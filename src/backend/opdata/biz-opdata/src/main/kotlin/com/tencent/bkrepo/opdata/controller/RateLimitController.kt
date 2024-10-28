@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestParam
 
 @RestController
 @RequestMapping("/api/rateLimit")
@@ -41,38 +42,44 @@ class RateLimitController(
         if (!rateLimiterConfigService.checkExist(request.id!!)) {
             throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, request.id!!)
         }
-        rateLimiterConfigService.getById(request.id!!).let {
-            if (it != null &&
-                updateCheckResource(it, request) &&
-                rateLimiterConfigService.checkExist(request)
-            ) {
-                throw ErrorCodeException(
-                    CommonMessageCode.RESOURCE_EXISTED,
-                    "resource:${request.resource},limitDimension:${request.limitDimension})"
-                )
-            }
+        val tRateLimit = rateLimiterConfigService.findByModuleNameAndLimitDimensionAndResource(
+            request.resource,
+            request.moduleName,
+            request.limitDimension
+        )
+        if (tRateLimit == null || !tRateLimit.id.equals(request.id)) {
+            checkResource(request)
         }
         rateLimiterConfigService.update(request)
         return ResponseBuilder.success()
     }
 
-    private fun updateCheckResource(tRateLimit: TRateLimit, request: RateLimitCreatOrUpdateRequest): Boolean {
-        return (tRateLimit.resource != request.resource || tRateLimit.limitDimension != request.limitDimension)
+    private fun checkResource(request: RateLimitCreatOrUpdateRequest) {
+        with(request) {
+            val tRateLimits = rateLimiterConfigService.findByResourceAndLimitDimension(
+                resource = resource,
+                limitDimension = limitDimension
+            )
+            val modules = ArrayList<String>()
+            tRateLimits.forEach { tRateLimit -> modules.addAll(tRateLimit.moduleName) }
+            if (modules.isNotEmpty()) {
+                modules.retainAll(moduleName)
+                if (modules.isNotEmpty()) {
+                    throw ErrorCodeException(
+                        CommonMessageCode.RESOURCE_EXISTED,
+                        "resource:$resource,limitDimension:$limitDimension,module:${modules}"
+                    )
+                }
+            }
+        }
     }
 
     // 新增
     @PostMapping("/create")
     fun create(@RequestBody request:RateLimitCreatOrUpdateRequest): Response<Void> {
-        with(request) {
-            if (rateLimiterConfigService.checkExist(request)) {
-                throw ErrorCodeException(
-                    CommonMessageCode.RESOURCE_EXISTED,
-                    "resource:$resource,limitDimension:$limitDimension"
-                )
-            }
-            rateLimiterConfigService.create(request)
-            return ResponseBuilder.success()
-        }
+        checkResource(request)
+        rateLimiterConfigService.create(request)
+        return ResponseBuilder.success()
     }
 
     // 删除
@@ -90,6 +97,18 @@ class RateLimitController(
     fun getConfig(): Response<String> {
         val config = rateLimiterProperties
         return ResponseBuilder.success(config.rules.toJsonString())
+    }
+
+    // 获取数据库里面的模块名
+    @PostMapping("/getExistModule")
+    fun getExistModule(@RequestParam resource:String,@RequestParam limitDimension:String): Response<List<String>> {
+        val tRateLimits = rateLimiterConfigService.findByResourceAndLimitDimension(
+            resource = resource,
+            limitDimension = limitDimension
+        )
+        val modules = ArrayList<String>()
+        tRateLimits.forEach { tRateLimit -> modules.addAll(tRateLimit.moduleName) }
+        return ResponseBuilder.success(modules)
     }
 
 }

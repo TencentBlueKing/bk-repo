@@ -2,7 +2,7 @@
   <el-dialog :title="createMode ? '创建限流配置' : '更新限流配置'" :visible.sync="showDialog" :before-close="close">
     <el-form ref="form" :rules="rules" :model="rateLimit" status-icon>
       <el-form-item ref="project-form-item" label="资源标识" prop="resource" :rules="[{ required: true, message: '资源标识不能为空'}]">
-        <el-input v-model="rateLimit.resource" type="text" size="small" width="50" placeholder="请输入资源标识" />
+        <el-input v-model="rateLimit.resource" type="text" size="small" width="50" :placeholder="resourceTip" @change="resourceChange()" />
       </el-form-item>
       <el-form-item
         ref="repo-form-item"
@@ -10,7 +10,7 @@
         prop="limitDimension"
         :rules="[{ required: true, message: '限流维度不能为空'}]"
       >
-        <el-select v-model="rateLimit.limitDimension" placeholder="请选择">
+        <el-select v-model="rateLimit.limitDimension" placeholder="请选择" @change="changeLimitDimension()">
           <el-option
             v-for="item in options"
             :key="item.value"
@@ -55,14 +55,17 @@
         </el-select>
       </el-form-item>
       <el-form-item label="作用模块" prop="moduleName" :rules="[{ required: true, message: '作用模块不能为空'}]">
-        <el-select v-model="rateLimit.moduleName" multiple filterable collapse-tags placeholder="请选择">
+        <el-select v-model="rateLimit.moduleName" multiple filterable collapse-tags placeholder="请选择" :change="changeModule(rateLimit.moduleName)">
           <el-option
             v-for="item in moduleNameOptions"
             :key="item.value"
             :label="item.label"
             :value="item.value"
+            :disabled="item.disabled"
+            :loading="loading"
           />
         </el-select>
+        <el-checkbox v-model="selectDockerAndOci" style="margin-left: 10px">添加docker和oci</el-checkbox>
         <el-checkbox v-model="moduleSelectAll" style="margin-left: 10px">全选</el-checkbox>
       </el-form-item>
       <el-form-item
@@ -76,7 +79,6 @@
           style="height: 40px ; width: 500px;"
           placeholder="请输入数据"
           min="0"
-          @input="updateInput()"
         />
         <i
           class="el-icon-circle-close"
@@ -100,7 +102,7 @@
 
 <script>
 import _ from 'lodash'
-import { createRateLimit, updateRateLimit } from '@/api/rateLimit'
+import { createRateLimit, updateRateLimit, getExistModule } from '@/api/rateLimit'
 export default {
   name: 'CreateOrUpdateRateLimitDialog',
   props: {
@@ -125,6 +127,7 @@ export default {
     return {
       showDialog: this.visible,
       rateLimit: this.newRateLimit(),
+      resourceTip: '请输入资源标识,例子如下：',
       rules: {},
       options: [{
         label: '指定URL限流',
@@ -185,7 +188,50 @@ export default {
           label: 'GLOBAL'
         }
       ],
-      moduleNameOptions: [
+      moduleNameOptions: this.newModuleName(),
+      moduleSelectAll: false,
+      selectDockerAndOci: false,
+      loading: false
+    }
+  },
+  watch: {
+    visible: function(newVal) {
+      if (newVal) {
+        this.resetRateLimit()
+        this.showDialog = true
+      } else {
+        this.close()
+      }
+    },
+    moduleSelectAll: function(newVal) {
+      if (newVal) {
+        this.rateLimit.moduleName = []
+        this.moduleNameOptions.forEach(moduleName => {
+          if (!moduleName.disabled) {
+            this.rateLimit.moduleName.push(moduleName.value)
+          }
+        })
+      } else {
+        this.rateLimit.moduleName = []
+      }
+    },
+    selectDockerAndOci: function(newVal) {
+      if (newVal) {
+        if (this.rateLimit.moduleName.indexOf('docker') < 0 && !this.moduleNameOptions[28].disabled) {
+          this.rateLimit.moduleName.push('docker')
+          this.rateLimit.moduleName.push('oci')
+        }
+      } else {
+        if (this.rateLimit.moduleName.indexOf('docker') > 0) {
+          this.rateLimit.moduleName.splice(this.rateLimit.moduleName.indexOf('docker'), 1)
+          this.rateLimit.moduleName.splice(this.rateLimit.moduleName.indexOf('oci'), 1)
+        }
+      }
+    }
+  },
+  methods: {
+    newModuleName() {
+      const name = [
         {
           value: 'auth',
           label: 'auth'
@@ -297,32 +343,14 @@ export default {
         {
           value: 'media',
           label: 'media'
+        },
+        {
+          value: 'docker',
+          label: 'docker'
         }
-      ],
-      moduleSelectAll: false
-    }
-  },
-  watch: {
-    visible: function(newVal) {
-      if (newVal) {
-        this.resetRateLimit()
-        this.showDialog = true
-      } else {
-        this.close()
-      }
+      ]
+      return name
     },
-    moduleSelectAll: function(newVal) {
-      if (newVal) {
-        this.rateLimit.moduleName = []
-        this.moduleNameOptions.forEach(moduleName => {
-          this.rateLimit.moduleName.push(moduleName.value)
-        })
-      } else {
-        this.rateLimit.moduleName = []
-      }
-    }
-  },
-  methods: {
     validateNum(rule, value, callback) {
       if (!value) {
         callback()
@@ -337,20 +365,81 @@ export default {
     updateInput() {
       this.$forceUpdate()
     },
+    resourceChange() {
+      if (this.rateLimit.resource !== '' && !this.loading) {
+        this.loading = true
+        getExistModule(this.rateLimit.resource, this.rateLimit.limitDimension).then((res) => {
+          for (let i = 0; i < this.moduleNameOptions.length; i++) {
+            const module = this.moduleNameOptions[i]
+            if (res.data.indexOf(this.moduleNameOptions[i].value) > -1) {
+              this.$set(module, 'disabled', true)
+            } else {
+              this.$set(module, 'disabled', false)
+            }
+          }
+          this.loading = false
+        })
+      }
+    },
+    changeLimitDimension() {
+      const msg = '请输入资源标识，例子如下：'
+      switch (this.rateLimit.limitDimension) {
+        case 'URL':
+          this.resourceTip = msg + '/'
+          break
+        case 'URL_REPO':
+          this.resourceTip = msg + '/*/'
+          break
+        case 'UPLOAD_USAGE':
+          this.resourceTip = msg + '/*/'
+          break
+        case 'DOWNLOAD_USAGE':
+          this.resourceTip = msg + '/*/'
+          break
+        case 'USER_URL':
+          this.resourceTip = msg + '*:/'
+          break
+        case 'USER_URL_REPO':
+          this.resourceTip = msg + '*:/*/'
+          break
+        case 'USER_UPLOAD_USAGE':
+          this.resourceTip = msg + '*:/*/'
+          break
+        case 'USER_DOWNLOAD_USAGE':
+          this.resourceTip = msg + '*:/'
+          break
+        case 'UPLOAD_BANDWIDTH':
+          this.resourceTip = msg + '/*/'
+          break
+        case 'DOWNLOAD_BANDWIDTH':
+          this.resourceTip = msg + '/*/'
+          break
+      }
+      if (this.rateLimit.resource !== '' && !this.loading) {
+        this.loading = true
+        getExistModule(this.rateLimit.resource, this.rateLimit.limitDimension).then((res) => {
+          for (let i = 0; i < this.moduleNameOptions.length; i++) {
+            const module = this.moduleNameOptions[i]
+            if (res.data.indexOf(this.moduleNameOptions[i].value) > -1) {
+              this.$set(module, 'disabled', true)
+            } else {
+              this.$set(module, 'disabled', false)
+            }
+          }
+          this.loading = false
+        })
+      }
+    },
     close() {
       this.showDialog = false
       this.moduleSelectAll = false
+      this.selectDockerAndOci = false
       this.rateLimit = this.newRateLimit()
+      this.moduleNameOptions = this.newModuleName()
       this.$refs['form'].resetFields()
       this.$emit('update:visible', false)
     },
     handleCreateOrUpdate() {
-      if (this.createMode || (!this.createMode && this.rateLimit.id !== undefined)) {
-        if (this.checkExist()) {
-          this.$message.error('已有此类配置')
-          return
-        }
-      }
       this.$refs['form'].validate((valid) => {
         if (valid) {
           const rateLimit = this.rateLimit
@@ -395,6 +484,9 @@ export default {
         this.rateLimit = this.newRateLimit()
       } else {
         this.rateLimit = _.cloneDeep(this.updatingRateLimit)
+        if (this.rateLimit.moduleName && this.rateLimit.moduleName.some(moduleName => moduleName === 'docker')) {
+          this.selectDockerAndOci = true
+        }
         if (this.rateLimit.targets.length === 0) {
           this.rateLimit.targets = ['']
         }
@@ -412,19 +504,23 @@ export default {
         limit: '',
         capacity: '',
         scope: 'LOCAL',
-        moduleName: ['repository'],
+        moduleName: [],
         targets: ['']
       }
       return rateLimit
     },
-    checkExist() {
-      if (this.rateLimitConfig.length === 0) {
-        return false
+    changeModule(module) {
+      if (module === null || (module.some(mod => mod === 'oci') && module.some(mod => mod === 'docker'))) {
+        return
       }
-      if (this.rateLimitConfig.find(item => item.resource === this.rateLimit.resource && item.limitDimension === this.rateLimit.limitDimension)) {
-        return true
+      if (module.some(mod => mod === 'docker') && !module.some(mod => mod === 'oci')) {
+        this.rateLimit.moduleName.splice(this.rateLimit.moduleName.indexOf('docker'), 1)
+        this.selectDockerAndOci = false
       }
-      return false
+      if (module.some(mod => mod === 'oci') && !module.some(mod => mod === 'docker')) {
+        this.rateLimit.moduleName.splice(this.rateLimit.moduleName.indexOf('oci'), 1)
+        this.selectDockerAndOci = false
+      }
     },
     removeDomain(item) {
       const index = this.rateLimit.targets.indexOf(item)

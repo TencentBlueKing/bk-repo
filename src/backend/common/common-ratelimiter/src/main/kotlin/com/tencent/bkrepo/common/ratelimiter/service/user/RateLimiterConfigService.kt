@@ -115,4 +115,16 @@ class RateLimiterConfigService(
         return rateLimitRepository.findByModuleNameAndLimitDimension(moduleName, limitDimension)
     }
 
+    fun findByResourceAndLimitDimension(resource: String, limitDimension: String): List<TRateLimit> {
+        return rateLimitRepository.findByResourceAndLimitDimension(resource, limitDimension)
+    }
+
+    fun findByModuleNameAndLimitDimensionAndResource(
+        resource: String,
+        moduleName: List<String>,
+        limitDimension: String
+    ): TRateLimit? {
+        return rateLimitRepository.findByModuleNameAndLimitDimensionAndResource(resource, moduleName, limitDimension)
+    }
+
 }

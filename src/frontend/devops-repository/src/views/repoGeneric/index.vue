@@ -1063,6 +1063,11 @@
                                 })
                             }
                         })
+                    } else if (e.status === 429) {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
                     } else {
                         const message = this.$t('fileError')
                         this.$bkMessage({
