@@ -73,6 +73,8 @@ import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRa
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserUploadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.service.servlet.MultipleReadHttpRequest
+import java.util.concurrent.ConcurrentHashMap
+import javax.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -82,8 +84,6 @@ import org.springframework.http.MediaType
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
-import java.util.concurrent.ConcurrentHashMap
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 限流器抽象实现
@@ -94,7 +94,7 @@ abstract class AbstractRateLimiterService(
     private val rateLimiterMetrics: RateLimiterMetrics,
     private val redisTemplate: RedisTemplate<String, String>? = null,
     private val rateLimiterConfigService: RateLimiterConfigService,
-    ) : RateLimiterService {
+) : RateLimiterService {
 
     @Value("\${spring.application.name}")
     var moduleName: String = StringPool.EMPTY
@@ -246,7 +246,7 @@ abstract class AbstractRateLimiterService(
         try {
             projectId = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
                     as Map<*, *>)["projectId"] as String?
-             repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
+            repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
                     as Map<*, *>)["repoName"] as String?
         } catch (ignore: Exception) {
         }
@@ -260,34 +260,39 @@ abstract class AbstractRateLimiterService(
         val limit = DataSize.ofMegabytes(1).toBytes()
         val lengthCondition = request.contentLength in 1..limit
         val typeCondition = request.contentType?.startsWith(MediaType.APPLICATION_JSON_VALUE) == true
+        // 限制缓存大小
         if (lengthCondition && typeCondition) {
-            // 限制缓存大小
             val multiReadRequest = MultipleReadHttpRequest(request, limit)
-            val queryModel = try {
-                multiReadRequest.inputStream.readJsonString<QueryModel>()
-            } catch (e: Exception) {
-                null
-            }
-            var (projectId, repoName) = getRepoInfoFromQueryModel(queryModel)
+            val (projectId, repoName) = getRepoInfoFromQueryModel(multiReadRequest)
             if (!projectId.isNullOrEmpty()) return Pair(projectId, repoName)
-            val mappedValue = objectMapper.readValue<Map<String, Any>>(multiReadRequest.inputStream)
-            projectId = mappedValue[PROJECT_ID] as? String
-            repoName = mappedValue[REPO_NAME] as? String
-            if (projectId.isNullOrEmpty()) {
+            val (newProjectId, newRepoName) = getRepoInfoFromOtherRequest(multiReadRequest)
+            if (newProjectId.isNullOrEmpty()) {
                 throw InvalidResourceException("Could not find projectId from request ${request.requestURI}")
             }
-            return Pair(projectId, repoName)
+            return Pair(newProjectId, newRepoName)
         }
         throw InvalidResourceException("Could not find projectId from body of request ${request.requestURI}")
     }
 
-    private fun getRepoInfoFromQueryModel(queryModel: QueryModel?): Pair<String?, String?> {
-        if (queryModel == null) return Pair(null, null)
-        val rule = queryModel.rule
-        if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
-            return findRepoInfoFromRule(rule)
+    private fun getRepoInfoFromQueryModel(multiReadRequest: MultipleReadHttpRequest): Pair<String?, String?> {
+        try {
+            val queryModel = multiReadRequest.inputStream.readJsonString<QueryModel>()
+            val rule = queryModel.rule
+            if (rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND) {
+                return findRepoInfoFromRule(rule)
+            }
+        } catch (ignore: Exception) {
         }
         return Pair(null, null)
+    }
+
+    private fun getRepoInfoFromOtherRequest(multiReadRequest: MultipleReadHttpRequest): Pair<String?, String?> {
+        try {
+            val mappedValue = objectMapper.readValue<Map<String, Any>>(multiReadRequest.inputStream)
+            return Pair((mappedValue[PROJECT_ID] as? String), (mappedValue[REPO_NAME] as? String))
+        } catch (ignore: Exception) {
+            return Pair(null, null)
+        }
     }
 
     private fun findRepoInfoFromRule(rule: Rule.NestedRule): Pair<String?, String?> {
@@ -323,21 +328,24 @@ abstract class AbstractRateLimiterService(
         }
         val databaseConfig = try {
             rateLimiterConfigService.findByModuleNameAndLimitDimension(
-                moduleName, getLimitDimensions().first())
+                moduleName, getLimitDimensions().first()
+            )
         } catch (e: Exception) {
             logger.error("system error: $e")
             listOf()
         }
-        val configs = usageRuleConfigs.plus(databaseConfig.map { tRateLimit -> ResourceLimit(
-            algo = tRateLimit.algo,
-            resource = tRateLimit.resource,
-            limit = tRateLimit.limit,
-            limitDimension = tRateLimit.limitDimension,
-            duration = tRateLimit.duration,
-            capacity = tRateLimit.capacity,
-            scope = tRateLimit.scope,
-            targets = tRateLimit.targets
-        ) })
+        val configs = usageRuleConfigs.plus(databaseConfig.map { tRateLimit ->
+            ResourceLimit(
+                algo = tRateLimit.algo,
+                resource = tRateLimit.resource,
+                limit = tRateLimit.limit,
+                limitDimension = tRateLimit.limitDimension,
+                duration = tRateLimit.duration,
+                capacity = tRateLimit.capacity,
+                scope = tRateLimit.scope,
+                targets = tRateLimit.targets
+            )
+        })
         // 配置规则变更后需要清理缓存的限流算法实现
         val newRuleHashCode = configs.hashCode()
         if (currentRuleHashCode == newRuleHashCode) {
@@ -375,7 +383,7 @@ abstract class AbstractRateLimiterService(
             try {
                 it.value.removeCacheLimit(it.key)
             } catch (e: Exception) {
-             logger.warn("clear limiter cacher error: ${e.cause}, ${e.message}")
+                logger.warn("clear limiter cache error: ${e.cause}, ${e.message}")
             }
         }
         rateLimiterCache.clear()
