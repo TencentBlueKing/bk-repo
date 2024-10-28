@@ -30,9 +30,7 @@ allowed_num = 1
 -- 生成令牌，并返回生成的令牌数量
 local tokens = {}
 for i = 1, count do
-    table.insert(tokens, now_sec)
-    table.insert(tokens, random..i)
+    redis.call('zadd', key, now_sec, random..i)
 end
-redis.call('zadd', key, unpack(tokens))
 redis.call('expire', key, interval)
 return { allowed_num, remaining }

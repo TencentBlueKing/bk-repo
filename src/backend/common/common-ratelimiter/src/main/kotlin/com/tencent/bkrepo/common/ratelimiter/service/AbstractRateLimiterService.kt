@@ -140,7 +140,6 @@ abstract class AbstractRateLimiterService(
         }
 
         if (resLimitInfo == null) {
-            logger.info("no rule in ${this.javaClass.simpleName} for request ${request.requestURI}")
             return null
         }
         return resLimitInfo
@@ -365,7 +364,13 @@ abstract class AbstractRateLimiterService(
     }
 
     private fun clearLimiterCache() {
-        rateLimiterCache.forEach { it.value.removeCacheLimit(it.key) }
+        rateLimiterCache.forEach {
+            try {
+                it.value.removeCacheLimit(it.key)
+            } catch (e: Exception) {
+             logger.warn("clear limiter cacher error: ${e.cause}, ${e.message}")
+            }
+        }
         rateLimiterCache.clear()
     }
 
