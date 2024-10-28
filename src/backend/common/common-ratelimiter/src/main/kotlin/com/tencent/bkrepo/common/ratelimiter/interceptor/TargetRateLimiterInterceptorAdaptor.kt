@@ -29,17 +29,18 @@ package com.tencent.bkrepo.common.ratelimiter.interceptor
 
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 
 /**
  * 执行限流机器判断
  */
 class TargetRateLimiterInterceptorAdaptor(
-    private val host: String
+    private val rateLimiterConfigService: RateLimiterConfigService,
 ) : RateLimiterInterceptorAdapter() {
 
     override fun beforeLimitCheck(resource: String, resourceLimit: ResourceLimit) {
-        if (resourceLimit.targets.isNotEmpty() && !resourceLimit.targets.contains(host)) {
-            throw InvalidResourceException("targets not contain $host")
+        if (resourceLimit.targets.isNotEmpty() && !resourceLimit.targets.contains(rateLimiterConfigService.host)) {
+            throw InvalidResourceException("targets not contain ${rateLimiterConfigService.host}")
         }
     }
 

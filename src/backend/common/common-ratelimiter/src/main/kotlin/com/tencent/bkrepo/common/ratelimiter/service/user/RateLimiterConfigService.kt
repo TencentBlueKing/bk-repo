@@ -34,13 +34,17 @@ package com.tencent.bkrepo.common.ratelimiter.service.user
 import com.tencent.bkrepo.common.ratelimiter.model.RateLimitCreatOrUpdateRequest
 import com.tencent.bkrepo.common.ratelimiter.model.TRateLimit
 import com.tencent.bkrepo.common.ratelimiter.repository.RateLimitRepository
-import org.springframework.stereotype.Service
 import java.time.Duration
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Service
 
 @Service
 class RateLimiterConfigService(
     private val rateLimitRepository: RateLimitRepository
 ) {
+
+    @Value("\${spring.cloud.client.ip-address}")
+    var host: String = "127.0.0.1"
 
     fun list(): List<TRateLimit> {
         return rateLimitRepository.findAll()
@@ -48,17 +52,19 @@ class RateLimiterConfigService(
 
     fun create(fileCacheRequest: RateLimitCreatOrUpdateRequest) {
         with(fileCacheRequest) {
-            rateLimitRepository.insert(TRateLimit(
-                id = null,
-                resource = resource,
-                limitDimension = limitDimension,
-                algo = algo,
-                limit = limit,
-                duration = Duration.ofSeconds(duration),
-                capacity = capacity,
-                scope = scope,
-                moduleName = moduleName
-                ))
+            rateLimitRepository.insert(
+                TRateLimit(
+                    id = null,
+                    resource = resource,
+                    limitDimension = limitDimension,
+                    algo = algo,
+                    limit = limit,
+                    duration = Duration.ofSeconds(duration),
+                    capacity = capacity,
+                    scope = scope,
+                    moduleName = moduleName
+                )
+            )
         }
     }
 
@@ -83,30 +89,34 @@ class RateLimiterConfigService(
     fun update(fileCacheRequest: RateLimitCreatOrUpdateRequest) {
         with(fileCacheRequest) {
             targets?.let {
-                rateLimitRepository.save(TRateLimit(
-                    id = id,
-                    resource = resource,
-                    limitDimension = limitDimension,
-                    algo = algo,
-                    limit = limit,
-                    duration = Duration.ofSeconds(duration),
-                    capacity = capacity,
-                    scope = scope,
-                    moduleName = moduleName,
-                    targets = it
-                ))
+                rateLimitRepository.save(
+                    TRateLimit(
+                        id = id,
+                        resource = resource,
+                        limitDimension = limitDimension,
+                        algo = algo,
+                        limit = limit,
+                        duration = Duration.ofSeconds(duration),
+                        capacity = capacity,
+                        scope = scope,
+                        moduleName = moduleName,
+                        targets = it
+                    )
+                )
             } ?: run {
-                rateLimitRepository.save(TRateLimit(
-                    id = id,
-                    resource = resource,
-                    limitDimension = limitDimension,
-                    algo = algo,
-                    limit = limit,
-                    duration = Duration.ofSeconds(duration),
-                    capacity = capacity,
-                    scope = scope,
-                    moduleName = moduleName
-                ))
+                rateLimitRepository.save(
+                    TRateLimit(
+                        id = id,
+                        resource = resource,
+                        limitDimension = limitDimension,
+                        algo = algo,
+                        limit = limit,
+                        duration = Duration.ofSeconds(duration),
+                        capacity = capacity,
+                        scope = scope,
+                        moduleName = moduleName
+                    )
+                )
             }
         }
     }
@@ -126,5 +136,4 @@ class RateLimiterConfigService(
     ): TRateLimit? {
         return rateLimitRepository.findByModuleNameAndLimitDimensionAndResource(resource, moduleName, limitDimension)
     }
-
 }
