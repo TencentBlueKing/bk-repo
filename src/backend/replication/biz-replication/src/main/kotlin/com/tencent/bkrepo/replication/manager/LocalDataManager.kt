@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
@@ -52,7 +53,6 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.constant.MD5
 import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.replication.constant.SIZE
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -84,7 +84,7 @@ class LocalDataManager(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
     private val nodeSearchService: NodeSearchService,
-    private val packageClient: PackageClient,
+    private val packageService: PackageService,
     private val storageService: StorageService,
     private val storageCredentialService: StorageCredentialService,
     private val storageProperties: StorageProperties,
@@ -166,7 +166,7 @@ class LocalDataManager(
      * 根据packageKey查找包信息
      */
     fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary {
-        return packageClient.findPackageByKey(projectId, repoName, packageKey).data
+        return packageService.findPackageByKey(projectId, repoName, packageKey)
             ?: throw PackageNotFoundException(packageKey)
     }
 
@@ -179,15 +179,14 @@ class LocalDataManager(
         packageKey: String,
         option: VersionListOption
     ): List<PackageVersion> {
-        return packageClient.listAllVersion(projectId, repoName, packageKey, option).data
-            ?: throw PackageNotFoundException(packageKey)
+        return packageService.listAllVersion(projectId, repoName, packageKey, option)
     }
 
     /**
      * 查询指定版本
      */
     fun findPackageVersion(projectId: String, repoName: String, packageKey: String, version: String): PackageVersion {
-        return packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+        return packageService.findVersionByName(projectId, repoName, packageKey, version)
             ?: throw VersionNotFoundException(packageKey)
     }
 
@@ -253,14 +252,11 @@ class LocalDataManager(
      * 分页查询包
      */
     fun listPackagePage(projectId: String, repoName: String, option: PackageListOption): List<PackageSummary> {
-        val packages = packageClient.listPackagePage(
+        val packages = packageService.listPackagePage(
             projectId = projectId,
             repoName = repoName,
             option = option
-        ).data?.records
-        if (packages.isNullOrEmpty()) {
-            return emptyList()
-        }
+        ).records
         return packages
     }
 

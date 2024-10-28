@@ -33,6 +33,7 @@ package com.tencent.bkrepo.npm.handler
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
@@ -44,7 +45,6 @@ import com.tencent.bkrepo.npm.pojo.fixtool.FailPackageDetail
 import com.tencent.bkrepo.npm.pojo.fixtool.FailVersionDetail
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -60,7 +60,7 @@ import java.time.LocalDateTime
 @Component
 class NpmPackageHandler {
     @Autowired
-    private lateinit var packageClient: PackageClient
+    private lateinit var packageService: PackageService
 
     /**
      * 包版本数据填充
@@ -126,7 +126,7 @@ class NpmPackageHandler {
                     description = packageMetaData.description.orEmpty(),
                     versionList = versionList
                 )
-                packageClient.populatePackage(packagePopulateRequest)
+                packageService.populatePackage(packagePopulateRequest)
             }
             return if (failPackageDetail.failedVersionSet.isEmpty()) null else failPackageDetail
         }
@@ -165,9 +165,10 @@ class NpmPackageHandler {
                     overwrite = true,
                     createdBy = userId
                 )
-                packageClient.createVersion(packageVersionCreateRequest, HttpContextHolder.getClientAddress()).apply {
-                    logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
-                }
+                packageService.createPackageVersion(packageVersionCreateRequest, HttpContextHolder.getClientAddress())
+                    .apply {
+                        logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
+                    }
             }
         }
     }
@@ -187,7 +188,7 @@ class NpmPackageHandler {
     fun deletePackage(userId: String, name: String, artifactInfo: NpmArtifactInfo) {
         val packageKey = PackageKeys.ofNpm(name)
         with(artifactInfo) {
-            packageClient.deletePackage(projectId, repoName, packageKey, HttpContextHolder.getClientAddress()).apply {
+            packageService.deletePackage(projectId, repoName, packageKey, HttpContextHolder.getClientAddress()).apply {
                 logger.info("user: [$userId] delete package [$name] in repo [$projectId/$repoName] success!")
             }
         }
@@ -199,7 +200,7 @@ class NpmPackageHandler {
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: NpmArtifactInfo) {
         val packageKey = PackageKeys.ofNpm(name)
         with(artifactInfo) {
-            packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
+            packageService.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
                 .apply {
                     logger.info(
                         "user: [$userId] delete package [$name] with version [$version] " +

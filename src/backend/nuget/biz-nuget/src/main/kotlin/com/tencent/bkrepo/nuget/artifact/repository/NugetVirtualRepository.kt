@@ -49,6 +49,7 @@ import com.tencent.bkrepo.nuget.util.NugetUtils
 import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
 import com.tencent.bkrepo.nuget.util.RemoteRegistrationUtils
 import com.tencent.bkrepo.nuget.util.NugetVersionUtils
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -181,9 +182,13 @@ class NugetVirtualRepository(
         it: RepositoryDetail
     ): Stream<RegistrationPageItem> {
         with(artifactInfo) {
-            val packageVersionList =
-                packageClient.listAllVersion(projectId, repoName, PackageKeys.ofNuget(packageName)).data
-            val sortedVersionList = packageVersionList.orEmpty().stream().sorted { o1, o2 ->
+            val packageVersionList = packageService.listAllVersion(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = PackageKeys.ofNuget(packageName),
+                option = VersionListOption()
+            )
+            val sortedVersionList = packageVersionList.stream().sorted { o1, o2 ->
                 NugetVersionUtils.compareSemVer(o1.name, o2.name)
             }.toList()
             val v3RegistrationUrl = NugetUtils.getV3Url(artifactInfo) + '/' + registrationPath

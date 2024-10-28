@@ -41,15 +41,14 @@ import com.tencent.bkrepo.conan.constant.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.conan.listener.event.ConanPackageUploadEvent
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeUploadEvent
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
-import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.generateFullPath
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildDownloadResponse
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageVersionCreateRequest
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toMetadataList
-import com.tencent.bkrepo.conan.utils.ConanPathUtils
-import com.tencent.bkrepo.conan.utils.ConanPathUtils.generateFullPath
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -132,7 +131,7 @@ class ConanLocalRepository : LocalRepository() {
             size = size,
             sourceType = sourceType
         )
-        packageClient.createVersion(packageVersionCreateRequest).apply {
+        packageService.createPackageVersion(packageVersionCreateRequest).apply {
             logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
         }
     }
@@ -166,7 +165,7 @@ class ConanLocalRepository : LocalRepository() {
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
     ): PackageDownloadRecord? {
-        val conanFileReference = ConanArtifactInfoUtil.convertToConanFileReference(
+        val conanFileReference = convertToConanFileReference(
             context.artifactInfo as ConanArtifactInfo
         )
         val refStr = ConanPathUtils.buildReferenceWithoutVersion(conanFileReference)
@@ -180,7 +179,7 @@ class ConanLocalRepository : LocalRepository() {
             val conanFileReference = node.nodeMetadata.toConanFileReference() ?: return null
             val refStr = ConanPathUtils.buildReferenceWithoutVersion(conanFileReference)
             val packageKey = PackageKeys.ofConan(refStr)
-            return packageClient.findVersionByName(projectId, repoName, packageKey, conanFileReference.version).data
+            return packageService.findVersionByName(projectId, repoName, packageKey, conanFileReference.version)
         }
     }
 
