@@ -31,13 +31,15 @@ import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
+import com.tencent.bkrepo.common.ratelimiter.repository.RateLimitRepository
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
+import java.time.Duration
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.time.Duration
 
 
 class RateLimiterInterceptorChainTest {
@@ -99,7 +101,8 @@ class RateLimiterInterceptorChainTest {
     @Test
     fun testTargetDoBeforeLimit() {
         val chain = RateLimiterInterceptorChain()
-        chain.addInterceptor(TargetRateLimiterInterceptorAdaptor("127.0.0.1"))
+        val rateLimitRepository: RateLimitRepository = RateLimitRepository()
+        chain.addInterceptor(TargetRateLimiterInterceptorAdaptor(RateLimiterConfigService(rateLimitRepository)))
         val resourceLimit = ResourceLimit(
             algo = Algorithms.FIXED_WINDOW.name, resource = "/project1/",
             limitDimension = LimitDimension.URL.name, limit = 52428800,
