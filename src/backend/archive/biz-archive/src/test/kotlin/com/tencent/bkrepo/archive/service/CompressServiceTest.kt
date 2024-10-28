@@ -10,8 +10,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.FileReferenceClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -33,12 +31,6 @@ class CompressServiceTest @Autowired constructor(
 
     @MockBean
     lateinit var storageService: StorageService
-
-    @MockBean
-    lateinit var fileReferenceClient: FileReferenceClient
-
-    @MockBean
-    lateinit var repositoryClient: RepositoryClient
 
     @BeforeEach
     fun beforeEach() {

@@ -39,6 +39,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Api("操作统计数据接口")
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProjectUsageStatisticsClient")
 @RequestMapping("/service/project/usage/statistics")
+@Deprecated("replace with ProjectUsageStatisticsService")
 interface ProjectUsageStatisticsClient {
     @ApiOperation("增加使用数据")
     @PostMapping("/inc")

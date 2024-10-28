@@ -57,6 +57,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageClient")
 @RequestMapping("/service")
+@Deprecated("replace with PackageService")
 interface PackageClient {
 
     @ApiOperation("查询包信息")

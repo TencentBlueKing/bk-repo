@@ -45,6 +45,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageDependentsClient")
 @RequestMapping("/service/package/dependents/")
+@Deprecated("replace with PackageDependentsService")
 interface PackageDependentsClient {
 
     @PostMapping("/add")

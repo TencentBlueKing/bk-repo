@@ -424,7 +424,7 @@ class FixToolServiceImpl : FixToolService, AbstractChartService() {
                     version = chartMetadata.version,
                     versionMetadata = metadata
                 )
-                packageMetadataClient.saveMetadata(packageMetadataRequest)
+                packageMetadataService.saveMetadata(packageMetadataRequest)
                 val metadataSaveRequest = MetadataSaveRequest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,

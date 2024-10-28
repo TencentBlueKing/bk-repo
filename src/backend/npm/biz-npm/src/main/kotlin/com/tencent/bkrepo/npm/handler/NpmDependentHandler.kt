@@ -33,11 +33,11 @@ package com.tencent.bkrepo.npm.handler
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.packages.PackageDependentsService
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.utils.NpmUtils
-import com.tencent.bkrepo.repository.api.PackageDependentsClient
 import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -48,7 +48,7 @@ import org.springframework.stereotype.Component
 class NpmDependentHandler {
 
     @Autowired
-    private lateinit var packageDependentsClient: PackageDependentsClient
+    private lateinit var packageDependentsService: PackageDependentsService
 
     @Async
     fun updatePackageDependents(
@@ -89,7 +89,7 @@ class NpmDependentHandler {
                 packageKey = name,
                 dependencies = versionMetaData.dependencies?.keys.orEmpty().map { PackageKeys.ofNpm(it) }.toSet()
             )
-            packageDependentsClient.addDependents(relation)
+            packageDependentsService.addDependents(relation)
             logger.info("user [$userId] publish dependent for package: [$name] success.")
         }
     }
@@ -108,7 +108,7 @@ class NpmDependentHandler {
                 packageKey = name,
                 dependencies = versionMetaData.dependencies?.keys.orEmpty().map { PackageKeys.ofNpm(it) }.toSet()
             )
-            packageDependentsClient.reduceDependents(relation)
+            packageDependentsService.reduceDependents(relation)
             logger.info("user [$userId] delete dependent for package: [$name] success.")
         }
     }

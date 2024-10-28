@@ -42,6 +42,7 @@ import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -392,12 +393,12 @@ class NpmFixToolServiceImpl(
 		 */
 		with(artifactInfo) {
 			val packageKey = PackageKeys.ofNpm(name)
-			val packageSummary = packageClient.findPackageByKey(projectId, repoName, packageKey).data
+			val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey)
 				?: throw PackageNotFoundException("package [$name] not found")
 			val packageInfo = queryPackageInfo(this, name, false)
 			val metadataVersions = packageInfo.versions.map.keys
 			val packageVersions =
-				packageClient.listAllVersion(projectId, repoName, packageKey).data.orEmpty().map { it.name }
+				packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption()).map { it.name }
 			val subVersion = metadataVersions subtract packageVersions
 			val fullPathList = mutableListOf<String>()
 			if (subVersion.isNotEmpty()) {

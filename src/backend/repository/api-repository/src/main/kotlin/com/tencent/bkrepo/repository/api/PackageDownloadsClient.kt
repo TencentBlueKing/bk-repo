@@ -50,6 +50,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageDownloadsClient")
 @RequestMapping("/service/package/downloads/")
+@Deprecated("replace with PackageDownloadsService")
 interface PackageDownloadsClient {
 
     @ApiOperation("记录包下载")
