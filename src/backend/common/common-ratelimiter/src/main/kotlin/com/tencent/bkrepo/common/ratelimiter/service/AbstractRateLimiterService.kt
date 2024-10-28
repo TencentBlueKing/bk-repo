@@ -241,10 +241,15 @@ abstract class AbstractRateLimiterService(
     }
 
     fun getRepoInfoFromAttribute(request: HttpServletRequest): Pair<String?, String?> {
-        val projectId = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
-                as Map<*, *>)["projectId"] as String?
-        val repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
-                as Map<*, *>)["repoName"] as String?
+        var projectId: String? = null
+        var repoName: String? = null
+        try {
+            projectId = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
+                    as Map<*, *>)["projectId"] as String?
+             repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
+                    as Map<*, *>)["repoName"] as String?
+        } catch (ignore: Exception) {
+        }
         if (projectId.isNullOrEmpty()) {
             throw InvalidResourceException("Could not find projectId from request ${request.requestURI}")
         }
