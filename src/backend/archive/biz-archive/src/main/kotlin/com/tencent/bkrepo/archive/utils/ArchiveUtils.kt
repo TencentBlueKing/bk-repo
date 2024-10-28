@@ -7,7 +7,6 @@ import com.tencent.bkrepo.archive.config.ArchiveProperties
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.ArrayBlockingQueue
@@ -20,13 +19,11 @@ import java.util.concurrent.TimeUnit
 class ArchiveUtils(
     storageCredentialService: StorageCredentialService,
     storageProperties: StorageProperties,
-    repositoryClient: RepositoryClient,
     archiveProperties: ArchiveProperties,
 ) {
 
     init {
         Companion.storageCredentialService = storageCredentialService
-        Companion.repositoryClient = repositoryClient
         Companion.archiveProperties = archiveProperties
         defaultStorageCredentials = storageProperties.defaultStorageCredentials()
     }
@@ -34,7 +31,6 @@ class ArchiveUtils(
     companion object {
         private lateinit var storageCredentialService: StorageCredentialService
         private lateinit var defaultStorageCredentials: StorageCredentials
-        private lateinit var repositoryClient: RepositoryClient
         private lateinit var archiveProperties: ArchiveProperties
         private val logger = LoggerFactory.getLogger(ArchiveUtils::class.java)
         private val storageCredentialsCache: LoadingCache<String, StorageCredentials> = CacheBuilder.newBuilder()

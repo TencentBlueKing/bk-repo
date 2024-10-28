@@ -33,8 +33,6 @@ const val AUTH_CONFIG_TYPE_VALUE_DEVOPS = "devops"
 const val AUTH_CONFIG_TYPE_VALUE_LOCAL = "local"
 const val AUTH_CONFIG_TYPE_VALUE_BKIAMV3 = "bkiamv3"
 
-const val BKIAMV3_CHECK = "bkiamv3Check"
-
 const val CUSTOM = "custom"
 const val PIPELINE = "pipeline"
 const val REPORT = "report"

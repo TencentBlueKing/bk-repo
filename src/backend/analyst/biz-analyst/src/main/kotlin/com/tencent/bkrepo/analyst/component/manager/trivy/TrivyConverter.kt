@@ -44,6 +44,7 @@ import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Component
+import java.util.Locale
 
 @Component("${TrivyScanner.TYPE}Converter")
 class TrivyConverter : ScannerConverter {
@@ -54,7 +55,7 @@ class TrivyConverter : ScannerConverter {
         val reports = result.records.mapTo(HashSet(result.records.size)) {
             ArtifactVulnerabilityInfo(
                 vulId = it.data.vulnerabilityId,
-                severity = ScanPlanConverter.convertToLeakLevel(it.data.severity.toLowerCase()),
+                severity = ScanPlanConverter.convertToLeakLevel(it.data.severity.lowercase(Locale.getDefault())),
                 pkgName = it.data.pkgName,
                 installedVersion = setOf(it.data.installedVersion),
                 title = it.data.title,
@@ -82,9 +83,9 @@ class TrivyConverter : ScannerConverter {
         // cve count
         scanExecutorResult.vulnerabilityItems.forEach {
             if (it.severity == "UNKNOWN") {
-                it.severity = Level.CRITICAL.levelName.toUpperCase()
+                it.severity = Level.CRITICAL.levelName.uppercase(Locale.getDefault())
             }
-            val overviewKey = CveOverviewKey.overviewKeyOf(it.severity.toLowerCase())
+            val overviewKey = CveOverviewKey.overviewKeyOf(it.severity.lowercase(Locale.getDefault()))
             overview[overviewKey] = overview.getOrDefault(overviewKey, 0L) + 1L
         }
         return overview

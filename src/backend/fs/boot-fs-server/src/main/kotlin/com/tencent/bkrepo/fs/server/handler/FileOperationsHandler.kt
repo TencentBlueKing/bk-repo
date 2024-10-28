@@ -29,12 +29,12 @@ package com.tencent.bkrepo.fs.server.handler
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
-import com.tencent.bkrepo.common.metadata.client.RRepositoryClient
 import com.tencent.bkrepo.fs.server.bodyToArtifactFile
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.io.RegionInputStreamResource
@@ -44,9 +44,9 @@ import com.tencent.bkrepo.fs.server.request.NodeRequest
 import com.tencent.bkrepo.fs.server.request.StreamRequest
 import com.tencent.bkrepo.fs.server.resolveRange
 import com.tencent.bkrepo.fs.server.service.FileOperationService
+import com.tencent.bkrepo.fs.server.service.node.RNodeService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
-import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.buffer.DataBufferUtils
@@ -68,8 +68,8 @@ import java.net.URI
  * 处理文件操作请求
  * */
 class FileOperationsHandler(
-    private val rRepositoryClient: RRepositoryClient,
-    private val fileOperationService: FileOperationService
+    private val fileOperationService: FileOperationService,
+    private val nodeService: RNodeService
 ) {
 
     /**
@@ -82,7 +82,7 @@ class FileOperationsHandler(
             if (category == RepositoryCategory.REMOTE.name && repoType == RepositoryType.GENERIC) {
                 return temporaryRedirect(URI.create("/generic${request.uri().path}")).buildAndAwait()
             }
-            val node = rRepositoryClient.getNodeDetail(projectId, repoName, fullPath).awaitSingle().data
+            val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             if (node?.folder == true || node == null) {
                 throw NodeNotFoundException(this.toString())
             }

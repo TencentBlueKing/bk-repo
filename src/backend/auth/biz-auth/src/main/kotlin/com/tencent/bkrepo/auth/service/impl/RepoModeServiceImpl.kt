@@ -37,41 +37,42 @@ import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
 import com.tencent.bkrepo.auth.service.RepoModeService
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.springframework.stereotype.Service
 
 @Service
 class RepoModeServiceImpl(
-    private val repoAuthConfigDao: RepoAuthConfigDao,
+    private val repoAuthDao: RepoAuthConfigDao,
     private val permissionDao: PermissionDao,
-    private val repoClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
 ) : RepoModeService {
 
     override fun createOrUpdateConfig(
         projectId: String,
         repoName: String,
         accessControlMode: AccessControlMode?,
-        officeDenyGroupSet: Set<String>
+        officeDenyGroupSet: Set<String>,
+        bkiamv3Check: Boolean
     ): RepoModeStatus? {
-        val repoDetail = repoClient.getRepoDetail(projectId, repoName).data ?: return null
+        val repoDetail = repositoryService.getRepoDetail(projectId, repoName) ?: return null
         if (repoDetail.public) return null
         var controlMode = accessControlMode
         if (accessControlMode == null) {
             controlMode = AccessControlMode.DEFAULT
         }
-
-        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, controlMode!!, officeDenyGroupSet)
-        return RepoModeStatus(id, accessControlMode, officeDenyGroupSet)
+        val id = repoAuthDao.upsertProjectRepo(projectId, repoName, controlMode!!, officeDenyGroupSet, bkiamv3Check)
+        return RepoModeStatus(id, accessControlMode, officeDenyGroupSet, bkiamv3Check)
     }
 
 
     override fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus {
         var controlMode = AccessControlMode.DEFAULT
         var officeDenyGroupSet = emptySet<String>()
+        var bkiamv3Check = false
         if (permissionDao.listByResourceAndRepo(ResourceType.NODE.name, projectId, repoName).isNotEmpty()) {
             controlMode = AccessControlMode.DIR_CTRL
         }
-        val result = repoAuthConfigDao.findOneByProjectRepo(projectId, repoName)
+        val result = repoAuthDao.findOneByProjectRepo(projectId, repoName)
         if (result != null) {
             if (result.officeDenyGroupSet != null) {
                 officeDenyGroupSet = result.officeDenyGroupSet!!
@@ -83,9 +84,15 @@ class RepoModeServiceImpl(
             if (result.accessControl != null && result.accessControl!! && result.accessControlMode == null) {
                 controlMode = AccessControlMode.STRICT
             }
+            bkiamv3Check = result.bkiamv3Check ?: false
         }
-        val id = repoAuthConfigDao.upsertProjectRepo(projectId, repoName, controlMode, officeDenyGroupSet)
-        return RepoModeStatus(id = id, accessControlMode = controlMode, officeDenyGroupSet = officeDenyGroupSet)
+        val id = repoAuthDao.upsertProjectRepo(projectId, repoName, controlMode, officeDenyGroupSet, bkiamv3Check)
+        return RepoModeStatus(
+            id = id,
+            accessControlMode = controlMode,
+            officeDenyGroupSet = officeDenyGroupSet,
+            bkiamv3Check = bkiamv3Check
+        )
     }
 
 }
