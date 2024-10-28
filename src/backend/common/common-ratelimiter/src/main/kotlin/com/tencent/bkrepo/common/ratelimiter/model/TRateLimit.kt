@@ -38,10 +38,14 @@ import java.time.Duration
 @Document(collection = "rate_limit")
 @CompoundIndexes(
     CompoundIndex(
-        name = "rate_limit_idx",
+        name = "resource_limitDimension_idx",
         def = "{'resource': 1,'limitDimension': 1}",
-        background = true,
-        unique = true
+        background = true
+    ),
+    CompoundIndex(
+        name = "limitDimension_idx",
+        def = "{'limitDimension': 1}",
+        background = true
     )
 )
 data class TRateLimit(
@@ -63,5 +67,5 @@ data class TRateLimit(
     // 指定机器上运行
     var targets: List<String> = emptyList(),
     // 模块名
-    var moduleName: List<String>? = null
+    var moduleName: List<String>
 )
