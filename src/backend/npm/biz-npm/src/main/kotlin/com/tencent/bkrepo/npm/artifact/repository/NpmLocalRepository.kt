@@ -215,7 +215,7 @@ class NpmLocalRepository(
             val (packageName, packageVersion) =
                 NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
             val packageKey = PackageKeys.ofNpm(packageName)
-            return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion).data
+            return packageService.findVersionByName(projectId, repoName, packageKey, packageVersion)
         }
     }
 

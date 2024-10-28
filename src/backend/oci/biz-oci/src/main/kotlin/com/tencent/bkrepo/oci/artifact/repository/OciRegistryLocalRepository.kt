@@ -79,6 +79,7 @@ import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.Locale
@@ -447,7 +448,7 @@ class OciRegistryLocalRepository(
             val artifactInfo = context.artifactInfo as OciArtifactInfo
             val packageKey = PackageKeys.ofName(repo.type, artifactInfo.packageName)
             val version = node.metadata[IMAGE_VERSION]?.toString() ?: return null
-            return packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+            return packageService.findVersionByName(projectId, repoName, packageKey, version)
         }
     }
 
@@ -466,7 +467,7 @@ class OciRegistryLocalRepository(
         with(context.artifactInfo as OciTagArtifactInfo) {
             val n = context.getAttribute<Int>(N)
             val last = context.getAttribute<String>(LAST_TAG)
-            val packageList = packageClient.listAllPackageNames(projectId, repoName).data.orEmpty()
+            val packageList = packageService.listAllPackageName(projectId, repoName)
             if (packageList.isEmpty()) return null
             val nameList = mutableListOf<String>().apply {
                 packageList.forEach {
@@ -497,11 +498,7 @@ class OciRegistryLocalRepository(
             val last = context.getAttribute<String>(LAST_TAG)
             val packageKey =
                 PackageKeys.ofName(context.repositoryDetail.type.name.lowercase(Locale.getDefault()), packageName)
-            val versionList = packageClient.listAllVersion(
-                projectId,
-                repoName,
-                packageKey
-            ).data.orEmpty()
+            val versionList = packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption())
             if (versionList.isEmpty()) return null
             val tagList = mutableListOf<String>().apply {
                 versionList.forEach {

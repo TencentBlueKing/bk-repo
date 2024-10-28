@@ -49,6 +49,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageMetadataClient")
 @RequestMapping("/service/metadata/package")
+@Deprecated("replace with PackageMetadataService")
 interface PackageMetadataClient {
 
     @ApiOperation("创建/更新元数据列表")

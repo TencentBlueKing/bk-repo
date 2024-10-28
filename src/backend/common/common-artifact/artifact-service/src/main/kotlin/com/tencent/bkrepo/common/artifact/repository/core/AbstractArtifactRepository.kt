@@ -56,6 +56,8 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWrite
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -64,8 +66,6 @@ import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.PackageDownloadsClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -91,7 +91,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     lateinit var repositoryService: RepositoryService
 
     @Autowired
-    lateinit var packageClient: PackageClient
+    lateinit var packageService: PackageService
 
     @Autowired
     lateinit var storageService: StorageService
@@ -106,7 +106,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     lateinit var publisher: ApplicationEventPublisher
 
     @Autowired
-    lateinit var packageDownloadsClient: PackageDownloadsClient
+    lateinit var packageDownloadsService: PackageDownloadsService
 
     @Autowired
     lateinit var artifactResourceWriter: ArtifactResourceWriter
@@ -237,7 +237,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     ) {
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
-                taskAsyncExecutor.execute { packageDownloadsClient.record(it) }
+                taskAsyncExecutor.execute { packageDownloadsService.record(it) }
                 publishPackageDownloadEvent(context, it)
             }
         }

@@ -39,7 +39,7 @@ import com.tencent.bkrepo.repository.api.cluster.ClusterPackageClient
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
-import com.tencent.bkrepo.repository.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController

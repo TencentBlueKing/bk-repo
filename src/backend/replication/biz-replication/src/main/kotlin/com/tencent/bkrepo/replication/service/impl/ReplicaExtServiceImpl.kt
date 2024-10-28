@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
@@ -64,7 +65,6 @@ import com.tencent.bkrepo.replication.replica.context.ReplicaContext.Companion.W
 import com.tencent.bkrepo.replication.service.RemoteNodeService
 import com.tencent.bkrepo.replication.service.ReplicaExtService
 import com.tencent.bkrepo.replication.util.OkHttpClientPool
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
@@ -82,7 +82,7 @@ import java.time.Duration
 @Service
 class ReplicaExtServiceImpl(
     private val repositoryService: RepositoryService,
-    private val packageClient: PackageClient,
+    private val packageService: PackageService,
     private val nodeService: NodeService,
     private val remoteNodeService: RemoteNodeService,
     private val replicationProperties: ReplicationProperties,
@@ -329,7 +329,7 @@ class ReplicaExtServiceImpl(
         packageKey: String
     ): List<PackageVersion>? {
         return if (host.isNullOrEmpty()) {
-            packageClient.listAllVersion(projectId, repoName, packageKey).data
+            packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption())
         } else {
             listPackageVersionsFromRemote(
                 host = host,
@@ -347,11 +347,11 @@ class ReplicaExtServiceImpl(
     ) : List<PackageSummary> {
         with(request) {
             return if (localHost.isNullOrEmpty()) {
-                packageClient.listPackagePage(
+                packageService.listPackagePage(
                     projectId = localProjectId,
                     repoName = localRepoName,
                     option = option
-                ).data?.records ?: emptyList()
+                ).records
             } else {
                 listPackagesFromHost(
                     host = localHost!!,
