@@ -9,32 +9,37 @@
                 </card-radio-group>
             </bk-form-item>
             <template v-if="(repoType === 'generic' || repoType === 'ddc') && repoName !== 'pipeline'">
-                <bk-form-item v-for="type in genericInterceptorsList" :key="type"
+                <bk-form-item
+                    v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
                     <bk-radio-group v-model="controlConfigs[type].enable">
                         <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
                         <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                     </bk-radio-group>
                     <template v-if="controlConfigs[type].enable && ['mobile', 'web'].includes(type)">
-                        <bk-form-item :label="$t('fileName')" :label-width="80" class="mt10"
+                        <bk-form-item
+                            :label="$t('fileName')" :label-width="80" class="mt10"
                             :property="`${type}.filename`" required error-display-type="normal">
                             <bk-input class="w250" v-model.trim="controlConfigs[type].filename"></bk-input>
                             <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('fileNameRule')"></i>
                         </bk-form-item>
-                        <bk-form-item :label="$t('metadata')" :label-width="80"
+                        <bk-form-item
+                            :label="$t('metadata')" :label-width="80"
                             :property="`${type}.metadata`" required error-display-type="normal">
                             <bk-input class="w250" v-model.trim="controlConfigs[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
                             <a class="f12 ml5" href="https://bk.tencent.com/docs/markdown/ZH/Devops/2.0/UserGuide/Services/Artifactory/meta.md" target="__blank">{{ $t('viewMetadataDocument') }}</a>
                         </bk-form-item>
                     </template>
                     <template v-if="controlConfigs[type].enable && type === 'ip_segment'">
-                        <bk-form-item :label="$t('IP')" :label-width="150" class="mt10"
+                        <bk-form-item
+                            :label="$t('IP')" :label-width="150" class="mt10"
                             :property="`${type}.ipSegment`" :required="!controlConfigs[type].officeNetwork" error-display-type="normal">
                             <bk-input class="w250 mr10" v-model.trim="controlConfigs[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
                             <bk-checkbox v-model="controlConfigs[type].officeNetwork">{{ $t('office_networkDownload') }}</bk-checkbox>
                             <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('office_networkDownloadTips')"></i>
                         </bk-form-item>
-                        <bk-form-item :label="$t('whiteUser')" :label-width="150"
+                        <bk-form-item
+                            :label="$t('whiteUser')" :label-width="150"
                             :property="`${type}.whitelistUser`" error-display-type="normal">
                             <bk-input class="w250" v-model.trim="controlConfigs[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
                         </bk-form-item>
@@ -49,7 +54,8 @@
                         :multiple="true"
                         searchable
                         :placeholder="$t('controlConfigPlaceholder')">
-                        <bk-option v-for="option in roleList"
+                        <bk-option
+                            v-for="option in roleList"
                             :key="option.id"
                             :id="option.id"
                             :name="option.name">
@@ -62,18 +68,16 @@
                 <bk-button theme="primary" @click="save()">{{$t('save')}}</bk-button>
             </bk-form-item>
         </bk-form>
-        <add-user-dialog ref="addUserDialog" :visible.sync="showAddUserDialog" @complete="handleAddUsers"></add-user-dialog>
     </div>
 </template>
 <script>
     import { mapActions } from 'vuex'
-    import AddUserDialog from '@repository/components/AddUserDialog/addUserDialog'
-    import { specialRepoEnum } from '@repository/store/publicEnum'
     import CardRadioGroup from '@repository/components/CardRadioGroup'
+    import { specialRepoEnum } from '@/store/publicEnum'
 
     export default {
-        name: 'controlConfig',
-        components: { CardRadioGroup, AddUserDialog },
+        name: 'ControlConfig',
+        components: { CardRadioGroup },
         props: {
             baseData: Object
         },
@@ -116,6 +120,7 @@
                 }
             ]
             return {
+                specialRepoEnum,
                 rootDirectoryPermission: '',
                 controlConfigs: {
                     mobile: {
@@ -136,11 +141,11 @@
                     }
                 },
                 blackList: [],
-                showAddUserDialog: false,
                 filenameRule,
                 metadataRule,
                 ipSegmentRule,
-                roleList: []
+                roleList: [],
+                authMode: undefined
             }
         },
         computed: {
@@ -183,19 +188,19 @@
                 set (val) {
                     if (val === 'public') {
                         this.$emit('showPermissionConfigTab', false)
-                        this.baseData.public = true
+                        this.controlConfigs.public = true
                         this.rootDirectoryPermission = null
                     } else if (val === 'folder') {
                         this.$emit('showPermissionConfigTab', true)
-                        this.baseData.public = false
+                        this.controlConfigs.public = false
                         this.rootDirectoryPermission = 'DIR_CTRL'
                     } else if (val === 'strict') {
                         this.$emit('showPermissionConfigTab', true)
-                        this.baseData.public = false
+                        this.controlConfigs.public = false
                         this.rootDirectoryPermission = 'STRICT'
                     } else if (val === 'default') {
                         this.$emit('showPermissionConfigTab', false)
-                        this.baseData.public = false
+                        this.controlConfigs.public = false
                         this.rootDirectoryPermission = 'DEFAULT'
                     } else {
                         this.$emit('showPermissionConfigTab', false)
@@ -249,6 +254,7 @@
             }).then((res) => {
                 this.rootDirectoryPermission = res.accessControlMode
                 this.blackList = res.officeDenyGroupSet
+                this.authMode = res
             })
             this.getRoleListHandler()
         },
@@ -269,41 +275,6 @@
                     name: 'userGroup'
                 })
             },
-            addUserGroup () {
-                this.$refs.roleForm.clearError()
-                this.editRoleConfig = {
-                    show: true,
-                    loading: false,
-                    id: '',
-                    name: '',
-                    description: '',
-                    users: [],
-                    originUsers: []
-                }
-            },
-            showAddDialog () {
-                this.showAddUserDialog = true
-                this.$refs.addUserDialog.editUserConfig = {
-                    users: this.editRoleConfig.users,
-                    originUsers: this.editRoleConfig.originUsers,
-                    search: '',
-                    newUser: ''
-                }
-            },
-            handleAddUsers (users) {
-                this.editRoleConfig.originUsers = users
-                this.editRoleConfig.users = users
-            },
-            deleteUser (index) {
-                const temp = []
-                for (let i = 0; i < this.editRoleConfig.users.length; i++) {
-                    if (i !== index) {
-                        temp.push(this.editRoleConfig.users[i])
-                    }
-                }
-                this.editRoleConfig.users = temp
-                this.editRoleConfig.originUsers = temp
-            },
             async save () {
                 await this.$refs.controlForm.validate()
                 try {
@@ -312,7 +283,8 @@
                         projectId: this.projectId,
                         repoName: this.repoName,
                         accessControlMode: this.rootDirectoryPermission,
-                        officeDenyGroupSet: this.blackList
+                        officeDenyGroupSet: this.blackList,
+                        bkiamv3Check: false
                     }
                     const configBody = this.getRepoConfigBody()
                     await this.updateRepoInfo({
@@ -384,9 +356,6 @@
                             )
                         }
                     }
-                }
-                if (!specialRepoEnum.includes(this.baseData.name)) {
-                    body.configuration.settings.bkiamv3Check = this.baseData.configuration.settings.bkiamv3Check
                 }
                 return body
             }

@@ -37,8 +37,8 @@
             </bk-form-item>
             <bk-form-item
                 :label="$t('bkPermissionCheck')"
-                v-if="!specialRepoEnum.includes(repoBaseInfo.name) && rbacStatus">
-                <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
+                v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
+                <bk-radio-group v-model="bkiamv3Check">
                     <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                 </bk-radio-group>
@@ -117,11 +117,6 @@
                 officeNetwork: false,
                 ipSegment: '',
                 whitelistUser: ''
-            },
-            configuration: {
-                settings: {
-                    bkiamv3Check: false
-                }
             }
         }
     }
@@ -139,8 +134,8 @@
                 showIamDenyDialog: false,
                 showData: {},
                 title: this.$t('createRepository'),
-                rbacStatus: false,
-                accessControl: 'DEFAULT'
+                accessControl: 'DEFAULT',
+                bkiamv3Check: false
             }
         },
         computed: {
@@ -235,14 +230,11 @@
             }
         },
         methods: {
-            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'getIamPermissionStatus', 'createOrUpdateRootPermission']),
+            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'createOrUpdateRootPermission']),
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
                 this.$refs.repoBaseInfo && this.$refs.repoBaseInfo.clearError()
-                this.getIamPermissionStatus().then(res => {
-                    this.rbacStatus = res
-                })
             },
             cancel () {
                 this.accessControl = 'DEFAULT'
@@ -285,9 +277,6 @@
                         }
                     }
                 }
-                if (!specialRepoEnum.includes(this.repoBaseInfo.name)) {
-                    body.configuration.settings.bkiamv3Check = this.repoBaseInfo.configuration.settings.bkiamv3Check
-                }
                 this.loading = true
                 this.createRepo({
                     body: body
@@ -327,7 +316,8 @@
                 const body = {
                     projectId: this.projectId,
                     repoName: this.repoBaseInfo.name,
-                    accessControlMode: this.accessControl
+                    accessControlMode: this.accessControl,
+                    bkiamv3Check: this.bkiamv3Check
                 }
                 this.createOrUpdateRootPermission({
                     body: body
