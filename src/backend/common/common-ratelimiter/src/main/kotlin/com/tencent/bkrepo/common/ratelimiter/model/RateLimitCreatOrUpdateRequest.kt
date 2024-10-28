@@ -50,5 +50,5 @@ data class RateLimitCreatOrUpdateRequest(
     // 指定机器上运行
     var targets: List<String>? = emptyList(),
     // 模块名
-    var moduleName: List<String>? = null
+    var moduleName: List<String>
 )
