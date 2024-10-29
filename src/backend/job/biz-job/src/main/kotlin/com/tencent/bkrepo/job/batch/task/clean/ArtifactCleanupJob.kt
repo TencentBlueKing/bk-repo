@@ -211,7 +211,7 @@ class ArtifactCleanupJob(
     /**
      * 清理容量，只针对配置了容量限制的才实时更新
      */
-    private fun decreaseVolume(row: RepoData, cleanupDate: LocalDateTime, path: String, deletedTime: LocalDateTime){
+    private fun decreaseVolume(row: RepoData, cleanupDate: LocalDateTime, path: String, deletedTime: LocalDateTime) {
         if (row.quota == null) return
         val option = NodeListOption(includeFolder = false, deep = true)
         val timeCriteria = Criteria().orOperator(
@@ -262,9 +262,12 @@ class ArtifactCleanupJob(
 
 
     private fun doPackageVersionCleanup(
-        projectId: String, repoName: String,
-        cleanupStrategy: CleanupStrategy, packageName: String,
-        versionList: List<PackageVersionData>, repoType: String
+        projectId: String,
+        repoName: String,
+        cleanupStrategy: CleanupStrategy,
+        packageName: String,
+        versionList: List<PackageVersionData>,
+        repoType: String
     ) {
         when (cleanupStrategy.cleanupType) {
             // 只保留距离当前时间天数以内的制品
