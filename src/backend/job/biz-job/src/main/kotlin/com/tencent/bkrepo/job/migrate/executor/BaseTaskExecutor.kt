@@ -191,13 +191,15 @@ abstract class BaseTaskExecutor(
         transferData(context, node)
 
         // FileReferenceCleanupJob 会定期清理引用为0的文件数据，所以不需要删除文件数据
-        // old引用计数 -1
-        if (!fileReferenceService.decrement(sha256, srcStorageKey)) {
-            logger.error("Failed to decrement file reference[$sha256] on storage[$srcStorageKey].")
-        }
+        // 迁移前后使用的存储相同时，如果加引用失败减引用成功，可能导致文件误删，因此先增后减
         // new引用计数 +1
         if (!fileReferenceService.increment(sha256, dstStorageKey)) {
             logger.error("Failed to increment file reference[$sha256] on storage[$dstStorageKey].")
+        }
+
+        // old引用计数 -1
+        if (!fileReferenceService.decrement(sha256, srcStorageKey)) {
+            logger.error("Failed to decrement file reference[$sha256] on storage[$srcStorageKey].")
         }
     }
 
