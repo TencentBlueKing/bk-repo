@@ -33,7 +33,10 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.service.log.LoggerHolder
@@ -45,12 +48,14 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ArtifactCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
@@ -61,6 +66,7 @@ import org.springframework.web.client.RestTemplate
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.reflect.KClass
 
 /**
@@ -72,7 +78,8 @@ class ArtifactCleanupJob(
     private val properties: ArtifactCleanupJobProperties,
     private val nodeService: NodeService,
     private val discoveryClient: DiscoveryClient,
-    private val serviceAuthManager: ServiceAuthManager
+    private val serviceAuthManager: ServiceAuthManager,
+    private val quotaService: QuotaService,
 ) : DefaultContextMongoDbJob<ArtifactCleanupJob.RepoData>(properties) {
 
     private val restTemplate = RestTemplate()
@@ -104,17 +111,17 @@ class ArtifactCleanupJob(
             if (filterConfig(row.projectId, row.name, cleanupStrategy)) return
             logger.info(
                 "Will clean the artifacts in repo ${row.projectId}|${row.name} " +
-                        "with cleanup strategy $cleanupStrategy"
+                    "with cleanup strategy $cleanupStrategy"
             )
             when (row.type) {
                 RepositoryType.GENERIC.name -> {
                     // 清理generic制品
-                    deleteNodes(row.projectId, row.name, cleanupStrategy)
+                    deleteNodes(row, cleanupStrategy)
                 }
                 RepositoryType.DOCKER.name,
                 RepositoryType.OCI.name,
                 RepositoryType.HELM.name
-                    -> {
+                -> {
                     // 清理镜像制品
                     deletePackages(
                         projectId = row.projectId,
@@ -128,7 +135,7 @@ class ArtifactCleanupJob(
         } catch (e: Exception) {
             throw JobExecuteException(
                 "Failed to send cleanup repository for " +
-                        "repo ${row.projectId}|${row.name}, error: ${e.message}", e
+                    "repo ${row.projectId}|${row.name}, error: ${e.message}", e
             )
         }
     }
@@ -159,7 +166,7 @@ class ArtifactCleanupJob(
     }
 
 
-    private fun deleteNodes(projectId: String, repoName: String, cleanupStrategy: CleanupStrategy) {
+    private fun deleteNodes(row: RepoData, cleanupStrategy: CleanupStrategy) {
         val cleanupDate = when (cleanupStrategy.cleanupType) {
             // 只保留距离当前时间天数以内的制品
             CleanupStrategyEnum.RETENTION_DAYS.value -> {
@@ -171,13 +178,10 @@ class ArtifactCleanupJob(
             }
             else -> return
         }
-        doNodeCleanup(projectId, repoName, cleanupDate, cleanupStrategy.cleanTargets)
+        doNodeCleanup(row, cleanupDate, cleanupStrategy.cleanTargets)
     }
 
-    private fun doNodeCleanup(
-        projectId: String, repoName: String, cleanupDate: LocalDateTime,
-        cleanupFolders: List<String>? = null
-    ) {
+    private fun doNodeCleanup(row: RepoData, cleanupDate: LocalDateTime, cleanupFolders: List<String>? = null) {
         val folders = if (cleanupFolders.isNullOrEmpty()) {
             listOf(PathUtils.ROOT)
         } else {
@@ -185,21 +189,42 @@ class ArtifactCleanupJob(
         }
         folders.forEach {
             try {
-                nodeService.deleteBeforeDate(
-                    projectId = projectId,
-                    repoName = repoName,
-                    path = PathUtils.toPath(it),
+                val path = PathUtils.toPath(it)
+                val result = nodeService.deleteBeforeDate(
+                    projectId = row.projectId,
+                    repoName = row.name,
+                    path = path,
                     date = cleanupDate,
-                    operator = SYSTEM_USER
+                    operator = SYSTEM_USER,
+                    decreaseVolume = false
                 )
+                decreaseVolume(row, cleanupDate, path, result.deletedTime)
             } catch (e: Exception) {
                 logger.warn(
-                    "Request of clean nodes $it in repo $projectId|$repoName failed, error is ${e.message}," +
-                            " cause is ${e.cause?.message}!, will sleep ${properties.sleepSeconds} seconds"
+                    "Request of clean nodes $it in repo ${row.projectId}|${row.name} failed, error is ${e.message}," +
+                        " cause is ${e.cause?.message}!"
                 )
-                Thread.sleep(properties.sleepSeconds * 1000)
             }
         }
+    }
+
+    /**
+     * 清理容量，只针对配置了容量限制的才实时更新
+     */
+    private fun decreaseVolume(row: RepoData, cleanupDate: LocalDateTime, path: String, deletedTime: LocalDateTime){
+        if (row.quota == null) return
+        val option = NodeListOption(includeFolder = false, deep = true)
+        val timeCriteria = Criteria().orOperator(
+            Criteria().and(TNode::lastAccessDate).lt(cleanupDate).and(TNode::lastModifiedDate).lt(cleanupDate),
+            Criteria().and(TNode::lastAccessDate).`is`(null).and(TNode::lastModifiedDate).lt(cleanupDate),
+        )
+        val criteria = NodeQueryHelper.nodeListCriteria(row.projectId, row.name, path, option)
+            .andOperator(timeCriteria)
+
+        val deletedCriteria = criteria.and(TNode::deleted).isEqualTo(deletedTime)
+        val deletedSize = nodeService.aggregateComputeSize(deletedCriteria)
+        logger.info("decrease volume $deletedSize for repo ${row.projectId}|${row.name}")
+        quotaService.decreaseUsedVolume(row.projectId, row.name, deletedSize)
     }
 
     private fun deletePackages(
@@ -283,7 +308,7 @@ class ArtifactCleanupJob(
     ) {
         val (urlPath, serviceInstance) = when (repoType) {
             RepositoryType.DOCKER.name, RepositoryType.OCI.name -> {
-                val dockerServiceId = buildServiceName(RepositoryType.DOCKER.name.toLowerCase())
+                val dockerServiceId = buildServiceName(RepositoryType.DOCKER.name.lowercase(Locale.getDefault()))
                 val instance = discoveryClient.getInstances(dockerServiceId).firstOrNull()
                 Pair(
                     "/service/third/version/delete/$projectId/$repoName",
@@ -291,7 +316,7 @@ class ArtifactCleanupJob(
                 )
             }
             RepositoryType.HELM.name -> {
-                val dockerServiceId = buildServiceName(RepositoryType.HELM.name.toLowerCase())
+                val dockerServiceId = buildServiceName(RepositoryType.HELM.name.lowercase(Locale.getDefault()))
                 val instance = discoveryClient.getInstances(dockerServiceId).firstOrNull()
                 Pair(
                     "/service/index/version/delete/$projectId/$repoName",
@@ -345,6 +370,8 @@ class ArtifactCleanupJob(
         val projectId: String by map
         val type: String by map
         val configuration: String by map
+        val quota: Long? = map["quota"] as Long?
+        val used: Long? = map["used"] as Long?
     }
 
     data class CleanupStrategy(

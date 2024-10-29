@@ -240,14 +240,16 @@ class CenterNodeServiceImpl(
         repoName: String,
         date: LocalDateTime,
         operator: String,
-        path: String
+        path: String,
+        decreaseVolume: Boolean
     ): NodeDeleteResult {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteBeforeDate(
             projectId,
             repoName,
             date,
             operator,
-            path
+            path,
+            decreaseVolume
         )
     }
 

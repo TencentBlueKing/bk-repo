@@ -282,6 +282,7 @@ class RepositoryServiceImpl(
             quota?.let {
                 Preconditions.checkArgument(it >= (repository.used ?: 0), this::quota.name)
                 repository.quota = it
+                repository.used = repository.used ?: 0
             }
             val oldConfiguration = repository.configuration.readJsonString<RepositoryConfiguration>()
             repository.public = public ?: repository.public

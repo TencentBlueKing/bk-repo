@@ -77,7 +77,7 @@ interface NodeDeleteOperation {
      * 根据最后访问时间删除[date]之前的历史数据
      */
     fun deleteBeforeDate(
-        projectId: String, repoName: String,
-        date: LocalDateTime, operator: String, path: String
+        projectId: String, repoName: String, date: LocalDateTime,
+        operator: String, path: String, decreaseVolume: Boolean = true
     ): NodeDeleteResult
 }
