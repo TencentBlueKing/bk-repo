@@ -259,6 +259,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     fun mappingStorageKeyTest() {
         fileReferenceCleanupJobProperties.storageKeyMapping = mapOf(
             "key1" to "key2",
+            "key2" to "key4",
             "key4" to DEFAULT_STORAGE_KEY,
         )
         val collectionName = fileReferenceCleanupJob.collectionNames().first()

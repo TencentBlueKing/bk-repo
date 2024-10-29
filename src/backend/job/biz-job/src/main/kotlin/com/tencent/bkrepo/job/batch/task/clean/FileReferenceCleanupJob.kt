@@ -223,36 +223,40 @@ class FileReferenceCleanupJob(
     }
 
     /**
-     * 是否存在映射存储相同sha256的引用
+     * 是否在映射存储中存在相同sha256的引用
      */
     private fun existsRefOfMappingStorage(ref: FileReferenceData, collectionName: String): Boolean {
         // 查询是否存在映射的key
         val self = ref.credentialsKey ?: DEFAULT_STORAGE_KEY
-        var mappingKey: String? = null
+        val mappingKeys = HashSet<String>()
         for (pair in properties.storageKeyMapping) {
             if (self == pair.key) {
-                mappingKey = pair.value
-                break
+                mappingKeys.add(pair.value)
             }
             if (self == pair.value) {
-                mappingKey = pair.key
-                break
+                mappingKeys.add(pair.key)
             }
         }
-        if (mappingKey == null) {
+        if (mappingKeys.isEmpty()) {
             return false
         }
 
-        // 兼容默认存储
-        val mappingStorageKey = if (mappingKey == DEFAULT_STORAGE_KEY) {
-            null
-        } else {
-            mappingKey
+        mappingKeys.forEach { mappingKey ->
+            // 兼容默认存储
+            val mappingStorageKey = if (mappingKey == DEFAULT_STORAGE_KEY) {
+                null
+            } else {
+                mappingKey
+            }
+
+            // 查询映射存储中是否存在对应的引用
+            val criteria = Criteria.where(SHA256).isEqualTo(ref.sha256).and(CREDENTIALS).isEqualTo(mappingStorageKey)
+            if (mongoTemplate.exists(Query(criteria), collectionName)) {
+                return true
+            }
         }
 
-        // 查询映射存储中是否存在对应的引用
-        val criteria = Criteria.where(SHA256).isEqualTo(ref.sha256).and(CREDENTIALS).isEqualTo(mappingStorageKey)
-        return mongoTemplate.exists(Query(criteria), collectionName)
+        return false
     }
 
     private fun getCredentials(key: String): StorageCredentials? {
