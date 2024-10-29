@@ -55,7 +55,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="作用模块" prop="moduleName" :rules="[{ required: true, message: '作用模块不能为空'}]">
-        <el-select v-model="rateLimit.moduleName" multiple filterable collapse-tags placeholder="请选择" :change="changeModule(rateLimit.moduleName)">
+        <el-select v-model="rateLimit.moduleName" multiple filterable collapse-tags placeholder="请选择" @change="changeModule()">
           <el-option
             v-for="item in moduleNameOptions"
             :key="item.value"
@@ -127,38 +127,38 @@ export default {
     return {
       showDialog: this.visible,
       rateLimit: this.newRateLimit(),
-      resourceTip: '请输入资源标识,例子如下：',
+      resourceTip: '请输入资源标识,例子如下：/{projectId}/{repoName}/**',
       rules: {},
       options: [{
-        label: '指定URL限流',
+        label: 'url维度请求频率',
         value: 'URL'
       }, {
-        label: '指定项目/仓库',
+        label: '项目/仓库维度请求频率',
         value: 'URL_REPO'
       }, {
-        label: '仓库上传总大小',
+        label: '项目/仓库维度上传总量',
         value: 'UPLOAD_USAGE'
       }, {
-        label: '仓库下载总大小',
+        label: '项目/仓库维度下载总量',
         value: 'DOWNLOAD_USAGE'
       }, {
-        label: '指定用户指定请求',
+        label: '用户+url维度请求频率',
         value: 'USER_URL'
       }, {
-        label: '指定用户访问指定项目/仓库',
+        label: '用户+项目/仓库维度请求频率',
         value: 'USER_URL_REPO'
       }, {
-        label: '指定用户上传总大小',
+        label: '用户+项目/仓库维度上传总量',
         value: 'USER_UPLOAD_USAGE'
       }, {
         value: 'USER_DOWNLOAD_USAGE',
-        label: '指定用户下载总大小'
+        label: '用户+项目/仓库维度下载总量'
       }, {
         value: 'UPLOAD_BANDWIDTH',
-        label: '项目维度上传带宽'
+        label: '项目/仓库维度上传带宽'
       }, {
         value: 'DOWNLOAD_BANDWIDTH',
-        label: '项目维度下载带宽'
+        label: '项目/仓库维度下载带宽'
       }],
       algoOptions: [
         {
@@ -222,7 +222,14 @@ export default {
           this.rateLimit.moduleName.push('oci')
         }
       } else {
-        if (this.rateLimit.moduleName.indexOf('docker') > 0) {
+        let has = false
+        for (let i = 0; i < this.rateLimit.moduleName.length; i++) {
+          if (this.rateLimit.moduleName[i] === 'docker') {
+            has = true
+            break
+          }
+        }
+        if (has) {
           this.rateLimit.moduleName.splice(this.rateLimit.moduleName.indexOf('docker'), 1)
           this.rateLimit.moduleName.splice(this.rateLimit.moduleName.indexOf('oci'), 1)
         }
@@ -234,119 +241,148 @@ export default {
       const name = [
         {
           value: 'auth',
-          label: 'auth'
+          label: 'auth',
+          disabled: false
         },
         {
           value: 'composer',
-          label: 'composer'
+          label: 'composer',
+          disabled: false
         },
         {
           value: 'generic',
-          label: 'generic'
+          label: 'generic',
+          disabled: false
         },
         {
           value: 'helm',
-          label: 'helm'
+          label: 'helm',
+          disabled: false
         },
         {
           value: 'maven',
-          label: 'maven'
+          label: 'maven',
+          disabled: false
         },
         {
           value: 'npm',
-          label: 'npm'
+          label: 'npm',
+          disabled: false
         },
         {
           value: 'nuget',
-          label: 'nuget'
+          label: 'nuget',
+          disabled: false
         },
         {
           value: 'opdata',
-          label: 'opdata'
+          label: 'opdata',
+          disabled: false
         },
         {
           value: 'pypi',
-          label: 'pypi'
+          label: 'pypi',
+          disabled: false
         },
         {
           value: 'replication',
-          label: 'replication'
+          label: 'replication',
+          disabled: false
         },
         {
           value: 'repository',
-          label: 'repository'
+          label: 'repository',
+          disabled: false
         },
         {
           value: 'rpm',
-          label: 'rpm'
+          label: 'rpm',
+          disabled: false
         },
         {
           value: 'git',
-          label: 'git'
+          label: 'git',
+          disabled: false
         },
         {
           value: 'oci',
-          label: 'oci'
+          label: 'oci',
+          disabled: false
         },
         {
           value: 'webhook',
-          label: 'webhook'
+          label: 'webhook',
+          disabled: false
         },
         {
           value: 'job',
-          label: 'job'
+          label: 'job',
+          disabled: false
         },
         {
           value: 'analyst',
-          label: 'analyst'
+          label: 'analyst',
+          disabled: false
         },
         {
           value: 'analysis-executor',
-          label: 'analysis-executor'
+          label: 'analysis-executor',
+          disabled: false
         },
         {
           value: 'conan',
-          label: 'conan'
+          label: 'conan',
+          disabled: false
         },
         {
           value: 'fs',
-          label: 'fs'
+          label: 'fs',
+          disabled: false
         },
         {
           value: 'config',
-          label: 'config'
+          label: 'config',
+          disabled: false
         },
         {
           value: 'lfs',
-          label: 'lfs'
+          label: 'lfs',
+          disabled: false
         },
         {
           value: 'ddc',
-          label: 'ddc'
+          label: 'ddc',
+          disabled: false
         },
         {
           value: 'svn',
-          label: 'svn'
+          label: 'svn',
+          disabled: false
         },
         {
           value: 'archive',
-          label: 'archive'
+          label: 'archive',
+          disabled: false
         },
         {
           value: 's3',
-          label: 's3'
+          label: 's3',
+          disabled: false
         },
         {
           value: 'router-controller',
-          label: 'router-controller'
+          label: 'router-controller',
+          disabled: false
         },
         {
           value: 'media',
-          label: 'media'
+          label: 'media',
+          disabled: false
         },
         {
           value: 'docker',
-          label: 'docker'
+          label: 'docker',
+          disabled: false
         }
       ]
       return name
@@ -385,34 +421,34 @@ export default {
       const msg = '请输入资源标识，例子如下：'
       switch (this.rateLimit.limitDimension) {
         case 'URL':
-          this.resourceTip = msg + '/'
+          this.resourceTip = msg + '/{projectId}/{repoName}/**'
           break
         case 'URL_REPO':
-          this.resourceTip = msg + '/*/'
+          this.resourceTip = msg + '/blueking/generic-local/ 或者/blueking/'
           break
         case 'UPLOAD_USAGE':
-          this.resourceTip = msg + '/*/'
+          this.resourceTip = msg + '/blueking/generic-local/ 或者/blueking/'
           break
         case 'DOWNLOAD_USAGE':
-          this.resourceTip = msg + '/*/'
+          this.resourceTip = msg + '/blueking/generic-local/ 或者/blueking/'
           break
         case 'USER_URL':
-          this.resourceTip = msg + '*:/'
+          this.resourceTip = msg + 'user1:/{projectId}/{repoName}/**'
           break
         case 'USER_URL_REPO':
-          this.resourceTip = msg + '*:/*/'
+          this.resourceTip = msg + 'user1:/blueking/generic-local/ 或者user1:/blueking/'
           break
         case 'USER_UPLOAD_USAGE':
-          this.resourceTip = msg + '*:/*/'
+          this.resourceTip = msg + 'user1:/blueking/generic-local/ 或者user1:/blueking/'
           break
         case 'USER_DOWNLOAD_USAGE':
-          this.resourceTip = msg + '*:/'
+          this.resourceTip = msg + 'user1:/blueking/generic-local/ 或者user1:/blueking/'
           break
         case 'UPLOAD_BANDWIDTH':
-          this.resourceTip = msg + '/*/'
+          this.resourceTip = msg + '/blueking/generic-local/ 或者/blueking/'
           break
         case 'DOWNLOAD_BANDWIDTH':
-          this.resourceTip = msg + '/*/'
+          this.resourceTip = msg + '/blueking/generic-local/ 或者/blueking/'
           break
       }
       if (this.rateLimit.resource !== '' && !this.loading) {
@@ -480,6 +516,9 @@ export default {
       })
     },
     resetRateLimit() {
+      this.$nextTick(() => {
+        this.$refs['form'].clearValidate()
+      })
       if (this.createMode) {
         this.rateLimit = this.newRateLimit()
       } else {
@@ -491,9 +530,6 @@ export default {
           this.rateLimit.targets = ['']
         }
       }
-      this.$nextTick(() => {
-        this.$refs['form'].clearValidate()
-      })
     },
     newRateLimit() {
       const rateLimit = {
@@ -509,7 +545,8 @@ export default {
       }
       return rateLimit
     },
-    changeModule(module) {
+    changeModule() {
+      const module = this.rateLimit.moduleName
       if (module === null || (module.some(mod => mod === 'oci') && module.some(mod => mod === 'docker'))) {
         return
       }

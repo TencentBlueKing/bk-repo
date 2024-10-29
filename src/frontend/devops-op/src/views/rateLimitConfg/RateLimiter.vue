@@ -114,35 +114,35 @@ export default {
         limitDimension: ''
       },
       options: [{
-        label: '指定URL限流',
+        label: 'url维度请求频率',
         value: 'URL'
       }, {
-        label: '指定项目/仓库',
+        label: '项目/仓库维度请求频率',
         value: 'URL_REPO'
       }, {
-        label: '仓库上传总大小',
+        label: '项目/仓库维度上传总量',
         value: 'UPLOAD_USAGE'
       }, {
-        label: '仓库下载总大小',
+        label: '项目/仓库维度下载总量',
         value: 'DOWNLOAD_USAGE'
       }, {
-        label: '指定用户指定请求',
+        label: '用户+url维度请求频率',
         value: 'USER_URL'
       }, {
-        label: '指定用户访问指定项目/仓库',
+        label: '用户+项目/仓库维度请求频率',
         value: 'USER_URL_REPO'
       }, {
-        label: '指定用户上传总大小',
+        label: '用户+项目/仓库维度上传总量',
         value: 'USER_UPLOAD_USAGE'
       }, {
         value: 'USER_DOWNLOAD_USAGE',
-        label: '指定用户下载总大小'
+        label: '用户+项目/仓库维度下载总量'
       }, {
         value: 'UPLOAD_BANDWIDTH',
-        label: '项目维度上传带宽'
+        label: '项目/仓库维度上传带宽'
       }, {
         value: 'DOWNLOAD_BANDWIDTH',
-        label: '项目维度下载带宽'
+        label: '项目/仓库维度下载带宽'
       }],
       algoOptions: [
         {
