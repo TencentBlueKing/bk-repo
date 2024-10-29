@@ -85,8 +85,21 @@ class FileReferenceCleanupJob(
      * */
     private lateinit var bf: BloomFilter<CharSequence>
 
+    /**
+     *
+     * 两个credentials使用相同的存储时（例如同一个对象存储桶），可能导致数据误删，
+     * 例如存储迁移的场景，迁移前后的存储桶一样仅缓存路径改变的情况
+     * 此时需要获取相同存储的映射关系，避免迁移结束旧存储引用减到0后将后端存储的数据删除，导致数据丢失
+     *
+     * 设置映射关系后会检查映射的StorageCredentialsKey是否存在对应引用，存在时将不删实际存储文件仅删除存储自身的引用
+     */
+    @Volatile
+    private lateinit var storageKeyMapping: Map<String, Set<String>>
+
     override fun createJobContext(): FileJobContext {
         bf = buildBloomFilter()
+        storageKeyMapping = storageCredentialService.getStorageKeyMapping()
+        logger.info("storage key mapping: [$storageKeyMapping]")
         return FileJobContext()
     }
 
@@ -227,17 +240,8 @@ class FileReferenceCleanupJob(
      */
     private fun existsRefOfMappingStorage(ref: FileReferenceData, collectionName: String): Boolean {
         // 查询是否存在映射的key
-        val self = ref.credentialsKey ?: DEFAULT_STORAGE_KEY
-        val mappingKeys = HashSet<String>()
-        for (pair in properties.storageKeyMapping) {
-            if (self == pair.key) {
-                mappingKeys.add(pair.value)
-            }
-            if (self == pair.value) {
-                mappingKeys.add(pair.key)
-            }
-        }
-        if (mappingKeys.isEmpty()) {
+        val mappingKeys = storageKeyMapping[ref.credentialsKey ?: DEFAULT_STORAGE_KEY]
+        if (mappingKeys.isNullOrEmpty()) {
             return false
         }
 

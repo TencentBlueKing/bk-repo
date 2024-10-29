@@ -31,10 +31,12 @@
 
 package com.tencent.bkrepo.common.metadata.service.repo.impl
 
+import com.tencent.bkrepo.common.api.collection.concurrent.ConcurrentHashSet
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.dao.repo.StorageCredentialsDao
@@ -44,6 +46,10 @@ import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion
 import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion.checkCreateRequest
 import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion.convert
 import com.tencent.bkrepo.common.storage.config.StorageProperties
+import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.bkrepo.common.storage.credentials.HDFSCredentials
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.credentials.S3Credentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
@@ -51,6 +57,7 @@ import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRe
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 存储凭证服务实现类
@@ -118,5 +125,46 @@ class StorageCredentialServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override fun forceDelete(key: String) {
         return storageCredentialsDao.deleteById(key)
+    }
+
+    override fun getStorageKeyMapping(): Map<String, Set<String>> {
+        val mappingKeys = ConcurrentHashMap<String, MutableSet<String>>()
+        val credentials = list() + default()
+        credentials.forEach { credential1 ->
+            val keys = mappingKeys.getOrPut(credential1.key ?: DEFAULT_STORAGE_KEY) { ConcurrentHashSet() }
+            credentials.forEach { credential2 ->
+                if (credential1.key != credential2.key && sameStorage(credential1, credential2)) {
+                    keys.add(credential2.key ?: DEFAULT_STORAGE_KEY)
+                }
+            }
+        }
+        return mappingKeys
+    }
+
+    /**
+     * 判断使用的后端存储是否相同
+     */
+    private fun sameStorage(credential1: StorageCredentials, credential2: StorageCredentials): Boolean {
+        if (credential1::class.java != credential2::class.java) {
+            return false
+        }
+
+        if (credential1 is InnerCosCredentials && credential2 is InnerCosCredentials) {
+            return credential1.bucket == credential2.bucket
+        }
+
+        if (credential1 is S3Credentials && credential2 is S3Credentials) {
+            return credential1.bucket == credential2.bucket
+        }
+
+        if (credential1 is FileSystemCredentials && credential2 is FileSystemCredentials) {
+            return credential1.path == credential2.path
+        }
+
+        if (credential1 is HDFSCredentials && credential2 is HDFSCredentials) {
+            throw RuntimeException("Unsupported credentials type[HDFSCredentials]")
+        }
+
+        return false
     }
 }

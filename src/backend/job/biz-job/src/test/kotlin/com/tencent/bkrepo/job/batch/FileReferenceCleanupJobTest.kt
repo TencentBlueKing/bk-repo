@@ -270,10 +270,13 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @Test
     fun mappingStorageKeyTest() {
-        fileReferenceCleanupJobProperties.storageKeyMapping = mapOf(
-            "key1" to "key2",
-            "key2" to "key4",
-            "key4" to DEFAULT_STORAGE_KEY,
+        whenever(storageCredentialService.getStorageKeyMapping()).thenReturn(
+            mapOf(
+                "key1" to setOf("key2", "key4", DEFAULT_STORAGE_KEY),
+                "key2" to setOf("key1", "key4", DEFAULT_STORAGE_KEY),
+                "key4" to setOf("key1", "key2", DEFAULT_STORAGE_KEY),
+                DEFAULT_STORAGE_KEY to setOf("key1", "key2", "key4"),
+            )
         )
         val collectionName = fileReferenceCleanupJob.collectionNames().first()
         val sha2561 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c1"
