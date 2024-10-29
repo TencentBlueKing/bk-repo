@@ -71,7 +71,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -87,10 +86,7 @@ class FixToolServiceImpl : FixToolService, AbstractChartService() {
         val successRepoName: MutableList<RepairResponse> = mutableListOf()
         val failedRepoName: MutableList<RepairResponse> = mutableListOf()
         logger.info("starting repair package created date for historical data")
-        val repositoryList = repositoryClient.pageByType(0, 1000, "HELM").data?.records ?: run {
-            logger.warn("no helm repository found, return.")
-            emptyList<RepositoryDetail>()
-        }
+        val repositoryList = repositoryService.listRepoPageByType("HELM", 0, 1000).records
         val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
         logger.info(
             "find [${helmLocalRepositoryList.size}] HELM local " +
@@ -172,7 +168,7 @@ class FixToolServiceImpl : FixToolService, AbstractChartService() {
 
     private fun helmIndexYamlMetadata(projectId: String, repoName: String): HelmIndexYamlMetadata {
         val nodeDetail =
-            nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()).data ?: run {
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) ?: run {
                 logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
                 throw HelmFileNotFoundException(
                     HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
@@ -191,10 +187,7 @@ class FixToolServiceImpl : FixToolService, AbstractChartService() {
         val packageManagerList = mutableListOf<PackageManagerResponse>()
         // 查找所有仓库
         logger.info("starting add package manager function to historical data")
-        val repositoryList = repositoryClient.pageByType(0, 1000, "HELM").data?.records ?: run {
-            logger.warn("no helm repository found, return.")
-            return emptyList()
-        }
+        val repositoryList = repositoryService.listRepoPageByType("HELM", 0, 1000).records
         val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
         logger.info(
             "find [${helmLocalRepositoryList.size}] HELM local " +
@@ -218,12 +211,13 @@ class FixToolServiceImpl : FixToolService, AbstractChartService() {
         try {
             // 查询索引文件
             val nodeDetail =
-                nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()).data ?: run {
-                    logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
-                    throw HelmFileNotFoundException(
-                        HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
-                    )
-                }
+                nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()))
+                    ?: run {
+                        logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
+                        throw HelmFileNotFoundException(
+                            HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
+                        )
+                    }
             // sleep 0.1s
             Thread.sleep(100)
             val inputStream = storageManager.loadFullArtifactInputStream(nodeDetail, null) ?: run {
@@ -369,7 +363,7 @@ class FixToolServiceImpl : FixToolService, AbstractChartService() {
             select = mutableListOf(),
             rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
-        return nodeClient.queryWithoutCount(queryModel).data!!
+        return nodeSearchService.searchWithoutCount(queryModel)
     }
 
     private fun resolveNode(record: Map<String, Any?>): NodeInfo {
@@ -430,7 +424,7 @@ class FixToolServiceImpl : FixToolService, AbstractChartService() {
                     version = chartMetadata.version,
                     versionMetadata = metadata
                 )
-                packageMetadataClient.saveMetadata(packageMetadataRequest)
+                packageMetadataService.saveMetadata(packageMetadataRequest)
                 val metadataSaveRequest = MetadataSaveRequest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
@@ -450,7 +444,7 @@ class FixToolServiceImpl : FixToolService, AbstractChartService() {
             operator = userId,
             configuration = repositoryDetail.configuration
         )
-        repositoryClient.updateRepo(request)
+        repositoryService.updateRepo(request)
     }
 
     companion object {

@@ -35,10 +35,12 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.MongoCollectionUtils
 import org.springframework.data.mongodb.core.FindAndModifyOptions
-import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
+import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import reactor.core.publisher.Flux
 import java.lang.reflect.ParameterizedType
 
 abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
@@ -61,6 +63,18 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
 
     suspend fun findAll(): List<E> {
         return findAll(classType)
+    }
+
+    suspend fun stream(query: Query): Flux<E> {
+        return stream(query, classType)
+    }
+
+    override suspend fun <T> stream(query: Query, clazz: Class<T>): Flux<T> {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao stream: [$query] [$clazz]")
+        }
+        return determineReactiveMongoOperations()
+            .find(query, clazz, determineCollectionName(query))
     }
 
     override suspend fun <T> find(query: Query, clazz: Class<T>): List<T> {
@@ -179,6 +193,17 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
             .findAndModify(query, update, options, clazz, determineCollectionName(query)).awaitSingle()
     }
 
+    override suspend fun <O> aggregate(aggregation: Aggregation, outputType: Class<O>): MutableList<O> {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo aggregate: [$aggregation]")
+        }
+        return determineReactiveMongoOperations().aggregate(
+            aggregation,
+            determineCollectionName(aggregation),
+            outputType
+        ).collectList().awaitSingle()
+    }
+
     protected open fun determineCollectionName(): String {
         var collectionName: String? = null
         if (classType.isAnnotationPresent(Document::class.java)) {
@@ -191,11 +216,13 @@ abstract class AbstractMongoReactiveDao<E> : MongoReactiveDao<E> {
         } else collectionName
     }
 
-    abstract fun determineReactiveMongoOperations(): ReactiveMongoOperations
+    abstract fun determineReactiveMongoOperations(): ReactiveMongoTemplate
 
     abstract fun determineCollectionName(query: Query): String
 
     abstract fun determineCollectionName(entity: E): String
+
+    abstract fun determineCollectionName(aggregation: Aggregation): String
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractMongoReactiveDao::class.java)

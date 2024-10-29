@@ -52,17 +52,17 @@ class CbWriterTest {
 
         assertEquals(data[2], CbFieldType.IntegerPositive.value or CbFieldType.HasFieldName.value)
         assertEquals(data[3], 1.toByte())
-        assertEquals(data[4], 'a'.toByte())
+        assertEquals(data[4], 'a'.code.toByte())
         assertEquals(data[5], 1.toByte())
 
         assertEquals(data[6], CbFieldType.IntegerPositive.value or CbFieldType.HasFieldName.value)
         assertEquals(data[7], 1.toByte())
-        assertEquals(data[8], 'b'.toByte())
+        assertEquals(data[8], 'b'.code.toByte())
         assertEquals(data[9], 2.toByte())
 
         assertEquals(data[10], CbFieldType.IntegerPositive.value or CbFieldType.HasFieldName.value)
         assertEquals(data[11], 1.toByte())
-        assertEquals(data[12], 'c'.toByte())
+        assertEquals(data[12], 'c'.code.toByte())
         assertEquals(data[13], 3.toByte())
     }
 
@@ -125,7 +125,7 @@ class CbWriterTest {
 
         assertEquals((CbFieldType.Array.value or CbFieldType.HasFieldName.value), data[2])
         assertEquals(1, data[3]) // Name length
-        assertEquals('a'.toByte(), data[4]) // Name
+        assertEquals('a'.code.toByte(), data[4]) // Name
         assertEquals(3, data[5]) // Length
         assertEquals(1, data[6]) // Item count
 
@@ -149,7 +149,7 @@ class CbWriterTest {
 
         assertEquals((CbFieldType.Binary.value or CbFieldType.HasFieldName.value), data[2])
         assertEquals(1, data[3]) // Name length
-        assertEquals('a'.toByte(), data[4]) // Name
+        assertEquals('a'.code.toByte(), data[4]) // Name
         assertEquals(4, data[5]) // Length
 
         assertEquals(1, data[6])

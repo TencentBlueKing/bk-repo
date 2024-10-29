@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.job.RESTORE
@@ -47,7 +48,6 @@ import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask.Companion.toDt
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
@@ -64,7 +64,7 @@ import java.time.format.DateTimeParseException
 @Component
 class SeparationTaskServiceImpl(
     private val dataSeparationConfig: DataSeparationConfig,
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
     private val separationTaskDao: SeparationTaskDao,
     private val separationFailedRecordDao: SeparationFailedRecordDao,
     private val mongoTemplate: MongoTemplate,
@@ -183,7 +183,7 @@ class SeparationTaskServiceImpl(
     }
 
     private fun getRepoInfo(projectId: String, repoName: String): RepositoryDetail {
-        val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+        val repo = repositoryService.getRepoDetail(projectId, repoName)
             ?: run {
                 logger.warn("Repo [$projectId|$repoName] not exist.")
                 throw NotFoundException(

@@ -29,7 +29,7 @@ package com.tencent.bkrepo.webhook.payload.builder.repo
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
 import com.tencent.bkrepo.webhook.payload.builder.EventPayloadBuilder
@@ -42,10 +42,10 @@ abstract class RepoPayloadBuilder(
 ) {
 
     @Autowired
-    private lateinit var repositoryClient: RepositoryClient
+    private lateinit var repositoryService: RepositoryService
 
     fun getRepo(projectId: String, repoName: String): RepositoryInfo {
-        return repositoryClient.getRepoInfo(projectId, repoName).data
+        return repositoryService.getRepoInfo(projectId, repoName)
             ?: throw NotFoundException(WebHookMessageCode.WEBHOOK_REPO_NOT_FOUND)
     }
 }

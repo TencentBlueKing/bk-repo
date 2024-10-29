@@ -20,8 +20,8 @@
                     </bk-form-item>
                     <bk-form-item
                         :label="$t('bkPermissionCheck')"
-                        v-if="!specialRepoEnum.includes(repoBaseInfo.name) && rbacStatus">
-                        <bk-radio-group v-model="repoBaseInfo.configuration.settings.bkiamv3Check">
+                        v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
+                        <bk-radio-group v-model="bkiamv3Check">
                             <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                             <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                         </bk-radio-group>
@@ -129,16 +129,12 @@
                         officeNetwork: false,
                         ipSegment: '',
                         whitelistUser: ''
-                    },
-                    configuration: {
-                        settings: {
-                            bkiamv3Check: false
-                        }
                     }
                 },
                 showIamDenyDialog: false,
                 showData: {},
-                rbacStatus: false,
+                bkiamv3Check: false,
+                authMode: undefined,
                 showPermissionConfig: false
             }
         },
@@ -160,7 +156,7 @@
                 return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage)
             },
             showControlConfigTab () {
-                return this.userInfo.admin || this.userInfo.manage
+                return (this.userInfo.admin || this.userInfo.manage) && !this.authMode.bkiamv3Check
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo
@@ -211,15 +207,22 @@
         created () {
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
-            this.getIamPermissionStatus().then(res => {
-                this.rbacStatus = res
-            })
+            this.getAuthModeFunc()
         },
         methods: {
-            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain', 'getPermissionUrl', 'getIamPermissionStatus']),
+            ...mapActions(['getRepoInfo', 'updateRepoInfo', 'getDomain', 'getPermissionUrl', 'getRootPermission', 'createOrUpdateRootPermission']),
             toRepoList () {
                 this.$router.push({
                     name: 'repositories'
+                })
+            },
+            getAuthModeFunc () {
+                this.getRootPermission({
+                    projectId: this.projectId,
+                    repoName: this.repoName
+                }).then(res => {
+                    this.authMode = res
+                    this.bkiamv3Check = res.bkiamv3Check
                 })
             },
             getRepoInfoHandler () {
@@ -327,20 +330,14 @@
                         }
                     }
                 }
-                if (!specialRepoEnum.includes(this.repoBaseInfo.name)) {
-                    body.configuration.settings.bkiamv3Check = this.repoBaseInfo.configuration.settings.bkiamv3Check
-                }
                 this.repoBaseInfo.loading = true
                 this.updateRepoInfo({
                     projectId: this.projectId,
                     name: this.repoName,
                     body
                 }).then(() => {
+                    this.saveRepoMode()
                     this.getRepoInfoHandler()
-                    this.$bkMessage({
-                        theme: 'success',
-                        message: this.$t('save') + this.$t('space') + this.$t('success')
-                    })
                 }).catch(err => {
                     if (err.status === 403) {
                         this.getPermissionUrl({
@@ -385,6 +382,29 @@
                     } else {
                         this.$refs.tab.$el.style.height = '100%'
                     }
+                })
+            },
+            saveRepoMode () {
+                const body = {
+                    projectId: this.projectId,
+                    repoName: this.repoBaseInfo.name,
+                    accessControlMode: this.authMode.accessControlMode,
+                    officeDenyGroupSet: this.authMode.officeDenyGroupSet,
+                    bkiamv3Check: this.bkiamv3Check
+                }
+                this.createOrUpdateRootPermission({
+                    body: body
+                }).then(() => {
+                    this.getAuthModeFunc()
+                    this.$bkMessage({
+                        theme: 'success',
+                        message: this.$t('save') + this.$t('space') + this.$t('success')
+                    })
+                }).catch((err) => {
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: err.message
+                    })
                 })
             }
         }

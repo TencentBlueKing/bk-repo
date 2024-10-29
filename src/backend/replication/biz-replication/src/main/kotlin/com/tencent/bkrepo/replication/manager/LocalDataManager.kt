@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.manager
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
@@ -37,8 +38,12 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -48,13 +53,11 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.constant.MD5
 import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.replication.constant.SIZE
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -78,9 +81,10 @@ import java.time.format.DateTimeFormatter
 @Component
 class LocalDataManager(
     private val projectService: ProjectService,
-    private val repositoryClient: RepositoryClient,
-    private val nodeClient: NodeClient,
-    private val packageClient: PackageClient,
+    private val repositoryService: RepositoryService,
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService,
+    private val packageService: PackageService,
     private val storageService: StorageService,
     private val storageCredentialService: StorageCredentialService,
     private val storageProperties: StorageProperties,
@@ -147,7 +151,7 @@ class LocalDataManager(
      * 仓库不存在抛异常
      */
     fun findRepoByName(projectId: String, repoName: String, type: String? = null): RepositoryDetail {
-        return repositoryClient.getRepoDetail(projectId, repoName, type).data
+        return repositoryService.getRepoDetail(projectId, repoName, type)
             ?: throw RepoNotFoundException(repoName)
     }
 
@@ -155,14 +159,14 @@ class LocalDataManager(
      * 判断仓库是否存在
      */
     fun existRepo(projectId: String, repoName: String, type: String? = null): Boolean {
-        return repositoryClient.getRepoDetail(projectId, repoName, type).data != null
+        return repositoryService.getRepoDetail(projectId, repoName, type) != null
     }
 
     /**
      * 根据packageKey查找包信息
      */
     fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary {
-        return packageClient.findPackageByKey(projectId, repoName, packageKey).data
+        return packageService.findPackageByKey(projectId, repoName, packageKey)
             ?: throw PackageNotFoundException(packageKey)
     }
 
@@ -175,15 +179,14 @@ class LocalDataManager(
         packageKey: String,
         option: VersionListOption
     ): List<PackageVersion> {
-        return packageClient.listAllVersion(projectId, repoName, packageKey, option).data
-            ?: throw PackageNotFoundException(packageKey)
+        return packageService.listAllVersion(projectId, repoName, packageKey, option)
     }
 
     /**
      * 查询指定版本
      */
     fun findPackageVersion(projectId: String, repoName: String, packageKey: String, version: String): PackageVersion {
-        return packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+        return packageService.findVersionByName(projectId, repoName, packageKey, version)
             ?: throw VersionNotFoundException(packageKey)
     }
 
@@ -209,14 +212,14 @@ class LocalDataManager(
     fun findDeletedNodeDetail(
         projectId: String, repoName: String, fullPath: String
     ): NodeDetail? {
-        return nodeClient.getDeletedNodeDetail(projectId, repoName, fullPath).data?.firstOrNull()
+        return nodeService.getDeletedNodeDetail(ArtifactInfo(projectId, repoName, fullPath)).firstOrNull()
     }
 
     /**
      * 查找节点
      */
     fun findNode(projectId: String, repoName: String, fullPath: String): NodeDetail? {
-        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
     }
 
     /**
@@ -234,8 +237,8 @@ class LocalDataManager(
             .sha256(sha256)
             .page(1, 1)
             .sortByAsc(NODE_FULL_PATH)
-        val result = nodeClient.queryWithoutCount(queryModel.build()).data
-        if (result == null || result.records.isEmpty()) {
+        val result = nodeSearchService.searchWithoutCount(queryModel.build())
+        if (result.records.isEmpty()) {
             throw NodeNotFoundException(sha256)
         }
         return FileInfo(
@@ -249,14 +252,11 @@ class LocalDataManager(
      * 分页查询包
      */
     fun listPackagePage(projectId: String, repoName: String, option: PackageListOption): List<PackageSummary> {
-        val packages = packageClient.listPackagePage(
+        val packages = packageService.listPackagePage(
             projectId = projectId,
             repoName = repoName,
             option = option
-        ).data?.records
-        if (packages.isNullOrEmpty()) {
-            return emptyList()
-        }
+        ).records
         return packages
     }
 
@@ -264,13 +264,10 @@ class LocalDataManager(
      * 查询目录下的文件列表
      */
     fun listNode(projectId: String, repoName: String, fullPath: String): List<NodeInfo> {
-        val nodes = nodeClient.listNode(
-            projectId = projectId,
-            repoName = repoName,
-            path = fullPath,
-            includeFolder = true,
-            deep = false
-        ).data
+        val nodes = nodeService.listNode(
+            ArtifactInfo(projectId, repoName, fullPath),
+            NodeListOption(includeFolder = true, deep = false)
+        )
         if (nodes.isNullOrEmpty()) {
             throw NodeNotFoundException("$projectId/$repoName")
         }

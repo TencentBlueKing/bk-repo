@@ -56,7 +56,7 @@ class PypiVirtualRepository : VirtualRepository() {
                 continue
             }
             traversedList.add(repoIdentify)
-            val subRepoInfo = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+            val subRepoInfo = repositoryService.getRepoDetail(repoIdentify.projectId, repoIdentify.name)!!
             val repository = ArtifactContextHolder.getRepository(subRepoInfo.category)
             stringBuilder.append(repository.query(context))
         }
@@ -73,7 +73,7 @@ class PypiVirtualRepository : VirtualRepository() {
                 continue
             }
             traversedList.add(repoIdentify)
-            val subRepoInfo = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+            val subRepoInfo = repositoryService.getRepoDetail(repoIdentify.projectId, repoIdentify.name)!!
             val repository = ArtifactContextHolder.getRepository(subRepoInfo.category)
             val subContext = context.copy(subRepoInfo) as ArtifactSearchContext
             val subValueList = repository.search(subContext)

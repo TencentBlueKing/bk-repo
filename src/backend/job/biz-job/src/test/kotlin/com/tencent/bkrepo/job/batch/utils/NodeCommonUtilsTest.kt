@@ -27,8 +27,12 @@
 
 package com.tencent.bkrepo.job.batch.utils
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
@@ -36,6 +40,7 @@ import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -57,6 +62,16 @@ import java.time.LocalDateTime
 class NodeCommonUtilsTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
 ) : JobBaseTest() {
+    @MockBean
+    private lateinit var routerControllerClient: RouterControllerClient
+    @MockBean
+    lateinit var servicePermissionClient: ServicePermissionClient
+    @MockBean
+    lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
+    @MockBean
+    lateinit var messageSupplier: MessageSupplier
+    @MockBean
+    lateinit var archiveClient: ArchiveClient
     @MockBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
     @MockBean

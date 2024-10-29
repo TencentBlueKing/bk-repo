@@ -112,7 +112,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             traversedList.add(repoIdentify)
             try {
                 permissionManager.checkRepoPermission(PermissionAction.READ, repoIdentify.projectId, repoIdentify.name)
-                val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+                val subRepoDetail = repositoryService.getRepoDetail(repoIdentify.projectId, repoIdentify.name)!!
                 val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
                 val subContext = context.copy(subRepoDetail)
                 action(subContext, repository)?.let { return it }

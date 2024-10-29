@@ -54,6 +54,11 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -61,15 +66,12 @@ import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.PackageDownloadsClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.util.Locale
 
 /**
  * 构件仓库抽象类
@@ -80,13 +82,16 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
-    lateinit var nodeClient: NodeClient
+    lateinit var nodeService: NodeService
 
     @Autowired
-    lateinit var repositoryClient: RepositoryClient
+    lateinit var nodeSearchService: NodeSearchService
 
     @Autowired
-    lateinit var packageClient: PackageClient
+    lateinit var repositoryService: RepositoryService
+
+    @Autowired
+    lateinit var packageService: PackageService
 
     @Autowired
     lateinit var storageService: StorageService
@@ -101,7 +106,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     lateinit var publisher: ApplicationEventPublisher
 
     @Autowired
-    lateinit var packageDownloadsClient: PackageDownloadsClient
+    lateinit var packageDownloadsService: PackageDownloadsService
 
     @Autowired
     lateinit var artifactResourceWriter: ArtifactResourceWriter
@@ -232,7 +237,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     ) {
         if (artifactResource.channel == ArtifactChannel.LOCAL) {
             buildDownloadRecord(context, artifactResource)?.let {
-                taskAsyncExecutor.execute { packageDownloadsClient.record(it) }
+                taskAsyncExecutor.execute { packageDownloadsService.record(it) }
                 publishPackageDownloadEvent(context, it)
             }
         }
@@ -329,7 +334,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     private fun publishPackageDownloadEvent(context: ArtifactDownloadContext, record: PackageDownloadRecord) {
         if (context.repositoryDetail.type != RepositoryType.GENERIC) {
             val packageType = context.repositoryDetail.type.name
-            val packageName = PackageKeys.resolveName(packageType.toLowerCase(), record.packageKey)
+            val packageName = PackageKeys.resolveName(packageType.lowercase(Locale.getDefault()), record.packageKey)
             publisher.publishEvent(
                 VersionDownloadEvent(
                     projectId = record.projectId,

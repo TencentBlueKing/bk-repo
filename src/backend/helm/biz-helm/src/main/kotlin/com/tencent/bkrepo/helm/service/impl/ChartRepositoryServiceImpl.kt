@@ -145,8 +145,8 @@ class ChartRepositoryServiceImpl(
                     select = mutableListOf(PROJECT_ID, REPO_NAME, NODE_FULL_PATH, NODE_METADATA),
                     rule = rule
                 )
-                val nodeList: List<Map<String, Any?>>? = nodeClient.queryWithoutCount(queryModel).data?.records
-                if (nodeList.isNullOrEmpty()) HttpStatus.NOT_FOUND else HttpStatus.OK
+                val nodeList: List<Map<String, Any?>> = nodeSearchService.searchWithoutCount(queryModel).records
+                if (nodeList.isEmpty()) HttpStatus.NOT_FOUND else HttpStatus.OK
             } else {
                 HttpStatus.NOT_FOUND
             }
@@ -163,11 +163,11 @@ class ChartRepositoryServiceImpl(
         with(artifactInfo) {
             val name = PackageKeys.resolveHelm(packageKey)
             val fullPath = String.format("/%s-%s.tgz", name, version)
-            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
+            val nodeDetail = nodeService.getNodeDetail(artifactInfo) ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, fullPath, "$projectId|$repoName")
             }
-            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
+            val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, version) ?: run {
                 logger.warn("packageKey [$packageKey] don't found.")
                 throw PackageNotFoundException(packageKey)
             }
