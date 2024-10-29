@@ -137,7 +137,11 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             val artifactResponse = this.onDownload(context)
                 ?: throw ArtifactNotFoundException(context.artifactInfo.toString())
             val throughput = artifactResourceWriter.write(artifactResponse)
-            ActionAuditContext.current().setInstance(artifactResponse.node)
+            if (artifactResponse.node != null) {
+                ActionAuditContext.current().setInstance(artifactResponse.node)
+            } else {
+                ActionAuditContext.current().setInstance(artifactResponse.nodes)
+            }
             this.onDownloadSuccess(context, artifactResponse, throughput)
         } catch (exception: ArtifactResponseException) {
             val principal = SecurityUtils.getPrincipal()
