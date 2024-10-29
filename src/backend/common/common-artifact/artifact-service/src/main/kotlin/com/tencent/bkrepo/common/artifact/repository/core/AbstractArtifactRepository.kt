@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.repository.core
 
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
@@ -136,6 +137,7 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             val artifactResponse = this.onDownload(context)
                 ?: throw ArtifactNotFoundException(context.artifactInfo.toString())
             val throughput = artifactResourceWriter.write(artifactResponse)
+            ActionAuditContext.current().setInstance(artifactResponse.node)
             this.onDownloadSuccess(context, artifactResponse, throughput)
         } catch (exception: ArtifactResponseException) {
             val principal = SecurityUtils.getPrincipal()

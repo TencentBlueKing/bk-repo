@@ -112,8 +112,8 @@ class UserShareController(
         actionId = NODE_VIEW_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#batchShareRecordCreateRequest?.fullPathList.toString()",
-            instanceNames = "#batchShareRecordCreateRequest?.fullPathList.toString()",
+            instanceIds = "#batchShareRecordCreateRequest?.fullPathList",
+            instanceNames = "#batchShareRecordCreateRequest?.fullPathList",
         ),
         attributes = [
             AuditAttribute(

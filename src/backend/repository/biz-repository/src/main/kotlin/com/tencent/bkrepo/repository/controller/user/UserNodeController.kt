@@ -218,8 +218,8 @@ class UserNodeController(
         actionId = NODE_DELETE_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
-            instanceIds = "#fullPaths.toString()",
-            instanceNames = "#fullPaths.toString()"
+            instanceIds = "#fullPaths",
+            instanceNames = "#fullPaths"
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -148,21 +149,21 @@ class UploadService(
         }
         // 保存节点
         val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL) as GenericLocalRepository
-        nodeClient.createNode(
-            NodeCreateRequest(
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
-                folder = false,
-                fullPath = artifactInfo.getArtifactFullPath(),
-                sha256 = mergedFileInfo.sha256,
-                md5 = mergedFileInfo.md5,
-                size = mergedFileInfo.size,
-                overwrite = getBooleanHeader(HEADER_OVERWRITE),
-                operator = userId,
-                expires = getLongHeader(HEADER_EXPIRES),
-                nodeMetadata = repository.resolveMetadata(HttpContextHolder.getRequest())
-            )
+        val request =NodeCreateRequest(
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            folder = false,
+            fullPath = artifactInfo.getArtifactFullPath(),
+            sha256 = mergedFileInfo.sha256,
+            md5 = mergedFileInfo.md5,
+            size = mergedFileInfo.size,
+            overwrite = getBooleanHeader(HEADER_OVERWRITE),
+            operator = userId,
+            expires = getLongHeader(HEADER_EXPIRES),
+            nodeMetadata = repository.resolveMetadata(HttpContextHolder.getRequest())
         )
+        ActionAuditContext.current().setInstance(request)
+        nodeClient.createNode(request)
         logger.info("User[${SecurityUtils.getPrincipal()}] complete upload [$artifactInfo] success.")
     }
 

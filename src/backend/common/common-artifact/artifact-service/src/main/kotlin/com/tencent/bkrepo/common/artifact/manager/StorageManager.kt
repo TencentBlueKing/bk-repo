@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.manager
 
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -82,6 +83,7 @@ class StorageManager(
     ): NodeDetail {
         val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials)
         try {
+            ActionAuditContext.current().setInstance(request)
             return nodeClient.createNode(request).data!!
         } catch (exception: Exception) {
             if (affectedCount == 1) {
