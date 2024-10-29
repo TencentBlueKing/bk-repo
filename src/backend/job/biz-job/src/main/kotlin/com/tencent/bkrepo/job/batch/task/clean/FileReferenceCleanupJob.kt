@@ -145,7 +145,7 @@ class FileReferenceCleanupJob(
             if (!successToDeleted) {
                 context.fileMissing.incrementAndGet()
                 logger.warn(
-                    "File[$sha256] is missing on [$storageCredentials] or " +
+                    "File[$sha256] is missing on [${storageCredentials?.key}] or " +
                             "existsRefOfMappingStorage[$existsRefOfMappingStorage], skip cleaning up."
                 )
             }
