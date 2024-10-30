@@ -229,7 +229,7 @@ class ArtifactDownloadListener(
         data[SHA256] = node.sha256 ?: StringPool.EMPTY
         data[SHARE_USER_ID] = context.shareUserId
         data[USER_AGENT] = request?.getHeader(HttpHeaders.USER_AGENT) ?: StringPool.EMPTY
-        data[SIZE] = node.size.toString()
+        data[SIZE] = node.size
         return NodeDownloadedEvent(
             projectId = node.projectId,
             repoName = node.repoName,
