@@ -229,6 +229,7 @@ class ArtifactDownloadListener(
         data[SHA256] = node.sha256 ?: StringPool.EMPTY
         data[SHARE_USER_ID] = context.shareUserId
         data[USER_AGENT] = request?.getHeader(HttpHeaders.USER_AGENT) ?: StringPool.EMPTY
+        data[SIZE] = node.size.toString()
         return NodeDownloadedEvent(
             projectId = node.projectId,
             repoName = node.repoName,
@@ -244,5 +245,6 @@ class ArtifactDownloadListener(
         private const val SHA256 = "sha256"
         private const val SHARE_USER_ID = "shareUserId"
         private const val USER_AGENT = "userAgent"
+        private const val SIZE = "size"
     }
 }
