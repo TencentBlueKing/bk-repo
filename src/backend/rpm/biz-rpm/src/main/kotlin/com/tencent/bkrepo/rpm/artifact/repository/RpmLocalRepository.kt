@@ -239,7 +239,7 @@ class RpmLocalRepository(
                     rpmMetadata.packages[0].format.changeLogs
                 )
             ),
-            1L
+            packageNum = 1L
         )
         stopWatch.start("storeOthers")
         storeIndexMarkFile(
@@ -256,7 +256,7 @@ class RpmLocalRepository(
                         rpmMetadata.packages[0].format.files
                     )
                 ),
-                1L
+                packageNum = 1L
             )
             stopWatch.start("storeFilelists")
             storeIndexMarkFile(
