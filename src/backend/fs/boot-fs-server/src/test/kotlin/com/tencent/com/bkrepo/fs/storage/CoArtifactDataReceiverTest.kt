@@ -28,6 +28,7 @@
 package com.tencent.com.bkrepo.fs.storage
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.fs.server.storage.CoArtifactDataReceiver
@@ -140,6 +141,7 @@ class CoArtifactDataReceiverTest {
             fileSizeThreshold = DataSize.ofBytes(fileSizeThreshold),
             rateLimit = DataSize.ofBytes(-1)
         )
-        return CoArtifactDataReceiver(receive, primaryPath, filename)
+        val monitorProperties = MonitorProperties(enabled = true, enableTransfer = true)
+        return CoArtifactDataReceiver(receive, monitorProperties, primaryPath, filename)
     }
 }
