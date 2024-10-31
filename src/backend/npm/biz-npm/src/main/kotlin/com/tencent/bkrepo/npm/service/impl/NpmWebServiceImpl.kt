@@ -33,10 +33,12 @@ package com.tencent.bkrepo.npm.service.impl
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.packages.PackageDependentsService
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -54,7 +56,6 @@ import com.tencent.bkrepo.npm.pojo.user.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.npm.service.NpmClientService
 import com.tencent.bkrepo.npm.service.NpmWebService
 import com.tencent.bkrepo.npm.utils.NpmUtils
-import com.tencent.bkrepo.repository.api.PackageDependentsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.Logger
@@ -67,7 +68,7 @@ import org.springframework.transaction.annotation.Transactional
 class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
 
     @Autowired
-    private lateinit var packageDependentsClient: PackageDependentsClient
+    private lateinit var packageDependentsService: PackageDependentsService
 
     @Autowired
     private lateinit var npmClientService: NpmClientService
@@ -84,11 +85,11 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         val fullPath = NpmUtils.getTgzPath(name, version, pathWithDash)
         with(artifactInfo) {
             checkRepositoryExist(projectId, repoName)
-            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
+            val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath)) ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 throw NpmArtifactNotFoundException("node [$fullPath] don't found.")
             }
-            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
+            val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, version) ?: run {
                 logger.warn("packageKey [$packageKey] don't found.")
                 throw NpmArtifactNotFoundException("packageKey [$packageKey] don't found.")
             }
@@ -104,8 +105,8 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         packageKey: String,
         versionMetadata: NpmVersionMetadata
     ): VersionDependenciesInfo {
-        val packageDependents = packageDependentsClient.queryDependents(artifactInfo.projectId,
-            artifactInfo.repoName, packageKey).data.orEmpty()
+        val packageDependents = packageDependentsService.findByPackageKey(artifactInfo.projectId,
+            artifactInfo.repoName, packageKey)
         val dependenciesList = parseDependencies(versionMetadata)
         val devDependenciesList = parseDevDependencies(versionMetadata)
         return VersionDependenciesInfo(dependenciesList, devDependenciesList, packageDependents)
@@ -181,7 +182,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
 
     private fun findNewLatest(request: PackageVersionDeleteRequest): String {
         return with(request) {
-            packageClient.findPackageByKey(projectId, repoName, PackageKeys.ofNpm(name)).data?.latest
+            packageService.findPackageByKey(projectId, repoName, PackageKeys.ofNpm(name))?.latest
                 ?: run {
                     val message =
                         "delete version by web operator to find new latest version failed with package [$name]"

@@ -54,7 +54,8 @@ class RepoAuthConfigDao : SimpleMongoDao<TRepoAuthConfig>() {
         projectId: String,
         repoName: String,
         accessControlMode: AccessControlMode,
-        officeDenyGroupSet: Set<String>
+        officeDenyGroupSet: Set<String>,
+        bkiamv3Check: Boolean
     ): String {
         val query = Query.query(
             Criteria.where(TRepoAuthConfig::projectId.name).`is`(projectId)
@@ -63,6 +64,7 @@ class RepoAuthConfigDao : SimpleMongoDao<TRepoAuthConfig>() {
         val options = FindAndModifyOptions().returnNew(true).upsert(true)
         val update = Update().set(TRepoAuthConfig::accessControlMode.name, accessControlMode)
             .set(TRepoAuthConfig::officeDenyGroupSet.name, officeDenyGroupSet)
+            .set(TRepoAuthConfig::bkiamv3Check.name, bkiamv3Check)
             .set(TRepoAuthConfig::lastModifiedBy.name, SecurityUtils.getUserId())
             .set(TRepoAuthConfig::lastModifiedDate.name, LocalDateTime.now())
         return this.findAndModify(query, update, options, TRepoAuthConfig::class.java)!!.id!!

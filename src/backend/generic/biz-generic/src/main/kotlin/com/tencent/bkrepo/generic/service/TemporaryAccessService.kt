@@ -36,11 +36,11 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -60,6 +60,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -80,7 +81,6 @@ import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
 import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
 import org.slf4j.LoggerFactory
@@ -95,7 +95,7 @@ import java.time.format.DateTimeFormatter
 @Service
 class TemporaryAccessService(
     private val temporaryTokenClient: ServiceTemporaryTokenClient,
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
     private val genericProperties: GenericProperties,
     private val pluginManager: PluginManager,
     private val deltaSyncService: DeltaSyncService,
@@ -108,7 +108,7 @@ class TemporaryAccessService(
      */
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         with(artifactInfo) {
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactUploadContext(repo, file)
             ArtifactContextHolder.getRepository(repo.category).upload(context)
@@ -120,7 +120,7 @@ class TemporaryAccessService(
      */
     fun download(artifactInfo: GenericArtifactInfo) {
         with(artifactInfo) {
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             HttpContextHolder.getRequest().setAttribute(REPO_KEY, repo)
             val context = ArtifactDownloadContext(repo)
@@ -133,7 +133,7 @@ class TemporaryAccessService(
         checkAlphaApkDownloadUser(userId, artifactInfo, shareBy)
         with(artifactInfo) {
             val downloadUser = if (userId == ANONYMOUS_USER) shareBy else userId
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo = repo, userId = downloadUser)
             context.shareUserId = shareBy
@@ -261,7 +261,7 @@ class TemporaryAccessService(
      * */
     fun sign(artifactInfo: GenericArtifactInfo, md5: String?) {
         with(artifactInfo) {
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val request = HttpContextHolder.getRequest()
             request.setAttribute(REPO_KEY, repo)
@@ -274,7 +274,7 @@ class TemporaryAccessService(
      * */
     fun patch(artifactInfo: GenericArtifactInfo, oldFilePath: String, deltaFile: ArtifactFile): SseEmitter {
         with(artifactInfo) {
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val request = HttpContextHolder.getRequest()
             request.setAttribute(REPO_KEY, repo)
@@ -292,7 +292,7 @@ class TemporaryAccessService(
 
     fun getUuidForChunkedUpload(artifactInfo: GenericChunkedArtifactInfo, artifactFile: ArtifactFile) {
         with(artifactInfo) {
-            val result = repositoryClient.getRepoDetail(projectId, repoName).data
+            val result = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw RepoNotFoundException(repoName)
             val responseProperty = if (uuid.isNullOrEmpty()) {
                 val uuidCreated = storageService.createAppendId(result.storageCredentials)
@@ -332,7 +332,7 @@ class TemporaryAccessService(
 
     fun reportChunkedMetrics(metrics: ChunkArtifactTransferMetrics) {
         if (metrics.success) {
-            val repo = repositoryClient.getRepoDetail(metrics.projectId, metrics.repoName).data ?: return
+            val repo = repositoryService.getRepoDetail(metrics.projectId, metrics.repoName) ?: return
             metrics.storage = repo.storageCredentials?.key ?: DEFAULT_STORAGE_KEY
             SpringContextUtils.publishEvent(ChunkArtifactTransferEvent(metrics))
         }

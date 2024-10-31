@@ -35,8 +35,8 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_PROJECT
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail

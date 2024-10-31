@@ -39,7 +39,7 @@ dependencies {
     implementation("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter")
     implementation("io.micrometer:micrometer-registry-influx")
     implementation("io.micrometer:micrometer-registry-prometheus")
-    implementation("com.google.guava:guava")
+
     implementation("com.github.ben-manes.caffeine:caffeine:2.9.3")
 
     testImplementation("org.mockito.kotlin:mockito-kotlin")

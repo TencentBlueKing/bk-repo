@@ -33,6 +33,7 @@
 <script>
     import { marked } from 'marked'
     import cookies from 'js-cookie'
+    import { getVersionContext } from '@/utils/versionLogs'
 
     export default {
         name: 'VersionLog',
@@ -62,9 +63,10 @@
                 cookies.set('hasShowLog', this.versionLogs[0].version, { domain: BK_CI_DOMAIN, path: '/', expires: 366 })
                 this.show = false
             },
-            handleItemClick (item, index) {
+            async handleItemClick (item, index) {
                 this.active = index
-                this.markdown = item.content
+                const content = await getVersionContext(item.version)
+                this.markdown = content
             }
         }
     }

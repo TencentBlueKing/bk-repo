@@ -17,7 +17,7 @@
     import Login from '@repository/components/Login'
     import cookies from 'js-cookie'
     import { mapActions } from 'vuex'
-    import { getTrueVersion } from '@repository/utils/versionLogs'
+    import { getTrueVersions } from '@repository/utils/versionLogs'
     export default {
         components: { NoticeComponent, Header, Login },
         mixins: [mixin],
@@ -36,7 +36,7 @@
             username && this.SET_USER_INFO({ username })
             this.getPermissionDialogConfig()
             const hasShowLog = cookies.get('hasShowLog') || ''
-            const logs = await getTrueVersion()
+            const logs = await getTrueVersions()
             if (logs.length > 0 && !this.ciMode && !this.isSubSaas) {
                 this.$store.commit('SET_VERSION_LOGS', logs)
                 if (hasShowLog !== logs[0].version) {

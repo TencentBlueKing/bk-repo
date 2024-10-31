@@ -32,5 +32,5 @@
 dependencies {
     api(project(":common:common-api"))
     api(project(":common:common-query:query-api"))
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
+    implementation("org.springframework.data:spring-data-mongodb")
 }

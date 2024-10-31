@@ -47,6 +47,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "StageClient")
 @RequestMapping("/service/stage")
+@Deprecated("replace with StageService")
 interface StageClient {
 
     @ApiOperation("查询晋级状态")

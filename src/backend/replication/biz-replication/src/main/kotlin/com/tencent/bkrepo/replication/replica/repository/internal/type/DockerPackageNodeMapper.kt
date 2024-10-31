@@ -27,9 +27,12 @@
 
 package com.tencent.bkrepo.replication.replica.repository.internal.type
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.replication.constant.BLOB_PATH_REFRESHED_KEY
 import com.tencent.bkrepo.replication.constant.DOCKER_LAYER_FULL_PATH
 import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
@@ -37,8 +40,6 @@ import com.tencent.bkrepo.replication.constant.OCI_LAYER_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_LAYER_FULL_PATH_V1
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.util.ManifestParser
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -49,9 +50,9 @@ import org.springframework.stereotype.Component
  */
 @Component
 class DockerPackageNodeMapper(
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val storageManager: StorageManager,
-    private val repositoryClient: RepositoryClient
+    private val repositoryService: RepositoryService
 ) : PackageNodeMapper {
 
     override fun type() = RepositoryType.DOCKER
@@ -69,13 +70,13 @@ class DockerPackageNodeMapper(
             val name = packageSummary.name
             val version = packageVersion.name
             var isOci = false
-            val repository = repositoryClient.getRepoDetail(projectId, repoName, type.name).data!!
+            val repository = repositoryService.getRepoDetail(projectId, repoName, type.name)!!
             var manifestFullPath = DOCKER_MANIFEST_JSON_FULL_PATH.format(name, version)
-            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, manifestFullPath).data ?: run {
+            val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, manifestFullPath)) ?: run {
                 // 针对使用oci替换了docker仓库，需要进行数据兼容
                 isOci = true
                 manifestFullPath = OCI_MANIFEST_JSON_FULL_PATH.format(name, version)
-                nodeClient.getNodeDetail(projectId, repoName, manifestFullPath).data!!
+                nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, manifestFullPath))!!
             }
             if (nodeDetail.sha256.isNullOrEmpty()) throw ArtifactNotFoundException(manifestFullPath)
             val inputStream = storageManager.loadFullArtifactInputStream(nodeDetail, repository.storageCredentials)!!

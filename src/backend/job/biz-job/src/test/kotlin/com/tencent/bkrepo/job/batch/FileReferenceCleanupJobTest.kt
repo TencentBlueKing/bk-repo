@@ -29,22 +29,25 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.task.clean.FileReferenceCleanupJob
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.repository.JobSnapshotRepository
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.bson.Document
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -80,7 +83,19 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     lateinit var archiveClient: ArchiveClient
 
     @MockBean
-    lateinit var repositoryClient: RepositoryClient
+    lateinit var repositoryService: RepositoryService
+
+    @MockBean
+    private lateinit var messageSupplier: MessageSupplier
+
+    @MockBean
+    private lateinit var servicePermissionClient: ServicePermissionClient
+
+    @MockBean
+    private lateinit var routerControllerClient: RouterControllerClient
+
+    @MockBean
+    private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
     @MockBean
     lateinit var jobSnapshotRepository: JobSnapshotRepository
@@ -113,26 +128,24 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         Mockito.`when`(storageCredentialService.findByKey(anyString())).thenReturn(
             credentials
         )
-        Mockito.`when`(repositoryClient.getRepoDetail(anyString(), anyString(), anyString())).thenReturn(
-            ResponseBuilder.success(
-                RepositoryDetail(
-                    projectId = "ut-project",
-                    name = "ut-repo",
-                    storageCredentials = InnerCosCredentials(key = "0"),
-                    type = RepositoryType.NONE,
-                    category = RepositoryCategory.LOCAL,
-                    public = false,
-                    description = "",
-                    configuration = LocalConfiguration(),
-                    createdBy = "",
-                    createdDate = "",
-                    lastModifiedBy = "",
-                    lastModifiedDate = "",
-                    oldCredentialsKey = null,
-                    quota = 0,
-                    used = 0,
-                ),
-            ),
+        Mockito.`when`(repositoryService.getRepoDetail(anyString(), anyString(), anyString())).thenReturn(
+            RepositoryDetail(
+                projectId = "ut-project",
+                name = "ut-repo",
+                storageCredentials = InnerCosCredentials(key = "0"),
+                type = RepositoryType.NONE,
+                category = RepositoryCategory.LOCAL,
+                public = false,
+                description = "",
+                configuration = LocalConfiguration(),
+                createdBy = "",
+                createdDate = "",
+                lastModifiedBy = "",
+                lastModifiedDate = "",
+                oldCredentialsKey = null,
+                quota = 0,
+                used = 0,
+            )
         )
         fileReferenceCleanupJobProperties.expectedNodes = 50_000
     }

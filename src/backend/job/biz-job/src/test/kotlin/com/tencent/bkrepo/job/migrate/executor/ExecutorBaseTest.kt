@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -48,7 +48,6 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.junit.jupiter.api.TestInstance
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
@@ -73,7 +72,6 @@ import java.time.LocalDateTime
 @Import(
     TaskExecutionAutoConfiguration::class,
     MigrateRepoStorageProperties::class,
-    RepositoryClient::class,
     RepositoryCommonUtils::class,
     StorageProperties::class,
 )
@@ -102,7 +100,7 @@ open class ExecutorBaseTest {
     protected lateinit var fileReferenceService: FileReferenceService
 
     @MockBean
-    protected lateinit var repositoryClient: RepositoryClient
+    protected lateinit var repositoryService: RepositoryService
 
     @MockBean
     protected lateinit var storageCredentialService: StorageCredentialService
@@ -115,11 +113,10 @@ open class ExecutorBaseTest {
         whenever(fileReferenceService.decrement(any(), anyOrNull())).thenReturn(true)
         whenever(fileReferenceService.count(anyString(), anyOrNull())).thenReturn(0)
 
-        whenever(repositoryClient.getRepoDetail(anyString(), anyString(), anyOrNull()))
-            .thenReturn(Response(0, "", MigrateTestUtils.buildRepo()))
-        whenever(repositoryClient.updateStorageCredentialsKey(anyString(), anyString(), anyString()))
-            .thenReturn(Response(0))
-        whenever(repositoryClient.unsetOldStorageCredentialsKey(anyString(), anyString())).thenReturn(Response(0))
+        whenever(repositoryService.getRepoDetail(anyString(), anyString(), anyOrNull()))
+            .thenReturn(MigrateTestUtils.buildRepo())
+        whenever(repositoryService.updateStorageCredentialsKey(anyString(), anyString(), anyString())).then {  }
+        whenever(repositoryService.unsetOldStorageCredentialsKey(anyString(), anyString())).then {  }
         whenever(storageCredentialService.findByKey(anyString()))
             .thenReturn(FileSystemCredentials())
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then {

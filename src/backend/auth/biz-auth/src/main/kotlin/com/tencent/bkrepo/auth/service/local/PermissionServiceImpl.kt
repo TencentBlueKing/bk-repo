@@ -75,7 +75,7 @@ import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.slf4j.LoggerFactory
 
 open class PermissionServiceImpl constructor(
@@ -85,7 +85,7 @@ open class PermissionServiceImpl constructor(
     private val userDao: UserDao,
     private val personalPathDao: PersonalPathDao,
     private val repoAuthConfigDao: RepoAuthConfigDao,
-    val repoClient: RepositoryClient,
+    val repositoryService: RepositoryService,
     val projectService: ProjectService
 ) : PermissionService {
 
@@ -350,7 +350,7 @@ open class PermissionServiceImpl constructor(
     }
 
     fun getAllRepoByProjectId(projectId: String): List<String> {
-        return repoClient.listRepo(projectId).data?.map { it.name } ?: emptyList()
+        return repositoryService.listRepo(projectId).map { it.name }
     }
 
     override fun checkPlatformPermission(request: CheckPermissionRequest): Boolean {

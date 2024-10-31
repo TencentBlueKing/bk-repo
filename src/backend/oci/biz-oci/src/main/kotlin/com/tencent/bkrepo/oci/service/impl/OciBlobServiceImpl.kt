@@ -42,6 +42,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -58,8 +60,6 @@ import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.ObjectBuildUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -67,8 +67,8 @@ import org.springframework.stereotype.Service
 @Service
 class OciBlobServiceImpl(
     private val storage: StorageService,
-    private val repoClient: RepositoryClient,
-    private val nodeClient: NodeClient,
+    private val repositoryService: RepositoryService,
+    private val nodeService: NodeService,
     private val ociOperationService: OciOperationService,
     private val permissionManager: PermissionManager,
 ) : OciBlobService {
@@ -145,9 +145,9 @@ class OciBlobServiceImpl(
                 return
             }
             // 当mount仓库和当前仓库不在一个存储实例时，直接上传
-            val mountRepo = repoClient.getRepoDetail(mountProjectId, mountRepoName).data
+            val mountRepo = repositoryService.getRepoDetail(mountProjectId, mountRepoName)
                 ?: throw RepoNotFoundException("$mountProjectId|$mountRepoName")
-            val currentRepo = repoClient.getRepoDetail(projectId, repoName).data
+            val currentRepo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw RepoNotFoundException("$projectId|$repoName")
             if (mountRepo.storageCredentials?.key != currentRepo.storageCredentials?.key) {
                 buildSessionIdLocationForUpload(this, domain)
@@ -168,7 +168,7 @@ class OciBlobServiceImpl(
                 metadata = metadata
             )
             ActionAuditContext.current().setInstance(nodeCreateRequest)
-            nodeClient.createNode(nodeCreateRequest)
+            nodeService.createNode(nodeCreateRequest)
             val blobLocation = OciLocationUtils.blobLocation(ociDigest, this)
             val responseProperty = ResponseProperty(
                 location = blobLocation,
@@ -210,7 +210,7 @@ class OciBlobServiceImpl(
     fun startAppend(artifactInfo: OciBlobArtifactInfo): String {
         with(artifactInfo) {
             // check repository
-            val result = repoClient.getRepoDetail(projectId, repoName, REPO_TYPE).data ?: run {
+            val result = repositoryService.getRepoDetail(projectId, repoName, REPO_TYPE) ?: run {
                 ArtifactContextHolder.queryRepoDetailFormExtraRepoType(projectId, repoName)
             }
             logger.debug("Start to append file in ${getRepoIdentify()}")

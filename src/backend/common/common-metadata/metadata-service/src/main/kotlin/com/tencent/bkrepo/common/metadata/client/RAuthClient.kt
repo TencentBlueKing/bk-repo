@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.metadata.client
 
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.User
@@ -112,6 +113,16 @@ interface RAuthClient {
         @ApiParam(value = "用户ID")
         @RequestParam userId: String
     ): Mono<Response<List<String>>>
+
+    @GetMapping("/permission/path/list")
+    fun listPermissionPath(
+        @ApiParam(value = "用户ID")
+        @RequestParam userId: String,
+        @ApiParam(value = "项目ID")
+        @RequestParam projectId: String,
+        @ApiParam(value = "仓库名称")
+        @RequestParam repoName: String
+    ): Mono<Response<ListPathResult>>
 
     @PostMapping("/bkiamv3/rbac/group/check")
     fun getExistRbacDefaultGroupProjectIds(

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.helm.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
@@ -47,6 +48,7 @@ import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -65,7 +67,7 @@ class HelmOperationService(
     fun removeChartOrProv(context: ArtifactRemoveContext) {
         with(context.artifactInfo as HelmDeleteArtifactInfo) {
             if (version.isNotBlank()) {
-                packageClient.findVersionByName(projectId, repoName, packageName, version).data?.let {
+                packageService.findVersionByName(projectId, repoName, packageName, version)?.let {
                     removeVersion(
                         projectId = projectId,
                         repoName = repoName,
@@ -75,7 +77,7 @@ class HelmOperationService(
                     )
                 } ?: throw VersionNotFoundException(version)
             } else {
-                packageClient.listAllVersion(projectId, repoName, packageName).data.orEmpty().forEach {
+                packageService.listAllVersion(projectId, repoName, packageName, VersionListOption()).forEach {
                     removeVersion(
                         projectId = projectId,
                         repoName = repoName,
@@ -84,7 +86,7 @@ class HelmOperationService(
                         userId = context.userId
                     )
                 }
-                packageClient.deletePackage(projectId, repoName, packageName)
+                packageService.deletePackage(projectId, repoName, packageName)
             }
             deleteIndex(this)
             updatePackageExtension(context)
@@ -96,11 +98,11 @@ class HelmOperationService(
      */
     private fun deleteIndex(artifactInfo: HelmDeleteArtifactInfo) {
         with(artifactInfo) {
-            if (!packageClient.listAllPackageNames(projectId, repoName).data.isNullOrEmpty()) {
+            if (packageService.listAllPackageName(projectId, repoName).isNotEmpty()) {
                 return
             }
             // 删除index文件
-            nodeClient.deleteNode(
+            nodeService.deleteNode(
                 NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -121,16 +123,16 @@ class HelmOperationService(
         packageKey: String,
         userId: String
     ) {
-        packageClient.deleteVersion(projectId, repoName, packageKey, version)
+        packageService.deleteVersion(projectId, repoName, packageKey, version)
         val packageName = PackageKeys.resolveHelm(packageKey)
         val chartPath = HelmUtils.getChartFileFullPath(packageName, version)
         val provPath = HelmUtils.getProvFileFullPath(packageName, version)
         if (chartPath.isNotBlank()) {
             val request = NodeDeleteRequest(projectId, repoName, chartPath, userId)
-            nodeClient.deleteNode(request)
+            nodeService.deleteNode(request)
         }
         if (provPath.isNotBlank()) {
-            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, provPath, userId))
+            nodeService.deleteNode(NodeDeleteRequest(projectId, repoName, provPath, userId))
         }
     }
 
@@ -139,10 +141,10 @@ class HelmOperationService(
      */
     private fun updatePackageExtension(context: ArtifactRemoveContext) {
         with(context.artifactInfo as HelmDeleteArtifactInfo) {
-            val version = packageClient.findPackageByKey(projectId, repoName, packageName).data?.latest
+            val version = packageService.findPackageByKey(projectId, repoName, packageName)?.latest
             try {
                 val chartPath = HelmUtils.getChartFileFullPath(getArtifactName(), version!!)
-                val map = nodeClient.getNodeDetail(projectId, repoName, chartPath).data?.metadata
+                val map = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, chartPath))?.metadata
                 val chartInfo = map?.let { it1 -> HelmMetadataUtils.convertToObject(it1) }
                 chartInfo?.appVersion?.let {
                     val packageUpdateRequest = ObjectBuilderUtil.buildPackageUpdateRequest(
@@ -152,7 +154,7 @@ class HelmOperationService(
                         appVersion = chartInfo.appVersion!!,
                         description = chartInfo.description
                     )
-                    packageClient.updatePackage(packageUpdateRequest)
+                    packageService.updatePackage(packageUpdateRequest)
                 }
             } catch (e: Exception) {
                 logger.warn("can not convert meta data")

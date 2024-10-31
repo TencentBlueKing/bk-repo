@@ -73,6 +73,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.LoggerFactory
+import org.springframework.web.context.request.RequestContextHolder
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
@@ -360,9 +361,11 @@ open class PermissionManager(
             path = paths?.first(),
         )
         //  devx 是否需要auth 校验仓库维度的访问黑名单
-        val devxAccessFrom = HttpContextHolder.getRequest().getAttribute(HEADER_DEVX_ACCESS_FROM)
-        if (devxAccessFrom == DEVX_ACCESS_FROM_OFFICE) {
-            checkRequest.requestSource = DEVX_ACCESS_FROM_OFFICE
+        if (RequestContextHolder.getRequestAttributes() != null) {
+            val devxAccessFrom = HttpContextHolder.getRequest().getAttribute(HEADER_DEVX_ACCESS_FROM)
+            if (devxAccessFrom == DEVX_ACCESS_FROM_OFFICE) {
+                checkRequest.requestSource = DEVX_ACCESS_FROM_OFFICE
+            }
         }
         if (checkPermissionFromAuthService(checkRequest) != true) {
             // 无权限，响应403错误

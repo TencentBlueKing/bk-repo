@@ -31,12 +31,15 @@ import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.conan.config.ConanProperties
@@ -65,9 +68,8 @@ import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getRecipeRevisionsFile
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.joinString
 import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToUtcTime
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -80,14 +82,11 @@ class CommonService(
     private val properties: ConanProperties
 ) {
     @Autowired
-    lateinit var nodeClient: NodeClient
-
+    lateinit var nodeService: NodeService
     @Autowired
     lateinit var storageManager: StorageManager
-
     @Autowired
-    lateinit var repositoryClient: RepositoryClient
-
+    lateinit var repositoryService: RepositoryService
     @Autowired
     lateinit var lockOperation: LockOperation
 
@@ -249,7 +248,7 @@ class CommonService(
         val result = mutableMapOf<String, String>()
         val pathList = getPaths(projectId, repoName, path, subFileset)
         pathList.forEach { it ->
-            nodeClient.getNodeDetail(projectId, repoName, it).data?.let {
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, it))?.let {
                 when (type) {
                     MD5 -> result[it.name] = it.md5!!
                     else -> result[it.name] = it.fullPath
@@ -264,7 +263,7 @@ class CommonService(
         repoName: String,
         path: String,
     ): NodeDetail {
-        return nodeClient.getNodeDetail(projectId, repoName, path).data
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, path))
             ?: throw ConanRecipeNotFoundException(ConanMessageCode.CONAN_RECIPE_NOT_FOUND, path, "$projectId|$repoName")
     }
 
@@ -274,9 +273,9 @@ class CommonService(
         path: String,
     ): ConanInfo {
         val fullPath = "/$path"
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             ?: throw NodeNotFoundException(path)
-        val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+        val repo = repositoryService.getRepoDetail(projectId, repoName)
             ?: throw RepoNotFoundException("$projectId|$repoName not found")
         val inputStream = storageManager.loadArtifactInputStream(node, repo.storageCredentials)
         // TODO 需要调整
@@ -291,10 +290,13 @@ class CommonService(
         subFileset: List<String> = emptyList()
     ): List<String> {
         val fullPath = "/$path"
-        nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             ?: throw NodeNotFoundException(path)
         val subFileMap = mutableMapOf<String, String>()
-        nodeClient.listNode(projectId, repoName, fullPath, includeFolder = false, deep = true).data!!.forEach {
+        nodeService.listNode(
+            ArtifactInfo(projectId, repoName, fullPath),
+            NodeListOption(includeFolder = false, deep = true)
+        ).forEach {
             subFileMap[it.name] = it.fullPath
         }
         if (subFileset.isEmpty()) return subFileMap.values.toList()
@@ -381,7 +383,7 @@ class CommonService(
         )
         if (indexJson.revisions.isEmpty()) {
             val revisionV1Path = joinString(revPath, DEFAULT_REVISION_V1)
-            nodeClient.getNodeDetail(projectId, repoName, revisionV1Path).data ?: return null
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, revisionV1Path)) ?: return null
             return RevisionInfo(DEFAULT_REVISION_V1, convertToUtcTime(LocalDateTime.now()))
         } else {
             return indexJson.revisions.first()
@@ -395,8 +397,9 @@ class CommonService(
         refStr: String
     ): IndexInfo {
         val fullPath = "/$revPath"
-        val indexNode = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: return IndexInfo(refStr)
-        val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+        val indexNode = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
+            ?: return IndexInfo(refStr)
+        val repo = repositoryService.getRepoDetail(projectId, repoName)
             ?: throw RepoNotFoundException("$projectId|$repoName not found")
         storageManager.loadArtifactInputStream(indexNode, repo.storageCredentials)?.use {
             return it.readJsonString()
@@ -409,10 +412,11 @@ class CommonService(
         repoName: String,
         revPath: String,
     ): List<String> {
-        nodeClient.getNodeDetail(projectId, repoName, revPath).data ?: return emptyList()
-        return nodeClient.listNode(projectId, repoName, revPath, includeFolder = true, deep = false).data!!.map {
-            it.name
-        }
+        nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, revPath)) ?: return emptyList()
+        return nodeService.listNode(
+            ArtifactInfo(projectId, repoName, revPath),
+            NodeListOption(includeFolder = true, deep = false)
+        ).map { it.name }
     }
 
     fun buildFileAndNodeCreateRequest(
@@ -453,10 +457,10 @@ class CommonService(
             indexInfo = indexInfo,
             operator = SecurityUtils.getUserId()
         )
-        val repository = repositoryClient.getRepoDetail(
+        val repository = repositoryService.getRepoDetail(
             nodeCreateRequest.projectId,
             nodeCreateRequest.repoName
-        ).data
+        )
             ?: throw RepoNotFoundException("Repository[${nodeCreateRequest.repoName}] does not exist")
         storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, repository.storageCredentials)
     }
