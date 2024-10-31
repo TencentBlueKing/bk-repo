@@ -188,7 +188,7 @@ class NpmLocalRepository(
                         metadata["description"] as? String,
                         metadata["maintainers"] as? List<Map<String, Any>> ?: emptyList(),
                         metadata["version"] as? String,
-                        it["lastModifiedDate"] as String,
+                        (it["lastModifiedDate"] as LocalDateTime).toString(),
                         metadata["keywords"] as? List<String> ?: emptyList(),
                         metadata["author"] as? Map<String, Any> ?: emptyMap()
                     )
