@@ -136,6 +136,7 @@ class TemporaryAccessService(
             val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo = repo, userId = downloadUser)
+            HttpContextHolder.getRequest().setAttribute(USER_KEY, downloadUser)
             context.shareUserId = shareBy
             val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
