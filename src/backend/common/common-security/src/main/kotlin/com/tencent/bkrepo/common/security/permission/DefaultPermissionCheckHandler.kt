@@ -31,13 +31,13 @@
 
 package com.tencent.bkrepo.common.security.permission
 
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.security.manager.PrincipalManager
 
 open class DefaultPermissionCheckHandler(
-    private val permissionManager: PermissionManager
+    private val principalManager: PrincipalManager
 ) : PermissionCheckHandler {
 
     override fun onPrincipalCheck(userId: String, principal: Principal) {
-        permissionManager.checkPrincipal(userId, principal.type)
+        principalManager.checkPrincipal(userId, principal.type)
     }
 }

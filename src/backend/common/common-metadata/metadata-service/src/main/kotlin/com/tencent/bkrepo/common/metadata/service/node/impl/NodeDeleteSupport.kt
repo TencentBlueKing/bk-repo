@@ -165,7 +165,8 @@ open class NodeDeleteSupport(
         repoName: String,
         date: LocalDateTime,
         operator: String,
-        path: String
+        path: String,
+        decreaseVolume: Boolean
     ): NodeDeleteResult {
         val option = NodeListOption(includeFolder = false, deep = true)
         val timeCriteria = Criteria().orOperator(
@@ -175,7 +176,7 @@ open class NodeDeleteSupport(
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
             .andOperator(timeCriteria)
         val query = Query(criteria)
-        val nodeDeleteResult = delete(query, operator, criteria, projectId, repoName)
+        val nodeDeleteResult = delete(query, operator, criteria, projectId, repoName, decreaseVolume = decreaseVolume)
         publishEvent(
             buildNodeCleanEvent(
                 projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString()

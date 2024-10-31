@@ -40,6 +40,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Api("流水线节点")
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PipelineNodeClient", primary = false)
 @RequestMapping("/service/pipeline")
+@Deprecated("replace with PipelineNodeService")
 interface PipelineNodeClient {
     @GetMapping("/list/{projectId}/{repoName}")
     @ApiOperation("获取流水线制品目录")

@@ -161,8 +161,9 @@ class NodeServiceImpl(
         date: LocalDateTime,
         operator: String,
         path: String,
+        decreaseVolume: Boolean
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
+        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path, decreaseVolume)
     }
 
     @Transactional(rollbackFor = [Throwable::class])

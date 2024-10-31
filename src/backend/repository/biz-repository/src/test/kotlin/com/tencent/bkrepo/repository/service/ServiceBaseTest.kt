@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.listener.ResourcePermissionListener
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -55,7 +56,6 @@ import com.tencent.bkrepo.common.metadata.service.repo.ResourceClearService
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper
 import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder

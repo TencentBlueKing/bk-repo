@@ -199,29 +199,19 @@ class OauthAuthorizationServiceImpl(
         client: TAccount,
         openId: Boolean
     ): TOauthToken {
-        var tOauthToken = oauthTokenRepository.findFirstByAccountIdAndUserId(client.id!!, userId)
-        val idToken = generateOpenIdToken(client.id, userId, nonce)
-        if (tOauthToken == null) {
-            tOauthToken = TOauthToken(
-                accessToken = idToken.toJwtToken(),
-                refreshToken = OauthUtils.generateRefreshToken(),
-                expireSeconds = oauthProperties.expiredDuration.seconds,
-                type = "Bearer",
-                accountId = client.id,
-                userId = userId,
-                scope = client.scope,
-                issuedAt = Instant.now(Clock.systemDefaultZone()),
-                idToken = if (openId) idToken else null
-            )
-        }
-        if (client.scope != tOauthToken.scope) {
-            tOauthToken.scope = client.scope!!
-        }
-        tOauthToken.userId = userId
-        tOauthToken.accessToken = idToken.toJwtToken()
-        tOauthToken.idToken = if (openId) idToken else null
-        tOauthToken.issuedAt = Instant.now(Clock.systemDefaultZone())
-        oauthTokenRepository.save(tOauthToken)
+        val idToken = generateOpenIdToken(client.id!!, userId, nonce)
+        val tOauthToken = TOauthToken(
+            accessToken = idToken.toJwtToken(),
+            refreshToken = OauthUtils.generateRefreshToken(),
+            expireSeconds = oauthProperties.expiredDuration.seconds,
+            type = "Bearer",
+            accountId = client.id,
+            userId = userId,
+            scope = client.scope,
+            issuedAt = Instant.now(Clock.systemDefaultZone()),
+            idToken = if (openId) idToken else null,
+        )
+        oauthTokenRepository.insert(tOauthToken)
         return tOauthToken
     }
 
@@ -261,17 +251,11 @@ class OauthAuthorizationServiceImpl(
     }
 
     override fun validateToken(accessToken: String): String? {
-        val token = oauthTokenRepository.findFirstByAccessToken(accessToken)
-            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, "access_token[$accessToken]")
-        if (token.expireSeconds == null) {
-            return token.userId
-        }
-
-        val expiredInstant = Instant.ofEpochSecond(token.issuedAt.epochSecond + token.expireSeconds)
-        if (expiredInstant.isBefore(Instant.now())) {
-            throw ErrorCodeException(CommonMessageCode.RESOURCE_EXPIRED, "access_token[$accessToken]")
-        }
-        return token.userId
+        val claims = JwtUtils.validateToken(
+            signingKey = RsaUtils.stringToPrivateKey(cryptoProperties.privateKeyStr2048PKCS8),
+            token = accessToken
+        )
+        return claims.body.subject
     }
 
     override fun deleteToken(clientId: String, clientSecret: String, accessToken: String) {
