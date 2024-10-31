@@ -16,7 +16,6 @@ import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -63,9 +62,6 @@ class StorageReconcileJobTest @Autowired constructor(
 
     @MockBean
     lateinit var fileReferenceService: FileReferenceService
-
-    @MockBean
-    lateinit var repositoryClient: RepositoryClient
 
     @MockBean
     lateinit var operateLogService: OperateLogService

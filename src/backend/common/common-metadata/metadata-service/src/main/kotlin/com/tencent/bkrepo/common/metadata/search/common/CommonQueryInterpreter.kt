@@ -28,10 +28,10 @@
 package com.tencent.bkrepo.common.metadata.search.common
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 
 open class CommonQueryInterpreter(
     private val permissionManager: PermissionManager,

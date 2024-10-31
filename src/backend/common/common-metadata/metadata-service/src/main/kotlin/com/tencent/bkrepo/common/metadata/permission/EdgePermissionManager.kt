@@ -25,62 +25,53 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.manager.proxy
+package com.tencent.bkrepo.common.metadata.permission
 
 import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.auth.api.proxy.ProxyPermissionClient
-import com.tencent.bkrepo.auth.api.proxy.ProxyUserClient
-import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
+import com.tencent.bkrepo.auth.api.cluster.ClusterPermissionClient
+import com.tencent.bkrepo.auth.api.cluster.ClusterUserClient
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
-import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
-import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.ProjectClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.common.security.manager.PrincipalManager
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 
-class ProxyPermissionManager(
-    projectClient: ProjectClient,
-    repositoryClient: RepositoryClient,
+class EdgePermissionManager(
+    projectService: ProjectService,
+    repositoryService: RepositoryService,
     permissionResource: ServicePermissionClient,
     externalPermissionResource: ServiceExternalPermissionClient,
     userResource: ServiceUserClient,
-    nodeClient: NodeClient,
-    httpAuthProperties: HttpAuthProperties
+    nodeService: NodeService,
+    clusterProperties: ClusterProperties,
+    httpAuthProperties: HttpAuthProperties,
+    principalManager: PrincipalManager
 ) : PermissionManager(
-    projectClient,
-    repositoryClient,
+    projectService,
+    repositoryService,
     permissionResource,
     externalPermissionResource,
     userResource,
-    nodeClient,
-    httpAuthProperties
+    nodeService,
+    httpAuthProperties,
+    principalManager
 ) {
 
-    private val proxyPermissionClient: ProxyPermissionClient by lazy { ProxyFeignClientFactory.create("auth") }
-
-    private val proxyUserClient: ProxyUserClient by lazy { ProxyFeignClientFactory.create("auth") }
-
-    private val proxyRepositoryClient: ProxyRepositoryClient by lazy { ProxyFeignClientFactory.create("repository") }
+    private val centerPermissionClient: ClusterPermissionClient
+        by lazy { FeignClientFactory.create(clusterProperties.center, "auth", clusterProperties.self.name) }
+    private val centerUserClient: ClusterUserClient
+        by lazy { FeignClientFactory.create(clusterProperties.center, "auth", clusterProperties.self.name) }
 
     override fun checkPermissionFromAuthService(request: CheckPermissionRequest): Boolean? {
-        return proxyPermissionClient.checkPermission(request).data
+        return centerPermissionClient.checkPermission(request).data
     }
 
     override fun isAdminUser(userId: String): Boolean {
-        return proxyUserClient.userInfoById(userId).data?.admin == true
-    }
-
-    override fun queryRepositoryInfo(projectId: String, repoName: String): RepositoryInfo {
-        return proxyRepositoryClient.getRepoInfo(projectId, repoName).data ?: throw RepoNotFoundException(repoName)
-    }
-
-    override fun getExternalPermission(projectId: String, repoName: String?): ExternalPermission? {
-        return null
+        return centerUserClient.info(userId).data?.admin == true
     }
 }

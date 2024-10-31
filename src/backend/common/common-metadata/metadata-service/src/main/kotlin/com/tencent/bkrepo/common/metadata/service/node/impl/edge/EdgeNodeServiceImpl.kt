@@ -189,6 +189,7 @@ class EdgeNodeServiceImpl(
         date: LocalDateTime,
         operator: String,
         path: String,
+        decreaseVolume: Boolean
     ): NodeDeleteResult {
         ignoreException(
             projectId = projectId,
@@ -197,7 +198,7 @@ class EdgeNodeServiceImpl(
         ) {
             centerNodeClient.deleteNodeLastModifiedBeforeDate(projectId, repoName, path, date, operator)
         }
-        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path)
+        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path, decreaseVolume)
     }
 
     @Transactional(rollbackFor = [Throwable::class])

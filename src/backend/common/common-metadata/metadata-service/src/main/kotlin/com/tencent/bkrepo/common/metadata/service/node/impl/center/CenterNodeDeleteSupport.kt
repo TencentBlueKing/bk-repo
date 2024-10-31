@@ -104,11 +104,12 @@ class CenterNodeDeleteSupport(
         repoName: String,
         date: LocalDateTime,
         operator: String,
-        path: String
+        path: String,
+        decreaseVolume: Boolean
     ): NodeDeleteResult {
         val clusterName = SecurityUtils.getClusterName()
         if (clusterName.isNullOrEmpty()) {
-            return super.deleteBeforeDate(projectId, repoName, date, operator, path)
+            return super.deleteBeforeDate(projectId, repoName, date, operator, path, decreaseVolume)
         }
         var deletedSize = 0L
         var deletedNum = 0L

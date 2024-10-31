@@ -31,6 +31,7 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
@@ -40,6 +41,8 @@ import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.job.CREDENTIALS
+import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.task.clean.FileReferenceCleanupJob
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
@@ -51,12 +54,15 @@ import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.bson.Document
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -260,6 +266,59 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         val finds = mongoTemplate.find<Map<String, Any?>>(query, collectionName)
         Assertions.assertEquals(1, finds.size)
         Assertions.assertEquals("key2", finds.first()["credentialsKey"])
+    }
+
+    @Test
+    fun mappingStorageKeyTest() {
+        whenever(storageCredentialService.getStorageKeyMapping()).thenReturn(
+            mapOf(
+                "key1" to setOf("key2", "key4", DEFAULT_STORAGE_KEY),
+                "key2" to setOf("key1", "key4", DEFAULT_STORAGE_KEY),
+                "key4" to setOf("key1", "key2", DEFAULT_STORAGE_KEY),
+                DEFAULT_STORAGE_KEY to setOf("key1", "key2", "key4"),
+            )
+        )
+        val collectionName = fileReferenceCleanupJob.collectionNames().first()
+        val sha2561 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c1"
+        val sha2562 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c2"
+        val sha2563 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c3"
+        insertOne(sha2561, "key1", 0, collectionName)
+        insertOne(sha2561, "key2", 1, collectionName)
+        insertOne(sha2563, "key3", 0, collectionName)
+        insertOne(sha2562, "key4", 0, collectionName)
+        insertOne(sha2562, null, 1, collectionName)
+
+        val deleted = HashSet<String>()
+        whenever(storageService.delete(anyString(), any())).then {
+            deleted.add(it.getArgument(0))
+        }
+        fileReferenceCleanupJob.start()
+
+        // assert
+        assertTrue(deleted.size == 1 && deleted.contains(sha2563))
+
+        assertFalse(existsRef(sha2561, "key1", collectionName))
+        assertTrue(existsRef(sha2561, "key2", collectionName))
+        assertFalse(existsRef(sha2563, "key3", collectionName))
+        assertFalse(existsRef(sha2562, "key4", collectionName))
+        assertTrue(existsRef(sha2562, null, collectionName))
+    }
+
+    private fun existsRef(sha256: String, key: String?, collectionName: String): Boolean {
+        val criteria = Criteria.where(SHA256).isEqualTo(sha256).and(CREDENTIALS).isEqualTo(key)
+        return mongoTemplate.exists(Query(criteria), collectionName)
+    }
+
+    private fun insertOne(sha256: String, key: String?, count: Int, collectionName: String) {
+        mongoTemplate.insert(
+            Document(
+                mutableMapOf(
+                    "sha256" to sha256,
+                    "credentialsKey" to key,
+                    "count" to count,
+                ) as Map<String, Any>?,
+            ), collectionName
+        )
     }
 
     private fun insertMany(num: Int, collectionName: String) {
