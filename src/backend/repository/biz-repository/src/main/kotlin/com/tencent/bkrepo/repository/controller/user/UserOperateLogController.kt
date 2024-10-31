@@ -30,12 +30,12 @@ package com.tencent.bkrepo.repository.controller.user
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.pojo.log.OpLogListOption
 import com.tencent.bkrepo.common.metadata.pojo.log.OperateLog
 import com.tencent.bkrepo.common.metadata.pojo.log.OperateLogResponse
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder

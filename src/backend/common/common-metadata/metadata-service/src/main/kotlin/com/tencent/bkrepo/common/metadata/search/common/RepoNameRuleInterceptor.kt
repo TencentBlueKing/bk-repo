@@ -36,18 +36,18 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper.listPermissionPaths
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
-import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper.listPermissionPaths
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
@@ -127,7 +127,7 @@ class RepoNameRuleInterceptor(
             userId = userId,
             projectId = projectId,
             option = RepoListOption()
-        )?.map { it.name }?.filter { repo -> repo !in (value.map { it.toString() }) }
+        ).map { it.name }.filter { repo -> repo !in (value.map { it.toString() }) }
         return buildRule(projectId, repoNameList)
     }
 

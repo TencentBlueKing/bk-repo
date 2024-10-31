@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.common.metadata.search.packages
 
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.metadata.search.common.CommonQueryInterpreter
 import com.tencent.bkrepo.common.metadata.search.common.LocalDatetimeRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.MetadataRuleInterceptor

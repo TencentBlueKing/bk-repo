@@ -29,7 +29,7 @@ package com.tencent.bkrepo.webhook.service
 
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.webhook.config.WebHookProperties
 import com.tencent.bkrepo.webhook.dao.WebHookDao
 import com.tencent.bkrepo.webhook.dao.WebHookLogDao
