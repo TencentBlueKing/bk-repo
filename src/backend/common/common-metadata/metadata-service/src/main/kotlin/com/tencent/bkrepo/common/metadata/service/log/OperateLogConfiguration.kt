@@ -11,7 +11,6 @@ import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsPrope
 import com.tencent.bkrepo.common.metadata.service.log.impl.CommitEdgeOperateLogServiceImpl
 import com.tencent.bkrepo.common.metadata.service.log.impl.OperateLogServiceImpl
 import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -31,7 +30,6 @@ class OperateLogConfiguration {
     fun operateLogService(
         operateProperties: OperateProperties,
         operateLogDao: OperateLogDao,
-        permissionManager: PermissionManager,
         clusterProperties: ClusterProperties
     ): OperateLogService {
         return if (clusterProperties.role == ClusterNodeType.EDGE &&

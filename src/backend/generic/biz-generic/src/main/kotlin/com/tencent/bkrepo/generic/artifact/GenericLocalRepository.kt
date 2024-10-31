@@ -65,6 +65,7 @@ import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
+import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager.Companion.METADATA_BUILD_ID
@@ -110,7 +111,6 @@ import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import com.tencent.bkrepo.repository.api.PipelineNodeClient
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -135,7 +135,7 @@ import kotlin.reflect.full.memberProperties
 class GenericLocalRepository(
     private val replicaTaskClient: ReplicaTaskClient,
     private val clusterNodeClient: ClusterNodeClient,
-    private val pipelineNodeClient: PipelineNodeClient,
+    private val pipelineNodeService: PipelineNodeService,
     private val ciPermissionManager: CIPermissionManager
 ) : LocalRepository() {
 
@@ -632,7 +632,7 @@ class GenericLocalRepository(
         return if (isSearchPipelineRoot) {
             // 仅在查询流水线仓库第一页时返回用户有权限的流水线目录
             if (queryModel.page.pageNumber == DEFAULT_PAGE_NUMBER) {
-                pipelineNodeClient.listPipeline(context.projectId, context.repoName).data!!.map { node ->
+                pipelineNodeService.listPipeline(context.projectId, context.repoName).map { node ->
                     val nodePropMap = LinkedHashMap<String, Any?>()
                     NodeInfo::class.memberProperties
                         .filter { it.name != NodeInfo::deleted.name }
@@ -734,7 +734,7 @@ class GenericLocalRepository(
         val headerNames = request.headerNames
         for (headerName in headerNames) {
             if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
-                val key = headerName.substring(BKREPO_META_PREFIX.length).trim().toLowerCase()
+                val key = headerName.substring(BKREPO_META_PREFIX.length).trim().lowercase(Locale.getDefault())
                 if (key.isNotBlank()) {
                     metadata[key] = HeaderUtils.getUrlDecodedHeader(headerName)!!
                 }

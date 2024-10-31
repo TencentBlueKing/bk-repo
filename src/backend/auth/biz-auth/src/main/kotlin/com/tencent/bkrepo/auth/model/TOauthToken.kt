@@ -27,13 +27,28 @@
 
 package com.tencent.bkrepo.auth.model
 
+import com.tencent.bkrepo.auth.model.TOauthToken.Companion.ACCESS_TOKEN_IDX
+import com.tencent.bkrepo.auth.model.TOauthToken.Companion.ACCESS_TOKEN_IDX_DEF
+import com.tencent.bkrepo.auth.model.TOauthToken.Companion.ACCOUNT_ID_ACCESS_TOKEN_IDX
+import com.tencent.bkrepo.auth.model.TOauthToken.Companion.ACCOUNT_ID_ACCESS_TOKEN_IDX_DEF
+import com.tencent.bkrepo.auth.model.TOauthToken.Companion.ACCOUNT_ID_USER_ID_IDX
+import com.tencent.bkrepo.auth.model.TOauthToken.Companion.ACCOUNT_ID_USER_ID_IDX_DEF
+import com.tencent.bkrepo.auth.model.TOauthToken.Companion.USER_IDX
+import com.tencent.bkrepo.auth.model.TOauthToken.Companion.USER_IDX_DEF
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.IdToken
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant
 
 @Document("oauth_token")
-data class TOauthToken(
+@CompoundIndexes(
+    CompoundIndex(name = ACCESS_TOKEN_IDX, def = ACCESS_TOKEN_IDX_DEF, background = true),
+    CompoundIndex(name = USER_IDX, def = USER_IDX_DEF, background = true),
+    CompoundIndex(name = ACCOUNT_ID_ACCESS_TOKEN_IDX, def = ACCOUNT_ID_ACCESS_TOKEN_IDX_DEF, background = true),
+    CompoundIndex(name = ACCOUNT_ID_USER_ID_IDX, def = ACCOUNT_ID_USER_ID_IDX_DEF, background = true),
+)data class TOauthToken(
     val id: String? = null,
     var accessToken: String,
     var refreshToken: String?,
@@ -44,4 +59,15 @@ data class TOauthToken(
     var scope: Set<ResourceType>?,
     var issuedAt: Instant,
     var idToken: IdToken?
-)
+) {
+    companion object {
+        const val ACCESS_TOKEN_IDX = "access_token"
+        const val ACCESS_TOKEN_IDX_DEF = "{'accessToken': 1}"
+        const val USER_IDX = "user_id"
+        const val USER_IDX_DEF = "{'userId': 1}"
+        const val ACCOUNT_ID_ACCESS_TOKEN_IDX = "account_id_access_token"
+        const val ACCOUNT_ID_ACCESS_TOKEN_IDX_DEF = "{'accountId': 1, 'access_token': 1}"
+        const val ACCOUNT_ID_USER_ID_IDX = "account_id_user_id"
+        const val ACCOUNT_ID_USER_ID_IDX_DEF = "{'accountId': 1, 'userId': 1}"
+    }
+}

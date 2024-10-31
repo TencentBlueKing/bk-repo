@@ -76,4 +76,10 @@ interface StorageCredentialService {
      * @param key 要删除的存储凭证key
      */
     fun forceDelete(key: String)
+
+    /**
+     * 获取存储映射关系
+     * key为存储storageKey, value为使用相同后端存储的storageKey
+     */
+    fun getStorageKeyMapping(): Map<String, Set<String>>
 }

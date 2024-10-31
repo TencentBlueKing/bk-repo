@@ -34,7 +34,7 @@ package com.tencent.bkrepo.repository.controller.user
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.service.node.PipelineNodeService
+import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestAttribute
