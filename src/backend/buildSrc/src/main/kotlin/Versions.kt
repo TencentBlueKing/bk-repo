@@ -71,5 +71,5 @@ object Versions {
     const val JavaCpp = "1.5.9"
     const val Notice = "1.0.0"
     const val SpringCloudFunction = "3.2.11"
-    const val audit = "1.0.8"
+    const val Audit = "1.0.8"
 }
