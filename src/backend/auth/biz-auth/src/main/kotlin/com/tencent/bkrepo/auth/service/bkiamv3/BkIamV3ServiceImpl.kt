@@ -154,6 +154,14 @@ class BkIamV3ServiceImpl(
         return false
     }
 
+    override fun checkBkiamv3ProjectConfig(projectId: String?): Boolean {
+        if (realm == AUTH_CONFIG_TYPE_VALUE_BKIAMV3) return true
+        if (projectId != null) {
+            return repoModeService.projectBkiamv3Check(projectId)
+        }
+        return false
+    }
+
     override fun getPermissionUrl(request: CheckPermissionRequest): String? {
         logger.debug(
             "v3 getPermissionUrl, userId: ${request.uid}, projectId: ${request.projectId}, " +

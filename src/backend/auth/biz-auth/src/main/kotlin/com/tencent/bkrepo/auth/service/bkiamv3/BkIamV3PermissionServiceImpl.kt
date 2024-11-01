@@ -34,6 +34,7 @@ import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.pojo.enums.ActionTypeMapping
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
@@ -93,6 +94,18 @@ open class BkIamV3PermissionServiceImpl(
     fun matchBkiamv3Cond(projectId: String?, repoName: String?): Boolean {
         if (!bkiamV3Service.checkIamConfiguration()) return false
         return bkiamV3Service.checkBkiamv3Config(projectId, repoName)
+    }
+
+    /**
+     * 是否需要采用iamv3项目校验
+     */
+    fun matchBkiamv3ProjectCond(request: CheckPermissionRequest): Boolean {
+        with(request) {
+            if (!bkiamV3Service.checkIamConfiguration()) return false
+            return request.requestSource == ResourceType.PROJECT.name &&
+                    request.action == PermissionAction.READ.name &&
+                    bkiamV3Service.checkBkiamv3ProjectConfig(projectId)
+        }
     }
 
     fun checkBkIamV3Permission(request: CheckPermissionRequest): Boolean {

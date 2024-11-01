@@ -102,4 +102,8 @@ class RepoModeServiceImpl(
         return result.bkiamv3Check!!
     }
 
+    override fun projectBkiamv3Check(projectId: String): Boolean {
+        return repoAuthDao.checkByProject(projectId)
+    }
+
 }
