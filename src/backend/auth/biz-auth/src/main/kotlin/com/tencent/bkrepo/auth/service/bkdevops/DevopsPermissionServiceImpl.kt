@@ -99,10 +99,9 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-        logger.debug("check permission [$request]")
+        logger.debug("devops check permission request [$request]")
         // 校验平台账号操作范围
         if (request.appId != null && !checkPlatformPermission(request)) return false
-
 
         // repo,node权限兼容bkiam权限与devops权限
         if (matchBkiamv3Cond(request.projectId, request.repoName) && matchDevopsRepoCond(request.repoName)) {
@@ -165,8 +164,6 @@ class DevopsPermissionServiceImpl constructor(
 
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            logger.debug("check devops permission request [$request]")
-
             // 用户不存在
             val user = getUserInfo(uid) ?: return false
             // 系统管理员用户
