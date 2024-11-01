@@ -98,9 +98,10 @@ class UserArtifactPreloadController(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @PathVariable id: String,
-    ) {
+    ): Response<Void> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
         preloadStrategyService.delete(projectId, repoName, id)
+        return ResponseBuilder.success()
     }
 
     @ApiOperation("获取所有预加载策略")
@@ -143,9 +144,10 @@ class UserArtifactPreloadController(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @PathVariable id: String,
-    ) {
+    ): Response<Void> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
         preloadPlanService.deletePlan(projectId, repoName, id)
+        return ResponseBuilder.success()
     }
 
     @ApiOperation("删除仓库的所有预加载计划")
@@ -154,9 +156,10 @@ class UserArtifactPreloadController(
     fun deleteAllPlans(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-    ) {
+    ): Response<Void> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
         preloadPlanService.deletePlan(projectId, repoName)
+        return ResponseBuilder.success()
     }
 
     private fun checkPreloadEnabled(

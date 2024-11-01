@@ -24,6 +24,7 @@ export const ROUTER_NAME_FILE_SYSTEM = 'FileSystem'
 export const ROUTER_NAME_FILE_CACHE = 'FileCache'
 export const ROUTER_NAME_FILE_SYSTEM_RECORD = 'FileSystemRecord'
 export const ROUTER_NAME_REPO_CONFIG = 'RepoConfig'
+export const ROUTER_NAME_PRELOAD_CONFIG = 'PreloadConfig'
 
 Vue.use(Router)
 
@@ -310,6 +311,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_REPO_CONFIG,
         meta: { title: 'REPO配置管理', icon: 'permission' },
         component: () => import('@/views/repoConfig/index')
+      }
+    ]
+  },
+  {
+    path: '/preload-config',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_PRELOAD_CONFIG,
+        meta: { title: '制品预加载配置', icon: 'service-config' },
+        component: () => import('@/views/preload/index')
       }
     ]
   },
