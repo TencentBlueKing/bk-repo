@@ -29,6 +29,7 @@ package com.tencent.bkrepo.generic.artifact
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.api.constant.CharPool
@@ -874,6 +875,7 @@ class GenericLocalRepository(
                 md5 = fileInfo.md5,
                 size = fileInfo.size
             )
+            ActionAuditContext.current().setInstance(nodeRequest)
             nodeService.createNode(nodeRequest)
             return property
         }

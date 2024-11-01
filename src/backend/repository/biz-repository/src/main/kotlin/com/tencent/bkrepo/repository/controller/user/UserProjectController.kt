@@ -27,11 +27,20 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.annotations.AuditRequestBody
+import com.tencent.bk.audit.context.ActionAuditContext
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_RESOURCE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -62,11 +71,25 @@ class UserProjectController(
     private val permissionManager: PermissionManager,
     private val projectService: ProjectService
 ) {
+    @AuditEntry(
+        actionId = PROJECT_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#userProjectRequest?.name",
+            instanceNames = "#userProjectRequest?.displayName"
+        ),
+        scopeId = "#userProjectRequest?.name",
+        content = ActionAuditContent.PROJECT_CREATE_CONTENT
+    )
     @ApiOperation("创建项目")
     @Principal(PrincipalType.GENERAL)
     @PostMapping("/create")
     fun createProject(
         @RequestAttribute userId: String,
+        @AuditRequestBody
         @RequestBody userProjectRequest: UserProjectCreateRequest
     ): Response<Void> {
         val createRequest = with(userProjectRequest) {
@@ -79,6 +102,7 @@ class UserProjectController(
                 metadata = metadata
             )
         }
+        ActionAuditContext.current().setInstance(createRequest)
         projectService.createProject(createRequest)
         return ResponseBuilder.success()
     }
@@ -106,14 +130,30 @@ class UserProjectController(
         return ResponseBuilder.success(projectService.checkProjectExist(name, displayName))
     }
 
+
+    @AuditEntry(
+        actionId = PROJECT_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#name",
+            instanceNames = "#name"
+        ),
+        scopeId = "#name",
+        content = ActionAuditContent.PROJECT_EDIT_CONTENT
+    )
     @ApiOperation("编辑项目")
     @PutMapping("/{name}")
     fun updateProject(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目ID", required = true)
         @PathVariable name: String,
+        @AuditRequestBody
         @RequestBody projectUpdateRequest: ProjectUpdateRequest
     ): Response<Boolean> {
+        ActionAuditContext.current().setInstance(projectUpdateRequest)
         permissionManager.checkProjectPermission(PermissionAction.UPDATE, name)
         return ResponseBuilder.success(projectService.updateProject(name, projectUpdateRequest))
     }
@@ -134,6 +174,19 @@ class UserProjectController(
         return ResponseBuilder.success(projectService.listPermissionProject(userId, option))
     }
 
+    @AuditEntry(
+        actionId = PROJECT_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#userProjectRequest?.name",
+            instanceNames = "#userProjectRequest?.displayName"
+        ),
+        scopeId = "#userProjectRequest?.name",
+        content = ActionAuditContent.PROJECT_CREATE_CONTENT
+    )
     @Deprecated("waiting kb-ci", replaceWith = ReplaceWith("createProject"))
     @ApiOperation("创建项目")
     @Principal(PrincipalType.PLATFORM)

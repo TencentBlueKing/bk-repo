@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.oci.service.impl
 
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpStatus
@@ -166,6 +167,7 @@ class OciBlobServiceImpl(
                 md5 = nodeProperty.md5!!,
                 metadata = metadata
             )
+            ActionAuditContext.current().setInstance(nodeCreateRequest)
             nodeService.createNode(nodeCreateRequest)
             val blobLocation = OciLocationUtils.blobLocation(ociDigest, this)
             val responseProperty = ResponseProperty(

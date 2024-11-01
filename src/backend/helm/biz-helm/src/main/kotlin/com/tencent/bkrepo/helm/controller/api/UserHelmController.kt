@@ -31,8 +31,15 @@
 
 package com.tencent.bkrepo.helm.controller.api
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
@@ -76,6 +83,23 @@ class UserHelmController(
         return ResponseBuilder.success(chartRepositoryService.detailVersion(userId, artifactInfo, packageKey, version))
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#artifactInfo?.repoName",
+            instanceNames = "#artifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
+    )
     @ApiOperation("删除仓库下的包")
     @DeleteMapping(CHART_PACKAGE_DELETE_URL)
     fun deletePackage(
@@ -88,6 +112,25 @@ class UserHelmController(
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#artifactInfo?.repoName",
+            instanceNames = "#artifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey"),
+            AuditAttribute(name = ActionAuditContent.VERSION_TEMPLATE, value = "#version")
+
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
+    )
     @ApiOperation("删除仓库下的包版本")
     @DeleteMapping(CHART_VERSION_DELETE_URL)
     fun deleteVersion(
