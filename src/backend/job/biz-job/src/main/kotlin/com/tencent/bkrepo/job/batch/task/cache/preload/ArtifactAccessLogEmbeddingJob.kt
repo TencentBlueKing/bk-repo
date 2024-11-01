@@ -77,12 +77,14 @@ class ArtifactAccessLogEmbeddingJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7L)
 
     override fun doStart0(jobContext: JobContext) {
+        val deprecatedVectorStore = createVectorStore(2L)
         val lastMonthVectorStore = createVectorStore(1L)
         val curMonthVectorStore = createVectorStore(0L)
+        val deprecatedCollectionExists = deprecatedVectorStore.collectionExists()
         var lastMonthCollectionExists = lastMonthVectorStore.collectionExists()
         val curMonthCollectionExists = curMonthVectorStore.collectionExists()
 
-        if (lastMonthCollectionExists && !curMonthCollectionExists) {
+        if (lastMonthCollectionExists && !curMonthCollectionExists && !deprecatedCollectionExists) {
             // 可能由于数据生成过程被中断导致存在上月数据不存在当月数据，需要删除重新生成
             lastMonthVectorStore.dropCollection()
             lastMonthCollectionExists = false
@@ -112,8 +114,7 @@ class ArtifactAccessLogEmbeddingJob(
         logger.info("insert data into collection[${curMonthVectorStore.collectionName()}] success")
 
         // 删除过期数据
-        val deprecatedVectorStore = createVectorStore(2L)
-        if (deprecatedVectorStore.collectionExists()) {
+        if (deprecatedCollectionExists) {
             logger.info("deprecated collection[${deprecatedVectorStore.collectionName()}] exists")
             deprecatedVectorStore.dropCollection()
             logger.info("drop collection [${deprecatedVectorStore.collectionName()}] success")

@@ -86,6 +86,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
+import java.time.LocalDateTime
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import javax.xml.parsers.SAXParserFactory
@@ -492,8 +493,8 @@ class JobService(
         return NodeInfo(
             createdBy = mapData["createdBy"] as String,
             createdDate = mapData["lastModifiedBy"] as String,
-            lastModifiedBy = mapData["lastModifiedDate"] as String,
-            lastModifiedDate = mapData["lastModifiedDate"] as String,
+            lastModifiedBy = (mapData["lastModifiedDate"] as LocalDateTime).toString(),
+            lastModifiedDate = (mapData["lastModifiedDate"] as LocalDateTime).toString(),
             folder = mapData["folder"] as Boolean,
             path = mapData["path"] as String,
             name = mapData["name"] as String,
