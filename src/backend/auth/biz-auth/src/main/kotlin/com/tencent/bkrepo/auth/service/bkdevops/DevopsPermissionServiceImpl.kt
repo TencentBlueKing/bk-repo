@@ -99,7 +99,7 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-
+        logger.debug("check permission [$request]")
         // 校验平台账号操作范围
         if (request.appId != null && !checkPlatformPermission(request)) return false
 

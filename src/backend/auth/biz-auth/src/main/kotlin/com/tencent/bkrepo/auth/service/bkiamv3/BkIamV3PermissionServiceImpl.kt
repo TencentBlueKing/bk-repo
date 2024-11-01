@@ -101,6 +101,7 @@ open class BkIamV3PermissionServiceImpl(
      */
     fun matchBkiamv3ProjectCond(request: CheckPermissionRequest): Boolean {
         with(request) {
+            logger.debug("check match cond permission [$request]")
             if (!bkiamV3Service.checkIamConfiguration()) return false
             return request.requestSource == ResourceType.PROJECT.name &&
                     request.action == PermissionAction.READ.name &&
