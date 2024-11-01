@@ -111,6 +111,7 @@ open class BkIamV3PermissionServiceImpl(
 
     fun checkBkIamV3Permission(request: CheckPermissionRequest): Boolean {
         with(request) {
+            logger.debug("checkBkIamV3Permission [$request]")
             if (projectId == null) {
                 return false
             }
