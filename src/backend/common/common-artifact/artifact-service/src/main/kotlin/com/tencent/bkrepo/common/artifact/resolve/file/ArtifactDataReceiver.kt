@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.api.constant.retry
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
@@ -35,17 +36,15 @@ import com.tencent.bkrepo.common.artifact.metrics.TrafficHandler
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
-import com.tencent.bkrepo.common.storage.config.ReceiveProperties
-import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
-import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.config.MonitorProperties
+import com.tencent.bkrepo.common.storage.config.ReceiveProperties
+import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.common.storage.util.delete
-import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -60,6 +59,7 @@ import java.security.SecureRandom
 import java.time.Duration
 import kotlin.math.abs
 import kotlin.system.measureTimeMillis
+import org.slf4j.LoggerFactory
 
 /**
  * artifact数据接收类，作用：
@@ -239,7 +239,7 @@ class ArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         var rateLimitFlag = false
-        val exception: Exception? = null
+        var exp: Exception? = null
         try {
             val input = requestLimitCheckService?.bandwidthCheck(
                 source, receiveProperties.circuitBreakerThreshold, contentLength
@@ -254,12 +254,14 @@ class ArtifactDataReceiver(
                 }
             }
         } catch (exception: IOException) {
+            exp = exception
             handleIOException(exception)
         } catch (overloadEx: OverloadException) {
+            exp = overloadEx
             handleOverloadException(overloadEx)
         } finally {
             if (rateLimitFlag) {
-                requestLimitCheckService?.bandwidthFinish(exception)
+                requestLimitCheckService?.bandwidthFinish(exp)
             }
         }
     }

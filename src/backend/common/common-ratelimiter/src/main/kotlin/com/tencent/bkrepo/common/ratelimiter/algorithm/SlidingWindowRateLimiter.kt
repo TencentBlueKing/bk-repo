@@ -56,7 +56,7 @@ class SlidingWindowRateLimiter(
     /**
      * 窗口列表
      */
-    private val windowArray = Array(subWindowNum) { WindowInfo() }
+    private var windowArray = Array(subWindowNum) { WindowInfo() }
     private val windowSize = duration.toMillis() * subWindowNum
 
     override fun tryAcquire(permits: Long): Boolean {
@@ -84,6 +84,7 @@ class SlidingWindowRateLimiter(
         val currentIndex = (currentTimeMillis % windowSize / (windowSize / subWindowNum)).toInt()
         // 2.  更新当前窗口计数 & 重置过期窗口计数
         var sum = 0L
+        val windowArrayCopy = windowArray.map { it.copy() }.toTypedArray()
         for (i in windowArray.indices) {
             val windowInfo = windowArray[i]
             if (currentTimeMillis - windowInfo.time > windowSize) {
@@ -96,7 +97,13 @@ class SlidingWindowRateLimiter(
             sum += windowInfo.count
         }
         // 3. 当前是否超过限制
-        return sum <= limit
+        return if (sum <= limit) {
+            true
+        } else {
+            //如果最终sum>limit, windowInfo.count需要减掉permits
+            windowArray = windowArrayCopy
+            false
+        }
     }
 
     data class WindowInfo(
