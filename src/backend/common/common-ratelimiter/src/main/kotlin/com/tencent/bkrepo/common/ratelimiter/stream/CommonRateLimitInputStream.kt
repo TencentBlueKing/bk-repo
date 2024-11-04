@@ -115,7 +115,7 @@ class CommonRateLimitInputStream(
                 } catch (ignore: InterruptedException) {
                 }
             }
-            if (!flag && failedNum >= rateCheckContext.waitRound) {
+            if (!flag && failedNum > rateCheckContext.waitRound) {
                 if (rateCheckContext.dryRun) {
                     return
                 }

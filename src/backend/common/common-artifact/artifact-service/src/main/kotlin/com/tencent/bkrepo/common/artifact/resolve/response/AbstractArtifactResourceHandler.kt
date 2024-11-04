@@ -119,7 +119,7 @@ abstract class AbstractArtifactResourceHandler(
         try {
             return measureThroughput {
                 val stream = requestLimitCheckService.bandwidthCheck(
-                    inputStream, storageProperties.response.circuitBreakerThreshold,
+                    recordAbleInputStream, storageProperties.response.circuitBreakerThreshold,
                     length
                 ) ?: recordAbleInputStream.rateLimit(
                     responseRateLimitWrapper(storageProperties.response.rateLimit)

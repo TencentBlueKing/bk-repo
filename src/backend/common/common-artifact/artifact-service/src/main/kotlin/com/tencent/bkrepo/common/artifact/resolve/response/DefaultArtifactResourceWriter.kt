@@ -195,7 +195,7 @@ open class DefaultArtifactResourceWriter(
                         val recordAbleInputStream = RecordAbleInputStream(inputStream)
                         zipOutput.putNextEntry(generateZipEntry(name, inputStream))
                         val stream = requestLimitCheckService.bandwidthCheck(
-                            inputStream, storageProperties.response.circuitBreakerThreshold,
+                            recordAbleInputStream, storageProperties.response.circuitBreakerThreshold,
                             inputStream.range.length
                         ) ?: recordAbleInputStream.rateLimit(
                             responseRateLimitWrapper(storageProperties.response.rateLimit)
