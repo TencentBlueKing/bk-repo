@@ -30,6 +30,8 @@ package com.tencent.bkrepo.fs.server.utils
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache
 import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXCvmWorkspace
@@ -38,8 +40,12 @@ import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.common.security.interceptor.devx.PageResponse
 import com.tencent.bkrepo.common.security.interceptor.devx.QueryResponse
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import com.tencent.bkrepo.fs.server.response.DevxTokenInfo
+import com.tencent.devops.api.pojo.Response
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
@@ -53,6 +59,7 @@ import reactor.netty.http.client.HttpClient
 import reactor.netty.http.client.PrematureCloseException
 import reactor.netty.resources.ConnectionProvider
 import reactor.util.retry.RetryBackoffSpec
+import java.net.URLDecoder
 import java.time.Duration
 import java.util.concurrent.Executors
 
@@ -168,6 +175,29 @@ class DevxWorkspaceUtils(
                     }
                     res?.data?.records?.mapTo(HashSet()) { it.ip } ?: emptySet()
                 }
+        }
+
+        suspend fun validateToken(devxToken: String): Mono<DevxTokenInfo> {
+            val token = withContext(Dispatchers.IO) {
+                URLDecoder.decode(devxToken, Charsets.UTF_8.name())
+            }
+            return httpClient
+                .get()
+                .uri("${devXProperties.validateTokenUrl}?dToken=$token")
+                .header("X-DEVOPS-BK-TOKEN", devXProperties.authToken)
+                .exchangeToMono {
+                    mono { parseDevxTokenInfo(it) }
+                }
+        }
+
+        private suspend fun parseDevxTokenInfo(response: ClientResponse): DevxTokenInfo {
+            return if (response.statusCode() != HttpStatus.OK) {
+                val errorMsg = response.awaitBody<String>()
+                logger.error("${response.statusCode()} $errorMsg")
+                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXPIRED, "token")
+            } else {
+                response.awaitBody<Response<DevxTokenInfo>>().data!!
+            }
         }
 
         private fun <T, R> WebClient.RequestHeadersSpec<*>.doRequest(

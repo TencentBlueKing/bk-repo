@@ -40,9 +40,8 @@ class RpmMetadataChangeLog(
     @XStreamImplicit(itemFieldName = "package")
     override val packages: List<RpmPackageChangeLog>,
     @XStreamAsAttribute
+    val xmlns: String = "http://linux.duke.edu/metadata/other",
+    @XStreamAsAttribute
     @XStreamAlias("packages")
     override var packageNum: Long
-) : RpmXmlMetadata(packages, packageNum) {
-    @XStreamAsAttribute
-    val xmlns: String = "http://linux.duke.edu/metadata/other"
-}
+) : RpmXmlMetadata(packages, packageNum)
