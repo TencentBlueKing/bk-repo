@@ -36,6 +36,8 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactClient
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.proxy.ProxyRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.security.service.ServiceAuthProperties
@@ -51,11 +53,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.*
 import org.mockito.Mockito
 import org.springframework.cloud.loadbalancer.support.SimpleObjectProvider
 import org.springframework.cloud.sleuth.Tracer
@@ -95,6 +93,7 @@ class FdtpAFTTest {
         val proxyRepository = Mockito.mock(ProxyRepository::class.java)
         val artifactClient = Mockito.mock(ArtifactClient::class.java)
         val httpAuthSecurity = SimpleObjectProvider<HttpAuthSecurity>(null)
+        val limitCheckService = RequestLimitCheckService(RateLimiterProperties())
         ArtifactContextHolder(
             listOf(artifactConfigurer),
             compositeRepository,
@@ -103,7 +102,7 @@ class FdtpAFTTest {
             httpAuthSecurity,
         )
         val helper = StorageHealthMonitorHelper(ConcurrentHashMap())
-        ArtifactFileFactory(StorageProperties(), helper)
+        ArtifactFileFactory(StorageProperties(), helper, limitCheckService)
         mockkObject(ArtifactMetrics)
         every { ArtifactMetrics.getUploadingCounters(any()) } returns emptyList()
         every { ArtifactMetrics.getUploadingTimer(any()) } returns Timer.builder(ARTIFACT_UPLOADING_TIME)
