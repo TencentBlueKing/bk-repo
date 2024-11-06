@@ -13,7 +13,6 @@ import com.tencent.bkrepo.common.bksync.file.BkSyncDeltaSource.Companion.toBkSyn
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -43,9 +42,6 @@ class BDZipManagerTest @Autowired constructor(
 
     @MockBean
     lateinit var fileReferenceService: FileReferenceService
-
-    @MockBean
-    lateinit var repositoryClient: RepositoryClient
 
     private val timeout = Duration.ofSeconds(10)
 

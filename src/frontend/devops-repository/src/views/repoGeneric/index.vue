@@ -811,6 +811,7 @@
                     || row.fullPath.endsWith('bat')
                     || row.fullPath.endsWith('json')
                     || row.fullPath.endsWith('yaml')
+                    || row.fullPath.endsWith('yml')
                     || row.fullPath.endsWith('xml')
                     || row.fullPath.endsWith('log')
                     || row.fullPath.endsWith('ini')
@@ -1062,6 +1063,11 @@
                                     message
                                 })
                             }
+                        })
+                    } else if (e.status === 429) {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
                         })
                     } else {
                         const message = this.$t('fileError')
@@ -1419,6 +1425,7 @@
                     || name.endsWith('bat')
                     || name.endsWith('json')
                     || name.endsWith('yaml')
+                    || name.endsWith('yml')
                     || name.endsWith('xml')
                     || name.endsWith('log')
                     || name.endsWith('ini')

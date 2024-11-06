@@ -40,6 +40,7 @@ dependencies {
     api(project(":common:common-security"))
     api(project(":common:common-artifact:artifact-api"))
     api(project(":common:common-storage:storage-service"))
+    api(project(":common:common-ratelimiter"))
     api(project(":common:common-stream"))
     api(project(":common:common-metrics-push"))
     api(project(":common:common-metadata:metadata-service"))
@@ -49,6 +50,7 @@ dependencies {
     api("io.micrometer:micrometer-registry-prometheus")
     api("org.influxdb:influxdb-java")
     api("org.apache.commons:commons-text")
+    api("com.tencent.bk.sdk:spring-boot-bk-audit-starter")
 
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("io.mockk:mockk")

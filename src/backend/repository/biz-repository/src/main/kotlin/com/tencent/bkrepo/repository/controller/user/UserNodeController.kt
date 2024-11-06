@@ -31,6 +31,11 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -39,15 +44,20 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -56,6 +66,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
@@ -96,6 +107,23 @@ class UserNodeController(
     private val permissionManager: PermissionManager,
 ) {
 
+    @AuditEntry(
+        actionId = NODE_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_VIEW_CONTENT
+    )
     @ApiOperation("根据路径查看节点详情")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/detail/$DEFAULT_MAPPING_URI")
@@ -108,6 +136,23 @@ class UserNodeController(
         return ResponseBuilder.success(node)
     }
 
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_CREATE_CONTENT
+    )
     @ApiOperation("创建文件夹")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @PostMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/mkdir/$DEFAULT_MAPPING_URI")
@@ -124,11 +169,29 @@ class UserNodeController(
                 overwrite = false,
                 operator = userId,
             )
+            ActionAuditContext.current().setInstance(createRequest)
             nodeService.createNode(createRequest)
             return ResponseBuilder.success()
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @ApiOperation("删除节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/delete/$DEFAULT_MAPPING_URI")
@@ -143,10 +206,28 @@ class UserNodeController(
                 fullPath = getArtifactFullPath(),
                 operator = userId,
             )
+            ActionAuditContext.current().setInstance(deleteRequest)
             return ResponseBuilder.success(nodeService.deleteNode(deleteRequest))
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#fullPaths",
+            instanceNames = "#fullPaths"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#repoName")
+        ],
+        scopeId = "#projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @ApiOperation("批量删除节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     @DeleteMapping("/batch/{projectId}/{repoName}")
@@ -164,6 +245,7 @@ class UserNodeController(
             fullPaths = fullPaths,
             operator = userId,
         )
+        ActionAuditContext.current().setInstance(nodesDeleteRequest)
         return ResponseBuilder.success(nodeService.deleteNodes(nodesDeleteRequest))
     }
 
@@ -189,6 +271,25 @@ class UserNodeController(
         return ResponseBuilder.success(nodeService.countDeleteNodes(nodesDeleteRequest))
     }
 
+
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
+            AuditAttribute(name = ActionAuditContent.DATE_TEMPLATE, value = "#date")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_CLEAN_CONTENT
+    )
     @ApiOperation("清理最后访问时间早于{date}的文件节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping("/clean/$DEFAULT_MAPPING_URI")
@@ -237,6 +338,24 @@ class UserNodeController(
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
+            AuditAttribute(name = ActionAuditContent.EXPIRES_DYAS_TEMPLATE, value = "#request?.expires")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_EXPIRES_EDIT_CONTENT
+    )
     @ApiOperation("更新节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.UPDATE)
     @PostMapping("/update/$DEFAULT_MAPPING_URI")
@@ -258,6 +377,24 @@ class UserNodeController(
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#newFullPath")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_RENAME_CONTENT
+    )
     @ApiOperation("重命名节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.UPDATE)
     @PostMapping("/rename/$DEFAULT_MAPPING_URI")
@@ -275,6 +412,7 @@ class UserNodeController(
                 newFullPath = newFullPath,
                 operator = userId,
             )
+            ActionAuditContext.current().setInstance(renameRequest)
             nodeService.renameNode(renameRequest)
             return ResponseBuilder.success()
         }
@@ -297,11 +435,35 @@ class UserNodeController(
                 newFullPath = newFullPath,
                 operator = userId,
             )
+            ActionAuditContext.current().setInstance(renameRequest)
             nodeService.renameNode(renameRequest)
             return ResponseBuilder.success()
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#request?.srcFullPath",
+            instanceNames = "#request?.srcFullPath"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#request?.srcProjectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#request?.srcRepoName"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#request?.destFullPath"),
+            AuditAttribute(
+                name = ActionAuditContent.NEW_PROJECT_CODE_CONTENT_TEMPLATE,
+                value = "#request?.destProjectId"
+            ),
+            AuditAttribute(name = ActionAuditContent.NEW_REPO_NAME_CONTENT_TEMPLATE, value = "#request?.destRepoName"),
+        ],
+        scopeId = "#request?.srcProjectId",
+        content = ActionAuditContent.NODE_MOVE_CONTENT
+    )
     @ApiOperation("移动节点")
     @PostMapping("/move")
     fun moveNode(
@@ -320,11 +482,35 @@ class UserNodeController(
                 overwrite = overwrite,
                 operator = userId,
             )
+            ActionAuditContext.current().setInstance(moveRequest)
             nodeService.moveNode(moveRequest)
             return ResponseBuilder.success()
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#request?.srcFullPath",
+            instanceNames = "#request?.srcFullPath"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#request?.srcProjectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#request?.srcRepoName"),
+            AuditAttribute(
+                name = ActionAuditContent.NEW_PROJECT_CODE_CONTENT_TEMPLATE,
+                value = "#request?.destProjectId"
+            ),
+            AuditAttribute(name = ActionAuditContent.NEW_REPO_NAME_CONTENT_TEMPLATE, value = "#request?.destRepoName"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#request?.destFullPath")
+        ],
+        scopeId = "#request?.srcProjectId",
+        content = ActionAuditContent.NODE_COPY_CONTENT
+    )
     @ApiOperation("复制节点")
     @PostMapping("/copy")
     fun copyNode(
@@ -343,6 +529,7 @@ class UserNodeController(
                 overwrite = overwrite,
                 operator = userId,
             )
+            ActionAuditContext.current().setInstance(copyRequest)
             nodeService.copyNode(copyRequest)
             return ResponseBuilder.success()
         }
@@ -399,6 +586,24 @@ class UserNodeController(
         return ResponseBuilder.success(nodeService.listDeletedPoint(artifactInfo))
     }
 
+    @AuditEntry(
+        actionId = NODE_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
+            AuditAttribute(name = ActionAuditContent.DATE_TEMPLATE, value = "#nodeRestoreOption?.deletedId")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_RESTORE_CONTENT
+    )
     @ApiOperation("恢复被删除节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.WRITE)
     @PostMapping("/restore/$DEFAULT_MAPPING_URI")
@@ -406,6 +611,7 @@ class UserNodeController(
         artifactInfo: ArtifactInfo,
         nodeRestoreOption: NodeRestoreOption,
     ): Response<NodeRestoreResult> {
+        ActionAuditContext.current().setInstance(nodeRestoreOption)
         return ResponseBuilder.success(nodeService.restoreNode(artifactInfo, nodeRestoreOption))
     }
 

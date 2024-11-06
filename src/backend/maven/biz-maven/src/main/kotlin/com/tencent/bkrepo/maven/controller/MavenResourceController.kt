@@ -27,8 +27,17 @@
 
 package com.tencent.bkrepo.maven.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.service.MavenService
 import org.springframework.http.MediaType
@@ -41,6 +50,24 @@ import org.springframework.web.bind.annotation.RestController
 class MavenResourceController(
     private val mavenService: MavenService
 ) {
+
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#mavenArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#mavenArtifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#mavenArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#mavenArtifactInfo?.repoName")
+        ],
+        scopeId = "#mavenArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     @PutMapping(MavenArtifactInfo.MAVEN_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun deploy(
         @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
@@ -49,11 +76,45 @@ class MavenResourceController(
         return mavenService.deploy(mavenArtifactInfo, file)
     }
 
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#mavenArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#mavenArtifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#mavenArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#mavenArtifactInfo?.repoName")
+        ],
+        scopeId = "#mavenArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @GetMapping(MavenArtifactInfo.MAVEN_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun dependency(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo) {
         mavenService.dependency(mavenArtifactInfo)
     }
 
+    @AuditEntry(
+        actionId = NODE_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#mavenArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#mavenArtifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#mavenArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#mavenArtifactInfo?.repoName")
+        ],
+        scopeId = "#mavenArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DELETE_CONTENT
+    )
     @DeleteMapping(MavenArtifactInfo.MAVEN_MAPPING_URI, produces = [MediaType.APPLICATION_JSON_VALUE])
     fun deleteDependency(@ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo) {
         mavenService.deleteDependency(mavenArtifactInfo)

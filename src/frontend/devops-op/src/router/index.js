@@ -24,6 +24,7 @@ export const ROUTER_NAME_FILE_SYSTEM = 'FileSystem'
 export const ROUTER_NAME_FILE_CACHE = 'FileCache'
 export const ROUTER_NAME_FILE_SYSTEM_RECORD = 'FileSystemRecord'
 export const ROUTER_NAME_REPO_CONFIG = 'RepoConfig'
+export const ROUTER_NAME_RATE_LIMITER_CONFIG = 'RateLimiterConfig'
 export const ROUTER_NAME_PRELOAD_CONFIG = 'PreloadConfig'
 
 Vue.use(Router)
@@ -311,6 +312,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_REPO_CONFIG,
         meta: { title: 'REPO配置管理', icon: 'permission' },
         component: () => import('@/views/repoConfig/index')
+      }
+    ]
+  },
+  {
+    path: '/rateLimiter',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_RATE_LIMITER_CONFIG,
+        meta: { title: '限流管理', icon: 'permission' },
+        component: () => import('@/views/rateLimitConfg/RateLimiter')
       }
     ]
   },

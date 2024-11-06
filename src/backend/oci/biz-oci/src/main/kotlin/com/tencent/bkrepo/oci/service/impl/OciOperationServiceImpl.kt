@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.oci.service.impl
 
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -407,6 +408,7 @@ class OciOperationServiceImpl(
                 md5 = fileInfo.md5,
                 sha256 = fileInfo.sha256
             )
+            ActionAuditContext.current().setInstance(newNodeRequest)
             nodeService.createNode(newNodeRequest)
         } else {
             storageManager.storeArtifactFile(request, artifactFile, storageCredentials)
@@ -679,6 +681,7 @@ class OciOperationServiceImpl(
                     md5 = nodeProperty.md5 ?: StringPool.UNKNOWN,
                     userId = userId
                 )
+                ActionAuditContext.current().setInstance(nodeCreateRequest)
                 nodeService.createNode(nodeCreateRequest)
             }
             val metadataMap = metadataService.listMetadata(projectId, repoName, fullPath)

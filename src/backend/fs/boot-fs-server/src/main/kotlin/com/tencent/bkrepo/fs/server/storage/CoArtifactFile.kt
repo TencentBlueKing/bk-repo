@@ -66,6 +66,7 @@ class CoArtifactFile(
         val path = storageCredentials.upload.location.toPath()
         receiver = CoArtifactDataReceiver(
             storageProperties.receive,
+            storageProperties.monitor,
             path
         )
         monitor.add(receiver)
@@ -108,7 +109,8 @@ class CoArtifactFile(
     }
 
     override fun isFallback(): Boolean {
-        return false
+        runBlocking { finish() }
+        return receiver.fallback
     }
 
     override fun isInLocalDisk(): Boolean {

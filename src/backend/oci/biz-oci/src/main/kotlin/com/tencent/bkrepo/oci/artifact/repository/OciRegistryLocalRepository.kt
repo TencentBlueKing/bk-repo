@@ -31,6 +31,10 @@
 
 package com.tencent.bkrepo.oci.artifact.repository
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -44,6 +48,9 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
@@ -188,6 +195,23 @@ class OciRegistryLocalRepository(
      * blob 上传，直接使用post
      * Pushing a blob monolithically ：A single POST request
      */
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#context.artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#context.artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#context?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#context?.repoName")
+        ],
+        scopeId = "#context?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     private fun postUpload(context: ArtifactUploadContext): ResponseProperty? {
         val artifactFile = context.getArtifactFile()
         val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
@@ -230,6 +254,23 @@ class OciRegistryLocalRepository(
      * 1 blob POST with PUT 上传的put模块处理
      * 2 blob POST PATCH with PUT 上传的put模块处理
      */
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#context.artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#context.artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#context?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#context?.repoName")
+        ],
+        scopeId = "#context?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     private fun putUploadBlob(context: ArtifactUploadContext): ResponseProperty {
         val artifactInfo = context.artifactInfo as OciBlobArtifactInfo
         val sha256 = artifactInfo.getDigestHex()

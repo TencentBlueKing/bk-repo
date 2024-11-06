@@ -31,6 +31,14 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.context.ActionAuditContext
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -39,7 +47,8 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.share.BatchShareRecordCreateRequest
@@ -67,6 +76,23 @@ class UserShareController(
     private val shareService: ShareService
 ) {
 
+    @AuditEntry(
+        actionId = NODE_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_SHARE_CREATE_CONTENT
+    )
     @ApiOperation("创建分享链接")
     @Permission(type = ResourceType.NODE, action = PermissionAction.WRITE)
     @PostMapping(DEFAULT_MAPPING_URI)
@@ -75,9 +101,33 @@ class UserShareController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
         @RequestBody shareRecordCreateRequest: ShareRecordCreateRequest
     ): Response<ShareRecordInfo> {
+        ActionAuditContext.current().setInstance(shareRecordCreateRequest)
         return ResponseBuilder.success(shareService.create(userId, artifactInfo, shareRecordCreateRequest))
     }
 
+    @AuditEntry(
+        actionId = NODE_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#batchShareRecordCreateRequest?.fullPathList",
+            instanceNames = "#batchShareRecordCreateRequest?.fullPathList",
+        ),
+        attributes = [
+            AuditAttribute(
+                name = ActionAuditContent.PROJECT_CODE_TEMPLATE,
+                value = "#batchShareRecordCreateRequest?.projectId"
+            ),
+            AuditAttribute(
+                name = ActionAuditContent.REPO_NAME_TEMPLATE,
+                value = "#batchShareRecordCreateRequest?.repoName"
+            )
+        ],
+        scopeId = "#batchShareRecordCreateRequest?.projectId",
+        content = ActionAuditContent.NODE_SHARE_CREATE_CONTENT
+    )
     @ApiOperation("批量创建分享链接")
     @PostMapping("/batch")
     fun batchShare(
@@ -85,6 +135,7 @@ class UserShareController(
         @RequestBody batchShareRecordCreateRequest: BatchShareRecordCreateRequest
     ): Response<List<ShareRecordInfo>> {
         with(batchShareRecordCreateRequest) {
+            ActionAuditContext.current().setInstance(batchShareRecordCreateRequest)
             val shareRecordCreateRequest = ShareRecordCreateRequest(authorizedUserList, authorizedIpList, expireSeconds)
             val recordInfoList = fullPathList.map {
                 val fullPath = PathUtils.normalizeFullPath(it)
@@ -96,6 +147,33 @@ class UserShareController(
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()",
+        ),
+        attributes = [
+            AuditAttribute(
+                name = ActionAuditContent.PROJECT_CODE_TEMPLATE,
+                value = "#artifactInfo?.projectId"
+            ),
+            AuditAttribute(
+                name = ActionAuditContent.REPO_NAME_TEMPLATE,
+                value = "#artifactInfo?.repoName"
+            ),
+            AuditAttribute(
+                name = ActionAuditContent.TOKEN_TEMPLATE,
+                value = "#token"
+            )
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_SHARE_DOWNLOAD_CONTENT
+    )
     @ApiOperation("下载分享文件")
     @GetMapping(DEFAULT_MAPPING_URI)
     fun download(
@@ -105,6 +183,7 @@ class UserShareController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ) {
         val downloadUser = downloadUserId ?: userId
+        ActionAuditContext.current().addExtendData("downloadUser", downloadUser)
         shareService.download(downloadUser, token, artifactInfo)
     }
 }

@@ -103,6 +103,7 @@
                 || this.filePath.endsWith('bat')
                 || this.filePath.endsWith('json')
                 || this.filePath.endsWith('yaml')
+                || this.filePath.endsWith('yml')
                 || this.filePath.endsWith('xml')
                 || this.filePath.endsWith('log')
                 || this.filePath.endsWith('ini')

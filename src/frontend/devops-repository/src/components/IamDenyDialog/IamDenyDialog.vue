@@ -9,10 +9,10 @@
             :outer-border="false"
             :row-border="false"
             size="small">
-            <bk-table-column :label="$t('requiredPermission')" width="276px">
+            <bk-table-column :label="$t('requiredPermission')" width="360px">
                 <template #default="{ row }"><p>{{ replaceAction(row.action) }}</p></template>
             </bk-table-column>
-            <bk-table-column :label="$t('associatedResource')" width="276px">
+            <bk-table-column :label="$t('associatedResource')" width="360px">
                 <template #default="{ row }">
                     <p v-if="row.path && row.path !== ''">
                         {{ $t('nodePath') + ':' + row.path }}
@@ -31,8 +31,8 @@
             </bk-table-column>
         </bk-table>
         <div slot="footer">
-            <bk-button @click="open">{{ $t('apply') }}</bk-button>
-            <bk-button type="primary" @click="close">{{ $t('cancel') }}</bk-button>
+            <bk-button @click="open" theme="primary" class="mr10">{{ $t('apply') }}</bk-button>
+            <bk-button type="primary" @click="close" class="mr10">{{ $t('cancel') }}</bk-button>
         </div>
     </bk-dialog>
 </template>
@@ -94,7 +94,7 @@
 
 <style lang="scss" scoped>
 ::v-deep .bk-dialog-wrapper .bk-dialog-content.bk-dialog-content-drag{
-    width: 600px !important;
+    width: 768px !important;
 }
 
 </style>

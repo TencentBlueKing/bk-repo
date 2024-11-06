@@ -367,9 +367,9 @@ class NpmFixToolServiceImpl(
 	private fun resolveNode(record: Map<String, Any?>): NodeInfo {
 		return NodeInfo(
 			createdBy = record["createdBy"] as String,
-			createdDate = record["createdDate"] as String,
+			createdDate = (record["createdDate"] as LocalDateTime).toString(),
 			lastModifiedBy = record["lastModifiedBy"] as String,
-			lastModifiedDate = record["lastModifiedDate"] as String,
+			lastModifiedDate = (record["lastModifiedDate"] as LocalDateTime).toString(),
 			folder = record["folder"] as Boolean,
 			path = record["path"] as String,
 			name = record["name"] as String,
