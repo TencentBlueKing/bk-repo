@@ -34,7 +34,7 @@ listOf(
     ":common:common-artifact:artifact-api",
     ":common:common-query:query-api",
     ":common:common-storage:storage-api",
-    ":generic:api-generic",
+    ":core:generic:api-generic",
     ":repository:api-repository",
     ":auth:api-auth",
     ":replication:api-replication"

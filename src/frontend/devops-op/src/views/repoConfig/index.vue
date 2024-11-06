@@ -161,7 +161,7 @@ import { searchProjects } from '@/api/project'
 import { listRepositories, pageRepositories } from '@/api/repository'
 import { formatNormalDate } from '@/utils/date'
 import { convertFileSize } from '@/utils/file'
-import EditRepoConfigDialog from '@/views/repoConfig/components/editRepoConfigDialog'
+import EditRepoConfigDialog from '@/views/repoConfig/components/EditRepoConfigDialog'
 
 export default {
   name: 'RepoConfig',
