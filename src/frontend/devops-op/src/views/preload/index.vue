@@ -137,8 +137,8 @@ import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
 import { formatNormalDate } from '@/utils/date'
 import { convertFileSize } from '@/utils/file'
-import editPlanConfigDialog from '@/views/preload/components/editPlanConfigDialog'
-import editStrategyConfigDialog from '@/views/preload/components/editStrategyConfigDialog'
+import editPlanConfigDialog from '@/views/preload/components/EditPlanConfigDialog'
+import editStrategyConfigDialog from '@/views/preload/components/EditStrategyConfigDialog'
 import { deletePlan, deletePlans, deleteStrategy, queryPlans, queryStrategies } from '@/api/preload'
 
 export default {
