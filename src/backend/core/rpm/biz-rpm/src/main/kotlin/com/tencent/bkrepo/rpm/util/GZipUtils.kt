@@ -79,20 +79,24 @@ object GZipUtils {
     fun InputStream.unGzipInputStream(): File {
         GZIPInputStream(this).use { gZIPInputStream ->
             val file = File.createTempFile("rpm_", ".xmlStream")
-            try {
-                BufferedOutputStream(FileOutputStream(file)).use { bufferedOutputStream ->
-                    var len: Int
-                    val buffer = ByteArray(1 * 1024 * 1024)
-                    while (gZIPInputStream.read(buffer).also { len = it } > 0) {
-                        bufferedOutputStream.write(buffer, 0, len)
-                    }
-                    bufferedOutputStream.flush()
+            return decompressGzip(gZIPInputStream, file)
+        }
+    }
+
+    private fun decompressGzip(gZIPInputStream: GZIPInputStream, file: File): File {
+        try {
+            BufferedOutputStream(FileOutputStream(file)).use { bufferedOutputStream ->
+                var len: Int
+                val buffer = ByteArray(1 * 1024 * 1024)
+                while (gZIPInputStream.read(buffer).also { len = it } > 0) {
+                    bufferedOutputStream.write(buffer, 0, len)
                 }
-                return file
-            } catch (e: Exception) {
-                file.delete()
-                throw e
+                bufferedOutputStream.flush()
             }
+            return file
+        } catch (e: Exception) {
+            file.delete()
+            throw e
         }
     }
 }
