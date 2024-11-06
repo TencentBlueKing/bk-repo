@@ -67,8 +67,8 @@ class NodeCommonUtils(
 
         fun findNodes(query: Query, storageCredentialsKey: String?): List<Node> {
             val nodes = mutableListOf<Node>()
-            for (it in 0 until SHARDING_COUNT) {
-                val collection = "$COLLECTION_NAME_PREFIX$it"
+            for (i in 0 until SHARDING_COUNT) {
+                val collection = "$COLLECTION_NAME_PREFIX$i"
                 val find = mongoTemplate.find(query, Node::class.java, collection).filter {
                     val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
                     val key = if (migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
@@ -218,7 +218,6 @@ class NodeCommonUtils(
                 for (i in 0 until SHARDING_COUNT) {
                     collectionNames.add("${COLLECTION_NAME_PREFIX}$i")
                 }
-                (0 until SHARDING_COUNT).forEach { collectionNames.add("${COLLECTION_NAME_PREFIX}$it") }
             }
             return collectionNames
         }
