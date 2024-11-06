@@ -107,9 +107,14 @@ class SeparationTaskServiceImpl(
         return result
     }
 
-    override fun findTasks(state: String?, pageRequest: PageRequest): Page<SeparationTask> {
-        val count = separationTaskDao.count(state)
-        val records = separationTaskDao.find(state, pageRequest).map { it.toDto() }
+    override fun findTasks(
+        state: String?,
+        projectId: String?,
+        repoName: String?,
+        pageRequest: PageRequest
+    ): Page<SeparationTask> {
+        val count = separationTaskDao.count(state, projectId, repoName)
+        val records = separationTaskDao.find(state, projectId, repoName, pageRequest).map { it.toDto() }
         return Pages.ofResponse(pageRequest, count, records)
     }
 
