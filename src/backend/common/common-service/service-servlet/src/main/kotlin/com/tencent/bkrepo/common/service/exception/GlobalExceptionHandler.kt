@@ -33,10 +33,15 @@ package com.tencent.bkrepo.common.service.exception
 
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -141,6 +146,21 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
     @ExceptionHandler(TooManyRequestsException::class)
     fun handleException(exception: TooManyRequestsException): Response<Void> {
         return response(exception)
+    }
+
+    @ExceptionHandler(OverloadException::class)
+    fun handleException(exception: OverloadException): Response<Void>? {
+        if (HttpContextHolder.getResponse().isCommitted) {
+            // 当返回已写入部分数据后，无法正常返回429
+            val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
+            LoggerHolder.logErrorCodeException(exception, "[${exception.messageCode.getCode()}]$errorMessage")
+            HttpContextHolder.getResponse().outputStream.close()
+            return null
+        } else {
+            HttpContextHolder.getResponse().reset()
+            HttpContextHolder.getResponse().contentType = MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
+            return response(exception)
+        }
     }
 
     @ExceptionHandler(Exception::class)

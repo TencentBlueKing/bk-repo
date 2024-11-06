@@ -49,6 +49,7 @@ import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_MESSAGE
 import com.tencent.bkrepo.oci.pojo.response.OciErrorResponse
 import com.tencent.bkrepo.oci.pojo.response.OciResponse
+import javax.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -56,7 +57,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
-import javax.servlet.http.HttpServletResponse
 
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 @RestControllerAdvice("com.tencent.bkrepo.oci")
@@ -64,7 +64,7 @@ class OciExceptionHandler(
     private val ociProperties: OciProperties
 ) {
 
-/**
+    /**
      * 单独处理认证失败异常，需要添加WWW_AUTHENTICATE响应头触发浏览器登录
      */
     @ExceptionHandler(AuthenticationException::class)
@@ -122,12 +122,6 @@ class OciExceptionHandler(
         ociResponse(responseObject, exception)
     }
 
-    @ExceptionHandler(ErrorCodeException::class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleException(exception: ErrorCodeException) {
-        ociResponse(exception)
-    }
-
     @ExceptionHandler(PermissionException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handleException(exception: PermissionException) {
@@ -162,7 +156,7 @@ class OciExceptionHandler(
         val uri = HttpContextHolder.getRequest().requestURI
         logger.warn(
             "User[$userId] access oci resource[$uri] failed[${exception.javaClass.simpleName}]:" +
-                " ${responseObject.message}"
+                    " ${responseObject.message}"
         )
     }
 
