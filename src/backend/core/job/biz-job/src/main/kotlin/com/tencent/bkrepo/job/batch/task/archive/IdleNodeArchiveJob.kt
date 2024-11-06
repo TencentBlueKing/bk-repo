@@ -80,7 +80,9 @@ class IdleNodeArchiveJob(
                 collectionNames.add("$COLLECTION_NAME_PREFIX$index")
             }
         } else {
-            (0 until SHARDING_COUNT).forEach { collectionNames.add("$COLLECTION_NAME_PREFIX$it") }
+            for (it in 0 until SHARDING_COUNT) {
+                collectionNames.add("$COLLECTION_NAME_PREFIX$it")
+            }
         }
         return collectionNames
     }
@@ -258,8 +260,8 @@ class IdleNodeArchiveJob(
         * 1. 其他项目存在相同sha256的节点。（跨项目的文件会无法归档）
         * 2. 当前项目存在更新（晚于归档截止时间）的节点。
         * */
-        (0 until SHARDING_COUNT).forEach {
-            val collectionName = COLLECTION_NAME_PREFIX.plus(it)
+        for (i in 0 until SHARDING_COUNT) {
+            val collectionName = COLLECTION_NAME_PREFIX.plus(i)
             val query = Query.query(
                 Criteria.where("sha256").isEqualTo(sha256)
                     .and("deleted").isEqualTo(null)

@@ -112,8 +112,6 @@ object BlakeUtils {
             return false
         }
 
-        override fun mark(readlimit: Int) {}
-
         @Throws(IOException::class)
         override fun reset() {
             throw IOException("reset not supported")
