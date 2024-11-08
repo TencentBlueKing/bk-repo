@@ -93,6 +93,10 @@
 </script>
 
 <style lang="scss" scoped>
+::v-deep .bk-dialog {
+    width: 768px !important;
+}
+
 ::v-deep .bk-dialog-wrapper .bk-dialog-content.bk-dialog-content-drag{
     width: 768px !important;
 }
