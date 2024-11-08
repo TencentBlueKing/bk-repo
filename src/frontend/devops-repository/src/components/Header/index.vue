@@ -203,7 +203,7 @@
                         uid: this.userInfo.name
                     }
                 }).then(res => {
-                    if (res !== '') {
+                    if (res !== '' && res !== null) {
                         window.open(res, '_blank')
                     }
                 })

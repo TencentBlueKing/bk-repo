@@ -1,7 +1,8 @@
 <template>
     <div class="repo-list-container" v-bkloading="{ isLoading }">
         <div class="ml20 mr20 mt10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="createRepo">{{ $t('createRepository') }}</bk-button>
+            <bk-button v-if="userInfo.manage || userInfo.admin" icon="plus" theme="primary" @click="createRepo">{{ $t('createRepository') }}</bk-button>
+            <bk-button v-else icon="plus" class="no-permission-button" @click="creatNoPermission">{{ $t('createRepository') }}</bk-button>
             <div class="flex-align-center">
                 <bk-input
                     v-model.trim="query.name"
@@ -41,7 +42,8 @@
                 <template #default="{ row }">
                     <Icon class="mr5 table-svg" size="16" :name="row.repoType" />
                     <span class="hover-btn" @click="toPackageList(row)">{{replaceRepoName(row.name)}}</span>
-                    <span v-if="MODE_CONFIG === 'ci' && ['custom', 'pipeline'].includes(row.name)"
+                    <span
+                        v-if="MODE_CONFIG === 'ci' && ['custom', 'pipeline'].includes(row.name)"
                         class="mr5 repo-tag SUCCESS" :data-name="$t('built-in')"></span>
                     <span v-if="row.configuration.settings.system" class="mr5 repo-tag" :data-name="$t('system')"></span>
                     <span v-if="row.public" class="mr5 repo-tag WARNING" :data-name="$t('public')"></span>
@@ -77,7 +79,7 @@
                 <template #default="{ row }">
                     <operation-list
                         :list="[
-                            { label: $t('setting'), clickEvent: () => toRepoConfig(row) },
+                            (userInfo.admin || userInfo.manage) && { label: $t('setting'), clickEvent: () => toRepoConfig(row) },
                             (row.repoType !== 'generic' ||
                                 (row.repoType === 'generic'
                                     && row.name !== 'custom'
@@ -125,7 +127,7 @@
         limitList: [10, 20, 40]
     }
     export default {
-        name: 'repoList',
+        name: 'RepoList',
         components: { OperationList, createRepoDialog, iamDenyDialog, genericCleanDialog },
         data () {
             return {
@@ -442,6 +444,26 @@
                 } else {
                     this.$refs.genericCleanDialog.date = beforeYears(1)
                 }
+            },
+            creatNoPermission () {
+                this.getPermissionUrl({
+                    body: {
+                        projectId: this.projectId,
+                        action: 'MANAGE',
+                        resourceType: 'PROJECT',
+                        uid: this.userInfo.name
+                    }
+                }).then(res => {
+                    if (res !== '' && res !== null) {
+                        this.showIamDenyDialog = true
+                        this.showData = {
+                            projectId: this.projectId,
+                            action: 'MANAGE',
+                            repoName: '',
+                            url: res
+                        }
+                    }
+                })
             }
         }
     }
@@ -460,6 +482,11 @@
         ::v-deep .bk-tooltip-ref {
             display: block;
         }
+    }
+    .no-permission-button {
+        background: #dcdee5 !important;
+        border-color: #dcdee5 !important;
+        color: #fff !important;
     }
 }
 </style>

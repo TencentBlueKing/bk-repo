@@ -125,7 +125,7 @@
             }
         },
         computed: {
-            ...mapState(['userList']),
+            ...mapState(['userList', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -140,7 +140,7 @@
         },
         methods: {
             formatDate,
-            ...mapActions(['searchPackageList', 'searchRepoList']),
+            ...mapActions(['searchPackageList', 'searchRepoList', 'getPermissionUrl']),
             refreshRoute () {
                 this.$router.replace({
                     query: {
@@ -194,6 +194,27 @@
                         this.hasNext = false
                     }
                     scrollLoad ? this.resultList.push(...records) : (this.resultList = records)
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'PROJECT',
+                                uid: this.userInfo.name
+                            }
+                        }).then(res => {
+                            if (res !== '' && res !== null) {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: '',
+                                    action: 'READ',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
