@@ -73,6 +73,7 @@
             <empty-data v-else :is-loading="isLoading" class="flex-1" ex-style="align-self:start;margin-top:130px;"></empty-data>
         </main>
         <generic-detail ref="genericDetail"></generic-detail>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
     </div>
 </template>
@@ -86,9 +87,10 @@
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
     import { repoEnum } from '@repository/store/publicEnum'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     export default {
-        name: 'repoSearch',
-        components: { repoTree, packageCard, InfiniteScroll, typeSelect, genericDetail, genericShareDialog },
+        name: 'RepoSearch',
+        components: { iamDenyDialog, repoTree, packageCard, InfiniteScroll, typeSelect, genericDetail, genericShareDialog },
         directives: {
             focus: {
                 inserted (el) {
@@ -121,7 +123,9 @@
                 hasNext: true,
                 focusContent: this.$t('toggle'),
                 repoNames: [],
-                init: false
+                init: false,
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {

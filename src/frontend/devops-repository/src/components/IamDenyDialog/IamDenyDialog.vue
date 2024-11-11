@@ -1,5 +1,5 @@
 <template>
-    <bk-dialog v-model="showIamDenyDialog" :visible.sync="showIamDenyDialog" :before-close="close" style="text-align: center">
+    <bk-dialog v-model="showIamDenyDialog" :visible.sync="showIamDenyDialog" :before-close="close" width="768px" style="text-align: center">
         <img src="/ui/no-permission.svg" />
         <p>{{ $t('iamTip') }}</p>
         <bk-table
@@ -91,14 +91,3 @@
         }
     }
 </script>
-
-<style lang="scss" scoped>
-::v-deep .bk-dialog {
-    width: 768px !important;
-}
-
-::v-deep .bk-dialog-wrapper .bk-dialog-content.bk-dialog-content-drag{
-    width: 768px !important;
-}
-
-</style>
