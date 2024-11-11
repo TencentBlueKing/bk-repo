@@ -160,7 +160,7 @@
                                 repoName: this.repoName
                             }
                         }).then(res => {
-                            if (res !== '') {
+                            if (res !== '' && res !== null) {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,
@@ -203,7 +203,7 @@
                                 path: this.genericForm.path
                             }
                         }).then(res => {
-                            if (res !== '') {
+                            if (res !== '' && res !== null) {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,
@@ -248,7 +248,7 @@
                                 path: this.genericForm.path
                             }
                         }).then(res => {
-                            if (res !== '') {
+                            if (res !== '' && res !== null) {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,

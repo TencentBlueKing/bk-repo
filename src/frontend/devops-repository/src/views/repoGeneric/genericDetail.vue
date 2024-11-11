@@ -202,7 +202,7 @@
                                 path: this.detailSlider.path
                             }
                         }).then(res => {
-                            if (res !== '') {
+                            if (res !== '' && res !== null) {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,
