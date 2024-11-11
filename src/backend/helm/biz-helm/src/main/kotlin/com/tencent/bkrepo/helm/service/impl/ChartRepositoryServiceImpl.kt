@@ -305,7 +305,7 @@ class ChartRepositoryServiceImpl(
                             helmProperties.domain, "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
                         )
                     )
-                    chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
+                    chartMetadata.created = TimeFormatUtil.convertToUtcTime(it[NODE_CREATE_DATE] as LocalDateTime)
                     chartMetadata.digest = it[NODE_SHA256] as String
                     ChartParserUtil.addIndexEntries(indexYamlMetadata, chartMetadata)
                 } catch (ex: HelmFileNotFoundException) {

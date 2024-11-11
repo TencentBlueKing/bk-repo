@@ -52,8 +52,6 @@ allprojects {
         }
         dependencies {
             dependency("com.github.zafarkhaja:java-semver:${Versions.JavaSemver}")
-            dependency("org.apache.skywalking:apm-toolkit-logback-1.x:${Versions.SkyWalkingApmToolkit}")
-            dependency("org.apache.skywalking:apm-toolkit-trace:${Versions.SkyWalkingApmToolkit}")
             dependency("net.javacrumbs.shedlock:shedlock-spring:${Versions.Shedlock}")
             dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:${Versions.Shedlock}")
             dependency("com.google.code.gson:gson:${Versions.Gson}")
