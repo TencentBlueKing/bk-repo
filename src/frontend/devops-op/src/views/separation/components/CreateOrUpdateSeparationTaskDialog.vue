@@ -69,100 +69,103 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item
-        v-if="showType !== 'GENERIC'"
-        v-for="(item,index) in task.content.packages"
-        :key="index"
-        prop="packages"
-      >
-        <span>包kEY：</span>
-        <el-input
-          v-model="item.packageKey"
-          placeholder="请输入"
-          style="height: 40px; width: 120px"
-          min="0"
-        />
-        <span style="margin-left: 10px">包kEY正则：</span>
-        <el-input
-          v-model="item.packageKeyRegex"
-          placeholder="请输入"
-          style="height: 40px; width: 120px"
-          min="0"
-        />
-        <span style="margin-left: 10px">包版本：</span>
-        <el-input
-          v-model="item.versionList"
-          placeholder="请输入数据，按逗号分隔"
-          style="height: 40px; width: 200px"
-          min="0"
-          @change="versionChange(index)"
-        />
-        <span style="margin-left: 10px">包版本正则：</span>
-        <el-input
-          v-model="item.versionRegex"
-          placeholder="请输入"
-          style="height: 40px; width: 120px"
-          min="0"
-        />
-        <span style="margin-left: 10px">排除包版本：</span>
-        <el-input
-          v-model="item.excludeVersionList"
-          placeholder="请输入数据，按逗号分隔"
-          style="height: 40px; width: 200px"
-          @change="excludeVersionChange(index)"
-        />
-        <i
-          class="el-icon-circle-close"
-          style="color: red"
-          @click.prevent="removeDomain(item)"
-        />
-        <i
-          v-if="index == task.content.packages.length - 1"
-          class="el-icon-circle-plus-outline"
-          style="margin: 0px 20px"
-          @click.prevent="addDomain()"
-        />
-      </el-form-item>
-      <el-form-item
-        v-if="showType === 'GENERIC' || showType === 'DDC'"
-        v-for="(item,index) in task.content.paths"
-        :key="'path'+ index"
-        prop="paths"
-      >
-        <span>路径：</span>
-        <el-input
-          v-model="item.path"
-          placeholder="请输入"
-          style="height: 40px; width: 120px"
-          min="0"
-        />
-        <span style="margin-left: 10px">路径正则：</span>
-        <el-input
-          v-model="item.pathRegex"
-          placeholder="请输入"
-          style="height: 40px; width: 120px"
-          min="0"
-        />
-        <span style="margin-left: 10px">排除路径：</span>
-        <el-input
-          v-model="item.excludePathList"
-          placeholder="请输入数据，按逗号分隔"
-          style="height: 40px; width: 200px"
-          min="0"
-          @change="excludePathChange(index)"
-        />
-        <i
-          class="el-icon-circle-close"
-          style="color: red"
-          @click.prevent="removeNodeDomain(item)"
-        />
-        <i
-          v-if="index === task.content.paths.length - 1"
-          class="el-icon-circle-plus-outline"
-          style="margin: 0px 20px"
-          @click.prevent="addNodeDomain()"
-        />
-      </el-form-item>
+      <div v-if="showType !== 'GENERIC'&& showType !== 'DDC'">
+        <el-form-item
+          v-for="(item,index) in task.content.packages"
+          :key="index"
+          prop="packages"
+        >
+          <span>包kEY：</span>
+          <el-input
+            v-model="item.packageKey"
+            placeholder="请输入"
+            style="height: 40px; width: 120px"
+            min="0"
+          />
+          <span style="margin-left: 10px">包kEY正则：</span>
+          <el-input
+            v-model="item.packageKeyRegex"
+            placeholder="请输入"
+            style="height: 40px; width: 120px"
+            min="0"
+          />
+          <span style="margin-left: 10px">包版本：</span>
+          <el-input
+            v-model="item.versionList"
+            placeholder="请输入数据，按逗号分隔"
+            style="height: 40px; width: 200px"
+            min="0"
+            @change="versionChange(index)"
+          />
+          <span style="margin-left: 10px">包版本正则：</span>
+          <el-input
+            v-model="item.versionRegex"
+            placeholder="请输入"
+            style="height: 40px; width: 120px"
+            min="0"
+          />
+          <span style="margin-left: 10px">排除包版本：</span>
+          <el-input
+            v-model="item.excludeVersionList"
+            placeholder="请输入数据，按逗号分隔"
+            style="height: 40px; width: 200px"
+            @change="excludeVersionChange(index)"
+          />
+          <i
+            class="el-icon-circle-close"
+            style="color: red"
+            @click.prevent="removeDomain(item)"
+          />
+          <i
+            v-if="index == task.content.packages.length - 1"
+            class="el-icon-circle-plus-outline"
+            style="margin: 0px 20px"
+            @click.prevent="addDomain()"
+          />
+        </el-form-item>
+      </div>
+      <div v-else>
+        <el-form-item
+          v-if="showType === 'GENERIC' || showType === 'DDC'"
+          v-for="(item,index) in task.content.paths"
+          :key="'path'+ index"
+          prop="paths"
+        >
+          <span>路径：</span>
+          <el-input
+            v-model="item.path"
+            placeholder="请输入"
+            style="height: 40px; width: 120px"
+            min="0"
+          />
+          <span style="margin-left: 10px">路径正则：</span>
+          <el-input
+            v-model="item.pathRegex"
+            placeholder="请输入"
+            style="height: 40px; width: 120px"
+            min="0"
+          />
+          <span style="margin-left: 10px">排除路径：</span>
+          <el-input
+            v-model="item.excludePathList"
+            placeholder="请输入数据，按逗号分隔"
+            style="height: 40px; width: 200px"
+            min="0"
+            @change="excludePathChange(index)"
+          />
+          <i
+            class="el-icon-circle-close"
+            style="color: red"
+            @click.prevent="removeNodeDomain(item)"
+          />
+          <i
+            v-if="index === task.content.paths.length - 1"
+            class="el-icon-circle-plus-outline"
+            style="margin: 0px 20px"
+            @click.prevent="addNodeDomain()"
+          />
+        </el-form-item>
+      </div>
     </el-form>
     <div slot="footer">
       <el-button @click="close">取 消</el-button>
