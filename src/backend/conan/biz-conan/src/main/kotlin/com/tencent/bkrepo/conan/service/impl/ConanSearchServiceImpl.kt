@@ -59,7 +59,6 @@ class ConanSearchServiceImpl : ConanSearchService {
         pattern: String?,
         ignoreCase: Boolean
     ): ConanSearchResult {
-        // TODO 需要对pattern进行校验， -q parameter only allowed with a valid recipe reference, not with a pattern
         val recipes = searchRecipes(projectId, repoName, pattern, ignoreCase)
         if (recipes.isEmpty()) {
             throw ConanSearchNotFoundException(

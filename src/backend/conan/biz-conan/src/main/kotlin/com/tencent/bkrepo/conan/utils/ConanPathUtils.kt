@@ -96,19 +96,6 @@ object ConanPathUtils {
         }
     }
 
-    fun buildReference(fileReference: ConanFileReference): String {
-        with(fileReference) {
-            return StringBuilder(userName)
-                .append(CharPool.SLASH)
-                .append(version)
-                .append(CharPool.AT)
-                .append(name)
-                .append(CharPool.SLASH)
-                .append(channel)
-                .toString()
-        }
-    }
-
     fun buildReferenceWithoutVersion(fileReference: ConanFileReference): String {
         with(fileReference) {
             return StringBuilder(userName)
@@ -122,7 +109,7 @@ object ConanPathUtils {
 
     fun buildPackageReference(packageReference: PackageReference): String {
         with(packageReference) {
-            return StringBuilder(buildReference(conRef))
+            return StringBuilder(buildConanFileName(conRef))
                 .append(CharPool.HASH_TAG)
                 .append(conRef.revision)
                 .append(CharPool.COLON)

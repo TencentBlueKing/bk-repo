@@ -46,13 +46,17 @@ import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.CONAN_PACKAGE_DELETE_URL
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.CONAN_VERSION_DELETE_URL
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.CONAN_VERSION_DETAIL
+import com.tencent.bkrepo.conan.pojo.request.IndexRefreshRequest
 import com.tencent.bkrepo.conan.service.ConanDeleteService
+import com.tencent.bkrepo.conan.service.ConanExtService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -63,6 +67,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/ext")
 class UserConanController(
     private val conanDeleteService: ConanDeleteService,
+    private val conanExtService: ConanExtService
 ) {
 
     @ApiOperation("查询包的版本详情")
@@ -148,5 +153,38 @@ class UserConanController(
     @GetMapping("/address")
     fun getRegistryDomain(): Response<ConanDomainInfo> {
         return ResponseBuilder.success(conanDeleteService.getDomain())
+    }
+
+    @ApiOperation("仓库索引修正")
+    @PostMapping("/repo/index/refresh/{projectId}/{repoName}")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    fun repoIndexRefresh(
+        @ArtifactPathVariable artifactInfo: ConanArtifactInfo,
+    ): Response<PackageVersionInfo> {
+        conanExtService.indexRefreshForRepo(artifactInfo.projectId, artifactInfo.repoName)
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("recipe索引修正")
+    @PostMapping("/recipe/index/refresh/{projectId}/{repoName}")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    fun repoIndexRefresh(
+        @ArtifactPathVariable artifactInfo: ConanArtifactInfo,
+        @RequestBody request: IndexRefreshRequest
+    ): Response<PackageVersionInfo> {
+        conanExtService.indexRefreshForRecipe(artifactInfo.projectId, artifactInfo.repoName, request)
+        return ResponseBuilder.success()
+    }
+
+
+    @ApiOperation("packagekey下索引修正")
+    @PostMapping("/packagekey/index/refresh/{projectId}/{repoName}")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    fun recipeIndexRefresh(
+        @ArtifactPathVariable artifactInfo: ConanArtifactInfo,
+        @RequestParam packageKey: String,
+    ): Response<PackageVersionInfo> {
+        conanExtService.indexRefreshByPackageKey(artifactInfo.projectId, artifactInfo.repoName, packageKey)
+        return ResponseBuilder.success()
     }
 }
