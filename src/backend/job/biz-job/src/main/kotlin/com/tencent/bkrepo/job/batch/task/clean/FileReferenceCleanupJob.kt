@@ -149,8 +149,13 @@ class FileReferenceCleanupJob(
                 logger.info("Mock delete $sha256 on $credentialsKey.")
                 return
             }
-            var successToDeleted = cleanupRelatedResources(sha256, credentialsKey)
+
+            // 删除文件
+            var successToDeleted = false
             val existsRefOfMappingStorage = existsRefOfMappingStorage(row, collectionName)
+            if (!existsRefOfMappingStorage) {
+                successToDeleted = cleanupRelatedResources(sha256, credentialsKey)
+            }
             if (!existsRefOfMappingStorage && storageService.exist(sha256, storageCredentials)) {
                 storageService.delete(sha256, storageCredentials)
                 successToDeleted = true
