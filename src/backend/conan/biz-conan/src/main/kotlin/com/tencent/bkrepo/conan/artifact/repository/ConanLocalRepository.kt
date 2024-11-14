@@ -41,8 +41,11 @@ import com.tencent.bkrepo.conan.constant.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.conan.listener.event.ConanPackageUploadEvent
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeUploadEvent
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
+import com.tencent.bkrepo.conan.pojo.metadata.ConanMetadataRequest
+import com.tencent.bkrepo.conan.service.ConanMetadataService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanPathUtils
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.generateFullPath
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildDownloadResponse
@@ -55,10 +58,14 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 class ConanLocalRepository : LocalRepository() {
+
+    @Autowired
+    lateinit var conanMetadataService: ConanMetadataService
 
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         with(context) {
@@ -134,6 +141,16 @@ class ConanLocalRepository : LocalRepository() {
         packageService.createPackageVersion(packageVersionCreateRequest).apply {
             logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
         }
+        val request = ConanMetadataRequest(
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            name = artifactInfo.name,
+            version = artifactInfo.version,
+            user = artifactInfo.userName,
+            channel = artifactInfo.channel,
+            recipe = buildConanFileName(convertToConanFileReference(artifactInfo))
+        )
+        conanMetadataService.storeMetadata(request)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {

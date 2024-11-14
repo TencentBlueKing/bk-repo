@@ -45,9 +45,11 @@ import com.tencent.bkrepo.conan.pojo.ConanDomainInfo
 import com.tencent.bkrepo.conan.pojo.PackageVersionInfo
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanDeleteService
+import com.tencent.bkrepo.conan.service.ConanMetadataService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
 import com.tencent.bkrepo.conan.utils.ConanPathUtils
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildExportFolderPath
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageFolderPath
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageIdFolderPath
@@ -71,9 +73,14 @@ import org.springframework.stereotype.Service
 class ConanDeleteServiceImpl : ConanDeleteService {
 
     @Autowired
+    lateinit var conanMetadataService: ConanMetadataService
+
+    @Autowired
     lateinit var nodeService: NodeService
+
     @Autowired
     lateinit var packageService: PackageService
+
     @Autowired
     lateinit var commonService: CommonService
 
@@ -88,6 +95,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                 val refStr = ConanPathUtils.buildReferenceWithoutVersion(conanFileReference)
                 val packageKey = PackageKeys.ofConan(refStr)
                 packageService.deleteVersion(projectId, repoName, packageKey, version)
+                conanMetadataService.delete(projectId, repoName, buildConanFileName(conanFileReference))
             } else {
                 val conanFileReference = convertToConanFileReference(conanArtifactInfo, revision)
                 val rootPath = PathUtils.normalizeFullPath(buildRevisionPath(conanFileReference))
@@ -221,6 +229,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
         logger.info("Will delete folder $rootPath in repo $projectId|$repoName")
         val request = NodeDeleteRequest(projectId, repoName, rootPath, SecurityUtils.getUserId())
         nodeService.deleteNode(request)
+        conanMetadataService.delete(projectId, repoName, buildConanFileName(conanFileReference))
         if (deleteVersion) {
             packageService.deleteVersion(projectId, repoName, packageKey, versionDetail.name)
         }

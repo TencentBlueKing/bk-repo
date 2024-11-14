@@ -51,8 +51,8 @@ import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageReference
-import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildReference
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildReferenceWithoutVersion
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getRecipeRevisionsFile
@@ -147,7 +147,7 @@ object ObjectBuildUtil {
         with(artifactInfo) {
             val conanFileReference = convertToConanFileReference(this)
             val revPath = getRecipeRevisionsFile(conanFileReference)
-            val refStr = buildReference(conanFileReference)
+            val refStr = buildConanFileName(conanFileReference)
             return ConanRecipeUploadRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -167,7 +167,7 @@ object ObjectBuildUtil {
         with(artifactInfo) {
             val packageReference = convertToPackageReference(this)
             val revPath = getRecipeRevisionsFile(packageReference.conRef)
-            val refStr = buildReference(packageReference.conRef)
+            val refStr = buildConanFileName(packageReference.conRef)
             val pRevPath = getPackageRevisionsFile(packageReference)
             val pRefStr = buildPackageReference(packageReference)
             return ConanPackageUploadRequest(
@@ -192,7 +192,7 @@ object ObjectBuildUtil {
         with(artifactInfo) {
             val packageReference = convertToConanFileReference(this)
             val revPath = getRecipeRevisionsFile(packageReference)
-            val refStr = buildReference(packageReference)
+            val refStr = buildConanFileName(packageReference)
             return ConanRecipeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -213,7 +213,7 @@ object ObjectBuildUtil {
         with(artifactInfo) {
             val packageReference = PackageReference(convertToConanFileReference(artifactInfo), packageId, pRevision)
             val revPath = getRecipeRevisionsFile(packageReference.conRef)
-            val refStr = buildReference(packageReference.conRef)
+            val refStr = buildConanFileName(packageReference.conRef)
             val pRevPath = getPackageRevisionsFile(packageReference)
             val pRefStr = buildPackageReference(packageReference)
             return ConanPackageDeleteRequest(
@@ -236,7 +236,7 @@ object ObjectBuildUtil {
         with(artifactInfo) {
             val packageReference = convertToPackageReference(this)
             val revPath = getRecipeRevisionsFile(packageReference.conRef)
-            val refStr = buildReference(packageReference.conRef)
+            val refStr = buildConanFileName(packageReference.conRef)
             val pRevPath = getPackageRevisionsFile(packageReference)
             val pRefStr = buildPackageReference(packageReference)
             return ConanPackageDeleteRequest(

@@ -39,9 +39,9 @@ import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
 import com.tencent.bkrepo.conan.service.ConanService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackagePath
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageReference
-import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildReference
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -66,7 +66,7 @@ class ConanServiceImpl : ConanService {
             }
             if (urls.isEmpty())
                 throw ConanRecipeNotFoundException(
-                    ConanMessageCode.CONAN_RECIPE_NOT_FOUND, buildReference(conanFileReference)
+                    ConanMessageCode.CONAN_RECIPE_NOT_FOUND, buildConanFileName(conanFileReference)
                 )
             return urls
         }
@@ -83,7 +83,7 @@ class ConanServiceImpl : ConanService {
             )
             if (urls.isEmpty())
                 throw ConanRecipeNotFoundException(
-                    ConanMessageCode.CONAN_RECIPE_NOT_FOUND, "${buildReference(packageReference.conRef)}/$packageId"
+                    ConanMessageCode.CONAN_RECIPE_NOT_FOUND, "${buildConanFileName(packageReference.conRef)}/$packageId"
                 )
             return urls
         }
@@ -153,7 +153,7 @@ class ConanServiceImpl : ConanService {
             commonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
             return commonService.getLastRevision(projectId, repoName, conanFileReference)
                 ?: throw ConanFileNotFoundException(
-                    ConanMessageCode.CONAN_FILE_NOT_FOUND, buildReference(conanFileReference), getRepoIdentify()
+                    ConanMessageCode.CONAN_FILE_NOT_FOUND, buildConanFileName(conanFileReference), getRepoIdentify()
                 )
         }
     }
