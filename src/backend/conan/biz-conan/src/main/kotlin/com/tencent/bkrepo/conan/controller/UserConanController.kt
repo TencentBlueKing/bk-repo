@@ -197,4 +197,27 @@ class UserConanController(
         conanExtService.metadataRefresh(artifactInfo.projectId, artifactInfo.repoName)
         return ResponseBuilder.success()
     }
+
+    @ApiOperation("重新生成包元数据信息")
+    @PostMapping("/metadata/package/refresh/{projectId}/{repoName}")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    fun packageMetadataRefresh(
+        @ArtifactPathVariable artifactInfo: ConanArtifactInfo,
+        @RequestParam packageKey: String,
+    ): Response<Void> {
+        conanExtService.packageMetadataRefresh(artifactInfo.projectId, artifactInfo.repoName, packageKey)
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("重新生成版本元数据信息")
+    @PostMapping("/metadata/version/refresh/{projectId}/{repoName}")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    fun versionMetadataRefresh(
+        @ArtifactPathVariable artifactInfo: ConanArtifactInfo,
+        @RequestParam packageKey: String,
+        @RequestParam version: String,
+    ): Response<Void> {
+        conanExtService.versionMetadataRefresh(artifactInfo.projectId, artifactInfo.repoName, packageKey, version)
+        return ResponseBuilder.success()
+    }
 }

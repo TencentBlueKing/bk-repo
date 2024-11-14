@@ -101,6 +101,15 @@ class ConanExtServiceImpl : ConanExtService {
         packageSearch(projectId, repoName, false)
     }
 
+    override fun packageMetadataRefresh(projectId: String, repoName: String, packageKey: String) {
+        versionSearch(projectId, repoName, packageKey, false)
+    }
+
+    override fun versionMetadataRefresh(projectId: String, repoName: String, packageKey: String, version: String) {
+        val versionInfo = packageService.findVersionByName(projectId, repoName, packageKey, version) ?: return
+        refreshMetadataForVersion(projectId, repoName, versionInfo)
+    }
+
     private fun packageSearch(projectId: String, repoName: String, indexRefresh: Boolean) {
         // 查询包
         var pageNumber = 1

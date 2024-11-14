@@ -50,4 +50,14 @@ interface ConanExtService {
      * 刷新整个仓库元数据信息
      */
     fun metadataRefresh(projectId: String, repoName: String)
+
+    /**
+     * 刷新整个仓库元数据信息
+     */
+    fun packageMetadataRefresh(projectId: String, repoName: String, packageKey: String)
+
+    /**
+     * 刷新整个仓库元数据信息
+     */
+    fun versionMetadataRefresh(projectId: String, repoName: String, packageKey: String, version: String)
 }
