@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @FeignClient(MAVEN_SERVICE_NAME, contextId = "ConanMetadataClient")
-@RequestMapping("/service/metadata")
+@RequestMapping("/cluster/metadata")
 interface ConanMetadataClient {
     @ApiOperation("存储conan版本元数据")
     @PostMapping("/update")
