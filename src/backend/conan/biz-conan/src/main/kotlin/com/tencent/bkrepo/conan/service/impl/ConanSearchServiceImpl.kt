@@ -59,7 +59,8 @@ class ConanSearchServiceImpl : ConanSearchService {
         pattern: String?,
         ignoreCase: Boolean
     ): ConanSearchResult {
-        val recipes = searchRecipes(projectId, repoName, pattern, ignoreCase)
+        val realPattern = pattern?.replace("*", ".*")
+        val recipes = searchRecipes(projectId, repoName, realPattern, ignoreCase)
         if (recipes.isEmpty()) {
             throw ConanSearchNotFoundException(
                 ConanMessageCode.CONAN_SEARCH_NOT_FOUND,

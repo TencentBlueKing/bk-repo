@@ -15,12 +15,11 @@ class ConanMetadataDao : SimpleMongoDao<TConanMetadataRecord>() {
     fun findAndModify(request: ConanMetadataRequest) {
         with(request) {
             val query = Query(buildCriteria(projectId, repoName, recipe))
-            val options = FindAndModifyOptions().upsert(true)
             val update = Update().set(TConanMetadataRecord::name.name, name)
                 .set(TConanMetadataRecord::user.name, user)
                 .set(TConanMetadataRecord::version.name, version)
                 .set(TConanMetadataRecord::channel.name, channel)
-            determineMongoTemplate().findAndModify(query, update, options, TConanMetadataRecord::class.java)
+            upsert(query, update)
         }
     }
 

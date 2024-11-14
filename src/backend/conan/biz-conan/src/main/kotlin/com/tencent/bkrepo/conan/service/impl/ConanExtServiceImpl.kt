@@ -40,10 +40,12 @@ import com.tencent.bkrepo.conan.pojo.request.IndexRefreshRequest
 import com.tencent.bkrepo.conan.service.ConanExtService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getRecipeRevisionsFile
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
+import com.tencent.bkrepo.conan.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -52,6 +54,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @Service
 class ConanExtServiceImpl : ConanExtService {
@@ -135,6 +139,33 @@ class ConanExtServiceImpl : ConanExtService {
             artifactInfo.revision = it.first
             refreshIndexForRecipeRevision(artifactInfo)
         }
+        val reference = buildConanFileName(conanFileReference)
+        storeIndex(reference, artifactInfo.projectId, artifactInfo.repoName, revPath, revisionsList)
+    }
+
+    private fun storeIndex(
+        reference: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        revisionsList: List<Pair<String, String>>
+    ) {
+        try {
+            val indexInfo = IndexInfo(reference = reference)
+            revisionsList.forEach {
+                val date = LocalDateTime.parse(it.second, DateTimeFormatter.ISO_DATE_TIME)
+                indexInfo.addRevision(RevisionInfo(it.first, TimeFormatUtil.convertToUtcTime(date)))
+            }
+            commonService.uploadIndexJson(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                indexInfo = indexInfo
+            )
+        } catch (e: Exception) {
+            logger.warn("store index $fullPath in $projectId|$repoName error: ${e.message}")
+        }
+
     }
 
 
@@ -142,7 +173,7 @@ class ConanExtServiceImpl : ConanExtService {
      * 更新recipe下指定revision下的所有index文件
      */
     private fun refreshIndexForRecipeRevision(artifactInfo: ConanArtifactInfo) {
-        val conanFileReference = convertToConanFileReference(artifactInfo)
+        val conanFileReference = convertToConanFileReference(artifactInfo, artifactInfo.revision)
         val revPath = PathUtils.normalizeFullPath(getPackageRevisionsFile(conanFileReference))
         val revisionsList = mutableListOf<Pair<String, String>>()
         revisionsList.addAll(listSubFolder(artifactInfo.projectId, artifactInfo.repoName, revPath))
@@ -163,16 +194,8 @@ class ConanExtServiceImpl : ConanExtService {
             val pRevPathPrefix = pRevPath.removeSuffix(INDEX_JSON)
             val revisionsList = mutableListOf<Pair<String, String>>()
             revisionsList.addAll(listSubFolder(artifactInfo.projectId, artifactInfo.repoName, pRevPathPrefix))
-            val conanFileReference = convertToConanFileReference(artifactInfo)
-            val reference = buildConanFileName(conanFileReference)
-            val indexInfo = IndexInfo(reference = reference)
-            revisionsList.forEach { indexInfo.addRevision(RevisionInfo(it.first, it.second)) }
-            commonService.uploadIndexJson(
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
-                fullPath = pRevPath,
-                indexInfo = indexInfo
-            )
+            val reference = ConanPathUtils.buildPackageReference(packageReference)
+            storeIndex(reference, artifactInfo.projectId, artifactInfo.repoName, pRevPath, revisionsList)
         } catch (e: Exception) {
             logger.warn("refresh index for $artifactInfo error: ${e.message}")
         }
