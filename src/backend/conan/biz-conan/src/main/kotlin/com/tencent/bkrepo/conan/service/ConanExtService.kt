@@ -46,4 +46,8 @@ interface ConanExtService {
      */
     fun indexRefreshForRecipe(projectId: String, repoName: String, request: IndexRefreshRequest)
 
+    /**
+     * 刷新整个仓库元数据信息
+     */
+    fun metadataRefresh(projectId: String, repoName: String)
 }

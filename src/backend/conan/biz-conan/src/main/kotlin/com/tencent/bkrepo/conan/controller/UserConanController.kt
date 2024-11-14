@@ -168,10 +168,10 @@ class UserConanController(
     @ApiOperation("recipe索引修正")
     @PostMapping("/recipe/index/refresh/{projectId}/{repoName}")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun repoIndexRefresh(
+    fun recipeIndexRefresh(
         @ArtifactPathVariable artifactInfo: ConanArtifactInfo,
         @RequestBody request: IndexRefreshRequest
-    ): Response<PackageVersionInfo> {
+    ): Response<Void> {
         conanExtService.indexRefreshForRecipe(artifactInfo.projectId, artifactInfo.repoName, request)
         return ResponseBuilder.success()
     }
@@ -180,11 +180,21 @@ class UserConanController(
     @ApiOperation("packagekey下索引修正")
     @PostMapping("/packagekey/index/refresh/{projectId}/{repoName}")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun recipeIndexRefresh(
+    fun packageKeyIndexRefresh(
         @ArtifactPathVariable artifactInfo: ConanArtifactInfo,
         @RequestParam packageKey: String,
-    ): Response<PackageVersionInfo> {
+    ): Response<Void> {
         conanExtService.indexRefreshByPackageKey(artifactInfo.projectId, artifactInfo.repoName, packageKey)
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("重新生成仓库元数据信息")
+    @PostMapping("/metadata/refresh/{projectId}/{repoName}")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
+    fun metadataRefresh(
+        @ArtifactPathVariable artifactInfo: ConanArtifactInfo,
+    ): Response<Void> {
+        conanExtService.metadataRefresh(artifactInfo.projectId, artifactInfo.repoName)
         return ResponseBuilder.success()
     }
 }

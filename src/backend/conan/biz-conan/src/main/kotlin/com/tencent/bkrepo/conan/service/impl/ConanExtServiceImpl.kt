@@ -36,8 +36,10 @@ import com.tencent.bkrepo.conan.constant.INDEX_JSON
 import com.tencent.bkrepo.conan.pojo.IndexInfo
 import com.tencent.bkrepo.conan.pojo.RevisionInfo
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
+import com.tencent.bkrepo.conan.pojo.metadata.ConanMetadataRequest
 import com.tencent.bkrepo.conan.pojo.request.IndexRefreshRequest
 import com.tencent.bkrepo.conan.service.ConanExtService
+import com.tencent.bkrepo.conan.service.ConanMetadataService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToPackageReference
 import com.tencent.bkrepo.conan.utils.ConanPathUtils
@@ -69,30 +71,15 @@ class ConanExtServiceImpl : ConanExtService {
     @Autowired
     lateinit var commonService: CommonService
 
+    @Autowired
+    lateinit var conanMetadataService: ConanMetadataService
+
     override fun indexRefreshForRepo(projectId: String, repoName: String) {
-        // 查询包
-        var pageNumber = 1
-        var packageOption = PackageListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
-        var packagePage = packageService.listPackagePage(projectId, repoName, option = packageOption)
-        while (packagePage.records.isNotEmpty()) {
-            packagePage.records.forEach { pkg -> indexRefreshByPackageKey(projectId, repoName, pkg.key) }
-            pageNumber += 1
-            packageOption = PackageListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
-            packagePage = packageService.listPackagePage(projectId, repoName, option = packageOption)
-        }
+        packageSearch(projectId, repoName, true)
     }
 
     override fun indexRefreshByPackageKey(projectId: String, repoName: String, key: String) {
-        // 查询包
-        var pageNumber = 1
-        var versionOption = VersionListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
-        var versionPage = packageService.listVersionPage(projectId, repoName, key, option = versionOption)
-        while (versionPage.records.isNotEmpty()) {
-            versionPage.records.forEach { ver -> indexRefreshByVersion(projectId, repoName, ver) }
-            pageNumber += 1
-            versionOption = VersionListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
-            versionPage = packageService.listVersionPage(projectId, repoName, key, option = versionOption)
-        }
+        versionSearch(projectId, repoName, key, true)
     }
 
     override fun indexRefreshForRecipe(projectId: String, repoName: String, request: IndexRefreshRequest) {
@@ -107,6 +94,60 @@ class ConanExtServiceImpl : ConanExtService {
                     refreshIndexForRecipePackage(artifactInfo)
                 }
             }
+        }
+    }
+
+    override fun metadataRefresh(projectId: String, repoName: String) {
+        packageSearch(projectId, repoName, false)
+    }
+
+    private fun packageSearch(projectId: String, repoName: String, indexRefresh: Boolean) {
+        // 查询包
+        var pageNumber = 1
+        var packageOption = PackageListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
+        var packagePage = packageService.listPackagePage(projectId, repoName, option = packageOption)
+        while (packagePage.records.isNotEmpty()) {
+            packagePage.records.forEach { pkg -> versionSearch(projectId, repoName, pkg.key, indexRefresh) }
+            pageNumber += 1
+            packageOption = PackageListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
+            packagePage = packageService.listPackagePage(projectId, repoName, option = packageOption)
+        }
+    }
+
+    private fun versionSearch(projectId: String, repoName: String, key: String, indexRefresh: Boolean) {
+        // 查询包
+        var pageNumber = 1
+        var versionOption = VersionListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
+        var versionPage = packageService.listVersionPage(projectId, repoName, key, option = versionOption)
+        while (versionPage.records.isNotEmpty()) {
+            versionPage.records.forEach {
+                if (indexRefresh) {
+                    indexRefreshByVersion(projectId, repoName, it)
+                } else {
+                    refreshMetadataForVersion(projectId, repoName, it)
+                }
+            }
+            pageNumber += 1
+            versionOption = VersionListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
+            versionPage = packageService.listVersionPage(projectId, repoName, key, option = versionOption)
+        }
+    }
+
+    private fun refreshMetadataForVersion(projectId: String, repoName: String, version: PackageVersion) {
+        val conanFileReference = version.packageMetadata.toConanFileReference() ?: return
+        val request = ConanMetadataRequest(
+            projectId = projectId,
+            repoName = repoName,
+            name = conanFileReference.name,
+            version = conanFileReference.version,
+            user = conanFileReference.userName,
+            channel = conanFileReference.channel,
+            recipe = buildConanFileName(conanFileReference)
+        )
+        try {
+            conanMetadataService.storeMetadata(request)
+        } catch (e: Exception) {
+            logger.warn("metadata refresh for $conanFileReference in $projectId|$repoName error: ${e.message}")
         }
     }
 
