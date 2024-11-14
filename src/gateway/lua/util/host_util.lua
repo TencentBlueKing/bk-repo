@@ -128,18 +128,13 @@ function _M:get_addr(service_name)
     local service_in_local = config.service_in_local
     if internal_ip ~= nil and service_in_local ~= nil and string.find(service_in_local, service_name) ~= nil then
         local service_ip = string.gsub(internal_ip, "\n", "")
-        ngx.log(ngx.ERR, service_in_local)
-        for k, v in ipairs(ips) do
-            if v == service_ip then
-                return "127.0.0.1:" .. port
-            end
+        if arrayUtil:isInArray(service_ip, ips) then
+            return "127.0.0.1:" .. port
         end
     end
 
     -- return ip,port address
-    return ips[math.random(table.getn(ips)
-    )
-    ] .. ":" .. port
+    return ips[math.random(table.getn(ips))] .. ":" .. port
 
 end
 
