@@ -8,7 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Document
 @CompoundIndexes(
     CompoundIndex(
         name = "unique_index",
-        def = "{'projectId':1, 'repoName':1, 'recipe':1",
+        def = "{'projectId':1, 'repoName':1, 'recipe':1}",
         background = true,
         unique = true
     )
