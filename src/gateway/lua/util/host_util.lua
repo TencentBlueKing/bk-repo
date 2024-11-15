@@ -21,7 +21,7 @@ local _M = {}
 
 --[[获取微服务真实地址]]
 function _M:get_addr(service_name)
-    
+
     local service_prefix = config.service_prefix
 
     if service_prefix == nil then
@@ -32,9 +32,9 @@ function _M:get_addr(service_name)
     if ngx.var.name_space ~= "" then
         return service_prefix .. service_name .. "." .. ngx.var.name_space .. ".svc.cluster.local"
     end
-    
+
     -- boot assembly部署
-    if config.service_name ~= nil and config.service_name ~= ""  then
+    if config.service_name ~= nil and config.service_name ~= "" then
         local domains = stringUtil:split(config.bkrepo.domain, ";")
         return domains[math.random(1, #domains)]
     end
@@ -122,6 +122,14 @@ function _M:get_addr(service_name)
 
         for ip in string.gmatch(ips_str, "([^,]+)") do
             table.insert(ips, ip)
+        end
+    end
+    -- return with local service
+    local service_in_local = config.service_in_local
+    if internal_ip ~= nil and service_in_local ~= nil and string.find(service_in_local, service_name) ~= nil then
+        local service_ip = string.gsub(internal_ip, "\n", "")
+        if arrayUtil:isInArray(service_ip, ips) then
+            return "127.0.0.1:" .. port
         end
     end
 

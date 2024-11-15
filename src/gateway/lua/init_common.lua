@@ -36,6 +36,11 @@ hostUtil = require("util.host_util")
 math.randomseed(os.time())
 uuid.seed()
 
+local handle = io.popen("/sbin/ifconfig eth1 | grep 'inet ' | awk '{print $2}'")
+local ip = handle:read("*a")
+handle:close()
+internal_ip = ip
+
 local ok_table = {
   status = 0,
   data = true
