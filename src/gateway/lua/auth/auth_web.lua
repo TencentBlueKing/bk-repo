@@ -53,6 +53,9 @@ elseif config.auth_mode == "ticket" then
     if bk_ticket == nil then
         bk_ticket = ngx.var.http_x_devops_bk_ticket
         if bk_ticket == nil then
+            bk_ticket = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-ticket"]
+        end
+        if bk_ticket == nil then
             ngx.exit(401)
             return
         end

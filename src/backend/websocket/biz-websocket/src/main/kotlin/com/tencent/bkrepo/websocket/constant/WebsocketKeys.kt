@@ -29,5 +29,6 @@ package com.tencent.bkrepo.websocket.constant
 
 const val USER_ENDPOINT = "/ws/user"
 const val APP_ENDPOINT = "/ws/app"
+const val DESKTOP_ENDPOINT = "/ws/desktop"
 
 const val SESSION_ID = "sessionId"

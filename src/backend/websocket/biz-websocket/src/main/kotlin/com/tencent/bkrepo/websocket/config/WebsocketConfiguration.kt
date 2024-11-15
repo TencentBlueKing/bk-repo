@@ -30,6 +30,7 @@ package com.tencent.bkrepo.websocket.config
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.websocket.constant.APP_ENDPOINT
+import com.tencent.bkrepo.websocket.constant.DESKTOP_ENDPOINT
 import com.tencent.bkrepo.websocket.constant.USER_ENDPOINT
 import com.tencent.bkrepo.websocket.dispatch.push.TransferPush
 import com.tencent.bkrepo.websocket.handler.SessionWebSocketHandlerDecoratorFactory
@@ -68,9 +69,9 @@ class WebsocketConfiguration(
     }
 
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
-        registry.addEndpoint(USER_ENDPOINT, APP_ENDPOINT)
+        registry.addEndpoint(USER_ENDPOINT, APP_ENDPOINT, DESKTOP_ENDPOINT)
             .setAllowedOriginPatterns("*")
-        registry.addEndpoint(USER_ENDPOINT, APP_ENDPOINT)
+        registry.addEndpoint(USER_ENDPOINT, APP_ENDPOINT, DESKTOP_ENDPOINT)
             .setAllowedOriginPatterns("*")
             .withSockJS()
     }
