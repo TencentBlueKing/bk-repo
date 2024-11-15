@@ -29,6 +29,7 @@ package com.tencent.bkrepo.ddc.repository
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.ddc.model.TDdcBlob
+import com.tencent.bkrepo.ddc.utils.DdcUtils.buildRef
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -89,7 +90,7 @@ class BlobRepository : SimpleMongoDao<TDdcBlob>() {
         val criteria = Criteria
             .where(TDdcBlob::projectId.name).isEqualTo(projectId)
             .and(TDdcBlob::repoName.name).isEqualTo(repoName)
-            .and(TDdcBlob::references.name).inValues("ref/${bucket}/${refKey}")
+            .and(TDdcBlob::references.name).inValues(buildRef(bucket, refKey))
         val update = Update().pull(TDdcBlob::references.name, refKey)
         updateMulti(Query(criteria), update)
     }

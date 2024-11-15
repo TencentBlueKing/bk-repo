@@ -2,6 +2,7 @@ package com.tencent.bkrepo.ddc.repository
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.ddc.model.TDdcBlobRef
+import com.tencent.bkrepo.ddc.utils.DdcUtils.buildRef
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -34,6 +35,4 @@ class BlobRefRepository : SimpleMongoDao<TDdcBlobRef>() {
             .and(TDdcBlobRef::ref.name).isEqualTo(buildRef(bucket, refKey))
         return determineMongoTemplate().findAllAndRemove(Query(criteria), TDdcBlobRef::class.java)
     }
-
-    private fun buildRef(bucket: String, key: String): String = "ref/$bucket/$key"
 }

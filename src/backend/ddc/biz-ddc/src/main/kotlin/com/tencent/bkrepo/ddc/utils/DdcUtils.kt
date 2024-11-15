@@ -36,4 +36,6 @@ object DdcUtils {
     fun TDdcRef.fullPath() = "/$bucket/$key"
 
     fun TDdcBlob.fullPath() = "/blobs/$blobId"
+
+    fun buildRef(bucket: String, key: String): String = "ref/$bucket/$key"
 }

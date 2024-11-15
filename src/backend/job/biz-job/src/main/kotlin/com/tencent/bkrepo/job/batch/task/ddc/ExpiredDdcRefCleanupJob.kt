@@ -90,7 +90,7 @@ class ExpiredDdcRefCleanupJob(
 
     private fun removeBlobRef(row: Ref) {
         // 移除blob与ref关联关系
-        val refKey = "ref/${row.bucket}/${row.key}"
+        val refKey = buildRef(row.bucket, row.key)
         var criteria = Criteria
             .where(DdcBlobCleanupJob.BlobRef::projectId.name).isEqualTo(row.projectId)
             .and(DdcBlobCleanupJob.BlobRef::repoName.name).isEqualTo(row.repoName)
@@ -131,5 +131,9 @@ class ExpiredDdcRefCleanupJob(
     companion object {
         const val COLLECTION_NAME = "ddc_ref"
         const val COLLECTION_NAME_LEGACY = "ddc_legacy_ref"
+
+        fun buildRef(bucket: String, key: String): String {
+            return "ref/$bucket/$key"
+        }
     }
 }
