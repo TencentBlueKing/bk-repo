@@ -92,14 +92,14 @@ class ExpiredDdcRefCleanupJob(
         // 移除blob与ref关联关系
         val refKey = buildRef(row.bucket, row.key)
         var criteria = Criteria
-            .where(DdcBlobCleanupJob.BlobRef::projectId.name).isEqualTo(row.projectId)
-            .and(DdcBlobCleanupJob.BlobRef::repoName.name).isEqualTo(row.repoName)
-            .and(DdcBlobCleanupJob.BlobRef::ref.name).isEqualTo(refKey)
+            .where(BlobRef::projectId.name).isEqualTo(row.projectId)
+            .and(BlobRef::repoName.name).isEqualTo(row.repoName)
+            .and(BlobRef::ref.name).isEqualTo(refKey)
         val blobIds = HashSet<String>()
         mongoTemplate.findAllAndRemove(
             Query(criteria),
-            DdcBlobCleanupJob.BlobRef::class.java,
-            DdcBlobCleanupJob.BLOB_REF_COLLECTION_NAME
+            BlobRef::class.java,
+            COLLECTION_NAME_BLOB_REF
         ).mapTo(blobIds) { it.blobId }
 
         // 减少blob引用计数
@@ -128,9 +128,18 @@ class ExpiredDdcRefCleanupJob(
         val inlineBlob: Binary? = null
     )
 
+    data class BlobRef(
+        val id: String,
+        val projectId: String,
+        val repoName: String,
+        val blobId: String,
+        val ref: String,
+    )
+
     companion object {
         const val COLLECTION_NAME = "ddc_ref"
         const val COLLECTION_NAME_LEGACY = "ddc_legacy_ref"
+        const val COLLECTION_NAME_BLOB_REF = "ddc_blob_ref"
 
         fun buildRef(bucket: String, key: String): String {
             return "ref/$bucket/$key"

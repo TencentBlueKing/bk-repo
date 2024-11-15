@@ -103,16 +103,7 @@ class DdcBlobCleanupJob(
         val refCount: Long = 0L,
     )
 
-    data class BlobRef(
-        val id: String,
-        val projectId: String,
-        val repoName: String,
-        val blobId: String,
-        val ref: String,
-    )
-
     companion object {
         const val COLLECTION_NAME = "ddc_blob"
-        const val BLOB_REF_COLLECTION_NAME = "ddc_blob_ref"
     }
 }
