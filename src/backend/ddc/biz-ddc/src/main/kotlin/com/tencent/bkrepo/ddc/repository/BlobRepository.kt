@@ -76,11 +76,11 @@ class BlobRepository : SimpleMongoDao<TDdcBlob>() {
         }
     }
 
-    fun addRefToBlob(projectId: String, repoName: String, bucket: String, refKey: String, blobIds: Set<String>) {
+    fun incRefCount(projectId: String, repoName: String, blobIds: Set<String>, inc: Long = 1L) {
         val criteria = TDdcBlob::projectId.isEqualTo(projectId)
             .and(TDdcBlob::repoName.name).isEqualTo(repoName)
             .and(TDdcBlob::blobId.name).inValues(blobIds)
-        val update = Update().addToSet(TDdcBlob::references.name, "ref/$bucket/$refKey")
+        val update = Update().inc(TDdcBlob::refCount.name, inc)
         updateMulti(Query(criteria), update)
     }
 

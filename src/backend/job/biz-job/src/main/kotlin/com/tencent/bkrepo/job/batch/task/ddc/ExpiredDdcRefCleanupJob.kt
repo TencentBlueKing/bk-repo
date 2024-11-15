@@ -85,13 +85,37 @@ class ExpiredDdcRefCleanupJob(
             )
         }
 
-        // 从blob ref列表中移除ref
+        removeBlobRef(row)
+    }
+
+    private fun removeBlobRef(row: Ref) {
+        // 移除blob与ref关联关系
         val refKey = "ref/${row.bucket}/${row.key}"
-        val criteria = Criteria
+        var criteria = Criteria
+            .where(DdcBlobCleanupJob.BlobRef::projectId.name).isEqualTo(row.projectId)
+            .and(DdcBlobCleanupJob.BlobRef::repoName.name).isEqualTo(row.repoName)
+            .and(DdcBlobCleanupJob.BlobRef::ref.name).isEqualTo(refKey)
+        val blobIds = HashSet<String>()
+        mongoTemplate.findAllAndRemove(
+            Query(criteria),
+            DdcBlobCleanupJob.BlobRef::class.java,
+            DdcBlobCleanupJob.BLOB_REF_COLLECTION_NAME
+        ).mapTo(blobIds) { it.blobId }
+
+        // 减少blob引用计数
+        criteria = Criteria
+            .where(DdcBlobCleanupJob.Blob::projectId.name).isEqualTo(row.projectId)
+            .and(DdcBlobCleanupJob.Blob::repoName.name).isEqualTo(row.repoName)
+            .and(DdcBlobCleanupJob.Blob::blobId.name).inValues(blobIds)
+        var update = Update().inc(DdcBlobCleanupJob.Blob::refCount.name, -1L)
+        mongoTemplate.updateMulti(Query(criteria), update, DdcBlobCleanupJob.COLLECTION_NAME)
+
+        // 兼容旧逻辑，从blob ref列表中移除ref，所有blob的reference字段都清空后可移除该代码
+        criteria = Criteria
             .where(DdcBlobCleanupJob.Blob::projectId.name).isEqualTo(row.projectId)
             .and(DdcBlobCleanupJob.Blob::repoName.name).isEqualTo(row.repoName)
             .and(DdcBlobCleanupJob.Blob::references.name).inValues(refKey)
-        val update = Update().pull(DdcBlobCleanupJob.Blob::references.name, refKey)
+        update = Update().pull(DdcBlobCleanupJob.Blob::references.name, refKey)
         mongoTemplate.updateMulti(Query(criteria), update, DdcBlobCleanupJob.COLLECTION_NAME)
     }
 
