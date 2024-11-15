@@ -16,6 +16,9 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.times
+import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -36,6 +39,20 @@ class ExpiredDdcRefCleanupJobTest @Autowired constructor(
 
     @MockBean
     lateinit var operateLogService: OperateLogService
+
+    @Test
+    fun testDeletedRefNode() {
+        val ref = ExpiredDdcRefCleanupJob.Ref(
+            id = "test",
+            projectId = UT_PROJECT_ID,
+            repoName = UT_REPO_NAME,
+            bucket = "test",
+            key = "test",
+            inlineBlob = null
+        )
+        expiredDdcRefCleanupJob.run(ref, COLLECTION_NAME, JobContext())
+        verify(nodeService, times(1)).deleteNode(any())
+    }
 
     @Test
     fun test() {
