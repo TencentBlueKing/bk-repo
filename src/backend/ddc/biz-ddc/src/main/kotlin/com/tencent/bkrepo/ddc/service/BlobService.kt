@@ -38,6 +38,7 @@ import com.tencent.bkrepo.ddc.exception.BlobNotFoundException
 import com.tencent.bkrepo.ddc.model.TDdcBlob
 import com.tencent.bkrepo.ddc.pojo.Blob
 import com.tencent.bkrepo.ddc.pojo.Reference
+import com.tencent.bkrepo.ddc.repository.BlobRefRepository
 import com.tencent.bkrepo.ddc.repository.BlobRepository
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -45,6 +46,7 @@ import java.time.LocalDateTime
 @Service
 class BlobService(
     private val blobRepository: BlobRepository,
+    private val blobRefRepository: BlobRefRepository,
     private val nodeService: NodeService,
     private val storageManager: StorageManager
 ) {
@@ -107,10 +109,15 @@ class BlobService(
     }
 
     fun addRefToBlobs(ref: Reference, blobIds: Set<String>) {
-        blobRepository.addRefToBlob(ref.projectId, ref.repoName, ref.bucket, ref.key.toString(), blobIds)
+        blobRefRepository.addRefToBlob(ref.projectId, ref.repoName, ref.bucket, ref.key.toString(), blobIds)
+        blobRepository.incRefCount(ref.projectId, ref.repoName, blobIds)
     }
 
     fun removeRefFromBlobs(projectId: String, repoName: String, bucket: String, key: String) {
+        val blobIds = HashSet<String>()
+        blobRefRepository.removeRefFromBlob(projectId, repoName, bucket, key).mapTo(blobIds) { it.blobId }
+        blobRepository.incRefCount(projectId, repoName, blobIds, -1L)
+        // 兼容旧逻辑，所有blob的references字段为空后可以移除该逻辑
         blobRepository.removeRefFromBlob(projectId, repoName, bucket, key)
     }
 }
