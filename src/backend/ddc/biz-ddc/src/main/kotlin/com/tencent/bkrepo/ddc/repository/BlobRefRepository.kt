@@ -12,6 +12,10 @@ import org.springframework.stereotype.Repository
 @Repository
 class BlobRefRepository : SimpleMongoDao<TDdcBlobRef>() {
     fun addRefToBlob(projectId: String, repoName: String, bucket: String, refKey: String, blobIds: Set<String>) {
+        if (blobIds.size > DEFAULT_BLOB_SIZE_LIMIT) {
+            val ref = "$projectId/$repoName/${buildRef(bucket, refKey)}"
+            logger.error("blobs of ref[$ref] exceed size limit, size[${blobIds.size}]]")
+        }
         blobIds.forEach {
             try {
                 insert(
@@ -34,5 +38,9 @@ class BlobRefRepository : SimpleMongoDao<TDdcBlobRef>() {
             .and(TDdcBlobRef::repoName.name).isEqualTo(repoName)
             .and(TDdcBlobRef::ref.name).isEqualTo(buildRef(bucket, refKey))
         return determineMongoTemplate().findAllAndRemove(Query(criteria), TDdcBlobRef::class.java)
+    }
+
+    companion object {
+        private const val DEFAULT_BLOB_SIZE_LIMIT = 20
     }
 }
