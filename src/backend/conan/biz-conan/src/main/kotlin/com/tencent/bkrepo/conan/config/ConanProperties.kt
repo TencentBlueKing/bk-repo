@@ -31,5 +31,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "conan")
 data class ConanProperties(
-    var domain: String = "localhost"
+    var domain: String = "localhost",
+    var pageSize: Int = 500
 )

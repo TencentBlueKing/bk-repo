@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.conan.config.ConanProperties
 import com.tencent.bkrepo.conan.constant.INDEX_JSON
 import com.tencent.bkrepo.conan.pojo.IndexInfo
 import com.tencent.bkrepo.conan.pojo.RevisionInfo
@@ -60,7 +61,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Service
-class ConanExtServiceImpl : ConanExtService {
+class ConanExtServiceImpl(
+    private val properties: ConanProperties
+) : ConanExtService {
 
     @Autowired
     lateinit var nodeService: NodeService
@@ -113,12 +116,12 @@ class ConanExtServiceImpl : ConanExtService {
     private fun packageSearch(projectId: String, repoName: String, indexRefresh: Boolean) {
         // 查询包
         var pageNumber = 1
-        var packageOption = PackageListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
+        var packageOption = PackageListOption(pageNumber = pageNumber, pageSize = properties.pageSize)
         var packagePage = packageService.listPackagePage(projectId, repoName, option = packageOption)
         while (packagePage.records.isNotEmpty()) {
             packagePage.records.forEach { pkg -> versionSearch(projectId, repoName, pkg.key, indexRefresh) }
             pageNumber += 1
-            packageOption = PackageListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
+            packageOption = PackageListOption(pageNumber = pageNumber, pageSize = properties.pageSize)
             packagePage = packageService.listPackagePage(projectId, repoName, option = packageOption)
         }
     }
@@ -126,7 +129,7 @@ class ConanExtServiceImpl : ConanExtService {
     private fun versionSearch(projectId: String, repoName: String, key: String, indexRefresh: Boolean) {
         // 查询包
         var pageNumber = 1
-        var versionOption = VersionListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
+        var versionOption = VersionListOption(pageNumber = pageNumber, pageSize = properties.pageSize, sortProperty = "createdDate")
         var versionPage = packageService.listVersionPage(projectId, repoName, key, option = versionOption)
         while (versionPage.records.isNotEmpty()) {
             versionPage.records.forEach {
@@ -137,7 +140,7 @@ class ConanExtServiceImpl : ConanExtService {
                 }
             }
             pageNumber += 1
-            versionOption = VersionListOption(pageNumber = pageNumber, pageSize = DEFAULT_PAGE_SIZE)
+            versionOption = VersionListOption(pageNumber = pageNumber, pageSize = properties.pageSize, sortProperty = "createdDate")
             versionPage = packageService.listVersionPage(projectId, repoName, key, option = versionOption)
         }
     }
@@ -258,7 +261,7 @@ class ConanExtServiceImpl : ConanExtService {
         do {
             val option = NodeListOption(
                 pageNumber = pageNumber,
-                pageSize = DEFAULT_PAGE_SIZE,
+                pageSize = properties.pageSize,
                 includeFolder = true,
                 includeMetadata = false,
                 deep = false
@@ -272,7 +275,7 @@ class ConanExtServiceImpl : ConanExtService {
             }
             result.addAll(records.filter { it.folder }.map { Pair(it.name, it.lastModifiedDate) })
             pageNumber++
-        } while (records.size == DEFAULT_PAGE_SIZE)
+        } while (records.size == properties.pageSize)
         return result
     }
 
@@ -299,6 +302,5 @@ class ConanExtServiceImpl : ConanExtService {
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(ConanExtServiceImpl::class.java)
-        private const val DEFAULT_PAGE_SIZE = 1000
     }
 }
