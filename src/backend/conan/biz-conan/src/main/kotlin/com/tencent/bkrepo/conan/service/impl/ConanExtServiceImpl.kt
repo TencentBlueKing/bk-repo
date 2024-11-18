@@ -129,7 +129,9 @@ class ConanExtServiceImpl(
     private fun versionSearch(projectId: String, repoName: String, key: String, indexRefresh: Boolean) {
         // 查询包
         var pageNumber = 1
-        var versionOption = VersionListOption(pageNumber = pageNumber, pageSize = properties.pageSize, sortProperty = "createdDate")
+        var versionOption = VersionListOption(
+            pageNumber = pageNumber, pageSize = properties.pageSize, sortProperty = "createdDate"
+        )
         var versionPage = packageService.listVersionPage(projectId, repoName, key, option = versionOption)
         while (versionPage.records.isNotEmpty()) {
             versionPage.records.forEach {
@@ -140,7 +142,9 @@ class ConanExtServiceImpl(
                 }
             }
             pageNumber += 1
-            versionOption = VersionListOption(pageNumber = pageNumber, pageSize = properties.pageSize, sortProperty = "createdDate")
+            versionOption = VersionListOption(
+                pageNumber = pageNumber, pageSize = properties.pageSize, sortProperty = "createdDate"
+            )
             versionPage = packageService.listVersionPage(projectId, repoName, key, option = versionOption)
         }
     }
