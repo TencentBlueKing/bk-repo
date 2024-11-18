@@ -164,6 +164,61 @@
 
 扫描结果预览字段参考[获取扫描报告预览](./report.md?id=获取扫描报告预览)
 
+## 创建跨项目扫描任务
+
+- API: POST /analyst/api/scan/global
+- API 名称: global scan
+- 功能说明：
+  - 中文：跨项目扫描
+  - English：global scan
+- 请求体
+
+```json
+{
+  "scanner": "scanner",
+  "rule": {
+    "relation": "AND",
+    "rules": [
+      {
+        "field": "repoName",
+        "value": "maven-local",
+        "operation": "EQ"
+      },
+      {
+        "field": "fullPath",
+        "value": "/",
+        "operation": "PREFIX"
+      }
+    ]
+  },
+  "projectMetadata": [
+    {
+      "key": "bg",
+      "value": "test"
+    }
+  ],
+  "metadata": [
+    {
+      "key": "buildNumber",
+      "value": "32"
+    }
+  ]
+}
+```
+
+- 请求字段说明
+
+| 字段              | 类型      | 是否必须 | 默认值   | 说明                                                         | Description        |
+|-----------------|---------|------|-------|------------------------------------------------------------|--------------------|
+| scanner         | string  | 否    | 无     | 要获取的报告使用的扫描器名称，扫描器名称在扫描器注册到制品库后确定，需要联系制品库管理员确认             | scanner name       |
+| force           | boolean | 否    | false | 是否强制扫描，为true时即使文件已扫描过也会再次执行扫描                              | force scan         |
+| rule            | object  | 否    | 无     | 要扫描的文件匹配规则，参考[自定义搜索接口公共说明](../common/search.md?id=自定义搜索协议) | file match rule    |
+| projectMetadata | array   | 否    | 无     | 指定项目元数据用于筛选需要扫描的项目                                         | scan task metadata |
+| metadata        | array   | 否    | 无     | 为扫描任务附加元数据，用于标识扫描任务                                        | scan task metadata |
+
+- 响应体
+
+响应体参考[创建扫描任务](./scan.md?id=创建扫描任务)响应体
 
 ## 通过流水线创建扫描任务
 
@@ -225,17 +280,6 @@
 | chatIds      | string | 否    | 无       | 企业微信机器人会话id，多个id用"&vert;"分隔                                | wework bot webhook url |
 
 - 响应体
-
-```json
-{
-  "code": 0,
-  "message": null,
-  "data": {},
-  "traceId": ""
-}
-```
-
-- data字段说明
 
 响应体参考[创建扫描任务](./scan.md?id=创建扫描任务)响应体
 
