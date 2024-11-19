@@ -66,9 +66,9 @@ object DockerUtils {
     ) {
         val images = listImagesCmd().exec()
         val exists = images?.any { image ->
-            image.repoTags.any { it == tag }
-        }
-        if (exists == true) {
+            image.repoTags?.any { it == tag } ?: false
+        } ?: false
+        if (exists) {
             return
         }
         logger.info("pulling image: $tag")
