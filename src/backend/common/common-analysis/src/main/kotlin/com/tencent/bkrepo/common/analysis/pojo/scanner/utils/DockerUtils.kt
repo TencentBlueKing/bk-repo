@@ -65,10 +65,10 @@ object DockerUtils {
         password: String?,
     ) {
         val images = listImagesCmd().exec()
-        val exists = images.any { image ->
+        val exists = images?.any { image ->
             image.repoTags.any { it == tag }
         }
-        if (exists) {
+        if (exists == true) {
             return
         }
         logger.info("pulling image: $tag")
