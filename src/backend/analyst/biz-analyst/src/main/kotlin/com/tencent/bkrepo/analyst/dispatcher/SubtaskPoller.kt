@@ -69,9 +69,9 @@ open class SubtaskPoller(
     open fun dispatch() {
         executionClusterService.list().forEach {
             executor.execute {
-                logger.info("cluster [${it.name}] start to dispatch subtask")
+                logger.debug("cluster [${it.name}] start to dispatch subtask")
                 dispatcherCache.get(it.name).dispatch()
-                logger.info("cluster [${it.name}] dispatch finished")
+                logger.debug("cluster [${it.name}] dispatch finished")
             }
         }
     }
