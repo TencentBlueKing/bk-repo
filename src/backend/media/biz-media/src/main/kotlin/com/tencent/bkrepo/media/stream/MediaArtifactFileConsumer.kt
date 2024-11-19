@@ -39,7 +39,6 @@ class MediaArtifactFileConsumer(
         storageManager.storeArtifactFile(nodeCreateRequest, file, repo.storageCredentials)
         if (transcodeConfig != null) {
             transcodeService.transcode(artifactInfo, transcodeConfig, userId)
-            logger.info("Add transcode task for artifact[$artifactInfo]")
         }
     }
 
@@ -68,7 +67,6 @@ class MediaArtifactFileConsumer(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(MediaArtifactFileConsumer::class.java)
         private const val METADATA_KEY_MEDIA_START_TIME = "media.startTime"
         private const val METADATA_KEY_MEDIA_STOP_TIME = "media.stopTime"
     }
