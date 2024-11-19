@@ -67,6 +67,9 @@ elseif config.auth_mode == "odc" then
     if bk_token == nil then
         bk_token = ngx.var.http_x_devops_bk_token
         if bk_token == nil then
+            bk_token = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-token"]
+        end
+        if bk_token == nil then
             ngx.exit(401)
             return
         end
