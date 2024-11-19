@@ -48,7 +48,7 @@ if bk_token ~= nil then
 end
 
 --- 设置用户信息
-ngx.header["authorization"] = config.bkrepo.authorization
+ngx.header["x-bkrepo-authorization"] = config.bkrepo.authorization
 ngx.header["x-bkrepo-uid"] = username
 ngx.header["x-bkrepo-bk-token"] = token
 ngx.header["x-bkrepo-access-token"] = token
