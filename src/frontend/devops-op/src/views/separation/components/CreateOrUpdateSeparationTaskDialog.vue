@@ -126,7 +126,6 @@
       </div>
       <div v-else>
         <el-form-item
-          v-if="showType === 'GENERIC' || showType === 'DDC'"
           v-for="(item,index) in task.content.paths"
           :key="'path'+ index"
           prop="paths"
