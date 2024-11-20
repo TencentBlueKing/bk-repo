@@ -49,12 +49,12 @@ function _M:get_addr(service_name)
 
     local router_srv_cache = ngx.shared.router_srv_store
     local router_srv_value = router_srv_cache:get(query_subdomain)
+    local service_in_local = config.service_in_local
 
     if router_srv_value == nil then
         -- 是否取用本地配置, 取用本地配置时需要获取所有ip,使用tcp协议，并增加缓存时间
         local cache_time = 2
         local use_udp = true
-        local service_in_local = config.service_in_local
         if service_in_local ~= nil and service_in_local ~= "" then
             cache_time = 3
             use_udp = false
