@@ -2,7 +2,7 @@
   <el-dialog :title="createMode?'创建扫描执行集群配置':'更新扫描执行集群配置'" :visible.sync="showDialog" :before-close="close">
     <el-form ref="form" :rules="rules" :model="executionCluster" status-icon>
       <el-form-item ref="project-form-item" label="执行集群名" prop="name" :rules="[{ required: true, message: '执行集群名不能为空'}]">
-        <el-input v-model="executionCluster.name" style="height: 40px ; width: 500px;" :disabled="!createMode"/>
+        <el-input v-model="executionCluster.name" style="height: 40px ; width: 500px;" :disabled="!createMode" />
       </el-form-item>
       <el-form-item ref="project-form-item" label="描述" prop="description">
         <el-input v-model="executionCluster.description" style="height: 40px ; width: 500px;" />
