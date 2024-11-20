@@ -26,6 +26,7 @@ export const ROUTER_NAME_FILE_SYSTEM_RECORD = 'FileSystemRecord'
 export const ROUTER_NAME_REPO_CONFIG = 'RepoConfig'
 export const ROUTER_NAME_RATE_LIMITER_CONFIG = 'RateLimiterConfig'
 export const ROUTER_NAME_PRELOAD_CONFIG = 'PreloadConfig'
+export const ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG = 'ExecutionClustersConfig'
 
 Vue.use(Router)
 
@@ -336,6 +337,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_PRELOAD_CONFIG,
         meta: { title: '制品预加载配置', icon: 'service-config' },
         component: () => import('@/views/preload/index')
+      }
+    ]
+  },
+  {
+    path: '/execution-clusters-config',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG,
+        meta: { title: '扫描执行集群配置', icon: 'service-config' },
+        component: () => import('@/views/execution-clusters/index')
       }
     ]
   },
