@@ -85,5 +85,10 @@ data class TDdcBlob(
      * ref类型引用 ref/{bucket}/{key}
      * blob类型引用 blob/{blobId}
      */
-    var references: Set<String> = emptySet()
+    @Deprecated("性能原因不在使用，关联关系存在TDdcReferenceBlob中")
+    var references: Set<String> = emptySet(),
+    /**
+     * 被引用的次数，计数为0时将被清理
+     */
+    var refCount: Long = 0L,
 )

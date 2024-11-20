@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,12 +25,39 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.config
+package com.tencent.bkrepo.conan.service
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.conan.pojo.request.IndexRefreshRequest
 
-@ConfigurationProperties(prefix = "conan")
-data class ConanProperties(
-    var domain: String = "localhost",
-    var pageSize: Int = 500
-)
+interface ConanExtService {
+
+    /**
+     * 重新生成整个仓库下所有的index.json文件
+     */
+    fun indexRefreshForRepo(projectId: String, repoName: String)
+
+    /**
+     * 重新生成整个指定key下所有的index.json文件
+     */
+    fun indexRefreshByPackageKey(projectId: String, repoName: String, key: String)
+
+    /**
+     * 重新生成recipe所有的index.json文件
+     */
+    fun indexRefreshForRecipe(projectId: String, repoName: String, request: IndexRefreshRequest)
+
+    /**
+     * 刷新整个仓库元数据信息
+     */
+    fun metadataRefresh(projectId: String, repoName: String)
+
+    /**
+     * 刷新整个仓库元数据信息
+     */
+    fun packageMetadataRefresh(projectId: String, repoName: String, packageKey: String)
+
+    /**
+     * 刷新整个仓库元数据信息
+     */
+    fun versionMetadataRefresh(projectId: String, repoName: String, packageKey: String, version: String)
+}

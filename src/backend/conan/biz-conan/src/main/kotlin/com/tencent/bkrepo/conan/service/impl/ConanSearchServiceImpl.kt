@@ -34,12 +34,10 @@ import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
 import com.tencent.bkrepo.conan.pojo.ConanInfo
 import com.tencent.bkrepo.conan.pojo.ConanSearchResult
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
+import com.tencent.bkrepo.conan.service.ConanMetadataService
 import com.tencent.bkrepo.conan.service.ConanSearchService
 import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
-import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackagePath
-import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
-import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
@@ -52,32 +50,24 @@ class ConanSearchServiceImpl : ConanSearchService {
     @Autowired
     lateinit var commonService: CommonService
 
+    @Autowired
+    lateinit var conanMetadataService: ConanMetadataService
+
     override fun search(
         projectId: String,
         repoName: String,
         pattern: String?,
         ignoreCase: Boolean
     ): ConanSearchResult {
-        // TODO 需要对pattern进行校验， -q parameter only allowed with a valid recipe reference, not with a pattern
-        val recipes = searchRecipes(projectId, repoName)
-        val list = if (pattern.isNullOrEmpty()) {
-            recipes
-        } else {
-            val realPattern = pattern.replace("*", ".*")
-            val regex = if (ignoreCase) {
-                Regex(realPattern, RegexOption.IGNORE_CASE)
-            } else {
-                Regex(realPattern)
-            }
-            recipes.filter { regex.containsMatchIn(it) }
-        }
-        if (list.isEmpty()) {
+        val realPattern = pattern?.replace("*", ".*")
+        val recipes = searchRecipes(projectId, repoName, realPattern, ignoreCase)
+        if (recipes.isEmpty()) {
             throw ConanSearchNotFoundException(
                 ConanMessageCode.CONAN_SEARCH_NOT_FOUND,
                 pattern ?: StringPool.EMPTY, "$projectId/$repoName"
             )
         }
-        return ConanSearchResult(list)
+        return ConanSearchResult(recipes)
     }
 
     override fun searchPackages(pattern: String?, conanArtifactInfo: ConanArtifactInfo): Map<String, ConanInfo> {
@@ -94,15 +84,7 @@ class ConanSearchServiceImpl : ConanSearchService {
         }
     }
 
-    fun searchRecipes(projectId: String, repoName: String): List<String> {
-        val result = mutableListOf<String>()
-        packageService.listAllPackageName(projectId, repoName).forEach {
-            packageService.listAllVersion(projectId, repoName, it, VersionListOption()).forEach { pv ->
-                pv.packageMetadata.toConanFileReference()?.apply {
-                    result.add(buildConanFileName(this))
-                }
-            }
-        }
-        return result.sorted()
+    fun searchRecipes(projectId: String, repoName: String, pattern: String? = null, ignoreCase: Boolean): List<String> {
+        return conanMetadataService.search(projectId, repoName, pattern, ignoreCase)
     }
 }

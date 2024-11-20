@@ -38,6 +38,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.exists
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.lte
 import org.springframework.data.mongodb.core.query.size
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -53,11 +54,16 @@ class DdcBlobCleanupJob(
     override fun buildQuery(): Query {
         val referencesCriteria = Criteria().orOperator(
             Blob::references.exists(false),
-            Blob::references.size(0)
+            Blob::references.size(0),
+        )
+        val refCountCriteria = Criteria().orOperator(
+            Blob::refCount.exists(false),
+            Blob::refCount.lte(0L),
         )
         // 最近1小时上传的blob不清理，避免将未finalized的ref所引用的blob清理掉
         val criteria = Criteria().andOperator(
             referencesCriteria,
+            refCountCriteria,
             Criteria.where("lastModifiedDate").lt(LocalDateTime.now().minusHours(1L))
         )
         val query = Query(criteria)
@@ -93,7 +99,8 @@ class DdcBlobCleanupJob(
         val projectId: String,
         val repoName: String,
         val blobId: String,
-        val references: Set<String> = emptySet()
+        val references: Set<String> = emptySet(),
+        val refCount: Long = 0L,
     )
 
     companion object {

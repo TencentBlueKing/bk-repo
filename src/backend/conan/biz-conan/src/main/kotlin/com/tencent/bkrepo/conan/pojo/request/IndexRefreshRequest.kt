@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,12 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.conan.config
+package com.tencent.bkrepo.conan.pojo.request
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
-@ConfigurationProperties(prefix = "conan")
-data class ConanProperties(
-    var domain: String = "localhost",
-    var pageSize: Int = 500
+data class IndexRefreshRequest(
+    val name: String,
+    val version: String,
+    val userName: String,
+    val channel: String,
+    val revision: String? = null,
+    val packageId: String? = null,
 )
