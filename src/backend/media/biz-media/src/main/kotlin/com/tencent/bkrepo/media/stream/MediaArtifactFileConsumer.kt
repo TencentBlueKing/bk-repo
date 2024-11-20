@@ -8,7 +8,6 @@ import com.tencent.bkrepo.media.service.TranscodeService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
