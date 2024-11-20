@@ -51,6 +51,15 @@ function _M:get_addr(service_name)
     local router_srv_value = router_srv_cache:get(query_subdomain)
 
     if router_srv_value == nil then
+        -- 是否取用本地配置, 取用本地配置时需要获取所有ip,使用tcp协议，并增加缓存时间
+        local cache_time = 2
+        local use_udp = true
+        local service_in_local = config.service_in_local
+        if service_in_local ~= nil and service_in_local ~= "" then
+            cache_time = 3
+            use_udp = false
+        end
+
         if not ns_config.ip then
             ngx.log(ngx.ERR, "DNS ip not exist!")
             ngx.exit(503)
@@ -77,9 +86,11 @@ function _M:get_addr(service_name)
             ngx.exit(503)
             return
         end
-
-        local records, err = dns:query(query_subdomain, { qtype = dns.TYPE_SRV, additional_section = true })
-
+        if use_udp then
+            records, err = dns:query(query_subdomain, { qtype = dns.TYPE_SRV, additional_section = true })
+        else
+            records, err = dns:tcp_query(query_subdomain, { qtype = dns.TYPE_SRV, additional_section = true })
+        end
         if not records then
             ngx.log(ngx.ERR, "failed to query the DNS server: ", err)
             ngx.exit(503)
@@ -114,7 +125,7 @@ function _M:get_addr(service_name)
             ngx.exit(503)
             return
         end
-        router_srv_cache:set(query_subdomain, table.concat(ips, ",") .. ":" .. port, 2)
+        router_srv_cache:set(query_subdomain, table.concat(ips, ",") .. ":" .. port, cache_time)
     else
         local func_itor = string.gmatch(router_srv_value, "([^:]+)")
         local ips_str = func_itor()
@@ -125,7 +136,6 @@ function _M:get_addr(service_name)
         end
     end
     -- return with local service
-    local service_in_local = config.service_in_local
     if internal_ip ~= nil and service_in_local ~= nil and string.find(service_in_local, service_name) ~= nil then
         local service_ip = string.gsub(internal_ip, "\n", "")
         if arrayUtil:isInArray(service_ip, ips) then
