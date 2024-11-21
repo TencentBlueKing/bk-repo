@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.dao.node
 
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
@@ -143,6 +144,53 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         }
 
         return pageWithoutShardingKey(pageRequest, query)
+    }
+
+    /**
+     * 根据[sha256]查询node列表，用于不需要分页的场景提高查询速度
+     *
+     * @param sha256 待查询sha256
+     * @param limit 查询选项
+     * @param includeMetadata 是否包含元数据
+     * @param includeDeleted 是否包含被删除的制品
+     * @param tillLimit 为true时将遍历所有分表直到查询到的结果数量达到limit
+     *
+     * @return 指定sha256的node列表
+     */
+    fun listBySha256(
+        sha256: String,
+        limit: Int = DEFAULT_PAGE_SIZE,
+        includeMetadata: Boolean =false,
+        includeDeleted: Boolean = true,
+        tillLimit: Boolean = true,
+    ): List<TNode> {
+        // 构造查询条件
+        val criteria = where(TNode::sha256).isEqualTo(sha256).and(TNode::folder).isEqualTo(false)
+        if (!includeDeleted) {
+            criteria.and(TNode::deleted).isEqualTo(null)
+        }
+        val query = Query(criteria)
+        if (!includeMetadata) {
+            query.fields().exclude(TNode::metadata.name)
+        }
+
+        if (shardingCount <= 0 || shardingCount > MAX_SHARDING_COUNT_OF_PAGE_QUERY) {
+            throw UnsupportedOperationException()
+        }
+
+        // 遍历所有分表进行查询
+        val template = determineMongoTemplate()
+        val result = ArrayList<TNode>()
+        for (sequence in 0 until shardingCount) {
+            query.limit(limit - result.size)
+            val collectionName = parseSequenceToCollectionName(sequence)
+            result.addAll(template.find(query, classType, collectionName))
+            if (result.isNotEmpty() && !tillLimit || result.size == limit) {
+                break
+            }
+        }
+
+        return result
     }
 
     companion object {

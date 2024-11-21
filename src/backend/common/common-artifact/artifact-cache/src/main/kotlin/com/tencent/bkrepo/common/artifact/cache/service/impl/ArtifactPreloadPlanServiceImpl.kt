@@ -112,9 +112,13 @@ class ArtifactPreloadPlanServiceImpl(
         if (!properties.enabled) {
             return
         }
-        val option = NodeListOption(pageSize = properties.maxNodes, includeFolder = false)
-        val res = nodeService.listNodePageBySha256(sha256, option)
-        val nodes = res.records
+        val nodes = nodeService.listNodeBySha256(
+            sha256 = sha256,
+            limit = properties.maxNodes,
+            includeMetadata = false,
+            includeDeleted = false,
+            tillLimit = false
+        )
         if (nodes.size >= properties.maxNodes) {
             // 限制查询出来的最大node数量，避免预加载计划创建时间过久
             logger.warn("nodes of sha256[$sha256] exceed max page size[${properties.maxNodes}]")

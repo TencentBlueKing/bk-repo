@@ -40,7 +40,8 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -61,66 +62,88 @@ class NodeQueryWithoutShardingKeyTest @Autowired constructor(
     private val nodeService: NodeService
 ) : ServiceBaseTest() {
 
+    // 创建测试数据sha256为sha256-0,sha256-1...sha256-8,sha256-9
+    // sha256-0和sha256-1有18条数据，其余sha256各有15条数据
+    val generateSha256Func = { i: Int -> "sha256-${i % 10}" }
+
     @BeforeAll
     fun beforeAll() {
         initMock()
+        generateTestData(52, generateSha256Func)
     }
 
     @Test
     @DisplayName("测试按SHA256分页查询")
     fun testListNodePageBySha256() {
-        // 创建测试数据sha256为sha256-0,sha256-1...sha256-8,sha256-9
-        // sha256-0和sha256-1有18条数据，其余sha256各有15条数据
-        val generateSha256Func = { i: Int -> "sha256-${i % 10}" }
-        generateTestData(52, generateSha256Func)
         val option = NodeListOption(1, 5, includeMetadata = true, sort = true)
         // 测试获取不存在的Node列表
         nodeService.listNodePageBySha256("notExistsSha256", option).apply {
-            Assertions.assertEquals(0L, totalRecords)
-            Assertions.assertEquals(0L, totalPages)
-            Assertions.assertTrue(records.isEmpty())
+            assertEquals(0L, totalRecords)
+            assertEquals(0L, totalPages)
+            assertTrue(records.isEmpty())
         }
 
         // 测试数据量小于pageSize的情况
         nodeService.listNodePageBySha256(generateSha256Func(1), option.copy(pageSize = 20)).apply {
-            Assertions.assertEquals(18, totalRecords)
-            Assertions.assertEquals(1, totalPages)
-            Assertions.assertEquals(18, records.size)
+            assertEquals(18, totalRecords)
+            assertEquals(1, totalPages)
+            assertEquals(18, records.size)
         }
 
         // 测试获取数据量等于pageSize的页
         nodeService.listNodePageBySha256(generateSha256Func(1), option.copy(pageSize = 4)).apply {
-            Assertions.assertEquals(18, totalRecords)
-            Assertions.assertEquals(5, totalPages)
-            Assertions.assertEquals(4, records.size)
+            assertEquals(18, totalRecords)
+            assertEquals(5, totalPages)
+            assertEquals(4, records.size)
         }
 
 
         // 测试获数据量小于pageSize的页
         nodeService.listNodePageBySha256(generateSha256Func(1), option.copy(pageSize = 4, pageNumber = 5)).apply {
-            Assertions.assertEquals(18, totalRecords)
-            Assertions.assertEquals(5, totalPages)
-            Assertions.assertEquals(2, records.size)
+            assertEquals(18, totalRecords)
+            assertEquals(5, totalPages)
+            assertEquals(2, records.size)
         }
 
         // 测试获取不存在的页
         nodeService.listNodePageBySha256(generateSha256Func(1), option.copy(pageSize = 4, pageNumber = 6)).apply {
-            Assertions.assertEquals(18, totalRecords)
-            Assertions.assertEquals(5, totalPages)
-            Assertions.assertEquals(0, records.size)
+            assertEquals(18, totalRecords)
+            assertEquals(5, totalPages)
+            assertEquals(0, records.size)
         }
 
         // 测试分页数据在两个分表的情况,[0,1,2,3,4,  5][6,7,8,9,  10,11][12,13,14,15,16,17]
         nodeService.listNodePageBySha256(generateSha256Func(1), option.copy(pageSize = 5, pageNumber = 2)).apply {
-            Assertions.assertEquals(18, totalRecords)
-            Assertions.assertEquals(4, totalPages)
-            Assertions.assertEquals(5, records.size)
-            Assertions.assertEquals(PROJECT_SHARDING_207, records[0].projectId)
-            Assertions.assertEquals(PROJECT_SHARDING_208, records[1].projectId)
-            Assertions.assertEquals(PROJECT_SHARDING_208, records[2].projectId)
-            Assertions.assertEquals(PROJECT_SHARDING_208, records[3].projectId)
-            Assertions.assertEquals(PROJECT_SHARDING_208, records[4].projectId)
+            assertEquals(18, totalRecords)
+            assertEquals(4, totalPages)
+            assertEquals(5, records.size)
+            assertEquals(PROJECT_SHARDING_207, records[0].projectId)
+            assertEquals(PROJECT_SHARDING_208, records[1].projectId)
+            assertEquals(PROJECT_SHARDING_208, records[2].projectId)
+            assertEquals(PROJECT_SHARDING_208, records[3].projectId)
+            assertEquals(PROJECT_SHARDING_208, records[4].projectId)
         }
+    }
+
+    @Test
+    @DisplayName("测试按SHA256查询")
+    fun testListNodeBySha256() {
+        val sha256 = generateSha256Func(1)
+
+        // 测试获取不存在的Node列表
+        nodeService.listNodeBySha256("notExistsSha256").apply { assertEquals(0, size) }
+
+        // 测试单表数据量小于limit的情况
+        nodeService.listNodeBySha256(sha256, 20, tillLimit = false).apply { assertEquals(18, size) }
+        nodeService.listNodeBySha256(sha256, 100, tillLimit = true).apply { assertEquals(20, size) }
+
+        // 测试单表数据量等于limit的页
+        nodeService.listNodeBySha256(sha256, 18, tillLimit = true).apply { assertEquals(18, size) }
+        nodeService.listNodeBySha256(sha256, 18, tillLimit = false).apply { assertEquals(18, size) }
+
+        // 测试获数据量小于pageSize的页
+        nodeService.listNodeBySha256(sha256, 10, tillLimit = true).apply { assertEquals(10, size) }
+        nodeService.listNodeBySha256(sha256, 10, tillLimit = false).apply { assertEquals(10, size) }
     }
 
     private fun generateTestData(size: Int, generateSha256Func: (Int) -> String) {
