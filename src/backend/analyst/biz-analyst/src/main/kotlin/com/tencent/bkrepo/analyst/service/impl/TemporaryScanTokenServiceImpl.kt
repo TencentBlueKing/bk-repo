@@ -234,7 +234,7 @@ class TemporaryScanTokenServiceImpl(
                 .build()
         )
         if (nodes.records.isEmpty()) {
-            throw SystemErrorException(RESOURCE_NOT_FOUND, sha256)
+            throw ErrorCodeException(RESOURCE_NOT_FOUND, "file[$sha256] of [$projectId:$repoName] not found")
         }
         val fullPath = nodes.records[0][NodeDetail::fullPath.name].toString()
         return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))?.let { node ->
