@@ -1,16 +1,17 @@
 <template>
-  <el-dialog :title="createMode?'创建扫描执行集群配置':'更新扫描执行集群配置'" :visible.sync="showDialog" :before-close="close">
-    <el-form ref="form" :rules="rules" :model="executionCluster" status-icon>
+  <el-dialog :title="showMode? '详情': (createMode?'创建扫描执行集群配置':'更新扫描执行集群配置')" :visible.sync="showDialog" :before-close="close">
+    <el-form ref="form" :rules="rules" :model="executionCluster" status-icon label-position="left" label-width="185px">
       <el-form-item ref="project-form-item" label="执行集群名" prop="name" :rules="[{ required: true, message: '执行集群名不能为空'}]">
         <el-input v-model="executionCluster.name" style="height: 40px ; width: 500px;" :disabled="!createMode" />
       </el-form-item>
       <el-form-item ref="project-form-item" label="描述" prop="description">
-        <el-input v-model="executionCluster.description" style="height: 40px ; width: 500px;" />
+        <el-input v-model="executionCluster.description" style="height: 40px ; width: 500px;" :disabled="showMode" />
       </el-form-item>
       <el-form-item label="集群类型" prop="type">
         <el-select
           v-model="executionCluster.type"
           placeholder="请选择"
+          :disabled="showMode"
         >
           <el-option
             v-for="item in options"
@@ -21,46 +22,48 @@
         </el-select>
       </el-form-item>
       <el-form-item v-if="executionCluster.type !== 'docker'" label="命名空间" prop="kubernetesProperties.namespace" :rules="[{ required: true, message: '命名空间不能为空'}]">
-        <el-input v-model="executionCluster.kubernetesProperties.namespace" style="height: 40px ; width: 500px;" />
+        <el-input v-model="executionCluster.kubernetesProperties.namespace" style="height: 40px ; width: 500px;" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type !== 'docker'" label="apiServer" prop="apiServer">
-        <el-input v-model="executionCluster.kubernetesProperties.apiServer" style="height: 40px ; width: 500px;" />
+        <el-input v-model="executionCluster.kubernetesProperties.apiServer" style="height: 40px ; width: 500px;" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type !== 'docker'" label="certificateAuthorityData" prop="certificateAuthorityData">
-        <el-input v-model="executionCluster.kubernetesProperties.certificateAuthorityData" style="height: 40px ; width: 500px;" />
+        <el-input v-model="executionCluster.kubernetesProperties.certificateAuthorityData" style="height: 40px ; width: 500px;" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type !== 'docker'" label="token" prop="token">
-        <el-input v-model="executionCluster.kubernetesProperties.token" style="height: 40px ; width: 500px;" />
+        <el-input v-model="executionCluster.kubernetesProperties.token" style="height: 40px ; width: 500px;" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type !== 'docker'" label="clientCertificateData" prop="clientCertificateData">
-        <el-input v-model="executionCluster.kubernetesProperties.clientCertificateData" style="height: 40px ; width: 500px;" />
+        <el-input v-model="executionCluster.kubernetesProperties.clientCertificateData" style="height: 40px ; width: 500px;" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type !== 'docker'" label="clientKeyData" prop="clientCertificateData">
-        <el-input v-model="executionCluster.kubernetesProperties.clientKeyData" style="height: 40px ; width: 500px;" />
+        <el-input v-model="executionCluster.kubernetesProperties.clientKeyData" style="height: 40px ; width: 500px;" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type !== 'docker'" label="最大使用内存(B)" prop="kubernetesProperties.limitMem" :rules="[{ required: true, message: '最大使用内存不能为空'}]">
-        <el-input-number v-model="executionCluster.kubernetesProperties.limitMem" controls-position="right" :min="1" />
+        <el-input-number v-model="executionCluster.kubernetesProperties.limitMem" style="height: 40px ; width: 200px;" controls-position="right" :min="1" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type !== 'docker'" label="最大临时内存(B)" prop="kubernetesProperties.limitStorage" :rules="[{ required: true, message: '最大临时内存不能为空'}]">
-        <el-input-number v-model="executionCluster.kubernetesProperties.limitStorage" controls-position="right" :min="1" />
+        <el-input-number v-model="executionCluster.kubernetesProperties.limitStorage" style="height: 40px ; width: 200px;" controls-position="right" :min="1" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type !== 'docker'" label="最大cpu" prop="kubernetesProperties.limitCpu" :rules="[{ required: true, message: '最大cpu不能为空'}]">
-        <el-input-number v-model="executionCluster.kubernetesProperties.limitCpu" controls-position="right" :min="1" />
+        <el-input-number v-model="executionCluster.kubernetesProperties.limitCpu" style="height: 40px ; width: 200px;" controls-position="right" :min="1" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'k8s_job'" label="最大保留时间(秒)" prop="jobTtlSecondsAfterFinished">
-        <el-input-number v-model="executionCluster.jobTtlSecondsAfterFinished" controls-position="right" :min="1" />
+        <el-input-number v-model="executionCluster.jobTtlSecondsAfterFinished" style="height: 40px ; width: 200px;" controls-position="right" :min="1" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'k8s_job'" label="执行完是否删除" prop="cleanJobAfterSuccess">
         <el-switch
           v-model="executionCluster.cleanJobAfterSuccess"
           active-color="#13ce66"
           inactive-color="#ff4949"
+          :disabled="showMode"
         />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'k8s_deployment'" label="扫描器" prop="scanner" :rules="[{ required: true, message: '扫描器不能为空'}]">
         <el-select
           v-model="executionCluster.scanner"
           placeholder="请选择"
+          :disabled="showMode"
         >
           <el-option
             v-for="item in scannerOptions"
@@ -71,34 +74,34 @@
         </el-select>
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'k8s_deployment'" label="最大副本数" prop="maxReplicas" :rules="[{ required: true, message: '最大副本数不能为空'}]">
-        <el-input-number v-model="executionCluster.maxReplicas" controls-position="right" :min="1" />
+        <el-input-number v-model="executionCluster.maxReplicas" style="height: 40px ; width: 200px;" controls-position="right" :min="1" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'k8s_deployment'" label="最小副本数" prop="minReplicas" :rules="[{ required: true, message: '最小副本数不能为空'}]">
-        <el-input-number v-model="executionCluster.minReplicas" controls-position="right" :min="1" />
+        <el-input-number v-model="executionCluster.minReplicas" style="height: 40px ; width: 200px;" controls-position="right" :min="1" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'k8s_deployment'" label="扩容阈值" prop="scaleThreshold" :rules="[{ required: true, message: '扩容阈值不能为空'}]">
-        <el-input-number v-model="executionCluster.scaleThreshold" controls-position="right" :min="1" />
+        <el-input-number v-model="executionCluster.scaleThreshold" style="height: 40px ; width: 200px;" controls-position="right" :min="1" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'k8s_deployment'" label="扫描器重试次数" prop="pullRetry" :rules="[{ required: true, message: '扫描器重试次数不能为空'}]">
-        <el-input-number v-model="executionCluster.pullRetry" controls-position="right" :min="1" />
+        <el-input-number v-model="executionCluster.pullRetry" style="height: 40px ; width: 200px;" controls-position="right" :min="1" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'docker'" label="host" prop="host" :rules="[{ required: true, message: 'host不能为空'}]">
-        <el-input v-model="executionCluster.host" style="height: 40px ; width: 500px;" />
+        <el-input v-model="executionCluster.host" style="height: 40px ; width: 500px;" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'docker'" label="版本" prop="version" :rules="[{ required: true, message: '版本不能为空'}]">
-        <el-input v-model="executionCluster.version" style="height: 40px ; width: 500px;" />
+        <el-input v-model="executionCluster.version" style="height: 40px ; width: 500px;" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'docker'" label="连接超时时长(毫秒)" prop="connectTimeout" :rules="[{ required: true, message: '连接超时时长不能为空'}]">
-        <el-input-number v-model="executionCluster.connectTimeout" controls-position="right" :min="0" />
+        <el-input-number v-model="executionCluster.connectTimeout" style="height: 40px ; width: 200px;" controls-position="right" :min="0" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'docker'" label="读取超时时长(毫秒)" prop="readTimeout" :rules="[{ required: true, message: '读取超时时长不能为空'}]">
-        <el-input-number v-model="executionCluster.readTimeout" controls-position="right" :min="0" />
+        <el-input-number v-model="executionCluster.readTimeout" style="height: 40px ; width: 200px;" controls-position="right" :min="0" :disabled="showMode" />
       </el-form-item>
       <el-form-item v-if="executionCluster.type === 'docker'" label="最大任务数" prop="maxTaskCount" :rules="[{ required: true, message: '最大任务数不能为空'}]">
-        <el-input-number v-model="executionCluster.maxTaskCount" controls-position="right" :min="0" />
+        <el-input-number v-model="executionCluster.maxTaskCount" style="height: 40px ; width: 200px;" controls-position="right" :min="0" :disabled="showMode" />
       </el-form-item>
     </el-form>
-    <div slot="footer">
+    <div v-if="!showMode" slot="footer">
       <el-button @click="close">取 消</el-button>
       <el-button type="primary" @click="handleUpdate()">确 定</el-button>
     </div>
@@ -113,7 +116,14 @@ export default {
   name: 'EditClusterConfigDialog',
   props: {
     visible: Boolean,
-    createMode: Boolean,
+    createMode: {
+      type: Boolean,
+      default: false
+    },
+    showMode: {
+      type: Boolean,
+      default: false
+    },
     /**
      * 仅在更新模式时有值
      */

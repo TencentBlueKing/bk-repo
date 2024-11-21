@@ -175,6 +175,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_PROJECT_METRICS,
         meta: { title: '仓库大小统计', icon: 'file' },
         component: () => import('@/views/node/ProjectMetrics')
+      },
+      {
+        path: 'preloadConfig',
+        name: ROUTER_NAME_PRELOAD_CONFIG,
+        meta: { title: '制品预加载配置', icon: 'service-config' },
+        component: () => import('@/views/preload/index')
       }
     ]
   },
@@ -262,6 +268,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_PROJECT_SCAN_CONFIGURATIONS,
         component: () => import('@/views/scan/ProjectScanConfiguration'),
         meta: { title: '项目配置', icon: 'setting' }
+      },
+      {
+        path: 'executionClustersConfig',
+        name: ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG,
+        meta: { title: '扫描执行集群配置', icon: 'service-config' },
+        component: () => import('@/views/execution-clusters/index')
       }
     ]
   },
@@ -325,30 +337,6 @@ export const asyncRoutes = [
         name: ROUTER_NAME_RATE_LIMITER_CONFIG,
         meta: { title: '限流管理', icon: 'permission' },
         component: () => import('@/views/rateLimitConfg/RateLimiter')
-      }
-    ]
-  },
-  {
-    path: '/preload-config',
-    component: Layout,
-    children: [
-      {
-        path: '/',
-        name: ROUTER_NAME_PRELOAD_CONFIG,
-        meta: { title: '制品预加载配置', icon: 'service-config' },
-        component: () => import('@/views/preload/index')
-      }
-    ]
-  },
-  {
-    path: '/execution-clusters-config',
-    component: Layout,
-    children: [
-      {
-        path: '/',
-        name: ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG,
-        meta: { title: '扫描执行集群配置', icon: 'service-config' },
-        component: () => import('@/views/execution-clusters/index')
       }
     ]
   },
