@@ -31,12 +31,16 @@
 
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.AUDITED_UID
+import com.tencent.bkrepo.common.api.constant.AUDIT_REQUEST_URI
+import com.tencent.bkrepo.common.api.constant.AUDIT_SHARE_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -60,8 +64,8 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -137,6 +141,11 @@ class TemporaryAccessService(
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo = repo, userId = downloadUser)
             HttpContextHolder.getRequest().setAttribute(USER_KEY, downloadUser)
+            ActionAuditContext.current().addExtendData(AUDITED_UID, downloadUser)
+            ActionAuditContext.current().addExtendData(
+                AUDIT_REQUEST_URI, "{${HttpContextHolder.getRequestOrNull()?.requestURI}}"
+            )
+            ActionAuditContext.current().addExtendData(AUDIT_SHARE_USER_ID, shareBy)
             context.shareUserId = shareBy
             val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
@@ -449,6 +458,11 @@ class TemporaryAccessService(
         }
         // 设置审计uid到session中
         HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, auditedUid)
+        ActionAuditContext.current().addExtendData(AUDITED_UID, auditedUid)
+        ActionAuditContext.current().addExtendData(
+            AUDIT_REQUEST_URI, "{${HttpContextHolder.getRequestOrNull()?.requestURI}}"
+        )
+        ActionAuditContext.current().addExtendData(AUDIT_SHARE_USER_ID, tokenInfo.createdBy)
         // 校验ip授权
         val clientIp = HttpContextHolder.getClientAddress()
         if (tokenInfo.authorizedIpList.isNotEmpty() && clientIp !in tokenInfo.authorizedIpList) {
