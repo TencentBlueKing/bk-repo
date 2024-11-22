@@ -134,16 +134,16 @@ class NodeQueryWithoutShardingKeyTest @Autowired constructor(
         nodeService.listNodeBySha256("notExistsSha256").apply { assertEquals(0, size) }
 
         // 测试单表数据量小于limit的情况
-        nodeService.listNodeBySha256(sha256, 20, tillLimit = false).apply { assertEquals(18, size) }
-        nodeService.listNodeBySha256(sha256, 100, tillLimit = true).apply { assertEquals(20, size) }
+        nodeService.listNodeBySha256(sha256, 20, tillLimit = false).apply { assertEquals(6, size) }
+        nodeService.listNodeBySha256(sha256, 100, tillLimit = true).apply { assertEquals(18, size) }
 
         // 测试单表数据量等于limit的页
-        nodeService.listNodeBySha256(sha256, 18, tillLimit = true).apply { assertEquals(18, size) }
-        nodeService.listNodeBySha256(sha256, 18, tillLimit = false).apply { assertEquals(18, size) }
+        nodeService.listNodeBySha256(sha256, 6, tillLimit = true).apply { assertEquals(6, size) }
+        nodeService.listNodeBySha256(sha256, 6, tillLimit = false).apply { assertEquals(6, size) }
 
         // 测试获数据量小于pageSize的页
-        nodeService.listNodeBySha256(sha256, 10, tillLimit = true).apply { assertEquals(10, size) }
-        nodeService.listNodeBySha256(sha256, 10, tillLimit = false).apply { assertEquals(10, size) }
+        nodeService.listNodeBySha256(sha256, 3, tillLimit = true).apply { assertEquals(3, size) }
+        nodeService.listNodeBySha256(sha256, 3, tillLimit = false).apply { assertEquals(3, size) }
     }
 
     private fun generateTestData(size: Int, generateSha256Func: (Int) -> String) {
