@@ -37,13 +37,15 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository.Companion.HEADER_NAME_HASH
 import com.tencent.bkrepo.ddc.component.PermissionHelper
+import com.tencent.bkrepo.ddc.pojo.BatchOps
+import com.tencent.bkrepo.ddc.pojo.Operation
 import com.tencent.bkrepo.ddc.service.ReferenceArtifactService
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_JUPITER_INLINED_PAYLOAD
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
@@ -151,6 +153,28 @@ class ReferencesController(
         permissionHelper.checkPathPermission(PermissionAction.WRITE)
         artifactInfo.inlineBlobHash = hash
         referenceArtifactService.finalize(artifactInfo)
+    }
+
+    @ApiOperation("批量读写")
+    @PostMapping(
+        "/{repoName}",
+        consumes = [MEDIA_TYPE_UNREAL_COMPACT_BINARY],
+        produces = [MEDIA_TYPE_UNREAL_COMPACT_BINARY],
+    )
+    fun batchOp(@PathVariable repoName: String) {
+        // 检查权限
+        val ops = BatchOps.deserialize(HttpContextHolder.getRequest().inputStream.use { it.readBytes() })
+        var requiredPermissionAction = PermissionAction.READ
+        for (op in ops.ops) {
+            if (op.op == Operation.PUT.name) {
+                requiredPermissionAction = PermissionAction.WRITE
+                break
+            }
+        }
+        permissionHelper.checkPathPermission(requiredPermissionAction)
+
+        // 执行操作
+        referenceArtifactService.batch(ops)
     }
 
     private fun getResponseType(format: String?, default: String): String {

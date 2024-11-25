@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
+import com.tencent.bkrepo.ddc.pojo.BatchOps
 import org.springframework.stereotype.Service
 
 @Service
@@ -56,6 +57,13 @@ class ReferenceArtifactService(
         with(artifactInfo) {
             referenceService.deleteReference(projectId, repoName, bucket, refKey.toString(), legacy)
         }
+    }
+
+    /**
+     * 批量操作
+     */
+    fun batch(ops: BatchOps) {
+        // TODO
     }
 
     fun finalize(artifactInfo: ReferenceArtifactInfo) {
