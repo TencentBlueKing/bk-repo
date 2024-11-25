@@ -7,5 +7,6 @@ data class TranscodeParam(
     val videoCodec: String? = null, // 视频编码
     val audioCodec: String? = null, // 音频编码
     var inputFileName: String, // 源文件名
-    var outputFileName: String, // 输出文件名
+    var outputFileName: String, // 输出文件名,
+    var extraParams: String, // 额外参数
 )

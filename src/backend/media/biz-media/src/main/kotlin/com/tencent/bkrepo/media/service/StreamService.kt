@@ -59,7 +59,7 @@ class StreamService(
                 type = RepositoryType.MEDIA,
                 category = RepositoryCategory.LOCAL,
                 public = false,
-                display = display
+                display = display,
             )
             repositoryService.createRepo(createRepoRequest)
             val nodeCreateRequest = NodeCreateRequest(
@@ -100,17 +100,20 @@ class StreamService(
         userId: String,
         remux: Boolean = false,
         saveType: MediaType = MediaType.RAW,
+        transcodeExtraParams: String? = null,
     ): ClientStream {
         val repoId = RepositoryId(projectId, repoName)
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
         val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
+        val transcodeConfig = getTranscodeConfig(projectId)
+        transcodeConfig?.let { it.extraParams = transcodeExtraParams }
         val fileConsumer = MediaArtifactFileConsumer(
             storageManager,
             transcodeService,
             repo,
             userId,
             STREAM_PATH,
-            getTranscodeConfig(projectId),
+            transcodeConfig,
         )
         val recordingListener = if (remux) {
             RemuxRecordingListener(credentials.upload.location, scheduler, saveType, fileConsumer)
