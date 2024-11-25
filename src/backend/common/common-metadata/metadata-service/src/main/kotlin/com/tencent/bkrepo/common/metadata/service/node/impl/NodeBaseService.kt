@@ -160,6 +160,16 @@ abstract class NodeBaseService(
         )
     }
 
+    override fun listNodeBySha256(
+        sha256: String,
+        limit: Int,
+        includeMetadata: Boolean,
+        includeDeleted: Boolean,
+        tillLimit: Boolean
+    ): List<NodeInfo> {
+        return nodeDao.listBySha256(sha256, limit, includeMetadata, includeDeleted, tillLimit).map { convert(it)!! }
+    }
+
     override fun checkExist(artifact: ArtifactInfo): Boolean {
         return nodeDao.exists(artifact.projectId, artifact.repoName, artifact.getArtifactFullPath())
     }
