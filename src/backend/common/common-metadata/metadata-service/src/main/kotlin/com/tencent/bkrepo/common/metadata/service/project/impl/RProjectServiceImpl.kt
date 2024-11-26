@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.project.RProjectDao
 import com.tencent.bkrepo.common.metadata.dao.project.RProjectMetricsDao
 import com.tencent.bkrepo.common.metadata.listener.RResourcePermissionListener
@@ -82,6 +83,7 @@ class RProjectServiceImpl(
     private val projectMetricsDao: RProjectMetricsDao,
     private val storageCredentialService: RStorageCredentialService,
     private val rAuthClient: RAuthClient,
+    private val repositoryProperties: RepositoryProperties,
 ) : RProjectService {
 
     @Autowired
@@ -133,6 +135,7 @@ class RProjectServiceImpl(
     }
 
     override suspend fun isProjectEnabled(name: String): Boolean {
+        if (!repositoryProperties.returnEnabled) return true
         val projectInfo = projectDao.findByName(name)
             ?: throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
         return ProjectServiceHelper.isProjectEnabled(projectInfo)
