@@ -53,7 +53,7 @@ data class BatchOps(
          * 仅支持反序列化最外层的属性，且只支持了BatchOp的字段类型
          */
         private fun deserializeBatchOp(obj: BatchOp, cbObject: CbObject): BatchOp {
-            fun toVal(field: CbField) = when {
+            fun valOf(field: CbField) = when {
                 field.isBool() -> field.asBool() as Any
                 field.isString() -> field.asString()
                 field.isInteger() -> field.asUInt32()
@@ -61,7 +61,7 @@ data class BatchOps(
                 else -> throw RuntimeException("unsupported field type ${field.getType()}")
             }
             cbObject.forEach { field ->
-                obj.javaClass.getDeclaredField(field.name).set(obj, toVal(field))
+                obj.javaClass.getDeclaredField(field.name).set(obj, valOf(field))
             }
             return obj
         }
