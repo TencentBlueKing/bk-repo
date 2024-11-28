@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.ddc.pojo
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.ddc.serialization.CbArray
 import com.tencent.bkrepo.ddc.serialization.CbField
 import com.tencent.bkrepo.ddc.serialization.CbObject
 import com.tencent.bkrepo.ddc.utils.isBool
@@ -43,9 +46,11 @@ data class BatchOps(
 ) {
     companion object {
         fun deserialize(byteArray: ByteArray): BatchOps {
-            val ops = CbObject(ByteBuffer.wrap(byteArray))[BatchOps::ops.name].asArray().map {
-                deserializeBatchOp(BatchOp(), it.asObject())
+            val opsCbArray = CbObject(ByteBuffer.wrap(byteArray))[BatchOps::ops.name].asArray()
+            if (opsCbArray == CbArray.EMPTY) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "ops is empty")
             }
+            val ops = opsCbArray.map { deserializeBatchOp(BatchOp(), it.asObject()) }
             return BatchOps(ops)
         }
 
@@ -60,8 +65,10 @@ data class BatchOps(
                 field.isObject() -> field.asObject()
                 else -> throw RuntimeException("unsupported field type ${field.getType()}")
             }
-            cbObject.forEach { field ->
-                obj.javaClass.getDeclaredField(field.name).set(obj, valOf(field))
+            cbObject.forEach { cbField ->
+                val field = obj.javaClass.getDeclaredField(cbField.name)
+                field.isAccessible = true
+                field.set(obj, valOf(cbField))
             }
             return obj
         }
@@ -72,22 +79,22 @@ data class BatchOps(
  * 操作
  */
 data class BatchOp(
-    var opId: Int = 0,
-    var bucket: String = "",
-    var key: String = "",
-    var op: String = Operation.INVALID.toString(),
+    val opId: Int = 0,
+    val bucket: String = "",
+    val key: String = "",
+    val op: String = Operation.INVALID.toString(),
     /**
      * 是否检查ref引用的所有blob是否存在
      */
-    var resolveAttachments: Boolean = false,
+    val resolveAttachments: Boolean = false,
     /**
      * ref inline blob，op为PUT时有值
      */
-    var payload: CbObject? = null,
+    val payload: CbObject? = null,
     /**
      * ref inline blob hash, op为PUT时有值
      */
-    var payloadHash: String? = null,
+    val payloadHash: String? = null,
 )
 
 /**

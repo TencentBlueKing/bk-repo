@@ -31,6 +31,7 @@ import com.tencent.bkrepo.ddc.serialization.CbFieldType
 import com.tencent.bkrepo.ddc.serialization.CbObject
 import com.tencent.bkrepo.ddc.utils.beginUniformArray
 import com.tencent.bkrepo.ddc.utils.writeInteger
+import com.tencent.bkrepo.ddc.utils.writerObject
 
 data class BatchOpsResponse(
     val results: List<OpResponse>
@@ -41,10 +42,7 @@ data class BatchOpsResponse(
             results.forEach {
                 writer.beginObject()
                 writer.writeInteger(OpResponse::opId.name, it.opId)
-                // 移除response CbObject的type与name信息，仅保留其payload
-                val resPayload = it.response.getView()
-                resPayload.position(1)
-                writer.writeField(CbFieldType.Object, OpResponse::response.name, resPayload.remaining()).put(resPayload)
+                writer.writerObject(OpResponse::response.name, it.response)
                 writer.writeInteger(OpResponse::statusCode.name, it.statusCode)
                 writer.endObject()
             }
