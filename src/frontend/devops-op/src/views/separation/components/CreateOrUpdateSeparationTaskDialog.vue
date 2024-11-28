@@ -1,6 +1,6 @@
 <template>
   <el-dialog title="创建降冷任务" :visible.sync="showDialog" :before-close="close">
-    <el-form ref="form" :rules="rules" :model="task" status-icon>
+    <el-form ref="form" :rules="rules" :model="task" status-icon label-position="left" label-width="80px">
       <el-form-item label="任务类型" prop="type">
         <el-select
           v-model="task.type"
@@ -69,7 +69,7 @@
           />
         </el-select>
       </el-form-item>
-      <div v-if="showType !== 'GENERIC'&& showType !== 'DDC'">
+      <div v-if="showType !== 'GENERIC'&& showType !== 'DDC'" style="margin-left: -80px">
         <el-form-item
           v-for="(item,index) in task.content.packages"
           :key="index"
@@ -79,21 +79,21 @@
           <el-input
             v-model="item.packageKey"
             placeholder="请输入"
-            style="height: 40px; width: 120px"
+            style="height: 40px; width: 100px"
             min="0"
           />
           <span style="margin-left: 10px">包kEY正则：</span>
           <el-input
             v-model="item.packageKeyRegex"
             placeholder="请输入"
-            style="height: 40px; width: 120px"
+            style="height: 40px; width: 100px"
             min="0"
           />
           <span style="margin-left: 10px">包版本：</span>
           <el-input
             v-model="item.versionList"
             placeholder="请输入数据，按逗号分隔"
-            style="height: 40px; width: 200px"
+            style="height: 40px; width: 185px"
             min="0"
             @change="versionChange(index)"
           />
@@ -101,14 +101,14 @@
           <el-input
             v-model="item.versionRegex"
             placeholder="请输入"
-            style="height: 40px; width: 120px"
+            style="height: 40px; width: 100px"
             min="0"
           />
           <span style="margin-left: 10px">排除包版本：</span>
           <el-input
             v-model="item.excludeVersionList"
             placeholder="请输入数据，按逗号分隔"
-            style="height: 40px; width: 200px"
+            style="height: 40px; width: 185px"
             @change="excludeVersionChange(index)"
           />
           <i
@@ -119,12 +119,12 @@
           <i
             v-if="index == task.content.packages.length - 1"
             class="el-icon-circle-plus-outline"
-            style="margin: 0px 20px"
+            style="margin: 0px 10px"
             @click.prevent="addDomain()"
           />
         </el-form-item>
       </div>
-      <div v-else>
+      <div v-else style="margin-left: -80px">
         <el-form-item
           v-for="(item,index) in task.content.paths"
           :key="'path'+ index"
