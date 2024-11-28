@@ -165,10 +165,6 @@ class UserShareController(
             AuditAttribute(
                 name = ActionAuditContent.REPO_NAME_TEMPLATE,
                 value = "#artifactInfo?.repoName"
-            ),
-            AuditAttribute(
-                name = ActionAuditContent.TOKEN_TEMPLATE,
-                value = "#token"
             )
         ],
         scopeId = "#artifactInfo?.projectId",
@@ -183,7 +179,6 @@ class UserShareController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo
     ) {
         val downloadUser = downloadUserId ?: userId
-        ActionAuditContext.current().addExtendData("downloadUser", downloadUser)
         shareService.download(downloadUser, token, artifactInfo)
     }
 }

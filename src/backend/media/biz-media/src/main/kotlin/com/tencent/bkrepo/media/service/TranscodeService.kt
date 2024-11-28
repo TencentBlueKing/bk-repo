@@ -76,7 +76,7 @@ class TranscodeService(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = newArtifactInfo.getArtifactFullPath(),
-                metadata = originMetadata
+                metadata = originMetadata,
             )
             metadataService.saveMetadata(copyRequest)
             val removeContext = ArtifactRemoveContext(repo, originArtifactInfo)
@@ -106,6 +106,7 @@ class TranscodeService(
                 audioCodec = audioCodec,
                 inputFileName = artifactInfo.getResponseName(),
                 outputFileName = outputArtifactInfo.getResponseName(),
+                extraParams = transcodeConfig.extraParams.orEmpty(),
             )
         }
     }

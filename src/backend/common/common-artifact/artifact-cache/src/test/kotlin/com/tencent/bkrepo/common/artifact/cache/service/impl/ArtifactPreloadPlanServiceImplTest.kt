@@ -55,6 +55,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -135,9 +136,9 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
             node.copy(fullPath = "test.txt"),
             node.copy(fullPath = "test2.txt"),
         )
-        whenever(nodeService.listNodePageBySha256(anyString(), any())).thenReturn(
-            Pages.ofResponse(Pages.ofRequest(0, 2000), nodes.size.toLong(), nodes)
-        )
+        whenever(
+            nodeService.listNodeBySha256(anyString(), any(), anyBoolean(), anyBoolean(), anyBoolean())
+        ).thenReturn(nodes)
 
         preloadPlanService.generatePlan(null, UT_SHA256)
         plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
@@ -177,9 +178,9 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
         for (i in 0..1000) {
             nodes.add(buildNodeInfo())
         }
-        whenever(nodeService.listNodePageBySha256(anyString(), any())).thenReturn(
-            Pages.ofResponse(Pages.ofRequest(0, 2000), nodes.size.toLong(), nodes)
-        )
+        whenever(
+            nodeService.listNodeBySha256(anyString(), any(), anyBoolean(), anyBoolean(), anyBoolean())
+        ).thenReturn(nodes)
         preloadPlanService.generatePlan(null, UT_SHA256)
         val plans = preloadPlanService.plans(UT_PROJECT_ID, UT_REPO_NAME, Pages.ofRequest(0, 10)).records
         assertEquals(0, plans.size)
@@ -218,9 +219,9 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
             buildRepo(projectId = projectId, repoName = repoName)
         )
         val nodes = listOf(buildNodeInfo(projectId, repoName))
-        whenever(nodeService.listNodePageBySha256(anyString(), any())).thenReturn(
-            Pages.ofResponse(Pages.ofRequest(0, 20), 1L, nodes)
-        )
+        whenever(
+            nodeService.listNodeBySha256(anyString(), any(), anyBoolean(), anyBoolean(), anyBoolean())
+        ).thenReturn(nodes)
     }
 
     // 构造测试数据

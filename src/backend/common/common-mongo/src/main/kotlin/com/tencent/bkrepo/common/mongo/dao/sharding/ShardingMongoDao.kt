@@ -312,6 +312,6 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     companion object {
 
         private val logger = LoggerFactory.getLogger(ShardingMongoDao::class.java)
-        private const val MAX_SHARDING_COUNT_OF_PAGE_QUERY = 256
+        const val MAX_SHARDING_COUNT_OF_PAGE_QUERY = 256
     }
 }

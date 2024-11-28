@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import feign.RetryableException
 import org.slf4j.LoggerFactory
 import org.springframework.util.AntPathMatcher
 
@@ -154,6 +155,12 @@ object ClusterUtils {
             if (!messageCodes.map { it.getCode() }.contains(e.errorCode)) {
                 throw e
             }
+        } catch (e: RetryableException) {
+            if (e.message?.contains("Read time out") == true) {
+                logger.info("ignore feign exception: ${e.message}")
+                return
+            }
+            throw e
         }
     }
 }

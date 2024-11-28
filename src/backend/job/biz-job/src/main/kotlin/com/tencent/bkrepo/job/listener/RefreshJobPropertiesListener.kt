@@ -53,7 +53,8 @@ class RefreshJobPropertiesListener(private val jobRegistrar: JobRegistrar) : Sma
             refreshKeys.forEach { key ->
                 try {
                     val jobName = key.substring(4, key.indexOf(".", 4))
-                        .replace(pattern) { it.value.last().uppercase() } + JOB_SUFFIX
+                        .replace(pattern) { it.value.last().uppercase() }
+                        .replaceFirstChar { it.lowercase() } + JOB_SUFFIX
                     val jobBean = SpringContextUtils.getBean(BatchJob::class.java, jobName)
                     logger.info("Job [$jobName] config updated")
                     val job = JobUtils.parseBatchJob(jobBean)

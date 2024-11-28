@@ -58,10 +58,10 @@ import com.tencent.bkrepo.conan.pojo.PackageReference
 import com.tencent.bkrepo.conan.pojo.RevisionInfo
 import com.tencent.bkrepo.conan.utils.ConanInfoLoadUtil
 import com.tencent.bkrepo.conan.utils.ConanPathUtils
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildExportFolderPath
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageReference
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildPackageRevisionFolderPath
-import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildReference
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildRevisionPath
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageConanInfoFile
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
@@ -71,11 +71,11 @@ import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToUtcTime
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import java.time.LocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
 
 @Component
 class CommonService(
@@ -83,10 +83,13 @@ class CommonService(
 ) {
     @Autowired
     lateinit var nodeService: NodeService
+
     @Autowired
     lateinit var storageManager: StorageManager
+
     @Autowired
     lateinit var repositoryService: RepositoryService
+
     @Autowired
     lateinit var lockOperation: LockOperation
 
@@ -341,7 +344,7 @@ class CommonService(
         conanFileReference: ConanFileReference
     ): RevisionInfo? {
         val revPath = getRecipeRevisionsFile(conanFileReference)
-        val refStr = buildReference(conanFileReference)
+        val refStr = buildConanFileName(conanFileReference)
         return lockAction(projectId, repoName, revPath) {
             getLatestRevision(
                 projectId = projectId,
@@ -503,7 +506,7 @@ class CommonService(
         conanFileReference: ConanFileReference
     ): IndexInfo {
         val revPath = getRecipeRevisionsFile(conanFileReference)
-        val refStr = buildReference(conanFileReference)
+        val refStr = buildConanFileName(conanFileReference)
         return lockAction(projectId, repoName, revPath) {
             getRevisionsList(
                 projectId = projectId,
@@ -571,6 +574,7 @@ class CommonService(
                 action()
             } finally {
                 lockOperation.close(lockKey, lock)
+                logger.info("Lock for key $lockKey has been released.")
             }
         } else {
             action()

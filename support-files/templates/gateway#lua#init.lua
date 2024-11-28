@@ -59,6 +59,7 @@ config = {
   security_paths = {
   },
   service_in_container = "__BK_REPO_SERVICE_IN_CONTAINER__",
+  service_in_local = "__BK_REPO_SERVICE_IN_LOCAL__",
   container_url = "__BK_REPO_URL_CONTAINER__"
 }
   
