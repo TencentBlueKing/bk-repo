@@ -29,8 +29,12 @@ package com.tencent.bkrepo.ddc.utils
 
 import com.tencent.bkrepo.ddc.model.TDdcBlob
 import com.tencent.bkrepo.ddc.model.TDdcRef
+import com.tencent.bkrepo.ddc.serialization.CbObject
+import org.slf4j.LoggerFactory
 
 object DdcUtils {
+    private val logger = LoggerFactory.getLogger(DdcUtils::class.java)
+
     const val DIR_BLOBS = "blobs"
 
     fun TDdcRef.fullPath() = "/$bucket/$key"
@@ -38,4 +42,13 @@ object DdcUtils {
     fun TDdcBlob.fullPath() = "/blobs/$blobId"
 
     fun buildRef(bucket: String, key: String): String = "ref/$bucket/$key"
+
+    fun toError(e: Exception, statusCode: Int): Pair<CbObject, Int> {
+        logger.info("batch op failed:\n${e.stackTraceToString()}")
+        val obj = CbObject.build {
+            it.writeString("title", e.message)
+            it.writeInteger("status", statusCode)
+        }
+        return Pair(obj, statusCode)
+    }
 }
