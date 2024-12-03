@@ -60,7 +60,7 @@ object DdcUtils {
         return toError(e, statusCode, msg)
     }
 
-    private fun toError(e: Exception, statusCode: Int, msg: String): Pair<CbObject, Int> {
+    fun toError(e: Exception, statusCode: Int, msg: String): Pair<CbObject, Int> {
         if (statusCode == HttpStatus.INTERNAL_SERVER_ERROR.value) {
             logger.error("batch op failed:\n${e.stackTraceToString()}")
         } else if (statusCode != HttpStatus.NOT_FOUND.value) {

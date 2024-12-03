@@ -119,7 +119,9 @@ class SerializationTest {
     @Test
     fun testSerializeError() {
         val e = ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "test")
-        val (error, code) = DdcUtils.toError(e)
+        val (error, code) = DdcUtils.toError(
+            e, e.status.value, "[250105]system.parameter.invalid"
+        )
         assertEquals(HttpStatus.BAD_REQUEST.value, code)
         assertEquals(
             "{\"title\":\"[250105]system.parameter.invalid\",\"status\":400}",
