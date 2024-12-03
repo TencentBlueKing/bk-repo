@@ -49,6 +49,9 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
     PIPELINE_REPO_MANUAL_UPLOAD_NOT_ALLOWED(10, "generic.pipeline-repo.manual-upload.not-allowed"),
     PIPELINE_ARTIFACT_PATH_ILLEGAL(11, "generic.pipeline.artifact.path.illegal"),
     CHUNKED_ARTIFACT_BROKEN(12, "generic.chunked.artifact.broken"),
+    BLOCK_FILE_NODE_NOT_CREATE(13, "generic.block.file.node.not-create"),
+    BLOCK_OFFSET_NOT_FOUND(14, "generic.block.node.offset.not-found"),
+    BLOCK_LIST_PATH_IS_FOLDER(15, "generic.block.list.path.is.folder")
     ;
 
     override fun getBusinessCode() = businessCode

@@ -66,6 +66,7 @@ import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
@@ -87,19 +88,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
-import com.tencent.bkrepo.generic.constant.BKREPO_META
-import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
-import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
-import com.tencent.bkrepo.generic.constant.GenericMessageCode
-import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
-import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
-import com.tencent.bkrepo.generic.constant.HEADER_MD5
-import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
-import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
-import com.tencent.bkrepo.generic.constant.HEADER_SHA256
-import com.tencent.bkrepo.generic.constant.HEADER_SIZE
-import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
-import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
+import com.tencent.bkrepo.generic.constant.*
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
 import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
@@ -125,6 +114,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
+import java.time.LocalDateTime
 import java.util.Base64
 import java.util.Locale
 import java.util.UUID
@@ -151,6 +141,13 @@ class GenericLocalRepository(
         super.onUploadBefore(context)
         // 若不允许覆盖, 提前检查节点是否存在
         checkNodeExist(context)
+        // 通用上传前检查
+        baseUploadBefore(context)
+        // 二次检查，防止接收文件过程中，有并发上传成功的情况
+        checkNodeExist(context)
+    }
+
+    private fun baseUploadBefore(context: ArtifactUploadContext){
         // 检查是否是覆盖流水线构件
         checkIfOverwritePipelineArtifact(context)
         // 校验sha256
@@ -165,8 +162,17 @@ class GenericLocalRepository(
         if (uploadMd5 != null && !calculatedMd5.equals(uploadMd5, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
         }
-        // 二次检查，防止接收文件过程中，有并发上传成功的情况
-        checkNodeExist(context)
+    }
+
+    override fun onNewUploadBefore(context: ArtifactUploadContext){
+        // 上传前校验
+        super.onNewUploadBefore(context)
+        // 若不允许覆盖, 提前检查Block节点是否存在
+        //checkBlockNodeExist(context)
+        // 通用上传前检查
+        baseUploadBefore(context)
+        // 二次检查，防止接收block文件过程中，有并发上传成功的情况
+        //checkBlockNodeExist(context)
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
@@ -189,6 +195,46 @@ class GenericLocalRepository(
             context.response.addHeader(X_CHECKSUM_MD5, context.getArtifactMd5())
             context.response.addHeader(X_CHECKSUM_SHA256, context.getArtifactSha256())
             context.response.writer.println(ResponseBuilder.success(nodeDetail).toJsonString())
+        }
+    }
+
+    override fun onNewUpload(context: ArtifactUploadContext) {
+        with(context) {
+            checkBlockBaseNode(artifactInfo)
+
+            val bArtifactFile = getArtifactFile()
+            val sha256 = getArtifactSha256()
+
+            val sequence = context.request.getHeader(HEADER_SEQUENCE).toLongOrNull()
+            val offset = context.request.getHeader(HEADER_OFFSET)?.toLongOrNull()
+
+            val blockNode = TBlockNode(
+                createdBy = userId,
+                createdDate = LocalDateTime.now(),
+                nodeFullPath = artifactInfo.getArtifactFullPath(),
+                startPos = offset ?: sequence ?: throw ErrorCodeException(GenericMessageCode.BLOCK_OFFSET_NOT_FOUND),
+                sha256 = sha256,
+                projectId = projectId,
+                repoName = repoName,
+                size = bArtifactFile.getSize()
+            )
+
+            val stored = storageService.store(sha256, bArtifactFile, storageCredentials)
+
+            try {
+                blockNodeService.createBlock(blockNode, storageCredentials)
+            } catch (e: Exception) {
+                if (stored > 1) {
+                    storageService.delete(sha256, storageCredentials)
+                }
+                // Log the exception for debugging purposes
+                logger.error("Failed to create block node", e)
+                throw e
+            }
+
+            // Set response content type and write success response
+            context.response.contentType = MediaTypes.APPLICATION_JSON
+            context.response.writer.println(ResponseBuilder.success().toJsonString())
         }
     }
 
@@ -260,6 +306,19 @@ class GenericLocalRepository(
                 }
             }
         }
+    }
+
+    private fun checkBlockNodeExist(context: ArtifactUploadContext) {
+        // todo 判断block node是否存在
+    }
+
+
+    private fun checkBlockBaseNode(artifactInfo: ArtifactInfo) {
+        nodeService.getNodeDetail(artifactInfo)
+            ?: run {
+                logger.error("Node detail not found for artifact: $artifactInfo")
+                throw ErrorCodeException(GenericMessageCode.BLOCK_FILE_NODE_NOT_CREATE, artifactInfo)
+            }
     }
 
     private fun checkIfOverwritePipelineArtifact(context: ArtifactUploadContext) {

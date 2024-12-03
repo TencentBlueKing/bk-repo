@@ -55,6 +55,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService
@@ -84,6 +85,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
     lateinit var nodeService: NodeService
+
+    @Autowired
+    lateinit var blockNodeService: BlockNodeService
 
     @Autowired
     lateinit var nodeSearchService: NodeSearchService
@@ -129,6 +133,19 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         } catch (exception: RuntimeException) {
             this.onUploadFailed(context, exception)
         } finally {
+            this.onUploadFinished(context)
+        }
+    }
+
+
+    override fun newUpload(context: ArtifactUploadContext) {
+        try {
+            this.onNewUploadBefore(context)
+            this.onNewUpload(context)
+            this.onUploadSuccess(context)
+        }catch (exception: RuntimeException){
+            this.onUploadFailed(context, exception)
+        }finally {
             this.onUploadFinished(context)
         }
     }
@@ -194,9 +211,23 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     }
 
     /**
+     * 分块上传前回调
+     */
+    open fun onNewUploadBefore(context: ArtifactUploadContext) {
+        artifactMetrics.uploadingCount.incrementAndGet()
+    }
+
+    /**
      * 上传构件
      */
     open fun onUpload(context: ArtifactUploadContext) {
+        throw MethodNotAllowedException()
+    }
+
+    /**
+     * 分块上传构件
+     */
+    open fun onNewUpload(context: ArtifactUploadContext) {
         throw MethodNotAllowedException()
     }
 

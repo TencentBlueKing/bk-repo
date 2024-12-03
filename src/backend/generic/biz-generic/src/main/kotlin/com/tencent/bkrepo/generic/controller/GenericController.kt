@@ -65,13 +65,11 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BATCH_M
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BLOCK_MAPPING_URI
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
-import com.tencent.bkrepo.generic.pojo.BatchDownloadPaths
-import com.tencent.bkrepo.generic.pojo.BlockInfo
-import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
-import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
+import com.tencent.bkrepo.generic.pojo.*
 import com.tencent.bkrepo.generic.service.CompressedFileService
 import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.UploadService
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -115,6 +113,12 @@ class GenericController(
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     fun upload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         uploadService.upload(artifactInfo, file)
+    }
+
+    @PutMapping("/new$GENERIC_MAPPING_URI")
+    @Permission(ResourceType.NODE, PermissionAction.WRITE)
+    fun newBlockUpload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
+        uploadService.newBlockUpload(artifactInfo, file)
     }
 
     @AuditEntry(
@@ -178,6 +182,16 @@ class GenericController(
     }
 
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
+    @PostMapping("/new$BLOCK_MAPPING_URI")
+    fun newStartBlockUpload(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+    ): Response<NodeDetail> {
+        uploadService.newStartBlockUpload(userId, artifactInfo)
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.NODE, PermissionAction.WRITE)
     @DeleteMapping(BLOCK_MAPPING_URI)
     fun abortBlockUpload(
         @RequestAttribute userId: String,
@@ -185,6 +199,16 @@ class GenericController(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<Void> {
         uploadService.abortBlockUpload(userId, uploadId, artifactInfo)
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.NODE, PermissionAction.WRITE)
+    @DeleteMapping("/new$BLOCK_MAPPING_URI")
+    fun abortNewBlockUpload(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+    ): Response<Void> {
+        uploadService.abortNewBlockUpload(userId, artifactInfo)
         return ResponseBuilder.success()
     }
 
@@ -205,6 +229,7 @@ class GenericController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_UPLOAD_CONTENT
     )
+
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     @PutMapping(BLOCK_MAPPING_URI)
     fun completeBlockUpload(
@@ -216,6 +241,16 @@ class GenericController(
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.NODE, PermissionAction.WRITE)
+    @PutMapping("/new$BLOCK_MAPPING_URI")
+    fun completeNewBlockUpload(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+    ): Response<Void> {
+        uploadService.completeNewBlockUpload(userId, artifactInfo)
+        return ResponseBuilder.success()
+    }
+
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @GetMapping(BLOCK_MAPPING_URI)
     fun listBlock(
@@ -224,6 +259,15 @@ class GenericController(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<List<BlockInfo>> {
         return ResponseBuilder.success(uploadService.listBlock(userId, uploadId, artifactInfo))
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.READ)
+    @GetMapping("/new$BLOCK_MAPPING_URI")
+    fun listNewBlock(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
+    ): Response<List<NewBlockInfo>> {
+        return ResponseBuilder.success(uploadService.newListBlock(userId, artifactInfo))
     }
 
     @AuditEntry(
