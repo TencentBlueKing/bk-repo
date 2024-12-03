@@ -75,6 +75,7 @@ import com.tencent.bkrepo.ddc.utils.isAttachment
 import com.tencent.bkrepo.ddc.utils.isBinaryAttachment
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
@@ -211,7 +212,11 @@ class DdcLocalRepository(
     private fun onUploadReference(context: ArtifactUploadContext) {
         when (val contentType = context.request.contentType) {
             MEDIA_TYPE_UNREAL_COMPACT_BINARY -> {
-                HttpContextHolder.getResponse().writer.println(uploadReference(context).toJsonString())
+                val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
+                val artifactFile = context.getArtifactFile()
+                val repoDetail = context.repositoryDetail
+                val res = uploadReference(repoDetail, artifactInfo, artifactFile, context.userId).toJsonString()
+                HttpContextHolder.getResponse().writer.println(res)
             }
 
             else -> throw BadRequestException(
@@ -220,9 +225,12 @@ class DdcLocalRepository(
         }
     }
 
-    fun uploadReference(context: ArtifactUploadContext): CreateRefResponse {
-        val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
-        val artifactFile = context.getArtifactFile()
+    fun uploadReference(
+        repositoryDetail: RepositoryDetail,
+        artifactInfo: ReferenceArtifactInfo,
+        artifactFile: ArtifactFile,
+        operator: String,
+    ): CreateRefResponse {
         val payload = if (artifactFile is ByteArrayArtifactFile) {
             artifactFile.byteArray()
         } else {
@@ -231,16 +239,18 @@ class DdcLocalRepository(
         val ref = referenceService.create(Reference.from(artifactInfo, payload))
         if (ref.inlineBlob == null) {
             // inlineBlob为null时表示inlineBlob过大，需要存到文件中
-            val nodeCreateRequest = buildRefNodeCreateRequest(context)
-            storageManager.storeArtifactFile(
-                nodeCreateRequest, context.getArtifactFile(), context.storageCredentials
-            )
+            val nodeCreateRequest = buildRefNodeCreateRequest(repositoryDetail, artifactInfo, artifactFile, operator)
+            storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, repositoryDetail.storageCredentials)
         }
         return referenceService.finalize(ref, payload)
     }
 
-    private fun buildRefNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
+    private fun buildRefNodeCreateRequest(
+        repositoryDetail: RepositoryDetail,
+        artifactInfo: ReferenceArtifactInfo,
+        artifactFile: ArtifactFile,
+        operator: String,
+    ): NodeCreateRequest {
         val metadata = ArrayList<MetadataModel>()
         metadata.add(
             MetadataModel(
@@ -250,7 +260,15 @@ class DdcLocalRepository(
             )
         )
 
-        return buildNodeCreateRequest(context).copy(
+        return NodeCreateRequest(
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
+            folder = false,
+            fullPath = artifactInfo.getArtifactFullPath(),
+            size = artifactFile.getSize(),
+            sha256 = artifactFile.getFileSha256(),
+            md5 = artifactFile.getFileMd5(),
+            operator = operator,
             overwrite = true,
             nodeMetadata = metadata
         )

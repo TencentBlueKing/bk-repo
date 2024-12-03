@@ -105,7 +105,8 @@ fun CbWriterBase.writeStringValue(value: String) = writeString(null, value)
 
 fun CbWriterBase.writeString(name: String? = null, value: String?) {
     if (value != null) {
-        writeFieldWithLength(CbFieldType.String, name, value.length).put(value.toByteArray())
+        val valueByteArray = value.toByteArray()
+        writeFieldWithLength(CbFieldType.String, name, valueByteArray.size).put(valueByteArray)
     }
 }
 

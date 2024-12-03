@@ -60,6 +60,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.nio.ByteBuffer
 
 @RequestMapping("/{projectId}/api/v1/refs")
 @RestController
@@ -177,7 +178,12 @@ class ReferencesController(
         permissionHelper.checkPathPermission(requiredPermissionAction)
 
         // 执行操作
-        return referenceArtifactService.batch(projectId, repoName, ops).serialize().getView().array()
+        val opsResponse = referenceArtifactService.batch(projectId, repoName, ops)
+        // 序列化,由于getView返回的是readOnly ByteBuffer，为了避免数组复制，通过反射获取内部数组返回
+        val data = opsResponse.serialize().getView()
+        val field = ByteBuffer::class.java.getDeclaredField("hb")
+        field.isAccessible = true
+        return field.get(data) as ByteArray
     }
 
     private fun getResponseType(format: String?, default: String): String {

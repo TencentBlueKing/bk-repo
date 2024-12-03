@@ -34,6 +34,8 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.ddc.serialization.CbFieldType
 import com.tencent.bkrepo.ddc.serialization.CbObject
 import com.tencent.bkrepo.ddc.serialization.CbWriter
+import com.tencent.bkrepo.ddc.utils.BlakeUtils
+import com.tencent.bkrepo.ddc.utils.BlakeUtils.hex
 import com.tencent.bkrepo.ddc.utils.DdcUtils
 import com.tencent.bkrepo.ddc.utils.beginUniformArray
 import com.tencent.bkrepo.ddc.utils.writeBinaryAttachment
@@ -44,6 +46,7 @@ import com.tencent.bkrepo.ddc.utils.writeStringValue
 import com.tencent.bkrepo.ddc.utils.writerObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.nio.ByteBuffer
 
 class SerializationTest {
     @Test
@@ -129,29 +132,35 @@ class SerializationTest {
         val getOp = BatchOp(
             opId = 1,
             bucket = "testbucket",
-            key = "testkey",
+            key = "testtkeyyytesttkeyyytesttkeyyytesttkeyyy",
             op = Operation.GET.name,
             resolveAttachments = true
         )
         val headOp = BatchOp(
             opId = 2,
             bucket = "testbucket",
-            key = "testkey",
+            key = "testtkeyyytesttkeyyytesttkeyyytesttkeyyy",
             op = Operation.HEAD.name,
             resolveAttachments = false
         )
         val payload = CbObject.build {
-            it.writeBinaryAttachment("test", "test".toByteArray())
+            it.writeBinaryAttachment("test", "testttestttestttestt".toByteArray())
         }
+
+        // 计算payload fieldData hash
+        val cbFieldData = payload.innerField.fieldData
+        val field = ByteBuffer::class.java.getDeclaredField("hb")
+        field.isAccessible = true
+        val payloadHash = BlakeUtils.hash(field.get(cbFieldData) as ByteArray).hex()
         val putOp = BatchOp(
             opId = 3,
             bucket = "testbucket",
-            key = "testkey",
+            key = "testtkeyyytesttkeyyytesttkeyyytesttkeyyy",
             op = Operation.PUT.name,
             payload = payload,
-            payloadHash = payload.getHash().toString(),
+            payloadHash = payloadHash,
         )
         val batchOps = BatchOps(listOf(getOp, headOp, putOp))
-        assertEquals(332, batchOps.serialize().getSize())
+        assertEquals(407, batchOps.serialize().getSize())
     }
 }

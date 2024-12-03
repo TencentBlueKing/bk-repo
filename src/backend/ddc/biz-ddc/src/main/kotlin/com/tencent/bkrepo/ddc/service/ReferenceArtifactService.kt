@@ -61,6 +61,7 @@ import com.tencent.bkrepo.ddc.utils.BlakeUtils
 import com.tencent.bkrepo.ddc.utils.BlakeUtils.hex
 import com.tencent.bkrepo.ddc.utils.DdcUtils
 import com.tencent.bkrepo.ddc.utils.writeBool
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.nio.ByteBuffer
@@ -77,6 +78,7 @@ class ReferenceArtifactService(
     private val refDownloadListener: RefDownloadListener,
     private val ddcMeterBinder: DdcMeterBinder,
     private val referenceResolver: ReferenceResolver,
+    private val ddcLocalRepository: DdcLocalRepository,
 ) : ArtifactService() {
     /**
      * 批量操作线程池
@@ -123,11 +125,13 @@ class ReferenceArtifactService(
      */
     fun batch(projectId: String, repoName: String, ops: BatchOps): BatchOpsResponse {
         val results = HashMap<Int, Future<Pair<CbObject, Int>>>(ops.ops.size)
+        val repo = ArtifactContextHolder.getRepoDetail()!!
+        val userId = SecurityUtils.getUserId()
         for (op in ops.ops) {
             results[op.opId] = when (op.op) {
                 Operation.GET.name -> executor.submit<Pair<CbObject, Int>> { getRef(projectId, repoName, op) }
                 Operation.HEAD.name -> executor.submit<Pair<CbObject, Int>> { headRef(projectId, repoName, op) }
-                Operation.PUT.name -> executor.submit<Pair<CbObject, Int>> { putRef(projectId, repoName, op) }
+                Operation.PUT.name -> executor.submit<Pair<CbObject, Int>> { putRef(repo, op, userId) }
                 else -> throw UnsupportedOperationException("unsupported op: ${op.op}")
             }
         }
@@ -184,8 +188,9 @@ class ReferenceArtifactService(
         }
     }
 
-    private fun putRef(projectId: String, repoName: String, op: BatchOp): Pair<CbObject, Int> {
+    private fun putRef(repo: RepositoryDetail, op: BatchOp, operator: String): Pair<CbObject, Int> {
         return try {
+            // 检查payload参数是否正确
             if (op.payload == null || op.payload == CbObject.EMPTY) {
                 throw ErrorCodeException(PARAMETER_MISSING, "Missing payload for operation: ${op.opId}")
             }
@@ -199,18 +204,17 @@ class ReferenceArtifactService(
             if (op.payloadHash != inlineBlobHash) {
                 throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")
             }
-            val context = ArtifactUploadContext(
-                ArtifactContextHolder.getRepoDetail()!!,
-                ByteArrayArtifactFile(inlineBlob),
-                ReferenceArtifactInfo(
-                    projectId = projectId,
-                    repoName = repoName,
-                    bucket = op.bucket,
-                    refKey = RefKey.create(op.key),
-                    inlineBlobHash = inlineBlobHash
-                )
+
+            // 创建ref
+            val artifactInfo = ReferenceArtifactInfo(
+                projectId = repo.projectId,
+                repoName = repo.name,
+                bucket = op.bucket,
+                refKey = RefKey.create(op.key),
+                inlineBlobHash = inlineBlobHash
             )
-            val res = (repository as DdcLocalRepository).uploadReference(context)
+            val artifactFile = ByteArrayArtifactFile(inlineBlob)
+            val res = ddcLocalRepository.uploadReference(repo, artifactInfo, artifactFile, operator)
             return Pair(res.serialize(), HttpStatus.OK.value)
         } catch (e: Exception) {
             DdcUtils.toError(e)

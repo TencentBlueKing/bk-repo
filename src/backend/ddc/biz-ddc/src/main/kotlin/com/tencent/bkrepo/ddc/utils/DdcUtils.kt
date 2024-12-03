@@ -63,7 +63,7 @@ object DdcUtils {
     private fun toError(e: Exception, statusCode: Int, msg: String): Pair<CbObject, Int> {
         if (statusCode == HttpStatus.INTERNAL_SERVER_ERROR.value) {
             logger.error("batch op failed:\n${e.stackTraceToString()}")
-        } else {
+        } else if (statusCode != HttpStatus.NOT_FOUND.value) {
             logger.info("batch op failed:\n${e.stackTraceToString()}")
         }
         val obj = CbObject.build {
