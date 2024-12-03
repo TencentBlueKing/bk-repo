@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.memory.ByteArrayArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -55,6 +56,7 @@ import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
 import com.tencent.bkrepo.ddc.metrics.DdcMeterBinder
 import com.tencent.bkrepo.ddc.pojo.Blob
 import com.tencent.bkrepo.ddc.pojo.ContentHash
+import com.tencent.bkrepo.ddc.pojo.CreateRefResponse
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.pojo.UploadCompressedBlobResponse
 import com.tencent.bkrepo.ddc.serialization.CbObject
@@ -207,27 +209,34 @@ class DdcLocalRepository(
     }
 
     private fun onUploadReference(context: ArtifactUploadContext) {
-        val contentType = context.request.contentType
-        val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
-        when (contentType) {
+        when (val contentType = context.request.contentType) {
             MEDIA_TYPE_UNREAL_COMPACT_BINARY -> {
-                val payload = context.getArtifactFile().getInputStream().use { it.readBytes() }
-                val ref = referenceService.create(Reference.from(artifactInfo, payload))
-                if (ref.inlineBlob == null) {
-                    // inlineBlob为null时表示inlineBlob过大，需要存到文件中
-                    val nodeCreateRequest = buildRefNodeCreateRequest(context)
-                    storageManager.storeArtifactFile(
-                        nodeCreateRequest, context.getArtifactFile(), context.storageCredentials
-                    )
-                }
-                val res = referenceService.finalize(ref, payload)
-                HttpContextHolder.getResponse().writer.println(res.toJsonString())
+                HttpContextHolder.getResponse().writer.println(uploadReference(context).toJsonString())
             }
 
             else -> throw BadRequestException(
                 CommonMessageCode.PARAMETER_INVALID, "Unknown request type $contentType"
             )
         }
+    }
+
+    fun uploadReference(context: ArtifactUploadContext): CreateRefResponse {
+        val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
+        val artifactFile = context.getArtifactFile()
+        val payload = if (artifactFile is ByteArrayArtifactFile) {
+            artifactFile.byteArray()
+        } else {
+            artifactFile.getInputStream().use { it.readBytes() }
+        }
+        val ref = referenceService.create(Reference.from(artifactInfo, payload))
+        if (ref.inlineBlob == null) {
+            // inlineBlob为null时表示inlineBlob过大，需要存到文件中
+            val nodeCreateRequest = buildRefNodeCreateRequest(context)
+            storageManager.storeArtifactFile(
+                nodeCreateRequest, context.getArtifactFile(), context.storageCredentials
+            )
+        }
+        return referenceService.finalize(ref, payload)
     }
 
     private fun buildRefNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {

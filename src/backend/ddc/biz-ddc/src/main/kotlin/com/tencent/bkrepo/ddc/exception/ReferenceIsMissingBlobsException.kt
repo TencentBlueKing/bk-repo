@@ -27,8 +27,15 @@
 
 package com.tencent.bkrepo.ddc.exception
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.ddc.pojo.ContentHash
 
 class ReferenceIsMissingBlobsException(
     val missingBlobs: List<ContentHash>
-) : RuntimeException("References is missing these blobs: ${missingBlobs.joinToString(",")}")
+) : ErrorCodeException(
+    CommonMessageCode.RESOURCE_NOT_FOUND,
+    missingBlobs.joinToString(","),
+    status = HttpStatus.NOT_FOUND
+)

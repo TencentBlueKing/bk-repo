@@ -27,24 +27,70 @@
 
 package com.tencent.bkrepo.ddc.service
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.HttpStatus.NOT_FOUND
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_MISSING
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.artifact.resolve.file.memory.ByteArrayArtifactFile
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
+import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository
+import com.tencent.bkrepo.ddc.component.RefDownloadListener
+import com.tencent.bkrepo.ddc.config.DdcProperties
+import com.tencent.bkrepo.ddc.event.RefDownloadedEvent
+import com.tencent.bkrepo.ddc.metrics.DdcMeterBinder
+import com.tencent.bkrepo.ddc.pojo.BatchOp
 import com.tencent.bkrepo.ddc.pojo.BatchOps
+import com.tencent.bkrepo.ddc.pojo.BatchOpsResponse
+import com.tencent.bkrepo.ddc.pojo.OpResponse
+import com.tencent.bkrepo.ddc.pojo.Operation
+import com.tencent.bkrepo.ddc.pojo.RefKey
+import com.tencent.bkrepo.ddc.serialization.CbObject
+import com.tencent.bkrepo.ddc.utils.BlakeUtils
+import com.tencent.bkrepo.ddc.utils.BlakeUtils.hex
+import com.tencent.bkrepo.ddc.utils.DdcUtils
+import com.tencent.bkrepo.ddc.utils.writeBool
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.nio.ByteBuffer
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.Future
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
+import java.util.concurrent.TimeUnit
 
 @Service
 class ReferenceArtifactService(
     private val referenceService: ReferenceService,
+    private val ddcProperties: DdcProperties,
+    private val refDownloadListener: RefDownloadListener,
+    private val ddcMeterBinder: DdcMeterBinder,
+    private val referenceResolver: ReferenceResolver,
 ) : ArtifactService() {
+    /**
+     * 批量操作线程池
+     * TODO 导出线程池使用情况到监控
+     */
+    private val executor = ThreadPoolExecutor(
+        ddcProperties.batchWorker,
+        ddcProperties.batchWorker,
+        1, TimeUnit.MINUTES,
+        ArrayBlockingQueue(ddcProperties.batchQueueSize),
+        ThreadFactoryBuilder().setNameFormat("ddc-batch-%d").build(),
+        CallerRunsPolicy()
+    )
+
     fun downloadRef(artifactInfo: ReferenceArtifactInfo) {
         repository.download(ArtifactDownloadContext())
     }
@@ -59,13 +105,6 @@ class ReferenceArtifactService(
         }
     }
 
-    /**
-     * 批量操作
-     */
-    fun batch(ops: BatchOps) {
-        // TODO
-    }
-
     fun finalize(artifactInfo: ReferenceArtifactInfo) {
         with(artifactInfo) {
             val ref = referenceService.getReference(
@@ -77,5 +116,108 @@ class ReferenceArtifactService(
             val res = referenceService.finalize(ref, ref.inlineBlob!!)
             HttpContextHolder.getResponse().writer.println(res.toJsonString())
         }
+    }
+
+    /**
+     * 批量操作
+     */
+    fun batch(projectId: String, repoName: String, ops: BatchOps): BatchOpsResponse {
+        val results = HashMap<Int, Future<Pair<CbObject, Int>>>(ops.ops.size)
+        for (op in ops.ops) {
+            results[op.opId] = when (op.op) {
+                Operation.GET.name -> executor.submit<Pair<CbObject, Int>> { getRef(projectId, repoName, op) }
+                Operation.HEAD.name -> executor.submit<Pair<CbObject, Int>> { headRef(projectId, repoName, op) }
+                Operation.PUT.name -> executor.submit<Pair<CbObject, Int>> { putRef(projectId, repoName, op) }
+                else -> throw UnsupportedOperationException("unsupported op: ${op.op}")
+            }
+        }
+        val opResponse = results.map {
+            val result = it.value.get()
+            OpResponse(it.key, result.first, result.second)
+        }
+        return BatchOpsResponse(opResponse)
+    }
+
+    private fun getRef(projectId: String, repoName: String, op: BatchOp): Pair<CbObject, Int> {
+        val user = SecurityUtils.getUserId()
+        val refFullKey = "$projectId/$repoName/${op.bucket}/${op.key}"
+        return try {
+            ddcMeterBinder.incCacheCount(projectId, repoName)
+            val ref = referenceService.getReference(projectId, repoName, op.bucket, op.key)
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, refFullKey, status = NOT_FOUND)
+            val refCb = CbObject(ByteBuffer.wrap(ref.inlineBlob!!))
+            if (op.resolveAttachments) {
+                referenceResolver.getReferencedBlobs(projectId, repoName, refCb)
+            }
+            refDownloadListener.onRefDownloaded(RefDownloadedEvent(ref, user))
+            ddcMeterBinder.incCacheHitCount(projectId, repoName)
+            logger.info("User[${user}] get ref [$refFullKey] success")
+            return Pair(refCb, HttpStatus.OK.value)
+        } catch (e: Exception) {
+            DdcUtils.toError(e)
+        }
+    }
+
+    private fun headRef(projectId: String, repoName: String, op: BatchOp): Pair<CbObject, Int> {
+        val user = SecurityUtils.getUserId()
+        val refFullKey = "$projectId/$repoName/${op.bucket}/${op.key}"
+        return try {
+            val ref = referenceService.getReference(projectId, repoName, op.bucket, op.key)
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, refFullKey, status = NOT_FOUND)
+            if (!ref.finalized!!) {
+                return Pair(CbObject.build { it.writeBool("exists", false) }, NOT_FOUND.value)
+            }
+
+            val refCb = CbObject(ByteBuffer.wrap(ref.inlineBlob!!))
+            if (op.resolveAttachments) {
+                referenceResolver.getReferencedBlobs(projectId, repoName, refCb)
+            }
+
+            logger.info("User[${user}] head ref [$refFullKey] success")
+            return Pair(CbObject.build { it.writeBool("exists", true) }, HttpStatus.OK.value)
+        } catch (e: Exception) {
+            if (e is ErrorCodeException && e.status == NOT_FOUND) {
+                Pair(CbObject.build { it.writeBool("exists", false) }, NOT_FOUND.value)
+            } else {
+                DdcUtils.toError(e)
+            }
+        }
+    }
+
+    private fun putRef(projectId: String, repoName: String, op: BatchOp): Pair<CbObject, Int> {
+        return try {
+            if (op.payload == null || op.payload == CbObject.EMPTY) {
+                throw ErrorCodeException(PARAMETER_MISSING, "Missing payload for operation: ${op.opId}")
+            }
+
+            if (op.payloadHash.isNullOrEmpty()) {
+                throw ErrorCodeException(PARAMETER_MISSING, "Missing payload hash for operation: ${op.opId}")
+            }
+
+            val inlineBlob = op.payload.getView().array()
+            val inlineBlobHash = BlakeUtils.hash(inlineBlob).hex()
+            if (op.payloadHash != inlineBlobHash) {
+                throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")
+            }
+            val context = ArtifactUploadContext(
+                ArtifactContextHolder.getRepoDetail()!!,
+                ByteArrayArtifactFile(inlineBlob),
+                ReferenceArtifactInfo(
+                    projectId = projectId,
+                    repoName = repoName,
+                    bucket = op.bucket,
+                    refKey = RefKey.create(op.key),
+                    inlineBlobHash = inlineBlobHash
+                )
+            )
+            val res = (repository as DdcLocalRepository).uploadReference(context)
+            return Pair(res.serialize(), HttpStatus.OK.value)
+        } catch (e: Exception) {
+            DdcUtils.toError(e)
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ReferenceArtifactService::class.java)
     }
 }

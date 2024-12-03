@@ -161,7 +161,10 @@ class ReferencesController(
         consumes = [MEDIA_TYPE_UNREAL_COMPACT_BINARY],
         produces = [MEDIA_TYPE_UNREAL_COMPACT_BINARY],
     )
-    fun batchOp(@PathVariable repoName: String) {
+    fun batchOp(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+    ): ByteArray {
         // 检查权限
         val ops = BatchOps.deserialize(HttpContextHolder.getRequest().inputStream.use { it.readBytes() })
         var requiredPermissionAction = PermissionAction.READ
@@ -174,7 +177,7 @@ class ReferencesController(
         permissionHelper.checkPathPermission(requiredPermissionAction)
 
         // 执行操作
-        referenceArtifactService.batch(ops)
+        return referenceArtifactService.batch(projectId, repoName, ops).serialize().getView().array()
     }
 
     private fun getResponseType(format: String?, default: String): String {
