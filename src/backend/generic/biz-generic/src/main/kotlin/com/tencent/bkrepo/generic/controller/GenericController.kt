@@ -65,7 +65,12 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BATCH_M
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BLOCK_MAPPING_URI
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
-import com.tencent.bkrepo.generic.pojo.*
+import com.tencent.bkrepo.generic.pojo.BatchDownloadPaths
+import com.tencent.bkrepo.generic.pojo.BlockInfo
+import com.tencent.bkrepo.generic.pojo.CompressedFileInfo
+import com.tencent.bkrepo.generic.pojo.NewBlockInfo
+import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
+
 import com.tencent.bkrepo.generic.service.CompressedFileService
 import com.tencent.bkrepo.generic.service.DownloadService
 import com.tencent.bkrepo.generic.service.UploadService
