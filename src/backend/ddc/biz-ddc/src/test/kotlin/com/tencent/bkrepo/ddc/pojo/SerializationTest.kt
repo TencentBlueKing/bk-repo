@@ -36,6 +36,7 @@ import com.tencent.bkrepo.ddc.serialization.CbObject
 import com.tencent.bkrepo.ddc.serialization.CbWriter
 import com.tencent.bkrepo.ddc.utils.DdcUtils
 import com.tencent.bkrepo.ddc.utils.beginUniformArray
+import com.tencent.bkrepo.ddc.utils.writeBinaryAttachment
 import com.tencent.bkrepo.ddc.utils.writeBool
 import com.tencent.bkrepo.ddc.utils.writeInteger
 import com.tencent.bkrepo.ddc.utils.writeString
@@ -121,5 +122,36 @@ class SerializationTest {
             "{\"title\":\"[250105]system.parameter.invalid\",\"status\":400}",
             error.toJson(jacksonObjectMapper())
         )
+    }
+
+    @Test
+    fun testSerializeBatchOp() {
+        val getOp = BatchOp(
+            opId = 1,
+            bucket = "testbucket",
+            key = "testkey",
+            op = Operation.GET.name,
+            resolveAttachments = true
+        )
+        val headOp = BatchOp(
+            opId = 2,
+            bucket = "testbucket",
+            key = "testkey",
+            op = Operation.HEAD.name,
+            resolveAttachments = false
+        )
+        val payload = CbObject.build {
+            it.writeBinaryAttachment("test", "test".toByteArray())
+        }
+        val putOp = BatchOp(
+            opId = 3,
+            bucket = "testbucket",
+            key = "testkey",
+            op = Operation.PUT.name,
+            payload = payload,
+            payloadHash = payload.getHash().toString(),
+        )
+        val batchOps = BatchOps(listOf(getOp, headOp, putOp))
+        assertEquals(332, batchOps.serialize().getSize())
     }
 }

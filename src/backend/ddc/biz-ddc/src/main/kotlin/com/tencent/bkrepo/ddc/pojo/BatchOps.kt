@@ -31,11 +31,17 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.ddc.serialization.CbArray
 import com.tencent.bkrepo.ddc.serialization.CbField
+import com.tencent.bkrepo.ddc.serialization.CbFieldType
 import com.tencent.bkrepo.ddc.serialization.CbObject
+import com.tencent.bkrepo.ddc.utils.beginUniformArray
 import com.tencent.bkrepo.ddc.utils.isBool
 import com.tencent.bkrepo.ddc.utils.isInteger
 import com.tencent.bkrepo.ddc.utils.isObject
 import com.tencent.bkrepo.ddc.utils.isString
+import com.tencent.bkrepo.ddc.utils.writeBool
+import com.tencent.bkrepo.ddc.utils.writeInteger
+import com.tencent.bkrepo.ddc.utils.writeString
+import com.tencent.bkrepo.ddc.utils.writerObject
 import java.nio.ByteBuffer
 
 /**
@@ -44,6 +50,25 @@ import java.nio.ByteBuffer
 data class BatchOps(
     val ops: List<BatchOp>
 ) {
+
+    fun serialize(): CbObject {
+        return CbObject.build { writer ->
+            writer.beginUniformArray(BatchOps::ops.name, CbFieldType.Object)
+            ops.forEach { op ->
+                writer.beginObject()
+                writer.writeInteger(BatchOp::opId.name, op.opId)
+                writer.writeString(BatchOp::bucket.name, op.bucket)
+                writer.writeString(BatchOp::key.name, op.key)
+                writer.writeString(BatchOp::op.name, op.op)
+                writer.writeBool(BatchOp::resolveAttachments.name, op.resolveAttachments)
+                op.payload?.let { writer.writerObject(BatchOp::payload.name, it) }
+                op.payloadHash?.let { writer.writeString(BatchOp::payloadHash.name, it) }
+                writer.endObject()
+            }
+            writer.endArray()
+        }
+    }
+
     companion object {
         fun deserialize(byteArray: ByteArray): BatchOps {
             val opsCbArray = CbObject(ByteBuffer.wrap(byteArray))[BatchOps::ops.name].asArray()
