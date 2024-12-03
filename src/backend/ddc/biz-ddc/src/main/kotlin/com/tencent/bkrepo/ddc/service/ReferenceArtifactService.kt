@@ -129,8 +129,8 @@ class ReferenceArtifactService(
         val userId = SecurityUtils.getUserId()
         for (op in ops.ops) {
             results[op.opId] = when (op.op) {
-                Operation.GET.name -> executor.submit<Pair<CbObject, Int>> { getRef(projectId, repoName, op) }
-                Operation.HEAD.name -> executor.submit<Pair<CbObject, Int>> { headRef(projectId, repoName, op) }
+                Operation.GET.name -> executor.submit<Pair<CbObject, Int>> { getRef(projectId, repoName, op, userId) }
+                Operation.HEAD.name -> executor.submit<Pair<CbObject, Int>> { headRef(projectId, repoName, op, userId) }
                 Operation.PUT.name -> executor.submit<Pair<CbObject, Int>> { putRef(repo, op, userId) }
                 else -> throw UnsupportedOperationException("unsupported op: ${op.op}")
             }
@@ -142,8 +142,7 @@ class ReferenceArtifactService(
         return BatchOpsResponse(opResponse)
     }
 
-    private fun getRef(projectId: String, repoName: String, op: BatchOp): Pair<CbObject, Int> {
-        val user = SecurityUtils.getUserId()
+    private fun getRef(projectId: String, repoName: String, op: BatchOp, user: String): Pair<CbObject, Int> {
         val refFullKey = "$projectId/$repoName/${op.bucket}/${op.key}"
         return try {
             ddcMeterBinder.incCacheCount(projectId, repoName)
@@ -162,8 +161,7 @@ class ReferenceArtifactService(
         }
     }
 
-    private fun headRef(projectId: String, repoName: String, op: BatchOp): Pair<CbObject, Int> {
-        val user = SecurityUtils.getUserId()
+    private fun headRef(projectId: String, repoName: String, op: BatchOp, user: String): Pair<CbObject, Int> {
         val refFullKey = "$projectId/$repoName/${op.bucket}/${op.key}"
         return try {
             val ref = referenceService.getReference(projectId, repoName, op.bucket, op.key)

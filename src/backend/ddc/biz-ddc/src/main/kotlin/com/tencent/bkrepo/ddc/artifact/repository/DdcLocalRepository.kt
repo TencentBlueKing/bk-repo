@@ -236,7 +236,7 @@ class DdcLocalRepository(
         } else {
             artifactFile.getInputStream().use { it.readBytes() }
         }
-        val ref = referenceService.create(Reference.from(artifactInfo, payload))
+        val ref = referenceService.create(Reference.from(artifactInfo, payload), operator)
         if (ref.inlineBlob == null) {
             // inlineBlob为null时表示inlineBlob过大，需要存到文件中
             val nodeCreateRequest = buildRefNodeCreateRequest(repositoryDetail, artifactInfo, artifactFile, operator)
