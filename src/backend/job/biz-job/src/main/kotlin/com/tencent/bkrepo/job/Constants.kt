@@ -41,6 +41,11 @@ const val SHARDING_COUNT = 256
 const val BATCH_SIZE = 1000
 
 /**
+ * 最大并发线程限制数
+ */
+const val CONCURRENT_THREAD_LIMIT = 100
+
+/**
  * 数据库字段
  */
 const val SHA256 = "sha256"
