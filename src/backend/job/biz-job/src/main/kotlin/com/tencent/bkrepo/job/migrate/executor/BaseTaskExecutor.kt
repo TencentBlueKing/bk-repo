@@ -163,6 +163,10 @@ abstract class BaseTaskExecutor(
         val repoName = node.repoName
         // 文件已存在于目标存储则不处理
         if (storageService.exist(sha256, context.dstCredentials)) {
+            if (!fileReferenceService.exists(sha256, context.task.dstStorageKey)) {
+                updateFileReference(context.task.srcStorageKey, context.task.dstStorageKey, sha256)
+                logger.info("correct reference[$sha256] success, task[$projectId/$repoName], state[${task.state}]")
+            }
             logger.info("file[$sha256] already exists in dst credentials[${context.task.dstStorageKey}]")
             return
         }
@@ -190,6 +194,13 @@ abstract class BaseTaskExecutor(
         // 跨存储迁移数据
         transferData(context, node)
 
+        // 更新引用
+        updateFileReference(srcStorageKey, dstStorageKey, sha256)
+    }
+
+    open fun close(timeout: Long, unit: TimeUnit) {}
+
+    private fun updateFileReference(srcStorageKey: String?, dstStorageKey: String?, sha256: String) {
         // FileReferenceCleanupJob 会定期清理引用为0的文件数据，所以不需要删除文件数据
         // 迁移前后使用的存储相同时，如果加引用失败减引用成功，可能导致文件误删，因此先增后减
         // new引用计数 +1
@@ -202,8 +213,6 @@ abstract class BaseTaskExecutor(
             logger.error("Failed to decrement file reference[$sha256] on storage[$srcStorageKey].")
         }
     }
-
-    open fun close(timeout: Long, unit: TimeUnit) {}
 
     /**
      * 执行数据迁移
