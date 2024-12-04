@@ -162,8 +162,9 @@ abstract class BaseTaskExecutor(
         val projectId = node.projectId
         val repoName = node.repoName
         // 文件已存在于目标存储则不处理
+        val dstFileReferenceExists = fileReferenceService.count(sha256, context.task.dstStorageKey) > 0
         if (storageService.exist(sha256, context.dstCredentials)) {
-            if (!fileReferenceService.exists(sha256, context.task.dstStorageKey)) {
+            if (!dstFileReferenceExists) {
                 updateFileReference(context.task.srcStorageKey, context.task.dstStorageKey, sha256)
                 logger.info("correct reference[$sha256] success, task[$projectId/$repoName], state[${task.state}]")
             }
@@ -171,7 +172,7 @@ abstract class BaseTaskExecutor(
             return
         }
 
-        if (fileReferenceService.count(sha256, context.task.dstStorageKey) > 0) {
+        if (dstFileReferenceExists) {
             /*
               可能由于在上传制品时使用的旧存储，而创建Node时由于会重新查一遍仓库的存储凭据而使用新存储
               这种情况会导致目标存储引用大于0但是文件不再目标存储，此时仅迁移存储不修改引用数
