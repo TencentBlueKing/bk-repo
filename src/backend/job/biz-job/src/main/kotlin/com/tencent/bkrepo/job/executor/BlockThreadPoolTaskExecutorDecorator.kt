@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.executor
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.job.CONCURRENT_THREAD_LIMIT
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Duration
@@ -89,17 +90,22 @@ class BlockThreadPoolTaskExecutorDecorator(
     /**
      * 执行带Id的任务
      * */
-    fun executeWithId(identityTask: IdentityTask, concurrentThreadLimit: Int, produce: Boolean = false, permitsPerSecond: Double = 0.0) {
+    fun executeWithId(
+        identityTask: IdentityTask,
+        concurrentThreadLimit: Int = CONCURRENT_THREAD_LIMIT,
+        produce: Boolean = false,
+        permitsPerSecond: Double = 0.0
+    ) {
         val id = identityTask.id
         val taskInfo = taskInfos.getOrPut(id) { IdentityTaskInfo(id, permitsPerSecond = permitsPerSecond) }
         while (true) {
-            when (taskInfo.count.get() < concurrentThreadLimit) {
-                true -> break
-                else ->
-                    try {
-                        Thread.sleep(100)
-                    } catch (ignore: InterruptedException) {
-                    }
+            if (taskInfo.count.get() < concurrentThreadLimit) {
+                break
+            } else {
+                try {
+                    Thread.sleep(100)
+                } catch (ignore: InterruptedException) {
+                }
             }
         }
         taskInfo.count.incrementAndGet()
