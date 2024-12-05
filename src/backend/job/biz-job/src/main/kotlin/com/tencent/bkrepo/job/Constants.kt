@@ -43,7 +43,7 @@ const val BATCH_SIZE = 1000
 /**
  * 最大并发线程限制数
  */
-const val CONCURRENT_THREAD_LIMIT = 100
+const val CONCURRENT_THREAD_LIMIT = 1024
 
 /**
  * 数据库字段
