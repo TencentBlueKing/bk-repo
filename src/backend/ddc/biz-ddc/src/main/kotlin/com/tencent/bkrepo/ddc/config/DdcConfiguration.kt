@@ -27,9 +27,46 @@
 
 package com.tencent.bkrepo.ddc.config
 
+import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.task.TaskExecutorBuilder
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Lazy
+import org.springframework.context.annotation.Primary
+import org.springframework.scheduling.annotation.AsyncAnnotationBeanPostProcessor
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(DdcProperties::class)
-class DdcConfiguration
+class DdcConfiguration {
+    @Bean(BEAN_NAME_REF_BATCH_EXECUTOR)
+    fun refBatchExecutor(ddcProperties: DdcProperties): ThreadPoolTaskExecutor {
+        return ThreadPoolTaskExecutor().apply {
+            corePoolSize = ddcProperties.refBatchWorker
+            maxPoolSize = ddcProperties.refBatchWorker
+            setAllowCoreThreadTimeOut(true)
+            keepAliveSeconds = 60
+            queueCapacity = ddcProperties.refBatchQueueSize
+            threadNamePrefix = "ddc-ref-batch-%d"
+            setRejectedExecutionHandler(CallerRunsPolicy())
+        }
+    }
+
+    @Lazy
+    @Bean(
+        name = [
+            TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME,
+            AsyncAnnotationBeanPostProcessor.DEFAULT_TASK_EXECUTOR_BEAN_NAME
+        ]
+    )
+    @Primary
+    fun applicationTaskExecutor(builder: TaskExecutorBuilder): ThreadPoolTaskExecutor {
+        return builder.build()
+    }
+
+    companion object {
+        const val BEAN_NAME_REF_BATCH_EXECUTOR = "refBatchExecutor"
+    }
+}

@@ -38,9 +38,9 @@ data class DdcProperties(
     /**
      * 批量操作接口工作线程数
      */
-    var batchWorker: Int = Runtime.getRuntime().availableProcessors() * 2,
+    var refBatchWorker: Int = Runtime.getRuntime().availableProcessors() * 2,
     /**
      * 批量操作接口线程池队列大小
      */
-    var batchQueueSize: Int = 16,
+    var refBatchQueueSize: Int = 16,
 )

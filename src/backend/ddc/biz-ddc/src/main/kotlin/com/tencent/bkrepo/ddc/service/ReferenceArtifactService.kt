@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.ddc.service
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.HttpStatus.NOT_FOUND
 import com.tencent.bkrepo.common.api.exception.BadRequestException
@@ -47,7 +46,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository
 import com.tencent.bkrepo.ddc.component.RefDownloadListener
-import com.tencent.bkrepo.ddc.config.DdcProperties
+import com.tencent.bkrepo.ddc.config.DdcConfiguration.Companion.BEAN_NAME_REF_BATCH_EXECUTOR
 import com.tencent.bkrepo.ddc.event.RefDownloadedEvent
 import com.tencent.bkrepo.ddc.metrics.DdcMeterBinder
 import com.tencent.bkrepo.ddc.pojo.BatchOp
@@ -63,35 +62,22 @@ import com.tencent.bkrepo.ddc.utils.DdcUtils
 import com.tencent.bkrepo.ddc.utils.writeBool
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
 import java.nio.ByteBuffer
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Future
-import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
-import java.util.concurrent.TimeUnit
 
 @Service
 class ReferenceArtifactService(
     private val referenceService: ReferenceService,
-    private val ddcProperties: DdcProperties,
     private val refDownloadListener: RefDownloadListener,
     private val ddcMeterBinder: DdcMeterBinder,
     private val referenceResolver: ReferenceResolver,
     private val ddcLocalRepository: DdcLocalRepository,
+    @Qualifier(BEAN_NAME_REF_BATCH_EXECUTOR)
+    private val executor: ThreadPoolTaskExecutor
 ) : ArtifactService() {
-    /**
-     * 批量操作线程池
-     * TODO 导出线程池使用情况到监控
-     */
-    private val executor = ThreadPoolExecutor(
-        ddcProperties.batchWorker,
-        ddcProperties.batchWorker,
-        1, TimeUnit.MINUTES,
-        ArrayBlockingQueue(ddcProperties.batchQueueSize),
-        ThreadFactoryBuilder().setNameFormat("ddc-batch-%d").build(),
-        CallerRunsPolicy()
-    )
 
     fun downloadRef(artifactInfo: ReferenceArtifactInfo) {
         repository.download(ArtifactDownloadContext())
