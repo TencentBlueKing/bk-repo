@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,17 +25,34 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.ddc.exception
+package com.tencent.bkrepo.ddc.pojo
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.ddc.pojo.ContentHash
+import com.tencent.bkrepo.ddc.serialization.CbFieldType
+import com.tencent.bkrepo.ddc.serialization.CbObject
+import com.tencent.bkrepo.ddc.utils.beginUniformArray
+import com.tencent.bkrepo.ddc.utils.writeInteger
+import com.tencent.bkrepo.ddc.utils.writerObject
 
-class ReferenceIsMissingBlobsException(
-    val missingBlobs: List<ContentHash>
-) : ErrorCodeException(
-    CommonMessageCode.RESOURCE_NOT_FOUND,
-    missingBlobs.joinToString(","),
-    status = HttpStatus.NOT_FOUND
+data class BatchOpsResponse(
+    val results: List<OpResponse>
+) {
+    fun serialize(): CbObject {
+        return CbObject.build { writer ->
+            writer.beginUniformArray(BatchOpsResponse::results.name, CbFieldType.Object)
+            results.forEach {
+                writer.beginObject()
+                writer.writeInteger(OpResponse::opId.name, it.opId)
+                writer.writerObject(OpResponse::response.name, it.response)
+                writer.writeInteger(OpResponse::statusCode.name, it.statusCode)
+                writer.endObject()
+            }
+            writer.endArray()
+        }
+    }
+}
+
+data class OpResponse(
+    val opId: Int,
+    val response: CbObject,
+    val statusCode: Int
 )
