@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.websocket.constant.APP_ENDPOINT
+import com.tencent.bkrepo.websocket.constant.DESKTOP_ENDPOINT
 import com.tencent.bkrepo.websocket.constant.SESSION_ID
 import com.tencent.bkrepo.websocket.constant.USER_ENDPOINT
 import com.tencent.bkrepo.websocket.service.WebsocketService
@@ -104,7 +105,7 @@ class SessionHandler(
         val sessionId = HostUtils.getRealSession(uri?.query)
         when {
             uri == null -> throw AuthenticationException("uri is null")
-            uri.path.startsWith(USER_ENDPOINT) -> {
+            uri.path.startsWith(USER_ENDPOINT) || uri.path.startsWith(DESKTOP_ENDPOINT) -> {
                 val platformToken = session.handshakeHeaders[HttpHeaders.AUTHORIZATION]?.firstOrNull()?.toString()
                     ?.removePrefix(PLATFORM_AUTH_PREFIX) ?: throw AuthenticationException("platform credential is null")
                 val (accessKey, secretKey) = String(Base64.getDecoder().decode(platformToken)).split(COLON)

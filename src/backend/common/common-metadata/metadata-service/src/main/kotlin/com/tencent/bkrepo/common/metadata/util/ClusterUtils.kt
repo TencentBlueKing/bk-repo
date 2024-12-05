@@ -156,7 +156,7 @@ object ClusterUtils {
                 throw e
             }
         } catch (e: RetryableException) {
-            if (e.message?.contains("Read time out") == true) {
+            if (e.message?.contains("Read timed out") == true) {
                 logger.info("ignore feign exception: ${e.message}")
                 return
             }
