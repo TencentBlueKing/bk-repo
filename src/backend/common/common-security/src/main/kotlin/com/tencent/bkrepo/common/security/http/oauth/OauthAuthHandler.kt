@@ -30,15 +30,21 @@ package com.tencent.bkrepo.common.security.http.oauth
 import com.tencent.bkrepo.common.api.constant.AUTHORITIES_KEY
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.OAUTH_AUTH_PREFIX
+import com.tencent.bkrepo.common.security.crypto.CryptoProperties
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import com.tencent.bkrepo.common.security.util.JwtUtils
+import com.tencent.bkrepo.common.security.util.RsaUtils
+import org.slf4j.LoggerFactory
 import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
-open class OauthAuthHandler(val authenticationManager: AuthenticationManager) : HttpAuthHandler {
+open class OauthAuthHandler(
+    val authenticationManager: AuthenticationManager,
+    val cryptoProperties: CryptoProperties
+) : HttpAuthHandler {
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
         val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
         return if (authorizationHeader.startsWith(OAUTH_AUTH_PREFIX)) {
@@ -53,14 +59,24 @@ open class OauthAuthHandler(val authenticationManager: AuthenticationManager) : 
 
     override fun onAuthenticate(request: HttpServletRequest, authCredentials: HttpAuthCredentials): String {
         require(authCredentials is OauthAuthCredentials)
-        return authenticationManager.checkOauthToken(authCredentials.token)
+        return try {
+            val claims = JwtUtils.validateToken(
+                signingKey = RsaUtils.stringToPrivateKey(cryptoProperties.privateKeyStr2048PKCS8),
+                token = authCredentials.token
+            )
+            val scopeList = claims.body["scope"] as? List<*>
+            val scope = scopeList?.joinToString(",")
+                ?: authenticationManager.findOauthToken(authCredentials.token)?.scope
+                ?: throw AuthenticationException("Invalid access token: $authCredentials.token")
+            request.setAttribute(AUTHORITIES_KEY, scope)
+            claims.body.subject
+        } catch (e: Exception) {
+            logger.info("invalid oauth token[${authCredentials.token}]: ${e.message}")
+            throw AuthenticationException("Invalid token")
+        }
     }
 
-    override fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) {
-        val authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION).orEmpty()
-        val accessToken = authorizationHeader.removePrefix(OAUTH_AUTH_PREFIX).trim()
-        val oauthToken = authenticationManager.findOauthToken(accessToken)
-            ?: throw AuthenticationException("Invalid access token")
-        request.setAttribute(AUTHORITIES_KEY, oauthToken.scope)
+    companion object {
+        private val logger = LoggerFactory.getLogger(OauthAuthHandler::class.java)
     }
 }
