@@ -211,7 +211,6 @@ open class NodeDeleteSupport(
             if (deletedNum == 0L) {
                 return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
             }
-
             if (decreaseVolume) {
                 var deletedCriteria = criteria.and(TNode::deleted).isEqualTo(deleteTime)
                 fullPaths?.let {
@@ -227,11 +226,10 @@ open class NodeDeleteSupport(
                     routerControllerClient.removeNodes(projectId, repoName, fullPath)
                 }
                 publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator))
-
-                nodeDao.find(Query(buildCriteria(projectId, repoName, fullPath, deleteTime))).first().let {
-                    if (it.sha256 == FAKE_SHA256) {
-                        nodeBaseService.blockNodeService.deleteBlocks(projectId, repoName, fullPath)
-                    }
+                val blockCriteria = buildCriteria(projectId, repoName, fullPath, deleteTime)
+                val node = nodeDao.findOne(Query(blockCriteria))
+                if (node?.sha256 == FAKE_SHA256) {
+                    nodeBaseService.blockNodeService.deleteBlocks(projectId, repoName, fullPath)
                 }
             }
         } catch (exception: DuplicateKeyException) {

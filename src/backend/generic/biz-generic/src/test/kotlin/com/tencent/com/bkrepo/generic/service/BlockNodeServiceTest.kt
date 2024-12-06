@@ -208,7 +208,9 @@ class BlockNodeServiceTest {
         )
     }
 
-    private fun assertBlocks(blocks: List<TBlockNode>, expectedSize: Int, blockSize: Long) {
+    private fun assertBlocks(blocks: List<TBlockNode>,
+                             expectedSize: Int,
+                             blockSize: Long) {
         Assertions.assertEquals(expectedSize, blocks.size)
         blocks.forEach { block ->
             Assertions.assertEquals(blockSize, block.size)
@@ -229,7 +231,10 @@ class BlockNodeServiceTest {
         }
     }
 
-    private fun deleteBlocksQuery(fullPath: String, projectId: String, repoName: String, createdDate: LocalDateTime): Query {
+    private fun deleteBlocksQuery(fullPath: String,
+                                  projectId: String,
+                                  repoName: String,
+                                  createdDate: LocalDateTime): Query {
         val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
             .and(TBlockNode::projectId.name).isEqualTo(projectId)
             .and(TBlockNode::repoName.name).isEqualTo(repoName)

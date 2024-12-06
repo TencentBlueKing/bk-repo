@@ -44,6 +44,11 @@ class BlockNodeDao : HashShardingMongoDao<TBlockNode>(){
             if (logger.isDebugEnabled) {
                 logger.debug("Mongo Dao updateFirst: [$query], [$update]")
             }
-            return determineMongoTemplate().updateFirst(query, update, TBlockNode::class.java, determineCollectionName(query))
+            return determineMongoTemplate()
+                .updateFirst(
+                    query,
+                    update,
+                    TBlockNode::class.java,
+                    determineCollectionName(query))
         }
 }
