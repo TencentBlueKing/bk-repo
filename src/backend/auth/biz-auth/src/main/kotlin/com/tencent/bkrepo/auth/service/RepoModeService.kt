@@ -48,4 +48,8 @@ interface RepoModeService {
 
     fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus
 
+    fun bkiamv3Check(projectId: String, repoName: String): Boolean
+
+    fun projectBkiamv3Check(projectId: String): Boolean
+
 }

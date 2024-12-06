@@ -48,7 +48,7 @@ interface BkiamResourceBaseService {
 
     fun listInstanceInfo(request: CallbackRequestDTO): CallbackBaseResponseDTO
 
-    fun buildFetchInstanceInfoResponseDTO(data: List<InstanceInfoDTO>) : CallbackBaseResponseDTO {
+    fun buildFetchInstanceInfoResponseDTO(data: List<InstanceInfoDTO>): CallbackBaseResponseDTO {
         val result = FetchInstanceInfoResponseDTO()
         result.code = 0
         result.message = ""
@@ -72,10 +72,7 @@ interface BkiamResourceBaseService {
         return result
     }
 
-    fun buildBaseDataResponseDTO(
-        count: Long,
-        records: List<InstanceInfoDTO>
-    ): BaseDataResponseDTO<InstanceInfoDTO> {
+    fun buildBaseDataResponseDTO(count: Long, records: List<InstanceInfoDTO>): BaseDataResponseDTO<InstanceInfoDTO> {
         val data = BaseDataResponseDTO<InstanceInfoDTO>()
         data.count = count
         data.result = records
