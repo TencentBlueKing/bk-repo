@@ -25,23 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.websocket.handler
+package com.tencent.bkrepo.websocket.config
 
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.websocket.config.WebSocketMetrics
-import com.tencent.bkrepo.websocket.service.WebsocketService
-import org.springframework.web.socket.WebSocketHandler
-import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory
+import io.micrometer.core.instrument.Gauge
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.MeterBinder
+import org.springframework.stereotype.Component
+import java.util.concurrent.atomic.AtomicInteger
 
-class SessionWebSocketHandlerDecoratorFactory (
-    private val websocketService: WebsocketService,
-    private val authenticationManager: AuthenticationManager,
-    private val jwtAuthProperties: JwtAuthProperties,
-    private val webSocketMetrics: WebSocketMetrics
-) : WebSocketHandlerDecoratorFactory {
+@Component
+class WebSocketMetrics: MeterBinder {
 
-    override fun decorate(handler: WebSocketHandler): WebSocketHandler {
-        return SessionHandler(handler, websocketService, authenticationManager, webSocketMetrics, jwtAuthProperties)
+    var connectionCount: AtomicInteger = AtomicInteger(0)
+
+    override fun bindTo(registry: MeterRegistry) {
+        Gauge.builder(WEBSOCKET_CONNECTION_COUNT, connectionCount) { it.get().toDouble() }
+            .description(WEBSOCKET_CONNECTION_COUNT_DESC)
+            .register(registry)
+    }
+
+    companion object {
+        private const val WEBSOCKET_CONNECTION_COUNT = "websocket_connection_count"
+        private const val WEBSOCKET_CONNECTION_COUNT_DESC = "websocket connection count"
     }
 }
