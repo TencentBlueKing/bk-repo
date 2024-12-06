@@ -48,6 +48,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -65,6 +66,20 @@ class BlockNodeServiceImpl(
             fileReferenceService.increment(bn.sha256, storageCredentials?.key)
             logger.info("Create block node[$projectId/$repoName$nodeFullPath-$startPos] ,sha256[$sha256] success.")
             return bn
+        }
+    }
+
+    override fun updateBlock(blockNode: TBlockNode) {
+        with(blockNode) {
+            val criteria = Criteria.where(TBlockNode::id.name).`is`(id)
+                .and(TBlockNode::nodeFullPath.name).`is`(nodeFullPath)
+                .and(TBlockNode::projectId.name).`is`(projectId)
+                .and(TBlockNode::repoName.name).`is`(repoName)
+            val update = Update()
+                .set(TBlockNode::startPos.name, startPos)
+                .set(TBlockNode::endPos.name, endPos)
+            blockNodeDao.updateBlock(Query(criteria), update)
+            logger.info("Update block node[$projectId/$repoName/$nodeFullPath-$startPos], sha256[$sha256] success.")
         }
     }
 
