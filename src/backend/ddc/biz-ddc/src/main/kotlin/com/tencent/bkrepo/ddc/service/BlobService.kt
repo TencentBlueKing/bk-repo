@@ -109,8 +109,10 @@ class BlobService(
     }
 
     fun addRefToBlobs(ref: Reference, blobIds: Set<String>) {
-        blobRefRepository.addRefToBlob(ref.projectId, ref.repoName, ref.bucket, ref.key.toString(), blobIds)
-        blobRepository.incRefCount(ref.projectId, ref.repoName, blobIds)
+        with(ref) {
+            val addedBlobIds = blobRefRepository.addRefToBlob(projectId, repoName, bucket, key.toString(), blobIds)
+            blobRepository.incRefCount(projectId, repoName, addedBlobIds)
+        }
     }
 
     fun removeRefFromBlobs(projectId: String, repoName: String, bucket: String, key: String) {

@@ -11,7 +11,18 @@ import org.springframework.stereotype.Repository
 
 @Repository
 class BlobRefRepository : SimpleMongoDao<TDdcBlobRef>() {
-    fun addRefToBlob(projectId: String, repoName: String, bucket: String, refKey: String, blobIds: Set<String>) {
+
+    /**
+     * 添加blob与ref关系，返回插入成功的blobId列表
+     */
+    fun addRefToBlob(
+        projectId: String,
+        repoName: String,
+        bucket: String,
+        refKey: String,
+        blobIds: Set<String>
+    ): Set<String> {
+        val addedBlobIds = HashSet<String>()
         if (blobIds.size > DEFAULT_BLOB_SIZE_LIMIT) {
             val ref = "$projectId/$repoName/${buildRef(bucket, refKey)}"
             logger.error("blobs of ref[$ref] exceed size limit, size[${blobIds.size}]]")
@@ -27,9 +38,11 @@ class BlobRefRepository : SimpleMongoDao<TDdcBlobRef>() {
                         ref = buildRef(bucket, refKey)
                     )
                 )
+                addedBlobIds.add(it)
             } catch (ignore: DuplicateKeyException) {
             }
         }
+        return addedBlobIds
     }
 
     fun removeRefFromBlob(projectId: String, repoName: String, bucket: String, refKey: String): List<TDdcBlobRef> {
