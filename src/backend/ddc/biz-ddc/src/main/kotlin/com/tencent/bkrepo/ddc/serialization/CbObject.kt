@@ -154,33 +154,69 @@ class CbObject : Iterable<CbField> {
             }
             writer.writeEndObject()
         } else if (CbFieldUtils.isArray(field.typeWithFlags)) {
-            writer.writeArrayFieldStart(field.name)
+            if (field.nameLen != 0) {
+                writer.writeArrayFieldStart(field.name)
+            } else {
+                writer.writeStartArray()
+            }
             val array = field.asArray()
             for (objectField in array) {
                 writeField(objectField, writer)
             }
             writer.writeEndArray()
         } else if (CbFieldUtils.isInteger(field.typeWithFlags)) {
+            writeInt(field, writer)
+        } else if (CbFieldUtils.isBool(field.typeWithFlags)) {
+            if (field.nameLen != 0) {
+                writer.writeBooleanField(field.name, field.asBool())
+            } else {
+                writer.writeBoolean(field.asBool())
+            }
+        } else if (CbFieldUtils.isNull(field.typeWithFlags)) {
+            if (field.nameLen != 0) {
+                writer.writeNullField(field.name)
+            } else {
+                writer.writeNull()
+            }
+        } else if (CbFieldUtils.isDateTime(field.typeWithFlags)) {
+            throw NotImplementedException()
+//            writer.writeStringField(field.name, field.asDateTime())
+        } else if (CbFieldUtils.isHash(field.typeWithFlags)) {
+            if (field.nameLen != 0) {
+                writer.writeStringField(field.name, field.asHash().toString())
+            } else {
+                writer.writeString(field.asHash().toString())
+            }
+        } else if (CbFieldUtils.isString(field.typeWithFlags)) {
+            if (field.nameLen != 0) {
+                writer.writeStringField(field.name, field.asString())
+            } else {
+                writer.writeString(field.asString())
+            }
+        } else if (CbFieldUtils.isObjectId(field.typeWithFlags)) {
+            if (field.nameLen != 0) {
+                writer.writeStringField(field.name, field.asObjectId().hex())
+            } else {
+                writer.writeString(field.asObjectId().hex())
+            }
+        } else {
+            throw NotImplementedException("Unhandled type ${field.getType()} when attempting to convert to json")
+        }
+    }
+
+    private fun writeInt(field: CbField, writer: JsonGenerator) {
+        if (field.nameLen != 0) {
             if (field.getType() == CbFieldType.IntegerNegative) {
                 writer.writeNumberField(field.name, -field.asInt64())
             } else {
                 writer.writeNumberField(field.name, field.asUInt64())
             }
-        } else if (CbFieldUtils.isBool(field.typeWithFlags)) {
-            writer.writeBooleanField(field.name, field.asBool())
-        } else if (CbFieldUtils.isNull(field.typeWithFlags)) {
-            writer.writeNull()
-        } else if (CbFieldUtils.isDateTime(field.typeWithFlags)) {
-            throw NotImplementedException()
-//            writer.writeStringField(field.name, field.asDateTime())
-        } else if (CbFieldUtils.isHash(field.typeWithFlags)) {
-            writer.writeStringField(field.name, field.asHash().toString())
-        } else if (CbFieldUtils.isString(field.typeWithFlags)) {
-            writer.writeStringField(field.name, field.asString())
-        } else if (CbFieldUtils.isObjectId(field.typeWithFlags)) {
-            writer.writeStringField(field.name, field.asObjectId().hex())
         } else {
-            throw NotImplementedException("Unhandled type ${field.getType()} when attempting to convert to json")
+            if (field.getType() == CbFieldType.IntegerNegative) {
+                writer.writeNumber(-field.asInt64())
+            } else {
+                writer.writeNumber(field.asUInt64())
+            }
         }
     }
 

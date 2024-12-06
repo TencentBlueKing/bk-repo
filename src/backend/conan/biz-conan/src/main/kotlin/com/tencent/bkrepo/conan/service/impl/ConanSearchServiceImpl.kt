@@ -27,10 +27,7 @@
 
 package com.tencent.bkrepo.conan.service.impl
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
-import com.tencent.bkrepo.conan.constant.ConanMessageCode
-import com.tencent.bkrepo.conan.exception.ConanSearchNotFoundException
 import com.tencent.bkrepo.conan.pojo.ConanInfo
 import com.tencent.bkrepo.conan.pojo.ConanSearchResult
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
@@ -61,12 +58,6 @@ class ConanSearchServiceImpl : ConanSearchService {
     ): ConanSearchResult {
         val realPattern = pattern?.replace("*", ".*")
         val recipes = searchRecipes(projectId, repoName, realPattern, ignoreCase)
-        if (recipes.isEmpty()) {
-            throw ConanSearchNotFoundException(
-                ConanMessageCode.CONAN_SEARCH_NOT_FOUND,
-                pattern ?: StringPool.EMPTY, "$projectId/$repoName"
-            )
-        }
         return ConanSearchResult(recipes)
     }
 

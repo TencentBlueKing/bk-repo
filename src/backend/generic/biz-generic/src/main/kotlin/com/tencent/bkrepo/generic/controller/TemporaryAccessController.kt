@@ -31,7 +31,6 @@ import com.tencent.bk.audit.annotations.ActionAuditRecord
 import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
-import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
@@ -41,13 +40,13 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.router.Router
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
-import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
-import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
-import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -131,10 +130,6 @@ class TemporaryAccessController(
             AuditAttribute(
                 name = ActionAuditContent.REPO_NAME_TEMPLATE,
                 value = "#artifactInfo?.repoName"
-            ),
-            AuditAttribute(
-                name = ActionAuditContent.TOKEN_TEMPLATE,
-                value = "#token"
             )
         ],
         scopeId = "#artifactInfo?.projectId",
@@ -151,7 +146,6 @@ class TemporaryAccessController(
         artifactInfo: GenericArtifactInfo
     ) {
         val downloadUser = downloadUserId ?: userId
-        ActionAuditContext.current().addExtendData("downloadUser", downloadUser)
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.DOWNLOAD)
         temporaryAccessService.downloadByShare(downloadUser, tokenInfo.createdBy, artifactInfo)
         temporaryAccessService.decrementPermits(tokenInfo)
@@ -170,8 +164,7 @@ class TemporaryAccessController(
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
-            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
-            AuditAttribute(name = ActionAuditContent.TOKEN_TEMPLATE, value = "#token")
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
         ],
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_DOWNLOAD_WITH_TOKEN_CONTENT
@@ -200,9 +193,8 @@ class TemporaryAccessController(
         ),
         attributes = [
             AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
-            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
-            AuditAttribute(name = ActionAuditContent.TOKEN_TEMPLATE, value = "#token")
-    ],
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_UPLOAD_WITH_TOKEN_CONTENT
     )

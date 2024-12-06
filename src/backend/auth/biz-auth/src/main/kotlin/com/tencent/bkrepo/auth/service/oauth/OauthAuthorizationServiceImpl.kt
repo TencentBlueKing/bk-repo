@@ -43,6 +43,7 @@ import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKey
 import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.OidcConfiguration
 import com.tencent.bkrepo.auth.pojo.oauth.UserInfo
 import com.tencent.bkrepo.auth.service.OauthAuthorizationService
@@ -146,17 +147,16 @@ class OauthAuthorizationServiceImpl(
         with(generateTokenRequest) {
             Preconditions.checkNotNull(clientId, this::clientId.name)
             Preconditions.checkNotNull(refreshToken, this::refreshToken.name)
-            val token = oauthTokenRepository.findFirstByAccountIdAndRefreshToken(clientId!!, refreshToken!!)
+            var token = oauthTokenRepository.findFirstByAccountIdAndRefreshToken(clientId!!, refreshToken!!)
                 ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, refreshToken!!)
-            val idToken = generateOpenIdToken(
-                clientId = clientId!!,
+            val client = accountDao.findById(clientId!!)
+                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId!!)
+            token = buildOauthToken(
                 userId = token.userId,
-                nonce = OauthUtils.generateRandomString(10)
+                nonce = OauthUtils.generateRandomString(10),
+                client = client,
+                openId = token.idToken != null
             )
-            token.accessToken = idToken.toJwtToken()
-            token.issuedAt = Instant.now(Clock.systemDefaultZone())
-            token.idToken?.let { token.idToken = idToken }
-            oauthTokenRepository.save(token)
             responseToken(transfer(token))
         }
     }
@@ -201,7 +201,7 @@ class OauthAuthorizationServiceImpl(
     ): TOauthToken {
         val idToken = generateOpenIdToken(client.id!!, userId, nonce)
         val tOauthToken = TOauthToken(
-            accessToken = idToken.toJwtToken(),
+            accessToken = idToken.toJwtToken(client.scope),
             refreshToken = OauthUtils.generateRefreshToken(),
             expireSeconds = oauthProperties.expiredDuration.seconds,
             type = "Bearer",
@@ -300,7 +300,7 @@ class OauthAuthorizationServiceImpl(
         accessToken = tOauthToken.accessToken,
         tokenType = tOauthToken.type,
         scope = if (tOauthToken.scope == null) "" else tOauthToken.scope!!.joinToString(StringPool.COMMA),
-        idToken = tOauthToken.idToken?.toJwtToken(),
+        idToken = tOauthToken.idToken?.toJwtToken(tOauthToken.scope),
         refreshToken = tOauthToken.refreshToken,
         expiresIn = if (tOauthToken.expireSeconds == null) {
             null
@@ -310,12 +310,15 @@ class OauthAuthorizationServiceImpl(
         }
     )
 
-    private fun IdToken.toJwtToken(): String {
+    private fun IdToken.toJwtToken(scope: Set<ResourceType>?): String {
+        val claims = mutableMapOf<String, Any>()
+        claims["scope"] = scope.orEmpty()
+        claims.putAll(JsonUtils.objectMapper.convertValue(this, jacksonTypeRef()))
         return JwtUtils.generateToken(
             signingKey = RsaUtils.stringToPrivateKey(cryptoProperties.privateKeyStr2048PKCS8),
             expireDuration = oauthProperties.expiredDuration,
             subject = sub,
-            claims = JsonUtils.objectMapper.convertValue(this, jacksonTypeRef()),
+            claims = claims,
             header = mapOf(KEY_ID_NAME to KEY_ID_VALUE),
             algorithm = SignatureAlgorithm.RS256
         )

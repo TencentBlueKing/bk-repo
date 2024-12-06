@@ -55,7 +55,6 @@ import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
@@ -112,12 +111,19 @@ class ArtifactPreloadPlanServiceImpl(
         if (!properties.enabled) {
             return
         }
-        val option = NodeListOption(pageSize = properties.maxNodes, includeFolder = false)
-        val res = nodeService.listNodePageBySha256(sha256, option)
-        val nodes = res.records
+        val nodes = nodeService.listNodeBySha256(
+            sha256 = sha256,
+            limit = properties.maxNodes,
+            includeMetadata = false,
+            includeDeleted = false,
+            tillLimit = false
+        )
         if (nodes.size >= properties.maxNodes) {
             // 限制查询出来的最大node数量，避免预加载计划创建时间过久
             logger.warn("nodes of sha256[$sha256] exceed max page size[${properties.maxNodes}]")
+            return
+        } else if (nodes.isEmpty()) {
+            logger.debug("nodes of sha256[$sha256] found")
             return
         }
         // node属于同一项目仓库的概率较大，缓存避免频繁查询策略
@@ -127,10 +133,14 @@ class ArtifactPreloadPlanServiceImpl(
         for (node in nodes) {
             val repo = repositoryCache.get(buildRepoId(node.projectId, node.repoName))
             if (repo.storageCredentialsKey != credentialsKey) {
+                logger.debug("credentialsKey of repo[${repo.name}] not match dst credentialsKey[${credentialsKey}]")
                 continue
             }
             val strategies = strategyCache.getOrPut(buildRepoId(node.projectId, node.repoName)) {
                 strategyService.list(node.projectId, node.repoName)
+            }
+            if (strategies.isEmpty()) {
+                logger.debug("preload strategy of repo[${repo.projectId}/${repo.name}] is empty")
             }
             strategies.forEach { strategy ->
                 matchAndGeneratePlan(strategy, node, repo.storageCredentialsKey)?.let { plans.add(it) }

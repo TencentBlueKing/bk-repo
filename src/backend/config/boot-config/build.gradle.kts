@@ -32,4 +32,5 @@
 dependencies {
     implementation("org.springframework.cloud:spring-cloud-config-server:3.1.6")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap:3.1.6")
+    implementation("io.undertow:undertow-servlet")
 }

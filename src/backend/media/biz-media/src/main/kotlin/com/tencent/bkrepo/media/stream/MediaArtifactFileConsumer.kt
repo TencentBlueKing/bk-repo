@@ -8,7 +8,6 @@ import com.tencent.bkrepo.media.service.TranscodeService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
@@ -39,7 +38,6 @@ class MediaArtifactFileConsumer(
         storageManager.storeArtifactFile(nodeCreateRequest, file, repo.storageCredentials)
         if (transcodeConfig != null) {
             transcodeService.transcode(artifactInfo, transcodeConfig, userId)
-            logger.info("Add transcode task for artifact[$artifactInfo]")
         }
     }
 
@@ -68,7 +66,6 @@ class MediaArtifactFileConsumer(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(MediaArtifactFileConsumer::class.java)
         private const val METADATA_KEY_MEDIA_START_TIME = "media.startTime"
         private const val METADATA_KEY_MEDIA_STOP_TIME = "media.stopTime"
     }

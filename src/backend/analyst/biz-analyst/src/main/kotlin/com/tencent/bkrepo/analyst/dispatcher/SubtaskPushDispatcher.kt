@@ -36,7 +36,7 @@ abstract class SubtaskPushDispatcher<T : ExecutionCluster>(
 
     override fun dispatch() {
         if (scanService.peek(executionCluster.name) == null) {
-            logger.info("cluster [${executionCluster.name}] has no subtask to dispatch")
+            logger.debug("cluster [${executionCluster.name}] has no subtask to dispatch")
             return
         }
 

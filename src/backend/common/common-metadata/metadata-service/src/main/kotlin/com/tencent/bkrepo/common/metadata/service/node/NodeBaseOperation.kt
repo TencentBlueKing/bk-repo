@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.service.node
 
+import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -65,6 +66,17 @@ interface NodeBaseOperation {
      * 根据sha256分页查询节点
      */
     fun listNodePageBySha256(sha256: String, option: NodeListOption): Page<NodeInfo>
+
+    /**
+     * 根据sha256列出指定数量的节点
+     */
+    fun listNodeBySha256(
+        sha256: String,
+        limit: Int = DEFAULT_PAGE_SIZE,
+        includeMetadata: Boolean =false,
+        includeDeleted: Boolean = true,
+        tillLimit: Boolean = true,
+    ): List<NodeInfo>
 
     /**
      * 判断节点是否存在

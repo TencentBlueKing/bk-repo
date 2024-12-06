@@ -148,6 +148,8 @@ class StorageManager(
             forwardNode = forward(node, SecurityUtils.getUserId())
             forwardNode?.let {
                 logger.info("Load[${node.identity()}] forward to [${it.identity()}].")
+                ActionAuditContext.current().addExtendData("alphaApkSha256", it.sha256)
+                ActionAuditContext.current().addExtendData("alphaApkMd5", it.md5)
             }
         }
         val load = forwardNode ?: node

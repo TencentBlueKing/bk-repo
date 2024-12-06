@@ -35,4 +35,12 @@ import org.springframework.util.unit.DataUnit
 data class DdcProperties(
     var inlineBlobMaxSize: DataSize = DataSize.of(64L, DataUnit.KILOBYTES),
     var updateRefLastAccessTime: Boolean = true,
+    /**
+     * 批量操作接口工作线程数
+     */
+    var refBatchWorker: Int = Runtime.getRuntime().availableProcessors() * 2,
+    /**
+     * 批量操作接口线程池队列大小
+     */
+    var refBatchQueueSize: Int = 16,
 )

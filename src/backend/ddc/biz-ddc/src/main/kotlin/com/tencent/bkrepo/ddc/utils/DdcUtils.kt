@@ -27,10 +27,17 @@
 
 package com.tencent.bkrepo.ddc.utils
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.ddc.model.TDdcBlob
 import com.tencent.bkrepo.ddc.model.TDdcRef
+import com.tencent.bkrepo.ddc.serialization.CbObject
+import org.slf4j.LoggerFactory
 
 object DdcUtils {
+    private val logger = LoggerFactory.getLogger(DdcUtils::class.java)
+
     const val DIR_BLOBS = "blobs"
 
     fun TDdcRef.fullPath() = "/$bucket/$key"
@@ -38,4 +45,31 @@ object DdcUtils {
     fun TDdcBlob.fullPath() = "/blobs/$blobId"
 
     fun buildRef(bucket: String, key: String): String = "ref/$bucket/$key"
+
+    fun toError(e: Exception): Pair<CbObject, Int> {
+        val statusCode = if (e is ErrorCodeException) {
+            e.status.value
+        } else {
+            HttpStatus.INTERNAL_SERVER_ERROR.value
+        }
+        val msg = if (e is ErrorCodeException) {
+            LocaleMessageUtils.getLocalizedMessage(e.messageCode, e.params)
+        } else {
+            HttpStatus.INTERNAL_SERVER_ERROR.name
+        }
+        return toError(e, statusCode, msg)
+    }
+
+    fun toError(e: Exception, statusCode: Int, msg: String): Pair<CbObject, Int> {
+        if (statusCode == HttpStatus.INTERNAL_SERVER_ERROR.value) {
+            logger.error("batch op failed:\n${e.stackTraceToString()}")
+        } else if (statusCode != HttpStatus.NOT_FOUND.value && statusCode != HttpStatus.BAD_REQUEST.value) {
+            logger.info("batch op failed:\n${e.stackTraceToString()}")
+        }
+        val obj = CbObject.build {
+            it.writeString("title", msg)
+            it.writeInteger("status", statusCode)
+        }
+        return Pair(obj, statusCode)
+    }
 }
