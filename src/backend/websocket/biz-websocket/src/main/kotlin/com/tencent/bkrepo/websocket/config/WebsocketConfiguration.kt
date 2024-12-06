@@ -94,6 +94,9 @@ class WebsocketConfiguration(
 
     override fun configureWebSocketTransport(registration: WebSocketTransportRegistration) {
         registration.addDecoratorFactory(wsHandlerDecoratorFactory())
+        registration.setMessageSizeLimit(webSocketProperties.messageSizeLimit)
+        registration.setSendTimeLimit(webSocketProperties.sendTimeLimit)
+        registration.setSendBufferSizeLimit(webSocketProperties.sendBufferSizeLimit)
         super.configureWebSocketTransport(registration)
     }
 
