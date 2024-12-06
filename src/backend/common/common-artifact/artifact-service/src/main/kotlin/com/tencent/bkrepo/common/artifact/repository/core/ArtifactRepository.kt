@@ -55,7 +55,7 @@ interface ArtifactRepository {
      *
      * @param context 构件上传上下文
      */
-    fun newUpload(context: ArtifactUploadContext)
+    fun newUpload(context: ArtifactUploadContext) {}
 
     /**
      * 下载构件

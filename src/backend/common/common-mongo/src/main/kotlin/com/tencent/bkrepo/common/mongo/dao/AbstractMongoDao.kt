@@ -135,15 +135,6 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         return determineMongoTemplate().updateFirst(query, update, determineCollectionName(query))
     }
 
-    fun updateBlock(query: Query, update: Update, clazz: Class<E>): UpdateResult
-    {
-        if (logger.isDebugEnabled) {
-            logger.debug("Mongo Dao update block: [$query], [$update]")
-        }
-        // 同样的方法，classtype识别不出来，且更新不传classtype会更新不到对应的记录
-        return determineMongoTemplate().updateFirst(query, update, clazz, determineCollectionName(query))
-    }
-
     override fun updateMulti(query: Query, update: Update): UpdateResult {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao updateMulti: [$query], [$update]")

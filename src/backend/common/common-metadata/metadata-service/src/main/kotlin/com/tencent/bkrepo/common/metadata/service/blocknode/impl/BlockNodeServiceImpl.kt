@@ -72,16 +72,13 @@ class BlockNodeServiceImpl(
     override fun updateBlock(blockNode: TBlockNode) {
         with(blockNode) {
             val criteria = Criteria.where(TBlockNode::id.name).`is`(id)
-                .and(TBlockNode::createdBy.name).`is`(createdBy)
                 .and(TBlockNode::nodeFullPath.name).`is`(nodeFullPath)
-                .and(TBlockNode::sha256.name).`is`(sha256)
                 .and(TBlockNode::projectId.name).`is`(projectId)
                 .and(TBlockNode::repoName.name).`is`(repoName)
-                .and(TBlockNode::size.name).`is`(size)
             val update = Update()
                 .set(TBlockNode::startPos.name, startPos)
                 .set(TBlockNode::endPos.name, endPos)
-            blockNodeDao.updateBlock(Query(criteria), update, TBlockNode::class.java)
+            blockNodeDao.updateBlock(Query(criteria), update)
             logger.info("Update block node[$projectId/$repoName/$nodeFullPath-$startPos], sha256[$sha256] success.")
         }
     }

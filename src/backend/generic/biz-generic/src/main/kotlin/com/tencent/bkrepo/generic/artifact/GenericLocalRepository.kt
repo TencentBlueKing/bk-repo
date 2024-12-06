@@ -179,13 +179,11 @@ class GenericLocalRepository(
 
     override fun onNewUploadBefore(context: ArtifactUploadContext){
         // 上传前校验
-        super.onNewUploadBefore(context)
-        // 若不允许覆盖, 提前检查Block节点是否存在
-        //checkBlockNodeExist(context)
+        super.onUploadBefore(context)
+        // 检查BlockNodeBase是否存在
+        checkBlockBaseNode(context.artifactInfo)
         // 通用上传前检查
         baseUploadBefore(context)
-        // 二次检查，防止接收block文件过程中，有并发上传成功的情况
-        //checkBlockNodeExist(context)
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
@@ -213,7 +211,6 @@ class GenericLocalRepository(
 
     override fun onNewUpload(context: ArtifactUploadContext) {
         with(context) {
-            checkBlockBaseNode(artifactInfo)
 
             val bArtifactFile = getArtifactFile()
             val sha256 = getArtifactSha256()
@@ -225,7 +222,7 @@ class GenericLocalRepository(
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 nodeFullPath = artifactInfo.getArtifactFullPath(),
-                startPos = offset ?: sequence ?: throw ErrorCodeException(GenericMessageCode.BLOCK_OFFSET_NOT_FOUND),
+                startPos = offset ?: sequence ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND),
                 sha256 = sha256,
                 projectId = projectId,
                 repoName = repoName,
@@ -320,11 +317,6 @@ class GenericLocalRepository(
             }
         }
     }
-
-    private fun checkBlockNodeExist(context: ArtifactUploadContext) {
-        // todo 判断block node是否存在
-    }
-
 
     private fun checkBlockBaseNode(artifactInfo: ArtifactInfo) {
         nodeService.getNodeDetail(artifactInfo)

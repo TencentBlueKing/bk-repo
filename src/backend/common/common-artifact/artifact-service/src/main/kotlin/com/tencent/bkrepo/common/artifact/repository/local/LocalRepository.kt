@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.repository.local
 
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -104,5 +105,35 @@ abstract class LocalRepository : AbstractArtifactRepository() {
             md5 = context.getArtifactMd5(),
             operator = context.userId
         )
+    }
+
+    /**
+     * 分块上传
+     */
+    override fun newUpload(context: ArtifactUploadContext) {
+        try {
+            this.onNewUploadBefore(context)
+            this.onNewUpload(context)
+            this.onUploadSuccess(context)
+        }catch (exception: RuntimeException){
+            this.onUploadFailed(context, exception)
+        }finally {
+            this.onUploadFinished(context)
+        }
+    }
+
+    /**
+     * 分块上传前回调
+     */
+    open fun onNewUploadBefore(context: ArtifactUploadContext) {
+        artifactMetrics.uploadingCount.incrementAndGet()
+    }
+
+
+        /**
+     * 分块上传构件
+     */
+    open fun onNewUpload(context: ArtifactUploadContext) {
+        throw MethodNotAllowedException()
     }
 }

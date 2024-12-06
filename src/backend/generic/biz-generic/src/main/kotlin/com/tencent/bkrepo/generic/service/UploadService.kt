@@ -150,7 +150,8 @@ class UploadService(
             sha256 = FAKE_SHA256,
             md5 = FAKE_MD5,
             operator = userId,
-            size = getLongHeader(HEADER_FILE_SIZE),
+            size = getLongHeader(HEADER_FILE_SIZE).takeIf { it > 0L }
+    ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND) ,
             overwrite = getBooleanHeader(HEADER_OVERWRITE),
             expires = getLongHeader(HEADER_EXPIRES),
             nodeMetadata = listOf(fsAttr)
@@ -169,9 +170,6 @@ class UploadService(
 
     fun abortNewBlockUpload(userId: String, artifactInfo: GenericArtifactInfo) {
         delete(userId, artifactInfo)
-        with(artifactInfo){
-            blockNodeService.deleteBlocks(projectId, repoName, getArtifactFullPath())
-        }
     }
 
     fun completeBlockUpload(
@@ -219,10 +217,7 @@ class UploadService(
         logger.info("User[${SecurityUtils.getPrincipal()}] complete upload [$artifactInfo] success.")
     }
 
-    fun completeNewBlockUpload(
-        userId: String,
-        artifactInfo: GenericArtifactInfo
-    ) {
+    fun completeNewBlockUpload(userId: String, artifactInfo: GenericArtifactInfo) {
         // 获取并按起始位置排序块信息列表
         val blockInfoList = listBlocks(artifactInfo).sortedBy { it.startPos }
 

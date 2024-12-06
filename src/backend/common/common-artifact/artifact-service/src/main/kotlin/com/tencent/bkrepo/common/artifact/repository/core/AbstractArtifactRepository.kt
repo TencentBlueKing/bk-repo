@@ -137,19 +137,6 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
         }
     }
 
-
-    override fun newUpload(context: ArtifactUploadContext) {
-        try {
-            this.onNewUploadBefore(context)
-            this.onNewUpload(context)
-            this.onUploadSuccess(context)
-        }catch (exception: RuntimeException){
-            this.onUploadFailed(context, exception)
-        }finally {
-            this.onUploadFinished(context)
-        }
-    }
-
     override fun download(context: ArtifactDownloadContext) {
         try {
             this.onDownloadBefore(context)
@@ -211,23 +198,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
     }
 
     /**
-     * 分块上传前回调
-     */
-    open fun onNewUploadBefore(context: ArtifactUploadContext) {
-        artifactMetrics.uploadingCount.incrementAndGet()
-    }
-
-    /**
      * 上传构件
      */
     open fun onUpload(context: ArtifactUploadContext) {
-        throw MethodNotAllowedException()
-    }
-
-    /**
-     * 分块上传构件
-     */
-    open fun onNewUpload(context: ArtifactUploadContext) {
         throw MethodNotAllowedException()
     }
 
