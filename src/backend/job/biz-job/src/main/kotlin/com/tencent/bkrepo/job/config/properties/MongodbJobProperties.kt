@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.config.properties
 
 import com.tencent.bkrepo.job.BATCH_SIZE
+import com.tencent.bkrepo.job.CONCURRENT_THREAD_LIMIT
 import com.tencent.bkrepo.job.batch.base.JobConcurrentLevel
 
 open class MongodbJobProperties(
@@ -44,5 +45,9 @@ open class MongodbJobProperties(
     /**
      * 每次批处理作业大小
      * */
-    var batchSize: Int = BATCH_SIZE
+    var batchSize: Int = BATCH_SIZE,
+    /**
+     * 并发执行下最大并发线程数
+     */
+    var concurrentThreadLimit: Int = CONCURRENT_THREAD_LIMIT,
 ) : BatchJobProperties()
