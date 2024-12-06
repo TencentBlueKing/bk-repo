@@ -46,7 +46,7 @@ import com.tencent.bkrepo.job.separation.pojo.query.NodeDetailInfo
 import com.tencent.bkrepo.job.separation.service.RepoSpecialDataSeparator
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import com.tencent.bkrepo.job.separation.util.SeparationUtils.getNodeCollectionName
-import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
+import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
 import com.tencent.bkrepo.maven.util.MavenUtil.extractGroupIdAndArtifactId
 import com.tencent.bkrepo.maven.util.MavenUtil.extractPath
@@ -210,7 +210,7 @@ class MavenRepoSpecialDataSeparatorHandler(
 
     override fun getRecoveryPackageVersionData(recoveryInfo: RecoveryNodeInfo): RecoveryVersionInfo {
         with(recoveryInfo) {
-            val mavenGAVC = fullPath.toMavenGAVC()
+            val mavenGAVC = fullPath.mavenGAVC()
             val version = mavenGAVC.version
             val artifactId = mavenGAVC.artifactId
             val groupId = mavenGAVC.groupId.formatSeparator("/", ".")

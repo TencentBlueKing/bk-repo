@@ -52,6 +52,9 @@ if security_paths ~= nil and #security_paths ~= 0 then
     local path = ngx.var.uri
     for _, item in ipairs(security_paths) do
         local pathPattern = "/web/" .. service_name .. item.path
+        if service_name == "fs-server" then
+             pathPattern = "/web/fs%-server" .. item.path
+        end
         if string.find(path, "^" .. pathPattern) ~= nil and service_name == item.service and method == item.method then
             is_secure = true
         end
