@@ -94,6 +94,8 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     private val permitsPerSecond: Double
         get() = properties.permitsPerSecond
 
+    private val concurrentThreadLimit: Int get() = properties.concurrentThreadLimit
+
     @Autowired
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
 
@@ -195,7 +197,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
         hasAsyncTask = true
         tasks.forEach {
             val task = IdentityTask(taskId) { block(it) }
-            executor.executeWithId(task, produce, permitsPerSecond)
+            executor.executeWithId(task, concurrentThreadLimit, produce, permitsPerSecond)
         }
     }
 
