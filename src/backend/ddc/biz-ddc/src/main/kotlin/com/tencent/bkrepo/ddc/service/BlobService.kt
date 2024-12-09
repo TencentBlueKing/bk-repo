@@ -111,14 +111,18 @@ class BlobService(
     fun addRefToBlobs(ref: Reference, blobIds: Set<String>) {
         with(ref) {
             val addedBlobIds = blobRefRepository.addRefToBlob(projectId, repoName, bucket, key.toString(), blobIds)
-            blobRepository.incRefCount(projectId, repoName, addedBlobIds)
+            if (addedBlobIds.isNotEmpty()) {
+                blobRepository.incRefCount(projectId, repoName, addedBlobIds)
+            }
         }
     }
 
     fun removeRefFromBlobs(projectId: String, repoName: String, bucket: String, key: String) {
         val blobIds = HashSet<String>()
         blobRefRepository.removeRefFromBlob(projectId, repoName, bucket, key).mapTo(blobIds) { it.blobId }
-        blobRepository.incRefCount(projectId, repoName, blobIds, -1L)
+        if (blobIds.isNotEmpty()) {
+            blobRepository.incRefCount(projectId, repoName, blobIds, -1L)
+        }
         // 兼容旧逻辑，所有blob的references字段为空后可以移除该逻辑
         blobRepository.removeRefFromBlob(projectId, repoName, bucket, key)
     }
