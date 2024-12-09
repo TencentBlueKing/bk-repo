@@ -27,10 +27,14 @@
 
 package com.tencent.bkrepo.common.storage.core.cache
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
+import com.tencent.bkrepo.common.api.stream.ChunkedInputStream
+import com.tencent.bkrepo.common.api.util.StreamUtils.drain
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
+import com.tencent.bkrepo.common.artifact.stream.BoundedInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
@@ -44,13 +48,21 @@ import com.tencent.bkrepo.common.storage.filesystem.cleanup.BasedAtimeAndMTimeFi
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
+import com.tencent.bkrepo.common.storage.innercos.request.DownloadPartRequestFactory
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.InputStream
+import java.lang.IllegalArgumentException
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.Executors
+import java.util.concurrent.Future
+import java.util.concurrent.FutureTask
+import java.util.concurrent.TimeUnit
+import kotlin.math.min
 
 /**
  * 支持缓存的存储服务
@@ -125,15 +137,19 @@ class CacheStorageService(
                 return it.apply { putMetadata(METADATA_KEY_CACHE_ENABLED, true) }
             }
         }
-        val artifactInputStream = fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
-        if (artifactInputStream != null && loadCacheFirst && range.isFullContent()) {
-            val cachePath = Paths.get(credentials.cache.path, path)
-            val tempPath = Paths.get(credentials.cache.path, TEMP)
-            val cacheFileLoadedEventPublisher = CacheFileLoadedEventPublisher(publisher, credentials)
-            val readListener = CachedFileWriter(cachePath, filename, tempPath, cacheFileLoadedEventPublisher)
-            artifactInputStream.addListener(readListener)
+        val artifactInputStream = if (enableLargeFileOptimization(range, credentials)) {
+            loadLargeFileByChunked(path, filename, range, credentials)
+        } else {
+            fileStorage.load(path, filename, range, credentials)?.artifactStream(range)?.apply {
+                if (loadCacheFirst && range.isFullContent()) {
+                    val cachePath = Paths.get(credentials.cache.path, path)
+                    val tempPath = Paths.get(credentials.cache.path, TEMP)
+                    val cacheFileLoadedEventPublisher = CacheFileLoadedEventPublisher(publisher, credentials)
+                    val readListener = CachedFileWriter(cachePath, filename, tempPath, cacheFileLoadedEventPublisher)
+                    addListener(readListener)
+                }
+            }
         }
-
         return if (artifactInputStream == null && !loadCacheFirst) {
             cacheClient.load(path, filename)?.artifactStream(range)
         } else {
@@ -179,7 +195,7 @@ class CacheStorageService(
             credentials,
             resolver,
             publisher,
-            fileRetainResolver
+            fileRetainResolver,
         )
         getCacheClient(credentials).walk(visitor)
         val result = mutableMapOf<Path, CleanupResult>()
@@ -207,7 +223,7 @@ class CacheStorageService(
     override fun copy(
         digest: String,
         fromCredentials: StorageCredentials?,
-        toCredentials: StorageCredentials?
+        toCredentials: StorageCredentials?,
     ) {
         val path = fileLocator.locate(digest)
         val from = getCredentialsOrDefault(fromCredentials)
@@ -301,6 +317,12 @@ class CacheStorageService(
         return cacheFirst && isHealth && isExceedThreshold
     }
 
+    private fun enableLargeFileOptimization(range: Range, credentials: StorageCredentials): Boolean {
+        val total = range.total ?: return false
+        val cache = credentials.cache
+        return cache.largeFileOptimization && total > cache.largeFileSizeThreshold.toBytes()
+    }
+
     private fun getMonitor(credentials: StorageCredentials): StorageHealthMonitor {
         return monitorHelper.getMonitor(storageProperties, credentials)
     }
@@ -313,8 +335,16 @@ class CacheStorageService(
         return FileSystemClient(getStagingPath(credentials))
     }
 
+    private fun getChunksClient(credentials: StorageCredentials): FileSystemClient {
+        return FileSystemClient(getChunksPath(credentials))
+    }
+
     private fun getStagingPath(credentials: StorageCredentials): Path {
         return Paths.get(credentials.cache.path, STAGING)
+    }
+
+    private fun getChunksPath(credentials: StorageCredentials): Path {
+        return getTempPath(credentials).resolve(CHUNKS)
     }
 
     private fun stagingFile(credentials: StorageCredentials, path: String, filename: String, file: File) {
@@ -325,8 +355,98 @@ class CacheStorageService(
         }
     }
 
+    /**
+     * 大文件分块下载
+     *
+     * 该方法对大文件下载进行了优化，使用分块下载降低了源存储带宽压力，减少了请求时长。具体行为如下：
+     *
+     * 大文件的下载会转换成多个分块下载请求，客户端在读取一个分块时，
+     * 服务端会预取下一个分块，如果下一个分块本地不存在，则会从存储中下载，并进行缓存。
+     *
+     * */
+    private fun loadLargeFileByChunked(
+        path: String,
+        name: String,
+        range: Range,
+        storageCredentials: StorageCredentials,
+    ): ArtifactInputStream? {
+        val optimalPartSize = storageCredentials.cache.largeFileSizeThreshold.toBytes()
+        val start = (range.start / optimalPartSize) * optimalPartSize
+        val end = ((range.end / optimalPartSize + 1) * optimalPartSize - 1).coerceAtMost(range.total!!)
+        val factory = DownloadPartRequestFactory(name, optimalPartSize, start, end)
+        var request = factory.nextDownloadPartRequest()
+        var fileChunk = Range(request.rangeStart!!, request.rangeEnd!!, range.total)
+        var preFetchFuture: Future<InputStream?>? = loadFileChunk(path, name, fileChunk, storageCredentials)
+        if (preFetchFuture?.get() == null) return null
+        val it = object : Iterator<InputStream> {
+            override fun hasNext(): Boolean {
+                return preFetchFuture != null
+            }
+
+            override fun next(): InputStream {
+                val inputStream = getCurInputStream()
+                if (factory.hasMoreRequests()) {
+                    request = factory.nextDownloadPartRequest()
+                    fileChunk = Range(request.rangeStart!!, request.rangeEnd!!, range.total)
+                    preFetchFuture = loadFileChunk(path, name, fileChunk, storageCredentials)
+                } else {
+                    preFetchFuture = null
+                }
+                return inputStream
+            }
+
+            private fun getCurInputStream(): InputStream {
+                val inputStream = preFetchFuture?.get(CHUNK_DOWNLOAD_TIMEOUT, TimeUnit.SECONDS)
+                    ?: throw IllegalArgumentException("Load file[$name] chunk $range failed ")
+                return BoundedInputStream(inputStream, min(range.end - request.rangeStart!! + 1, optimalPartSize))
+                    .apply {
+                        if (range.start > request.rangeStart!!) {
+                            skip(range.start - request.rangeStart!!)
+                        }
+                    }
+            }
+        }
+        return ChunkedInputStream(it).artifactStream(range)
+    }
+
+    /**
+     * 获取文件块，优先从本地获取，没有则从实际存储中获取
+     * */
+    private fun loadFileChunk(
+        path: String,
+        name: String,
+        range: Range,
+        storageCredentials: StorageCredentials,
+    ): Future<InputStream?> {
+        val largeFileSizeThreshold = storageCredentials.cache.largeFileSizeThreshold.toBytes()
+        val filename = "${name}_${range.start}_${range.end}"
+        val chunkRange = Range.full(largeFileSizeThreshold)
+        val chunksClient = getChunksClient(storageCredentials)
+        chunksClient.load(path, filename)?.artifactStream(chunkRange)?.let {
+            return FutureTask<InputStream> { it }.apply { run() }
+        }
+        return ioThreadPool.submit<InputStream> {
+            val cachePath = Paths.get(getChunksPath(storageCredentials).toString(), path)
+            val tempPath = Paths.get(storageCredentials.cache.path, TEMP)
+            val inputStream = fileStorage.load(path, name, range, storageCredentials)?.artifactStream(range)
+            if (inputStream != null && range.length >= largeFileSizeThreshold) {
+                inputStream.addListener(CachedFileWriter(cachePath, filename, tempPath), true)
+                inputStream.use { it.drain() }
+                val chunk = chunksClient.load(path, filename)
+                require(chunk != null && chunk.length() == largeFileSizeThreshold) { "file[$name] chunk cache failed." }
+                chunk.artifactStream(chunkRange)
+            } else {
+                inputStream
+            }
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(CacheStorageService::class.java)
         private const val STAGING = "staging"
+        private const val CHUNKS = "chunks"
+        private const val CHUNK_DOWNLOAD_TIMEOUT = 60L
+        private val ioThreadPool =
+            Executors.newCachedThreadPool(ThreadFactoryBuilder().setNameFormat("cache-io-%d").build())!!
     }
 }

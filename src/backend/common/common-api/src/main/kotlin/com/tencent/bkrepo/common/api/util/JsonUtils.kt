@@ -45,6 +45,7 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
+import com.tencent.bkrepo.common.api.serializer.DataSizeDeserializer
 import com.tencent.bkrepo.common.api.serializer.DataSizeSerializer
 import org.springframework.util.unit.DataSize
 import java.io.InputStream
@@ -73,6 +74,7 @@ object JsonUtils {
         registerModule(Jdk8Module())
         var dateSizeModule = SimpleModule()
         dateSizeModule.addSerializer(DataSize::class.java, DataSizeSerializer())
+        dateSizeModule.addDeserializer(DataSize::class.java, DataSizeDeserializer())
         registerModule(dateSizeModule)
         enable(SerializationFeature.INDENT_OUTPUT)
         disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)

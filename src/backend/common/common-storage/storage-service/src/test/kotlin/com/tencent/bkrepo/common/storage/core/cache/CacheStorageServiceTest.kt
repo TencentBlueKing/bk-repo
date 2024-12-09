@@ -1,7 +1,9 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
+ *
  * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -60,6 +62,7 @@ import java.nio.charset.Charset
 import java.util.concurrent.CyclicBarrier
 import kotlin.concurrent.thread
 import kotlin.random.Random
+import kotlin.random.nextInt
 
 @ExtendWith(SpringExtension::class)
 @ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
@@ -82,7 +85,7 @@ internal class CacheStorageServiceTest {
 
     @BeforeEach
     fun beforeEach() {
-        // before each
+        storageProperties.defaultStorageCredentials().cache.loadCacheFirst = true
     }
 
     @AfterEach
@@ -369,6 +372,32 @@ internal class CacheStorageServiceTest {
         }
         // 等待执行
         Thread.sleep(2000)
+    }
+
+    @Test
+    fun largeFileOptimizationTest() {
+        storageProperties.defaultStorageCredentials().cache.loadCacheFirst = false
+        val size = 50 * 1024 * 1024
+        val data = Random.nextBytes(size)
+        val artifactFile = createTempArtifactFile(data)
+        val sha256 = artifactFile.getFileSha256()
+        storageService.store(sha256, artifactFile, null)
+        // 等待异步存储完毕
+        Thread.sleep(1000)
+        repeat(3) {
+            val start = Random.nextInt(size)
+            val end = Random.nextInt(start + 1, size + 1)
+            println("${Thread.currentThread().name} $start ----- $end")
+            val artifactInputStream =
+                storageService.load(sha256, Range(start.toLong(), end.toLong(), size.toLong()), null)
+            Assertions.assertEquals(
+                data.copyOfRange(start, end + 1).inputStream().sha256(),
+                artifactInputStream!!.sha256(),
+            )
+        }
+        val artifactInputStream = storageService.load(sha256, Range.full(size.toLong()), null)
+
+        Assertions.assertEquals(sha256, artifactInputStream!!.sha256())
     }
 
     private fun createTempArtifactFile(size: Long): ArtifactFile {
