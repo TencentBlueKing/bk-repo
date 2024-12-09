@@ -41,7 +41,8 @@ import org.slf4j.LoggerFactory
 import java.util.Queue
 
 class ArtifactMetricsExporter(
-    private val customMetricsExporter: CustomMetricsExporter? = null
+    private val customMetricsExporter: CustomMetricsExporter? = null,
+    private val allowUnknownProjectExport: Boolean,
 ) {
 
     fun export(queue: Queue<ArtifactTransferRecord>) {
@@ -51,7 +52,11 @@ class ArtifactMetricsExporter(
         val count: Int = queue.size
         for (i in 0 until count) {
             val item = queue.poll()
-            if (item.project == StringPool.UNKNOWN || item.fullPath == StringPool.UNKNOWN) continue
+            if ((item.project == StringPool.UNKNOWN || item.fullPath == StringPool.UNKNOWN) &&
+                !allowUnknownProjectExport
+            ) {
+                continue
+            }
             val labels = convertRecordToMap(item)
             val metrics = TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE
             val metricItem = MetricsItem(
