@@ -53,6 +53,9 @@ elseif config.auth_mode == "ticket" then
     if bk_ticket == nil then
         bk_ticket = ngx.var.http_x_devops_bk_ticket
         if bk_ticket == nil then
+            bk_ticket = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-ticket"]
+        end
+        if bk_ticket == nil then
             ngx.exit(401)
             return
         end
@@ -63,6 +66,9 @@ elseif config.auth_mode == "odc" then
     local bk_token = cookieUtil:get_cookie("bk_token")
     if bk_token == nil then
         bk_token = ngx.var.http_x_devops_bk_token
+        if bk_token == nil then
+            bk_token = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-token"]
+        end
         if bk_token == nil then
             ngx.exit(401)
             return

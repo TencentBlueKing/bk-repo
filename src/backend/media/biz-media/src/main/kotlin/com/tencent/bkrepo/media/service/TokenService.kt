@@ -150,7 +150,7 @@ class TokenService(
     /**
      * 检查token并返回token信息
      */
-    private fun checkToken(token: String): TemporaryTokenInfo {
+    fun checkToken(token: String): TemporaryTokenInfo {
         if (token.isBlank()) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, token)
         }

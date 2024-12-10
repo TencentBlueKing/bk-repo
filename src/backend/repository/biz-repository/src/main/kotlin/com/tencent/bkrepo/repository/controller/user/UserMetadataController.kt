@@ -43,9 +43,10 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_EDIT_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
-import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -53,7 +54,6 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataSaveRequest
-import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -104,10 +104,10 @@ class UserMetadataController(
     }
 
     @AuditEntry(
-        actionId = REPO_EDIT_ACTION
+        actionId = NODE_EDIT_ACTION
     )
     @ActionAuditRecord(
-        actionId = REPO_EDIT_ACTION,
+        actionId = NODE_EDIT_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
             instanceIds = "#artifactInfo?.getArtifactFullPath()",
@@ -144,10 +144,10 @@ class UserMetadataController(
     }
 
     @AuditEntry(
-        actionId = REPO_EDIT_ACTION
+        actionId = NODE_EDIT_ACTION
     )
     @ActionAuditRecord(
-        actionId = REPO_EDIT_ACTION,
+        actionId = NODE_EDIT_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
             instanceIds = "#artifactInfo?.getArtifactFullPath()",
@@ -182,10 +182,10 @@ class UserMetadataController(
     }
 
     @AuditEntry(
-        actionId = REPO_EDIT_ACTION
+        actionId = NODE_EDIT_ACTION
     )
     @ActionAuditRecord(
-        actionId = REPO_EDIT_ACTION,
+        actionId = NODE_EDIT_ACTION,
         instance = AuditInstanceRecord(
             resourceType = NODE_RESOURCE,
             instanceIds = "#artifactInfo?.getArtifactFullPath()",

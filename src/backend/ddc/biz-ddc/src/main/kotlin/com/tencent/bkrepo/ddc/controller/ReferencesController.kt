@@ -37,13 +37,15 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository.Companion.HEADER_NAME_HASH
 import com.tencent.bkrepo.ddc.component.PermissionHelper
+import com.tencent.bkrepo.ddc.pojo.BatchOps
+import com.tencent.bkrepo.ddc.pojo.Operation
 import com.tencent.bkrepo.ddc.service.ReferenceArtifactService
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_JUPITER_INLINED_PAYLOAD
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
@@ -58,6 +60,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.nio.ByteBuffer
 
 @RequestMapping("/{projectId}/api/v1/refs")
 @RestController
@@ -151,6 +154,36 @@ class ReferencesController(
         permissionHelper.checkPathPermission(PermissionAction.WRITE)
         artifactInfo.inlineBlobHash = hash
         referenceArtifactService.finalize(artifactInfo)
+    }
+
+    @ApiOperation("批量读写")
+    @PostMapping(
+        "/{repoName}",
+        consumes = [MEDIA_TYPE_UNREAL_COMPACT_BINARY],
+        produces = [MEDIA_TYPE_UNREAL_COMPACT_BINARY],
+    )
+    fun batchOp(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+    ): ByteArray {
+        // 检查权限
+        val ops = BatchOps.deserialize(HttpContextHolder.getRequest().inputStream.use { it.readBytes() })
+        var requiredPermissionAction = PermissionAction.READ
+        for (op in ops.ops) {
+            if (op.op == Operation.PUT.name) {
+                requiredPermissionAction = PermissionAction.WRITE
+                break
+            }
+        }
+        permissionHelper.checkPathPermission(requiredPermissionAction)
+
+        // 执行操作
+        val opsResponse = referenceArtifactService.batch(projectId, repoName, ops)
+        // 序列化,由于getView返回的是readOnly ByteBuffer，为了避免数组复制，通过反射获取内部数组返回
+        val data = opsResponse.serialize().getView()
+        val field = ByteBuffer::class.java.getDeclaredField("hb")
+        field.isAccessible = true
+        return field.get(data) as ByteArray
     }
 
     private fun getResponseType(format: String?, default: String): String {

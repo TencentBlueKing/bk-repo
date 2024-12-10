@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.metadata.service.project.impl
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
 import com.tencent.bkrepo.common.metadata.dao.project.ProjectMetricsDao
@@ -45,10 +46,12 @@ class CenterProjectServiceImpl(
     projectMetricsDao: ProjectMetricsDao,
     serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient,
     storageCredentialService: StorageCredentialService,
-) : ProjectServiceImpl(
+    repositoryProperties: RepositoryProperties,
+    ) : ProjectServiceImpl(
     projectDao,
     servicePermissionClient,
     projectMetricsDao,
     serviceBkiamV3ResourceClient,
-    storageCredentialService
+    storageCredentialService,
+    repositoryProperties
 )
