@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
@@ -220,11 +221,16 @@ open class NodeDeleteSupport(
                 deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
                 quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             }
-            fullPaths?.forEach {
+            fullPaths?.forEach { fullPath ->
                 if (routerControllerProperties.enabled) {
-                    routerControllerClient.removeNodes(projectId, repoName, it)
+                    routerControllerClient.removeNodes(projectId, repoName, fullPath)
                 }
-                publishEvent(buildDeletedEvent(projectId, repoName, it, operator))
+                publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator))
+                val blockCriteria = buildCriteria(projectId, repoName, fullPath, deleteTime)
+                val node = nodeDao.findOne(Query(blockCriteria))
+                if (node?.sha256 == FAKE_SHA256) {
+                    nodeBaseService.blockNodeService.deleteBlocks(projectId, repoName, fullPath)
+                }
             }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[$resourceKey] by [$operator] error: [${exception.message}]")
