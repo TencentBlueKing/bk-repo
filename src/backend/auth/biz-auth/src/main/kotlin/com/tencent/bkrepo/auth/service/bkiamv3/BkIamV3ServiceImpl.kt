@@ -119,7 +119,7 @@ class BkIamV3ServiceImpl(
     private lateinit var repositoryService: RepositoryService
 
     @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}")
-    private var ciAuthServer: String = ""
+    private var realm: String = ""
 
     @Value("\${auth.iam.applyJoinUserGroupUrl:}")
     private val applyJoinUserGroupUrl = ""
@@ -147,16 +147,22 @@ class BkIamV3ServiceImpl(
 
     override fun checkBkiamv3Config(projectId: String?, repoName: String?): Boolean {
         // 如果配置是bkiamv3，默认走bkiamv3校验
-        if (ciAuthServer == AUTH_CONFIG_TYPE_VALUE_BKIAMV3) return true
+        if (realm == AUTH_CONFIG_TYPE_VALUE_BKIAMV3) return true
         if (projectId != null && repoName != null) {
-            return repoModeService.getAccessControlStatus(projectId, repoName).bkiamv3Check
+            return repoModeService.bkiamv3Check(projectId, repoName)
         }
         return false
     }
 
-    override fun getPermissionUrl(
-        request: CheckPermissionRequest
-    ): String? {
+    override fun checkBkiamv3ProjectConfig(projectId: String?): Boolean {
+        if (realm == AUTH_CONFIG_TYPE_VALUE_BKIAMV3) return true
+        if (projectId != null) {
+            return repoModeService.projectBkiamv3Check(projectId)
+        }
+        return false
+    }
+
+    override fun getPermissionUrl(request: CheckPermissionRequest): String? {
         logger.debug(
             "v3 getPermissionUrl, userId: ${request.uid}, projectId: ${request.projectId}, " +
                     "repoName: ${request.repoName} resourceType: ${request.resourceType}, " +
@@ -177,9 +183,7 @@ class BkIamV3ServiceImpl(
 
     private fun generatePermissionUrl(request: CheckPermissionRequest): String? {
         with(request) {
-            val resourceId = getResourceId(
-                resourceType, projectId, repoName, path
-            )
+            val resourceId = getResourceId(resourceType, projectId, repoName, path)
             val action = BkIamV3Utils.convertActionType(request.resourceType, request.action)
             val resourceType = request.resourceType.lowercase(Locale.getDefault())
             if (repoName != null && !checkBkiamv3Config(projectId, repoName)) return null
@@ -358,14 +362,7 @@ class BkIamV3ServiceImpl(
             ?: createGradeManager(SecurityUtils.getUserId(), projectId)).isNullOrEmpty()
     }
 
-    /**
-     * 创建项目分级管理员
-     */
-    override fun createGradeManager(
-        userId: String,
-        projectId: String,
-        repoName: String?
-    ): String? {
+    override fun createGradeManager(userId: String, projectId: String, repoName: String?): String? {
         if (!checkIamConfiguration()) return null
         val realUserId = userService.getUserInfoById(userId)?.asstUsers?.firstOrNull() ?: userId
         return if (repoName == null) {
@@ -420,10 +417,7 @@ class BkIamV3ServiceImpl(
         }
     }
 
-    fun createProjectGradeManager(
-        userId: String,
-        projectId: String
-    ): String? {
+    fun createProjectGradeManager(userId: String, projectId: String): String? {
         val projectInfo = projectService.getProjectInfo(projectId)!!
         logger.debug("v3 start to create grade manager for project $projectId with user $userId")
         // 如果已经创建project管理员，则返回
@@ -484,11 +478,7 @@ class BkIamV3ServiceImpl(
     /**
      * 创建项目分级管理员
      */
-    private fun createRepoGradeManager(
-        userId: String,
-        projectId: String,
-        repoName: String
-    ): String? {
+    private fun createRepoGradeManager(userId: String, projectId: String, repoName: String): String? {
         val projectInfo = projectService.getProjectInfo(projectId)!!
         val repoDetail = repositoryService.getRepoInfo(projectId, repoName)!!
         // 如果已经创建repo管理员，则返回
@@ -571,7 +561,6 @@ class BkIamV3ServiceImpl(
             ResourceType.PROJECT.toString() -> projectId!!
             ResourceType.REPO.toString() ->
                 convertRepoResourceId(projectId!!, repoName!!)
-
             ResourceType.NODE.toString() ->
                 convertNodeResourceId(projectId!!, repoName!!, path!!)
 
@@ -591,12 +580,7 @@ class BkIamV3ServiceImpl(
         return result
     }
 
-    private fun saveTBkIamAuthManager(
-        projectId: String,
-        repoName: String?,
-        managerId: Int,
-        userId: String
-    ) {
+    private fun saveTBkIamAuthManager(projectId: String, repoName: String?, managerId: Int, userId: String) {
         val tBkIamAuthManager = if (repoName == null) {
             TBkIamAuthManager(
                 resourceId = projectId,

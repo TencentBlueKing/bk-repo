@@ -55,7 +55,7 @@ class ServiceBkiamV3ResourceController : ServiceBkiamV3ResourceClient {
     override fun createRepoManage(userId: String, projectId: String, repoName: String): Response<String?> {
         bkIamV3Service?.let {
             val repoGradeId = lockAction(projectId) {
-            bkIamV3Service!!.createGradeManager(userId, projectId, repoName)
+                bkIamV3Service!!.createGradeManager(userId, projectId, repoName)
             }
             return ResponseBuilder.success(repoGradeId)
         } ?: return ResponseBuilder.success()
@@ -67,9 +67,9 @@ class ServiceBkiamV3ResourceController : ServiceBkiamV3ResourceClient {
         } ?: return ResponseBuilder.success(true)
     }
 
-    override fun getExistRbacDefaultGroupProjectIds(projectIds: List<String>): Response<Map<String, Boolean>> {
+    override fun getExistRbacDefaultGroupProjectIds(projectIdList: List<String>): Response<Map<String, Boolean>> {
         bkIamV3Service?.let {
-            return ResponseBuilder.success(bkIamV3Service!!.getExistRbacDefaultGroupProjectIds(projectIds))
+            return ResponseBuilder.success(bkIamV3Service!!.getExistRbacDefaultGroupProjectIds(projectIdList))
         } ?: return ResponseBuilder.success(emptyMap())
     }
 
