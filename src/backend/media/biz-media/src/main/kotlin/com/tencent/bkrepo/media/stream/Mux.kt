@@ -36,10 +36,10 @@ class Mux {
      * @param inputStream 视频输入流
      * @param output 封装后的文件
      * */
-    constructor(inputStream: InputStream, output: File) : this() {
+    constructor(inputStream: InputStream, output: File, name: String) : this() {
         this.inputStream = inputStream
         this.outputFile = output
-        this.fileName = inputStream.toString()
+        this.fileName = name
     }
 
     constructor()
@@ -53,6 +53,10 @@ class Mux {
     private var avio: AVIOContext? = null
     private var running: AtomicBoolean = AtomicBoolean(false)
     private var stopFlag: AtomicBoolean = AtomicBoolean(false)
+    private var writeHeader = false
+
+    @Volatile
+    var packetCount = 0
 
     fun start() {
         if (!running.compareAndSet(false, true)) {
@@ -78,17 +82,16 @@ class Mux {
                 )
                 ifmtCtx!!.pb(avio)
             }
-            check(avformat.avformat_open_input(ifmtCtx, fileName, null, null) >= 0) { "open failed" }
-            check(avformat.avformat_find_stream_info(ifmtCtx, null as? PointerPointer<*>) >= 0) {
-                "can't find stream info"
-            }
+            var ret = avformat.avformat_open_input(ifmtCtx, fileName, null, null)
+            check(ret >= 0) { "open failed [$ret]" }
+            ret = avformat.avformat_find_stream_info(ifmtCtx, null as? PointerPointer<*>)
+            check(ret >= 0) { "can't find stream info [$ret]" }
             if (logger.isDebugEnabled) {
                 avformat.av_dump_format(ifmtCtx, 0, fileName, 0)
             }
             val outputFilePath = outputFile!!.absolutePath
-            check(avformat.avformat_alloc_output_context2(ofmtCtx, null, null, outputFilePath) >= 0) {
-                "create output ctx error"
-            }
+            ret = avformat.avformat_alloc_output_context2(ofmtCtx, null, null, outputFilePath)
+            check(ret >= 0) { "create output ctx error [$ret]" }
             val streamMapping = mutableMapOf<Int, Int>()
             var streamIndex = 0
 
@@ -126,9 +129,8 @@ class Mux {
             check(avformat.avformat_write_header(ofmtCtx, null as? PointerPointer<*>) >= 0) {
                 "Error occurred when opening output file"
             }
-
+            writeHeader = true
             var dts = 0L
-            var count = 0L
             while (!stopFlag.get()) {
                 if (avformat.av_read_frame(ifmtCtx, pkt) < 0) {
                     break
@@ -150,9 +152,9 @@ class Mux {
                 pkt!!.pos(-1)
                 logPacket(ofmtCtx, pkt!!, "out")
                 check(avformat.av_interleaved_write_frame(ofmtCtx, pkt) >= 0) { "write frame error" }
-                count++
+                packetCount++
             }
-            logger.info("Complete remux $fileName,size ${outputFile!!.length()} B,$count packet.")
+            logger.info("Complete remux $fileName,size ${outputFile!!.length()} B,$packetCount packet.")
         } catch (e: Exception) {
             logger.error("Remux error:", e)
             throw e
@@ -160,6 +162,7 @@ class Mux {
             release()
             scope.close()
             running.set(false)
+            logger.info("Finish remux $fileName to ${outputFile!!.absolutePath}")
         }
     }
 
@@ -196,10 +199,14 @@ class Mux {
         }
 
         if (ofmtCtx != null) {
-            avformat.av_write_trailer(ofmtCtx)
-            logger.info("Finish remux $fileName to ${outputFile!!.absolutePath}")
-            if (ofmtCtx!!.oformat().flags() and avformat.AVFMT_NOFILE == 0) {
-                avformat.avio_closep(ofmtCtx!!.pb())
+            if (writeHeader) {
+                avformat.av_write_trailer(ofmtCtx)
+            }
+            val oformat = ofmtCtx!!.oformat()
+            if (oformat != null) {
+                if (oformat.flags() and avformat.AVFMT_NOFILE == 0 && !ofmtCtx!!.pb().isNull) {
+                    avformat.avio_closep(ofmtCtx!!.pb())
+                }
             }
             avformat.avformat_free_context(ofmtCtx)
             ofmtCtx = null
@@ -263,6 +270,7 @@ class Mux {
             val b = ByteArray(buf_size)
             val size = inputStream.read(b)
             return if (size < 0) {
+                logger.info("input end")
                 avutil.AVERROR_EOF
             } else {
                 buf.put(b, 0, size)
