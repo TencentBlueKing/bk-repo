@@ -86,6 +86,10 @@
                         } else if (this.projectList.find(v => v.id === localProjectId)) {
                             projectId = localProjectId
                         } else {
+                            this.$bkMessage({
+                                message: this.$t('projectNoPermissionTip', { 0: urlProjectId }),
+                                theme: 'primary'
+                            })
                             projectId = (this.projectList[0] || {}).id
                         }
                         localStorage.setItem('projectId', projectId)
