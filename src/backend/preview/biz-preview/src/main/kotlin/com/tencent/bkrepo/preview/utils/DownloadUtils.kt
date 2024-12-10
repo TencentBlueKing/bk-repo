@@ -46,7 +46,8 @@ import org.springframework.web.client.RestTemplate
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.util.*
+import java.net.URL
+import java.util.UUID
 
 /**
  * 文件下载工具
@@ -67,74 +68,20 @@ object DownloadUtils {
      */
     @Throws(Exception::class)
     fun downLoad(fileAttribute: FileAttribute, config: PreviewConfig): DownloadResult {
-        var urlStr: String? = null
-        try {
-            SslUtils.ignoreSsl()
-            urlStr = fileAttribute.url?.replace("+", "%20")?.replace(" ", "%20")
-        } catch (e: Exception) {
-            logger.error("Ignore SSL certificate exceptions", e)
-        }
-
         val result = DownloadResult()
+        val urlStr = processUrl(fileAttribute)
+
         val fileName = fileAttribute.fileName
         val realPath = getRelFilePath(fileName, fileAttribute.suffix!!, config.fileDir!!)
 
-        // 判断文件是否合法
-        if (FileUtils.isIllegalFileName(realPath)) {
-            result.apply {
-                code = DownloadResult.CODE_FAIL
-                msg = "Download failed,The file name is invalid,$fileName"
-            }
-            return result
-        }
-
-        if (!FileUtils.isAllowedUpload(realPath, config.prohibitSuffix)) {
-            result.apply {
-                code = DownloadResult.CODE_FAIL
-                msg = "Download Failed,Unsupported Type,$urlStr"
-            }
-            return result
-        }
+        if (!isValidFile(realPath, fileName!!, urlStr!!, config, result)) return result
 
         try {
             val url = WebUtils.normalizedURL(urlStr)
             if (FileUtils.isHttpUrl(url)) {
-                val realFile = File(realPath)
-                factory.setReadTimeout(72000)
-                factory.setConnectTimeout(10000)
-                factory.setConnectionRequestTimeout(2000)
-                factory.httpClient = HttpClientBuilder.create()
-                    .setRedirectStrategy(DefaultRedirectStrategy())
-                    .build()
-                restTemplate.requestFactory = factory
-                val requestCallback = RequestCallback { request ->
-                    request.headers.setAccept(listOf(MediaType.APPLICATION_OCTET_STREAM, MediaType.ALL))
-                }
-
-                try {
-                    restTemplate.execute(url.toURI(), HttpMethod.GET, requestCallback) { fileResponse ->
-                        org.apache.commons.io.FileUtils.copyToFile(fileResponse.body, realFile)
-                        null
-                    }
-                } catch (e: Exception) {
-                    logger.error("The download failed: $e")
-                    result.apply {
-                        code = DownloadResult.CODE_FAIL
-                        msg = "The download failed: $e"
-                    }
-                    return result
-                }
+                downloadHttpFile(url, realPath, result)
             } else if (FileUtils.isFtpUrl(url)) {
-                val ftpUsername = WebUtils.getUrlParameterReg(fileAttribute.url!!, URL_PARAM_FTP_USERNAME)
-                val ftpPassword = WebUtils.getUrlParameterReg(fileAttribute.url!!, URL_PARAM_FTP_PASSWORD)
-                val ftpControlEncoding = WebUtils.getUrlParameterReg(fileAttribute.url!!, URL_PARAM_FTP_CONTROL_ENCODING)
-                FtpUtils.download(
-                    fileAttribute.url,
-                    realPath,
-                    ftpUsername.takeUnless { it.isNullOrEmpty() } ?: config.ftpUsername,
-                    ftpPassword.takeUnless { it.isNullOrEmpty() } ?: config.ftpPassword,
-                    ftpControlEncoding.takeUnless { it.isNullOrEmpty() } ?: config.ftpControlEncoding
-                )
+                downloadFtpFile(fileAttribute, realPath, config, result)
             } else {
                 result.apply {
                     code = DownloadResult.CODE_FAIL
@@ -142,21 +89,7 @@ object DownloadUtils {
                 }
             }
 
-            FileUtils.getFileMd5AndSize(realPath)?.let { (md5, size) ->
-                result.apply {
-                    code = DownloadResult.CODE_SUCCESS
-                    filePath = realPath
-                    this.md5 = md5
-                    this.size = size
-                    msg = fileName
-                }
-            } ?: run {
-                result.apply {
-                    code = DownloadResult.CODE_FAIL
-                    msg = "Failed to calculate MD5 or size for file: $fileName"
-                }
-            }
-            return result
+            return calculateFileMd5AndSize(realPath, fileName, result)
         } catch (e: IOException) {
             logger.error("File download failed，url：$urlStr")
             result.apply {
@@ -169,6 +102,108 @@ object DownloadUtils {
             return result
         }
     }
+
+    private fun downloadHttpFile(url: URL, realPath: String, result: DownloadResult) {
+        try {
+            val realFile = File(realPath)
+            factory.setReadTimeout(72000)
+            factory.setConnectTimeout(10000)
+            factory.setConnectionRequestTimeout(2000)
+            factory.httpClient = HttpClientBuilder.create()
+                .setRedirectStrategy(DefaultRedirectStrategy())
+                .build()
+            restTemplate.requestFactory = factory
+            val requestCallback = RequestCallback { request ->
+                request.headers.setAccept(listOf(MediaType.APPLICATION_OCTET_STREAM, MediaType.ALL))
+            }
+
+            restTemplate.execute(url.toURI(), HttpMethod.GET, requestCallback) { fileResponse ->
+                org.apache.commons.io.FileUtils.copyToFile(fileResponse.body, realFile)
+                null
+            }
+        } catch (e: Exception) {
+            logger.error("The download failed: $e")
+            result.apply {
+                code = DownloadResult.CODE_FAIL
+                msg = "The download failed: $e"
+            }
+        }
+    }
+
+    private fun downloadFtpFile(fileAttribute: FileAttribute,
+                                realPath: String,
+                                config: PreviewConfig,
+                                result: DownloadResult) {
+        try {
+            val ftpUsername = WebUtils.getUrlParameterReg(fileAttribute.url!!, URL_PARAM_FTP_USERNAME)
+            val ftpPassword = WebUtils.getUrlParameterReg(fileAttribute.url!!, URL_PARAM_FTP_PASSWORD)
+            val ftpControlEncoding = WebUtils.getUrlParameterReg(fileAttribute.url!!, URL_PARAM_FTP_CONTROL_ENCODING)
+            FtpUtils.download(
+                fileAttribute.url,
+                realPath,
+                ftpUsername.takeUnless { it.isNullOrEmpty() } ?: config.ftpUsername,
+                ftpPassword.takeUnless { it.isNullOrEmpty() } ?: config.ftpPassword,
+                ftpControlEncoding.takeUnless { it.isNullOrEmpty() } ?: config.ftpControlEncoding
+            )
+        } catch (e: Exception) {
+            logger.error("FTP download failed: $e")
+            result.apply {
+                code = DownloadResult.CODE_FAIL
+                msg = "FTP download failed: $e"
+            }
+        }
+    }
+
+    private fun calculateFileMd5AndSize(realPath: String, fileName: String, result: DownloadResult): DownloadResult {
+        FileUtils.getFileMd5AndSize(realPath)?.let { (md5, size) ->
+            result.apply {
+                code = DownloadResult.CODE_SUCCESS
+                filePath = realPath
+                this.md5 = md5
+                this.size = size
+                msg = fileName
+            }
+        } ?: run {
+            result.apply {
+                code = DownloadResult.CODE_FAIL
+                msg = "Failed to calculate MD5 or size for file: $fileName"
+            }
+        }
+        return result
+    }
+
+    private fun isValidFile(realPath: String,
+                            fileName: String,
+                            urlStr: String,
+                            config: PreviewConfig,
+                            result: DownloadResult): Boolean {
+        if (FileUtils.isIllegalFileName(realPath)) {
+            result.apply {
+                code = DownloadResult.CODE_FAIL
+                msg = "Download failed, The file name is invalid,$fileName"
+            }
+            return false
+        }
+        if (!FileUtils.isAllowedUpload(realPath, config.prohibitSuffix)) {
+            result.apply {
+                code = DownloadResult.CODE_FAIL
+                msg = "Download Failed, Unsupported Type, $urlStr"
+            }
+            return false
+        }
+        return true
+    }
+
+    private fun processUrl(fileAttribute: FileAttribute): String? {
+        return try {
+            SslUtils.ignoreSsl()
+            fileAttribute.url?.replace("+", "%20")?.replace(" ", "%20")
+        } catch (e: Exception) {
+            logger.error("Ignore SSL certificate exceptions", e)
+            null
+        }
+    }
+
 
     /**
      * 文件存放的真实路径

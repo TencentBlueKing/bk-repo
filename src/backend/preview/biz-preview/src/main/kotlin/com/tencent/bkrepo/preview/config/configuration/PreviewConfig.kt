@@ -65,7 +65,7 @@ class PreviewConfig {
      * 预览仓库配额,默认10G
      */
     @Value("\${preview.repoQuota:10485760}")
-    val repoQuota: Long? = 10485760
+    val repoQuota: Long? = 1073741824
 
     /**
      * 预览仓库制品保留天数,默认7天

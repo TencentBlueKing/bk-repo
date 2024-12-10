@@ -1,21 +1,21 @@
 package com.tencent.bkrepo.preview.service
 
-import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import com.tencent.bkrepo.preview.exception.PreviewInvalidException
-import com.tencent.bkrepo.preview.utils.*
 import com.tencent.bkrepo.preview.pojo.FileAttribute
 import com.tencent.bkrepo.preview.pojo.FileType
+import com.tencent.bkrepo.preview.utils.FileUtils
+import com.tencent.bkrepo.preview.utils.JsonMapper
+import com.tencent.bkrepo.preview.utils.WebUtils
+import com.tencent.bkrepo.preview.utils.UrlEncoderUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import org.springframework.util.StringUtils
-import java.io.*
+import java.io.File
+import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
-import java.net.URLEncoder
-import java.nio.charset.Charset
-import java.util.*
+import java.util.UUID
 import javax.servlet.http.HttpServletRequest
 
 @Component
@@ -25,70 +25,6 @@ class FileHandlerService(private val config: PreviewConfig) {
         private const val URI_ENCODING = "UTF-8"
         private const val PDF2JPG_IMAGE_FORMAT = ".jpg"
         private val logger = LoggerFactory.getLogger(FileHandlerService::class.java)
-    }
-
-    /**
-     * 对转换后的文件进行操作(改变编码方式)
-     *
-     * @param outFilePath 文件绝对路径
-     */
-    fun doActionConvertedFile(outFilePath: String) {
-        val charset = EncodingDetects.getJavaEncode(outFilePath) // 假设返回的是 String?
-        val sb = StringBuilder()
-        try {
-            FileInputStream(outFilePath).bufferedReader(charset = Charset.forName(charset)).use { reader ->
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    if (line!!.contains("charset=gb2312")) {
-                        line = line!!.replace("charset=gb2312", "charset=utf-8")
-                    }
-                    sb.append(line)
-                }
-                // 添加sheet控制头
-                sb.append("<script src=\"js/jquery-3.6.1.min.js\" type=\"text/javascript\"></script>")
-                sb.append("<script src=\"excel/excel.header.js\" type=\"text/javascript\"></script>")
-                sb.append("<link rel=\"stylesheet\" href=\"excel/excel.css\">")
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-        // 重新写入文件
-        try {
-            FileOutputStream(outFilePath).bufferedWriter(Charset.forName("UTF-8")).use { writer ->
-                writer.write(sb.toString())
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    /**
-     * 获取本地 pdf 转 image 后的 web 访问地址
-     *
-     * @param pdfFilePath pdf文件名
-     * @param index 图片索引
-     * @return 图片访问地址
-     */
-    private fun getPdf2jpgUrl(pdfFilePath: String, index: Int): String {
-        val baseUrl = "" // 设置 baseUrl
-        val pdfFolder = pdfFilePath.replace(config.fileDir, "").removeSuffix(".pdf")
-        val urlPrefix: String
-        urlPrefix = try {
-            "$baseUrl${URLEncoder.encode(pdfFolder, URI_ENCODING).replace("+", "%20")}"
-        } catch (e: UnsupportedEncodingException) {
-            logger.error("UnsupportedEncodingException", e)
-            "$baseUrl$pdfFolder"
-        }
-        return "$urlPrefix/$index$PDF2JPG_IMAGE_FORMAT"
-    }
-
-    /**
-     * @param str 原字符串（待截取原串）
-     * @param posStr 指定字符串
-     * @return 截取指定字符串之后的数据
-     */
-    fun getSubString(str: String, posStr: String): String {
-        return str.substring(str.indexOf(posStr) + posStr.length)
     }
 
     /**
@@ -168,16 +104,17 @@ class FileHandlerService(private val config: PreviewConfig) {
         return baseUrl
     }
 
-
-
     /**
      * 请求校验
      */
     private fun checkRequest(fileAttribute: FileAttribute, req: HttpServletRequest) {
-        if (fileAttribute.projectId.isNullOrEmpty()
-            && fileAttribute.repoName.isNullOrEmpty()
-            && fileAttribute.artifactUri.isNullOrEmpty()
-            && fileAttribute.url.isNullOrEmpty()) {
+        val isInvalid = listOf(
+            fileAttribute.projectId,
+            fileAttribute.repoName,
+            fileAttribute.artifactUri,
+            fileAttribute.url
+        ).all { it.isNullOrEmpty() }
+        if (isInvalid) {
             logger.error("The file download info cannot be empty")
             throw PreviewInvalidException(PreviewMessageCode.PREVIEW_PARAMETER_INVALID, "url")
         }

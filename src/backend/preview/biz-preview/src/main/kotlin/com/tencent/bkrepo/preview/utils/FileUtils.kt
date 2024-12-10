@@ -38,8 +38,7 @@ import org.springframework.util.StringUtils
 import org.springframework.web.util.HtmlUtils
 import java.io.File
 import java.net.URL
-import java.util.*
-import kotlin.math.log
+import java.util.Locale
 
 object FileUtils {
     private val logger = LoggerFactory.getLogger(FileUtils::class.java)

@@ -31,9 +31,7 @@
 
 package com.tencent.bkrepo.preview.controller
 
-import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo
@@ -41,14 +39,12 @@ import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo.Companion.PREVIEW
 import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo.Companion.PREVIEW_REMOTE_MAPPING_URI
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import com.tencent.bkrepo.preview.exception.PreviewInvalidException
+import com.tencent.bkrepo.preview.pojo.PreviewInfo
 import com.tencent.bkrepo.preview.service.FileHandlerService
 import com.tencent.bkrepo.preview.service.FilePreviewFactory
 import com.tencent.bkrepo.preview.utils.WebUtils
-import com.tencent.bkrepo.preview.pojo.PreviewInfo
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletRequest

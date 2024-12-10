@@ -33,7 +33,6 @@ package com.tencent.bkrepo.preview.service
 
 import org.apache.commons.lang3.StringUtils
 import org.jodconverter.core.office.InstalledOfficeManagerHolder
-import org.jodconverter.core.office.OfficeException
 import org.jodconverter.core.office.OfficeUtils
 import org.jodconverter.core.util.OSUtils
 import org.jodconverter.local.office.LocalOfficeManager
@@ -45,8 +44,6 @@ import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
-import java.util.*
-import java.util.function.ToIntFunction
 import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy
 

@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.preview.pojo
 
 import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
 
 @ApiModel("预览文件信息")
 data class FileAttribute (

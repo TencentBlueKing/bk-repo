@@ -32,7 +32,11 @@
 package com.tencent.bkrepo.preview.utils
 
 import java.security.cert.X509Certificate
-import javax.net.ssl.*
+import javax.net.ssl.HostnameVerifier
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
+import javax.net.ssl.SSLContext
 
 /**
  * SSL工具
@@ -65,8 +69,12 @@ object SslUtils {
     private class miTM : X509TrustManager {
         override fun getAcceptedIssuers(): Array<X509Certificate>? = null
 
-        override fun checkServerTrusted(certs: Array<X509Certificate>, authType: String) {}
+        override fun checkServerTrusted(certs: Array<X509Certificate>, authType: String) {
+            // No-op: Accepting all certificates
+        }
 
-        override fun checkClientTrusted(certs: Array<X509Certificate>, authType: String) {}
+        override fun checkClientTrusted(certs: Array<X509Certificate>, authType: String) {
+            // No-op: Accepting all certificates
+        }
     }
 }
