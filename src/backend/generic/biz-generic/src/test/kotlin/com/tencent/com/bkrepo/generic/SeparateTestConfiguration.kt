@@ -1,0 +1,8 @@
+package com.tencent.com.bkrepo.generic
+
+import org.springframework.boot.SpringBootConfiguration
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+
+@SpringBootConfiguration
+@EnableAutoConfiguration
+class SeparateTestConfiguration

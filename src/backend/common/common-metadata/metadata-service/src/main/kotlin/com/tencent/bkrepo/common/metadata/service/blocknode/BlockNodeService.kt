@@ -56,6 +56,13 @@ interface BlockNodeService {
     ): TBlockNode
 
     /**
+     * 更新分块
+     * */
+    fun updateBlock(
+        blockNode: TBlockNode,
+    )
+
+    /**
      * 删除旧分块，即删除非指定的nodeCurrentSha256的分块。
      * 如果未指定nodeCurrentSha256，则删除节点所有分块
      * @param projectId 项目id
