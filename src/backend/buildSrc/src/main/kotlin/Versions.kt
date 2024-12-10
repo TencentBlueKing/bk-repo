@@ -72,4 +72,8 @@ object Versions {
     const val Notice = "1.0.0"
     const val SpringCloudFunction = "3.2.11"
     const val Audit = "1.0.8"
+    const val JodConverter = "4.4.6"
+    const val Galimatias = "0.2.1"
+    const val CommonsNet = "3.9.0"
+    const val JuniversalCharDet = "1.0.3"
 }
