@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.generic.model
+package com.tencent.bkrepo.common.metadata.model
 
 data class NodeAttribute(
     // 用户id
@@ -19,4 +19,3 @@ data class NodeAttribute(
         const val NOBODY = "nobody"
     }
 }
-

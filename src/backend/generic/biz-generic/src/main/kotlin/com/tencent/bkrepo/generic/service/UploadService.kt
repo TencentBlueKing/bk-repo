@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.NodeAttribute
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
@@ -67,7 +68,6 @@ import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_FILE_SIZE
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
-import com.tencent.bkrepo.generic.model.NodeAttribute
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.NewBlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
