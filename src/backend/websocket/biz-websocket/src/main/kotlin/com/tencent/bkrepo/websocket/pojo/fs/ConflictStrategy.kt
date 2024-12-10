@@ -27,15 +27,8 @@
 
 package com.tencent.bkrepo.websocket.pojo.fs
 
-/**
- * 复制协议数据单元
- */
-data class CopyPDU(
-    val projectId: String,
-    val userId: String,
-    val workspaceName: String,
-    val files: Map<String, Long>,
-    val timestamp: Long,
-    val dstPath: String? = null,
-    val strategy: ConflictStrategy = ConflictStrategy.OVERWRITE
-)
+enum class ConflictStrategy {
+    OVERWRITE,
+    SKIP,
+    RENAME,
+}
