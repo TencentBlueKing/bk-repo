@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
-import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
@@ -60,7 +59,7 @@ import java.time.LocalDateTime
 /**
  * 节点删除接口实现
  */
-open class NodeDeleteSupport(
+open class NodeDeleteSuspport(
     private val nodeBaseService: NodeBaseService
 ) : NodeDeleteOperation {
 
