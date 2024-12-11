@@ -226,11 +226,6 @@ open class NodeDeleteSupport(
                     routerControllerClient.removeNodes(projectId, repoName, fullPath)
                 }
                 publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator))
-                val blockCriteria = buildCriteria(projectId, repoName, fullPath, deleteTime)
-                val node = nodeDao.findOne(Query(blockCriteria))
-                if (node?.sha256 == FAKE_SHA256) {
-                    nodeBaseService.blockNodeService.deleteBlocks(projectId, repoName, fullPath)
-                }
             }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[$resourceKey] by [$operator] error: [${exception.message}]")
