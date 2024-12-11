@@ -59,7 +59,7 @@ import java.time.LocalDateTime
 /**
  * 节点删除接口实现
  */
-open class NodeDeleteSuspport(
+open class NodeDeleteSupport(
     private val nodeBaseService: NodeBaseService
 ) : NodeDeleteOperation {
 
