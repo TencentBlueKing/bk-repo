@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,41 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.repository.internal.type
+package com.tencent.bkrepo.npm.pojo
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 
-class NpmPackageNodeMapper : PackageNodeMapper {
-
-    override fun type() = RepositoryType.NPM
-    override fun extraType(): RepositoryType? {
-        return null
-    }
-
-    override fun map(
-        packageSummary: PackageSummary,
-        packageVersion: PackageVersion,
-        type: RepositoryType
-    ): List<String> {
-        val name = if (type == RepositoryType.OHPM) {
-            PackageKeys.resolveOhpm(packageSummary.key)
-        } else {
-            PackageKeys.resolveNpm(packageSummary.key)
-        }
-        val version = packageVersion.name
-        return listOf(
-            NPM_PKG_TGZ_FULL_PATH.format(name, name, version),
-            NPM_PKG_VERSION_METADATA_FULL_PATH.format(name, name, version),
-            NPM_PKG_METADATA_FULL_PATH.format(name)
-        )
-    }
-
+@JsonInclude(JsonInclude.Include.NON_NULL)
+data class OhpmResponse(
+    val code: Int = HttpStatus.OK.value,
+    val message: String? = null,
+    /**
+     * 出错时ohpm客户端会取响应体中error字段的值进行打印提示
+     */
+    val error: String? = null,
+    /**
+     * ohpm客户端会在发布包成功后打印该字段的值
+     */
+    val additionalMsg: String? = null,
+) {
     companion object {
-        const val NPM_PKG_TGZ_FULL_PATH = "/%s/-/%s-%s.tgz"
-        const val NPM_PKG_VERSION_METADATA_FULL_PATH = "/.npm/%s/%s-%s.json"
-        const val NPM_PKG_METADATA_FULL_PATH = "/.npm/%s/package.json"
+        fun success(message: String = "success") = OhpmResponse(HttpStatus.OK.value, message)
+        fun error(code: Int, error: String) = OhpmResponse(code = code, error = error)
     }
 }

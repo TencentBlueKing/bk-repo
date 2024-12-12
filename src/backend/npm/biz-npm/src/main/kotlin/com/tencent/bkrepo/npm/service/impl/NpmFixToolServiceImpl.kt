@@ -13,7 +13,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -42,6 +41,7 @@ import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -394,7 +394,7 @@ class NpmFixToolServiceImpl(
 		 * 处理时注意tag处理，如果tag关联的版本不存在，删除该tag，如果是latest版本删除了则需要重新找个最新版本为latest版本
 		 */
 		with(artifactInfo) {
-			val packageKey = PackageKeys.ofNpm(name)
+			val packageKey = NpmUtils.packageKeyByRepoType(name)
 			val packageSummary = packageClient.findPackageByKey(projectId, repoName, packageKey).data
 				?: throw PackageNotFoundException("package [$name] not found")
 			val packageInfo = queryPackageInfo(this, name, false)
@@ -414,6 +414,10 @@ class NpmFixToolServiceImpl(
 					packageInfo.time.getMap().remove(it)
 					// 删除版本索引文件
 					fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, it))
+				}
+				if (packageSummary.type == PackageType.OHPM) {
+					NpmUtils.updateLatestVersion(packageInfo)
+					packageInfo.rev = packageInfo.versions.map.size.toString()
 				}
 				removePackageVersionMetadata(fullPathList)
 				// 重新上传json索引文件
