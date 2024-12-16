@@ -25,36 +25,36 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.backup.pojo.record
+package com.tencent.bkrepo.job.backup.service.impl.repo
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
-import com.tencent.bkrepo.job.backup.model.TBackupTask
-import com.tencent.bkrepo.job.backup.pojo.query.BackupNodeInfo
-import com.tencent.bkrepo.job.backup.pojo.task.ProjectContentInfo
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.job.backup.pojo.query.VersionBackupInfo
+import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
+import com.tencent.bkrepo.job.backup.service.BackupRepoSpecialDataService
 import org.springframework.data.mongodb.core.query.Criteria
-import java.nio.file.Path
-import java.time.LocalDateTime
 
-class BackupContext(
-    val task: TBackupTask,
-) {
-    lateinit var targertPath: Path
-    lateinit var tempClient: FileSystemClient
-    lateinit var startDate: LocalDateTime
-    var backupProgress = BackupProgress()
-    var type: String = task.type
-    var taskId: String = task.id!!
-    var currrentProjectInfo: ProjectContentInfo? = null
-    var currentProjectId: String? = null
-    var currentRepoName: String? = null
-    var currentRepositoryType: RepositoryType? = null
-    var currentStorageCredentials: StorageCredentials? = null
-    var currentPackageId: String? = null
-    var currentPackageKey: String? = null
-    var currentVersionName: String? = null
-    var criteriaForNodeInVersion: Criteria? = null
-    var currentNode: BackupNodeInfo? = null
-    var currentFile: String? = null
+object BackupRepoSpecialMappings {
+
+    private val mappers = mutableMapOf<RepositoryType, BackupRepoSpecialDataService>()
+
+    init {
+        addMapper(SpringContextUtils.getBean(BackupMavenRepoHandler::class.java))
+    }
+
+    private fun addMapper(mapper: BackupRepoSpecialDataService) {
+        mappers[mapper.type()] = mapper
+        mapper.extraType()?.let { mappers[mapper.extraType()!!] = mapper }
+    }
+
+    fun getNodeCriteriaOfVersion(versionBackupInfo: VersionBackupInfo): Criteria? {
+        val mapper = mappers[versionBackupInfo.type] ?: return null
+        return mapper.getNodeCriteriaOfVersion(versionBackupInfo)
+    }
+
+    fun storeRepoSpecialData(versionBackupInfo: VersionBackupInfo, context: BackupContext) {
+        val mapper = mappers[versionBackupInfo.type] ?: return
+        return mapper.storeRepoSpecialData(versionBackupInfo, context)
+    }
+
 }

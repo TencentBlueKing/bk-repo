@@ -7,15 +7,19 @@ import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
-import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.NAME
-import com.tencent.bkrepo.job.PROJECT
+import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
+import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
 import com.tencent.bkrepo.job.PROJECT_COLLECTION_NAME
 import com.tencent.bkrepo.job.REPO_COLLECTION_NAME
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
 import com.tencent.bkrepo.job.backup.pojo.BackupTaskState
 import com.tencent.bkrepo.job.backup.pojo.query.BackupFileReferenceInfo
+import com.tencent.bkrepo.job.backup.pojo.query.BackupMavenMetadata
 import com.tencent.bkrepo.job.backup.pojo.query.BackupNodeInfo
+import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageInfo
+import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageVersionInfo
+import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageVersionInfoWithKeyInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupProjectInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupRepositoryInfo
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
@@ -99,6 +103,21 @@ class DataRecordsRestoreServiceImpl(
                     context.currentFile = Paths.get(context.targertPath.toString(), NODE_FILE_NAME).toString()
                     loadAndStoreRecord(BackupNodeInfo::class.java, context)
                 }
+                PACKAGE_FILE_NAME -> {
+                    context.currentFile = Paths.get(context.targertPath.toString(), PACKAGE_FILE_NAME).toString()
+                    loadAndStoreRecord(BackupPackageInfo::class.java, context)
+                }
+                PACKAGE_VERSION_FILE_NAME -> {
+                    context.currentFile = Paths.get(
+                        context.targertPath.toString(),
+                        PACKAGE_VERSION_FILE_NAME
+                    ).toString()
+                    loadAndStoreRecord(BackupPackageVersionInfoWithKeyInfo::class.java, context)
+                }
+                MAVEN_METADATA_FILE_NAME -> {
+                    context.currentFile = Paths.get(context.targertPath.toString(), MAVEN_METADATA_FILE_NAME).toString()
+                    loadAndStoreRecord(BackupMavenMetadata::class.java, context)
+                }
                 else -> continue
             }
         }
@@ -133,6 +152,22 @@ class DataRecordsRestoreServiceImpl(
             BackupNodeInfo::class -> {
                 val record = data as BackupNodeInfo
                 val existRecord = findExistNode(record)
+                storeData(existRecord, record, context)
+            }
+            BackupPackageInfo::class -> {
+                val record = data as BackupPackageInfo
+                val existRecord = findExistPackage(record)
+                storeData(existRecord, record, context)
+            }
+            BackupPackageVersionInfoWithKeyInfo::class -> {
+                val record = data as BackupPackageVersionInfoWithKeyInfo
+                val (packageId, existRecord) = findExistPackageVersion(record)
+                record.packageId = packageId
+                storeData(existRecord, record, context)
+            }
+            BackupMavenMetadata::class -> {
+                val record = data as BackupMavenMetadata
+                val existRecord = findExistMavenMetadata(record)
                 storeData(existRecord, record, context)
             }
             else -> return
@@ -180,6 +215,37 @@ class DataRecordsRestoreServiceImpl(
                     }
                     uploadFile(record, context)
                 }
+                BackupPackageInfo::class -> {
+                    val record = newData as BackupPackageInfo
+                    if (existedData != null) {
+                        // TODO  package的id会在version表中使用
+                        updateExistPackage(record)
+                    } else {
+                        record.id = null
+                        mongoTemplate.save(record, PACKAGE_COLLECTION_NAME)
+                        logger.info("Create package ${record.key} in ${record.projectId}|${record.name} success!")
+                    }
+                }
+                BackupPackageVersionInfo::class -> {
+                    val record = newData as BackupPackageVersionInfo
+                    if (existedData != null) {
+                        updateExistPackageVersion(record)
+                    } else {
+                        record.id = null
+                        mongoTemplate.save(record, PACKAGE_VERSION_COLLECTION_NAME)
+                        logger.info("Create version ${record.name} of packageId ${record.packageId} success!")
+                    }
+                }
+                BackupMavenMetadata::class -> {
+                    val record = newData as BackupMavenMetadata
+                    if (existedData != null) {
+                        updateExistMavenMetadata(record)
+                    } else {
+                        record.id = null
+                        mongoTemplate.save(record, MAVEN_METADATA_COLLECTION_NAME)
+                        logger.info("Create metadata in ${record.projectId}|${record.repoName} success!")
+                    }
+                }
                 else -> return
             }
         } catch (e: DuplicateKeyException) {
@@ -211,9 +277,8 @@ class DataRecordsRestoreServiceImpl(
 
     private fun updateExistRepo(repoInfo: BackupRepositoryInfo) {
         val repoQuery = Query(
-            Criteria.where(NAME).isEqualTo(repoInfo.name)
-                .and(PROJECT).isEqualTo(repoInfo.projectId)
-                .and(DELETED_DATE).isEqualTo(null)
+            Criteria.where(BackupRepositoryInfo::projectId.name).isEqualTo(repoInfo.projectId)
+                .and(BackupRepositoryInfo::name.name).isEqualTo(repoInfo.name)
         )
         // 逻辑删除， 同时删除索引
         val update = Update()
@@ -239,6 +304,81 @@ class DataRecordsRestoreServiceImpl(
             logger.error("update exist repo failed with name ${repoInfo.projectId}|${repoInfo.name}")
         } else {
             logger.info("update exist repo success with name ${repoInfo.projectId}|${repoInfo.name}")
+        }
+    }
+
+    private fun updateExistPackage(packageInfo: BackupPackageInfo) {
+        val packageQuery = Query(
+            Criteria.where(BackupPackageInfo::projectId.name).isEqualTo(packageInfo.projectId)
+                .and(BackupPackageInfo::repoName.name).isEqualTo(packageInfo.repoName)
+                .and(BackupPackageInfo::key.name).isEqualTo(packageInfo.key)
+        )
+        // 逻辑删除， 同时删除索引
+        val update = Update()
+            .set(BackupPackageInfo::latest.name, packageInfo.latest)
+            .set(BackupPackageInfo::description.name, packageInfo.description)
+            .set(BackupPackageInfo::extension.name, packageInfo.extension)
+            .set(BackupPackageInfo::clusterNames.name, packageInfo.clusterNames)
+
+        val updateResult = mongoTemplate.updateFirst(packageQuery, update, PACKAGE_COLLECTION_NAME)
+        if (updateResult.modifiedCount != 1L) {
+            logger.error(
+                "update exist package ${packageInfo.key} " +
+                    "failed with name ${packageInfo.projectId}|${packageInfo.repoName}"
+            )
+        } else {
+            logger.info(
+                "update exist package ${packageInfo.key} " +
+                    "success with name ${packageInfo.projectId}|${packageInfo.repoName}"
+            )
+        }
+    }
+
+    private fun updateExistPackageVersion(versionInfo: BackupPackageVersionInfo) {
+        val packageQuery = Query(
+            Criteria.where(BackupPackageVersionInfo::packageId.name).isEqualTo(versionInfo.packageId)
+                .and(BackupPackageVersionInfo::name.name).isEqualTo(versionInfo.name)
+        )
+        // 逻辑删除， 同时删除索引
+        val update = Update()
+            .set(BackupPackageVersionInfo::size.name, versionInfo.size)
+            .set(BackupPackageVersionInfo::ordinal.name, versionInfo.ordinal)
+            .set(BackupPackageVersionInfo::downloads.name, versionInfo.downloads)
+            .set(BackupPackageVersionInfo::manifestPath.name, versionInfo.manifestPath)
+            .set(BackupPackageVersionInfo::artifactPath.name, versionInfo.artifactPath)
+            .set(BackupPackageVersionInfo::stageTag.name, versionInfo.stageTag)
+            .set(BackupPackageVersionInfo::metadata.name, versionInfo.metadata)
+            .set(BackupPackageVersionInfo::tags.name, versionInfo.tags)
+            .set(BackupPackageVersionInfo::extension.name, versionInfo.extension)
+            .set(BackupPackageVersionInfo::clusterNames.name, versionInfo.clusterNames)
+
+        val updateResult = mongoTemplate.updateFirst(packageQuery, update, PACKAGE_VERSION_COLLECTION_NAME)
+        if (updateResult.modifiedCount != 1L) {
+            logger.error("update exist version ${versionInfo.name} of package ${versionInfo.packageId} failed")
+        } else {
+            logger.error("update exist version ${versionInfo.name} of package ${versionInfo.packageId} success")
+        }
+    }
+
+    private fun updateExistMavenMetadata(mavenMetadata: BackupMavenMetadata) {
+        val metadataQuery = Query(
+            Criteria.where(BackupMavenMetadata::projectId.name).isEqualTo(mavenMetadata.projectId)
+                .and(BackupMavenMetadata::repoName.name).isEqualTo(mavenMetadata.repoName)
+                .and(BackupMavenMetadata::groupId.name).isEqualTo(mavenMetadata.groupId)
+                .and(BackupMavenMetadata::artifactId.name).isEqualTo(mavenMetadata.artifactId)
+                .and(BackupMavenMetadata::version.name).isEqualTo(mavenMetadata.version)
+                .and(BackupMavenMetadata::classifier.name).isEqualTo(mavenMetadata.classifier)
+                .and(BackupMavenMetadata::extension.name).isEqualTo(mavenMetadata.extension)
+        )
+        val update = Update()
+            .set(BackupMavenMetadata::timestamp.name, mavenMetadata.timestamp)
+            .set(BackupMavenMetadata::buildNo.name, mavenMetadata.buildNo)
+
+        val updateResult = mongoTemplate.updateFirst(metadataQuery, update, MAVEN_METADATA_COLLECTION_NAME)
+        if (updateResult.modifiedCount != 1L) {
+            logger.error("update exist metadata $mavenMetadata failed")
+        } else {
+            logger.error("update exist metadata $mavenMetadata success")
         }
     }
 
@@ -289,6 +429,57 @@ class DataRecordsRestoreServiceImpl(
         )
         val collectionName = SeparationUtils.getNodeCollectionName(record.projectId)
         return mongoTemplate.findOne(existNodeQuery, BackupNodeInfo::class.java, collectionName)
+    }
+
+    private fun findExistPackage(record: BackupPackageInfo): BackupPackageInfo? {
+        val existPackageQuery = Query(
+            Criteria.where(BackupPackageInfo::repoName.name).isEqualTo(record.repoName)
+                .and(BackupPackageInfo::projectId.name).isEqualTo(record.projectId)
+                .and(BackupPackageInfo::key.name).isEqualTo(record.key)
+        )
+        return mongoTemplate.findOne(existPackageQuery, BackupPackageInfo::class.java, PACKAGE_COLLECTION_NAME)
+    }
+
+    private fun findExistPackageVersion(
+        record: BackupPackageVersionInfoWithKeyInfo
+    ): Pair<String, BackupPackageVersionInfo?> {
+        // TODO packageId变化该如何处理
+        val existPackageQuery = Query(
+            Criteria.where(BackupPackageVersionInfoWithKeyInfo::repoName.name).isEqualTo(record.repoName)
+                .and(BackupPackageVersionInfoWithKeyInfo::projectId.name).isEqualTo(record.projectId)
+                .and(BackupPackageVersionInfoWithKeyInfo::key.name).isEqualTo(record.key)
+        )
+        // TODO 此处需要缓存，避免过多导致频繁查询
+        val packageInfo = mongoTemplate.findOne(
+            existPackageQuery,
+            BackupPackageInfo::class.java,
+            PACKAGE_COLLECTION_NAME
+        )
+        val existVersionQuery = Query(
+            Criteria.where(BackupPackageVersionInfoWithKeyInfo::packageId.name).isEqualTo(packageInfo.id)
+                .and(BackupPackageVersionInfoWithKeyInfo::name.name).isEqualTo(record.name)
+        )
+        val existVersion = mongoTemplate.findOne(
+            existVersionQuery,
+            BackupPackageVersionInfo::class.java,
+            PACKAGE_VERSION_COLLECTION_NAME
+        )
+        return Pair(packageInfo.id!!, existVersion)
+    }
+
+    private fun findExistMavenMetadata(record: BackupMavenMetadata): BackupMavenMetadata? {
+        // TODO 记录更新时需要对比时间，保留最新的记录
+        // TODO 对于存在索引文件的仓库需要更新对应索引文件信息
+        val existMetadataQuery = Query(
+            Criteria.where(BackupMavenMetadata::projectId.name).isEqualTo(record.projectId)
+                .and(BackupMavenMetadata::repoName.name).isEqualTo(record.repoName)
+                .and(BackupMavenMetadata::groupId.name).isEqualTo(record.groupId)
+                .and(BackupMavenMetadata::artifactId.name).isEqualTo(record.artifactId)
+                .and(BackupMavenMetadata::version.name).isEqualTo(record.version)
+                .and(BackupMavenMetadata::classifier.name).isEqualTo(record.classifier)
+                .and(BackupMavenMetadata::extension.name).isEqualTo(record.extension)
+        )
+        return mongoTemplate.findOne(existMetadataQuery, BackupMavenMetadata::class.java, MAVEN_METADATA_COLLECTION_NAME)
     }
 
     fun uploadFile(record: BackupNodeInfo, context: BackupContext) {

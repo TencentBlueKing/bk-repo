@@ -25,36 +25,35 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.backup.pojo.record
+package com.tencent.bkrepo.job.backup.service
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
-import com.tencent.bkrepo.job.backup.model.TBackupTask
-import com.tencent.bkrepo.job.backup.pojo.query.BackupNodeInfo
-import com.tencent.bkrepo.job.backup.pojo.task.ProjectContentInfo
+import com.tencent.bkrepo.job.backup.pojo.query.VersionBackupInfo
+import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import org.springframework.data.mongodb.core.query.Criteria
-import java.nio.file.Path
-import java.time.LocalDateTime
 
-class BackupContext(
-    val task: TBackupTask,
-) {
-    lateinit var targertPath: Path
-    lateinit var tempClient: FileSystemClient
-    lateinit var startDate: LocalDateTime
-    var backupProgress = BackupProgress()
-    var type: String = task.type
-    var taskId: String = task.id!!
-    var currrentProjectInfo: ProjectContentInfo? = null
-    var currentProjectId: String? = null
-    var currentRepoName: String? = null
-    var currentRepositoryType: RepositoryType? = null
-    var currentStorageCredentials: StorageCredentials? = null
-    var currentPackageId: String? = null
-    var currentPackageKey: String? = null
-    var currentVersionName: String? = null
-    var criteriaForNodeInVersion: Criteria? = null
-    var currentNode: BackupNodeInfo? = null
-    var currentFile: String? = null
+/**
+ * 不同依赖源特有数据备份或者恢复
+ */
+interface BackupRepoSpecialDataService {
+    /**
+     * 匹配仓库类型
+     */
+    fun type(): RepositoryType
+
+    /**
+     * 额外兼容仓库类型
+     * (现主要是因为使用oci替换docker，需要兼容)
+     */
+    fun extraType(): RepositoryType?
+
+    /**
+     * 根据版本信息获取对应node查询信息
+     */
+    fun getNodeCriteriaOfVersion(versionBackupInfo: VersionBackupInfo): Criteria
+
+    /**
+     * 备份仓库特有的数据
+     */
+    fun storeRepoSpecialData(versionBackupInfo: VersionBackupInfo, context: BackupContext)
 }

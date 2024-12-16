@@ -25,36 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.job.backup.pojo.record
+package com.tencent.bkrepo.job.backup.pojo.query
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
-import com.tencent.bkrepo.job.backup.model.TBackupTask
-import com.tencent.bkrepo.job.backup.pojo.query.BackupNodeInfo
-import com.tencent.bkrepo.job.backup.pojo.task.ProjectContentInfo
-import org.springframework.data.mongodb.core.query.Criteria
-import java.nio.file.Path
-import java.time.LocalDateTime
-
-class BackupContext(
-    val task: TBackupTask,
-) {
-    lateinit var targertPath: Path
-    lateinit var tempClient: FileSystemClient
-    lateinit var startDate: LocalDateTime
-    var backupProgress = BackupProgress()
-    var type: String = task.type
-    var taskId: String = task.id!!
-    var currrentProjectInfo: ProjectContentInfo? = null
-    var currentProjectId: String? = null
-    var currentRepoName: String? = null
-    var currentRepositoryType: RepositoryType? = null
-    var currentStorageCredentials: StorageCredentials? = null
-    var currentPackageId: String? = null
-    var currentPackageKey: String? = null
-    var currentVersionName: String? = null
-    var criteriaForNodeInVersion: Criteria? = null
-    var currentNode: BackupNodeInfo? = null
-    var currentFile: String? = null
-}
+data class BackupMavenMetadata(
+    var id: String?,
+    val projectId: String,
+    val repoName: String,
+    val groupId: String,
+    val artifactId: String,
+    val version: String,
+    val timestamp: String?,
+    val buildNo: Int,
+    val classifier: String?,
+    val extension: String,
+)

@@ -64,6 +64,7 @@ const val REPLICA_TYPE = "replicaType"
 const val NAME = "name"
 const val SIZE = "size"
 const val NODE_NUM = "nodeNum"
+const val PACKAGE_ID = "packageId"
 
 
 /**

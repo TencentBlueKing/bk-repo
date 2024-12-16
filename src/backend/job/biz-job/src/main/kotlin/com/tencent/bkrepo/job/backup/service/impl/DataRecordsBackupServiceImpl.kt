@@ -3,9 +3,9 @@ package com.tencent.bkrepo.job.backup.service.impl
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.ID_IDX
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
@@ -17,6 +17,9 @@ import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.NAME
+import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
+import com.tencent.bkrepo.job.PACKAGE_ID
+import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.PROJECT_COLLECTION_NAME
 import com.tencent.bkrepo.job.REPO_COLLECTION_NAME
@@ -24,12 +27,17 @@ import com.tencent.bkrepo.job.STORAGE_CREDENTIALS_COLLECTION_NAME
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
 import com.tencent.bkrepo.job.backup.pojo.BackupTaskState
 import com.tencent.bkrepo.job.backup.pojo.query.BackupNodeInfo
+import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageInfo
+import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageVersionInfo
+import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageVersionInfoWithKeyInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupProjectInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupRepositoryInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupStorageCredentials
+import com.tencent.bkrepo.job.backup.pojo.query.VersionBackupInfo
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import com.tencent.bkrepo.job.backup.pojo.task.ProjectContentInfo
 import com.tencent.bkrepo.job.backup.service.DataRecordsBackupService
+import com.tencent.bkrepo.job.backup.service.impl.repo.BackupRepoSpecialMappings
 import com.tencent.bkrepo.job.backup.util.ZipFileUtil
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -95,8 +103,22 @@ class DataRecordsBackupServiceImpl(
         queryResult(criteria, BackupRepositoryInfo::class.java, REPO_COLLECTION_NAME, context)
     }
 
+    private fun packageDataBackup(context: BackupContext) {
+        val criteria = buildPackageCriteria(context.currentProjectId!!, context.currentRepoName!!)
+        queryResult(criteria, BackupPackageInfo::class.java, PACKAGE_COLLECTION_NAME, context)
+    }
+
+    private fun packageVersionDataBackup(context: BackupContext) {
+        val criteria = buildPackageVersionCriteria(context.currentPackageId!!)
+        queryResult(criteria, BackupPackageVersionInfo::class.java, PACKAGE_VERSION_COLLECTION_NAME, context)
+    }
+
     private fun nodeDataBackup(context: BackupContext) {
-        val criteria = buildNodeCriteria(context.currentProjectId!!, context.currentRepoName!!)
+        val criteria = buildNodeCriteria(
+            context.currentProjectId!!,
+            context.currentRepoName!!,
+            context.criteriaForNodeInVersion
+        )
         val collectionName = SeparationUtils.getNodeCollectionName(context.currentProjectId!!)
         queryResult(criteria, BackupNodeInfo::class.java, collectionName, context)
     }
@@ -141,9 +163,13 @@ class DataRecordsBackupServiceImpl(
                 data.forEach {
                     val record = it as BackupRepositoryInfo
                     context.currentRepoName = record.name
+                    context.currentRepositoryType = record.type
                     context.currentStorageCredentials = findStorageCredentials(record.credentialsKey)
                     storeData(record, context)
-                    nodeDataBackup(context)
+                    when (record.type) {
+                        RepositoryType.GENERIC, RepositoryType.DDC -> nodeDataBackup(context)
+                        else -> packageDataBackup(context)
+                    }
                 }
                 return (data.last() as BackupRepositoryInfo).id!!
             }
@@ -156,39 +182,39 @@ class DataRecordsBackupServiceImpl(
                 }
                 return (data.last() as BackupNodeInfo).id!!
             }
+            BackupPackageInfo::class -> {
+                data.forEach {
+                    val record = it as BackupPackageInfo
+                    context.currentPackageId = record.id
+                    context.currentPackageKey = record.key
+                    storeData(record, context)
+                    packageVersionDataBackup(context)
+                }
+                return (data.last() as BackupPackageInfo).id!!
+            }
+            BackupPackageVersionInfo::class -> {
+                data.forEach {
+                    val record = it as BackupPackageVersionInfo
+                    context.currentVersionName = record.name
+                    val bVersion = VersionBackupInfo(
+                        projectId = context.currentProjectId!!,
+                        repoName = context.currentRepoName!!,
+                        packageKey = context.currentPackageKey!!,
+                        version = record.name,
+                        type = context.currentRepositoryType!!
+                    )
+                    context.criteriaForNodeInVersion = BackupRepoSpecialMappings.getNodeCriteriaOfVersion(bVersion)
+                    BackupRepoSpecialMappings.storeRepoSpecialData(bVersion, context)
+                    val newRecord = buildBackupPackageVersionInfoWithKeyInfo(record, context)
+                    storeData(newRecord, context)
+                    nodeDataBackup(context)
+                }
+                return (data.last() as BackupPackageVersionInfo).id!!
+            }
             else -> return StringPool.EMPTY
         }
     }
 
-    // TODO 全存储在一个文件中，当数据过多会导致内容过大
-    private inline fun <reified T> storeData(data: T, context: BackupContext) {
-        val fileName = when (T::class) {
-            BackupProjectInfo::class -> PROJECT_FILE_NAME
-            BackupRepositoryInfo::class -> REPOSITORY_FILE_NAME
-            BackupNodeInfo::class -> NODE_FILE_NAME
-            else -> return
-        }
-        try {
-            context.tempClient.touch(StringPool.EMPTY, fileName)
-            logger.info("Success to create file [$fileName]")
-            val dataStr = data!!.toJsonString().replace(System.lineSeparator(), "")
-            val inputStream = dataStr.byteInputStream()
-            val size = dataStr.length.toLong()
-            context.tempClient.append(StringPool.EMPTY, fileName, inputStream, size)
-            val lineEndStr = "\n"
-            context.tempClient.append(
-                StringPool.EMPTY,
-                fileName,
-                lineEndStr.byteInputStream(),
-                lineEndStr.length.toLong()
-            )
-            logger.info("Success to append file [$fileName]")
-        } catch (exception: Exception) {
-            logger.error("Failed to create file", exception)
-            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
-            // TODO 异常该如何处理
-        }
-    }
 
     private fun findStorageCredentials(currentCredentialsKey: String?): StorageCredentials? {
         val backupStorageCredentials = currentCredentialsKey?.let {
@@ -203,7 +229,8 @@ class DataRecordsBackupServiceImpl(
 
     private fun storeRealFile(context: BackupContext) {
         with(context) {
-            if (currentNode!!.folder || currentNode!!.sha256 == FAKE_SHA256 || currentNode!!.sha256.isNullOrEmpty()) return
+            if (currentNode!!.folder || currentNode!!.sha256 == FAKE_SHA256
+                || currentNode!!.sha256.isNullOrEmpty()) return
             val nodeDetail = convertToDetail(currentNode)
             val dir = generateRandomPath(currentNode!!.sha256!!)
             if (tempClient.exist(dir, currentNode!!.sha256!!)) {
@@ -263,11 +290,21 @@ class DataRecordsBackupServiceImpl(
         return criteria
     }
 
-
-    private fun buildNodeCriteria(projectId: String, repoName: String): Criteria {
+    private fun buildPackageCriteria(projectId: String, repoName: String): Criteria {
         return Criteria.where(PROJECT).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
+    }
+
+    private fun buildPackageVersionCriteria(packageId: String): Criteria {
+        return Criteria.where(PACKAGE_ID).isEqualTo(packageId)
+    }
+
+    private fun buildNodeCriteria(projectId: String, repoName: String, criteriaForNodeInVersion: Criteria?): Criteria {
+        val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
+            .and(REPO_NAME).isEqualTo(repoName)
             .and(DELETED_DATE).isEqualTo(null)
+        criteriaForNodeInVersion?.let { criteria.andOperator(it) }
+        return criteria
     }
 
     private fun convert(tNode: BackupNodeInfo?): NodeInfo? {
@@ -304,11 +341,41 @@ class DataRecordsBackupServiceImpl(
         }
     }
 
-    fun convertToDetail(tNode: BackupNodeInfo?): NodeDetail? {
+    private fun buildBackupPackageVersionInfoWithKeyInfo(
+        record: BackupPackageVersionInfo,
+        context: BackupContext
+    ): BackupPackageVersionInfoWithKeyInfo {
+        with(record) {
+            return BackupPackageVersionInfoWithKeyInfo(
+                id = id,
+                createdBy = createdBy,
+                createdDate = createdDate,
+                lastModifiedBy = lastModifiedBy,
+                lastModifiedDate = lastModifiedDate,
+                packageId = packageId,
+                name = name,
+                size = size,
+                ordinal = ordinal,
+                downloads = downloads,
+                manifestPath = manifestPath,
+                artifactPath = artifactPath,
+                stageTag = stageTag,
+                metadata = metadata,
+                tags = tags,
+                extension = extension,
+                clusterNames = clusterNames,
+                projectId = context.currentProjectId!!,
+                repoName = context.currentRepoName!!,
+                key = context.currentPackageKey!!,
+            )
+        }
+    }
+
+    private fun convertToDetail(tNode: BackupNodeInfo?): NodeDetail? {
         return convert(tNode)?.let { NodeDetail(it) }
     }
 
-    fun toMap(metadataList: List<MetadataModel>?): Map<String, Any> {
+    private fun toMap(metadataList: List<MetadataModel>?): Map<String, Any> {
         return metadataList?.associate { it.key to it.value }.orEmpty()
     }
 
