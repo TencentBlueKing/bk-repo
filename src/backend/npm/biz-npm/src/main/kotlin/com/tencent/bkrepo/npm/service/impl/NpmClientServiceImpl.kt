@@ -437,7 +437,8 @@ class NpmClientServiceImpl(
             val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
             val context = ArtifactUploadContext(artifactFile)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
-            context.putAttribute(ATTRIBUTE_OCTET_STREAM_SHA1, npmMetadata.dist?.shasum!!)
+            // ohpm包没有shasum字段
+            npmMetadata.dist?.shasum?.let { context.putAttribute(ATTRIBUTE_OCTET_STREAM_SHA1, it) }
             ArtifactContextHolder.getRepository().upload(context).also {
                 logger.info(
                     "user [$userId] upload npm package version metadata file [$fullPath] " +

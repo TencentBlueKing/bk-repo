@@ -63,6 +63,11 @@ class NpmClientController(
     private val npmClientService: NpmClientService
 ) {
 
+    @GetMapping("/{projectId}/{repoName}/-/ping")
+    fun ping(): String {
+        return "{ \"code\": 200, \"message\": \"success\" }"
+    }
+
     /**
      * npm service info
      */
@@ -140,7 +145,7 @@ class NpmClientController(
         return npmClientService.packageVersionInfo(artifactInfo, pkgName, version)
     }
 
-    @RequestMapping(value = ["/{projectId}/{repoName}/**/*.tgz"], method = [RequestMethod.HEAD])
+    @RequestMapping(value = ["/{projectId}/{repoName}/**/*.{tgz,har,hsp}"], method = [RequestMethod.HEAD])
     fun downloadHead(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo
     ) {
@@ -150,7 +155,7 @@ class NpmClientController(
     /**
      * download tgz file
      */
-    @GetMapping("/{projectId}/{repoName}/**/*.tgz")
+    @GetMapping("/{projectId}/{repoName}/**/*.{tgz,har,hsp}")
     fun download(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo
     ) {
