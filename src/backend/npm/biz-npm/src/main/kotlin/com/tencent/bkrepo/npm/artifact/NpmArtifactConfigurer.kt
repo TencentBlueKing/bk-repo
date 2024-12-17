@@ -49,6 +49,7 @@ import org.springframework.stereotype.Component
 @Component
 class NpmArtifactConfigurer : ArtifactConfigurerSupport() {
 
+    override fun getRepositoryTypes() = listOf(RepositoryType.OHPM)
     override fun getRepositoryType() = RepositoryType.NPM
     override fun getLocalRepository() = SpringContextUtils.getBean<NpmLocalRepository>()
     override fun getRemoteRepository() = SpringContextUtils.getBean<NpmRemoteRepository>()

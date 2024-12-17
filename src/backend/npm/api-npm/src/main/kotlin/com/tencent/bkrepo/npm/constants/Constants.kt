@@ -71,3 +71,10 @@ const val PKG_NAME = "pkg_name"
 val ERROR_MAP = mapOf("error" to "not_found", "reason" to "document not found")
 
 const val NPM_TGZ_TARBALL_PREFIX = "X-BKREPO-NPM-PREFIX"
+
+// OHPM
+const val INTEGRITY_HSP = "integrity_hsp"
+const val RESOLVED_HSP = "resolved_hsp"
+const val HSP_FILE_EXT = "hsp"
+const val HSP_TYPE = "hspType"
+const val OHPM_PKG_HAR_FULL_PATH = "/%s/-/%s-%s.har"

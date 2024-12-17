@@ -41,6 +41,7 @@ object PackageKeys {
 
     private const val DOCKER = "docker"
     private const val NPM = "npm"
+    private const val OHPM = "ohpm"
     private const val HELM = "helm"
     private const val RPM = "rpm"
     private const val PYPI = "pypi"
@@ -98,6 +99,15 @@ object PackageKeys {
      */
     fun ofNpm(name: String): String {
         return ofName(NPM, name)
+    }
+
+    /**
+     * 生成ohpm格式key
+     *
+     * 例子: ohpm://test
+     */
+    fun ofOhpm(name: String): String {
+        return ofName(OHPM, name)
     }
 
     /**
