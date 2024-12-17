@@ -102,16 +102,20 @@ class SeparationTaskDao : SimpleMongoDao<TSeparationTask>() {
         return exists(Query(criteria))
     }
 
-    fun find(state: String?, pageRequest: PageRequest): List<TSeparationTask> {
-        val criteria = Criteria()
-        state?.let { criteria.and(TSeparationTask::state.name).isEqualTo(it) }
-        return find(Query(criteria).with(pageRequest))
+    fun find(state: String?, projectId: String?, repoName: String?, pageRequest: PageRequest): List<TSeparationTask> {
+        return find(buildQuery(state, projectId, repoName).with(pageRequest))
     }
 
-    fun count(state: String?): Long {
+    fun count(state: String?, projectId: String?, repoName: String?): Long {
+        return count(buildQuery(state, projectId, repoName))
+    }
+
+    private fun buildQuery(state: String?, projectId: String?, repoName: String?): Query {
         val criteria = Criteria()
         state?.let { criteria.and(TSeparationTask::state.name).isEqualTo(it) }
-        return count(Query(criteria))
+        projectId?.let { criteria.and(TSeparationTask::projectId.name).isEqualTo(projectId) }
+        repoName?.let { criteria.and(TSeparationTask::repoName.name).isEqualTo(repoName) }
+        return Query(criteria)
     }
 
     fun updateState(
