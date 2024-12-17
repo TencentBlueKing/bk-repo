@@ -67,7 +67,7 @@ class ClientService(
 
     suspend fun createClient(request: ClientCreateRequest): ClientDetail {
         with(request) {
-            val ip = ReactiveRequestContextHolder.getClientAddress()
+            val ip = if (this.ip.isNullOrBlank()) ReactiveRequestContextHolder.getClientAddress() else this.ip
             val query = Query(
                 Criteria.where(TClient::projectId.name).isEqualTo(projectId)
                     .and(TClient::repoName.name).isEqualTo(repoName)
@@ -277,7 +277,8 @@ class ClientService(
             mountPoint = client.mountPoint,
             version = client.version,
             os = client.os,
-            arch = client.arch
+            arch = client.arch,
+            ip = client.ip
         )
     }
 
