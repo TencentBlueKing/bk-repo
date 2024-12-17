@@ -34,6 +34,11 @@ import com.tencent.bkrepo.job.backup.pojo.query.BackupProjectInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupRepositoryInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupStorageCredentials
 import com.tencent.bkrepo.job.backup.pojo.query.VersionBackupInfo
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupAccount
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupPermission
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupRole
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupTemporaryToken
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupUser
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import com.tencent.bkrepo.job.backup.pojo.task.ProjectContentInfo
 import com.tencent.bkrepo.job.backup.service.DataRecordsBackupService
@@ -70,6 +75,10 @@ class DataRecordsBackupServiceImpl(
             // TODO 需要进行仓库用量判断
             if (task.content == null || task.content!!.projects.isNullOrEmpty()) return
             initStorage(context)
+            // 备份公共基础数据
+            commonDataBackup(context)
+
+            // 备份业务数据
             for (projectFilterInfo in task.content!!.projects!!) {
                 if (!checkProjectParams(projectFilterInfo)) continue
                 val criteria = buildProjectCriteria(projectFilterInfo)
@@ -92,9 +101,20 @@ class DataRecordsBackupServiceImpl(
         context.tempClient = FileSystemClient(path)
     }
 
+    private fun commonDataBackup(context: BackupContext) {
+        queryResult(Criteria(), BackupUser::class.java, USER_COLLECTION_NAME, context)
+        queryResult(Criteria(), BackupRole::class.java, ROLE_COLLECTION_NAME, context)
+        queryResult(
+            Criteria.where(BackupTemporaryToken::expireDate.name).gt(LocalDateTime.now()),
+            BackupTemporaryToken::class.java, TEMPORARY_TOKEN_COLLECTION_NAME, context
+        )
+        queryResult(Criteria(), BackupPermission::class.java, PERMISSION_COLLECTION_NAME, context)
+        queryResult(Criteria(), BackupAccount::class.java, ACCOUNT_COLLECTION_NAME, context)
+    }
+
     private fun buildZipFileName(context: BackupContext): String {
         val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
-        val path = context.task.name + StringPool.DASH + currentDateStr + ZIP_FILE_SUFFRIX
+        val path = context.task.name + StringPool.DASH + currentDateStr + ZIP_FILE_SUFFIX
         return Paths.get(context.task.storeLocation, context.task.name, path).toString()
     }
 
@@ -149,6 +169,41 @@ class DataRecordsBackupServiceImpl(
 
     private inline fun <reified T> processData(data: List<T>, context: BackupContext): String {
         when (T::class) {
+            BackupUser::class -> {
+                data.forEach {
+                    val record = it as BackupUser
+                    storeData(record, context)
+                }
+                return (data.last() as BackupUser).id!!
+            }
+            BackupRole::class -> {
+                data.forEach {
+                    val record = it as BackupRole
+                    storeData(record, context)
+                }
+                return (data.last() as BackupRole).id!!
+            }
+            BackupTemporaryToken::class -> {
+                data.forEach {
+                    val record = it as BackupTemporaryToken
+                    storeData(record, context)
+                }
+                return (data.last() as BackupTemporaryToken).id!!
+            }
+            BackupPermission::class -> {
+                data.forEach {
+                    val record = it as BackupPermission
+                    storeData(record, context)
+                }
+                return (data.last() as BackupPermission).id!!
+            }
+            BackupAccount::class -> {
+                data.forEach {
+                    val record = it as BackupAccount
+                    storeData(record, context)
+                }
+                return (data.last() as BackupAccount).id!!
+            }
             BackupProjectInfo::class -> {
                 data.forEach {
                     val record = it as BackupProjectInfo

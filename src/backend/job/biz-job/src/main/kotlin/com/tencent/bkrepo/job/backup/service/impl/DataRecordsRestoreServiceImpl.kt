@@ -22,6 +22,11 @@ import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageVersionInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageVersionInfoWithKeyInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupProjectInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupRepositoryInfo
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupAccount
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupPermission
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupRole
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupTemporaryToken
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupUser
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import com.tencent.bkrepo.job.backup.pojo.setting.BackupConflictStrategy
 import com.tencent.bkrepo.job.backup.service.DataRecordsRestoreService
@@ -61,7 +66,10 @@ class DataRecordsRestoreServiceImpl(
             val unZipTempFolder = buildTargetFolder(context)
             ZipFileUtil.decompressFile(task.storeLocation, unZipTempFolder.toString())
             initStorage(unZipTempFolder, context)
-            processFiles(context)
+            // 恢复公共数据
+            processFiles(context, COMMON_FILE_LIST)
+            // 恢复业务数据
+            processFiles(context, REPO_FILE_LIST)
             backupTaskDao.updateState(taskId, BackupTaskState.FINISHED, endDate = LocalDateTime.now())
         }
     }
@@ -72,7 +80,7 @@ class DataRecordsRestoreServiceImpl(
         if (!Files.exists(path)) {
             throw FileNotFoundException(context.task.storeLocation)
         }
-        val tempFolder = path.name.removeSuffix(ZIP_FILE_SUFFRIX) + StringPool.DASH + currentDateStr
+        val tempFolder = path.name.removeSuffix(ZIP_FILE_SUFFIX) + StringPool.DASH + currentDateStr
         return Paths.get(path.parent.toString(), tempFolder)
     }
 
@@ -88,9 +96,35 @@ class DataRecordsRestoreServiceImpl(
         context.tempClient = FileSystemClient(targetFolder)
     }
 
-    private fun processFiles(context: BackupContext) {
-        for (file in FILE_LIST) {
+    private fun processFiles(context: BackupContext, files: List<String>) {
+        for (file in files) {
             when (file) {
+                USER_FILE_NAME -> {
+                    context.currentFile = Paths.get(context.targertPath.toString(), USER_FILE_NAME).toString()
+                    loadAndStoreRecord(BackupUser::class.java, context)
+                }
+                ROLE_FILE_NAME -> {
+                    context.currentFile = Paths.get(context.targertPath.toString(), ROLE_FILE_NAME).toString()
+                    loadAndStoreRecord(BackupRole::class.java, context)
+                }
+                TEMPORARY_TOKEN_FILE_NAME -> {
+                    context.currentFile = Paths.get(
+                        context.targertPath.toString(),
+                        TEMPORARY_TOKEN_FILE_NAME
+                    ).toString()
+                    loadAndStoreRecord(BackupTemporaryToken::class.java, context)
+                }
+                PERMISSION_FILE_NAME -> {
+                    context.currentFile = Paths.get(
+                        context.targertPath.toString(),
+                        PERMISSION_FILE_NAME
+                    ).toString()
+                    loadAndStoreRecord(BackupPermission::class.java, context)
+                }
+                ACCOUNT_FILE_NAME -> {
+                    context.currentFile = Paths.get(context.targertPath.toString(), ACCOUNT_FILE_NAME).toString()
+                    loadAndStoreRecord(BackupAccount::class.java, context)
+                }
                 PROJECT_FILE_NAME -> {
                     context.currentFile = Paths.get(context.targertPath.toString(), PROJECT_FILE_NAME).toString()
                     loadAndStoreRecord(BackupProjectInfo::class.java, context)
@@ -139,6 +173,30 @@ class DataRecordsRestoreServiceImpl(
 
     private inline fun <reified T> processData(data: T, context: BackupContext) {
         when (T::class) {
+            BackupUser::class -> {
+                val record = data as BackupUser
+                val existRecord = findExistUser(record)
+                storeData(existRecord, record, context)
+            }
+            BackupRole::class -> {
+                val record = data as BackupRole
+                val existRecord = findExistRole(record)
+                storeData(existRecord, record, context)
+            }
+            BackupTemporaryToken::class -> {
+                val record = data as BackupTemporaryToken
+                storeData(null, record, context)
+            }
+            BackupPermission::class -> {
+                val record = data as BackupPermission
+                val existRecord = findExistPermission(record)
+                storeData(existRecord, record, context)
+            }
+            BackupAccount::class -> {
+                val record = data as BackupAccount
+                val existRecord = findExistAccount(record)
+                storeData(existRecord, record, context)
+            }
             BackupProjectInfo::class -> {
                 val record = data as BackupProjectInfo
                 val existRecord = findExistProject(record)
@@ -181,6 +239,53 @@ class DataRecordsRestoreServiceImpl(
         }
         try {
             when (T::class) {
+                BackupRole::class -> {
+                    val record = newData as BackupRole
+                    if (existedData != null) {
+                        updateExistRole(record)
+                    } else {
+                        record.id = null
+                        mongoTemplate.save(record, ROLE_COLLECTION_NAME)
+                        logger.info("Create role ${record.name} success!")
+                    }
+                }
+                BackupUser::class -> {
+                    val record = newData as BackupUser
+                    if (existedData != null) {
+                        val existRecord = existedData as BackupUser?
+                        updateExistUser(existRecord!!, record)
+                    } else {
+                        record.id = null
+                        mongoTemplate.save(record, USER_COLLECTION_NAME)
+                        logger.info("Create user ${record.name} success!")
+                    }
+                }
+                BackupTemporaryToken::class -> {
+                    val record = newData as BackupTemporaryToken
+                    record.id = null
+                    mongoTemplate.save(record, TEMPORARY_TOKEN_COLLECTION_NAME)
+                    logger.info("Create token ${record.id} success!")
+                }
+                BackupPermission::class -> {
+                    val record = newData as BackupPermission
+                    if (existedData != null) {
+                        updateExistPermission(record)
+                    } else {
+                        record.id = null
+                        mongoTemplate.save(record, USER_COLLECTION_NAME)
+                        logger.info("Create permission ${record.permName} success!")
+                    }
+                }
+                BackupAccount::class -> {
+                    val record = newData as BackupAccount
+                    if (existedData != null) {
+                        updateExistAccount(record)
+                    } else {
+                        record.id = null
+                        mongoTemplate.save(record, ACCOUNT_COLLECTION_NAME)
+                        logger.info("Create account ${record.appId} success!")
+                    }
+                }
                 BackupProjectInfo::class -> {
                     val record = newData as BackupProjectInfo
                     if (existedData != null) {
@@ -252,6 +357,97 @@ class DataRecordsRestoreServiceImpl(
             logger.warn("insert data occurred DuplicateKeyException")
         }
 
+    }
+
+    private fun updateExistUser(existUser: BackupUser, userInfo: BackupUser) {
+        // 部分字段更新可能会导致原有数据不能使用
+        val roleQuery = Query(Criteria.where(BackupUser::userId.name).isEqualTo(existUser.userId))
+        val update = Update()
+            .set(BackupUser::name.name, userInfo.name)
+            .set(BackupUser::admin.name, userInfo.admin)
+            .set(BackupUser::pwd.name, userInfo.pwd)
+            .set(BackupUser::locked.name, userInfo.locked)
+            .set(BackupUser::group.name, userInfo.group)
+            .set(BackupUser::pwd.name, userInfo.pwd)
+            .set(BackupUser::email.name, userInfo.email)
+            .set(BackupUser::pwd.name, userInfo.pwd)
+            .set(BackupUser::phone.name, userInfo.phone)
+            .set(BackupUser::source.name, userInfo.source)
+            .addToSet(BackupUser::tokens.name, userInfo.tokens)
+            .addToSet(BackupUser::roles.name, userInfo.roles)
+            .addToSet(BackupUser::asstUsers.name, userInfo.asstUsers)
+            .addToSet(BackupUser::accounts.name, userInfo.accounts)
+
+        val updateResult = mongoTemplate.updateFirst(roleQuery, update, USER_COLLECTION_NAME)
+        if (updateResult.modifiedCount != 1L) {
+            logger.error("update exist user failed with name ${userInfo.userId} ")
+        } else {
+            logger.info("update exist user success with name ${userInfo.userId}")
+        }
+    }
+
+    private fun updateExistRole(roleInfo: BackupRole) {
+        val roleQuery = Query(
+            Criteria.where(BackupRole::roleId.name).isEqualTo(roleInfo.roleId)
+                .and(BackupRole::projectId.name).isEqualTo(roleInfo.projectId)
+                .and(BackupRole::repoName.name).isEqualTo(roleInfo.repoName)
+                .and(BackupRole::type.name).isEqualTo(roleInfo.type)
+                .and(BackupRole::source.name).isEqualTo(roleInfo.source)
+        )
+        val update = Update()
+            .set(BackupRole::name.name, roleInfo.name)
+            .set(BackupRole::admin.name, roleInfo.admin)
+            .set(BackupRole::description.name, roleInfo.description)
+        val updateResult = mongoTemplate.updateFirst(roleQuery, update, ROLE_COLLECTION_NAME)
+        if (updateResult.modifiedCount != 1L) {
+            logger.error("update exist role failed with name ${roleInfo.name} ")
+        } else {
+            logger.info("update exist role success with name ${roleInfo.name}")
+        }
+    }
+
+    private fun updateExistPermission(permissionInfo: BackupPermission) {
+        val permissionQuery = Query.query(
+            Criteria.where(BackupPermission::permName.name).`is`(permissionInfo.permName)
+                .and(BackupPermission::projectId.name).`is`(permissionInfo.projectId)
+                .and(BackupPermission::repos.name).`is`(permissionInfo.repos)
+                .and(BackupPermission::resourceType.name).`is`(permissionInfo.resourceType)
+        )
+        val update = Update()
+            .addToSet(BackupPermission::includePattern.name, permissionInfo.includePattern)
+            .addToSet(BackupPermission::excludePattern.name, permissionInfo.excludePattern)
+            .set(BackupPermission::updatedBy.name, permissionInfo.updatedBy)
+            .addToSet(BackupPermission::users.name, permissionInfo.users)
+            .addToSet(BackupPermission::roles.name, permissionInfo.roles)
+            .addToSet(BackupPermission::departments.name, permissionInfo.departments)
+            .addToSet(BackupPermission::actions.name, permissionInfo.actions)
+        val updateResult = mongoTemplate.updateFirst(permissionQuery, update, PERMISSION_COLLECTION_NAME)
+        if (updateResult.modifiedCount != 1L) {
+            logger.error("update exist permission failed with id ${permissionInfo.id} ")
+        } else {
+            logger.info("update exist permission success with id ${permissionInfo.id}")
+        }
+    }
+
+    private fun updateExistAccount(accountInfo: BackupAccount) {
+        val accountQuery = Query.query(Criteria.where(BackupAccount::appId.name).`is`(accountInfo.appId))
+        val update = Update()
+            .addToSet(BackupAccount::credentials.name, accountInfo.credentials)
+            .addToSet(BackupAccount::authorizationGrantTypes.name, accountInfo.authorizationGrantTypes)
+            .addToSet(BackupAccount::scope.name, accountInfo.scope)
+            .addToSet(BackupAccount::scopeDesc.name, accountInfo.scopeDesc)
+            .set(BackupAccount::homepageUrl.name, accountInfo.homepageUrl)
+            .set(BackupAccount::redirectUri.name, accountInfo.redirectUri)
+            .set(BackupAccount::avatarUrl.name, accountInfo.avatarUrl)
+            .set(BackupAccount::locked.name, accountInfo.locked)
+            .set(BackupAccount::description.name, accountInfo.description)
+
+        val updateResult = mongoTemplate.updateFirst(accountQuery, update, ACCOUNT_COLLECTION_NAME)
+        if (updateResult.modifiedCount != 1L) {
+            logger.error("update exist account failed with id ${accountInfo.appId} ")
+        } else {
+            logger.info("update exist account success with id ${accountInfo.appId}")
+        }
     }
 
     private fun updateExistProject(projectInfo: BackupProjectInfo) {
@@ -403,6 +599,37 @@ class DataRecordsRestoreServiceImpl(
                     "and fullPath ${nodeInfo.fullPath} in ${nodeInfo.projectId}|${nodeInfo.repoName}"
             )
         }
+    }
+
+    private fun findExistUser(record: BackupUser): BackupUser? {
+        val existUserQuery = Query(Criteria.where(BackupUser::userId.name).isEqualTo(record.userId))
+        return mongoTemplate.findOne(existUserQuery, BackupUser::class.java, USER_COLLECTION_NAME)
+    }
+
+    private fun findExistRole(record: BackupRole): BackupRole? {
+        val existRoleQuery = Query(
+            Criteria.where(BackupRole::roleId.name).isEqualTo(record.roleId)
+                .and(BackupRole::projectId.name).isEqualTo(record.projectId)
+                .and(BackupRole::repoName.name).isEqualTo(record.repoName)
+                .and(BackupRole::type.name).isEqualTo(record.type)
+                .and(BackupRole::source.name).isEqualTo(record.source)
+
+        )
+        return mongoTemplate.findOne(existRoleQuery, BackupRole::class.java, ROLE_COLLECTION_NAME)
+    }
+
+    private fun findExistPermission(record: BackupPermission): BackupPermission? {
+        val existPermissionQuery = Query(
+            Criteria.where(BackupPermission::permName.name).isEqualTo(record.permName)
+                .and(BackupPermission::projectId.name).isEqualTo(record.projectId)
+                .and(BackupPermission::resourceType.name).isEqualTo(record.resourceType)
+        )
+        return mongoTemplate.findOne(existPermissionQuery, BackupPermission::class.java, PERMISSION_COLLECTION_NAME)
+    }
+
+    private fun findExistAccount(record: BackupAccount): BackupAccount? {
+        val existAccountQuery = Query(Criteria.where(BackupAccount::appId.name).isEqualTo(record.appId))
+        return mongoTemplate.findOne(existAccountQuery, BackupAccount::class.java, ACCOUNT_COLLECTION_NAME)
     }
 
     private fun findExistProject(record: BackupProjectInfo): BackupProjectInfo? {

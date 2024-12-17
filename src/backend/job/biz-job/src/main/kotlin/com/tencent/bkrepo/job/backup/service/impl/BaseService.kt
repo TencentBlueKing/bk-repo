@@ -11,6 +11,11 @@ import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageVersionInfoWithKeyInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupProjectInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupRepositoryInfo
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupAccount
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupPermission
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupRole
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupTemporaryToken
+import com.tencent.bkrepo.job.backup.pojo.query.common.BackupUser
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
@@ -21,6 +26,11 @@ open class BaseService {
     // TODO 全存储在一个文件中，当数据过多会导致内容过大
     inline fun <reified T> storeData(data: T, context: BackupContext) {
         val fileName = when (T::class) {
+            BackupUser::class -> USER_FILE_NAME
+            BackupRole::class -> ROLE_FILE_NAME
+            BackupTemporaryToken::class -> TEMPORARY_TOKEN_FILE_NAME
+            BackupPermission::class -> PERMISSION_FILE_NAME
+            BackupAccount::class -> ACCOUNT_FILE_NAME
             BackupProjectInfo::class -> PROJECT_FILE_NAME
             BackupRepositoryInfo::class -> REPOSITORY_FILE_NAME
             BackupNodeInfo::class -> NODE_FILE_NAME
@@ -69,6 +79,11 @@ open class BaseService {
 
     companion object {
         val logger = LoggerFactory.getLogger(BaseService::class.java)
+        const val USER_FILE_NAME = "user.json"
+        const val ROLE_FILE_NAME = "role.json"
+        const val TEMPORARY_TOKEN_FILE_NAME = "temporary_token.json"
+        const val PERMISSION_FILE_NAME = "permission.json"
+        const val ACCOUNT_FILE_NAME = "account.json"
         const val PROJECT_FILE_NAME = "project.json"
         const val REPOSITORY_FILE_NAME = "repository.json"
         const val NODE_FILE_NAME = "node.json"
@@ -76,8 +91,20 @@ open class BaseService {
         const val PACKAGE_VERSION_FILE_NAME = "package-version.json"
         const val MAVEN_METADATA_FILE_NAME = "maven-metadata.json"
         const val MAVEN_METADATA_COLLECTION_NAME = "maven_metadata"
-        const val ZIP_FILE_SUFFRIX = ".zip"
-        val FILE_LIST = listOf(
+        const val USER_COLLECTION_NAME = "user"
+        const val ROLE_COLLECTION_NAME = "role"
+        const val TEMPORARY_TOKEN_COLLECTION_NAME = "temporary_token"
+        const val PERMISSION_COLLECTION_NAME = "permission"
+        const val ACCOUNT_COLLECTION_NAME = "account"
+        const val ZIP_FILE_SUFFIX = ".zip"
+        val COMMON_FILE_LIST = listOf(
+            ROLE_COLLECTION_NAME,
+            USER_COLLECTION_NAME,
+            PERMISSION_COLLECTION_NAME,
+            TEMPORARY_TOKEN_COLLECTION_NAME,
+            ACCOUNT_COLLECTION_NAME,
+        )
+        val REPO_FILE_LIST = listOf(
             PROJECT_FILE_NAME,
             REPOSITORY_FILE_NAME,
             NODE_FILE_NAME,
