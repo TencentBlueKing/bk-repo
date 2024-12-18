@@ -31,17 +31,21 @@
 
 package com.tencent.bkrepo.npm.artifact
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.npm.artifact.repository.NpmLocalRepository
 import com.tencent.bkrepo.npm.artifact.repository.NpmRemoteRepository
 import com.tencent.bkrepo.npm.artifact.repository.NpmVirtualRepository
 import com.tencent.bkrepo.npm.pojo.NpmErrorResponse
+import com.tencent.bkrepo.npm.pojo.OhpmResponse
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 import org.springframework.stereotype.Component
@@ -63,7 +67,16 @@ class NpmArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
-            return NpmErrorResponse(payload.message.orEmpty(), StringPool.EMPTY)
+            return if (ArtifactContextHolder.getRepoDetailOrNull()?.type == RepositoryType.OHPM) {
+                val code = if (payload.code == CommonMessageCode.SYSTEM_ERROR.getCode()) {
+                    HttpStatus.INTERNAL_SERVER_ERROR.value
+                } else {
+                    HttpStatus.BAD_REQUEST.value
+                }
+                OhpmResponse.error(code, payload.message.orEmpty())
+            } else {
+                NpmErrorResponse(payload.message.orEmpty(), StringPool.EMPTY)
+            }
         }
     }
 }

@@ -41,6 +41,7 @@ import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.NpmDeleteResponse
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
+import com.tencent.bkrepo.npm.pojo.OhpmResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.metadata.disttags.DistTags
 import com.tencent.bkrepo.npm.service.NpmClientService
@@ -64,8 +65,8 @@ class NpmClientController(
 ) {
 
     @GetMapping("/{projectId}/{repoName}/-/ping")
-    fun ping(): String {
-        return "{ \"code\": 200, \"message\": \"success\" }"
+    fun ping(): OhpmResponse {
+        return OhpmResponse.success()
     }
 
     /**
