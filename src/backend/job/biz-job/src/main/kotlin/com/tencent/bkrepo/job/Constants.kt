@@ -69,6 +69,7 @@ const val REPLICA_TYPE = "replicaType"
 const val NAME = "name"
 const val SIZE = "size"
 const val NODE_NUM = "nodeNum"
+const val PACKAGE_ID = "packageId"
 
 
 /**
@@ -108,6 +109,10 @@ val IGNORE_PROJECT_PREFIX_LIST = listOf(CODE_PROJECT_PREFIX, CLOSED_SOURCE_PREFI
 const val RESTORE = "RESTORE"
 const val SEPARATE = "SEPARATE"
 
+const val PROJECT_COLLECTION_NAME = "project"
+const val REPO_COLLECTION_NAME = "repository"
+const val STORAGE_CREDENTIALS_COLLECTION_NAME = "storage_credentials"
+
 const val PACKAGE_COLLECTION_NAME = "package"
 const val PACKAGE_VERSION_COLLECTION_NAME = "package_version"
 const val PACKAGE_DOWNLOADS_COLLECTION_NAME = "package_downloads"
@@ -115,3 +120,9 @@ const val SEPARATION_TASK_COLLECTION_NAME = "separation_task"
 
 const val PACKAGE_VERSION = "version"
 const val PACKAGE_DOWNLOAD_DATE = "date"
+
+/**
+ * 记录备份
+ */
+const val DATA_RECORDS_BACKUP = "DATA_BACKUP"
+const val DATA_RECORDS_RESTORE = "DATA_RESTORE"
