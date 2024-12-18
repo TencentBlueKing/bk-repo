@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.npm.handler
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
