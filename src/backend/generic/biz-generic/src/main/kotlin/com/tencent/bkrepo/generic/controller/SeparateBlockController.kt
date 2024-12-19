@@ -38,7 +38,6 @@ import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
@@ -47,15 +46,16 @@ import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BLOCK_MAPPING_URI
-import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC_MAPPING_URI
-import com.tencent.bkrepo.generic.pojo.NewBlockInfo
+import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.generic.pojo.SeparateBlockInfo
+import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.UploadService
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -67,35 +67,11 @@ class SeparateBlockController(
 
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     @PostMapping(BLOCK_MAPPING_URI)
-    fun newStartBlockUpload(
+    fun startSeparateBlockUpload(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
-    ): Response<NodeDetail> {
-        uploadService.newStartBlockUpload(userId, artifactInfo)
-        return ResponseBuilder.success()
-    }
-
-    @AuditEntry(
-        actionId = NODE_CREATE_ACTION
-    )
-    @ActionAuditRecord(
-        actionId = NODE_CREATE_ACTION,
-        instance = AuditInstanceRecord(
-            resourceType = NODE_RESOURCE,
-            instanceIds = "#artifactInfo?.getArtifactFullPath()",
-            instanceNames = "#artifactInfo?.getArtifactFullPath()"
-        ),
-        attributes = [
-            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
-            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
-        ],
-        scopeId = "#artifactInfo?.projectId",
-        content = ActionAuditContent.NODE_UPLOAD_CONTENT
-    )
-    @PutMapping(GENERIC_MAPPING_URI)
-    @Permission(ResourceType.NODE, PermissionAction.WRITE)
-    fun newBlockUpload(@ArtifactPathVariable artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
-        uploadService.newBlockUpload(artifactInfo, file)
+    ): Response<UploadTransactionInfo> {
+        return ResponseBuilder.success(uploadService.startSeparateBlockUpload(userId, artifactInfo))
     }
 
     @AuditEntry(
@@ -117,30 +93,33 @@ class SeparateBlockController(
     )
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     @PutMapping(BLOCK_MAPPING_URI)
-    fun completeNewBlockUpload(
+    fun completeSeparateBlockUpload(
         @RequestAttribute userId: String,
+        @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<Void> {
-        uploadService.completeNewBlockUpload(userId, artifactInfo)
+        uploadService.completeSeparateBlockUpload(userId, uploadId, artifactInfo)
         return ResponseBuilder.success()
     }
 
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     @DeleteMapping(BLOCK_MAPPING_URI)
-    fun abortNewBlockUpload(
+    fun abortSeparateBlockUpload(
         @RequestAttribute userId: String,
+        @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
     ): Response<Void> {
-        uploadService.abortNewBlockUpload(userId, artifactInfo)
+        uploadService.abortSeparateBlockUpload(userId, uploadId, artifactInfo)
         return ResponseBuilder.success()
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @GetMapping(BLOCK_MAPPING_URI)
-    fun listNewBlock(
+    fun listSeparateBlock(
         @RequestAttribute userId: String,
+        @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
-    ): Response<List<NewBlockInfo>> {
-        return ResponseBuilder.success(uploadService.newListBlock(userId, artifactInfo))
+    ): Response<List<SeparateBlockInfo>> {
+        return ResponseBuilder.success(uploadService.separateListBlock(userId, uploadId, artifactInfo))
     }
 }

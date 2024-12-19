@@ -87,6 +87,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
+import com.tencent.bkrepo.fs.server.constant.VERSION_KEY
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
@@ -177,39 +178,35 @@ class GenericLocalRepository(
         }
     }
 
-    override fun onNewUploadBefore(context: ArtifactUploadContext){
-        // 上传前校验
-        super.onUploadBefore(context)
-        // 检查BlockNodeBase是否存在
-        checkBlockBaseNode(context.artifactInfo)
-        // 通用上传前检查
-        baseUploadBefore(context)
-    }
-
     override fun onUpload(context: ArtifactUploadContext) {
         val uploadId = context.request.getHeader(HEADER_UPLOAD_ID)
-        val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
-        val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
-        if (isBlockUpload(uploadId, sequence)) {
-            this.blockUpload(uploadId, sequence!!, context)
-            context.response.contentType = MediaTypes.APPLICATION_JSON
-            context.response.writer.println(ResponseBuilder.success().toJsonString())
-        } else if (isChunkedUpload(uploadType)) {
-            chunkedUpload(context)
-        } else {
-            val nodeDetail = storageManager.storeArtifactFile(
-                buildNodeCreateRequest(context),
-                context.getArtifactFile(),
-                context.storageCredentials
-            )
-            context.response.contentType = MediaTypes.APPLICATION_JSON
-            context.response.addHeader(X_CHECKSUM_MD5, context.getArtifactMd5())
-            context.response.addHeader(X_CHECKSUM_SHA256, context.getArtifactSha256())
-            context.response.writer.println(ResponseBuilder.success(nodeDetail).toJsonString())
+        if (isSeparateUpload(uploadId)){
+            onSeparateUpload(context, uploadId)
+        }
+        else{
+            val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
+            val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
+            if (isBlockUpload(uploadId, sequence)) {
+                this.blockUpload(uploadId, sequence!!, context)
+                context.response.contentType = MediaTypes.APPLICATION_JSON
+                context.response.writer.println(ResponseBuilder.success().toJsonString())
+            } else if (isChunkedUpload(uploadType)) {
+                chunkedUpload(context)
+            } else {
+                val nodeDetail = storageManager.storeArtifactFile(
+                    buildNodeCreateRequest(context),
+                    context.getArtifactFile(),
+                    context.storageCredentials
+                )
+                context.response.contentType = MediaTypes.APPLICATION_JSON
+                context.response.addHeader(X_CHECKSUM_MD5, context.getArtifactMd5())
+                context.response.addHeader(X_CHECKSUM_SHA256, context.getArtifactSha256())
+                context.response.writer.println(ResponseBuilder.success(nodeDetail).toJsonString())
+            }
         }
     }
 
-    override fun onNewUpload(context: ArtifactUploadContext) {
+    private fun onSeparateUpload(context: ArtifactUploadContext, uploadId: String) {
         with(context) {
 
             val bArtifactFile = getArtifactFile()
@@ -222,11 +219,13 @@ class GenericLocalRepository(
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 nodeFullPath = artifactInfo.getArtifactFullPath(),
-                startPos = offset ?: sequence ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND),
+                startPos = offset ?: sequence
+                            ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND),
                 sha256 = sha256,
                 projectId = projectId,
                 repoName = repoName,
-                size = bArtifactFile.getSize()
+                size = bArtifactFile.getSize(),
+                version = uploadId
             )
 
             val stored = storageService.store(sha256, bArtifactFile, storageCredentials)
@@ -246,6 +245,10 @@ class GenericLocalRepository(
             context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(ResponseBuilder.success().toJsonString())
         }
+    }
+
+    private fun isSeparateUpload(uploadId: String): Boolean {
+        return uploadId.substringAfter("/") == VERSION_KEY
     }
 
     override fun onUploadSuccess(context: ArtifactUploadContext) {
@@ -308,6 +311,7 @@ class GenericLocalRepository(
         val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
         val uploadId = HeaderUtils.getHeader(HEADER_UPLOAD_ID)
         val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
+                    ?: HeaderUtils.getHeader(HEADER_OFFSET)?.toInt()
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
         if (!overwrite && !isBlockUpload(uploadId, sequence) && !isChunkedUpload(uploadType)) {
             with(context.artifactInfo) {
@@ -316,14 +320,6 @@ class GenericLocalRepository(
                 }
             }
         }
-    }
-
-    private fun checkBlockBaseNode(artifactInfo: ArtifactInfo) {
-        nodeService.getNodeDetail(artifactInfo)
-            ?: run {
-                logger.error("Node detail not found for artifact: $artifactInfo")
-                throw ErrorCodeException(GenericMessageCode.BLOCK_FILE_NODE_NOT_CREATE, artifactInfo)
-            }
     }
 
     private fun checkIfOverwritePipelineArtifact(context: ArtifactUploadContext) {

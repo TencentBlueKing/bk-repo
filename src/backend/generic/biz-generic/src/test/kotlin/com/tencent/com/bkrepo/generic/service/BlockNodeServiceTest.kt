@@ -17,6 +17,7 @@ import com.tencent.com.bkrepo.generic.UT_PROJECT_ID
 import com.tencent.com.bkrepo.generic.UT_REPO_NAME
 import com.tencent.com.bkrepo.generic.UT_SHA256
 import com.tencent.com.bkrepo.generic.UT_USER
+import com.tencent.com.bkrepo.generic.UT_VERSION
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -97,7 +98,7 @@ class BlockNodeServiceTest {
     fun testBlockUpload() {
         setupBlocks()
         val blocks = listBlocks(createdDate)
-        assertBlocks(blocks, expectedSize = 2, blockSize = BLOCK_SIZE)
+        assertBlocks(blocks, expectedSize = 2, blockSize = BLOCK_SIZE, UT_VERSION)
     }
 
     @DisplayName("测试BlockCompletion")
@@ -105,13 +106,19 @@ class BlockNodeServiceTest {
     fun testBlockCompletion() {
         setupBlocks()
         val blocks = listBlocks(createdDate)
-        assertBlocks(blocks, expectedSize = 2, blockSize = BLOCK_SIZE)
+        assertBlocks(blocks, expectedSize = 2, blockSize = BLOCK_SIZE, UT_VERSION)
 
         // 完成上传
         completeUpload(blocks)
 
-        val completeBlocks = listBlocks(createdDate)
-        assertBlocks(completeBlocks, expectedSize = 2, blockSize = BLOCK_SIZE)
+        val completeBlocks = blockNodeService.listBlocks(
+            range,
+            UT_PROJECT_ID,
+            UT_REPO_NAME,
+            "/file",
+            createdDate.toString()
+        )
+        assertBlocks(completeBlocks, expectedSize = 2, blockSize = BLOCK_SIZE, null)
         Assertions.assertEquals(0, completeBlocks[0].startPos)
         Assertions.assertEquals(BLOCK_SIZE, completeBlocks[1].startPos)
     }
@@ -121,13 +128,14 @@ class BlockNodeServiceTest {
     fun testBlockAbort() {
         setupBlocks()
         val blocks = listBlocks(createdDate)
-        assertBlocks(blocks, expectedSize = 2, blockSize = BLOCK_SIZE)
+        assertBlocks(blocks, expectedSize = 2, blockSize = BLOCK_SIZE, UT_VERSION)
 
         // 中止上传
         blockNodeService.deleteBlocks(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
-            fullPath = "/file"
+            fullPath = "/file",
+            version = UT_VERSION
         )
 
         val deleteBlocksQuery = deleteBlocksQuery("/file", UT_PROJECT_ID, UT_REPO_NAME, createdDate)
@@ -192,29 +200,32 @@ class BlockNodeServiceTest {
             sha256 = "$UT_SHA256$i",
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
-            size = BLOCK_SIZE
+            size = BLOCK_SIZE,
+            version = UT_VERSION
         )
         val artifactFile = createTempArtifactFile()
         storageService.store(blockNode.sha256, artifactFile, storageCredentials)
         blockNodeService.createBlock(blockNode, storageCredentials)
     }
     private fun listBlocks(createdDate: LocalDateTime, fullPath: String = "/file"): List<TBlockNode> {
-        return blockNodeService.listBlocks(
-            range = range,
+        return blockNodeService.listBlocksInVersion(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             fullPath = fullPath,
-            createdDate = createdDate.toString()
+            createdDate = createdDate.toString(),
+            version = UT_VERSION,
         )
     }
 
     private fun assertBlocks(blocks: List<TBlockNode>,
                              expectedSize: Int,
-                             blockSize: Long) {
+                             blockSize: Long,
+                             version: String?,) {
         Assertions.assertEquals(expectedSize, blocks.size)
         blocks.forEach { block ->
             Assertions.assertEquals(blockSize, block.size)
             Assertions.assertTrue(storageService.exist(block.sha256, storageCredentials))
+            Assertions.assertEquals(block.version, version)
         }
     }
 
@@ -222,11 +233,7 @@ class BlockNodeServiceTest {
         var offset = 0L
         blocks.sortedBy { it.startPos }.forEach { blockInfo ->
             val blockSize = blockInfo.size
-            val blockNode = blockInfo.copy(
-                startPos = offset,
-                endPos = offset + blockSize - 1
-            )
-            blockNodeService.updateBlock(blockNode)
+            blockNodeService.updateBlock(blockInfo, offset, offset + blockSize - 1)
             offset += blockSize  // 更新偏移量
         }
     }

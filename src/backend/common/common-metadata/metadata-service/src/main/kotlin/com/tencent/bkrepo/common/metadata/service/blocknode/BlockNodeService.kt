@@ -48,6 +48,17 @@ interface BlockNodeService {
     ): List<TBlockNode>
 
     /**
+     * 查询出当前版本内的分块
+     */
+    fun listBlocksInVersion(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        createdDate: String? = null,
+        version: String
+    ): List<TBlockNode>
+
+    /**
      * 创建分块
      * */
     fun createBlock(
@@ -60,11 +71,14 @@ interface BlockNodeService {
      * */
     fun updateBlock(
         blockNode: TBlockNode,
+        startPos: Long,
+        endPos: Long,
     )
 
     /**
      * 删除旧分块，即删除非指定的nodeCurrentSha256的分块。
      * 如果未指定nodeCurrentSha256，则删除节点所有分块
+     * 如果指定version，则删除该版本对应的分块，未指定则删除所有分块
      * @param projectId 项目id
      * @param repoName 仓库名
      * @param fullPath 文件路径
@@ -72,7 +86,8 @@ interface BlockNodeService {
     fun deleteBlocks(
         projectId: String,
         repoName: String,
-        fullPath: String
+        fullPath: String,
+        version: String? = null
     )
 
     /**

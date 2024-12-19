@@ -40,15 +40,15 @@ import org.springframework.stereotype.Repository
 @Conditional(SyncCondition::class)
 class BlockNodeDao : HashShardingMongoDao<TBlockNode>(){
 
-        fun updateBlock(query: Query, update: Update): UpdateResult {
-            if (logger.isDebugEnabled) {
-                logger.debug("Mongo Dao updateFirst: [$query], [$update]")
-            }
-            return determineMongoTemplate()
-                .updateFirst(
-                    query,
-                    update,
-                    TBlockNode::class.java,
-                    determineCollectionName(query))
+    fun updateBlock(query: Query, update: Update): UpdateResult {
+        if (logger.isDebugEnabled) {
+            logger.debug("Mongo Dao updateFirst: [$query], [$update]")
         }
+        return determineMongoTemplate()
+            .updateFirst(
+                query,
+                update,
+                TBlockNode::class.java,
+                determineCollectionName(query))
+    }
 }
