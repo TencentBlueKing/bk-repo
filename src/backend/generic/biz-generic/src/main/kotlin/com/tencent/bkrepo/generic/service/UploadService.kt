@@ -146,7 +146,9 @@ class UploadService(
                 expireSeconds = TRANSACTION_EXPIRES
             )
             // 记录上传启动的日志
-            logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success, version: $uploadId.")
+            logger.info(
+                "User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success, "
+                        + "version: $uploadId.")
             return uploadTransaction
         }
     }
@@ -198,7 +200,11 @@ class UploadService(
         deleteBlockList.forEach {
             storageService.delete(it.sha256, storageCredentials)
         }
-        blockNodeService.deleteBlocks(artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath(), uploadId)
+        blockNodeService.deleteBlocks(
+            artifactInfo.projectId,
+            artifactInfo.repoName,
+            artifactInfo.getArtifactFullPath(),
+            uploadId)
     }
 
     fun completeBlockUpload(
@@ -318,7 +324,11 @@ class UploadService(
         }
     }
 
-    fun separateListBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): List<SeparateBlockInfo> {
+    fun separateListBlock(
+        userId: String,
+        uploadId: String,
+        artifactInfo: GenericArtifactInfo
+    ): List<SeparateBlockInfo> {
 
         val blockInfoList = blockNodeService.listBlocksInVersion(
             artifactInfo.projectId,
