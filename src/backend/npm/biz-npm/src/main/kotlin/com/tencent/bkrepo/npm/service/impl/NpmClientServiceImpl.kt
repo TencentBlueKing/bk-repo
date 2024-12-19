@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.CREATED
+import com.tencent.bkrepo.npm.constants.HSP_FILE_EXT
 import com.tencent.bkrepo.npm.constants.HSP_TYPE
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MODIFIED
@@ -240,17 +241,22 @@ class NpmClientServiceImpl(
         artifactInfo: NpmArtifactInfo,
         name: String,
         version: String,
-        tgzPath: String
+        tarballPath: String
     ) {
         logger.info("handling delete version [$version] request for package [$name].")
         val fullPathList = mutableListOf<String>()
-        val packageKey = PackageKeys.ofNpm(name)
+        val ohpm = ArtifactContextHolder.getRepoDetail()?.type == RepositoryType.OHPM
+        val packageKey = NpmUtils.packageKey(name, ohpm)
         with(artifactInfo) {
             // 判断package_version是否存在
-            if (tgzPath.isEmpty() || !packageVersionExist(projectId, repoName, packageKey, version)) {
+            if (tarballPath.isEmpty() || !packageVersionExist(projectId, repoName, packageKey, version)) {
                 throw NpmArtifactNotFoundException("package [$name] with version [$version] not exists.")
             }
-            fullPathList.add(tgzPath)
+            fullPathList.add(tarballPath)
+            if (ohpm) {
+                val hspPath = tarballPath.substring(0, tarballPath.length - 3) + HSP_FILE_EXT
+                fullPathList.add(hspPath)
+            }
             fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
             val context = ArtifactRemoveContext()
             // 删除包管理中对应的version

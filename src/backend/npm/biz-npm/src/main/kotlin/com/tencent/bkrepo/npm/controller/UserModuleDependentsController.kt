@@ -35,10 +35,10 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
 import com.tencent.bkrepo.npm.service.ModuleDepsService
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -68,7 +68,7 @@ class UserModuleDependentsController(
         @ApiParam(value = "资源名称", required = true)
         @RequestParam packageKey: String
     ): Response<Page<ModuleDepsInfo>> {
-        val name = PackageKeys.resolveNpm(packageKey)
+        val name = NpmUtils.resolveNameByRepoType(packageKey)
         return ResponseBuilder.success(moduleDepsService.page(projectId, repoName, pageNumber, pageSize, name))
     }
 }

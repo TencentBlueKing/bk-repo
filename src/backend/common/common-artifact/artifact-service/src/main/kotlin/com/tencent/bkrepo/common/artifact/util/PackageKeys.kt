@@ -177,6 +177,15 @@ object PackageKeys {
     }
 
     /**
+     * 解析ohpm格式的key
+     *
+     * 例子: ohpm://test  ->  test
+     */
+    fun resolveOhpm(ohpmKey: String): String {
+        return resolveName(OHPM, ohpmKey)
+    }
+
+    /**
      * 解析helm格式的key
      *
      * 例子: helm://test  ->  test

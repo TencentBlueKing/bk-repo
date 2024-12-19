@@ -44,6 +44,7 @@ import com.tencent.bkrepo.npm.pojo.user.request.PackageDeleteRequest
 import com.tencent.bkrepo.npm.pojo.user.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.npm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.npm.service.NpmWebService
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -88,7 +89,7 @@ class UserNpmController(
         @RequestParam packageKey: String
     ): Response<Void> {
         with(artifactInfo) {
-            val pkgName = PackageKeys.resolveNpm(packageKey)
+            val pkgName = NpmUtils.resolveNameByRepoType(packageKey)
             val deleteRequest = PackageDeleteRequest(
                 projectId, repoName, pkgName, userId
             )
@@ -110,7 +111,7 @@ class UserNpmController(
         @RequestParam version: String
     ): Response<Void> {
         with(artifactInfo) {
-            val pkgName = PackageKeys.resolveNpm(packageKey)
+            val pkgName = NpmUtils.resolveNameByRepoType(packageKey)
             val deleteRequest = PackageVersionDeleteRequest(
                 projectId, repoName, pkgName, version, userId
             )

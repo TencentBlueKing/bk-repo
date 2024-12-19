@@ -187,7 +187,7 @@ class NpmPackageHandler {
      * 删除包
      */
     fun deletePackage(userId: String, name: String, artifactInfo: NpmArtifactInfo) {
-        val packageKey = PackageKeys.ofNpm(name)
+        val packageKey = NpmUtils.packageKeyByRepoType(name)
         with(artifactInfo) {
             packageClient.deletePackage(projectId, repoName, packageKey, HttpContextHolder.getClientAddress()).apply {
                 logger.info("user: [$userId] delete package [$name] in repo [$projectId/$repoName] success!")
@@ -199,7 +199,7 @@ class NpmPackageHandler {
      * 删除版本
      */
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: NpmArtifactInfo) {
-        val packageKey = PackageKeys.ofNpm(name)
+        val packageKey = NpmUtils.packageKeyByRepoType(name)
         with(artifactInfo) {
             packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
                 .apply {
