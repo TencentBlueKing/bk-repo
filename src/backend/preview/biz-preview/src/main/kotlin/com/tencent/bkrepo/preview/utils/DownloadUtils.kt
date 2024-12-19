@@ -43,10 +43,8 @@ import org.springframework.http.MediaType
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
 import org.springframework.web.client.RequestCallback
 import org.springframework.web.client.RestTemplate
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileNotFoundException
-import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URL
 import java.util.UUID

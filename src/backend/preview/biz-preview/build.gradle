@@ -33,6 +33,7 @@ dependencies {
     //api(project(":common:common-generic"))
     api(project(":common:common-artifact:artifact-service"))
     api("org.dom4j:dom4j:${Versions.Dom4j}")
+    api("org.apache.httpcomponents:httpclient:${Versions.HttpClient}")
     // office转换
     api("org.jodconverter:jodconverter-local:${Versions.JodConverter}")
     // url规范化

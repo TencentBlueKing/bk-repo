@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.preview.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import com.tencent.bkrepo.preview.exception.PreviewInvalidException

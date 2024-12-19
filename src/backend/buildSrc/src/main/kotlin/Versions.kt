@@ -76,4 +76,5 @@ object Versions {
     const val Galimatias = "0.2.1"
     const val CommonsNet = "3.9.0"
     const val JuniversalCharDet = "1.0.3"
+    const val HttpClient = "4.5.13"
 }
