@@ -71,8 +71,9 @@ class ArtifactMetricsConfiguration {
 
     @Bean
     fun artifactMetricsExporter(
-        customMetricsExporter: CustomMetricsExporter? = null
+        customMetricsExporter: CustomMetricsExporter? = null,
+        artifactMetricsProperties: ArtifactMetricsProperties,
     ): ArtifactMetricsExporter {
-        return ArtifactMetricsExporter(customMetricsExporter)
+        return ArtifactMetricsExporter(customMetricsExporter, artifactMetricsProperties.allowUnknownProjectExport)
     }
 }
