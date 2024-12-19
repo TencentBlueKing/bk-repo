@@ -35,6 +35,9 @@ import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
@@ -42,6 +45,7 @@ import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_WITH_DOWNLOAD_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
+import com.tencent.bkrepo.npm.constants.OHPM_PKG_HAR_FULL_PATH
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 
 object NpmUtils {
@@ -152,5 +156,46 @@ object NpmUtils {
                 .append(SLASH).append(tgzSuffix.trimStart(SLASH))
         }
         return newTarball.toString()
+    }
+
+    fun packageKeyByRepoType(
+        name: String,
+        repoType: RepositoryType = ArtifactContextHolder.getRepoDetail()!!.type
+    ): String {
+        return if (repoType == RepositoryType.OHPM) {
+            PackageKeys.ofOhpm(name)
+        } else {
+            PackageKeys.ofNpm(name)
+        }
+    }
+
+    fun packageKey(name: String, ohpm: Boolean = false) = if (ohpm) {
+        PackageKeys.ofOhpm(name)
+    } else {
+        PackageKeys.ofNpm(name)
+    }
+
+    fun resolveNameByRepoType(
+        packageKey: String,
+        repoType: RepositoryType = ArtifactContextHolder.getRepoDetail()!!.type
+    ): String {
+        return if (repoType == RepositoryType.OHPM) {
+            PackageKeys.resolveOhpm(packageKey)
+        } else {
+            PackageKeys.resolveNpm(packageKey)
+        }
+    }
+
+    fun getTarballPathByRepoType(
+        name: String,
+        version: String,
+        pathWithDash: Boolean = true,
+        repoType: RepositoryType = ArtifactContextHolder.getRepoDetail()!!.type
+    ): String {
+        return if (repoType == RepositoryType.OHPM) {
+            OHPM_PKG_HAR_FULL_PATH.format(name, name, version)
+        } else {
+            getTgzPath(name, version, pathWithDash)
+        }
     }
 }

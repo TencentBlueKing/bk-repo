@@ -74,14 +74,14 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun detailVersion(artifactInfo: NpmArtifactInfo, packageKey: String, version: String): PackageVersionInfo {
-        val name = PackageKeys.resolveNpm(packageKey)
+        val name = NpmUtils.resolveNameByRepoType(packageKey)
         val packageMetadata = queryPackageInfo(artifactInfo, name, false)
         if (!packageMetadata.versions.map.keys.contains(version)) {
             throw NpmArtifactNotFoundException("version [$version] don't found in package [$name].")
         }
         val pathWithDash = packageMetadata.versions.map[version]?.dist?.tarball?.substringAfter(name)
             ?.contains(TGZ_FULL_PATH_WITH_DASH_SEPARATOR) ?: true
-        val fullPath = NpmUtils.getTgzPath(name, version, pathWithDash)
+        val fullPath = NpmUtils.getTarballPathByRepoType(name, version, pathWithDash)
         with(artifactInfo) {
             checkRepositoryExist(projectId, repoName)
             val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
@@ -134,11 +134,11 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 deletePackage(artifactInfo, deletePackageRequest)
                 return
             }
-            val tgzPath =
+            val tarballPath =
                 packageMetadata.versions.map[version]?.dist?.tarball?.substringAfterLast(
                     artifactInfo.getRepoIdentify()
                 ).orEmpty()
-            npmClientService.deleteVersion(artifactInfo, name, version, tgzPath)
+            npmClientService.deleteVersion(artifactInfo, name, version, tarballPath)
             // 修改package.json文件的内容
             updatePackageWithDeleteVersion(artifactInfo, this, packageMetadata)
         }
@@ -181,7 +181,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
 
     private fun findNewLatest(request: PackageVersionDeleteRequest): String {
         return with(request) {
-            packageClient.findPackageByKey(projectId, repoName, PackageKeys.ofNpm(name)).data?.latest
+            packageClient.findPackageByKey(projectId, repoName, NpmUtils.packageKeyByRepoType(name)).data?.latest
                 ?: run {
                     val message =
                         "delete version by web operator to find new latest version failed with package [$name]"

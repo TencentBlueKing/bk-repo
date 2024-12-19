@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -338,8 +339,9 @@ class NpmLocalRepository(
                 val nodeCreateRequest = buildMigrationNodeCreateRequest(context, artifactFile)
                 storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
                 // 添加依赖
+                val ohpm = context.repositoryDetail.type == RepositoryType.OHPM
                 npmDependentHandler.updatePackageDependents(
-                    context.userId, context.artifactInfo, newPackageMetaData, NpmOperationAction.MIGRATION
+                    context.userId, context.artifactInfo, newPackageMetaData, NpmOperationAction.MIGRATION, ohpm
                 )
                 artifactFile.delete()
             }

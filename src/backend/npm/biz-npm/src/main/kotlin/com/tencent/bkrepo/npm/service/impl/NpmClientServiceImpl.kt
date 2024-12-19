@@ -34,6 +34,7 @@ package com.tencent.bkrepo.npm.service.impl
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -47,6 +48,8 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.CREATED
+import com.tencent.bkrepo.npm.constants.HSP_FILE_EXT
+import com.tencent.bkrepo.npm.constants.HSP_TYPE
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -67,8 +70,10 @@ import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
+import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction.UNPUBLISH
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.metadata.disttags.DistTags
+import com.tencent.bkrepo.npm.pojo.user.OhpmDistTagRequest
 import com.tencent.bkrepo.npm.service.NpmClientService
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
@@ -194,7 +199,11 @@ class NpmClientServiceImpl(
                 "in repo [${artifactInfo.getRepoIdentify()}]"
         )
         val packageMetaData = queryPackageInfo(artifactInfo, name, false)
-        val version = objectMapper.readValue(HttpContextHolder.getRequest().inputStream, String::class.java)
+        val version = if (ArtifactContextHolder.getRepoDetail()?.type == RepositoryType.OHPM) {
+            objectMapper.readValue(HttpContextHolder.getRequest().inputStream, OhpmDistTagRequest::class.java).version
+        } else {
+            objectMapper.readValue(HttpContextHolder.getRequest().inputStream, String::class.java)
+        }
         if ((LATEST == tag && packageMetaData.versions.map.containsKey(version)) || LATEST != tag) {
             packageMetaData.distTags.getMap()[tag] = version
             doPackageFileUpload(userId, artifactInfo, packageMetaData)
@@ -232,17 +241,22 @@ class NpmClientServiceImpl(
         artifactInfo: NpmArtifactInfo,
         name: String,
         version: String,
-        tgzPath: String
+        tarballPath: String
     ) {
         logger.info("handling delete version [$version] request for package [$name].")
         val fullPathList = mutableListOf<String>()
-        val packageKey = PackageKeys.ofNpm(name)
+        val ohpm = ArtifactContextHolder.getRepoDetail()?.type == RepositoryType.OHPM
+        val packageKey = NpmUtils.packageKey(name, ohpm)
         with(artifactInfo) {
             // 判断package_version是否存在
-            if (tgzPath.isEmpty() || !packageVersionExist(projectId, repoName, packageKey, version)) {
+            if (tarballPath.isEmpty() || !packageVersionExist(projectId, repoName, packageKey, version)) {
                 throw NpmArtifactNotFoundException("package [$name] with version [$version] not exists.")
             }
-            fullPathList.add(tgzPath)
+            fullPathList.add(tarballPath)
+            if (ohpm) {
+                val hspPath = tarballPath.substring(0, tarballPath.length - 3) + HSP_FILE_EXT
+                fullPathList.add(hspPath)
+            }
             fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
             val context = ArtifactRemoveContext()
             // 删除包管理中对应的version
@@ -267,7 +281,8 @@ class NpmClientServiceImpl(
         ArtifactContextHolder.getRepository().remove(context).also {
             logger.info("userId [$userId] delete package [$name] success.")
         }
-        npmDependentHandler.updatePackageDependents(userId, artifactInfo, packageMetaData, NpmOperationAction.UNPUBLISH)
+        val ohpm = context.repositoryDetail.type == RepositoryType.OHPM
+        npmDependentHandler.updatePackageDependents(userId, artifactInfo, packageMetaData, UNPUBLISH, ohpm)
     }
 
     private fun searchLatestVersionMetadata(artifactInfo: NpmArtifactInfo, name: String): NpmVersionMetadata {
@@ -323,14 +338,17 @@ class NpmClientServiceImpl(
         artifactInfo: NpmArtifactInfo,
         npmPackageMetaData: NpmPackageMetaData
     ) {
-        val attachments = npmPackageMetaData.attachments
-        attachments ?: run {
+        if (npmPackageMetaData.attachments == null) {
             val message = "Missing attachments with tarball data, aborting upload for '${npmPackageMetaData.name}'"
             logger.warn(message)
             throw NpmBadRequestException(message)
         }
         try {
-            val size = attachments.getMap().values.iterator().next().length!!.toLong()
+            val size = npmPackageMetaData.attachments!!.getMap().values.iterator().next().length!!.toLong()
+            val ohpm = ArtifactContextHolder.getRepoDetail()!!.type == RepositoryType.OHPM
+            if (ohpm) {
+                resolveOhpm(npmPackageMetaData)
+            }
             handlerAttachmentsUpload(userId, artifactInfo, npmPackageMetaData)
             handlerPackageFileUpload(userId, artifactInfo, npmPackageMetaData, size)
             handlerVersionFileUpload(userId, artifactInfo, npmPackageMetaData, size)
@@ -338,16 +356,28 @@ class NpmClientServiceImpl(
                 userId,
                 artifactInfo,
                 npmPackageMetaData,
-                NpmOperationAction.PUBLISH
+                NpmOperationAction.PUBLISH,
+                ohpm
             )
             val versionMetadata = npmPackageMetaData.versions.map.values.iterator().next()
-            npmPackageHandler.createVersion(userId, artifactInfo, versionMetadata, size)
+            npmPackageHandler.createVersion(userId, artifactInfo, versionMetadata, size, ohpm)
         } catch (exception: IOException) {
             val version = NpmUtils.getLatestVersionFormDistTags(npmPackageMetaData.distTags)
             logger.error(
                 "userId [$userId] publish package [${npmPackageMetaData.name}] for version [$version] " +
                     "to repo [${artifactInfo.projectId}/${artifactInfo.repoName}] failed."
             )
+        }
+    }
+
+    private fun resolveOhpm(npmPackageMetaData: NpmPackageMetaData) {
+        npmPackageMetaData.versions.map.forEach {
+            val version = it.value
+            resolveOhpmHsp(version)
+            val hspType = npmPackageMetaData.any()[HSP_TYPE]?.toString()
+            if (!hspType.isNullOrEmpty()) {
+                version.set(HSP_TYPE, hspType)
+            }
         }
     }
 
@@ -358,7 +388,7 @@ class NpmClientServiceImpl(
         size: Long
     ) {
         with(artifactInfo) {
-            val packageKey = PackageKeys.ofNpm(npmPackageMetaData.name.orEmpty())
+            val packageKey = NpmUtils.packageKeyByRepoType(npmPackageMetaData.name.orEmpty())
             val gmtTime = TimeUtil.getGMTTime()
             val npmMetadata = npmPackageMetaData.versions.map.values.iterator().next()
             if (!npmMetadata.dist!!.any().containsKey(SIZE)) {
@@ -418,7 +448,8 @@ class NpmClientServiceImpl(
             val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
             val context = ArtifactUploadContext(artifactFile)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
-            context.putAttribute(ATTRIBUTE_OCTET_STREAM_SHA1, npmMetadata.dist?.shasum!!)
+            // ohpm包没有shasum字段
+            npmMetadata.dist?.shasum?.let { context.putAttribute(ATTRIBUTE_OCTET_STREAM_SHA1, it) }
             ArtifactContextHolder.getRepository().upload(context).also {
                 logger.info(
                     "user [$userId] upload npm package version metadata file [$fullPath] " +
@@ -434,10 +465,8 @@ class NpmClientServiceImpl(
         artifactInfo: NpmArtifactInfo,
         npmPackageMetaData: NpmPackageMetaData
     ) {
-        val attachmentEntry = npmPackageMetaData.attachments!!.getMap().entries.iterator().next()
         val versionMetadata = npmPackageMetaData.versions.map.values.iterator().next()
-        val fullPath = "${versionMetadata.name}/-/${attachmentEntry.key}"
-        val packageKey = PackageKeys.ofNpm(versionMetadata.name.orEmpty())
+        val packageKey = NpmUtils.packageKeyByRepoType(versionMetadata.name.orEmpty())
         val version = versionMetadata.version.orEmpty()
         with(artifactInfo) {
             // 判断包版本是否存在 如果该版本先前发布过，也不让再次发布该版本
@@ -447,18 +476,32 @@ class NpmClientServiceImpl(
                     "You cannot publish over the previously published versions: ${versionMetadata.version}."
                 )
             }
+        }
+        npmPackageMetaData.attachments!!.getMap().forEach {
+            val fullPath = "${versionMetadata.name}/-/${it.key}"
+            handlerAttachmentsUpload(userId, artifactInfo, it.value, fullPath)
+        }
+        // 将attachments移除
+        npmPackageMetaData.attachments = null
+    }
+
+    private fun handlerAttachmentsUpload(
+        userId: String,
+        artifactInfo: NpmArtifactInfo,
+        attachment: NpmPackageMetaData.Attachment,
+        fullPath: String,
+    ) {
+        with(artifactInfo) {
             logger.info("user [$userId] deploying npm package [$fullPath] into repo [$projectId/$repoName]")
             try {
-                val inputStream = tgzContentToInputStream(attachmentEntry.value.data!!)
+                val inputStream = tgzContentToInputStream(attachment.data!!)
                 val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
                 val context = ArtifactUploadContext(artifactFile)
                 context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
-                context.putAttribute("attachments.content_type", attachmentEntry.value.contentType!!)
-                context.putAttribute("attachments.length", attachmentEntry.value.length!!)
+                context.putAttribute("attachments.content_type", attachment.contentType!!)
+                context.putAttribute("attachments.length", attachment.length!!)
                 context.putAttribute("name", NPM_PACKAGE_TGZ_FILE)
                 // context.putAttribute(NPM_METADATA, buildProperties(versionMetadata))
-                // 将attachments移除
-                npmPackageMetaData.attachments = null
                 ArtifactContextHolder.getRepository().upload(context)
                 artifactFile.delete()
             } catch (exception: IOException) {

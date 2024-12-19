@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
+import com.tencent.bkrepo.npm.constants.OHPM_PKG_HAR_FULL_PATH
 import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
@@ -139,22 +140,23 @@ class NpmPackageHandler {
         userId: String,
         artifactInfo: NpmArtifactInfo,
         versionMetaData: NpmVersionMetadata,
-        size: Long
+        size: Long,
+        ohpm: Boolean
     ) {
         versionMetaData.apply {
             val name = this.name!!
             val description = this.description
             val version = this.version!!
             val manifestPath = getManifestPath(name, version)
-            val contentPath = getContentPath(name, version)
+            val contentPath = getContentPath(name, version, ohpm)
             val metadata = buildProperties(this)
             with(artifactInfo) {
                 val packageVersionCreateRequest = PackageVersionCreateRequest(
                     projectId = projectId,
                     repoName = repoName,
                     packageName = name,
-                    packageKey = PackageKeys.ofNpm(name),
-                    packageType = PackageType.NPM,
+                    packageKey = NpmUtils.packageKey(name, ohpm),
+                    packageType = if (ohpm)  PackageType.OHPM else PackageType.NPM,
                     packageDescription = description,
                     versionName = version,
                     size = size,
@@ -185,7 +187,7 @@ class NpmPackageHandler {
      * 删除包
      */
     fun deletePackage(userId: String, name: String, artifactInfo: NpmArtifactInfo) {
-        val packageKey = PackageKeys.ofNpm(name)
+        val packageKey = NpmUtils.packageKeyByRepoType(name)
         with(artifactInfo) {
             packageClient.deletePackage(projectId, repoName, packageKey, HttpContextHolder.getClientAddress()).apply {
                 logger.info("user: [$userId] delete package [$name] in repo [$projectId/$repoName] success!")
@@ -197,7 +199,7 @@ class NpmPackageHandler {
      * 删除版本
      */
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: NpmArtifactInfo) {
-        val packageKey = PackageKeys.ofNpm(name)
+        val packageKey = NpmUtils.packageKeyByRepoType(name)
         with(artifactInfo) {
             packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
                 .apply {
@@ -213,8 +215,13 @@ class NpmPackageHandler {
         return NpmUtils.getVersionPackageMetadataPath(name, version)
     }
 
-    fun getContentPath(name: String, version: String): String {
-        return String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
+    fun getContentPath(name: String, version: String, ohpm: Boolean): String {
+        val format = if (ohpm) {
+            OHPM_PKG_HAR_FULL_PATH
+        } else {
+            NPM_PKG_TGZ_FULL_PATH
+        }
+        return String.format(format, name, name, version)
     }
 
     companion object {

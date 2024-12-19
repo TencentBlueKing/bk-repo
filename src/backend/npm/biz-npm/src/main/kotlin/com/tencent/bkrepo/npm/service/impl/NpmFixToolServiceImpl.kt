@@ -394,7 +394,7 @@ class NpmFixToolServiceImpl(
 		 * 处理时注意tag处理，如果tag关联的版本不存在，删除该tag，如果是latest版本删除了则需要重新找个最新版本为latest版本
 		 */
 		with(artifactInfo) {
-			val packageKey = PackageKeys.ofNpm(name)
+			val packageKey = NpmUtils.packageKeyByRepoType(name)
 			val packageSummary = packageClient.findPackageByKey(projectId, repoName, packageKey).data
 				?: throw PackageNotFoundException("package [$name] not found")
 			val packageInfo = queryPackageInfo(this, name, false)

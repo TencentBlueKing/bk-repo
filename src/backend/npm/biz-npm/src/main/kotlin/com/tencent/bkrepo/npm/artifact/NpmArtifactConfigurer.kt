@@ -36,12 +36,15 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.exception.ExceptionResponseTranslator
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.npm.artifact.repository.NpmLocalRepository
 import com.tencent.bkrepo.npm.artifact.repository.NpmRemoteRepository
 import com.tencent.bkrepo.npm.artifact.repository.NpmVirtualRepository
 import com.tencent.bkrepo.npm.pojo.NpmErrorResponse
+import com.tencent.bkrepo.npm.pojo.OhpmResponse
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 import org.springframework.stereotype.Component
@@ -49,6 +52,7 @@ import org.springframework.stereotype.Component
 @Component
 class NpmArtifactConfigurer : ArtifactConfigurerSupport() {
 
+    override fun getRepositoryTypes() = listOf(RepositoryType.OHPM)
     override fun getRepositoryType() = RepositoryType.NPM
     override fun getLocalRepository() = SpringContextUtils.getBean<NpmLocalRepository>()
     override fun getRemoteRepository() = SpringContextUtils.getBean<NpmRemoteRepository>()
@@ -62,7 +66,11 @@ class NpmArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
-            return NpmErrorResponse(payload.message.orEmpty(), StringPool.EMPTY)
+            return if (ArtifactContextHolder.getRepoDetailOrNull()?.type == RepositoryType.OHPM) {
+                OhpmResponse.error(HttpContextHolder.getResponse().status, payload.message.orEmpty())
+            } else {
+                NpmErrorResponse(payload.message.orEmpty(), StringPool.EMPTY)
+            }
         }
     }
 }
