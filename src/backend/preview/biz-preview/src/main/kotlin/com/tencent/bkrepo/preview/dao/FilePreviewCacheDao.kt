@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,20 +29,27 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.preview.pojo
+package com.tencent.bkrepo.preview.dao
 
-/**
- * 下载结果
- */
-data class DownloadResult(
-    var code: Int = CODE_SUCCESS,
-    var filePath: String? = null,
-    var msg: String? = null,
-    var size: Long = 0,
-    var md5: String? = null
-) {
-    companion object {
-        const val CODE_SUCCESS = 0
-        const val CODE_FAIL = 1
+import com.mongodb.client.result.DeleteResult
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.preview.model.TPreviewFileCache
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
+
+@Repository
+class FilePreviewCacheDao : SimpleMongoDao<TPreviewFileCache>() {
+    /**
+     * 按md5查找
+     */
+    fun findByMd5(md5: String): TPreviewFileCache? {
+        return this.findOne(Query(TPreviewFileCache::md5.isEqualTo(md5)))
+    }
+    /**
+     * 按md5删除
+     */
+    fun removeByMd5(md5: String): DeleteResult {
+        return this.remove(Query(TPreviewFileCache::md5.isEqualTo(md5)))
     }
 }

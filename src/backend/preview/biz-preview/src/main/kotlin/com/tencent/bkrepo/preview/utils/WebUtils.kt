@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.preview.utils
 
 import io.mola.galimatias.GalimatiasParseException
+import javax.servlet.ServletRequest
+import javax.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.util.Base64Utils
 import org.springframework.util.StringUtils
@@ -43,10 +45,8 @@ import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.HashMap
 import java.util.regex.Pattern
-import javax.servlet.ServletRequest
-import javax.servlet.http.HttpServletRequest
 
 object WebUtils {
     private val logger = LoggerFactory.getLogger(WebUtils::class.java)

@@ -54,19 +54,23 @@ data class FileAttribute (
     var url: String? = null,
 
     // 文件的md5
-    val md5: String? = null,
+    var md5: String? = null,
 
-    // baseUrl
-    var baseUrl: String? = null,
+    // 文件大小（byte）
+    var size: Long = 0,
 
     // office预览类型（image / pdf)
     val officePreviewType: String = "pdf",
 
-    // 转换后的文件名
+    // 转换后的文件路径
     var outFilePath: String? = null,
-    val originFilePath: String? = null,
-    val cacheListName: String? = null,
+    // 下载文件保存路径
+    var originFilePath: String? = null,
+    // 转换后的文件名
     var convertFileName: String? = null,
+
+    // 最终文件临时路径
+    var finalFilePath: String? = null,
 
     // xlsx是否转成html
     var isHtmlView: Boolean = false,

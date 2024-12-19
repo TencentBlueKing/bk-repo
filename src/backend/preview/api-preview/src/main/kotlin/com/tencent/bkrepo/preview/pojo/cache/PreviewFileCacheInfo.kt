@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,20 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.preview.pojo
+package com.tencent.bkrepo.preview.pojo.cache
 
-/**
- * 下载结果
- */
-data class DownloadResult(
-    var code: Int = CODE_SUCCESS,
-    var filePath: String? = null,
-    var msg: String? = null,
-    var size: Long = 0,
-    var md5: String? = null
-) {
-    companion object {
-        const val CODE_SUCCESS = 0
-        const val CODE_FAIL = 1
-    }
-}
+import io.swagger.annotations.ApiModel
+import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
+
+@ApiModel("预览缓存信息")
+data class PreviewFileCacheInfo(
+    @ApiModelProperty("文件md5")
+    var md5: String,
+    @ApiModelProperty("项目id")
+    val projectId: String,
+    @ApiModelProperty("仓库Name")
+    val repoName: String,
+    @ApiModelProperty("文件路径")
+    val fullPath: String,
+    @ApiModelProperty("创建时间")
+    val createdDate: LocalDateTime? = null,
+)

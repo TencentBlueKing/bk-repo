@@ -32,8 +32,8 @@
 package com.tencent.bkrepo.preview.config.configuration
 
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
-import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.preview.config.PreviewArtifactResourceWriter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

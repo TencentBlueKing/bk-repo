@@ -194,6 +194,26 @@ object FileUtils {
     }
 
     /**
+     * 删除当前文件，同时如果当前目录为空，父目录也删除
+     */
+    fun deleteFileAndParentDirectory(filePath: String): Boolean {
+        val file = File(filePath)
+        if (file.exists()) {
+            val deletedFile = file.delete()
+            logger.debug("File deleted: $deletedFile")
+            val parentDir = file.parentFile
+            // 删除上一层目录（如果是空目录）
+            if (parentDir?.exists() == true && parentDir.list().isNullOrEmpty()) {
+                val deletedDir = parentDir.delete()
+                logger.debug("Parent directory deleted: $deletedDir")
+            }
+        } else {
+            logger.warn("File does not exist,path: $filePath")
+        }
+        return true
+    }
+
+    /**
      * 判断文件是否允许上传
      *
      * @param file 文件扩展名

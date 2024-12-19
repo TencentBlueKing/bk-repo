@@ -34,29 +34,19 @@ package com.tencent.bkrepo.preview.controller
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.preview.pojo.PreviewOptions
-import com.tencent.bkrepo.preview.pojo.Watermark
 import com.tencent.bkrepo.preview.service.CommonResourceService
+import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class CommonResourceController(private val resourceService: CommonResourceService) {
 
     /**
-     * 获取水印
-     */
-    @GetMapping("/api/common/getWatermark")
-    fun getWatermark(
-        @RequestParam("extraParam", required = false) extraParams: String?
-    ): Response<Watermark> {
-        return ResponseBuilder.success(resourceService.decodeAndParseWatermark(extraParams))
-    }
-
-    /**
-     * 获取预览属性
+     * 获取预览通用属性
      */
     @GetMapping("/api/common/getOptions")
+    @CrossOrigin
     fun getPreviewOptions(): Response<PreviewOptions> {
         return ResponseBuilder.success(resourceService.getPreviewOptions())
     }

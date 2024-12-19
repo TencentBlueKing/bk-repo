@@ -29,17 +29,32 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.preview.exception
+package com.tencent.bkrepo.preview.model
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.MessageCode
-import com.tencent.bkrepo.preview.constant.PreviewMessageCode
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
 /**
- * 文件处理异常
+ * 预览文件缓存
  */
-open class PreviewHandleException(
-    messageCode: MessageCode = PreviewMessageCode.PREVIEW_FIlE_HANDLE_ERROR,
-    param: String
-) : ErrorCodeException(HttpStatus.INTERNAL_SERVER_ERROR, messageCode, arrayOf(param))
+@Document("preview_file_cache")
+@CompoundIndexes(
+    CompoundIndex(name = "md5_idx", def = "{'md5': 1}", unique = true, background = true),
+    CompoundIndex(name = "created_date_idx", def = "{'createdDate': -1}", background = true)
+)
+data class TPreviewFileCache(
+    // 主键id
+    var id: String? = null,
+    // 文件MD5值
+    var md5: String,
+    // 项目id
+    var projectId: String,
+    // 仓库名称
+    var repoName: String,
+    // 文件路径
+    var fullPath: String,
+    // 记录创建时间
+    var createdDate: LocalDateTime
+)

@@ -31,48 +31,18 @@
 
 package com.tencent.bkrepo.preview.service.impl
 
+import com.tencent.bkrepo.preview.constant.PreviewMessageCode
+import com.tencent.bkrepo.preview.exception.PreviewSystemException
 import com.tencent.bkrepo.preview.pojo.FileAttribute
-import com.tencent.bkrepo.preview.utils.FileUtils.htmlEscape
 import com.tencent.bkrepo.preview.service.FilePreview
-import com.tencent.bkrepo.preview.pojo.PreviewInfo
 import org.springframework.stereotype.Service
 
+/**
+ * 不支持的文件类型
+ */
 @Service
 class OtherFilePreviewImpl : FilePreview {
-    override fun filePreviewHandle(fileAttribute: FileAttribute, previewInfo: PreviewInfo): PreviewInfo {
-        return this.notSupportedFile(fileAttribute,
-            previewInfo,
-            "The system does not yet support online preview of files in this format"
-        )
-    }
-
-    /**
-     * 通用的预览失败，导向到不支持的文件响应页面
-     *
-     * @return 页面
-     */
-    fun notSupportedFile(fileAttribute: FileAttribute, previewInfo: PreviewInfo, errMsg: String?): PreviewInfo {
-        return this.notSupportedFile(previewInfo, fileAttribute.suffix!!, errMsg)
-    }
-
-    /**
-     * 通用的预览失败，导向到不支持的文件响应页面
-     *
-     * @return 页面
-     */
-    fun notSupportedFile(previewInfo: PreviewInfo, errMsg: String?): PreviewInfo {
-        return this.notSupportedFile(previewInfo, "Unknown", errMsg)
-    }
-
-    /**
-     * 通用的预览失败，导向到不支持的文件响应页面
-     *
-     * @return 页面
-     */
-    fun notSupportedFile(previewInfo: PreviewInfo, fileType: String, errMsg: String?): PreviewInfo {
-        previewInfo.msg = htmlEscape(errMsg?:"")
-        previewInfo.fileTemplate = FilePreview.NOT_SUPPORTED_FILE_PAGE
-        previewInfo.fileType = htmlEscape(fileType)
-        return previewInfo
+    override fun filePreviewHandle(fileAttribute: FileAttribute) {
+        throw PreviewSystemException(PreviewMessageCode.PREVIEW_FILE_NOT_SUPPORT_ERROR, fileAttribute.suffix!!)
     }
 }

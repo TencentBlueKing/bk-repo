@@ -127,6 +127,7 @@ enum class FileType(val instanceName: String) {
             "brep"
         )
         private val EML_TYPES = arrayOf("eml")
+        private val MEDIA_TYPES = arrayOf("mp3", "wav", "mp4", "flv")
         private val XMIND_TYPES = arrayOf("xmind")
         private val EPUB_TYPES = arrayOf("epub")
         private val DCM_TYPES = arrayOf("dcm")
@@ -161,6 +162,31 @@ enum class FileType(val instanceName: String) {
             "jsp",
             "sql"
         )
+        private val SSIM_TEXT_TYPES = arrayOf(
+            "txt",
+            "html",
+            "htm",
+            "asp",
+            "jsp",
+            "xml",
+            "json",
+            "properties",
+            "md",
+            "gitignore",
+            "log",
+            "java",
+            "py",
+            "c",
+            "cpp",
+            "sql",
+            "sh",
+            "bat",
+            "m",
+            "bas",
+            "prg",
+            "cmd",
+            "xbrl"
+        )
 
         private val FILE_TYPE_MAPPER = mutableMapOf<String, FileType>()
 
@@ -169,16 +195,18 @@ enum class FileType(val instanceName: String) {
             PICTURE_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = PICTURE }
             ARCHIVE_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = COMPRESS }
             TIFF_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = TIFF }
-            CODES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = CODE }
             OFD_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = OFD }
             CAD_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = CAD }
             SVG_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = SVG }
             EPUB_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = EPUB }
             EML_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = EML }
+            MEDIA_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = MEDIA }
             XMIND_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = XMIND }
             ONLINE3D_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = ONLINE3D }
             DCM_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = DCM }
             DRAWIO_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = DRAWIO }
+            SSIM_TEXT_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = SIMTEXT }
+            CODES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = CODE }
             XML_TYPES.forEach { fileType -> FILE_TYPE_MAPPER[fileType] = XML }
             FILE_TYPE_MAPPER["md"] = MARKDOWN
             FILE_TYPE_MAPPER["pdf"] = PDF

@@ -31,23 +31,34 @@
 
 package com.tencent.bkrepo.preview.config
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
+import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.resolve.response.AbstractArtifactResourceHandler
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
+import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
+import com.tencent.bkrepo.preview.constant.PREVIEW_ARTIFACT_TO_FILE
 import com.tencent.bkrepo.preview.constant.PREVIEW_TMP_FILE_SAVE_PATH
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * preview制品响应输出，下载到临时目录
@@ -66,10 +77,57 @@ class PreviewArtifactResourceWriter(
     override fun write(resource: ArtifactResource): Throughput {
         responseRateLimitCheck()
         downloadRateLimitCheck(resource)
-        return writeArtifact(resource)
+        val request = HttpContextHolder.getRequest()
+        var toFile = request.getAttribute(PREVIEW_ARTIFACT_TO_FILE)
+        return if (toFile as Boolean) {
+            return writeSingleArtifactToFile(resource)
+        } else {
+            TraceHeaderUtils.setResponseHeader()
+            writeSingleArtifactToResponse(resource)
+        }
     }
 
-    private fun writeArtifact(resource: ArtifactResource): Throughput {
+    /**
+     * 响应输出
+     */
+    private fun writeSingleArtifactToResponse(resource: ArtifactResource): Throughput {
+        val request = HttpContextHolder.getRequest()
+        val response = HttpContextHolder.getResponse()
+        val name = resource.getSingleName()
+        val range = resource.getSingleStream().range
+        val cacheControl = resource.node?.metadata?.get(HttpHeaders.CACHE_CONTROL)?.toString()
+            ?: resource.node?.metadata?.get(HttpHeaders.CACHE_CONTROL.lowercase(Locale.getDefault()))?.toString()
+            ?: StringPool.NO_CACHE
+
+        response.bufferSize = getBufferSize(range.length)
+        val mediaType = resource.contentType ?: HttpHeaderUtils.determineMediaType(
+            name,
+            storageProperties.response.mimeMappings
+        )
+        response.characterEncoding = resource.characterEncoding
+        response.contentType = mediaType
+        response.status = resource.status?.value ?: resolveStatus(request)
+        response.setContentLengthLong(range.length)
+        response.setHeader(HttpHeaders.ACCEPT_RANGES, StringPool.BYTES)
+        response.setHeader(HttpHeaders.CACHE_CONTROL, cacheControl)
+        response.setHeader(HttpHeaders.CONTENT_RANGE, "${StringPool.BYTES} $range")
+        if (resource.useDisposition) {
+            response.setHeader(HttpHeaders.CONTENT_DISPOSITION, HttpHeaderUtils.encodeDisposition(name))
+        }
+
+        resource.node?.let {
+            response.setHeader(HttpHeaders.ETAG, it.sha256)
+            response.setHeader(X_CHECKSUM_MD5, it.md5)
+            response.setHeader(X_CHECKSUM_SHA256, it.sha256)
+            response.setDateHeader(HttpHeaders.LAST_MODIFIED, resolveLastModified(it.lastModifiedDate))
+        }
+        return writeRangeStream(resource, request, response)
+    }
+
+    /**
+     * 写到文件
+     */
+    private fun writeSingleArtifactToFile(resource: ArtifactResource): Throughput {
         val request = HttpContextHolder.getRequest()
         var filePath = request.getAttribute(PREVIEW_TMP_FILE_SAVE_PATH)
         val inputStream = resource.getSingleStream()
@@ -89,7 +147,13 @@ class PreviewArtifactResourceWriter(
 
                 stream.use { input ->
                     // 写入到临时文件
-                    File(filePath!!.toString()).outputStream().use { fileOutput ->
+                    val file = File(filePath!!.toString())
+                    file.parentFile?.let { parentDir ->
+                        if (!parentDir.exists()) {
+                            parentDir.mkdirs()
+                        }
+                    }
+                    file.outputStream().use { fileOutput ->
                         input.copyTo(fileOutput, bufferSize = getBufferSize(length))
                     }
                 }
@@ -107,6 +171,14 @@ class PreviewArtifactResourceWriter(
                 requestLimitCheckService.bandwidthFinish(exp)
             }
         }
+    }
+
+    /**
+     * 解析last modified
+     */
+    private fun resolveLastModified(lastModifiedDate: String): Long {
+        val localDateTime = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME)
+        return localDateTime.atZone(ZoneOffset.systemDefault()).toInstant().toEpochMilli()
     }
 
     companion object {

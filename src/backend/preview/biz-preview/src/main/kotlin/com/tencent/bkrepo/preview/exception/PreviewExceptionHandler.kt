@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.preview.pojo.PreviewInfo
-import com.tencent.bkrepo.preview.service.FilePreview
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpStatus
@@ -62,9 +61,9 @@ class PreviewExceptionHandler {
     /**
      * 文件处理异常
      */
-    @ExceptionHandler(PreviewHandleException::class)
+    @ExceptionHandler(PreviewSystemException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun handleException(exception: PreviewHandleException) : Response<PreviewInfo> {
+    fun handleException(exception: PreviewSystemException) : Response<PreviewInfo> {
         return previewResponse(exception)
     }
 
@@ -78,10 +77,7 @@ class PreviewExceptionHandler {
     }
 
     private fun previewResponse(exception: ErrorCodeException) : Response<PreviewInfo> {
-        val previewInfo = PreviewInfo()
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
-        previewInfo.fileTemplate = FilePreview.NOT_SUPPORTED_FILE_PAGE
-        previewInfo.msg = errorMessage
-        return ResponseBuilder.build(exception.messageCode.getCode(), errorMessage ,previewInfo)
+        return ResponseBuilder.build(exception.messageCode.getCode(), errorMessage, null)
     }
 }
