@@ -72,6 +72,7 @@ import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction.UNPUBLISH
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.metadata.disttags.DistTags
+import com.tencent.bkrepo.npm.pojo.user.OhpmDistTagRequest
 import com.tencent.bkrepo.npm.service.NpmClientService
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
@@ -197,7 +198,11 @@ class NpmClientServiceImpl(
                 "in repo [${artifactInfo.getRepoIdentify()}]"
         )
         val packageMetaData = queryPackageInfo(artifactInfo, name, false)
-        val version = objectMapper.readValue(HttpContextHolder.getRequest().inputStream, String::class.java)
+        val version = if (ArtifactContextHolder.getRepoDetail()?.type == RepositoryType.OHPM) {
+            objectMapper.readValue(HttpContextHolder.getRequest().inputStream, OhpmDistTagRequest::class.java).version
+        } else {
+            objectMapper.readValue(HttpContextHolder.getRequest().inputStream, String::class.java)
+        }
         if ((LATEST == tag && packageMetaData.versions.map.containsKey(version)) || LATEST != tag) {
             packageMetaData.distTags.getMap()[tag] = version
             doPackageFileUpload(userId, artifactInfo, packageMetaData)

@@ -193,9 +193,12 @@ class NpmClientController(
     /**
      * npm dist-tag add
      */
-    @PutMapping(
-        "/{projectId}/{repoName}/-/package/{name}/dist-tags/{tag}",
-        "/{projectId}/{repoName}/-/package/@{scope}/{name}/dist-tags/{tag}"
+    @RequestMapping(
+        method = [RequestMethod.POST, RequestMethod.PUT],
+        path = [
+            "/{projectId}/{repoName}/-/package/{name}/dist-tags/{tag}",
+            "/{projectId}/{repoName}/-/package/@{scope}/{name}/dist-tags/{tag}"
+        ]
     )
     fun addDistTags(
         @RequestAttribute userId: String,
