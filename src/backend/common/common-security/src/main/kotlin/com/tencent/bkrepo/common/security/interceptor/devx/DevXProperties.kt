@@ -79,7 +79,7 @@ data class DevXProperties(
     var projectCvmWhiteList: Map<String, Set<String>> = emptyMap(),
     /**
      * 配置可以被访问的项目
-     * key 为项目ip， value为可被访问的项目ip
+     * key 为项目id， value为可被访问的项目id
      */
     var projectWhiteList: Map<String, Set<String>> = emptyMap(),
     /**
