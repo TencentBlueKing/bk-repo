@@ -96,7 +96,7 @@ class PreviewConfig {
      * openoffice 或 LibreOffice 的 home 路径
      */
     @Value("\${preview.office.home:/opt/libreoffice7.6}")
-    val officeHome: String? = null
+    val officeHome: String = "/opt/libreoffice7.6"
 
     /**
      * office 转换服务的端口，默认开启两个进程
