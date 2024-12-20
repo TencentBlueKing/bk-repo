@@ -69,6 +69,7 @@ const val REPLICA_TYPE = "replicaType"
 const val NAME = "name"
 const val SIZE = "size"
 const val NODE_NUM = "nodeNum"
+const val PACKAGE_ID = "packageId"
 
 
 /**
@@ -115,3 +116,9 @@ const val SEPARATION_TASK_COLLECTION_NAME = "separation_task"
 
 const val PACKAGE_VERSION = "version"
 const val PACKAGE_DOWNLOAD_DATE = "date"
+
+/**
+ * 记录备份
+ */
+const val DATA_RECORDS_BACKUP = "DATA_BACKUP"
+const val DATA_RECORDS_RESTORE = "DATA_RESTORE"
