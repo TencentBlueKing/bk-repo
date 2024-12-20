@@ -80,12 +80,6 @@ class PreviewConfig {
     val maxFileSize: Long = 50
 
     /**
-     * 前端baseUrl
-     */
-    @Value("\${preview.frontendBaseUrl}")
-    val frontendBaseUrl: String? = null
-
-    /**
      * 是否删除临时文件
      */
     @Value("\${preview.isDeleteTmpFile:true}")
@@ -101,7 +95,7 @@ class PreviewConfig {
     /**
      * openoffice 或 LibreOffice 的 home 路径
      */
-    @Value("\${preview.office.home:}")
+    @Value("\${preview.office.home:/opt/libreoffice7.6}")
     val officeHome: String? = null
 
     /**

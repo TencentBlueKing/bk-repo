@@ -110,33 +110,46 @@ class OfficeFilePreviewImpl(
      * 把文件改成utf8编码
      */
     private fun changeFileEncoding(outFilePath: String) {
-        // 获取文件的编码方式
-        val charset = EncodingDetects.getJavaEncode(outFilePath)
-        val sb = StringBuilder()
         try {
-            FileInputStream(outFilePath).use { inputStream ->
-                BufferedReader(InputStreamReader(inputStream, charset)).use { reader ->
-                    var line: String?
-                    while (reader.readLine().also { line = it } != null) {
-                        // 替换charset为 utf-8
-                        sb.append(line?.replace("charset=gb2312", "charset=utf-8") ?: line)
-                    }
-                }
-            }
-
+            // 获取文件的编码方式
+            val charset = EncodingDetects.getJavaEncode(outFilePath)
+            // 读取文件内容并替换 charset
+            val fileContent = readFileWithEncoding(outFilePath, charset!!)
             // 添加额外的 HTML 控制头
-            sb.append("<script src=\"js/jquery-3.6.1.min.js\" type=\"text/javascript\"></script>")
-            sb.append("<script src=\"excel/excel.header.js\" type=\"text/javascript\"></script>")
-            sb.append("<link rel=\"stylesheet\" href=\"excel/excel.css\">")
-
+            val updatedContent = addHtmlHeaders(fileContent)
             // 重新写入文件，采用 UTF-8 编码
-            FileOutputStream(outFilePath).use { fos ->
-                BufferedWriter(OutputStreamWriter(fos, StandardCharsets.UTF_8)).use { writer ->
-                    writer.write(sb.toString())
-                }
-            }
+            writeFileWithUtf8(outFilePath, updatedContent)
         } catch (e: IOException) {
             logger.error("Error changing the encoding of the file", e)
+        }
+    }
+
+    private fun readFileWithEncoding(outFilePath: String, charset: String): String {
+        val sb = StringBuilder()
+        FileInputStream(outFilePath).use { inputStream ->
+            BufferedReader(InputStreamReader(inputStream, charset)).use { reader ->
+                var line: String?
+                while (reader.readLine().also { line = it } != null) {
+                    sb.append(line?.replace("charset=gb2312", "charset=utf-8") ?: line)
+                }
+            }
+        }
+        return sb.toString()
+    }
+
+    private fun addHtmlHeaders(content: String): String {
+        val sb = StringBuilder(content)
+        sb.append("<script src=\"js/jquery-3.6.1.min.js\" type=\"text/javascript\"></script>")
+        sb.append("<script src=\"excel/excel.header.js\" type=\"text/javascript\"></script>")
+        sb.append("<link rel=\"stylesheet\" href=\"excel/excel.css\">")
+        return sb.toString()
+    }
+
+    private fun writeFileWithUtf8(outFilePath: String, content: String) {
+        FileOutputStream(outFilePath).use { fos ->
+            BufferedWriter(OutputStreamWriter(fos, StandardCharsets.UTF_8)).use { writer ->
+                writer.write(content)
+            }
         }
     }
 

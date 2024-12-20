@@ -1,2 +1,3 @@
 spring.application.name: preview
 server.port: 25822
+office.home: ${preview.office.home:/opt/libreoffice7.6}
