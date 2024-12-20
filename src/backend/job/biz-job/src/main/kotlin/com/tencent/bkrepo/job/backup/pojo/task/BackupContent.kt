@@ -55,5 +55,7 @@
 package com.tencent.bkrepo.job.backup.pojo.task
 
 data class BackupContent(
+    var commonData: Boolean = false,
+    var compression: Boolean = false,
     var projects: MutableList<ProjectContentInfo>? = null,
 )

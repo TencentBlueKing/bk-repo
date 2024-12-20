@@ -28,9 +28,8 @@
 package com.tencent.bkrepo.job.backup.service
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.job.backup.pojo.query.VersionBackupInfo
+import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
-import org.springframework.data.mongodb.core.query.Criteria
 
 /**
  * 不同依赖源特有数据备份或者恢复
@@ -48,12 +47,7 @@ interface BackupRepoSpecialDataService {
     fun extraType(): RepositoryType?
 
     /**
-     * 根据版本信息获取对应node查询信息
+     * 查找仓库要恢复的特殊数据类型
      */
-    fun getNodeCriteriaOfVersion(versionBackupInfo: VersionBackupInfo): Criteria
-
-    /**
-     * 备份仓库特有的数据
-     */
-    fun storeRepoSpecialData(versionBackupInfo: VersionBackupInfo, context: BackupContext)
+    fun getRepoSpecialDataEnum(context: BackupContext): List<BackupDataEnum>
 }

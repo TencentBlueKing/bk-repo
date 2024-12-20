@@ -29,10 +29,9 @@ package com.tencent.bkrepo.job.backup.service.impl.repo
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.job.backup.pojo.query.VersionBackupInfo
+import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import com.tencent.bkrepo.job.backup.service.BackupRepoSpecialDataService
-import org.springframework.data.mongodb.core.query.Criteria
 
 object BackupRepoSpecialMappings {
 
@@ -47,14 +46,8 @@ object BackupRepoSpecialMappings {
         mapper.extraType()?.let { mappers[mapper.extraType()!!] = mapper }
     }
 
-    fun getNodeCriteriaOfVersion(versionBackupInfo: VersionBackupInfo): Criteria? {
-        val mapper = mappers[versionBackupInfo.type] ?: return null
-        return mapper.getNodeCriteriaOfVersion(versionBackupInfo)
+    fun getRepoSpecialDataEnum(context: BackupContext): List<BackupDataEnum>? {
+        val mapper = mappers[context.currentRepositoryType] ?: return null
+        return mapper.getRepoSpecialDataEnum(context)
     }
-
-    fun storeRepoSpecialData(versionBackupInfo: VersionBackupInfo, context: BackupContext) {
-        val mapper = mappers[versionBackupInfo.type] ?: return
-        return mapper.storeRepoSpecialData(versionBackupInfo, context)
-    }
-
 }

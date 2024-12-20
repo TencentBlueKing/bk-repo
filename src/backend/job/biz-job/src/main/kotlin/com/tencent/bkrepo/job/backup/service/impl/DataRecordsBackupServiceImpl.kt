@@ -2,52 +2,23 @@ package com.tencent.bkrepo.job.backup.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.EscapeUtils
-import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
-import com.tencent.bkrepo.common.artifact.manager.StorageManager
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.constant.ID_IDX
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
-import com.tencent.bkrepo.common.storage.message.StorageErrorException
-import com.tencent.bkrepo.common.storage.message.StorageMessageCode
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.BATCH_SIZE
-import com.tencent.bkrepo.job.DELETED_DATE
-import com.tencent.bkrepo.job.NAME
-import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
-import com.tencent.bkrepo.job.PACKAGE_ID
-import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
 import com.tencent.bkrepo.job.PROJECT
-import com.tencent.bkrepo.job.PROJECT_COLLECTION_NAME
-import com.tencent.bkrepo.job.REPO_COLLECTION_NAME
-import com.tencent.bkrepo.job.STORAGE_CREDENTIALS_COLLECTION_NAME
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
 import com.tencent.bkrepo.job.backup.pojo.BackupTaskState
-import com.tencent.bkrepo.job.backup.pojo.query.BackupNodeInfo
-import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageInfo
-import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageVersionInfo
-import com.tencent.bkrepo.job.backup.pojo.query.BackupPackageVersionInfoWithKeyInfo
-import com.tencent.bkrepo.job.backup.pojo.query.BackupProjectInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupRepositoryInfo
-import com.tencent.bkrepo.job.backup.pojo.query.BackupStorageCredentials
-import com.tencent.bkrepo.job.backup.pojo.query.VersionBackupInfo
-import com.tencent.bkrepo.job.backup.pojo.query.common.BackupAccount
-import com.tencent.bkrepo.job.backup.pojo.query.common.BackupPermission
-import com.tencent.bkrepo.job.backup.pojo.query.common.BackupRole
-import com.tencent.bkrepo.job.backup.pojo.query.common.BackupTemporaryToken
-import com.tencent.bkrepo.job.backup.pojo.query.common.BackupUser
+import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum
+import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum.Companion.PRIVATE_TYPE
+import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum.Companion.PUBLIC_TYPE
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import com.tencent.bkrepo.job.backup.pojo.task.ProjectContentInfo
 import com.tencent.bkrepo.job.backup.service.DataRecordsBackupService
-import com.tencent.bkrepo.job.backup.service.impl.repo.BackupRepoSpecialMappings
+import com.tencent.bkrepo.job.backup.service.impl.base.BackupDataMappings
 import com.tencent.bkrepo.job.backup.util.ZipFileUtil
-import com.tencent.bkrepo.job.separation.util.SeparationUtils
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
@@ -64,7 +35,6 @@ import java.time.format.DateTimeFormatter
 @Service
 class DataRecordsBackupServiceImpl(
     private val mongoTemplate: MongoTemplate,
-    private val storageManager: StorageManager,
     private val backupTaskDao: BackupTaskDao,
 ) : DataRecordsBackupService, BaseService() {
     override fun projectDataBackup(context: BackupContext) {
@@ -76,18 +46,17 @@ class DataRecordsBackupServiceImpl(
             if (task.content == null || task.content!!.projects.isNullOrEmpty()) return
             initStorage(context)
             // 备份公共基础数据
-            commonDataBackup(context)
-
-            // 备份业务数据
-            for (projectFilterInfo in task.content!!.projects!!) {
-                if (!checkProjectParams(projectFilterInfo)) continue
-                val criteria = buildProjectCriteria(projectFilterInfo)
-                context.currrentProjectInfo = projectFilterInfo
-                queryResult(criteria, BackupProjectInfo::class.java, PROJECT_COLLECTION_NAME, context)
+            if (task.content!!.commonData) {
+                commonDataBackup(context)
             }
-            // TODO 最后需要进行压缩
+            // 备份业务数据
+            customDataBackup(context)
+            //  最后进行压缩
+            if (task.content!!.compression) {
+                ZipFileUtil.compressDirectory(targertPath.toString(), buildZipFileName(context))
+                // TODO 最后需要删除目录
+            }
             backupTaskDao.updateState(taskId, BackupTaskState.FINISHED, endDate = LocalDateTime.now())
-            ZipFileUtil.compressDirectory(targertPath.toString(), buildZipFileName(context))
         }
     }
 
@@ -102,209 +71,20 @@ class DataRecordsBackupServiceImpl(
     }
 
     private fun commonDataBackup(context: BackupContext) {
-        queryResult(Criteria(), BackupUser::class.java, USER_COLLECTION_NAME, context)
-        queryResult(Criteria(), BackupRole::class.java, ROLE_COLLECTION_NAME, context)
-        queryResult(
-            Criteria.where(BackupTemporaryToken::expireDate.name).gt(LocalDateTime.now()),
-            BackupTemporaryToken::class.java, TEMPORARY_TOKEN_COLLECTION_NAME, context
-        )
-        queryResult(Criteria(), BackupPermission::class.java, PERMISSION_COLLECTION_NAME, context)
-        queryResult(Criteria(), BackupAccount::class.java, ACCOUNT_COLLECTION_NAME, context)
-    }
-
-    private fun buildZipFileName(context: BackupContext): String {
-        val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
-        val path = context.task.name + StringPool.DASH + currentDateStr + ZIP_FILE_SUFFIX
-        return Paths.get(context.task.storeLocation, context.task.name, path).toString()
-    }
-
-    private fun repoDataBackup(context: BackupContext) {
-        val criteria = buildRepositoryCriteria(context.currentProjectId!!, context.currrentProjectInfo!!)
-        queryResult(criteria, BackupRepositoryInfo::class.java, REPO_COLLECTION_NAME, context)
-    }
-
-    private fun packageDataBackup(context: BackupContext) {
-        val criteria = buildPackageCriteria(context.currentProjectId!!, context.currentRepoName!!)
-        queryResult(criteria, BackupPackageInfo::class.java, PACKAGE_COLLECTION_NAME, context)
-    }
-
-    private fun packageVersionDataBackup(context: BackupContext) {
-        val criteria = buildPackageVersionCriteria(context.currentPackageId!!)
-        queryResult(criteria, BackupPackageVersionInfo::class.java, PACKAGE_VERSION_COLLECTION_NAME, context)
-    }
-
-    private fun nodeDataBackup(context: BackupContext) {
-        val criteria = buildNodeCriteria(
-            context.currentProjectId!!,
-            context.currentRepoName!!,
-            context.criteriaForNodeInVersion
-        )
-        val collectionName = SeparationUtils.getNodeCollectionName(context.currentProjectId!!)
-        queryResult(criteria, BackupNodeInfo::class.java, collectionName, context)
-    }
-
-    private inline fun <reified T> queryResult(
-        criteria: Criteria,
-        clazz: Class<T>,
-        collectionName: String,
-        context: BackupContext
-    ) {
-        val pageSize = BATCH_SIZE
-        var querySize: Int
-        var lastId = ObjectId(MIN_OBJECT_ID)
-        do {
-            val query = Query(criteria)
-                .addCriteria(Criteria.where(ID).gt(lastId))
-                .limit(BATCH_SIZE)
-                .with(Sort.by(ID).ascending())
-            val data = mongoTemplate.find(query, clazz, collectionName)
-            if (data.isEmpty()) {
-                break
-            }
-            val dataLastId = processData(data, context)
-            querySize = data.size
-            lastId = ObjectId(dataLastId)
-        } while (querySize == pageSize)
-    }
-
-    private inline fun <reified T> processData(data: List<T>, context: BackupContext): String {
-        when (T::class) {
-            BackupUser::class -> {
-                data.forEach {
-                    val record = it as BackupUser
-                    storeData(record, context)
-                }
-                return (data.last() as BackupUser).id!!
-            }
-            BackupRole::class -> {
-                data.forEach {
-                    val record = it as BackupRole
-                    storeData(record, context)
-                }
-                return (data.last() as BackupRole).id!!
-            }
-            BackupTemporaryToken::class -> {
-                data.forEach {
-                    val record = it as BackupTemporaryToken
-                    storeData(record, context)
-                }
-                return (data.last() as BackupTemporaryToken).id!!
-            }
-            BackupPermission::class -> {
-                data.forEach {
-                    val record = it as BackupPermission
-                    storeData(record, context)
-                }
-                return (data.last() as BackupPermission).id!!
-            }
-            BackupAccount::class -> {
-                data.forEach {
-                    val record = it as BackupAccount
-                    storeData(record, context)
-                }
-                return (data.last() as BackupAccount).id!!
-            }
-            BackupProjectInfo::class -> {
-                data.forEach {
-                    val record = it as BackupProjectInfo
-                    context.currentProjectId = record.name
-                    context.currentRepoName = null
-                    storeData(record, context)
-                    repoDataBackup(context)
-                }
-                return (data.last() as BackupProjectInfo).id!!
-            }
-            BackupRepositoryInfo::class -> {
-                data.forEach {
-                    val record = it as BackupRepositoryInfo
-                    context.currentRepoName = record.name
-                    context.currentRepositoryType = record.type
-                    context.currentStorageCredentials = findStorageCredentials(record.credentialsKey)
-                    storeData(record, context)
-                    when (record.type) {
-                        RepositoryType.GENERIC, RepositoryType.DDC -> nodeDataBackup(context)
-                        else -> packageDataBackup(context)
-                    }
-                }
-                return (data.last() as BackupRepositoryInfo).id!!
-            }
-            BackupNodeInfo::class -> {
-                data.forEach {
-                    val record = it as BackupNodeInfo
-                    context.currentNode = record
-                    storeData(record, context)
-                    storeRealFile(context)
-                }
-                return (data.last() as BackupNodeInfo).id!!
-            }
-            BackupPackageInfo::class -> {
-                data.forEach {
-                    val record = it as BackupPackageInfo
-                    context.currentPackageId = record.id
-                    context.currentPackageKey = record.key
-                    storeData(record, context)
-                    packageVersionDataBackup(context)
-                }
-                return (data.last() as BackupPackageInfo).id!!
-            }
-            BackupPackageVersionInfo::class -> {
-                data.forEach {
-                    val record = it as BackupPackageVersionInfo
-                    context.currentVersionName = record.name
-                    val bVersion = VersionBackupInfo(
-                        projectId = context.currentProjectId!!,
-                        repoName = context.currentRepoName!!,
-                        packageKey = context.currentPackageKey!!,
-                        version = record.name,
-                        type = context.currentRepositoryType!!
-                    )
-                    context.criteriaForNodeInVersion = BackupRepoSpecialMappings.getNodeCriteriaOfVersion(bVersion)
-                    BackupRepoSpecialMappings.storeRepoSpecialData(bVersion, context)
-                    val newRecord = buildBackupPackageVersionInfoWithKeyInfo(record, context)
-                    storeData(newRecord, context)
-                    nodeDataBackup(context)
-                }
-                return (data.last() as BackupPackageVersionInfo).id!!
-            }
-            else -> return StringPool.EMPTY
+        BackupDataEnum.getNonRelatedAndSpecialDataList(PUBLIC_TYPE).forEach {
+            queryResult(context, it)
         }
     }
 
-
-    private fun findStorageCredentials(currentCredentialsKey: String?): StorageCredentials? {
-        val backupStorageCredentials = currentCredentialsKey?.let {
-            mongoTemplate.findOne(
-                Query(Criteria.where(ID_IDX).isEqualTo(it)),
-                BackupStorageCredentials::class.java,
-                STORAGE_CREDENTIALS_COLLECTION_NAME
-            )
-        }
-        return backupStorageCredentials?.let { convert(backupStorageCredentials) }
-    }
-
-    private fun storeRealFile(context: BackupContext) {
+    private fun customDataBackup(context: BackupContext) {
         with(context) {
-            if (currentNode!!.folder || currentNode!!.sha256 == FAKE_SHA256
-                || currentNode!!.sha256.isNullOrEmpty()) return
-            val nodeDetail = convertToDetail(currentNode)
-            val dir = generateRandomPath(currentNode!!.sha256!!)
-            if (tempClient.exist(dir, currentNode!!.sha256!!)) {
-                logger.info("real file already exist [${currentNode!!.sha256}]")
-                return
-            }
-            // 存储异常如何处理
-            storageManager.loadFullArtifactInputStream(nodeDetail, currentStorageCredentials)?.use {
-                try {
-                    tempClient.store(dir, currentNode!!.sha256!!, it, currentNode!!.size)
-                    logger.info("Success to store real file  [${currentNode!!.sha256}]")
-                } catch (exception: Exception) {
-                    logger.error("Failed to store real file", exception)
-                    throw StorageErrorException(StorageMessageCode.STORE_ERROR)
-                }
+            for (projectFilterInfo in task.content!!.projects!!) {
+                if (!checkProjectParams(projectFilterInfo)) continue
+                val criteria = buildCriteria(projectFilterInfo)
+                queryResult(context, BackupDataEnum.REPOSITORY_DATA, criteria)
             }
         }
     }
-
 
     private fun checkProjectParams(project: ProjectContentInfo?): Boolean {
         return !(project != null &&
@@ -313,130 +93,93 @@ class DataRecordsBackupServiceImpl(
             project.excludeProjects.isNullOrEmpty())
     }
 
-    private fun buildProjectCriteria(project: ProjectContentInfo): Criteria {
+    private fun buildCriteria(project: ProjectContentInfo): Criteria {
         with(project) {
             val criteria = Criteria()
             if (projectId.isNullOrEmpty()) {
                 if (projectRegex.isNullOrEmpty()) {
-                    criteria.and(NAME).nin(excludeProjects!!)
+                    criteria.and(PROJECT).nin(excludeProjects!!)
                 } else {
-                    criteria.and(NAME).regex(".*${EscapeUtils.escapeRegex(projectRegex)}.*")
+                    criteria.and(PROJECT).regex(".*${EscapeUtils.escapeRegex(projectRegex)}.*")
                 }
             } else {
-                criteria.and(NAME).isEqualTo(projectId)
+                criteria.and(PROJECT).isEqualTo(projectId)
+            }
+            if (project.repoList.isNullOrEmpty()) {
+                if (project.repoRegex.isNullOrEmpty()) {
+                    if (!project.excludeRepos.isNullOrEmpty()) {
+                        criteria.and(REPO_NAME).nin(project.excludeRepos)
+                    }
+                } else {
+                    criteria.and(REPO_NAME).regex(".*${EscapeUtils.escapeRegex(project.repoRegex)}.*")
+                }
+            } else {
+                criteria.and(REPO_NAME).`in`(project.repoList)
             }
             return criteria
         }
     }
 
-    private fun buildRepositoryCriteria(projectId: String, project: ProjectContentInfo): Criteria {
-        val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
-        if (project.repoList.isNullOrEmpty()) {
-            if (project.repoRegex.isNullOrEmpty()) {
-                if (!project.excludeRepos.isNullOrEmpty()) {
-                    criteria.and(NAME).nin(project.excludeRepos)
-                }
-            } else {
-                criteria.and(NAME).regex(".*${EscapeUtils.escapeRegex(project.repoRegex)}.*")
+    private fun buildZipFileName(context: BackupContext): String {
+        val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+        val path = context.task.name + StringPool.DASH + currentDateStr + ZIP_FILE_SUFFIX
+        return Paths.get(context.task.storeLocation, context.task.name, path).toString()
+    }
+
+    private fun queryResult(
+        context: BackupContext,
+        backupDataEnum: BackupDataEnum,
+        customRepoCriteria: Criteria? = null
+    ) {
+        val pageSize = BATCH_SIZE
+        var querySize: Int
+        var lastId = ObjectId(MIN_OBJECT_ID)
+        val criteria = customRepoCriteria ?: BackupDataMappings.buildQueryCriteria(backupDataEnum, context)
+        val collectionName = BackupDataMappings.getCollectionName(backupDataEnum, context)
+        do {
+            val query = Query(criteria)
+                .addCriteria(Criteria.where(ID).gt(lastId))
+                .limit(BATCH_SIZE)
+                .with(Sort.by(ID).ascending())
+            val datas = mongoTemplate.find(query, backupDataEnum.backupClazz, collectionName)
+            if (datas.isEmpty()) {
+                break
             }
-        } else {
-            criteria.and(NAME).`in`(project.repoList)
-        }
-        return criteria
+            if (customRepoCriteria == null) {
+                processData(datas, backupDataEnum, context)
+            } else {
+                processCustomRepoData(datas as List<BackupRepositoryInfo>, context)
+            }
+            querySize = datas.size
+            lastId = ObjectId(BackupDataMappings.returnLastId(datas.last(), backupDataEnum))
+        } while (querySize == pageSize)
     }
 
-    private fun buildPackageCriteria(projectId: String, repoName: String): Criteria {
-        return Criteria.where(PROJECT).isEqualTo(projectId)
-            .and(REPO_NAME).isEqualTo(repoName)
-    }
-
-    private fun buildPackageVersionCriteria(packageId: String): Criteria {
-        return Criteria.where(PACKAGE_ID).isEqualTo(packageId)
-    }
-
-    private fun buildNodeCriteria(projectId: String, repoName: String, criteriaForNodeInVersion: Criteria?): Criteria {
-        val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
-            .and(REPO_NAME).isEqualTo(repoName)
-            .and(DELETED_DATE).isEqualTo(null)
-        criteriaForNodeInVersion?.let { criteria.andOperator(it) }
-        return criteria
-    }
-
-    private fun convert(tNode: BackupNodeInfo?): NodeInfo? {
-        return tNode?.let {
-            val metadata = toMap(it.metadata)
-            NodeInfo(
-                id = it.id,
-                createdBy = it.createdBy,
-                createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                lastModifiedBy = it.lastModifiedBy,
-                lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                projectId = it.projectId,
-                repoName = it.repoName,
-                folder = it.folder,
-                path = it.path,
-                name = it.name,
-                fullPath = it.fullPath,
-                size = if (it.size < 0L) 0L else it.size,
-                nodeNum = it.nodeNum?.let { nodeNum ->
-                    if (nodeNum < 0L) 0L else nodeNum
-                },
-                sha256 = it.sha256,
-                md5 = it.md5,
-                metadata = metadata,
-                nodeMetadata = it.metadata,
-                copyFromCredentialsKey = it.copyFromCredentialsKey,
-                copyIntoCredentialsKey = it.copyIntoCredentialsKey,
-                deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
-                lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
-                clusterNames = it.clusterNames,
-                archived = it.archived,
-                compressed = it.compressed,
-            )
+    private fun processCustomRepoData(records: List<BackupRepositoryInfo>, context: BackupContext) {
+        records.forEach { record ->
+            context.currentRepositoryType = record.type
+            context.currentProjectId = record.projectId
+            context.currentRepoName = record.name
+            BackupDataEnum.getNonRelatedAndSpecialDataList(PRIVATE_TYPE).forEach {
+                queryResult(context, it)
+            }
         }
     }
 
-    private fun buildBackupPackageVersionInfoWithKeyInfo(
-        record: BackupPackageVersionInfo,
-        context: BackupContext
-    ): BackupPackageVersionInfoWithKeyInfo {
-        with(record) {
-            return BackupPackageVersionInfoWithKeyInfo(
-                id = id,
-                createdBy = createdBy,
-                createdDate = createdDate,
-                lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate,
-                packageId = packageId,
-                name = name,
-                size = size,
-                ordinal = ordinal,
-                downloads = downloads,
-                manifestPath = manifestPath,
-                artifactPath = artifactPath,
-                stageTag = stageTag,
-                metadata = metadata,
-                tags = tags,
-                extension = extension,
-                clusterNames = clusterNames,
-                projectId = context.currentProjectId!!,
-                repoName = context.currentRepoName!!,
-                key = context.currentPackageKey!!,
-            )
+    private fun <T> processData(data: List<T>, backupDataEnum: BackupDataEnum, context: BackupContext) {
+        data.forEach { record ->
+            BackupDataMappings.preBackupDataHandler(record, backupDataEnum, context)
+            storeData(record, backupDataEnum, context)
+            BackupDataMappings.postBackupDataHandler(backupDataEnum, context)
+            if (!backupDataEnum.relatedData.isNullOrEmpty()) {
+                val relatedDataEnum = BackupDataEnum.getByCollectionName(backupDataEnum.relatedData)
+                queryResult(context, relatedDataEnum)
+            }
+            val specialData = BackupDataMappings.getSpecialDataEnum(backupDataEnum, context) ?: return
+            specialData.forEach {
+                queryResult(context, it)
+            }
         }
-    }
-
-    private fun convertToDetail(tNode: BackupNodeInfo?): NodeDetail? {
-        return convert(tNode)?.let { NodeDetail(it) }
-    }
-
-    private fun toMap(metadataList: List<MetadataModel>?): Map<String, Any> {
-        return metadataList?.associate { it.key to it.value }.orEmpty()
-    }
-
-
-    private fun convert(credentials: BackupStorageCredentials): StorageCredentials {
-        return credentials.credentials.readJsonString<StorageCredentials>().apply { this.key = credentials.id }
     }
 
     companion object {

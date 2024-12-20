@@ -35,7 +35,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import java.time.LocalDateTime
 
-data class BackupAccount(
+class BackupAccount(
     var id: String? = null,
     var appId: String,
     var locked: Boolean,

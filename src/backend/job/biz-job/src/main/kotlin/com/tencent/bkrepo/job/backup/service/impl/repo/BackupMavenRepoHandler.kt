@@ -27,28 +27,16 @@
 
 package com.tencent.bkrepo.job.backup.service.impl.repo
 
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.job.backup.pojo.query.BackupMavenMetadata
-import com.tencent.bkrepo.job.backup.pojo.query.BackupNodeInfo
-import com.tencent.bkrepo.job.backup.pojo.query.VersionBackupInfo
+import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import com.tencent.bkrepo.job.backup.service.BackupRepoSpecialDataService
-import com.tencent.bkrepo.job.backup.service.impl.BaseService
-import com.tencent.bkrepo.maven.util.MavenUtil
-import com.tencent.bkrepo.maven.util.MavenUtil.extractPath
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 
 
 @Component
-class BackupMavenRepoHandler(
-    private val mongoTemplate: MongoTemplate,
-) : BackupRepoSpecialDataService, BaseService() {
+class BackupMavenRepoHandler : BackupRepoSpecialDataService {
 
     override fun type(): RepositoryType {
         return RepositoryType.MAVEN
@@ -58,44 +46,9 @@ class BackupMavenRepoHandler(
         return null
     }
 
-    override fun getNodeCriteriaOfVersion(versionBackupInfo: VersionBackupInfo): Criteria {
-        with(versionBackupInfo) {
-            val packagePath = PathUtils.normalizeFullPath(extractPath(packageKey))
-            val versionPath = PathUtils.combinePath(packagePath, version)
-            return Criteria.where(BackupNodeInfo::path.name).isEqualTo(versionPath)
-        }
+    override fun getRepoSpecialDataEnum(context: BackupContext): List<BackupDataEnum> {
+        return listOf(BackupDataEnum.MAVEN_METADATA_DATA)
     }
-
-    override fun storeRepoSpecialData(versionBackupInfo: VersionBackupInfo, context: BackupContext) {
-        with(versionBackupInfo) {
-            val metadataRecords = findMetadata(versionBackupInfo)
-            if (metadataRecords.isEmpty()) {
-                logger.warn("No metadata record found for $version of $packageKey in $projectId|$repoName")
-                return
-            }
-            metadataRecords.forEach {
-                storeData(it, context)
-            }
-        }
-    }
-
-    private fun findMetadata(versionBackupInfo: VersionBackupInfo): List<BackupMavenMetadata> {
-        with(versionBackupInfo) {
-            val (artifactId, groupId) = MavenUtil.extractGroupIdAndArtifactId(packageKey)
-            val criteria = Criteria.where(BackupMavenMetadata::projectId.name).isEqualTo(projectId)
-                .and(BackupMavenMetadata::repoName.name).isEqualTo(repoName)
-                .and(BackupMavenMetadata::groupId.name).isEqualTo(groupId)
-                .and(BackupMavenMetadata::artifactId.name).isEqualTo(artifactId)
-                .and(BackupMavenMetadata::version.name).isEqualTo(version)
-            val metadataQuery = Query(criteria)
-            return mongoTemplate.find(
-                metadataQuery,
-                BackupMavenMetadata::class.java,
-                MAVEN_METADATA_COLLECTION_NAME
-            )
-        }
-    }
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(BackupMavenRepoHandler::class.java)
