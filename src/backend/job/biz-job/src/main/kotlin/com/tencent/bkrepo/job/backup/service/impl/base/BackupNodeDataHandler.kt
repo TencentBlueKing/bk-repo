@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
+import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.backup.pojo.query.BackupFileReferenceInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupNodeInfo
@@ -17,6 +18,7 @@ import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import com.tencent.bkrepo.job.backup.pojo.setting.BackupConflictStrategy
 import com.tencent.bkrepo.job.backup.service.BackupDataHandler
+import com.tencent.bkrepo.job.backup.service.impl.BaseService
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.separation.pojo.query.NodeDetailInfo
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
@@ -42,7 +44,7 @@ class BackupNodeDataHandler(
     private val storageManager: StorageManager,
     private val mongoTemplate: MongoTemplate,
     private val storageService: StorageService,
-) : BackupDataHandler {
+) : BackupDataHandler, BaseService() {
     override fun dataType(): BackupDataEnum {
         return BackupDataEnum.NODE_DATA
     }
@@ -50,6 +52,7 @@ class BackupNodeDataHandler(
     override fun buildQueryCriteria(context: BackupContext): Criteria {
         return Criteria.where(PROJECT).isEqualTo(context.currentProjectId)
             .and(REPO_NAME).isEqualTo(context.currentRepoName)
+            .and(DELETED_DATE).isEqualTo(null)
     }
 
     override fun getCollectionName(backupDataEnum: BackupDataEnum, context: BackupContext): String {
@@ -94,14 +97,16 @@ class BackupNodeDataHandler(
                 || currentNode!!.sha256.isNullOrEmpty()) return
             val nodeDetail = convertToDetail(currentNode)
             val dir = generateRandomPath(currentNode!!.sha256!!)
-            if (tempClient.exist(dir, currentNode!!.sha256!!)) {
+            val filePath = buildPath(dir, currentNode!!.sha256!!, context.targertPath)
+            if (exist(filePath)) {
                 logger.info("real file already exist [${currentNode!!.sha256}]")
                 return
             }
+            touch(filePath)
             // 存储异常如何处理
             storageManager.loadFullArtifactInputStream(nodeDetail, currentStorageCredentials)?.use {
                 try {
-                    tempClient.store(dir, currentNode!!.sha256!!, it, currentNode!!.size)
+                    streamToFile(it, filePath.toString())
                     logger.info("Success to store real file  [${currentNode!!.sha256}]")
                 } catch (exception: Exception) {
                     logger.error("Failed to store real file", exception)

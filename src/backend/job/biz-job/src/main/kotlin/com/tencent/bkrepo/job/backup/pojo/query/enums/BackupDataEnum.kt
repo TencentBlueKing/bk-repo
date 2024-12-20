@@ -19,6 +19,7 @@ enum class BackupDataEnum(
     val backupClazz: Class<*>,
     val restoreClazz: Class<*>,
     val type: String,
+    val parentData: Boolean = true,
     val relatedData: String? = null,
     val specialData: Boolean = false,
 ) {
@@ -77,15 +78,16 @@ enum class BackupDataEnum(
         BackupPackageInfo::class.java,
         BackupPackageInfo::class.java,
         "PRIVATE",
-        "package_version"
+        relatedData = "package_version"
     ),
     PACKAGE_VERSION_DATA(
         "package_version",
         "package-version.json",
         BackupPackageVersionInfoWithKeyInfo::class.java,
         BackupPackageVersionInfo::class.java,
-        "PRIVATE"
-    ),
+        "PRIVATE",
+        false
+        ),
     NODE_DATA(
         "node",
         "node.json",
@@ -99,6 +101,7 @@ enum class BackupDataEnum(
         BackupMavenMetadata::class.java,
         BackupMavenMetadata::class.java,
         "PRIVATE",
+        false,
         specialData = true
     );
 
@@ -117,9 +120,9 @@ enum class BackupDataEnum(
             throw IllegalArgumentException("No enum for constant $collectionName")
         }
 
-        fun getNonRelatedAndSpecialDataList(type: String): List<BackupDataEnum> {
+        fun getParentAndSpecialDataList(type: String): List<BackupDataEnum> {
             return BackupDataEnum.values().filter {
-                it.relatedData.isNullOrEmpty() && it.type == type && it.specialData == false
+                it.type == type && it.parentData == true
             }
         }
 

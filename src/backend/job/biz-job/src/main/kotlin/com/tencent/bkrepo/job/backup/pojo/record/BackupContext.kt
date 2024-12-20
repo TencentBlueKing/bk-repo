@@ -29,7 +29,6 @@ package com.tencent.bkrepo.job.backup.pojo.record
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.job.backup.model.TBackupTask
 import com.tencent.bkrepo.job.backup.pojo.query.BackupNodeInfo
 import java.nio.file.Path
@@ -39,7 +38,6 @@ class BackupContext(
     val task: TBackupTask,
 ) {
     lateinit var targertPath: Path
-    lateinit var tempClient: FileSystemClient
     lateinit var startDate: LocalDateTime
     var backupProgress = BackupProgress()
     var type: String = task.type

@@ -76,7 +76,7 @@ data class BackupPackageVersionInfoWithKeyInfo(
     var tags: List<String>? = null,
     var extension: Map<String, Any>? = null,
     var clusterNames: Set<String>? = null,
-    var projectId: String,
-    var repoName: String,
-    var key: String,
+    var projectId: String? = null,
+    var repoName: String? = null,
+    var key: String? = null,
 )

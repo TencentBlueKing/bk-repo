@@ -31,6 +31,7 @@ class BackupPackageDataHandler(
     override fun <T> preBackupDataHandler(record: T, backupDataEnum: BackupDataEnum, context: BackupContext) {
         val packageInfo = record as BackupPackageInfo
         context.currentPackageId = record.id
+        context.currentPackageKey = record.key
     }
 
     override fun <T> returnLastId(data: T): String {

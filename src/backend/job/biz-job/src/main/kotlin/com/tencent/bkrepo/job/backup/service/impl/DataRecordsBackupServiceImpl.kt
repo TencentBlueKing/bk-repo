@@ -5,7 +5,8 @@ import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
+import com.tencent.bkrepo.common.storage.message.StorageErrorException
+import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
@@ -15,6 +16,7 @@ import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum
 import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum.Companion.PRIVATE_TYPE
 import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum.Companion.PUBLIC_TYPE
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
+import com.tencent.bkrepo.job.backup.pojo.setting.BackupErrorStrategy
 import com.tencent.bkrepo.job.backup.pojo.task.ProjectContentInfo
 import com.tencent.bkrepo.job.backup.service.DataRecordsBackupService
 import com.tencent.bkrepo.job.backup.service.impl.base.BackupDataMappings
@@ -67,11 +69,10 @@ class DataRecordsBackupServiceImpl(
             Files.createDirectories(path)
         }
         context.targertPath = path
-        context.tempClient = FileSystemClient(path)
     }
 
     private fun commonDataBackup(context: BackupContext) {
-        BackupDataEnum.getNonRelatedAndSpecialDataList(PUBLIC_TYPE).forEach {
+        BackupDataEnum.getParentAndSpecialDataList(PUBLIC_TYPE).forEach {
             queryResult(context, it)
         }
     }
@@ -160,7 +161,7 @@ class DataRecordsBackupServiceImpl(
             context.currentRepositoryType = record.type
             context.currentProjectId = record.projectId
             context.currentRepoName = record.name
-            BackupDataEnum.getNonRelatedAndSpecialDataList(PRIVATE_TYPE).forEach {
+            BackupDataEnum.getParentAndSpecialDataList(PRIVATE_TYPE).forEach {
                 queryResult(context, it)
             }
         }
@@ -168,16 +169,23 @@ class DataRecordsBackupServiceImpl(
 
     private fun <T> processData(data: List<T>, backupDataEnum: BackupDataEnum, context: BackupContext) {
         data.forEach { record ->
-            BackupDataMappings.preBackupDataHandler(record, backupDataEnum, context)
-            storeData(record, backupDataEnum, context)
-            BackupDataMappings.postBackupDataHandler(backupDataEnum, context)
-            if (!backupDataEnum.relatedData.isNullOrEmpty()) {
-                val relatedDataEnum = BackupDataEnum.getByCollectionName(backupDataEnum.relatedData)
-                queryResult(context, relatedDataEnum)
-            }
-            val specialData = BackupDataMappings.getSpecialDataEnum(backupDataEnum, context) ?: return
-            specialData.forEach {
-                queryResult(context, it)
+            try {
+                BackupDataMappings.preBackupDataHandler(record, backupDataEnum, context)
+                storeData(record, backupDataEnum, context)
+                BackupDataMappings.postBackupDataHandler(backupDataEnum, context)
+                if (!backupDataEnum.relatedData.isNullOrEmpty()) {
+                    val relatedDataEnum = BackupDataEnum.getByCollectionName(backupDataEnum.relatedData)
+                    queryResult(context, relatedDataEnum)
+                }
+                val specialData = BackupDataMappings.getSpecialDataEnum(backupDataEnum, context)
+                specialData?.forEach {
+                    queryResult(context, it)
+                }
+            } catch (e: Exception) {
+                logger.error("Failed to process record $record", e)
+                if (context.task.backupSetting.errorStrategy == BackupErrorStrategy.FAST_FAIL) {
+                    throw StorageErrorException(StorageMessageCode.STORE_ERROR)
+                }
             }
         }
     }

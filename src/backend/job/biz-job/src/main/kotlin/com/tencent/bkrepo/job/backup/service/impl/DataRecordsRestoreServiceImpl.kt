@@ -2,7 +2,6 @@ package com.tencent.bkrepo.job.backup.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
 import com.tencent.bkrepo.job.backup.pojo.BackupTaskState
 import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum
@@ -57,7 +56,6 @@ class DataRecordsRestoreServiceImpl(
                 path
             }
             context.targertPath = targetFolder
-            context.tempClient = FileSystemClient(targetFolder)
         }
     }
 
