@@ -46,9 +46,9 @@ import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.migration.PackageMigrateDetail
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
+import com.tencent.bkrepo.npm.constants.HSP_FILE_EXT
 import com.tencent.bkrepo.npm.constants.METADATA
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
@@ -148,9 +148,14 @@ class NpmLocalRepository(
         artifactResource: ArtifactResource
     ): PackageDownloadRecord? {
         with(context) {
+            if (artifactInfo.getArtifactFullPath().endsWith(HSP_FILE_EXT)) {
+                // 拉取package一次会同时下载har与hsp包，此处仅统计har，避免重复
+                return null
+            }
             val packageInfo = NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
             with(packageInfo) {
-                return PackageDownloadRecord(projectId, repoName, PackageKeys.ofNpm(first), second)
+                val packageKey = NpmUtils.packageKeyByRepoType(first, repositoryDetail.type)
+                return PackageDownloadRecord(projectId, repoName, packageKey, second)
             }
         }
     }
@@ -217,7 +222,7 @@ class NpmLocalRepository(
         with(context) {
             val (packageName, packageVersion) =
                 NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
-            val packageKey = PackageKeys.ofNpm(packageName)
+            val packageKey = NpmUtils.packageKeyByRepoType(packageName, context.repositoryDetail.type)
             return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion).data
         }
     }
