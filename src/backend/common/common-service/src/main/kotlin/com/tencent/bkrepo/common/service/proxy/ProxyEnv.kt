@@ -96,7 +96,7 @@ object ProxyEnv {
     private fun getProperty(key: String): String {
         if (properties.isEmpty) {
             if (!propertyFileResource.exists()) {
-                throw RuntimeException()
+                throw RuntimeException("properties is empty and property file resource not exist")
             }
 
             properties.load(propertyFileResource.inputStream)
