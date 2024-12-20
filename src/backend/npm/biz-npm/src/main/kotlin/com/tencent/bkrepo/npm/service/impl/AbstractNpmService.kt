@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.npm.service.impl
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -76,7 +77,8 @@ open class AbstractNpmService {
 	 * 查询仓库是否存在
 	 */
 	fun checkRepositoryExist(projectId: String, repoName: String): RepositoryDetail {
-		return repositoryClient.getRepoDetail(projectId, repoName, "NPM").data ?: run {
+		val type = ArtifactContextHolder.getRepoDetailOrNull()?.type?.name ?: RepositoryType.NPM.name
+		return repositoryClient.getRepoDetail(projectId, repoName, type).data ?: run {
 			logger.error("check repository [$repoName] in projectId [$projectId] failed!")
 			throw NpmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
 		}
