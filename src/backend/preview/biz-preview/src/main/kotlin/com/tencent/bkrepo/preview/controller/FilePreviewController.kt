@@ -31,23 +31,29 @@
 
 package com.tencent.bkrepo.preview.controller
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo
-import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo.Companion.PREVIEW_COMMON_MAPPING_URI
+import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo.Companion.PREVIEW_BKREPO_MAPPING_URI
+import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo.Companion.PREVIEW_INFO_BKREPO_MAPPING_URI
+import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo.Companion.PREVIEW_INFO_REMOTE_MAPPING_URI
 import com.tencent.bkrepo.preview.artifact.PreviewArtifactInfo.Companion.PREVIEW_REMOTE_MAPPING_URI
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import com.tencent.bkrepo.preview.exception.PreviewInvalidException
 import com.tencent.bkrepo.preview.pojo.PreviewInfo
+import com.tencent.bkrepo.preview.service.CommonResourceService
 import com.tencent.bkrepo.preview.service.FileHandlerService
 import com.tencent.bkrepo.preview.service.FilePreviewFactory
 import com.tencent.bkrepo.preview.utils.WebUtils
 import org.slf4j.LoggerFactory
+import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 预览接口
@@ -55,72 +61,89 @@ import javax.servlet.http.HttpServletRequest
 @RestController
 class FilePreviewController(
     private val fileHandlerService: FileHandlerService,
-    private val previewFactory: FilePreviewFactory
+    private val previewFactory: FilePreviewFactory,
+    private val resourceService: CommonResourceService
 ) {
+
+    /**
+     * 远程文件预览属性
+     */
+    @GetMapping(PREVIEW_INFO_REMOTE_MAPPING_URI)
+    @CrossOrigin
+    fun getPreviewInfo(
+        @RequestParam("extraParam") extraParams: String
+    ): Response<PreviewInfo> {
+        val decodedParams = decodeParams(extraParams)
+        val previewInfo = fileHandlerService.buildFilePreviewInfo(decodedParams!!)
+        return ResponseBuilder.success(previewInfo)
+    }
+
+    /**
+     * bkrepo文件预览属性
+     */
+    @GetMapping(PREVIEW_INFO_BKREPO_MAPPING_URI)
+    @Permission(ResourceType.NODE, PermissionAction.READ)
+    @CrossOrigin
+    fun getPreviewInfo(
+        @ArtifactPathVariable artifactInfo: PreviewArtifactInfo,
+        @RequestParam(name = "extraParam", required = false) extraParam: String?,
+    ): Response<PreviewInfo> {
+        val decodedParams = decodeParams(extraParam)
+        val previewInfo = fileHandlerService.buildFilePreviewInfo(artifactInfo, decodedParams)
+        return ResponseBuilder.success(previewInfo)
+    }
 
     /**
      * bkrepo文件
      */
-    @GetMapping(PREVIEW_COMMON_MAPPING_URI)
+    @GetMapping(PREVIEW_BKREPO_MAPPING_URI)
+    @Permission(ResourceType.NODE, PermissionAction.DOWNLOAD)
+    @CrossOrigin
     fun onlinePreview(
         @ArtifactPathVariable artifactInfo: PreviewArtifactInfo,
-        @RequestParam(name = "extraParam", required = false) extraParams: String?,
-        req: HttpServletRequest
-    ): Response<PreviewInfo> {
-        val decodedParams: String?
-        try {
-            decodedParams = if (!extraParams.isNullOrEmpty()) {
-                WebUtils.decodeUrl(extraParams!!).toString()
-            } else {
-                null
-            }
-        } catch (ex: Exception) {
-            throw PreviewInvalidException(PreviewMessageCode.PREVIEW_PARAMETER_INVALID, "extraParam")
-        }
-        val fileAttribute = fileHandlerService.getFileAttribute(artifactInfo, decodedParams, req)
+        @RequestParam(name = "extraParam", required = false) extraParam: String?
+    ) {
+        val decodedParams = decodeParams(extraParam)
+        val fileAttribute = fileHandlerService.getFileAttribute(artifactInfo, decodedParams)
         val filePreview = previewFactory.get(fileAttribute)
-        logger.info("preview file, projectId：{},repoName:{},artifactUri:{}, previewType：{}",
+        logger.info("preview file from bkrepo, projectId：{},repoName:{},artifactUri:{}, previewType：{}",
             artifactInfo.projectId,
             artifactInfo.repoName,
             artifactInfo.getArtifactFullPath(),
             fileAttribute.type
         )
-        val previewInfo = PreviewInfo().apply {
-            fileName = fileAttribute.fileName
-        }
-
-        filePreview.filePreviewHandle(fileAttribute, previewInfo)
-        return ResponseBuilder.success(previewInfo)
+        filePreview.filePreviewHandle(fileAttribute)
     }
 
     /**
      * 远程文件
      */
     @GetMapping(PREVIEW_REMOTE_MAPPING_URI)
+    @CrossOrigin
     fun onlinePreview(
-        @RequestParam("extraParam") extraParams: String,
-        req: HttpServletRequest
-    ): Response<PreviewInfo> {
-        val decodedParams: String
-        try {
-            decodedParams = WebUtils.decodeUrl(extraParams)!!
-        } catch (ex: Exception) {
-            throw PreviewInvalidException(PreviewMessageCode.PREVIEW_PARAMETER_INVALID, "extraParam")
-        }
-
-        val fileAttribute = fileHandlerService.getFileAttribute(decodedParams, req)
+        @RequestParam("extraParam") extraParam: String
+    ) {
+        val decodedParams = decodeParams(extraParam)
+        val fileAttribute = fileHandlerService.getFileAttribute(decodedParams!!)
         val filePreview = previewFactory.get(fileAttribute)
-
-        logger.info("preview file, url：{}, previewType：{}", fileAttribute.url, fileAttribute.type)
-
-        val previewInfo = PreviewInfo().apply {
-            fileName = fileAttribute.fileName
-        }
-
-        filePreview.filePreviewHandle(fileAttribute, previewInfo)
-        return ResponseBuilder.success(previewInfo)
+        logger.info("preview file from remote, url：{}, previewType：{}", fileAttribute.url, fileAttribute.type)
+        filePreview.filePreviewHandle(fileAttribute)
     }
 
+    private fun decodeParams(extraParam: String?): String? {
+        val decodedParams: String?
+        try {
+            decodedParams = if (!extraParam.isNullOrEmpty()) {
+                WebUtils.decodeUrl(extraParam!!).toString()
+            } else {
+                null
+            }
+        } catch (ex: Exception) {
+            logger.error("Decryption parameter [extraParams] failed", ex)
+            throw PreviewInvalidException(PreviewMessageCode.PREVIEW_PARAMETER_INVALID, "extraParam")
+        }
+        return decodedParams
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(FilePreviewController::class.java)

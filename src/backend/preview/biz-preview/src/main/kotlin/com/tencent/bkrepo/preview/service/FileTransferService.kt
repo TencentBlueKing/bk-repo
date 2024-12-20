@@ -41,37 +41,57 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
+import com.tencent.bkrepo.preview.constant.PREVIEW_ARTIFACT_TO_FILE
 import com.tencent.bkrepo.preview.constant.PREVIEW_NODE_DETAIL
 import com.tencent.bkrepo.preview.constant.PREVIEW_TMP_FILE_SAVE_PATH
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import com.tencent.bkrepo.preview.exception.PreviewNotFoundException
 import com.tencent.bkrepo.preview.pojo.DownloadResult
 import com.tencent.bkrepo.preview.pojo.FileAttribute
+import com.tencent.bkrepo.preview.pojo.cache.PreviewFileCacheInfo
 import com.tencent.bkrepo.preview.utils.DownloadUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import javax.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
-import javax.servlet.http.HttpServletRequest
 
 @Component
 class FileTransferService(
     private val config: PreviewConfig,
-    private val projectService: ProjectService,
     private val repositoryService: RepositoryService
-    ) : ArtifactService() {
+) : ArtifactService() {
+
+    /**
+     * 输出文件内容
+     */
+    fun sendFileAsResponse(fileAttribute: FileAttribute, previewFileCacheInfo: PreviewFileCacheInfo) {
+        val artifactInfo = ArtifactInfo(previewFileCacheInfo.projectId,
+            previewFileCacheInfo.repoName,
+            previewFileCacheInfo.fullPath
+        )
+        setFileTransferAttribute(artifactInfo, fileAttribute, false)
+        val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
+        val context = ArtifactDownloadContext()
+        if (node == null && context.repositoryDetail.category == RepositoryCategory.LOCAL) {
+            throw PreviewNotFoundException(PreviewMessageCode.PREVIEW_NODE_NOT_FOUND,
+                "${artifactInfo.projectId}|${artifactInfo.repoName}|${artifactInfo.getArtifactFullPath()}")
+        }
+        repository.download(context)
+    }
+
     fun download(fileAttribute: FileAttribute): DownloadResult? {
         var result: DownloadResult? = if (fileAttribute.storageType == 1) {
             DownloadUtils.downLoad(fileAttribute, config)
         } else {
             downloadFromRepo(fileAttribute)
         }
+        fileAttribute.originFilePath = result?.filePath
         return result
     }
 
@@ -80,7 +100,7 @@ class FileTransferService(
             fileAttribute.repoName!!,
             fileAttribute.artifactUri!!
         )
-        setFileTransferAttribute(artifactInfo, fileAttribute)
+        setFileTransferAttribute(artifactInfo, fileAttribute, true)
         val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
         val context = ArtifactDownloadContext()
         if (node == null && context.repositoryDetail.category == RepositoryCategory.LOCAL) {
@@ -107,9 +127,11 @@ class FileTransferService(
     fun upload(fileAttribute: FileAttribute, sourcePath: String): NodeDetail{
         val file = File(sourcePath)
         require(file.exists()) { "The file does not exist, $sourcePath" }
-        // 准备要上传的信息
-        val artifactInfo = ArtifactInfo(config.projectId, config.repoName, buildArtifactUri(fileAttribute))
-        setFileTransferAttribute(artifactInfo, fileAttribute)
+        // 准备要上传的信息,如果是bkrepo文件，预览文件保存在原仓库，否则保存在自定义仓库中
+        val projectId = if (fileAttribute.storageType == 0) fileAttribute.projectId else config.projectId
+        val repoName = if (fileAttribute.storageType == 0) fileAttribute.repoName else config.repoName
+        val artifactInfo = ArtifactInfo(projectId!!, repoName!!, buildArtifactUri(fileAttribute))
+        setFileTransferAttribute(artifactInfo, fileAttribute, true)
         val artifactFile = ArtifactFileFactory.build(file.inputStream(), file.length())
         val context = ArtifactUploadContext(artifactFile)
 
@@ -122,7 +144,9 @@ class FileTransferService(
     /**
      * 把project、repo等信息设置到request域，上传、下载要用
      */
-    private fun setFileTransferAttribute(artifactInfo: ArtifactInfo, fileAttribute: FileAttribute) {
+    private fun setFileTransferAttribute(artifactInfo: ArtifactInfo,
+                                         fileAttribute: FileAttribute,
+                                         toFile: Boolean) {
         val request: HttpServletRequest = HttpContextHolder.getRequest()
         val repoDetail =repositoryService.getRepoDetail(artifactInfo.projectId,
             artifactInfo.repoName,
@@ -134,6 +158,7 @@ class FileTransferService(
 
         val fileTmpPath = DownloadUtils.getRelFilePath(fileAttribute.fileName, fileAttribute.suffix!!, config.fileDir)
         request.setAttribute(PREVIEW_TMP_FILE_SAVE_PATH, fileTmpPath)
+        request.setAttribute(PREVIEW_ARTIFACT_TO_FILE, toFile)
     }
 
     /**
@@ -141,7 +166,10 @@ class FileTransferService(
      */
     private fun buildArtifactUri(fileAttribute: FileAttribute): String {
         val date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-        return "/$date/${UUID.randomUUID()}/${fileAttribute.convertFileName}"
+        return if (fileAttribute.storageType == 0)
+            "/convert/$date/${UUID.randomUUID()}/${fileAttribute.convertFileName}"
+        else
+            "/$date/${UUID.randomUUID()}/${fileAttribute.convertFileName}"
     }
 
 }

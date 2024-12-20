@@ -39,7 +39,9 @@ class PreviewArtifactInfo(
     artifactUri: String
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
-        const val PREVIEW_COMMON_MAPPING_URI = "/api/file/preview/{projectId}/{repoName}/**"
-        const val PREVIEW_REMOTE_MAPPING_URI = "/api/file/preview"
+        const val PREVIEW_BKREPO_MAPPING_URI = "/api/file/onlinePreview/{projectId}/{repoName}/**"
+        const val PREVIEW_REMOTE_MAPPING_URI = "/api/file/onlinePreview"
+        const val PREVIEW_INFO_REMOTE_MAPPING_URI = "/api/file/getPreviewInfo"
+        const val PREVIEW_INFO_BKREPO_MAPPING_URI = "/api/file/getPreviewInfo/{projectId}/{repoName}/**"
     }
 }

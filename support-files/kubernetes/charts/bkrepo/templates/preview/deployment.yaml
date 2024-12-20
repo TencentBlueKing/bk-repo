@@ -96,7 +96,7 @@ spec:
               value: {{ include "common.names.fullname" . }}-
           ports:
             - name: http
-              containerPort: 25801
+              containerPort: 25822
               protocol: TCP
           livenessProbe:
             httpGet:

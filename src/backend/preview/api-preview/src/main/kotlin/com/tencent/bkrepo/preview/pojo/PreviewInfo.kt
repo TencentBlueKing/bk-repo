@@ -39,22 +39,15 @@ import io.swagger.annotations.ApiModelProperty
  */
 @ApiModel("预览信息")
 data class PreviewInfo (
-    @ApiModelProperty("原始的文件属性")
-    val file: FileAttribute? = null,
-    @ApiModelProperty("图片集合")
-    val imgUrls: List<String>? = null,
-    @ApiModelProperty("pdf的预览地址")
-    var pdfUrl: String? = null,
-    @ApiModelProperty("预览地址")
-    var url: String? = null,
     @ApiModelProperty("文件名称")
     var fileName: String? = null,
-    @ApiModelProperty("错误信息")
-    var msg: String? = null,
-
     @ApiModelProperty("文件类型")
     var fileType: String? = null,
+    @ApiModelProperty("文件后缀")
+    var suffix: String? = null,
     // 文件展示模板，如officeweb、ppt等
     @ApiModelProperty("文件展示模板")
     var fileTemplate: String? = null,
+    @ApiModelProperty("水印")
+    var watermark: Watermark? = null,
 )

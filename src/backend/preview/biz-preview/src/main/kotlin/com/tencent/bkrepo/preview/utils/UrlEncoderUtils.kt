@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.preview.utils
 
-import java.util.*
+import java.util.BitSet
 
 /**
  * url编码工具

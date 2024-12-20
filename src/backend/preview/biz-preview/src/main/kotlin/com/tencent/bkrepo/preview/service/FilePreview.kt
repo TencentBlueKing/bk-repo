@@ -1,14 +1,16 @@
 package com.tencent.bkrepo.preview.service
 
 import com.tencent.bkrepo.preview.pojo.FileAttribute
-import com.tencent.bkrepo.preview.pojo.PreviewInfo
 
 interface FilePreview {
-    fun filePreviewHandle(fileAttribute: FileAttribute, previewInfo: PreviewInfo): PreviewInfo?
+
+    /**
+     * 预览文件处理，最终的预览文件流由response输出
+     */
+    fun filePreviewHandle(fileAttribute: FileAttribute)
 
     companion object {
         const val PDF_FILE_PREVIEW_PAGE = "pdf"
-        const val PPT_FILE_PREVIEW_PAGE = "ppt"
         const val COMPRESS_FILE_PREVIEW_PAGE = "compress"
         const val MEDIA_FILE_PREVIEW_PAGE = "media"
         const val PICTURE_FILE_PREVIEW_PAGE = "picture"

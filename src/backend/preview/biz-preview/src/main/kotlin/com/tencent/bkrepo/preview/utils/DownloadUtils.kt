@@ -220,7 +220,7 @@ object DownloadUtils {
         )
 
         val dir = "$fileDir${File.separator}download"
-        val realPath = "$dir${File.separator}$updatedFileName"
+        val realPath = "$dir${File.separator}${UUID.randomUUID()}${File.separator}$updatedFileName"
         val dirFile = File(dir)
 
         if (!dirFile.exists() && !dirFile.mkdirs()) {

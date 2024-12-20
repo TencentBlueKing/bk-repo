@@ -37,7 +37,9 @@ enum class PreviewMessageCode(private val key: String) : MessageCode {
     PREVIEW_FILE_NOT_FOUND("preview.file.not-found"),
     PREVIEW_NODE_NOT_FOUND("preview.node.not-found"),
     PREVIEW_REPO_NOT_FOUND("preview.repo.not-found"),
-    PREVIEW_FIlE_HANDLE_ERROR("preview.file.handle.error"),
+    PREVIEW_FIlE_CONVERT_ERROR("preview.file.convert.error"),
+    PREVIEW_FILE_SIZE_LIMIT_ERROR("preview.file.size.limit.error"),
+    PREVIEW_FILE_NOT_SUPPORT_ERROR("preview.file.not-support"),
     PREVIEW_PARAMETER_INVALID("preview.parameter.invalid")
     ;
 

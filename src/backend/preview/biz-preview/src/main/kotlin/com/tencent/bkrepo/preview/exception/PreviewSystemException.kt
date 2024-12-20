@@ -29,20 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.preview.pojo
+package com.tencent.bkrepo.preview.exception
+
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 
 /**
- * 下载结果
+ * 系统异常
  */
-data class DownloadResult(
-    var code: Int = CODE_SUCCESS,
-    var filePath: String? = null,
-    var msg: String? = null,
-    var size: Long = 0,
-    var md5: String? = null
-) {
-    companion object {
-        const val CODE_SUCCESS = 0
-        const val CODE_FAIL = 1
-    }
-}
+open class PreviewSystemException(
+    messageCode: MessageCode = PreviewMessageCode.PREVIEW_FIlE_CONVERT_ERROR,
+    param: String
+) : ErrorCodeException(HttpStatus.INTERNAL_SERVER_ERROR, messageCode, arrayOf(param))

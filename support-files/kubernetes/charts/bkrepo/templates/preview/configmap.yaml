@@ -15,7 +15,6 @@ data:
   application.yml: |-
     preview:
       domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}/preview
-      genericDomain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}/generic
       {{- if keys $.Values.preview.config }}
         {{- toYaml .Values.preview.config | nindent 6 }}
       {{- end}}

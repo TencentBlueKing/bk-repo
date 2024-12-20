@@ -6,25 +6,90 @@ import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import com.tencent.bkrepo.preview.exception.PreviewInvalidException
 import com.tencent.bkrepo.preview.pojo.FileAttribute
 import com.tencent.bkrepo.preview.pojo.FileType
+import com.tencent.bkrepo.preview.pojo.PreviewInfo
 import com.tencent.bkrepo.preview.utils.FileUtils
 import com.tencent.bkrepo.preview.utils.JsonMapper
-import com.tencent.bkrepo.preview.utils.WebUtils
 import com.tencent.bkrepo.preview.utils.UrlEncoderUtils
+import com.tencent.bkrepo.preview.utils.WebUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.File
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 import java.util.UUID
-import javax.servlet.http.HttpServletRequest
 
 @Component
-class FileHandlerService(private val config: PreviewConfig) {
+class FileHandlerService(
+    private val config: PreviewConfig,
+    private val resourceService: CommonResourceService
+) {
 
     companion object {
         private const val URI_ENCODING = "UTF-8"
-        private const val PDF2JPG_IMAGE_FORMAT = ".jpg"
         private val logger = LoggerFactory.getLogger(FileHandlerService::class.java)
+    }
+
+    /**
+     * 预览信息
+     */
+    fun buildFilePreviewInfo(decodedParams: String): PreviewInfo {
+        val fileAttribute = getFileAttribute(decodedParams)
+        val fileTemplate = getFileTemplate(fileAttribute)
+        val watermark = resourceService.getWatermark(decodedParams)
+        logger.info("Preview info, url：{}, previewType：{}, fileTemplate: {}",
+            fileAttribute.url, fileAttribute.type, fileTemplate)
+        return PreviewInfo(
+            fileName = fileAttribute.fileName,
+            fileType = fileAttribute.type!!.name,
+            suffix = fileAttribute.suffix,
+            fileTemplate = fileTemplate,
+            watermark = watermark
+        )
+    }
+
+    /**
+     * 预览信息
+     */
+    fun buildFilePreviewInfo(artifactInfo: ArtifactInfo, decodedParams: String?): PreviewInfo {
+        val fileAttribute = getFileAttribute(artifactInfo, decodedParams)
+        val fileTemplate = getFileTemplate(fileAttribute)
+        val watermark = resourceService.getWatermark(decodedParams)
+        logger.info("Preview info, url：{}, previewType：{}, fileTemplate: {}",
+            fileAttribute.url, fileAttribute.type, fileTemplate)
+        return PreviewInfo(
+            fileName = fileAttribute.fileName,
+            fileType = fileAttribute.type!!.name,
+            suffix = fileAttribute.suffix,
+            fileTemplate = fileTemplate,
+            watermark = watermark
+        )
+    }
+
+    /**
+     * 获取文件预览模板
+     *
+     * @param params 原始参数
+     * @return 预览模板
+     */
+    fun getFileTemplate(fileAttribute: FileAttribute): String = with(fileAttribute) {
+        when {
+            isHtmlView && suffix?.lowercase() == "csv" -> FilePreview.CSV_FILE_PREVIEW_PAGE
+            isHtmlView -> FilePreview.EXEL_FILE_PREVIEW_PAGE
+            type?.name == FileType.OFFICE.name -> when (suffix!!.lowercase()) {
+                "xlsx" -> FilePreview.XLSX_FILE_PREVIEW_PAGE
+                "csv"  -> FilePreview.CSV_FILE_PREVIEW_PAGE
+                else   -> FilePreview.PDF_FILE_PREVIEW_PAGE
+            }
+            type?.name == FileType.PDF.name -> FilePreview.PDF_FILE_PREVIEW_PAGE
+            type?.name == FileType.SIMTEXT.name -> FilePreview.TXT_FILE_PREVIEW_PAGE
+            type?.name == FileType.CODE.name -> FilePreview.CODE_FILE_PREVIEW_PAGE
+            type?.name == FileType.PICTURE.name -> FilePreview.PICTURE_FILE_PREVIEW_PAGE
+            type?.name == FileType.XML.name -> FilePreview.XML_FILE_PREVIEW_PAGE
+            type?.name == FileType.MARKDOWN.name -> FilePreview.MARKDOWN_FILE_PREVIEW_PAGE
+            type?.name == FileType.XMIND.name -> FilePreview.XMIND_FILE_PREVIEW_PAGE
+            type?.name == FileType.MEDIA.name -> FilePreview.MEDIA_FILE_PREVIEW_PAGE
+            else -> FilePreview.NOT_SUPPORTED_FILE_PAGE
+        }
     }
 
     /**
@@ -33,11 +98,11 @@ class FileHandlerService(private val config: PreviewConfig) {
      * @param params 原始参数
      * @return 文件属性
      */
-    fun getFileAttribute(params: String, req: HttpServletRequest): FileAttribute {
+    fun getFileAttribute(params: String): FileAttribute {
         val jsonMapper = JsonMapper()
         val attribute = jsonMapper.fromJson(params, FileAttribute::class.java)?: FileAttribute()
-        checkRequest(attribute, req)
-        adjustProperties(attribute, req)
+        checkRequest(attribute)
+        adjustProperties(attribute)
         return attribute
     }
 
@@ -47,14 +112,14 @@ class FileHandlerService(private val config: PreviewConfig) {
      * @param params 原始参数
      * @return 文件属性
      */
-    fun getFileAttribute(artifactInfo: ArtifactInfo, params: String?, req: HttpServletRequest): FileAttribute {
+    fun getFileAttribute(artifactInfo: ArtifactInfo, params: String?): FileAttribute {
         val jsonMapper = JsonMapper()
         val attribute = jsonMapper.fromJson(params, FileAttribute::class.java)?: FileAttribute()
         attribute.projectId = artifactInfo.projectId
         attribute.repoName = artifactInfo.repoName
         attribute.artifactUri = artifactInfo.getArtifactFullPath()
-        checkRequest(attribute, req)
-        adjustProperties(attribute, req)
+        checkRequest(attribute)
+        adjustProperties(attribute)
         return attribute
     }
 
@@ -68,10 +133,17 @@ class FileHandlerService(private val config: PreviewConfig) {
         originFileName: String,
         convertFilePrefixName: String,
         isHtmlView: Boolean,
+        suffix: String,
         isCompressFile: Boolean
     ): String {
         var convertFileName = when (type) {
-            FileType.OFFICE -> convertFilePrefixName + if (isHtmlView) "html" else "pdf"
+            FileType.OFFICE -> {
+                if (suffix.equals("csv", ignoreCase = true) || suffix.equals("xlsx", ignoreCase = true)) {
+                    originFileName
+                } else {
+                    convertFilePrefixName + if (isHtmlView) "html" else "pdf"
+                }
+            }
             FileType.PDF -> originFileName
             FileType.MEDIACONVERT -> convertFilePrefixName + "mp4"
             else -> originFileName
@@ -82,32 +154,10 @@ class FileHandlerService(private val config: PreviewConfig) {
         return convertFileName
     }
 
-    private fun getBaseUrl(request: HttpServletRequest): String {
-        // 1. 支持通过 http header 中 X-Base-Url 来动态设置 baseUrl 以支持多个域名/项目的共享使用
-        val urlInHeader = request.getHeader("X-Base-Url")
-        var baseUrl: String
-
-        baseUrl = if (!urlInHeader.isNullOrEmpty()) {
-            urlInHeader
-        } else (if (!config.domain.isNullOrEmpty()) {
-            // 2. 如果配置文件中配置了 baseUrl 且不为 default 则以配置文件为准
-            config.domain
-        } else {
-            // 3. 默认动态拼接 baseUrl
-            "${request.scheme}://${request.serverName}:${request.serverPort}${request.contextPath}/"
-        }).toString()
-
-        if (!baseUrl.endsWith("/")) {
-            baseUrl = "$baseUrl/"
-        }
-
-        return baseUrl
-    }
-
     /**
      * 请求校验
      */
-    private fun checkRequest(fileAttribute: FileAttribute, req: HttpServletRequest) {
+    private fun checkRequest(fileAttribute: FileAttribute) {
         val isInvalid = listOf(
             fileAttribute.projectId,
             fileAttribute.repoName,
@@ -123,7 +173,7 @@ class FileHandlerService(private val config: PreviewConfig) {
     /**
      * 参数完善
      */
-    private fun adjustProperties(fileAttribute: FileAttribute, req: HttpServletRequest) {
+    private fun adjustProperties(fileAttribute: FileAttribute) {
         var suffix: String
         var type: FileType
         var originFileName: String // 原始文件名
@@ -178,7 +228,7 @@ class FileHandlerService(private val config: PreviewConfig) {
 
         // 获取缓存文件名
         val convertFileName = convertFilePrefixName?.let {
-            getConvertFileName(type, originFileName, it, isHtmlView, false)
+            getConvertFileName(type, originFileName, it, isHtmlView, suffix, false)
         }
 
         // 获取输出文件路径
@@ -193,7 +243,6 @@ class FileHandlerService(private val config: PreviewConfig) {
             this.outFilePath = outFilePath
             this.convertFileName = convertFileName
             this.isHtmlView = isHtmlView
-            this.baseUrl = getBaseUrl(req)
         }
     }
 
@@ -214,9 +263,9 @@ class FileHandlerService(private val config: PreviewConfig) {
         }
     }
 
-    // 判断是否为 HTML 视图
+    // 判断是否为HTML视图
     private fun isHtmlView(suffix: String): Boolean {
-        val htmlSuffixes = setOf("xls", "xlsx", "csv", "xlsm", "xlt", "xltm", "et", "ett", "xlam")
+        val htmlSuffixes = setOf("xls", "csv", "xlsm", "xlt", "xltm", "et", "ett", "xlam")
         return htmlSuffixes.contains(suffix.lowercase())
     }
 }

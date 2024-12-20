@@ -62,41 +62,41 @@ class PreviewConfig {
     val prohibitSuffix = "exe,dll"
 
     /**
-     * 预览仓库配额,默认10G
+     * 预览仓库配额(M),默认10G
      */
-    @Value("\${preview.repoQuota:10485760}")
-    val repoQuota: Long? = 1073741824
+    @Value("\${preview.repoQuota:10240}")
+    val repoQuota: Long = 10240
 
     /**
      * 预览仓库制品保留天数,默认7天
      */
     @Value("\${preview.artifactKeepDays:7}")
-    val artifactKeepDays: Long? = 7
+    val artifactKeepDays: Long = 7
 
     /**
-     * 预览地址缓存时间,单位s, 默认0不缓存
+     * 支持预览的文件大小（M）
      */
-    @Value("\${preview.fullPathCacheTime:0}")
-    val fullPathCacheTime: Long? = 0
+    @Value("\${preview.maxFileSize:50}")
+    val maxFileSize: Long = 50
 
     /**
-     * 预览服务domain
+     * 是否删除临时文件
      */
-    @Value("\${preview.domain}")
-    val domain: String? = null
+    @Value("\${preview.isDeleteTmpFile:true}")
+    val isDeleteTmpFile: Boolean = true
 
     /**
-     * generic服务domain
+     * 是否开启缓存
      */
-    @Value("\${preview.genericDomain}")
-    val genericDomain: String? = null
+    @Value("\${preview.cacheEnabled:true}")
+    val cacheEnabled: Boolean = true
 
     // office 相关配置
     /**
      * openoffice 或 LibreOffice 的 home 路径
      */
-    @Value("\${preview.office.home:}")
-    val officeHome: String? = null
+    @Value("\${preview.office.home:/opt/libreoffice7.6}")
+    val officeHome: String = "/opt/libreoffice7.6"
 
     /**
      * office 转换服务的端口，默认开启两个进程
@@ -163,18 +163,6 @@ class PreviewConfig {
      */
     @Value("\${preview.office.documentOpenPasswords:true}")
     val isOfficeDocumentOpenPasswords = true
-
-    /**
-     * xlsx 格式前端解析
-     */
-    @Value("\${preview.office.type.web:web}")
-    val officeTypeWeb = "web"
-
-    /**
-     * office 类型文档 (word, ppt) 样式，默认为pdf,也可以是图片image
-     */
-    @Value("\${preview.office.preview.type:pdf}")
-    val officePreviewType = "pdf"
 
     /**
      * 是否关闭 office 预览切换开关，默认为 false，可配置为 true 关闭
@@ -294,5 +282,4 @@ class PreviewConfig {
      */
     @Value("\${preview.watermark.angle:10}")
     val watermarkAngle = "10"
-
 }

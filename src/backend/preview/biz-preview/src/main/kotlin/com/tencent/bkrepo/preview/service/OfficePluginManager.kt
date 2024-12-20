@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.preview.service
 
+import javax.annotation.PostConstruct
+import javax.annotation.PreDestroy
 import org.apache.commons.lang3.StringUtils
 import org.jodconverter.core.office.InstalledOfficeManagerHolder
 import org.jodconverter.core.office.OfficeUtils
@@ -44,8 +46,6 @@ import org.springframework.stereotype.Component
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
-import javax.annotation.PostConstruct
-import javax.annotation.PreDestroy
 
 /**
  * 创建office文件转换器
@@ -66,12 +66,16 @@ class OfficePluginManager {
     @Value("\${preview.office.plugin.task.maxTasksPerProcess:5}")
     private val maxTasksPerProcess = 5
 
+    @Value("\${preview.office.home:/opt/libreoffice7.6}")
+    private val officeHome: String = "/opt/libreoffice7.6"
+
     /**
      * 启动Office组件进程
      */
     @PostConstruct
     fun startOfficeManager() {
-        val officeHome: File = LocalOfficeUtils.getDefaultOfficeHome()
+        val officeHome: File = getOfficeHome(officeHome)
+        logger.info("Office component path：${officeHome.path}")
         val killOffice = killProcess()
         if (killOffice) {
             logger.warn("A running Office process has been detected and the process has been automatically terminated")
@@ -93,6 +97,14 @@ class OfficePluginManager {
         } catch (e: Exception) {
             logger.error("The office component fails to start, check whether the office component is available",e)
         }
+    }
+
+    private fun getOfficeHome(homePath: String?): File {
+        if (homePath.isNullOrEmpty()) {
+            return LocalOfficeUtils.getDefaultOfficeHome()
+        }
+        val officeHome = File(homePath)
+        return if (officeHome.exists()) officeHome else LocalOfficeUtils.getDefaultOfficeHome()
     }
 
     private fun killProcess(): Boolean {

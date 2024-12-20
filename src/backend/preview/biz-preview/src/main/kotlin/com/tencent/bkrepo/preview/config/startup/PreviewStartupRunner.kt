@@ -88,7 +88,7 @@ class PreviewStartupRunner(
                 type = RepositoryType.GENERIC,
                 category = RepositoryCategory.LOCAL,
                 public = true,
-                quota = config.repoQuota,
+                quota = config.repoQuota * 1024 * 1024,
                 configuration =repoConfig
             )
             var createdRepo = repositoryService.createRepo(req)
