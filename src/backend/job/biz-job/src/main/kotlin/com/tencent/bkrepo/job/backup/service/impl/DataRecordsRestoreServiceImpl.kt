@@ -9,6 +9,7 @@ import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum.Companion.P
 import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum.Companion.PUBLIC_TYPE
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import com.tencent.bkrepo.job.backup.pojo.task.BackupContent
+import com.tencent.bkrepo.job.backup.pojo.task.ProjectContentInfo
 import com.tencent.bkrepo.job.backup.service.DataRecordsRestoreService
 import com.tencent.bkrepo.job.backup.service.impl.base.BackupDataMappings
 import com.tencent.bkrepo.job.backup.util.ZipFileUtil
@@ -102,39 +103,46 @@ class DataRecordsRestoreServiceImpl(
 
     private fun filterFolder(path: Path, content: BackupContent?): Boolean {
         if (content == null) return false
-        var projectMatch = false
-        var repoMatch = false
         val currentFolderName = path.name
         val parentFolderName = path.parent.name
-
         content.projects?.forEach {
-            if (it.projectId.isNullOrEmpty()) {
-                if (it.projectRegex.isNullOrEmpty()) {
-                    projectMatch = it.excludeProjects?.contains(parentFolderName) != true
-                } else {
-                    val regex = Regex(it.projectRegex.replace("*", ".*"))
-                    projectMatch = regex.matches(parentFolderName)
-                }
-            } else {
-                projectMatch = parentFolderName == it.projectId
-            }
-            if (it.repoList.isNullOrEmpty()) {
-                if (it.repoRegex.isNullOrEmpty()) {
-                    if (!it.excludeRepos.isNullOrEmpty()) {
-                        repoMatch = it.excludeRepos.contains(currentFolderName) != true
-                    } else {
-                        repoMatch = true
-                    }
-                } else {
-                    val regex = Regex(it.repoRegex.replace("*", ".*"))
-                    repoMatch = regex.matches(currentFolderName)
-                }
-            } else {
-                repoMatch = it.repoList.contains(currentFolderName)
-            }
-            if (projectMatch && repoMatch) return true
+            if (projectFilter(it, parentFolderName) && repoFilter(it, currentFolderName)) return true
         }
         return false
+    }
+
+    private fun projectFilter(project: ProjectContentInfo, projectFolder: String): Boolean {
+        var projectMatch = false
+        if (project.projectId.isNullOrEmpty()) {
+            if (project.projectRegex.isNullOrEmpty()) {
+                projectMatch = project.excludeProjects?.contains(projectFolder) != true
+            } else {
+                val regex = Regex(project.projectRegex.replace("*", ".*"))
+                projectMatch = regex.matches(projectFolder)
+            }
+        } else {
+            projectMatch = projectFolder == project.projectId
+        }
+        return projectMatch
+    }
+
+    private fun repoFilter(project: ProjectContentInfo, repoFolder: String): Boolean {
+        var repoMatch = false
+        if (project.repoList.isNullOrEmpty()) {
+            if (project.repoRegex.isNullOrEmpty()) {
+                if (!project.excludeRepos.isNullOrEmpty()) {
+                    repoMatch = project.excludeRepos.contains(repoFolder) != true
+                } else {
+                    repoMatch = true
+                }
+            } else {
+                val regex = Regex(project.repoRegex.replace("*", ".*"))
+                repoMatch = regex.matches(repoFolder)
+            }
+        } else {
+            repoMatch = project.repoList.contains(repoFolder)
+        }
+        return repoMatch
     }
 
     private fun commonDataRestore(context: BackupContext) {

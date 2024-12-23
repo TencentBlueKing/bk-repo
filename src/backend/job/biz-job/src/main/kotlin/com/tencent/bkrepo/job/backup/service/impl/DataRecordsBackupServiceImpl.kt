@@ -110,6 +110,11 @@ class DataRecordsBackupServiceImpl(
     }
 
     private fun buildCriteria(project: ProjectContentInfo): Criteria {
+        return Criteria().andOperator(buildProjectCriteria(project))
+            .andOperator(buildRepoCriteria(project))
+    }
+
+    private fun buildProjectCriteria(project: ProjectContentInfo): Criteria {
         with(project) {
             val criteria = Criteria()
             if (projectId.isNullOrEmpty()) {
@@ -121,6 +126,13 @@ class DataRecordsBackupServiceImpl(
             } else {
                 criteria.and(PROJECT).isEqualTo(projectId)
             }
+            return criteria
+        }
+    }
+
+    private fun buildRepoCriteria(project: ProjectContentInfo): Criteria {
+        with(project) {
+            val criteria = Criteria()
             if (project.repoList.isNullOrEmpty()) {
                 if (project.repoRegex.isNullOrEmpty()) {
                     if (!project.excludeRepos.isNullOrEmpty()) {
