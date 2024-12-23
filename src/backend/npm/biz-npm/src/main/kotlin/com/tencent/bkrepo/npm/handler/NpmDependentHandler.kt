@@ -50,6 +50,12 @@ class NpmDependentHandler {
     @Autowired
     private lateinit var packageDependentsClient: PackageDependentsClient
 
+    fun existsPackageDependents(projectId: String, repoName: String, name: String, ohpm: Boolean): Boolean {
+        val packageKey = packageKey(name, ohpm)
+        val dependents = packageDependentsClient.queryDependents(projectId, repoName, packageKey).data
+        return !dependents.isNullOrEmpty()
+    }
+
     @Async
     fun updatePackageDependents(
         userId: String,

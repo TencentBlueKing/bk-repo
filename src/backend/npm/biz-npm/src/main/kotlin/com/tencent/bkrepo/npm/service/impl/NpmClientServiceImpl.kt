@@ -55,6 +55,7 @@ import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.OHPM_ARTIFACT_TYPE
 import com.tencent.bkrepo.npm.constants.OHPM_DEFAULT_ARTIFACT_TYPE
+import com.tencent.bkrepo.npm.constants.OHPM_DEPRECATE
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.constants.TGZ_FULL_PATH_WITH_DASH_SEPARATOR
@@ -271,8 +272,9 @@ class NpmClientServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun deletePackage(userId: String, artifactInfo: NpmArtifactInfo, name: String) {
         logger.info("handling delete package request for package [$name]")
-        val fullPathList = mutableListOf<String>()
         val packageMetaData = queryPackageInfo(artifactInfo, name, false)
+        checkOhpmDependentsAndDeprecate(userId, artifactInfo, packageMetaData, null)
+        val fullPathList = mutableListOf<String>()
         fullPathList.add(".npm/$name")
         fullPathList.add(name)
         val context = ArtifactRemoveContext()
@@ -284,6 +286,29 @@ class NpmClientServiceImpl(
         }
         val ohpm = context.repositoryDetail.type == RepositoryType.OHPM
         npmDependentHandler.updatePackageDependents(userId, artifactInfo, packageMetaData, UNPUBLISH, ohpm)
+    }
+
+    override fun checkOhpmDependentsAndDeprecate(
+        userId: String,
+        artifactInfo: NpmArtifactInfo,
+        packageMetaData: NpmPackageMetaData,
+        version: String?
+    ) {
+        val projectId = artifactInfo.projectId
+        val repoName = artifactInfo.repoName
+        val name = packageMetaData.name!!
+        val ohpm = ArtifactContextHolder.getRepoDetail()!!.type == RepositoryType.OHPM
+        if (!ohpm || !npmDependentHandler.existsPackageDependents(projectId, repoName, name, ohpm)) {
+            return
+        }
+
+        packageMetaData.versions.map.forEach {
+            if (version == null || version == it.key) {
+                it.value.set(OHPM_DEPRECATE, true)
+            }
+        }
+        doPackageFileUpload(userId, artifactInfo, packageMetaData)
+        throw NpmBadRequestException("The OHPM package \"${name}\" has been depended on by other components.")
     }
 
     private fun searchLatestVersionMetadata(artifactInfo: NpmArtifactInfo, name: String): NpmVersionMetadata {

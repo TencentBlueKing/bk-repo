@@ -94,4 +94,19 @@ interface NpmClientService {
      * delete package
      */
     fun deletePackage(userId: String, artifactInfo: NpmArtifactInfo, name: String)
+
+    /**
+     * 目标制品为OHPM类型且被依赖时，将标记指定版本为废弃并抛出异常，否则什么都不处理
+     *
+     * @param userId 用户
+     * @param artifactInfo 制品信息
+     * @param packageMetaData OHPM包的package.json数据
+     * @param version 指定版本，为null时将所有版本都标记为废弃
+     */
+    fun checkOhpmDependentsAndDeprecate(
+        userId: String,
+        artifactInfo: NpmArtifactInfo,
+        packageMetaData: NpmPackageMetaData,
+        version: String?
+    )
 }
