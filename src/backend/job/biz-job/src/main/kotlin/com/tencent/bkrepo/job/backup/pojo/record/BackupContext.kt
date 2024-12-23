@@ -40,6 +40,7 @@ class BackupContext(
     lateinit var targertPath: Path
     lateinit var startDate: LocalDateTime
     var backupProgress = BackupProgress()
+    var currentPath: Path? = null
     var type: String = task.type
     var taskId: String = task.id!!
     var currentProjectId: String? = null

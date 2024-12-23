@@ -41,10 +41,12 @@ class DataRecordsBackupServiceImpl(
 ) : DataRecordsBackupService, BaseService() {
     override fun projectDataBackup(context: BackupContext) {
         with(context) {
+            logger.info("Start to run backup task ${context.task}.")
             startDate = LocalDateTime.now()
             backupTaskDao.updateState(taskId, BackupTaskState.RUNNING, startDate)
             // TODO 需要进行磁盘判断
             // TODO 需要进行仓库用量判断
+            // TODO 异常需要捕获
             if (task.content == null || task.content!!.projects.isNullOrEmpty()) return
             initStorage(context)
             // 备份公共基础数据
@@ -56,9 +58,15 @@ class DataRecordsBackupServiceImpl(
             //  最后进行压缩
             if (task.content!!.compression) {
                 ZipFileUtil.compressDirectory(targertPath.toString(), buildZipFileName(context))
-                // TODO 最后需要删除目录
+                //  最后需要删除目录
+                try {
+                    deleteDirectory(targertPath)
+                } catch (e: Exception) {
+                    logger.warn("delete temp folder error: ", e)
+                }
             }
             backupTaskDao.updateState(taskId, BackupTaskState.FINISHED, endDate = LocalDateTime.now())
+            logger.info("Backup task ${context.task} has been finished!")
         }
     }
 
@@ -73,7 +81,14 @@ class DataRecordsBackupServiceImpl(
 
     private fun commonDataBackup(context: BackupContext) {
         BackupDataEnum.getParentAndSpecialDataList(PUBLIC_TYPE).forEach {
-            queryResult(context, it)
+            logger.info("start to backup common data ${it.collectionName}.")
+            try {
+                queryResult(context, it)
+            } catch (e: Exception) {
+                logger.error("backup common data ${it.collectionName} error $e")
+                throw e
+            }
+            logger.info("common data ${it.collectionName} has been backed up!")
         }
     }
 
@@ -162,7 +177,20 @@ class DataRecordsBackupServiceImpl(
             context.currentProjectId = record.projectId
             context.currentRepoName = record.name
             BackupDataEnum.getParentAndSpecialDataList(PRIVATE_TYPE).forEach {
-                queryResult(context, it)
+                logger.info("start to backup custom data ${it.collectionName} for repo ${record.projectId}|${record.name}.")
+                try {
+                    queryResult(context, it)
+                } catch (e: Exception) {
+                    logger.error(
+                        "backup custom data ${it.collectionName} " +
+                            "error for repo ${record.projectId}|${record.name} $e"
+                    )
+                    throw e
+                }
+                logger.info(
+                    "custom data ${it.collectionName} of " +
+                        "repo ${record.projectId}|${record.name} has been backed up!"
+                )
             }
         }
     }
@@ -182,7 +210,7 @@ class DataRecordsBackupServiceImpl(
                     queryResult(context, it)
                 }
             } catch (e: Exception) {
-                logger.error("Failed to process record $record", e)
+                logger.error("Failed to process record $record with data of ${backupDataEnum.collectionName}", e)
                 if (context.task.backupSetting.errorStrategy == BackupErrorStrategy.FAST_FAIL) {
                     throw StorageErrorException(StorageMessageCode.STORE_ERROR)
                 }

@@ -96,7 +96,7 @@ class BackupNodeDataHandler(
             if (currentNode!!.folder || currentNode!!.sha256 == FAKE_SHA256
                 || currentNode!!.sha256.isNullOrEmpty()) return
             val nodeDetail = convertToDetail(currentNode)
-            val dir = generateRandomPath(currentNode!!.sha256!!)
+            val dir = FILE_STORE_FOLDER + generateRandomPath(currentNode!!.sha256!!)
             val filePath = buildPath(dir, currentNode!!.sha256!!, context.targertPath)
             if (exist(filePath)) {
                 logger.info("real file already exist [${currentNode!!.sha256}]")
@@ -237,7 +237,7 @@ class BackupNodeDataHandler(
      * 生成随机文件路径
      * */
     fun generateRandomPath(root: Path, sha256: String): Path {
-        return Paths.get(root.toFile().path, generateRandomPath(sha256))
+        return Paths.get(root.toFile().path, FILE_STORE_FOLDER, generateRandomPath(sha256), sha256)
     }
 
     companion object {

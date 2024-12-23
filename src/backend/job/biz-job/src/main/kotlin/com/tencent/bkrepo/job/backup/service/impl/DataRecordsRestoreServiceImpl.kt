@@ -8,6 +8,7 @@ import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum
 import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum.Companion.PRIVATE_TYPE
 import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum.Companion.PUBLIC_TYPE
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
+import com.tencent.bkrepo.job.backup.pojo.task.BackupContent
 import com.tencent.bkrepo.job.backup.service.DataRecordsRestoreService
 import com.tencent.bkrepo.job.backup.service.impl.base.BackupDataMappings
 import com.tencent.bkrepo.job.backup.util.ZipFileUtil
@@ -29,18 +30,27 @@ class DataRecordsRestoreServiceImpl(
 ) : DataRecordsRestoreService, BaseService() {
     override fun projectDataRestore(context: BackupContext) {
         with(context) {
+            logger.info("Start to run restore task ${context.task}.")
             startDate = LocalDateTime.now()
             backupTaskDao.updateState(taskId, BackupTaskState.RUNNING, startDate)
             // TODO 需要进行磁盘判断
+            // TODO 异常需要捕获
             if (task.content == null) return
             preProcessFile(context)
             // 恢复公共基础数据
             if (task.content!!.commonData) {
+                context.currentPath = context.targertPath
                 commonDataRestore(context)
             }
             // 备份业务数据
-            customDataRestore(context)
+            findSecondLevelDirectories(context.targertPath).forEach {
+                if (filterFolder(it, task.content)) {
+                    context.currentPath = it
+                    customDataRestore(context)
+                }
+            }
             backupTaskDao.updateState(taskId, BackupTaskState.FINISHED, endDate = LocalDateTime.now())
+            logger.info("Restore task ${context.task} has been finished!")
         }
     }
 
@@ -55,6 +65,7 @@ class DataRecordsRestoreServiceImpl(
             } else {
                 path
             }
+            logger.info("restore root folder is $targetFolder")
             context.targertPath = targetFolder
         }
     }
@@ -73,20 +84,86 @@ class DataRecordsRestoreServiceImpl(
         return subdirectories.firstOrNull() ?: throw FileNotFoundException(unZipTempFolder.toString())
     }
 
+    fun findSecondLevelDirectories(directory: Path): List<Path> {
+        val secondLevelDirectories = mutableListOf<Path>()
+
+        Files.walk(directory, 2)
+            .filter {
+                Files.isDirectory(it) &&
+                    it != directory &&
+                    it.parent.name != BaseService.FILE_STORE_FOLDER
+                    && it.parent != directory
+            }
+            .forEach { secondLevelDirectories.add(it) }
+
+        return secondLevelDirectories
+    }
+
+
+    private fun filterFolder(path: Path, content: BackupContent?): Boolean {
+        if (content == null) return false
+        var projectMatch = false
+        var repoMatch = false
+        val currentFolderName = path.name
+        val parentFolderName = path.parent.name
+
+        content.projects?.forEach {
+            if (it.projectId.isNullOrEmpty()) {
+                if (it.projectRegex.isNullOrEmpty()) {
+                    projectMatch = it.excludeProjects?.contains(parentFolderName) != true
+                } else {
+                    val regex = Regex(it.projectRegex.replace("*", ".*"))
+                    projectMatch = regex.matches(parentFolderName)
+                }
+            } else {
+                projectMatch = parentFolderName == it.projectId
+            }
+            if (it.repoList.isNullOrEmpty()) {
+                if (it.repoRegex.isNullOrEmpty()) {
+                    if (!it.excludeRepos.isNullOrEmpty()) {
+                        repoMatch = it.excludeRepos.contains(currentFolderName) != true
+                    } else {
+                        repoMatch = true
+                    }
+                } else {
+                    val regex = Regex(it.repoRegex.replace("*", ".*"))
+                    repoMatch = regex.matches(currentFolderName)
+                }
+            } else {
+                repoMatch = it.repoList.contains(currentFolderName)
+            }
+            if (projectMatch && repoMatch) return true
+        }
+        return false
+    }
+
     private fun commonDataRestore(context: BackupContext) {
         BackupDataEnum.getNonSpecialDataList(PUBLIC_TYPE).forEach {
-            processFiles(context, it)
+            logger.info("start to restore common data ${it.collectionName}!")
+            try {
+                processFiles(context, it)
+            } catch (e: Exception) {
+                logger.error("restore common data ${it.collectionName} error $e")
+            }
+            logger.info("common data ${it.collectionName} has been restored!")
         }
     }
 
     private fun customDataRestore(context: BackupContext) {
         BackupDataEnum.getNonSpecialDataList(PRIVATE_TYPE).forEach {
-            processFiles(context, it)
+            logger.info("start to restore custom data ${it.collectionName} with folder ${context.currentPath}!")
+            try {
+                processFiles(context, it)
+            } catch (e: Exception) {
+                logger.error("restore custom data ${it.collectionName} with folder ${context.currentPath} error $e")
+                throw e
+            }
+            logger.info("custom data ${it.collectionName} has been restored with folder ${context.currentPath}!")
         }
     }
 
     private fun processFiles(context: BackupContext, backupDataEnum: BackupDataEnum) {
-        context.currentFile = Paths.get(context.targertPath.toString(), backupDataEnum.fileName).toString()
+        BackupDataMappings.preRestoreDataHandler(backupDataEnum, context)
         loadAndStoreRecord(backupDataEnum, context)
         val specialData = BackupDataMappings.getSpecialDataEnum(backupDataEnum, context) ?: return
         specialData.forEach {
@@ -97,7 +174,7 @@ class DataRecordsRestoreServiceImpl(
     private fun loadAndStoreRecord(backupDataEnum: BackupDataEnum, context: BackupContext) {
         with(context) {
             if (!Files.exists(Paths.get(currentFile))) {
-                logger.error("$currentFile not exist!")
+                logger.warn("$currentFile not exist!")
                 return
             }
             val file = File(currentFile)

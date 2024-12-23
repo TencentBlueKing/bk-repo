@@ -56,7 +56,6 @@ class BackupProjectDataHandler(
 
     private fun updateExistProject(projectInfo: BackupProjectInfo) {
         val projectQuery = buildQuery(projectInfo)
-        // 逻辑删除， 同时删除索引
         val update = Update()
             .set(BackupProjectInfo::lastModifiedBy.name, projectInfo.lastModifiedBy)
             .set(BackupProjectInfo::createdBy.name, projectInfo.createdBy)

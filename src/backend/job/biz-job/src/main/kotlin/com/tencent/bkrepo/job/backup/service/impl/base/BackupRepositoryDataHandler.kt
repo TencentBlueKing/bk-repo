@@ -89,7 +89,6 @@ class BackupRepositoryDataHandler(
 
     private fun updateExistRepo(repoInfo: BackupRepositoryInfo) {
         val repoQuery = buildQuery(repoInfo)
-        // 逻辑删除， 同时删除索引
         val update = Update()
             .set(BackupRepositoryInfo::lastModifiedBy.name, repoInfo.lastModifiedBy)
             .set(BackupRepositoryInfo::createdBy.name, repoInfo.createdBy)

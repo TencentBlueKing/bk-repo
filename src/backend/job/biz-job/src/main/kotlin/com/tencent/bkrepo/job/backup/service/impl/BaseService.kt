@@ -79,8 +79,17 @@ open class BaseService {
         return Files.isRegularFile(filePath)
     }
 
+    fun deleteDirectory(directory: Path) {
+        if (Files.exists(directory)) {
+            Files.walk(directory)
+                .sorted(Comparator.reverseOrder())
+                .forEach { Files.delete(it) }
+        }
+    }
+
     companion object {
         val logger = LoggerFactory.getLogger(BaseService::class.java)
         const val ZIP_FILE_SUFFIX = ".zip"
+        const val FILE_STORE_FOLDER = "bk+store"
     }
 }

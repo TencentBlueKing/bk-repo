@@ -81,6 +81,11 @@ object BackupDataMappings {
         return mapper.returnLastId(data)
     }
 
+    fun preRestoreDataHandler(backupDataEnum: BackupDataEnum, context: BackupContext) {
+        val mapper = mappers[backupDataEnum] ?: return
+        mapper.preRestoreDataHandler(backupDataEnum, context)
+    }
+
     fun <T> storeRestoreDataHandler(record: T, backupDataEnum: BackupDataEnum, context: BackupContext) {
         val mapper = mappers[backupDataEnum] ?: return
         mapper.storeRestoreDataHandler(record, backupDataEnum, context)
