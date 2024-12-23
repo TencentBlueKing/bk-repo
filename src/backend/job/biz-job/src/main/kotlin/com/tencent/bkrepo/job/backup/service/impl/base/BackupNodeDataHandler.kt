@@ -9,7 +9,6 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.backup.pojo.query.BackupFileReferenceInfo
@@ -242,5 +241,6 @@ class BackupNodeDataHandler(
 
     companion object {
         private val logger = LoggerFactory.getLogger(BackupNodeDataHandler::class.java)
+        private const val FAKE_SHA256 = "0000000000000000000000000000000000000000000000000000000000000000"
     }
 }

@@ -177,7 +177,10 @@ class DataRecordsBackupServiceImpl(
             context.currentProjectId = record.projectId
             context.currentRepoName = record.name
             BackupDataEnum.getParentAndSpecialDataList(PRIVATE_TYPE).forEach {
-                logger.info("start to backup custom data ${it.collectionName} for repo ${record.projectId}|${record.name}.")
+                logger.info(
+                    "start to backup custom data ${it.collectionName} " +
+                        "for repo ${record.projectId}|${record.name}."
+                )
                 try {
                     queryResult(context, it)
                 } catch (e: Exception) {
