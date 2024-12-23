@@ -53,6 +53,8 @@ import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
+import com.tencent.bkrepo.npm.constants.OHPM_ARTIFACT_TYPE
+import com.tencent.bkrepo.npm.constants.OHPM_DEFAULT_ARTIFACT_TYPE
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.constants.TGZ_FULL_PATH_WITH_DASH_SEPARATOR
@@ -377,6 +379,12 @@ class NpmClientServiceImpl(
             if (!hspType.isNullOrEmpty()) {
                 version.set(HSP_TYPE, hspType)
             }
+            if (version.any()[OHPM_ARTIFACT_TYPE] == null) {
+                // OpenHarmony包制品类型，有两个选项：original、obfuscation
+                // original：源码，即发布源码(.ts/.ets)；obfuscation：混淆代码，即源码经过混淆之后发布上传
+                // 默认为original
+                version.set(OHPM_ARTIFACT_TYPE, OHPM_DEFAULT_ARTIFACT_TYPE)
+            }
         }
     }
 
@@ -547,7 +555,7 @@ class NpmClientServiceImpl(
             val entry = iterator.next()
             val pathWithDash = entry.value.dist?.tarball?.substringAfter(npmPackageMetaData.name!!)
                 ?.contains(TGZ_FULL_PATH_WITH_DASH_SEPARATOR) ?: true
-            val tgzFullPath = NpmUtils.getTgzPath(npmPackageMetaData.name!!, entry.key, pathWithDash)
+            val tgzFullPath = NpmUtils.getTarballPathByRepoType(npmPackageMetaData.name!!, entry.key, pathWithDash)
             if (entry.value.any().containsKey("deprecated")) {
                 metadataClient.saveMetadata(
                     MetadataSaveRequest(
