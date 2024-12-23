@@ -2,18 +2,25 @@ FROM blueking/jdk:0.0.2
 
 LABEL maintainer="Tencent BlueKing Devops"
 
-# 内置一些常用的中文字体，避免普遍性乱码
-# COPY fonts/* /usr/share/fonts/chinese/
-RUN yum -y install wqy-zenhei wqy-microhei fontconfig && \
-    fc-cache -fv && \
-    yum -y install ca-certificates && \
-    # 安装 glibc-common 以支持中文本地化
-    yum -y install glibc-common && \
+RUN yum -y install ca-certificates && \
+    yum -y install glibc-common wget bzip2 && \
     # 安装必要的字体包
-    yum -y install wqy-zenhei wqy-microhei ttf-dejavu fontconfig wget && \
+    wget https://sourceforge.net/projects/wqy/files/wqy-microhei/0.2.0-beta/wqy-microhei-0.2.0-beta.tar.gz -O /tmp/wqy-microhei.tar.gz && \
+    mkdir -p /usr/share/fonts/wenquanyi && \
+    tar -zxvf /tmp/wqy-microhei.tar.gz -C /usr/share/fonts/wenquanyi --strip-components=1 && \
+    rm -f /tmp/wqy-microhei.tar.gz && \
+    wget https://jaist.dl.sourceforge.net/project/wqy/wqy-zenhei/0.9.45%20%28Fighting-state%20RC1%29/wqy-zenhei-0.9.45.tar.gz -O /tmp/wqy-zenhei.tar.gz && \
+    mkdir -p /usr/share/fonts/wenquanyi && \
+    tar -zxvf /tmp/wqy-zenhei.tar.gz -C /usr/share/fonts/wenquanyi --strip-components=1 && \
+    rm -f /tmp/wqy-zenhei.tar.gz && \
+    wget https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2 -O /tmp/dejavu-fonts.tar.bz2 && \
+    mkdir -p /usr/share/fonts/dejavu && \
+    tar -jxvf /tmp/dejavu-fonts.tar.bz2 -C /usr/share/fonts/dejavu --strip-components=1 && \
+    rm -f /tmp/dejavu-fonts.tar.bz2 && \
+    yum -y install fontconfig && \
+    fc-cache -fv && \
     # 设置中文环境
     localedef -i zh_CN -c -f UTF-8 -A /usr/share/locale/locale.alias zh_CN.UTF-8 && \
-    export LANG=zh_CN.UTF-8 && \
     # 设置时区
     export DEBIAN_FRONTEND=noninteractive && \
     yum -y install tzdata && \
@@ -22,14 +29,18 @@ RUN yum -y install wqy-zenhei wqy-microhei fontconfig && \
     yum -y install libXrender libXinerama libXt libXext libfreetype cairo cups libX11 nss && \
     # 清理缓存
     yum clean all && \
-    # 下载 LibreOffice RPM 包
+    # 安装LibreOffice
     wget https://downloadarchive.documentfoundation.org/libreoffice/old/7.6.7.1/rpm/x86_64/LibreOffice_7.6.7.1_Linux_x86-64_rpm.tar.gz -O libreoffice_rpm.tar.gz && \
     tar -zxf libreoffice_rpm.tar.gz -C /tmp && \
-    # 安装 RPM 包
     cd /tmp/LibreOffice_7.6.7.1_Linux_x86-64_rpm/RPMS && \
     yum -y install *.rpm && \
-    # 清理临时文件
     rm -rf /tmp/* && rm -rf /var/lib/apt/lists/*
+
+# 设置环境变量，支持中文
+ENV LANG=zh_CN.utf-8
+ENV LC_ALL=zh_CN.utf-8
+ENV LC_CTYPE=zh_CN.utf-8
+RUN echo "LANG=zh_CN.utf-8" >> /etc/environment
 
 ENV BK_REPO_HOME=/data/workspace \
     BK_REPO_LOGS_DIR=/data/workspace/logs \
