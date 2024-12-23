@@ -351,7 +351,7 @@ class NpmClientServiceImpl(
                 resolveOhpm(npmPackageMetaData)
             }
             handlerAttachmentsUpload(userId, artifactInfo, npmPackageMetaData)
-            handlerPackageFileUpload(userId, artifactInfo, npmPackageMetaData, size)
+            handlerPackageFileUpload(userId, artifactInfo, npmPackageMetaData, size, ohpm)
             handlerVersionFileUpload(userId, artifactInfo, npmPackageMetaData, size)
             npmDependentHandler.updatePackageDependents(
                 userId,
@@ -392,7 +392,8 @@ class NpmClientServiceImpl(
         userId: String,
         artifactInfo: NpmArtifactInfo,
         npmPackageMetaData: NpmPackageMetaData,
-        size: Long
+        size: Long,
+        ohpm: Boolean,
     ) {
         with(artifactInfo) {
             val packageKey = NpmUtils.packageKeyByRepoType(npmPackageMetaData.name.orEmpty())
@@ -403,6 +404,9 @@ class NpmClientServiceImpl(
             }
             // 第一次上传
             if (!packageExist(projectId, repoName, packageKey)) {
+                if (ohpm) {
+                    npmPackageMetaData.rev = npmPackageMetaData.versions.map.size.toString()
+                }
                 npmPackageMetaData.time.add(CREATED, gmtTime)
                 npmPackageMetaData.time.add(MODIFIED, gmtTime)
                 npmPackageMetaData.time.add(npmMetadata.version!!, gmtTime)
@@ -414,6 +418,9 @@ class NpmClientServiceImpl(
             originalPackageInfo.distTags.getMap().putAll(npmPackageMetaData.distTags.getMap())
             originalPackageInfo.time.add(MODIFIED, gmtTime)
             originalPackageInfo.time.add(npmMetadata.version!!, gmtTime)
+            if (ohpm) {
+                originalPackageInfo.rev = originalPackageInfo.versions.map.size.toString()
+            }
             doPackageFileUpload(userId, artifactInfo, originalPackageInfo)
         }
     }

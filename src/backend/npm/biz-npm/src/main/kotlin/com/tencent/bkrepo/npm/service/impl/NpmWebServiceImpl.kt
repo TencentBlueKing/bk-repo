@@ -33,6 +33,7 @@ package com.tencent.bkrepo.npm.service.impl
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
@@ -162,6 +163,9 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 packageMetaData.versions.map.remove(version)
                 packageMetaData.time.getMap().remove(version)
                 packageMetaData.distTags.set(LATEST, newLatest)
+            }
+            if (ArtifactContextHolder.getRepoDetail()!!.type == RepositoryType.OHPM) {
+                packageMetaData.rev = packageMetaData.versions.map.size.toString()
             }
             reUploadPackageJsonFile(artifactInfo, packageMetaData)
         }
