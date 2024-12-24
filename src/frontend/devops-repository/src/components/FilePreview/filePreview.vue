@@ -1,21 +1,12 @@
 <template>
     <div>
-        <vue-office-docx
-            v-if="previewDocx"
-            :src="dataSource"
-            style="max-height: 100vh; overflow-y: auto"
-        />
         <vue-office-excel
             v-if="previewExcel"
             :src="dataSource"
             :options="excelOptions"
             style="max-height: 100vh; overflow-y: auto"
         />
-        <vue-office-pdf
-            v-if="previewPdf"
-            :src="dataSource"
-            style="max-height: 100vh; overflow-y: auto"
-        />
+        <iframe v-if="showFrame" :src="pageUrl" frameborder="0" style="width: 100%; height: 100%"></iframe>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <textarea v-model="basicFileText" class="textarea" readonly></textarea>
@@ -29,16 +20,19 @@
     </div>
 </template>
 <script>
-    import VueOfficePdf from '@vue-office/pdf'
     import VueOfficeExcel from '@vue-office/excel'
-    import VueOfficeDocx from '@vue-office/docx'
-    import { customizePreviewOfficeFile } from '@/utils/previewOfficeFile'
+    import {
+        customizePreviewLocalOfficeFile, customizePreviewOfficeFile, customizePreviewRemoteOfficeFile
+    } from '@/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
+    import { Base64 } from 'js-base64'
 
     export default {
-        name: 'filePreview',
-        components: { VueOfficeDocx, VueOfficeExcel, VueOfficePdf },
+        name: 'FilePreview',
+        components: { VueOfficeExcel },
         props: {
+            repoType: String,
+            extraParam: String,
             repoName: String,
             filePath: String
         },
@@ -64,12 +58,12 @@
                         return workbookData
                     } // 将获取到的excel数据进行处理之后且渲染到页面之前，可通过transformData对即将渲染的数据及样式进行修改，此时每个单元格的text值就是即将渲染到页面上的内容
                 },
-                previewDocx: false,
                 previewExcel: false,
-                previewPdf: false,
                 previewBasic: false,
                 basicFileText: '',
-                hasError: false
+                hasError: false,
+                pageUrl: '',
+                showFrame: true
             }
         },
         computed: {
@@ -78,27 +72,7 @@
             }
         },
         async created () {
-            if (this.filePath.endsWith('.pdf')
-                || this.filePath.endsWith('.docx')
-                || this.filePath.endsWith('.xls')
-                || this.filePath.endsWith('.xlsx')
-            ) {
-                customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
-                    if (this.filePath.endsWith('docx')) {
-                        this.previewDocx = true
-                    } else if (this.filePath.endsWith('xlsx')) {
-                        this.previewExcel = true
-                    } else if (this.filePath.endsWith('xls')) {
-                        this.excelOptions.xls = true
-                        this.previewExcel = true
-                    } else {
-                        this.previewPdf = true
-                    }
-                    this.dataSource = res.data
-                }).catch((e) => {
-                    this.hasError = true
-                })
-            } else if (this.filePath.endsWith('txt')
+            if (this.filePath.endsWith('txt')
                 || this.filePath.endsWith('sh')
                 || this.filePath.endsWith('bat')
                 || this.filePath.endsWith('json')
@@ -120,6 +94,70 @@
                 }).catch((e) => {
                     this.hasError = true
                 })
+            } else if (this.filePath.endsWith('.xlsx')
+            ) {
+                customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                    this.previewExcel = true
+                    this.dataSource = res.data
+                }).catch((e) => {
+                    this.hasError = true
+                })
+            } else if (this.filePath.endsWith('docx')
+                || this.filePath.endsWith('wps')
+                || this.filePath.endsWith('doc')
+                || this.filePath.endsWith('docm')
+                || this.filePath.endsWith('xls')
+                || this.filePath.endsWith('xlsm')
+                || this.filePath.endsWith('ppt')
+                || this.filePath.endsWith('pptx')
+                || this.filePath.endsWith('vsd')
+                || this.filePath.endsWith('rtf')
+                || this.filePath.endsWith('odt')
+                || this.filePath.endsWith('wmf')
+                || this.filePath.endsWith('emf')
+                || this.filePath.endsWith('dps')
+                || this.filePath.endsWith('et')
+                || this.filePath.endsWith('ods')
+                || this.filePath.endsWith('ots')
+                || this.filePath.endsWith('tsv')
+                || this.filePath.endsWith('odp')
+                || this.filePath.endsWith('otp')
+                || this.filePath.endsWith('sxi')
+                || this.filePath.endsWith('ott')
+                || this.filePath.endsWith('vsdx')
+                || this.filePath.endsWith('fodt')
+                || this.filePath.endsWith('fods')
+                || this.filePath.endsWith('xltx')
+                || this.filePath.endsWith('tga')
+                || this.filePath.endsWith('psd')
+                || this.filePath.endsWith('dotm')
+                || this.filePath.endsWith('ett')
+                || this.filePath.endsWith('xlt')
+                || this.filePath.endsWith('xltm')
+                || this.filePath.endsWith('wpt')
+                || this.filePath.endsWith('dot')
+                || this.filePath.endsWith('xlam')
+                || this.filePath.endsWith('dotx')
+                || this.filePath.endsWith('xla')
+                || this.filePath.endsWith('pages')
+                || this.filePath.endsWith('eps')) {
+                if (this.repoType === 'local') {
+                    customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(async res => {
+                        const url = URL.createObjectURL(res.data)
+                        this.showFrame = true
+                        this.pageUrl = url
+                    }).catch(() => {
+                        this.hasError = true
+                    })
+                } else {
+                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(res => {
+                        const url = URL.createObjectURL(res.data)
+                        this.showFrame = true
+                        this.pageUrl = url
+                    }).catch(() => {
+                        this.hasError = true
+                    })
+                }
             } else {
                 this.hasError = true
             }
@@ -133,10 +171,10 @@
             ]),
             cancel () {
                 this.dataSource = ''
-                this.previewDocx = false
                 this.previewExcel = false
-                this.previewPdf = false
                 this.previewBasic = false
+                this.showFrame = false
+                this.pageUrl = ''
                 this.hasError = false
             }
         }
