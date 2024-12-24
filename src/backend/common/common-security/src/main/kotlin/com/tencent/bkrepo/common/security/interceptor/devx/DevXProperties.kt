@@ -78,6 +78,11 @@ data class DevXProperties(
      */
     var projectCvmWhiteList: Map<String, Set<String>> = emptyMap(),
     /**
+     * 配置可以被访问的项目
+     * key 为项目id， value为可被访问的项目id
+     */
+    var projectWhiteList: Map<String, Set<String>> = emptyMap(),
+    /**
      * 可以从任意来源访问的用户
      */
     var userWhiteList: Set<String> = emptySet(),
