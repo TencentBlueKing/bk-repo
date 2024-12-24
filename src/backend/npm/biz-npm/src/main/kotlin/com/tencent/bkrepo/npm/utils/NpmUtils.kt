@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.npm.utils
 
+import com.github.zafarkhaja.semver.Version
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.UrlFormatter
@@ -47,8 +48,11 @@ import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
 import com.tencent.bkrepo.npm.constants.OHPM_PKG_HAR_FULL_PATH
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
+import org.slf4j.LoggerFactory
 
 object NpmUtils {
+
+    private val logger = LoggerFactory.getLogger(NpmUtils::class.java)
 
     fun getPackageMetadataPath(packageName: String): String {
         return NPM_PKG_METADATA_FULL_PATH.format(packageName)
@@ -101,6 +105,16 @@ object NpmUtils {
             return iterator.next().value
         }
         return distTags.getMap()[LATEST]!!
+    }
+
+    fun updateLatestVersion(npmPackageMetaData: NpmPackageMetaData) {
+        try {
+            npmPackageMetaData.versions.map.keys
+                .maxByOrNull { Version.valueOf(it) }
+                ?.let { npmPackageMetaData.distTags.set(LATEST, it) }
+        } catch (e: Exception) {
+            logger.error("update latest failed, current version will be used as the latest", e)
+        }
     }
 
     fun parseNameAndVersionFromFullPath(artifactFullPath: String): Pair<String, String> {

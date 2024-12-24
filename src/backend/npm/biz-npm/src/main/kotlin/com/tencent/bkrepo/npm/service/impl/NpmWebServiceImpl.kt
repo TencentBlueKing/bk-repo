@@ -166,6 +166,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 packageMetaData.distTags.set(LATEST, newLatest)
             }
             if (ArtifactContextHolder.getRepoDetail()!!.type == RepositoryType.OHPM) {
+                NpmUtils.updateLatestVersion(packageMetaData)
                 packageMetaData.rev = packageMetaData.versions.map.size.toString()
             }
             reUploadPackageJsonFile(artifactInfo, packageMetaData)

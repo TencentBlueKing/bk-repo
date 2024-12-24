@@ -444,6 +444,7 @@ class NpmClientServiceImpl(
             originalPackageInfo.time.add(MODIFIED, gmtTime)
             originalPackageInfo.time.add(npmMetadata.version!!, gmtTime)
             if (ohpm) {
+                NpmUtils.updateLatestVersion(originalPackageInfo)
                 originalPackageInfo.rev = originalPackageInfo.versions.map.size.toString()
             }
             doPackageFileUpload(userId, artifactInfo, originalPackageInfo)
