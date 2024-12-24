@@ -62,7 +62,7 @@ class BackupPackageVersionDataHandler(
     private fun findExistPackageVersion(
         record: BackupPackageVersionInfoWithKeyInfo
     ): Pair<String, BackupPackageVersionInfo?> {
-        // TODO packageId变化该如何处理
+        // package的id会在version表中使用
         val existPackageQuery = Query(
             Criteria.where(BackupPackageVersionInfoWithKeyInfo::repoName.name).isEqualTo(record.repoName)
                 .and(BackupPackageVersionInfoWithKeyInfo::projectId.name).isEqualTo(record.projectId)

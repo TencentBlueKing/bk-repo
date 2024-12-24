@@ -50,6 +50,7 @@ object BackupDataMappings {
         addMapper(SpringContextUtils.getBean(BackupPackageVersionDataHandler::class.java))
         addMapper(SpringContextUtils.getBean(BackupNodeDataHandler::class.java))
         addMapper(SpringContextUtils.getBean(BackupMavenMetadataDataHandler::class.java))
+        addMapper(SpringContextUtils.getBean(BackupConanMetadataDataHandler::class.java))
     }
 
     private fun addMapper(mapper: BackupDataHandler) {

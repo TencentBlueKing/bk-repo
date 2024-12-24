@@ -202,7 +202,7 @@ class BackupNodeDataHandler(
         val repo = RepositoryCommonUtils.getRepositoryDetail(record.projectId, record.repoName)
         val filePath = generateRandomPath(context.targertPath, record.sha256!!)
         val artifactFile = filePath.toFile().toArtifactFile()
-        // TODO 增加重试已经异常捕获
+        // TODO 增加重试以及异常捕获
         storageService.store(record.sha256!!, artifactFile, repo.storageCredentials)
         // 只有新增的时候才去尽显文件索引新增
         increment(record.sha256!!, repo.storageCredentials?.key)

@@ -48,8 +48,6 @@ class BackupMavenMetadataDataHandler(
     }
 
     private fun findExistMavenMetadata(record: BackupMavenMetadata): BackupMavenMetadata? {
-        // TODO 记录更新时需要对比时间，保留最新的记录
-        // TODO 对于存在索引文件的仓库需要更新对应索引文件信息
         val existMetadataQuery = buildQuery(record)
         return mongoTemplate.findOne(
             existMetadataQuery,
@@ -59,6 +57,7 @@ class BackupMavenMetadataDataHandler(
     }
 
     private fun updateExistMavenMetadata(mavenMetadata: BackupMavenMetadata) {
+        // TODO 记录更新时需要对比时间，保留最新的记录
         val metadataQuery = buildQuery(mavenMetadata)
         val update = Update()
             .set(BackupMavenMetadata::timestamp.name, mavenMetadata.timestamp)

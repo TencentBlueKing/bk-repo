@@ -28,27 +28,29 @@
 package com.tencent.bkrepo.job.backup.service.impl.repo
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import com.tencent.bkrepo.job.backup.service.BackupRepoSpecialDataService
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 
-object BackupRepoSpecialMappings {
 
-    private val mappers = mutableMapOf<RepositoryType, BackupRepoSpecialDataService>()
+@Component
+class BackupConanRepoHandler : BackupRepoSpecialDataService {
 
-    init {
-        addMapper(SpringContextUtils.getBean(BackupMavenRepoHandler::class.java))
-        addMapper(SpringContextUtils.getBean(BackupConanRepoHandler::class.java))
+    override fun type(): RepositoryType {
+        return RepositoryType.CONAN
     }
 
-    private fun addMapper(mapper: BackupRepoSpecialDataService) {
-        mappers[mapper.type()] = mapper
-        mapper.extraType()?.let { mappers[mapper.extraType()!!] = mapper }
+    override fun extraType(): RepositoryType? {
+        return null
     }
 
-    fun getRepoSpecialDataEnum(context: BackupContext): List<BackupDataEnum>? {
-        val mapper = mappers[context.currentRepositoryType] ?: return null
-        return mapper.getRepoSpecialDataEnum(context)
+    override fun getRepoSpecialDataEnum(context: BackupContext): List<BackupDataEnum> {
+        return listOf(BackupDataEnum.CONAN_METADATA_DATA)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(BackupConanRepoHandler::class.java)
     }
 }

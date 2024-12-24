@@ -2,6 +2,7 @@ package com.tencent.bkrepo.job.backup.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.job.backup.config.DataBackupConfig
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
 import com.tencent.bkrepo.job.backup.pojo.BackupTaskState
 import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum
@@ -28,6 +29,7 @@ import kotlin.streams.toList
 @Service
 class DataRecordsRestoreServiceImpl(
     private val backupTaskDao: BackupTaskDao,
+    private val dataBackupConfig: DataBackupConfig,
 ) : DataRecordsRestoreService, BaseService() {
     override fun projectDataRestore(context: BackupContext) {
         with(context) {
@@ -62,6 +64,7 @@ class DataRecordsRestoreServiceImpl(
                 throw FileNotFoundException(context.task.storeLocation)
             }
             val targetFolder = if (task.content!!.compression) {
+                freeSpaceCheck(context, dataBackupConfig.usageThreshold)
                 decompressZipFile(path, context)
             } else {
                 path
@@ -72,7 +75,7 @@ class DataRecordsRestoreServiceImpl(
     }
 
     private fun decompressZipFile(sourcePath: Path, context: BackupContext): Path {
-        val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+        val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss"))
         val tempFolder = sourcePath.name.removeSuffix(ZIP_FILE_SUFFIX) + StringPool.DASH + currentDateStr
         val unZipTempFolder = Paths.get(sourcePath.parent.toString(), tempFolder)
         ZipFileUtil.decompressFile(context.task.storeLocation, unZipTempFolder.toString())

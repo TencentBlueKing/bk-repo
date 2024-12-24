@@ -1,14 +1,18 @@
 package com.tencent.bkrepo.job.backup.service.impl
 
+import com.google.common.util.concurrent.UncheckedExecutionException
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.PROJECT
+import com.tencent.bkrepo.job.backup.config.DataBackupConfig
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
 import com.tencent.bkrepo.job.backup.pojo.BackupTaskState
 import com.tencent.bkrepo.job.backup.pojo.query.BackupRepositoryInfo
@@ -29,6 +33,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
@@ -38,15 +43,19 @@ import java.time.format.DateTimeFormatter
 class DataRecordsBackupServiceImpl(
     private val mongoTemplate: MongoTemplate,
     private val backupTaskDao: BackupTaskDao,
+    private val storageService: StorageService,
+    private val dataBackupConfig: DataBackupConfig,
 ) : DataRecordsBackupService, BaseService() {
     override fun projectDataBackup(context: BackupContext) {
         with(context) {
             logger.info("Start to run backup task ${context.task}.")
             startDate = LocalDateTime.now()
             backupTaskDao.updateState(taskId, BackupTaskState.RUNNING, startDate)
-            // TODO 需要进行磁盘判断
+            // 需要进行磁盘判断， 当达到磁盘容量大小的限定百分比时则停止
+            freeSpaceCheck(context, dataBackupConfig.usageThreshold)
             // TODO 需要进行仓库用量判断
             // TODO 异常需要捕获
+            // TODO 历史备份保留周期，当超过该周期时需要进行删除
             if (task.content == null || task.content!!.projects.isNullOrEmpty()) return
             initStorage(context)
             // 备份公共基础数据
@@ -57,10 +66,16 @@ class DataRecordsBackupServiceImpl(
             customDataBackup(context)
             //  最后进行压缩
             if (task.content!!.compression) {
-                ZipFileUtil.compressDirectory(targertPath.toString(), buildZipFileName(context))
-                //  最后需要删除目录
+                // TODO 使用压缩需要关注对CPU的影响
+                val zipFileName = buildZipFileName(context)
                 try {
+                    ZipFileUtil.compressDirectory(targertPath.toString(), zipFileName)
+                    val zipFile = File(targertPath.toString(), zipFileName)
+                    storageService.store(zipFileName, zipFile.toArtifactFile(), dataBackupConfig.cos)
+                    //  最后需要删除目录
                     deleteDirectory(targertPath)
+                } catch (unchecked: UncheckedExecutionException) {
+                    logger.error("cos config is null, $unchecked")
                 } catch (e: Exception) {
                     logger.warn("delete temp folder error: ", e)
                 }
@@ -71,7 +86,7 @@ class DataRecordsBackupServiceImpl(
     }
 
     private fun initStorage(context: BackupContext) {
-        val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+        val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss"))
         val path = Paths.get(context.task.storeLocation, context.task.name, currentDateStr)
         if (!Files.exists(path)) {
             Files.createDirectories(path)
@@ -110,8 +125,7 @@ class DataRecordsBackupServiceImpl(
     }
 
     private fun buildCriteria(project: ProjectContentInfo): Criteria {
-        return Criteria().andOperator(buildProjectCriteria(project))
-            .andOperator(buildRepoCriteria(project))
+        return Criteria().andOperator(buildProjectCriteria(project), buildRepoCriteria(project))
     }
 
     private fun buildProjectCriteria(project: ProjectContentInfo): Criteria {
@@ -121,7 +135,9 @@ class DataRecordsBackupServiceImpl(
                 if (projectRegex.isNullOrEmpty()) {
                     criteria.and(PROJECT).nin(excludeProjects!!)
                 } else {
-                    criteria.and(PROJECT).regex(".*${EscapeUtils.escapeRegex(projectRegex)}.*")
+                    val escapeValue = EscapeUtils.escapeRegexExceptWildcard(projectRegex)
+                    val regexPattern = escapeValue.replace("*", ".*")
+                    criteria.and(PROJECT).regex("^$regexPattern")
                 }
             } else {
                 criteria.and(PROJECT).isEqualTo(projectId)
@@ -131,25 +147,25 @@ class DataRecordsBackupServiceImpl(
     }
 
     private fun buildRepoCriteria(project: ProjectContentInfo): Criteria {
-        with(project) {
-            val criteria = Criteria()
-            if (project.repoList.isNullOrEmpty()) {
-                if (project.repoRegex.isNullOrEmpty()) {
-                    if (!project.excludeRepos.isNullOrEmpty()) {
-                        criteria.and(REPO_NAME).nin(project.excludeRepos)
-                    }
-                } else {
-                    criteria.and(REPO_NAME).regex(".*${EscapeUtils.escapeRegex(project.repoRegex)}.*")
+        val criteria = Criteria()
+        if (project.repoList.isNullOrEmpty()) {
+            if (project.repoRegex.isNullOrEmpty()) {
+                if (!project.excludeRepos.isNullOrEmpty()) {
+                    criteria.and(REPO_NAME).nin(project.excludeRepos)
                 }
             } else {
-                criteria.and(REPO_NAME).`in`(project.repoList)
+                val escapeValue = EscapeUtils.escapeRegexExceptWildcard(project.repoRegex)
+                val regexPattern = escapeValue.replace("*", ".*")
+                criteria.and(REPO_NAME).regex("^$regexPattern")
             }
-            return criteria
+        } else {
+            criteria.and(REPO_NAME).`in`(project.repoList)
         }
+        return criteria
     }
 
     private fun buildZipFileName(context: BackupContext): String {
-        val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+        val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss"))
         val path = context.task.name + StringPool.DASH + currentDateStr + ZIP_FILE_SUFFIX
         return Paths.get(context.task.storeLocation, context.task.name, path).toString()
     }

@@ -45,7 +45,6 @@ class BackupPackageDataHandler(
             if (context.task.backupSetting.conflictStrategy == BackupConflictStrategy.SKIP) {
                 return
             }
-            // TODO  package的id会在version表中使用
             updateExistPackage(record)
         } else {
             record.id = null

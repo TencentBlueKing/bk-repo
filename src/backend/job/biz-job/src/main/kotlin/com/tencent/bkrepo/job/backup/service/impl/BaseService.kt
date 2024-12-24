@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.job.backup.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
@@ -22,6 +24,22 @@ import java.nio.file.Paths
 
 
 open class BaseService {
+
+
+    fun freeSpaceCheck(context: BackupContext, usageThreshold: Double) {
+        val currentDirectory = File(context.task.storeLocation)
+        val freeSpace = currentDirectory.freeSpace
+        val totalSpace = currentDirectory.totalSpace
+
+        val freeSpacePercentage = (freeSpace.toDouble() / totalSpace.toDouble())
+        val usedSpacePercentage = 1 - freeSpacePercentage
+        if (usedSpacePercentage > usageThreshold) {
+            val msg = "disk usage reached limit $usageThreshold"
+            logger.error(msg)
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, msg)
+        }
+    }
+
 
     // TODO 全存储在一个文件中，当数据过多会导致内容过大
     fun <T> storeData(data: T, backupDataEnum: BackupDataEnum, context: BackupContext) {
