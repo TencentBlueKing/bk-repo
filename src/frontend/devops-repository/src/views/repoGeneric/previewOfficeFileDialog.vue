@@ -7,35 +7,27 @@
         :title="($t('preview') + ' - ' + previewDialog.title)"
         @cancel="cancel"
     >
-        <div>
-            <vue-office-docx
-                v-if="previewDocx"
-                :src="dataSource"
-                style="height: 100vh;"
-            />
+        <div ref="showData">
+            <iframe v-if="showFrame" :src="pageUrl" frameborder="0" style="width: 100%; height: 100%"></iframe>
             <vue-office-excel
                 v-if="previewExcel"
                 :src="dataSource"
                 :options="excelOptions"
                 style="height: 100vh;"
             />
-            <vue-office-pdf
-                v-if="previewPdf"
-                :src="dataSource"
-            />
         </div>
     </bk-dialog>
 </template>
 
 <script>
-    import VueOfficeDocx from '@vue-office/docx'
     import VueOfficeExcel from '@vue-office/excel'
-    import VueOfficePdf from '@vue-office/pdf'
-    import { customizePreviewOfficeFile } from '@repository/utils/previewOfficeFile'
+    import {
+        customizePreviewLocalOfficeFile, customizePreviewOfficeFile, customizePreviewRemoteOfficeFile
+    } from '@/utils/previewOfficeFile'
 
     export default {
         name: 'PreviewOfficeFileDialog',
-        components: { VueOfficeDocx, VueOfficeExcel, VueOfficePdf },
+        components: { VueOfficeExcel },
         data () {
             return {
                 projectId: '',
@@ -61,34 +53,59 @@
                         return workbookData
                     } // 将获取到的excel数据进行处理之后且渲染到页面之前，可通过transformData对即将渲染的数据及样式进行修改，此时每个单元格的text值就是即将渲染到页面上的内容
                 },
-                previewDocx: false,
                 previewExcel: false,
-                previewPdf: false
+                pageUrl: '',
+                extraParam: '',
+                repoType: '',
+                showFrame: false
             }
         },
         methods: {
             setData () {
-                customizePreviewOfficeFile(this.projectId, this.repoName, this.filePath).then(res => {
-                    if (this.filePath.endsWith('docx')) {
-                        this.previewDocx = true
-                    } else if (this.filePath.endsWith('xlsx')) {
+                if (this.filePath.endsWith('.xlsx')) {
+                    this.$refs.showData.style.removeProperty('height')
+                    customizePreviewOfficeFile(this.projectId, this.repoName, this.filePath).then(res => {
                         this.previewExcel = true
-                    } else if (this.filePath.endsWith('xls')) {
-                        this.excelOptions.xls = true
-                        this.previewExcel = true
-                    } else {
-                        this.previewPdf = true
-                    }
-                    this.dataSource = res.data
-                    this.previewDialog.isLoading = false
-                }).catch((e) => {
-                    this.cancel()
-                    const vm = window.repositoryVue
-                    vm.$bkMessage({
-                        theme: 'error',
-                        message: e.message
+                        this.dataSource = res.data
+                        this.previewDialog.isLoading = false
+                    }).catch((e) => {
+                        this.cancel()
+                        const vm = window.repositoryVue
+                        vm.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
                     })
-                })
+                } else {
+                    this.$refs.showData.style.height = '800px'
+                    if (this.repoType === 'local') {
+                        customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                            this.showFrame = true
+                            const url = URL.createObjectURL(res.data)
+                            this.pageUrl = url
+                        }).catch((e) => {
+                            this.cancel()
+                            const vm = window.repositoryVue
+                            vm.$bkMessage({
+                                theme: 'error',
+                                message: e.message
+                            })
+                        })
+                    } else {
+                        customizePreviewRemoteOfficeFile(this.extraParam).then(res => {
+                            this.showFrame = true
+                            const url = URL.createObjectURL(res.data)
+                            this.pageUrl = url
+                        }).catch((e) => {
+                            this.cancel()
+                            const vm = window.repositoryVue
+                            vm.$bkMessage({
+                                theme: 'error',
+                                message: e.message
+                            })
+                        })
+                    }
+                }
             },
             setDialogData (data) {
                 this.previewDialog = {
@@ -104,6 +121,8 @@
                 this.previewDocx = false
                 this.previewExcel = false
                 this.previewPdf = false
+                this.pageUrl = ''
+                this.showFrame = false
             }
         }
     }
