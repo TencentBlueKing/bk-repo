@@ -107,7 +107,6 @@
                 || this.filePath.endsWith('doc')
                 || this.filePath.endsWith('docm')
                 || this.filePath.endsWith('xls')
-                || this.filePath.endsWith('csv')
                 || this.filePath.endsWith('xlsm')
                 || this.filePath.endsWith('ppt')
                 || this.filePath.endsWith('pptx')

@@ -832,7 +832,6 @@
                     || row.fullPath.endsWith('docm')
                     || row.fullPath.endsWith('xls')
                     || row.fullPath.endsWith('xlsx')
-                    || row.fullPath.endsWith('csv')
                     || row.fullPath.endsWith('xlsm')
                     || row.fullPath.endsWith('ppt')
                     || row.fullPath.endsWith('pptx')
