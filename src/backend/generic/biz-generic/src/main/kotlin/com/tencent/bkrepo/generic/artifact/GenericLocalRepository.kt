@@ -182,8 +182,7 @@ class GenericLocalRepository(
         val uploadId = context.request.getHeader(HEADER_UPLOAD_ID)
         if (isSeparateUpload(uploadId)){
             onSeparateUpload(context, uploadId)
-        }
-        else{
+        } else{
             val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
             val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
             if (isBlockUpload(uploadId, sequence)) {

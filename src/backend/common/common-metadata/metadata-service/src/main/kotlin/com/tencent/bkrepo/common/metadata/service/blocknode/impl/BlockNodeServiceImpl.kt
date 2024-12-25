@@ -116,11 +116,7 @@ class BlockNodeServiceImpl(
         version: String?
     ) {
         val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
-        if (version != null) {
-            criteria.and(TBlockNode::version.name).`is`(version)
-        }else{
-            criteria.and(TBlockNode::version.name).`is`(null)
-        }
+            .apply { and(TBlockNode::version.name).isEqualTo(version) }
         val update = BlockNodeQueryHelper.deleteUpdate()
         blockNodeDao.updateMulti(Query(criteria), update)
         logger.info("Delete node blocks[$projectId/$repoName$fullPath] success. Version: $version")

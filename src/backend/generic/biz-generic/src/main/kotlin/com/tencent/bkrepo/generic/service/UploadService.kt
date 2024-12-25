@@ -195,11 +195,6 @@ class UploadService(
     }
 
     fun abortSeparateBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
-        val deleteBlockList = separateListBlock(userId, uploadId, artifactInfo)
-        val storageCredentials = getStorageCredentials(artifactInfo)
-        deleteBlockList.forEach {
-            storageService.delete(it.sha256, storageCredentials)
-        }
         blockNodeService.deleteBlocks(
             artifactInfo.projectId,
             artifactInfo.repoName,
@@ -276,8 +271,9 @@ class UploadService(
         val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
             ?.takeIf { it.metadata[VERSION_KEY] == uploadId }
             ?: run {
-                logger.error("Failed to retrieve node or version mismatch for uploadId: $uploadId")
-                throw ErrorCodeException(GenericMessageCode.BLOCK_FILE_NODE_CREATE_FAIL, artifactInfo)
+                logger.warn("Version mismatch for uploadId: $uploadId")
+                abortSeparateBlockUpload(userId, uploadId, artifactInfo)
+                return
             }
 
         // 获取并按起始位置排序块信息列表
