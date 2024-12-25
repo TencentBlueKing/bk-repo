@@ -23,7 +23,7 @@
     import VueOfficeExcel from '@vue-office/excel'
     import {
         customizePreviewLocalOfficeFile, customizePreviewOfficeFile, customizePreviewRemoteOfficeFile
-    } from '@/utils/previewOfficeFile'
+    } from '@repository/utils/previewOfficeFile'
 
     export default {
         name: 'PreviewOfficeFileDialog',
