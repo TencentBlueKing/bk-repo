@@ -73,8 +73,9 @@ abstract class AbstractFilePreview(
         val downloadResult = downloadFile(fileAttribute)
                 ?: throw PreviewNotFoundException(PreviewMessageCode.PREVIEW_FILE_NOT_FOUND, fileAttribute.fileName!!)
 
-        // 从缓存获取最终文件并且节点是否存在
-        var previewFileCacheInfo = if (config.cacheEnabled) getCacheAndCheckExist(fileAttribute.md5!!) else null
+        // 从缓存获取最终文件并且判断节点是否存在
+        var previewFileCacheInfo = if (config.cacheEnabled) getCacheAndCheckExist(fileAttribute) else null
+
         if (previewFileCacheInfo == null) {
             // 文件校验，比如是否超过最大预览限制
             checkFileConstraints(fileAttribute)
@@ -147,8 +148,11 @@ abstract class AbstractFilePreview(
     /**
      * 获取预览文件缓存
      */
-    private fun getCacheAndCheckExist(md5: String): PreviewFileCacheInfo? {
-        val filePreviewCacheInfo = previewFileCacheService.getCacheByMd5(md5) ?: return null
+    private fun getCacheAndCheckExist(fileAttribute: FileAttribute): PreviewFileCacheInfo? {
+        val projectId = if (fileAttribute.storageType == 0) fileAttribute.projectId else config.projectId
+        val repoName = if (fileAttribute.storageType == 0) fileAttribute.repoName else config.repoName
+        val md5 = fileAttribute.md5
+        val filePreviewCacheInfo = previewFileCacheService.getCache(md5!!, projectId!!, repoName!!) ?: return null
         // 检查节点是否存在
         return if (nodeService.checkExist(
                 ArtifactInfo(
@@ -161,7 +165,7 @@ abstract class AbstractFilePreview(
             filePreviewCacheInfo
         } else {
             // 节点不存在，移除缓存
-            previewFileCacheService.removeCacheByMd5(md5)
+            previewFileCacheService.removeCache(md5, projectId, repoName)
             logger.warn("node does not exist, delete the cache information, key：$md5")
             null
         }

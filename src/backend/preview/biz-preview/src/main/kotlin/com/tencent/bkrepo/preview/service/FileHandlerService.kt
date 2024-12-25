@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.preview.service
 
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
@@ -8,7 +9,6 @@ import com.tencent.bkrepo.preview.pojo.FileAttribute
 import com.tencent.bkrepo.preview.pojo.FileType
 import com.tencent.bkrepo.preview.pojo.PreviewInfo
 import com.tencent.bkrepo.preview.utils.FileUtils
-import com.tencent.bkrepo.preview.utils.JsonMapper
 import com.tencent.bkrepo.preview.utils.UrlEncoderUtils
 import com.tencent.bkrepo.preview.utils.WebUtils
 import org.slf4j.LoggerFactory
@@ -73,7 +73,6 @@ class FileHandlerService(
      */
     fun getFileTemplate(fileAttribute: FileAttribute): String = with(fileAttribute) {
         when {
-            isHtmlView && suffix?.lowercase() == "csv" -> FilePreview.CSV_FILE_PREVIEW_PAGE
             isHtmlView -> FilePreview.EXEL_FILE_PREVIEW_PAGE
             type?.name == FileType.OFFICE.name -> when (suffix!!.lowercase()) {
                 "xlsx" -> FilePreview.XLSX_FILE_PREVIEW_PAGE
@@ -99,8 +98,7 @@ class FileHandlerService(
      * @return 文件属性
      */
     fun getFileAttribute(params: String): FileAttribute {
-        val jsonMapper = JsonMapper()
-        val attribute = jsonMapper.fromJson(params, FileAttribute::class.java)?: FileAttribute()
+        val attribute = params.readJsonString<FileAttribute>()
         checkRequest(attribute)
         adjustProperties(attribute)
         return attribute
@@ -113,8 +111,7 @@ class FileHandlerService(
      * @return 文件属性
      */
     fun getFileAttribute(artifactInfo: ArtifactInfo, params: String?): FileAttribute {
-        val jsonMapper = JsonMapper()
-        val attribute = jsonMapper.fromJson(params, FileAttribute::class.java)?: FileAttribute()
+        val attribute = params?.readJsonString<FileAttribute>() ?: FileAttribute()
         attribute.projectId = artifactInfo.projectId
         attribute.repoName = artifactInfo.repoName
         attribute.artifactUri = artifactInfo.getArtifactFullPath()
@@ -265,7 +262,7 @@ class FileHandlerService(
 
     // 判断是否为HTML视图
     private fun isHtmlView(suffix: String): Boolean {
-        val htmlSuffixes = setOf("xls", "csv", "xlsm", "xlt", "xltm", "et", "ett", "xlam")
+        val htmlSuffixes = setOf("xls", "xlsm", "xlt", "xltm", "et", "ett", "xlam")
         return htmlSuffixes.contains(suffix.lowercase())
     }
 }

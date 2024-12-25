@@ -37,8 +37,10 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
@@ -74,27 +76,36 @@ class PreviewStartupRunner(
         val projectId = config.projectId
         val repoName = config.repoName
         var exist = repositoryService.checkExist(projectId, repoName, RepositoryType.GENERIC.name)
-        if (!exist) {
-            val repoConfig = LocalConfiguration()
-            val cleanupStrategy = mutableMapOf(
-                "enable" to true,
-                "cleanupType" to "retentionDays",
-                "cleanupValue" to config.artifactKeepDays
-            )
-            repoConfig.settings["cleanupStrategy"] = cleanupStrategy
+        val repoConfig = LocalConfiguration()
+        val cleanupStrategy = mutableMapOf(
+            "enable" to true,
+            "cleanupType" to "retentionDays",
+            "cleanupValue" to config.artifactKeepDays
+        )
+        repoConfig.settings["cleanupStrategy"] = cleanupStrategy
 
+        if (!exist) {
             val req = RepoCreateRequest(projectId = config.projectId,
                 name = config.repoName,
                 type = RepositoryType.GENERIC,
                 category = RepositoryCategory.LOCAL,
-                public = true,
+                public = config.repoPublic,
                 quota = config.repoQuota * 1024 * 1024,
                 configuration =repoConfig
             )
             var createdRepo = repositoryService.createRepo(req)
             logger.debug("Create project success，projectId:${createdRepo.name}")
         } else {
-            logger.debug("project ${config.projectId} and repository ${config.repoName} exist skip.")
+            logger.debug("project ${config.projectId} and repository ${config.repoName} exist. to update")
+            val updateRepo = RepoUpdateRequest(
+                projectId = config.projectId,
+                name = config.repoName,
+                public = config.repoPublic,
+                quota = config.repoQuota * 1024 * 1024,
+                configuration =repoConfig,
+                operator = SYSTEM_USER
+            )
+            repositoryService.updateRepo(updateRepo)
         }
     }
 

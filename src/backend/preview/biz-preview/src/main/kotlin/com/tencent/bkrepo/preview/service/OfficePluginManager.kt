@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.preview.service
 
-import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy
 import org.apache.commons.lang3.StringUtils
 import org.jodconverter.core.office.InstalledOfficeManagerHolder
@@ -52,7 +51,7 @@ import java.io.IOException
  */
 @Component
 class OfficePluginManager {
-    private lateinit var officeManager: LocalOfficeManager
+    private var officeManager: LocalOfficeManager ? = null
 
     @Value("\${preview.office.plugin.server.ports:2001,2002}")
     private val serverPorts = "2001,2002"
@@ -69,11 +68,16 @@ class OfficePluginManager {
     @Value("\${preview.office.home:/opt/libreoffice7.6}")
     private val officeHome: String = "/opt/libreoffice7.6"
 
+    fun startOfficeManagerIfNeeded() {
+        if (officeManager == null) {
+            startOfficeManager()
+        }
+    }
+
     /**
      * 启动Office组件进程
      */
-    @PostConstruct
-    fun startOfficeManager() {
+    private fun startOfficeManager() {
         val officeHome: File = getOfficeHome(officeHome)
         logger.info("Office component path：${officeHome.path}")
         val killOffice = killProcess()
@@ -92,7 +96,7 @@ class OfficePluginManager {
                 .maxTasksPerProcess(maxTasksPerProcess)
                 .taskExecutionTimeout(taskexecutiontimeout)
                 .build()
-            officeManager.start()
+            officeManager?.start()
             InstalledOfficeManagerHolder.setInstance(officeManager)
         } catch (e: Exception) {
             logger.error("The office component fails to start, check whether the office component is available",e)
@@ -165,7 +169,7 @@ class OfficePluginManager {
 
     @PreDestroy
     fun destroyOfficeManager() {
-        if (null != officeManager && officeManager.isRunning()) {
+        if (null != officeManager && officeManager!!.isRunning()) {
             logger.info("Shutting down office process")
             OfficeUtils.stopQuietly(officeManager)
         }

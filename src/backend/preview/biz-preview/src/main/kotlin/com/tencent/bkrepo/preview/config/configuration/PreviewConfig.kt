@@ -50,6 +50,12 @@ class PreviewConfig {
     val repoName = "convert"
 
     /**
+     * repo是否公开
+     */
+    @Value("\${preview.repoPublic:true}")
+    val repoPublic = true
+
+    /**
      * 临时文件保存路径
      */
     @Value("\${preview.file.dir:/data/workspace/tmp}")

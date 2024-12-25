@@ -39,8 +39,8 @@ interface PreviewFileCacheService {
     fun createCache(requestFile: PreviewFileCacheCreateRequest): PreviewFileCacheInfo
 
     // 删除缓存
-    fun removeCacheByMd5(md5: String)
+    fun removeCache(md5: String, projectId: String, repoName: String)
 
-    // 根据md5查询缓存
-    fun getCacheByMd5(md5: String): PreviewFileCacheInfo?
+    // 查询缓存
+    fun getCache(md5: String, projectId: String, repoName: String): PreviewFileCacheInfo?
 }

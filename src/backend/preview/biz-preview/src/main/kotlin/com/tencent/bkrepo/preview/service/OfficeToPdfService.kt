@@ -46,7 +46,10 @@ import java.io.File
  * office转pdf服务
  */
 @Component
-class OfficeToPdfService(private val config: PreviewConfig) {
+class OfficeToPdfService(
+    private val config: PreviewConfig,
+    private val officePluginManager: OfficePluginManager
+) {
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(OfficeToPdfService::class.java)
@@ -54,6 +57,7 @@ class OfficeToPdfService(private val config: PreviewConfig) {
 
     @Throws(OfficeException::class)
     fun openOfficeToPDF(inputFilePath: String, outputFilePath: String, fileAttribute: FileAttribute) {
+        officePluginManager.startOfficeManagerIfNeeded()
         office2pdf(inputFilePath, outputFilePath, fileAttribute)
     }
 

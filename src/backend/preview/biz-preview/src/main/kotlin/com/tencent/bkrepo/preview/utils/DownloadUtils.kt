@@ -31,23 +31,24 @@
 
 package com.tencent.bkrepo.preview.utils
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.pojo.DownloadResult
 import com.tencent.bkrepo.preview.pojo.FileAttribute
-import org.apache.http.impl.client.DefaultRedirectStrategy
-import org.apache.http.impl.client.HttpClientBuilder
-import org.springframework.http.HttpMethod
-import org.springframework.http.MediaType
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory
-import org.springframework.web.client.RequestCallback
-import org.springframework.web.client.RestTemplate
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.ResponseBody
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 /**
  * 文件下载工具
@@ -57,8 +58,6 @@ object DownloadUtils {
     private const val URL_PARAM_FTP_USERNAME = "ftp.username"
     private const val URL_PARAM_FTP_PASSWORD = "ftp.password"
     private const val URL_PARAM_FTP_CONTROL_ENCODING = "ftp.control.encoding"
-    private val restTemplate = RestTemplate()
-    private val factory = HttpComponentsClientHttpRequestFactory()
 
     /**
      * 下载文件
@@ -104,30 +103,88 @@ object DownloadUtils {
     }
 
     private fun downloadHttpFile(url: URL, realPath: String, result: DownloadResult) {
-        try {
-            val realFile = File(realPath)
-            factory.setReadTimeout(72000)
-            factory.setConnectTimeout(10000)
-            factory.setConnectionRequestTimeout(2000)
-            factory.httpClient = HttpClientBuilder.create()
-                .setRedirectStrategy(DefaultRedirectStrategy())
-                .build()
-            restTemplate.requestFactory = factory
-            val requestCallback = RequestCallback { request ->
-                request.headers.setAccept(listOf(MediaType.APPLICATION_OCTET_STREAM, MediaType.ALL))
-            }
+        val client = createHttpClient()
+        val request = createRequest(url)
 
-            restTemplate.execute(url.toURI(), HttpMethod.GET, requestCallback) { fileResponse ->
-                org.apache.commons.io.FileUtils.copyToFile(fileResponse.body, realFile)
-                null
-            }
+        try {
+            retryDownload(request, client, realPath, result)
         } catch (e: Exception) {
-            logger.error("The download failed: $e")
+            logger.error("Download failed: $e")
             result.apply {
                 code = DownloadResult.CODE_FAIL
                 msg = "The download failed: $e"
             }
         }
+    }
+
+    private fun createHttpClient(): OkHttpClient {
+        return HttpClientBuilderFactory
+            .create()
+            .readTimeout(72000, TimeUnit.MILLISECONDS)
+            .connectTimeout(10000, TimeUnit.MILLISECONDS)
+            .retryOnConnectionFailure(true)
+            .build()
+    }
+
+    private fun createRequest(url: URL): Request {
+        return Request.Builder()
+            .url(url)
+            .addHeader(HttpHeaders.ACCEPT, MediaTypes.APPLICATION_OCTET_STREAM)
+            .build()
+    }
+
+    private fun retryDownload(request: Request, client: OkHttpClient, realPath: String, result: DownloadResult) {
+        val maxRetries = 3
+        var attempt = 0
+
+        while (attempt < maxRetries) {
+            try {
+                val response = client.newCall(request).execute()
+                if (response.isSuccessful) {
+                    saveFile(response.body, realPath)
+                    result.apply {
+                        code = DownloadResult.CODE_SUCCESS
+                        msg = "Download succeeded."
+                    }
+                    return
+                } else {
+                    throw IOException("Failed to download file: ${response.code}")
+                }
+            } catch (e: Exception) {
+                attempt++
+                if (attempt >= maxRetries) {
+                    logger.error("Download failed after $attempt attempts: $e")
+                    result.apply {
+                        code = DownloadResult.CODE_FAIL
+                        msg = "The download failed after $attempt attempts: $e"
+                    }
+                    return
+                }
+                if (shouldRetry(e)) {
+                    logger.warn("Retrying download due to error: $e (Attempt: $attempt)")
+                    Thread.sleep(2000) //等待2秒后重试
+                } else {
+                    throw e
+                }
+            }
+        }
+    }
+
+    private fun saveFile(body: ResponseBody?, realPath: String) {
+        val file = File(realPath)
+        if (!file.parentFile.exists() && !file.parentFile.mkdirs()) {
+            logger.error("Failed to create directory [$realPath], please check the directory permissions!")
+            throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, "Failed to create directory")
+        }
+        body?.byteStream()?.use { inputStream ->
+            file.outputStream().use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        }
+    }
+
+    private fun shouldRetry(e: Exception): Boolean {
+        return e is IOException || e is SocketTimeoutException
     }
 
     private fun downloadFtpFile(fileAttribute: FileAttribute,
@@ -196,10 +253,9 @@ object DownloadUtils {
 
     private fun processUrl(fileAttribute: FileAttribute): String? {
         return try {
-            SslUtils.ignoreSsl()
             fileAttribute.url?.replace("+", "%20")?.replace(" ", "%20")
         } catch (e: Exception) {
-            logger.error("Ignore SSL certificate exceptions", e)
+            logger.error("processUrl exceptions", e)
             null
         }
     }

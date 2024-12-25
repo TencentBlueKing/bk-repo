@@ -57,12 +57,12 @@ class PreviewFileCacheServiceImpl(
         return convert(filePreviewCache)
     }
 
-    override fun removeCacheByMd5(md5: String) {
-        filePreviewCacheDao.removeByMd5(md5)
+    override fun removeCache(md5: String, projectId: String, repoName: String) {
+        filePreviewCacheDao.removeCache(md5, projectId, repoName)
     }
 
-    override fun getCacheByMd5(md5: String): PreviewFileCacheInfo? {
-        return filePreviewCacheDao.findByMd5(md5)?.let { convert(it) }
+    override fun getCache(md5: String, projectId: String, repoName: String): PreviewFileCacheInfo? {
+        return filePreviewCacheDao.getCache(md5, projectId, repoName)?.let { convert(it) }
     }
 
     private fun convert(previewFileCache: TPreviewFileCache): PreviewFileCacheInfo {

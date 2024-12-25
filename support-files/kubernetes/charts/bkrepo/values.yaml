@@ -547,7 +547,7 @@ s3:
 
 ## preview服务配置
 preview:
-  enabled: true
+  enabled: false
   config: {}
   ## Kubernetes 通用配置
   image:

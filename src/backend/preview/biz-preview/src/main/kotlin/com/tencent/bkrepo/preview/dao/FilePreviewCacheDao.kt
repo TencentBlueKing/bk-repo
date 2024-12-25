@@ -34,6 +34,7 @@ package com.tencent.bkrepo.preview.dao
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.preview.model.TPreviewFileCache
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
@@ -41,15 +42,22 @@ import org.springframework.stereotype.Repository
 @Repository
 class FilePreviewCacheDao : SimpleMongoDao<TPreviewFileCache>() {
     /**
-     * 按md5查找
+     * 查找缓存
      */
-    fun findByMd5(md5: String): TPreviewFileCache? {
-        return this.findOne(Query(TPreviewFileCache::md5.isEqualTo(md5)))
+    fun getCache(md5: String, projectId: String, repoName: String): TPreviewFileCache? {
+        return this.findOne(Query(buildCriteria(md5, projectId, repoName)))
     }
     /**
-     * 按md5删除
+     * 删除缓存
      */
-    fun removeByMd5(md5: String): DeleteResult {
-        return this.remove(Query(TPreviewFileCache::md5.isEqualTo(md5)))
+    fun removeCache(md5: String, projectId: String, repoName: String): DeleteResult {
+        return this.remove(Query(buildCriteria(md5, projectId, repoName)))
+    }
+
+    private fun buildCriteria(md5: String, projectId: String, repoName: String): Criteria {
+        return Criteria
+            .where(TPreviewFileCache::md5.name).isEqualTo(md5)
+            .and(TPreviewFileCache::projectId.name).isEqualTo(projectId)
+            .and(TPreviewFileCache::repoName.name).isEqualTo(repoName)
     }
 }

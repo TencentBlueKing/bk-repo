@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.preview.service
 
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.pojo.PreviewOptions
 import com.tencent.bkrepo.preview.pojo.Watermark
-import com.tencent.bkrepo.preview.utils.JsonMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -19,9 +19,8 @@ class CommonResourceService(private val config: PreviewConfig) {
      * 水印
      */
     fun getWatermark(decodedParams: String?): Watermark {
-        val jsonMapper = JsonMapper()
         val watermark = if (!decodedParams.isNullOrEmpty()) {
-            jsonMapper.fromJson(decodedParams, Watermark::class.java)?: Watermark()
+            decodedParams!!.readJsonString()
         } else {
             Watermark()
         }
