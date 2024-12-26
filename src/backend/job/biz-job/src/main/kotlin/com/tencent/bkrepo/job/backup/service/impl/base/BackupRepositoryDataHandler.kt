@@ -107,8 +107,8 @@ class BackupRepositoryDataHandler(
             .set(BackupRepositoryInfo::clusterNames.name, repoInfo.clusterNames)
             .set(BackupRepositoryInfo::credentialsKey.name, repoInfo.credentialsKey)
             .set(BackupRepositoryInfo::deleted.name, repoInfo.deleted)
-
-
+            .set(BackupRepositoryInfo::quota.name, repoInfo.quota)
+            .set(BackupRepositoryInfo::used.name, repoInfo.used)
         // TODO quote和used需要进行事实计算更新
 
         val updateResult = mongoTemplate.updateFirst(repoQuery, update, BackupDataEnum.REPOSITORY_DATA.collectionName)

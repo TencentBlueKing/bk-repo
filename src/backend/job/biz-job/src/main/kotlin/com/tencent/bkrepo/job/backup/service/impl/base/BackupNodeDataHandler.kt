@@ -20,7 +20,6 @@ import com.tencent.bkrepo.job.backup.service.impl.BaseService
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.separation.pojo.query.NodeDetailInfo
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -34,7 +33,6 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Component
@@ -82,11 +80,18 @@ class BackupNodeDataHandler(
             if (context.task.backupSetting.conflictStrategy == BackupConflictStrategy.SKIP) {
                 return
             }
-            removeExistNode(existRecord, collectionName)
+            updateExistNode(existRecord, collectionName)
         } else {
-            record.id = null
-            mongoTemplate.save(record, collectionName)
-            logger.info("Create node ${record.fullPath} in ${record.projectId}|${record.repoName} success!")
+            try {
+                mongoTemplate.save(record, collectionName)
+                logger.info("Create node ${record.fullPath} in ${record.projectId}|${record.repoName} success!")
+            } catch (exception: DuplicateKeyException) {
+                if (context.task.backupSetting.conflictStrategy == BackupConflictStrategy.SKIP) {
+                    return
+                }
+                // 可能存在已经上传的节点记录不在备份数据里
+                updateDuplicateNode(record, collectionName)
+            }
         }
         uploadFile(record, context)
 
@@ -178,24 +183,31 @@ class BackupNodeDataHandler(
         return mongoTemplate.findOne(existNodeQuery, BackupNodeInfo::class.java, collectionName)
     }
 
-    private fun removeExistNode(
-        nodeInfo: BackupNodeInfo,
-        nodeCollectionName: String
-    ) {
+    private fun updateExistNode(nodeInfo: BackupNodeInfo, nodeCollectionName: String) {
         val nodeQuery = Query(Criteria.where(ID).isEqualTo(nodeInfo.id))
         // 逻辑删除， 同时删除索引
         val update = Update()
-            .set(NodeDetailInfo::lastModifiedBy.name, SYSTEM_USER)
-            .set(NodeDetailInfo::deleted.name, LocalDateTime.now())
+            .set(NodeDetailInfo::lastModifiedBy.name, nodeInfo.lastModifiedBy)
+            .set(NodeDetailInfo::lastModifiedDate.name, nodeInfo.lastModifiedDate)
+            .set(NodeDetailInfo::lastModifiedDate.name, nodeInfo.lastAccessDate)
+            .set(NodeDetailInfo::deleted.name, nodeInfo.deleted)
+            .set(NodeDetailInfo::expireDate.name, nodeInfo.expireDate)
+            .set(NodeDetailInfo::lastModifiedDate.name, nodeInfo.lastAccessDate)
+            .set(NodeDetailInfo::copyFromCredentialsKey.name, nodeInfo.copyFromCredentialsKey)
+            .set(NodeDetailInfo::copyIntoCredentialsKey.name, nodeInfo.copyIntoCredentialsKey)
+            .set(NodeDetailInfo::metadata.name, nodeInfo.metadata)
+            .set(NodeDetailInfo::archived.name, nodeInfo.archived)
+            .set(NodeDetailInfo::compressed.name, nodeInfo.compressed)
+
         val updateResult = mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
         if (updateResult.modifiedCount != 1L) {
             logger.error(
-                "delete exist node failed with id ${nodeInfo.id} " +
+                "update exist node failed with id ${nodeInfo.id} " +
                     "and fullPath ${nodeInfo.fullPath} in ${nodeInfo.projectId}|${nodeInfo.repoName}"
             )
         } else {
             logger.info(
-                "delete exist node success with id ${nodeInfo.id} " +
+                "update exist node success with id ${nodeInfo.id} " +
                     "and fullPath ${nodeInfo.fullPath} in ${nodeInfo.projectId}|${nodeInfo.repoName}"
             )
         }
@@ -236,6 +248,30 @@ class BackupNodeDataHandler(
         logger.info("Increment node reference of file [$sha256] on credentialsKey [$credentialsKey].")
     }
 
+    fun updateDuplicateNode(record: BackupNodeInfo, collectionName: String) {
+        val existNodeQuery = Query(
+            Criteria.where(BackupNodeInfo::repoName.name).isEqualTo(record.repoName)
+                .and(BackupNodeInfo::projectId.name).isEqualTo(record.projectId)
+                .and(BackupNodeInfo::fullPath.name).isEqualTo(record.fullPath)
+                .and(BackupNodeInfo::deleted.name).isEqualTo(record.deleted)
+        )
+        val update = Update()
+            .set(NodeDetailInfo::lastModifiedBy.name, record.lastModifiedBy)
+            .set(NodeDetailInfo::lastModifiedDate.name, record.lastModifiedDate)
+            .set(NodeDetailInfo::lastModifiedDate.name, record.lastAccessDate)
+            .set(NodeDetailInfo::expireDate.name, record.expireDate)
+            .set(NodeDetailInfo::lastModifiedDate.name, record.lastAccessDate)
+            .set(NodeDetailInfo::copyFromCredentialsKey.name, record.copyFromCredentialsKey)
+            .set(NodeDetailInfo::copyIntoCredentialsKey.name, record.copyIntoCredentialsKey)
+            .set(NodeDetailInfo::metadata.name, record.metadata)
+            .set(NodeDetailInfo::archived.name, record.archived)
+            .set(NodeDetailInfo::compressed.name, record.compressed)
+            .set(NodeDetailInfo::sha256.name, record.sha256)
+            .set(NodeDetailInfo::md5.name, record.md5)
+            .set(NodeDetailInfo::size.name, record.size)
+            .set(NodeDetailInfo::id.name, record.id)
+        mongoTemplate.upsert(existNodeQuery, update, collectionName)
+    }
 
     /**
      * 生成随机文件路径
