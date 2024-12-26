@@ -902,5 +902,6 @@
     "conanCreditGuideSubTitle1":"1. Execute the following command on the command line to configure remote artifact repository",
     "conanCreditGuideSubTitle2":"2、Execute the following command on the command line to configure artifact repository credentials(conan1.x)",
     "conanRecipePlaceholder":"The format of RECIPE is <NAME>/VERSION>@<USER>/CHANNEL>",
-    "conanPullGuideSubTitle":"Please execute the following command on the command line to pull(conan1.x)："
+    "conanPullGuideSubTitle":"Please execute the following command on the command line to pull(conan1.x)：",
+    "projectNoPermissionTip": "Request project {0} has no permission and has been switched"
 }

@@ -56,6 +56,7 @@ class WebsocketConfiguration(
     private val websocketService: WebsocketService,
     private val jwtAuthProperties: JwtAuthProperties,
     private val authenticationManager: AuthenticationManager,
+    private val webSocketMetrics: WebSocketMetrics
 ) : WebSocketMessageBrokerConfigurer {
 
     override fun configureMessageBroker(config: MessageBrokerRegistry) {
@@ -94,6 +95,9 @@ class WebsocketConfiguration(
 
     override fun configureWebSocketTransport(registration: WebSocketTransportRegistration) {
         registration.addDecoratorFactory(wsHandlerDecoratorFactory())
+        registration.setMessageSizeLimit(webSocketProperties.messageSizeLimit)
+        registration.setSendTimeLimit(webSocketProperties.sendTimeLimit)
+        registration.setSendBufferSizeLimit(webSocketProperties.sendBufferSizeLimit)
         super.configureWebSocketTransport(registration)
     }
 
@@ -102,7 +106,8 @@ class WebsocketConfiguration(
         return SessionWebSocketHandlerDecoratorFactory(
             websocketService = websocketService,
             authenticationManager = authenticationManager,
-            jwtAuthProperties = jwtAuthProperties
+            jwtAuthProperties = jwtAuthProperties,
+            webSocketMetrics = webSocketMetrics
         )
     }
 

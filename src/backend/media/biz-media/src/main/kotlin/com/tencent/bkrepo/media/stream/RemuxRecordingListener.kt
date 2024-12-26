@@ -52,7 +52,12 @@ class RemuxRecordingListener(
      * */
     private var fileName: String? = null
 
+    private var startFailed = AtomicBoolean(false)
+
     override fun handler(packet: StreamPacket) {
+        if (startFailed.get()) {
+            return
+        }
         pipeOut.write(packet.getData())
     }
 
@@ -63,9 +68,14 @@ class RemuxRecordingListener(
             fileName = "$name.$fileType"
             val tempFileName = StringPool.randomStringByLongValue(REMUX_PREFIX, ".$fileType")
             tempFilePath = Paths.get(path, tempFileName)
-            mux = Mux(pipeIn, tempFilePath!!.toFile())
+            mux = Mux(pipeIn, tempFilePath!!.toFile(), name)
             val remuxFuture = threadPool.submit {
-                mux!!.start()
+                try {
+                    mux!!.start()
+                } catch (e: Exception) {
+                    logger.error("Mux start failed", e)
+                    startFailed.set(true)
+                }
             }
             if (remuxFuture.isDone) {
                 throw IllegalStateException("Remux start error")
@@ -80,7 +90,11 @@ class RemuxRecordingListener(
                 pipeOut.close()
                 mux!!.stop()
                 pipeIn.close()
-                fileConsumer.accept(tempFilePath!!.toFile(), fileName!!)
+                if (mux!!.packetCount > 0) {
+                    fileConsumer.accept(tempFilePath!!.toFile(), fileName!!)
+                } else {
+                    logger.warn("empty stream $fileName")
+                }
             }
         } finally {
             Files.deleteIfExists(tempFilePath)

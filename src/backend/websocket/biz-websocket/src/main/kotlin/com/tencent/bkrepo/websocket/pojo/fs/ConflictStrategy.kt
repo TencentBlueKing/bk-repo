@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,23 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.websocket.handler
+package com.tencent.bkrepo.websocket.pojo.fs
 
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.websocket.config.WebSocketMetrics
-import com.tencent.bkrepo.websocket.service.WebsocketService
-import org.springframework.web.socket.WebSocketHandler
-import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory
-
-class SessionWebSocketHandlerDecoratorFactory (
-    private val websocketService: WebsocketService,
-    private val authenticationManager: AuthenticationManager,
-    private val jwtAuthProperties: JwtAuthProperties,
-    private val webSocketMetrics: WebSocketMetrics
-) : WebSocketHandlerDecoratorFactory {
-
-    override fun decorate(handler: WebSocketHandler): WebSocketHandler {
-        return SessionHandler(handler, websocketService, authenticationManager, webSocketMetrics, jwtAuthProperties)
-    }
+enum class ConflictStrategy {
+    OVERWRITE,
+    SKIP,
+    RENAME,
 }

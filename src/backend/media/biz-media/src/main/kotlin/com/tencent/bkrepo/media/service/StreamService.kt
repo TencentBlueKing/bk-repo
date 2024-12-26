@@ -98,6 +98,7 @@ class StreamService(
         name: String,
         mode: StreamMode,
         userId: String,
+        author: String,
         remux: Boolean = false,
         saveType: MediaType = MediaType.RAW,
         transcodeExtraParams: String? = null,
@@ -112,6 +113,7 @@ class StreamService(
             transcodeService,
             repo,
             userId,
+            author,
             STREAM_PATH,
             transcodeConfig,
         )
@@ -129,7 +131,7 @@ class StreamService(
             stream.saveAs()
         }
         stream.startPublish()
-        logger.info("User[$userId] publish stream $streamId")
+        logger.info("User[$author] publish stream $streamId")
         return stream
     }
 

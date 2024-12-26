@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,23 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.websocket.handler
+package com.tencent.bkrepo.job.config.properties
 
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import com.tencent.bkrepo.websocket.config.WebSocketMetrics
-import com.tencent.bkrepo.websocket.service.WebsocketService
-import org.springframework.web.socket.WebSocketHandler
-import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-class SessionWebSocketHandlerDecoratorFactory (
-    private val websocketService: WebsocketService,
-    private val authenticationManager: AuthenticationManager,
-    private val jwtAuthProperties: JwtAuthProperties,
-    private val webSocketMetrics: WebSocketMetrics
-) : WebSocketHandlerDecoratorFactory {
-
-    override fun decorate(handler: WebSocketHandler): WebSocketHandler {
-        return SessionHandler(handler, websocketService, authenticationManager, webSocketMetrics, jwtAuthProperties)
-    }
-}
+@ConfigurationProperties(value = "job.ddc-blob-ref-count-correct")
+class DdcBlobRefCountCorrectJobProperties(
+    override var cron: String = "0 0 1 * * ?",
+    /**
+     * 预期blob与ref关系总数
+     */
+    var expectedRefs: Long = 10_000_000,
+    /**
+     * 布隆过滤器的误报率。
+     * 误报率较高，会导致更多的数据库查询，但不影响节点清理的正确性，误报率越低，消耗的内存越大。
+     * */
+    var fpp: Double = 0.0001,
+) : MongodbJobProperties()

@@ -39,6 +39,7 @@ import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeCopyJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
+import java.time.Duration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -59,6 +60,8 @@ class NodeCopyJob(
     override fun start(): Boolean {
         return super.start()
     }
+
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(3)
 
     override fun collectionNames(): List<String> {
         return (0 until SHARDING_COUNT)
