@@ -545,6 +545,46 @@ s3:
   podAnnotations: {}
   priorityClassName: ""
 
+## preview服务配置
+preview:
+  enabled: false
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: registry.hub.docker.com
+    repository: bkrepo/bkrepo-preview
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
 ## maven registry服务配置
 maven:
   enabled: true
