@@ -75,8 +75,9 @@ class DataRecordsBackupServiceImpl(
                 } catch (unchecked: UncheckedExecutionException) {
                     logger.error("cos config is null, $unchecked")
                     throw unchecked
+                } finally {
+                    deleteFolder(targertPath)
                 }
-                deleteFolder(targertPath)
             }
             backupTaskDao.updateState(taskId, BackupTaskState.FINISHED, endDate = LocalDateTime.now())
             logger.info("Backup task ${context.task} has been finished!")
@@ -247,7 +248,10 @@ class DataRecordsBackupServiceImpl(
                     queryResult(context, it)
                 }
             } catch (e: Exception) {
-                logger.error("Failed to process record $record with data of ${backupDataEnum.collectionName}", e)
+                logger.error(
+                    "Failed to process record $record with " +
+                        "data of ${backupDataEnum.collectionName}, error is ${e.message}"
+                )
                 if (context.task.backupSetting.errorStrategy == BackupErrorStrategy.FAST_FAIL) {
                     throw StorageErrorException(StorageMessageCode.STORE_ERROR)
                 }

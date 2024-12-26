@@ -47,8 +47,4 @@ data class BackupSetting(
      * 执行计划
      */
     val executionPlan: BackupExecutionPlan = BackupExecutionPlan(),
-    /**
-     * 是否进行存储目录大小检测
-     */
-    val spaceCapCheck: Boolean = true,
 )

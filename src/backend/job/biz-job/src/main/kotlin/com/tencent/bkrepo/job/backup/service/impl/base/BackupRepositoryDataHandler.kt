@@ -111,13 +111,8 @@ class BackupRepositoryDataHandler(
             .set(BackupRepositoryInfo::used.name, repoInfo.used)
         // TODO quote和used需要进行事实计算更新
 
-        val updateResult = mongoTemplate.updateFirst(repoQuery, update, BackupDataEnum.REPOSITORY_DATA.collectionName)
-
-        if (updateResult.modifiedCount != 1L) {
-            logger.error("update exist repo failed with name ${repoInfo.projectId}|${repoInfo.name}")
-        } else {
-            logger.info("update exist repo success with name ${repoInfo.projectId}|${repoInfo.name}")
-        }
+        mongoTemplate.updateFirst(repoQuery, update, BackupDataEnum.REPOSITORY_DATA.collectionName)
+        logger.info("update exist repo success with name ${repoInfo.projectId}|${repoInfo.name}")
     }
 
     private fun buildQuery(repoInfo: BackupRepositoryInfo): Query {

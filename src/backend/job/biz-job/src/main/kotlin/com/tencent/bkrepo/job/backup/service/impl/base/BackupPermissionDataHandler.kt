@@ -65,16 +65,12 @@ class BackupPermissionDataHandler(
             .addToSet(BackupPermission::roles.name, permissionInfo.roles)
             .addToSet(BackupPermission::departments.name, permissionInfo.departments)
             .addToSet(BackupPermission::actions.name, permissionInfo.actions)
-        val updateResult = mongoTemplate.updateFirst(
+        mongoTemplate.updateFirst(
             permissionQuery,
             update,
             BackupDataEnum.PERMISSION_DATA.collectionName
         )
-        if (updateResult.modifiedCount != 1L) {
-            logger.error("update exist permission failed with id ${permissionInfo.id} ")
-        } else {
-            logger.info("update exist permission success with id ${permissionInfo.id}")
-        }
+        logger.info("update exist permission success with id ${permissionInfo.id}")
     }
 
     private fun buildQuery(permissionInfo: BackupPermission): Query {

@@ -62,9 +62,6 @@ class BackupNodeDataHandler(
     override fun <T> preBackupDataHandler(record: T, backupDataEnum: BackupDataEnum, context: BackupContext) {
         val node = record as BackupNodeInfo
         context.currentNode = node
-    }
-
-    override fun postBackupDataHandler(context: BackupContext) {
         storeRealFile(context)
     }
 
@@ -75,6 +72,7 @@ class BackupNodeDataHandler(
     override fun <T> storeRestoreDataHandler(record: T, backupDataEnum: BackupDataEnum, context: BackupContext) {
         val record = record as BackupNodeInfo?
         val collectionName = SeparationUtils.getNodeCollectionName(record!!.projectId)
+        uploadFile(record, context)
         val existRecord = findExistNode(record)
         if (existRecord != null) {
             if (context.task.backupSetting.conflictStrategy == BackupConflictStrategy.SKIP) {
@@ -93,8 +91,6 @@ class BackupNodeDataHandler(
                 updateDuplicateNode(record, collectionName)
             }
         }
-        uploadFile(record, context)
-
     }
 
     private fun storeRealFile(context: BackupContext) {
@@ -108,10 +104,10 @@ class BackupNodeDataHandler(
                 logger.info("real file already exist [${currentNode!!.sha256}]")
                 return
             }
-            touch(filePath)
             // 存储异常如何处理
             storageManager.loadFullArtifactInputStream(nodeDetail, currentStorageCredentials)?.use {
                 try {
+                    touch(filePath)
                     streamToFile(it, filePath.toString())
                     logger.info("Success to store real file  [${currentNode!!.sha256}]")
                 } catch (exception: Exception) {
@@ -199,18 +195,11 @@ class BackupNodeDataHandler(
             .set(NodeDetailInfo::archived.name, nodeInfo.archived)
             .set(NodeDetailInfo::compressed.name, nodeInfo.compressed)
 
-        val updateResult = mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
-        if (updateResult.modifiedCount != 1L) {
-            logger.error(
-                "update exist node failed with id ${nodeInfo.id} " +
-                    "and fullPath ${nodeInfo.fullPath} in ${nodeInfo.projectId}|${nodeInfo.repoName}"
-            )
-        } else {
-            logger.info(
-                "update exist node success with id ${nodeInfo.id} " +
-                    "and fullPath ${nodeInfo.fullPath} in ${nodeInfo.projectId}|${nodeInfo.repoName}"
-            )
-        }
+        mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
+        logger.info(
+            "update exist node success with id ${nodeInfo.id} " +
+                "and fullPath ${nodeInfo.fullPath} in ${nodeInfo.projectId}|${nodeInfo.repoName}"
+        )
     }
 
 

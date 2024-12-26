@@ -54,12 +54,8 @@ class BackupRoleDataHandler(
             .set(BackupRole::name.name, roleInfo.name)
             .set(BackupRole::admin.name, roleInfo.admin)
             .set(BackupRole::description.name, roleInfo.description)
-        val updateResult = mongoTemplate.updateFirst(roleQuery, update, BackupDataEnum.ROLE_DATA.collectionName)
-        if (updateResult.modifiedCount != 1L) {
-            logger.error("update exist role failed with name ${roleInfo.name} ")
-        } else {
-            logger.info("update exist role success with name ${roleInfo.name}")
-        }
+        mongoTemplate.updateFirst(roleQuery, update, BackupDataEnum.ROLE_DATA.collectionName)
+        logger.info("update exist role success with name ${roleInfo.name}")
     }
 
     private fun buildQuery(roleInfo: BackupRole): Query {

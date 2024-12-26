@@ -68,12 +68,8 @@ class BackupAccountDataHandler(
             .set(BackupAccount::locked.name, accountInfo.locked)
             .set(BackupAccount::description.name, accountInfo.description)
 
-        val updateResult = mongoTemplate.updateFirst(accountQuery, update, BackupDataEnum.ACCOUNT_DATA.collectionName)
-        if (updateResult.modifiedCount != 1L) {
-            logger.error("update exist account failed with id ${accountInfo.appId} ")
-        } else {
-            logger.info("update exist account success with id ${accountInfo.appId}")
-        }
+        mongoTemplate.updateFirst(accountQuery, update, BackupDataEnum.ACCOUNT_DATA.collectionName)
+        logger.info("update exist account success with id ${accountInfo.appId}")
     }
 
     private fun buildQuery(accountInfo: BackupAccount): Query {

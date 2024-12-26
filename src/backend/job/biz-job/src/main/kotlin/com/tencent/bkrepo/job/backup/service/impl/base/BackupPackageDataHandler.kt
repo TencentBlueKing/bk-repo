@@ -75,18 +75,11 @@ class BackupPackageDataHandler(
             .set(BackupPackageInfo::extension.name, packageInfo.extension)
             .set(BackupPackageInfo::clusterNames.name, packageInfo.clusterNames)
 
-        val updateResult = mongoTemplate.updateFirst(packageQuery, update, BackupDataEnum.PACKAGE_DATA.collectionName)
-        if (updateResult.modifiedCount != 1L) {
-            logger.error(
-                "update exist package ${packageInfo.key} " +
-                    "failed with name ${packageInfo.projectId}|${packageInfo.repoName}"
-            )
-        } else {
-            logger.info(
-                "update exist package ${packageInfo.key} " +
-                    "success with name ${packageInfo.projectId}|${packageInfo.repoName}"
-            )
-        }
+        mongoTemplate.updateFirst(packageQuery, update, BackupDataEnum.PACKAGE_DATA.collectionName)
+        logger.info(
+            "update exist package ${packageInfo.key} " +
+                "success with name ${packageInfo.projectId}|${packageInfo.repoName}"
+        )
     }
 
     private fun buildQuery(packageInfo: BackupPackageInfo): Query {

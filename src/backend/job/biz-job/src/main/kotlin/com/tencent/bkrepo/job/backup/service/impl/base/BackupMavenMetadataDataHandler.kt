@@ -62,16 +62,12 @@ class BackupMavenMetadataDataHandler(
             .set(BackupMavenMetadata::timestamp.name, mavenMetadata.timestamp)
             .set(BackupMavenMetadata::buildNo.name, mavenMetadata.buildNo)
 
-        val updateResult = mongoTemplate.updateFirst(
+        mongoTemplate.updateFirst(
             metadataQuery,
             update,
             BackupDataEnum.MAVEN_METADATA_DATA.collectionName
         )
-        if (updateResult.modifiedCount != 1L) {
-            logger.error("update exist metadata $mavenMetadata failed")
-        } else {
-            logger.info("update exist metadata $mavenMetadata success")
-        }
+        logger.info("update exist metadata $mavenMetadata success")
     }
 
     private fun buildQuery(mavenMetadata: BackupMavenMetadata): Query {

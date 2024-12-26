@@ -106,16 +106,12 @@ class BackupPackageVersionDataHandler(
             .set(BackupPackageVersionInfo::extension.name, versionInfo.extension)
             .set(BackupPackageVersionInfo::clusterNames.name, versionInfo.clusterNames)
 
-        val updateResult = mongoTemplate.updateFirst(
+        mongoTemplate.updateFirst(
             packageQuery,
             update,
             BackupDataEnum.PACKAGE_VERSION_DATA.collectionName
         )
-        if (updateResult.modifiedCount != 1L) {
-            logger.error("update exist version ${versionInfo.name} of package ${versionInfo.packageId} failed")
-        } else {
-            logger.info("update exist version ${versionInfo.name} of package ${versionInfo.packageId} success")
-        }
+        logger.info("update exist version ${versionInfo.name} of package ${versionInfo.packageId} success")
     }
 
     fun convert(versionInfo: BackupPackageVersionInfoWithKeyInfo): BackupPackageVersionInfo {

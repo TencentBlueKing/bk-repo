@@ -75,12 +75,8 @@ class BackupUserDataHandler(
             .addToSet(BackupUser::asstUsers.name, userInfo.asstUsers)
             .addToSet(BackupUser::accounts.name, userInfo.accounts)
 
-        val updateResult = mongoTemplate.updateFirst(roleQuery, update, BackupDataEnum.USER_DATA.collectionName)
-        if (updateResult.modifiedCount != 1L) {
-            logger.error("update exist user failed with name ${userInfo.userId} ")
-        } else {
-            logger.info("update exist user success with name ${userInfo.userId}")
-        }
+        mongoTemplate.updateFirst(roleQuery, update, BackupDataEnum.USER_DATA.collectionName)
+        logger.info("update exist user success with name ${userInfo.userId}")
     }
 
     private fun buildQuery(userInfo: BackupUser): Query {

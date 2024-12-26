@@ -69,12 +69,8 @@ class BackupProjectDataHandler(
             .set(BackupProjectInfo::metadata.name, projectInfo.metadata)
             .set(BackupProjectInfo::credentialsKey.name, projectInfo.credentialsKey)
 
-        val updateResult = mongoTemplate.updateFirst(projectQuery, update, BackupDataEnum.PROJECT_DATA.collectionName)
-        if (updateResult.modifiedCount != 1L) {
-            logger.error("update exist project failed with name ${projectInfo.name} ")
-        } else {
-            logger.info("update exist project success with name ${projectInfo.name}")
-        }
+        mongoTemplate.updateFirst(projectQuery, update, BackupDataEnum.PROJECT_DATA.collectionName)
+        logger.info("update exist project success with name ${projectInfo.name}")
     }
 
     private fun buildQuery(projectInfo: BackupProjectInfo): Query {
