@@ -246,8 +246,8 @@ class GenericLocalRepository(
         }
     }
 
-    private fun isSeparateUpload(uploadId: String): Boolean {
-        return uploadId.substringAfter("/") == VERSION_KEY
+    private fun isSeparateUpload(uploadId: String?): Boolean {
+        return uploadId?.substringAfter("/") == VERSION_KEY
     }
 
     override fun onUploadSuccess(context: ArtifactUploadContext) {
