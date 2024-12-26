@@ -40,13 +40,15 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.npm.constants.FILE_SUFFIX
+import com.tencent.bkrepo.npm.constants.HAR_FILE_EXT
+import com.tencent.bkrepo.npm.constants.HSP_FILE_EXT
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.NPM_PKG_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_WITH_DOWNLOAD_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
-import com.tencent.bkrepo.npm.constants.OHPM_PKG_HAR_FULL_PATH
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import org.slf4j.LoggerFactory
 
@@ -62,11 +64,11 @@ object NpmUtils {
         return NPM_PKG_VERSION_METADATA_FULL_PATH.format(name, name, version)
     }
 
-    fun getTgzPath(name: String, version: String, pathWithDash: Boolean = true): String {
+    fun getTgzPath(name: String, version: String, pathWithDash: Boolean = true, ext: String = FILE_SUFFIX): String {
         return if (pathWithDash) {
-            NPM_PKG_TGZ_FULL_PATH.format(name, name, version)
+            NPM_PKG_TGZ_FULL_PATH.format(name, name, version, ext)
         } else {
-            NPM_PKG_TGZ_WITH_DOWNLOAD_FULL_PATH.format(name, name, version)
+            NPM_PKG_TGZ_WITH_DOWNLOAD_FULL_PATH.format(name, name, version, ext)
         }
     }
 
@@ -84,7 +86,7 @@ object NpmUtils {
      * 查看[tarball]里面是否使用 - 分隔符来进行分隔
      */
     fun isDashSeparateInTarball(name: String, version: String, tarball: String): Boolean {
-        val tgzPath = "/%s-%s.tgz".format(name, version)
+        val tgzPath = "/%s-%s".format(name, version)
         val separate = tarball.substringBeforeLast(tgzPath).substringAfterLast('/')
         return separate == StringPool.DASH
     }
@@ -94,7 +96,7 @@ object NpmUtils {
      * http://xxx/helloworld/download/hellworld-1.0.0.tgz  -> http://xxx/helloworld/-/hellworld-1.0.0.tgz
      */
     fun formatTarballWithDash(name: String, version: String, tarball: String): String {
-        val tgzPath = "/%s-%s.tgz".format(name, version)
+        val tgzPath = "/%s-%s".format(name, version)
         val separate = tarball.substringBeforeLast(tgzPath).substringAfterLast('/')
         return tarball.replace("$name/$separate/$name", "$name/-/$name")
     }
@@ -211,10 +213,26 @@ object NpmUtils {
         pathWithDash: Boolean = true,
         repoType: RepositoryType = ArtifactContextHolder.getRepoDetail()!!.type
     ): String {
-        return if (repoType == RepositoryType.OHPM) {
-            OHPM_PKG_HAR_FULL_PATH.format(name, name, version)
-        } else {
-            getTgzPath(name, version, pathWithDash)
-        }
+        val ext = getContentFileExt(repoType == RepositoryType.OHPM)
+        return getTgzPath(name, version, pathWithDash, ext)
+    }
+
+    /**
+     * 转换har tarball url为 hsp url
+     *
+     * demo-1.0.0.har -> demo-1.0.0.hsp
+     */
+    fun harPathToHspPath(harTarball: String): String {
+        return harTarball.substring(0, harTarball.length - 4) + HSP_FILE_EXT
+    }
+
+    fun getContentPath(name: String, version: String, ohpm: Boolean): String {
+        return String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version, getContentFileExt(ohpm))
+    }
+
+    fun getContentFileExt(ohpm: Boolean) = if (ohpm) {
+        HAR_FILE_EXT
+    } else {
+        FILE_SUFFIX
     }
 }

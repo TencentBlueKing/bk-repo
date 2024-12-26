@@ -35,8 +35,6 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
-import com.tencent.bkrepo.npm.constants.OHPM_PKG_HAR_FULL_PATH
 import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
@@ -148,7 +146,7 @@ class NpmPackageHandler {
             val description = this.description
             val version = this.version!!
             val manifestPath = getManifestPath(name, version)
-            val contentPath = getContentPath(name, version, ohpm)
+            val contentPath = NpmUtils.getContentPath(name, version, ohpm)
             val metadata = buildProperties(this)
             with(artifactInfo) {
                 val packageVersionCreateRequest = PackageVersionCreateRequest(
@@ -213,15 +211,6 @@ class NpmPackageHandler {
 
     fun getManifestPath(name: String, version: String): String {
         return NpmUtils.getVersionPackageMetadataPath(name, version)
-    }
-
-    fun getContentPath(name: String, version: String, ohpm: Boolean): String {
-        val format = if (ohpm) {
-            OHPM_PKG_HAR_FULL_PATH
-        } else {
-            NPM_PKG_TGZ_FULL_PATH
-        }
-        return String.format(format, name, name, version)
     }
 
     companion object {

@@ -41,6 +41,7 @@ import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -413,6 +414,9 @@ class NpmFixToolServiceImpl(
 					packageInfo.time.getMap().remove(it)
 					// 删除版本索引文件
 					fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, it))
+				}
+				if (packageSummary.type == PackageType.OHPM) {
+					NpmUtils.updateLatestVersion(packageInfo)
 				}
 				removePackageVersionMetadata(fullPathList)
 				// 重新上传json索引文件

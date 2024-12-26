@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.constants.HSP_FILE_EXT
 import com.tencent.bkrepo.npm.constants.INTEGRITY_HSP
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
@@ -157,8 +156,7 @@ open class AbstractNpmService {
 			return
 		}
 		// OHPM HSP包
-		val harTarball = versionMetadata.dist?.tarball!!
-		val hspTarball = harTarball.substring(0, harTarball.length - 3) + HSP_FILE_EXT
+		val hspTarball = NpmUtils.harPathToHspPath(versionMetadata.dist?.tarball!!)
 		versionMetadata.dist!!.set(RESOLVED_HSP, hspTarball)
 	}
 

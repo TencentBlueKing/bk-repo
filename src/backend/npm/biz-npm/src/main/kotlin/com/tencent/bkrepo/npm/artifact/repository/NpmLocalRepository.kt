@@ -52,6 +52,7 @@ import com.tencent.bkrepo.npm.constants.HSP_FILE_EXT
 import com.tencent.bkrepo.npm.constants.METADATA
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
+import com.tencent.bkrepo.npm.constants.RESOLVED_HSP
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.handler.NpmDependentHandler
@@ -285,6 +286,7 @@ class NpmLocalRepository(
         var count = 0
         val totalSize = packageMetaData.versions.map.size
         val iterator = packageMetaData.versions.map.entries.iterator()
+        val ohpm = context.repositoryDetail.type == RepositoryType.OHPM
         while (iterator.hasNext()) {
             val entry = iterator.next()
             val version = entry.key
@@ -293,7 +295,11 @@ class NpmLocalRepository(
                 measureTimeMillis {
                     val tarball = versionMetadata.dist?.tarball!!
                     storeVersionMetadata(context, versionMetadata)
-                    val size = storeTgzArtifact(context, tarball, name, version)
+                    val size = storeTgzArtifact(context, tarball, name, version, NpmUtils.getContentFileExt(ohpm))
+                    versionMetadata.dist?.any()?.get(RESOLVED_HSP)?.let {
+                        // ohpm包存储hsp文件
+                        storeTgzArtifact(context, it as String, name, version, HSP_FILE_EXT)
+                    }
                     versionSizeMap[version] = size
                 }.apply {
                     logger.info(
@@ -497,6 +503,10 @@ class NpmLocalRepository(
     private fun adjustTarball(versionMetaData: NpmVersionMetadata) {
         with(versionMetaData) {
             versionMetaData.dist!!.tarball = NpmUtils.formatTarballWithDash(name!!, version!!, dist?.tarball!!)
+            versionMetaData.dist!!.any()[RESOLVED_HSP]?.let {
+                val resolvedHsp = NpmUtils.formatTarballWithDash(name!!, version!!, it as String)
+                versionMetaData.dist!!.set(RESOLVED_HSP, resolvedHsp)
+            }
         }
     }
 
@@ -538,13 +548,14 @@ class NpmLocalRepository(
         context: ArtifactMigrateContext,
         tarball: String,
         name: String,
-        version: String
+        version: String,
+        ext: String,
     ): Long {
         // 包的大小信息
         with(context) {
             var size = 0L
             var response: Response? = null
-            val fullPath = NpmUtils.getTgzPath(name, version)
+            val fullPath = NpmUtils.getTgzPath(name, version, true, ext)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
             // hit cache continue
             if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {

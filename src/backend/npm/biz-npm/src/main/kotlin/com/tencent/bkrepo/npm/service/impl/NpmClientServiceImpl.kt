@@ -47,7 +47,6 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.CREATED
-import com.tencent.bkrepo.npm.constants.HSP_FILE_EXT
 import com.tencent.bkrepo.npm.constants.HSP_TYPE
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MODIFIED
@@ -256,7 +255,7 @@ class NpmClientServiceImpl(
             }
             fullPathList.add(tarballPath)
             if (ohpm) {
-                val hspPath = tarballPath.substring(0, tarballPath.length - 3) + HSP_FILE_EXT
+                val hspPath = NpmUtils.harPathToHspPath(tarballPath)
                 fullPathList.add(hspPath)
             }
             fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
