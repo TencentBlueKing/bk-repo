@@ -331,6 +331,7 @@ class NpmLocalRepository(
     ) {
         val name = packageMetaData.name!!
         val fullPath = NpmUtils.getPackageMetadataPath(name)
+        val ohpm = context.repositoryDetail.type == RepositoryType.OHPM
         try {
             with(context) {
                 val originalPackageMetadata = npmPackageMetaData(fullPath)
@@ -343,6 +344,9 @@ class NpmLocalRepository(
                 } ?: return
                 // 调整tarball地址
                 adjustTarball(newPackageMetaData, name, packageMetaData)
+                if (ohpm) {
+                    newPackageMetaData.rev = newPackageMetaData.versions.map.size.toString()
+                }
                 // 存储package.json文件
                 context.putAttribute(NPM_FILE_FULL_PATH, NpmUtils.getPackageMetadataPath(name))
                 val artifactFile = JsonUtils.objectMapper.writeValueAsBytes(newPackageMetaData).inputStream()
@@ -350,7 +354,6 @@ class NpmLocalRepository(
                 val nodeCreateRequest = buildMigrationNodeCreateRequest(context, artifactFile)
                 storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
                 // 添加依赖
-                val ohpm = context.repositoryDetail.type == RepositoryType.OHPM
                 npmDependentHandler.updatePackageDependents(
                     context.userId, context.artifactInfo, newPackageMetaData, NpmOperationAction.MIGRATION, ohpm
                 )
