@@ -17,12 +17,21 @@
                 <span class="mt5 error-data-title">{{ $t('previewErrorTip') }}</span>
             </div>
         </div>
+        <div v-if="loading" class="mainBody">
+            <div class="iconBody">
+                <Icon name="loading" size="80" class="svg-loading" />
+                <span class="mainMessage">{{ $t('fileLoadingTip') }}</span>
+            </div>
+        </div>
     </div>
 </template>
 <script>
     import VueOfficeExcel from '@vue-office/excel'
     import {
-        customizePreviewLocalOfficeFile, customizePreviewOfficeFile, customizePreviewRemoteOfficeFile
+        customizePreviewLocalOfficeFile,
+        customizePreviewOfficeFile,
+        customizePreviewRemoteOfficeFile,
+        getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo
     } from '@/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
@@ -63,7 +72,8 @@
                 basicFileText: '',
                 hasError: false,
                 pageUrl: '',
-                showFrame: true
+                showFrame: false,
+                loading: false
             }
         },
         computed: {
@@ -72,6 +82,7 @@
             }
         },
         async created () {
+            this.loading = true
             if (this.filePath.endsWith('txt')
                 || this.filePath.endsWith('sh')
                 || this.filePath.endsWith('bat')
@@ -89,20 +100,24 @@
                     repoName: this.repoName,
                     path: '/' + this.filePath
                 }).then(res => {
+                    this.loading = false
                     this.previewBasic = true
                     this.basicFileText = res
                 }).catch((e) => {
+                    this.loading = false
                     this.hasError = true
                 })
-            } else if (this.filePath.endsWith('.xlsx')
-            ) {
+            } else if (this.filePath.endsWith('.xlsx')) {
                 customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                    this.loading = false
                     this.previewExcel = true
                     this.dataSource = res.data
                 }).catch((e) => {
+                    this.loading = false
                     this.hasError = true
                 })
             } else if (this.filePath.endsWith('docx')
+                || this.filePath.endsWith('pdf')
                 || this.filePath.endsWith('wps')
                 || this.filePath.endsWith('doc')
                 || this.filePath.endsWith('docm')
@@ -142,23 +157,38 @@
                 || this.filePath.endsWith('pages')
                 || this.filePath.endsWith('eps')) {
                 if (this.repoType === 'local') {
+                    getPreviewLocalOfficeFileInfo(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                        if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                            this.initWaterMark(res.data.data.watermark)
+                        }
+                    })
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(async res => {
-                        const url = URL.createObjectURL(res.data)
+                        this.loading = false
+                        const url = URL.createObjectURL(res.data) + '#toolbar=0&navpanes=0'
                         this.showFrame = true
                         this.pageUrl = url
                     }).catch(() => {
+                        this.loading = false
                         this.hasError = true
                     })
                 } else {
+                    getPreviewRemoteOfficeFileInfo(Base64.encode(Base64.decode(this.extraParam))).then(res => {
+                        if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                            this.initWaterMark(res.data.data.watermark)
+                        }
+                    })
                     customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(res => {
-                        const url = URL.createObjectURL(res.data)
+                        this.loading = false
+                        const url = URL.createObjectURL(res.data)+ '#toolbar=0&navpanes=0'
                         this.showFrame = true
                         this.pageUrl = url
                     }).catch(() => {
+                        this.loading = false
                         this.hasError = true
                     })
                 }
             } else {
+                this.loading = false
                 this.hasError = true
             }
         },
@@ -176,6 +206,9 @@
                 this.showFrame = false
                 this.pageUrl = ''
                 this.hasError = false
+            },
+            initWaterMark (param) {
+                window.initWaterMark(param)
             }
         }
     }
@@ -200,5 +233,32 @@
     margin-top: 18px;
     font-size: 24px;
     line-height: 32px;
+}
+.mainBody {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    .svg-loading {
+        margin-right: 10px;
+        animation: rotate-loading 1s linear infinite;
+    }
+    .iconBody{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .mainMessage{
+        font-size: 16px;
+    }
+    @keyframes rotate-loading {
+        0% {
+            transform: rotateZ(0);
+        }
+
+        100% {
+            transform: rotateZ(360deg);
+        }
+    }
 }
 </style>

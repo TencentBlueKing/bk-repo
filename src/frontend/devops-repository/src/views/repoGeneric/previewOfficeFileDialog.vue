@@ -15,6 +15,12 @@
                 :options="excelOptions"
                 style="height: 100vh;"
             />
+            <div v-if="loading" class="mainBody">
+                <div class="iconBody">
+                    <Icon name="loading" size="80" class="svg-loading" />
+                    <span class="mainMessage">{{ $t('fileLoadingTip') }}</span>
+                </div>
+            </div>
         </div>
     </bk-dialog>
 </template>
@@ -22,7 +28,10 @@
 <script>
     import VueOfficeExcel from '@vue-office/excel'
     import {
-        customizePreviewLocalOfficeFile, customizePreviewOfficeFile, customizePreviewRemoteOfficeFile
+        customizePreviewLocalOfficeFile,
+        customizePreviewOfficeFile,
+        customizePreviewRemoteOfficeFile,
+        getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo
     } from '@repository/utils/previewOfficeFile'
 
     export default {
@@ -57,7 +66,8 @@
                 pageUrl: '',
                 extraParam: '',
                 repoType: '',
-                showFrame: false
+                showFrame: false,
+                loading: false
             }
         },
         methods: {
@@ -77,11 +87,18 @@
                         })
                     })
                 } else {
+                    this.loading = true
                     this.$refs.showData.style.height = '800px'
                     if (this.repoType === 'local') {
-                        customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                        getPreviewLocalOfficeFileInfo(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                            if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                                this.initWaterMark(res.data.data.watermark)
+                            }
+                        })
+                        customizePreviewLocalOfficeFile(this.projectId, this.repoName, this.filePath).then(res => {
+                            this.loading = false
                             this.showFrame = true
-                            const url = URL.createObjectURL(res.data)
+                            const url = URL.createObjectURL(res.data) + '#toolbar=0&navpanes=0'
                             this.pageUrl = url
                         }).catch((e) => {
                             this.cancel()
@@ -92,9 +109,15 @@
                             })
                         })
                     } else {
+                        getPreviewRemoteOfficeFileInfo(this.extraParam).then(res => {
+                            if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                                this.initWaterMark(res.data.data.watermark)
+                            }
+                        })
                         customizePreviewRemoteOfficeFile(this.extraParam).then(res => {
+                            this.loading = false
                             this.showFrame = true
-                            const url = URL.createObjectURL(res.data)
+                            const url = URL.createObjectURL(res.data)+ '#toolbar=0&navpanes=0'
                             this.pageUrl = url
                         }).catch((e) => {
                             this.cancel()
@@ -113,16 +136,19 @@
                 }
             },
             cancel () {
+                this.loading = false
                 this.previewDialog.show = false
                 this.filePath = ''
                 this.projectId = ''
                 this.repoName = ''
                 this.dataSource = ''
-                this.previewDocx = false
                 this.previewExcel = false
-                this.previewPdf = false
                 this.pageUrl = ''
                 this.showFrame = false
+                window.resetWaterMark()
+            },
+            initWaterMark (param) {
+                window.initWaterMark(param)
             }
         }
     }
@@ -135,4 +161,32 @@
         margin-bottom: 10px;
         color: #707070;
     }
+
+.mainBody {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    .svg-loading {
+        margin-right: 10px;
+        animation: rotate-loading 1s linear infinite;
+    }
+    .iconBody{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .mainMessage{
+        font-size: 16px;
+    }
+    @keyframes rotate-loading {
+        0% {
+            transform: rotateZ(0);
+        }
+
+        100% {
+            transform: rotateZ(360deg);
+        }
+    }
+}
 </style>
