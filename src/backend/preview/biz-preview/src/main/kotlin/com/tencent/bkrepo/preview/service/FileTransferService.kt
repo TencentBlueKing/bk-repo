@@ -64,6 +64,7 @@ import java.util.UUID
 @Component
 class FileTransferService(
     private val config: PreviewConfig,
+    private val downloadUtils: DownloadUtils,
     private val repositoryService: RepositoryService
 ) : ArtifactService() {
 
@@ -87,7 +88,7 @@ class FileTransferService(
 
     fun download(fileAttribute: FileAttribute): DownloadResult? {
         var result: DownloadResult? = if (fileAttribute.storageType == 1) {
-            DownloadUtils.downLoad(fileAttribute, config)
+            downloadUtils.downLoad(fileAttribute, config)
         } else {
             downloadFromRepo(fileAttribute)
         }
@@ -156,7 +157,7 @@ class FileTransferService(
         request.setAttribute(ARTIFACT_INFO_KEY, artifactInfo)
         request.setAttribute(REPO_KEY, repoDetail)
 
-        val fileTmpPath = DownloadUtils.getRelFilePath(fileAttribute.fileName, fileAttribute.suffix!!, config.fileDir)
+        val fileTmpPath = downloadUtils.getRelFilePath(fileAttribute.fileName, fileAttribute.suffix!!, config.fileDir)
         request.setAttribute(PREVIEW_TMP_FILE_SAVE_PATH, fileTmpPath)
         request.setAttribute(PREVIEW_ARTIFACT_TO_FILE, toFile)
     }
