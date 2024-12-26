@@ -15,7 +15,6 @@ export function customizePreviewOfficeFile (projectId, repoName, fullPath) {
 
 export function customizePreviewLocalOfficeFile (projectId, repoName, fullPath) {
     const url = projectId + '/' + repoName + fullPath
-    console.log(url)
     return axios({
         url: `${location.origin}/web/preview/api/file/onlinePreview/` + url,
         method: 'get',

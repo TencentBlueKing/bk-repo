@@ -63,7 +63,7 @@
                 basicFileText: '',
                 hasError: false,
                 pageUrl: '',
-                showFrame: true
+                showFrame: false
             }
         },
         computed: {
@@ -94,8 +94,7 @@
                 }).catch((e) => {
                     this.hasError = true
                 })
-            } else if (this.filePath.endsWith('.xlsx')
-            ) {
+            } else if (this.filePath.endsWith('.xlsx')) {
                 customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
                     this.previewExcel = true
                     this.dataSource = res.data

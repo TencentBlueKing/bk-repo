@@ -79,7 +79,7 @@
                 } else {
                     this.$refs.showData.style.height = '800px'
                     if (this.repoType === 'local') {
-                        customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                        customizePreviewLocalOfficeFile(this.projectId, this.repoName, this.filePath).then(res => {
                             this.showFrame = true
                             const url = URL.createObjectURL(res.data)
                             this.pageUrl = url
