@@ -417,6 +417,7 @@ class NpmFixToolServiceImpl(
 				}
 				if (packageSummary.type == PackageType.OHPM) {
 					NpmUtils.updateLatestVersion(packageInfo)
+					packageInfo.rev = packageInfo.versions.map.size.toString()
 				}
 				removePackageVersionMetadata(fullPathList)
 				// 重新上传json索引文件
