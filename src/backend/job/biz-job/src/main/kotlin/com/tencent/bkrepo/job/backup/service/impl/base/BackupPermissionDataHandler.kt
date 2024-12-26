@@ -21,7 +21,11 @@ class BackupPermissionDataHandler(
     }
 
     override fun buildQueryCriteria(context: BackupContext): Criteria {
-        return Criteria()
+        val criteria = Criteria()
+        if (context.incrementDate != null) {
+            criteria.and(BackupPermission::updateAt.name).gte(context.incrementDate)
+        }
+        return criteria
     }
 
     override fun <T> returnLastId(data: T): String {
@@ -37,7 +41,6 @@ class BackupPermissionDataHandler(
             }
             updateExistPermission(record)
         } else {
-            record.id = null
             mongoTemplate.save(record, BackupDataEnum.PERMISSION_DATA.collectionName)
             logger.info("Create permission ${record.permName} success!")
         }

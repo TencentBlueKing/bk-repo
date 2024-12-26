@@ -21,7 +21,11 @@ class BackupAccountDataHandler(
     }
 
     override fun buildQueryCriteria(context: BackupContext): Criteria {
-        return Criteria()
+        val criteria = Criteria()
+        if (context.incrementDate != null) {
+            criteria.and(BackupAccount::lastModifiedDate.name).gte(context.incrementDate)
+        }
+        return criteria
     }
 
     override fun <T> returnLastId(data: T): String {
@@ -37,7 +41,6 @@ class BackupAccountDataHandler(
             }
             updateExistAccount(record)
         } else {
-            record.id = null
             mongoTemplate.save(record, BackupDataEnum.ACCOUNT_DATA.collectionName)
             logger.info("Create account ${record.appId} success!")
         }

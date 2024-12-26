@@ -58,4 +58,7 @@ data class BackupContent(
     var commonData: Boolean = false,
     var compression: Boolean = false,
     var projects: MutableList<ProjectContentInfo>? = null,
+    var increment: Boolean? = null,
+    // 如开启增量备份，不指定日期则默认周期为为前一天凌晨到现在的增量
+    var incrementDate: String? = null,
 )

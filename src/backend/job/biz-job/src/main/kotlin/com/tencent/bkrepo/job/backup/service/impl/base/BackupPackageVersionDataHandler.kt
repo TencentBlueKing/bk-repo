@@ -25,7 +25,11 @@ class BackupPackageVersionDataHandler(
     }
 
     override fun buildQueryCriteria(context: BackupContext): Criteria {
-        return Criteria.where(PACKAGE_ID).isEqualTo(context.currentPackageId)
+        val criteria = Criteria.where(PACKAGE_ID).isEqualTo(context.currentPackageId)
+        if (context.incrementDate != null) {
+            criteria.and(BackupPackageVersionInfoWithKeyInfo::lastModifiedDate.name).gte(context.incrementDate)
+        }
+        return criteria
     }
 
     override fun <T> preBackupDataHandler(record: T, backupDataEnum: BackupDataEnum, context: BackupContext) {
@@ -52,7 +56,6 @@ class BackupPackageVersionDataHandler(
             updateExistPackageVersion(record)
         } else {
             val storeRecord = convert(record)
-            storeRecord.id = null
             mongoTemplate.save(storeRecord, BackupDataEnum.PACKAGE_VERSION_DATA.collectionName)
             logger.info("Create version ${record.name} of packageId ${record.packageId} success!")
         }

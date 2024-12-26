@@ -39,7 +39,6 @@ class BackupContext(
 ) {
     lateinit var targertPath: Path
     lateinit var startDate: LocalDateTime
-    var backupProgress = BackupProgress()
     var currentPath: Path? = null
     var type: String = task.type
     var taskId: String = task.id!!
@@ -52,4 +51,5 @@ class BackupContext(
     var currentVersionName: String? = null
     var currentNode: BackupNodeInfo? = null
     var currentFile: String? = null
+    var incrementDate: LocalDateTime? = null
 }

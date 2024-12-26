@@ -57,7 +57,7 @@ class DataRecordsBackupServiceImpl(
             // TODO 异常需要捕获
             // TODO 历史备份保留周期，当超过该周期时需要进行删除
             if (task.content == null || task.content!!.projects.isNullOrEmpty()) return
-            initStorage(context)
+            init(context)
             // 备份公共基础数据
             if (task.content!!.commonData) {
                 commonDataBackup(context)
@@ -72,26 +72,32 @@ class DataRecordsBackupServiceImpl(
                     ZipFileUtil.compressDirectory(targertPath.toString(), zipFileName)
                     val zipFile = File(targertPath.toString(), zipFileName)
                     storageService.store(zipFileName, zipFile.toArtifactFile(), dataBackupConfig.cos)
-                    //  最后需要删除目录
-                    deleteDirectory(targertPath)
                 } catch (unchecked: UncheckedExecutionException) {
                     logger.error("cos config is null, $unchecked")
-                } catch (e: Exception) {
-                    logger.warn("delete temp folder error: ", e)
+                    throw unchecked
                 }
+                deleteFolder(targertPath)
             }
             backupTaskDao.updateState(taskId, BackupTaskState.FINISHED, endDate = LocalDateTime.now())
             logger.info("Backup task ${context.task} has been finished!")
         }
     }
 
-    private fun initStorage(context: BackupContext) {
+    private fun init(context: BackupContext) {
         val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss"))
         val path = Paths.get(context.task.storeLocation, context.task.name, currentDateStr)
         if (!Files.exists(path)) {
             Files.createDirectories(path)
         }
         context.targertPath = path
+        if (context.task.content?.increment != null) {
+            val date = if (context.task.content?.incrementDate != null) {
+                LocalDateTime.parse(context.task.content!!.incrementDate, DateTimeFormatter.ISO_DATE_TIME)
+            } else {
+                context.startDate.minusDays(1)
+            }
+            context.incrementDate = date
+        }
     }
 
     private fun commonDataBackup(context: BackupContext) {

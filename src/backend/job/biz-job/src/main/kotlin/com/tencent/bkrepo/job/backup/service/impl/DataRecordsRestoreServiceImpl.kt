@@ -52,6 +52,9 @@ class DataRecordsRestoreServiceImpl(
                     customDataRestore(context)
                 }
             }
+            if (task.content!!.compression) {
+                deleteFolder(targertPath)
+            }
             backupTaskDao.updateState(taskId, BackupTaskState.FINISHED, endDate = LocalDateTime.now())
             logger.info("Restore task ${context.task} has been finished!")
         }

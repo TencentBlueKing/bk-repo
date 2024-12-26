@@ -22,7 +22,11 @@ class BackupUserDataHandler(
     }
 
     override fun buildQueryCriteria(context: BackupContext): Criteria {
-        return Criteria()
+        val criteria = Criteria()
+        if (context.incrementDate != null) {
+            criteria.and(BackupUser::lastModifiedDate.name).gte(context.incrementDate)
+        }
+        return criteria
     }
 
     override fun <T> returnLastId(data: T): String {
@@ -38,7 +42,6 @@ class BackupUserDataHandler(
             }
             updateExistUser(record)
         } else {
-            record.id = null
             mongoTemplate.save(record, BackupDataEnum.USER_DATA.collectionName)
             logger.info("Create user ${record.name} success!")
         }

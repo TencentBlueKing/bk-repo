@@ -34,7 +34,6 @@ class BackupConanMetadataDataHandler(
         val record = record as BackupConanMetadata
         val existRecord = findExistConanMetadata(record)
         if (existRecord == null) {
-            record.id = null
             mongoTemplate.save(record, BackupDataEnum.CONAN_METADATA_DATA.collectionName)
             logger.info("Create metadata in ${record.projectId}|${record.repoName} success!")
         }

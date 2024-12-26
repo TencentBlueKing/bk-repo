@@ -24,8 +24,12 @@ class BackupPackageDataHandler(
     }
 
     override fun buildQueryCriteria(context: BackupContext): Criteria {
-        return Criteria.where(PROJECT).isEqualTo(context.currentProjectId)
+        val criteria = Criteria.where(PROJECT).isEqualTo(context.currentProjectId)
             .and(REPO_NAME).isEqualTo(context.currentRepoName)
+        if (context.incrementDate != null) {
+            criteria.and(BackupPackageInfo::lastModifiedDate.name).gte(context.incrementDate)
+        }
+        return criteria
     }
 
     override fun <T> preBackupDataHandler(record: T, backupDataEnum: BackupDataEnum, context: BackupContext) {
@@ -47,7 +51,6 @@ class BackupPackageDataHandler(
             }
             updateExistPackage(record)
         } else {
-            record.id = null
             mongoTemplate.save(record, BackupDataEnum.PACKAGE_DATA.collectionName)
             logger.info("Create package ${record.key} in ${record.projectId}|${record.name} success!")
         }

@@ -9,7 +9,6 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
-import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.backup.pojo.query.BackupFileReferenceInfo
 import com.tencent.bkrepo.job.backup.pojo.query.BackupNodeInfo
@@ -49,9 +48,12 @@ class BackupNodeDataHandler(
     }
 
     override fun buildQueryCriteria(context: BackupContext): Criteria {
-        return Criteria.where(PROJECT).isEqualTo(context.currentProjectId)
+        val criteria = Criteria.where(PROJECT).isEqualTo(context.currentProjectId)
             .and(REPO_NAME).isEqualTo(context.currentRepoName)
-            .and(DELETED_DATE).isEqualTo(null)
+        if (context.incrementDate != null) {
+            criteria.and(BackupNodeInfo::lastModifiedDate.name).gte(context.incrementDate)
+        }
+        return criteria
     }
 
     override fun getCollectionName(backupDataEnum: BackupDataEnum, context: BackupContext): String {
@@ -111,6 +113,9 @@ class BackupNodeDataHandler(
                     logger.error("Failed to store real file", exception)
                     throw StorageErrorException(StorageMessageCode.STORE_ERROR)
                 }
+            } ?: {
+                logger.error("File of node $nodeDetail not exist!")
+                throw StorageErrorException(StorageMessageCode.STORE_ERROR)
             }
         }
     }
@@ -167,7 +172,7 @@ class BackupNodeDataHandler(
             Criteria.where(BackupNodeInfo::repoName.name).isEqualTo(record.repoName)
                 .and(BackupNodeInfo::projectId.name).isEqualTo(record.projectId)
                 .and(BackupNodeInfo::fullPath.name).isEqualTo(record.fullPath)
-                .and(BackupNodeInfo::deleted.name).isEqualTo(null)
+                .and(BackupNodeInfo::id.name).isEqualTo(record.id)
         )
         val collectionName = SeparationUtils.getNodeCollectionName(record.projectId)
         return mongoTemplate.findOne(existNodeQuery, BackupNodeInfo::class.java, collectionName)

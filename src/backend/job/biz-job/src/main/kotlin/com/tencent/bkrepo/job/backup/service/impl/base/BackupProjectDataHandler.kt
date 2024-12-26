@@ -23,7 +23,11 @@ class BackupProjectDataHandler(
     }
 
     override fun buildQueryCriteria(context: BackupContext): Criteria {
-        return Criteria.where(NAME).isEqualTo(context.currentProjectId)
+        val criteria = Criteria.where(NAME).isEqualTo(context.currentProjectId)
+        if (context.incrementDate != null) {
+            criteria.and(BackupProjectInfo::lastModifiedDate.name).gte(context.incrementDate)
+        }
+        return criteria
     }
 
     override fun <T> returnLastId(data: T): String {
@@ -39,7 +43,6 @@ class BackupProjectDataHandler(
             }
             updateExistProject(record)
         } else {
-            record.id = null
             mongoTemplate.save(record, BackupDataEnum.PROJECT_DATA.collectionName)
             logger.info("Create project ${record.name} success!")
         }

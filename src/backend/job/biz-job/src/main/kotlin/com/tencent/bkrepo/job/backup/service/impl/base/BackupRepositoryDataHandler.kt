@@ -29,8 +29,12 @@ class BackupRepositoryDataHandler(
     }
 
     override fun buildQueryCriteria(context: BackupContext): Criteria {
-        return Criteria.where(PROJECT).isEqualTo(context.currentProjectId)
+        val criteria = Criteria.where(PROJECT).isEqualTo(context.currentProjectId)
             .and(NAME).isEqualTo(context.currentRepoName)
+        if (context.incrementDate != null) {
+            criteria.and(BackupRepositoryInfo::lastModifiedDate.name).gte(context.incrementDate)
+        }
+        return criteria
     }
 
     override fun <T> preBackupDataHandler(record: T, backupDataEnum: BackupDataEnum, context: BackupContext) {
@@ -53,7 +57,6 @@ class BackupRepositoryDataHandler(
             // TODO  仓库涉及存储, 不能简单更新
             updateExistRepo(record)
         } else {
-            record.id = null
             mongoTemplate.save(record, BackupDataEnum.REPOSITORY_DATA.collectionName)
             logger.info("Create repo ${record.projectId}|${record.name} success!")
         }
@@ -103,6 +106,8 @@ class BackupRepositoryDataHandler(
             .set(BackupRepositoryInfo::display.name, repoInfo.display)
             .set(BackupRepositoryInfo::clusterNames.name, repoInfo.clusterNames)
             .set(BackupRepositoryInfo::credentialsKey.name, repoInfo.credentialsKey)
+            .set(BackupRepositoryInfo::deleted.name, repoInfo.deleted)
+
 
         // TODO quote和used需要进行事实计算更新
 
@@ -119,6 +124,7 @@ class BackupRepositoryDataHandler(
         return Query(
             Criteria.where(BackupRepositoryInfo::projectId.name).isEqualTo(repoInfo.projectId)
                 .and(BackupRepositoryInfo::name.name).isEqualTo(repoInfo.name)
+                .and(BackupRepositoryInfo::deleted.name).isEqualTo(repoInfo.deleted)
         )
     }
 

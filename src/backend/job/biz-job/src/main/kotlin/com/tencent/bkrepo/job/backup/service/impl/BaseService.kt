@@ -63,6 +63,15 @@ open class BaseService {
         }
     }
 
+    fun deleteFolder(targetPath: Path) {
+        try {
+            //  最后需要删除目录
+            deleteDirectory(targetPath)
+        } catch (e: Exception) {
+            logger.warn("delete temp folder error: ", e)
+        }
+    }
+
     fun buildPath(dir: String, fileName: String, root: Path): Path {
         return Paths.get(root.toString(), dir, fileName)
     }

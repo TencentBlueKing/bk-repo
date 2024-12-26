@@ -34,7 +34,7 @@ data class BackupSetting(
     /**
      * 冲突解决策略
      */
-    val conflictStrategy: BackupConflictStrategy = BackupConflictStrategy.SKIP,
+    val conflictStrategy: BackupConflictStrategy = BackupConflictStrategy.OVERWRITE,
     /**
      * 错误处理策略
      */

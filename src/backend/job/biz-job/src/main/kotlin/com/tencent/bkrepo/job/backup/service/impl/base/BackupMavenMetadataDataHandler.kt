@@ -41,7 +41,6 @@ class BackupMavenMetadataDataHandler(
             }
             updateExistMavenMetadata(record)
         } else {
-            record.id = null
             mongoTemplate.save(record, BackupDataEnum.MAVEN_METADATA_DATA.collectionName)
             logger.info("Create metadata in ${record.projectId}|${record.repoName} success!")
         }
