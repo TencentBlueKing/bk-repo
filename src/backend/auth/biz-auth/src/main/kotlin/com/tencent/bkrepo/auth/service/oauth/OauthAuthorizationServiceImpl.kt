@@ -31,9 +31,13 @@ import cn.hutool.core.codec.Base64Decoder
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.tencent.bkrepo.auth.config.OauthProperties
 import com.tencent.bkrepo.auth.dao.AccountDao
+import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
+import com.tencent.bkrepo.auth.exception.OauthException
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.model.TOauthToken
+import com.tencent.bkrepo.auth.pojo.enums.OauthErrorType
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizeRequest
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
@@ -42,8 +46,6 @@ import com.tencent.bkrepo.auth.pojo.oauth.IdToken
 import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKey
 import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
-import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.OidcConfiguration
 import com.tencent.bkrepo.auth.pojo.oauth.UserInfo
 import com.tencent.bkrepo.auth.service.OauthAuthorizationService
@@ -54,7 +56,6 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -88,8 +89,8 @@ class OauthAuthorizationServiceImpl(
     override fun authorized(authorizeRequest: AuthorizeRequest): AuthorizedResult {
         with(authorizeRequest) {
             val userId = SecurityUtils.getUserId()
-            val client =
-                accountDao.findById(clientId) ?: throw ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST)
+            val client = accountDao.findById(clientId)
+                    ?: throw OauthException(OauthErrorType.INVALID_CLIENT, "client[$clientId] not found]")
             val code = OauthUtils.generateCode()
 
             val userIdKey = "$clientId:$code:userId"
@@ -136,7 +137,7 @@ class OauthAuthorizationServiceImpl(
             } else if (generateTokenRequest.grantType.equals(AuthorizationGrantType.CLIENT_CREDENTIALS.value(), true)) {
                 createClientCredentialsToken(clientId, clientSecret)
             } else {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "grant_type")
+                throw OauthException(OauthErrorType.UNSUPPORTED_GRANT_TYPE, generateTokenRequest.grantType)
             }
 
         val token = transfer(tOauthToken)
@@ -148,9 +149,9 @@ class OauthAuthorizationServiceImpl(
             Preconditions.checkNotNull(clientId, this::clientId.name)
             Preconditions.checkNotNull(refreshToken, this::refreshToken.name)
             var token = oauthTokenRepository.findFirstByAccountIdAndRefreshToken(clientId!!, refreshToken!!)
-                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, refreshToken!!)
+                ?: throw OauthException(OauthErrorType.INVALID_GRANT, "refresh token[$refreshToken] not found")
             val client = accountDao.findById(clientId!!)
-                ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId!!)
+                ?: throw OauthException(OauthErrorType.INVALID_GRANT, "client[$clientId] not found")
             token = buildOauthToken(
                 userId = token.userId,
                 nonce = OauthUtils.generateRandomString(10),
@@ -171,7 +172,8 @@ class OauthAuthorizationServiceImpl(
         val userIdKey = "$clientId:$code:userId"
         val openIdKey = "$clientId:$code:openId"
         val nonceKey = "$clientId:$code:nonce"
-        val userId = redisOperation.get(userIdKey) ?: throw ErrorCodeException(AuthMessageCode.AUTH_CODE_CHECK_FAILED)
+        val userId = redisOperation.get(userIdKey)
+            ?: throw OauthException(OauthErrorType.INVALID_REQUEST, "auth code check failed")
         val openId = redisOperation.get(openIdKey).toBoolean()
         val nonce = redisOperation.get(nonceKey)
         val client = checkClientSecret(clientId, clientSecret, code, generateTokenRequest.codeVerifier)
@@ -331,10 +333,11 @@ class OauthAuthorizationServiceImpl(
         codeVerifier: String?
     ): TAccount {
         if (clientSecret.isNullOrBlank() && codeVerifier.isNullOrBlank()) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "clientSecret or codeVerifier")
+            throw OauthException(OauthErrorType.INVALID_REQUEST, "need clientSecret or codeVerifier")
         }
 
-        val client = accountDao.findById(clientId) ?: throw ErrorCodeException(AuthMessageCode.AUTH_CLIENT_NOT_EXIST)
+        val client = accountDao.findById(clientId)
+            ?: throw OauthException(OauthErrorType.INVALID_CLIENT, "client[$clientId] not found")
 
         val credential = if (clientSecret.isNullOrBlank()) {
             client.credentials.find { it.authorizationGrantType == AuthorizationGrantType.AUTHORIZATION_CODE }
@@ -345,7 +348,7 @@ class OauthAuthorizationServiceImpl(
             }
         }
         if (credential == null) {
-            throw ErrorCodeException(AuthMessageCode.AUTH_SECRET_CHECK_FAILED)
+            throw OauthException(OauthErrorType.UNAUTHORIZED_CLIENT, "auth secret check failed")
         }
 
         if (!code.isNullOrBlank()) {
@@ -366,7 +369,7 @@ class OauthAuthorizationServiceImpl(
             else -> false
         }
         if (!pass) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "code_verifier")
+            throw OauthException(OauthErrorType.INVALID_REQUEST, "code_verifier")
         }
     }
 
