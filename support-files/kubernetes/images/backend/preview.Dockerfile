@@ -9,7 +9,7 @@ RUN yum -y install ca-certificates && \
     mkdir -p /usr/share/fonts/wenquanyi && \
     tar -zxvf /tmp/wqy-microhei.tar.gz -C /usr/share/fonts/wenquanyi --strip-components=1 && \
     rm -f /tmp/wqy-microhei.tar.gz && \
-    wget https://jaist.dl.sourceforge.net/project/wqy/wqy-zenhei/0.9.45%20%28Fighting-state%20RC1%29/wqy-zenhei-0.9.45.tar.gz -O /tmp/wqy-zenhei.tar.gz && \
+    wget http://wenq.org/daily/zenhei/wqy-zenhei-0.9.47-nightlybuild.tar.gz -O /tmp/wqy-zenhei.tar.gz && \
     mkdir -p /usr/share/fonts/wenquanyi && \
     tar -zxvf /tmp/wqy-zenhei.tar.gz -C /usr/share/fonts/wenquanyi --strip-components=1 && \
     rm -f /tmp/wqy-zenhei.tar.gz && \
