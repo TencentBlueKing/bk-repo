@@ -78,7 +78,7 @@ class BackupNodeDataHandler(
             if (context.task.backupSetting.conflictStrategy == BackupConflictStrategy.SKIP) {
                 return
             }
-            updateExistNode(existRecord, collectionName)
+            updateExistNode(record, collectionName)
         } else {
             try {
                 mongoTemplate.save(record, collectionName)
