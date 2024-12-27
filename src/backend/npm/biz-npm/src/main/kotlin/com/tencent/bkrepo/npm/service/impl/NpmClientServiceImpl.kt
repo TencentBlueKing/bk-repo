@@ -534,29 +534,29 @@ class NpmClientServiceImpl(
         attachment: NpmPackageMetaData.Attachment,
         fullPath: String,
     ) {
-        with(artifactInfo) {
-            logger.info("user [$userId] deploying npm package [$fullPath] into repo [$projectId/$repoName]")
-            try {
-                val inputStream = tgzContentToInputStream(attachment.data!!)
-                val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
-                if (fullPath.endsWith(HAR_FILE_EXT)) {
-                    // 保存readme,changelog文件
-                    val readmeDir = NpmUtils.getReadmeDirFromTarballPath(fullPath)
-                    artifactFile.getInputStream().use { handlerOhpmReadmeAndChangelogUpload(it, readmeDir) }
-                }
-                val context = ArtifactUploadContext(artifactFile)
-                context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
-                context.putAttribute("attachments.content_type", attachment.contentType!!)
-                context.putAttribute("attachments.length", attachment.length!!)
-                context.putAttribute("name", NPM_PACKAGE_TGZ_FILE)
-                // context.putAttribute(NPM_METADATA, buildProperties(versionMetadata))
-                ArtifactContextHolder.getRepository().upload(context)
-                artifactFile.delete()
-            } catch (exception: IOException) {
-                logger.error(
-                    "Failed deploying npm package [$fullPath] into repo [$projectId/$repoName] due to : $exception"
-                )
+        val projectId = artifactInfo.projectId
+        val repoName = artifactInfo.repoName
+        logger.info("user [$userId] deploying npm package [$fullPath] into repo [$projectId/$repoName]")
+        try {
+            val inputStream = tgzContentToInputStream(attachment.data!!)
+            val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
+            if (fullPath.endsWith(HAR_FILE_EXT)) {
+                // 保存readme,changelog文件
+                val readmeDir = NpmUtils.getReadmeDirFromTarballPath(fullPath)
+                artifactFile.getInputStream().use { handlerOhpmReadmeAndChangelogUpload(it, readmeDir) }
             }
+            val context = ArtifactUploadContext(artifactFile)
+            context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
+            context.putAttribute("attachments.content_type", attachment.contentType!!)
+            context.putAttribute("attachments.length", attachment.length!!)
+            context.putAttribute("name", NPM_PACKAGE_TGZ_FILE)
+            // context.putAttribute(NPM_METADATA, buildProperties(versionMetadata))
+            ArtifactContextHolder.getRepository().upload(context)
+            artifactFile.delete()
+        } catch (exception: IOException) {
+            logger.error(
+                "Failed deploying npm package [$fullPath] into repo [$projectId/$repoName] due to : $exception"
+            )
         }
     }
 
