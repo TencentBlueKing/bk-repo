@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.job.backup.config
 
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("backup")
