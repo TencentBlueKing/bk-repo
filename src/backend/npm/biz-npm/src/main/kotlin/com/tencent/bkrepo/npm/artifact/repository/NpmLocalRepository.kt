@@ -48,10 +48,13 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
+import com.tencent.bkrepo.npm.constants.HAR_FILE_EXT
 import com.tencent.bkrepo.npm.constants.HSP_FILE_EXT
 import com.tencent.bkrepo.npm.constants.METADATA
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
+import com.tencent.bkrepo.npm.constants.OHPM_CHANGELOG_FILE_NAME
+import com.tencent.bkrepo.npm.constants.OHPM_README_FILE_NAME
 import com.tencent.bkrepo.npm.constants.RESOLVED_HSP
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SIZE
@@ -559,7 +562,6 @@ class NpmLocalRepository(
             var size = 0L
             var response: Response? = null
             val fullPath = NpmUtils.getTgzPath(name, version, true, ext)
-            context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
             // hit cache continue
             if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
                 logger.info(
@@ -573,6 +575,12 @@ class NpmLocalRepository(
                     response = okHttpUtil.doGet(tarball)
                     if (checkResponse(response!!)) {
                         val artifactFile = ArtifactFileFactory.build(response?.body!!.byteStream())
+                        if (fullPath.endsWith(HAR_FILE_EXT)) {
+                            // 保存readme,changelog文件
+                            val readmeDir = NpmUtils.getReadmeDirFromTarballPath(fullPath)
+                            artifactFile.getInputStream().use { storeReadmeAndChangelog(context, it, readmeDir) }
+                        }
+                        context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
                         val nodeCreateRequest = buildMigrationNodeCreateRequest(context, artifactFile)
                         storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
                         size = artifactFile.getSize()
@@ -591,6 +599,26 @@ class NpmLocalRepository(
             }
             return size
         }
+    }
+
+    private fun storeReadmeAndChangelog(context: ArtifactMigrateContext, inputStream: InputStream, readmeDir: String) {
+        try {
+            val (readme, changelog) = NpmUtils.getReadmeAndChangeLog(inputStream)
+            readme?.let { storeReadmeOrChangeLog(context, it, "$readmeDir/$OHPM_README_FILE_NAME") }
+            changelog?.let { storeReadmeOrChangeLog(context, it, "$readmeDir/$OHPM_CHANGELOG_FILE_NAME") }
+        }  catch (exception: IOException) {
+            logger.error(
+                "Failed deploying npm readme [$readmeDir] due to : $exception"
+            )
+        }
+    }
+
+    private fun storeReadmeOrChangeLog(context: ArtifactMigrateContext, data: ByteArray, fullPath: String) {
+        context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
+        val artifactFile = data.inputStream().use { ArtifactFileFactory.build(it) }
+        val nodeCreateRequest = buildMigrationNodeCreateRequest(context, artifactFile)
+        storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, context.storageCredentials)
+        artifactFile.delete()
     }
 
     private fun buildMigrationNodeCreateRequest(

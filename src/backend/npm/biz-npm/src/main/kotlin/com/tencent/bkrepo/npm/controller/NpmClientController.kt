@@ -164,7 +164,7 @@ class NpmClientController(
     /**
      * download tgz file
      */
-    @GetMapping("/{projectId}/{repoName}/**/*.{tgz,har,hsp}")
+    @GetMapping("/{projectId}/{repoName}/**/*.{tgz,har,hsp,md}")
     fun download(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo
     ) {

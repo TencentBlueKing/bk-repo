@@ -47,14 +47,17 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.CREATED
+import com.tencent.bkrepo.npm.constants.HAR_FILE_EXT
 import com.tencent.bkrepo.npm.constants.HSP_TYPE
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
 import com.tencent.bkrepo.npm.constants.OHPM_ARTIFACT_TYPE
+import com.tencent.bkrepo.npm.constants.OHPM_CHANGELOG_FILE_NAME
 import com.tencent.bkrepo.npm.constants.OHPM_DEFAULT_ARTIFACT_TYPE
 import com.tencent.bkrepo.npm.constants.OHPM_DEPRECATE
+import com.tencent.bkrepo.npm.constants.OHPM_README_FILE_NAME
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.constants.TGZ_FULL_PATH_WITH_DASH_SEPARATOR
@@ -256,7 +259,10 @@ class NpmClientServiceImpl(
             fullPathList.add(tarballPath)
             if (ohpm) {
                 val hspPath = NpmUtils.harPathToHspPath(tarballPath)
+                val readmeDir = NpmUtils.getReadmeDirFromTarballPath(tarballPath)
                 fullPathList.add(hspPath)
+                fullPathList.add("$readmeDir/$OHPM_README_FILE_NAME")
+                fullPathList.add("$readmeDir/$OHPM_CHANGELOG_FILE_NAME")
             }
             fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
             val context = ArtifactRemoveContext()
@@ -535,6 +541,11 @@ class NpmClientServiceImpl(
             try {
                 val inputStream = tgzContentToInputStream(attachment.data!!)
                 val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
+                if (fullPath.endsWith(HAR_FILE_EXT)) {
+                    // 保存readme,changelog文件
+                    val readmeDir = NpmUtils.getReadmeDirFromTarballPath(fullPath)
+                    artifactFile.getInputStream().use { handlerOhpmReadmeAndChangelogUpload(it, readmeDir) }
+                }
                 val context = ArtifactUploadContext(artifactFile)
                 context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
                 context.putAttribute("attachments.content_type", attachment.contentType!!)
@@ -549,6 +560,27 @@ class NpmClientServiceImpl(
                 )
             }
         }
+    }
+
+    private fun handlerOhpmReadmeAndChangelogUpload(inputStream: InputStream, readmeDir: String) {
+        try {
+            val (readme, changelog) = NpmUtils.getReadmeAndChangeLog(inputStream)
+            readme?.let { uploadReadmeOrChangeLog(it, "$readmeDir/$OHPM_README_FILE_NAME") }
+            changelog?.let { uploadReadmeOrChangeLog(it, "$readmeDir/$OHPM_CHANGELOG_FILE_NAME") }
+        }  catch (exception: IOException) {
+            logger.error(
+                "Failed deploying npm readme [$readmeDir] due to : $exception"
+            )
+        }
+    }
+
+    private fun uploadReadmeOrChangeLog(byteArray: ByteArray, fullPath: String) {
+        val artifactFile = byteArray.inputStream().use { ArtifactFileFactory.build(it) }
+        val context = ArtifactUploadContext(artifactFile)
+        context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
+        context.putAttribute("name", NPM_PACKAGE_TGZ_FILE)
+        ArtifactContextHolder.getRepository().upload(context)
+        artifactFile.delete()
     }
 
     private fun buildProperties(npmVersionMetadata: NpmVersionMetadata?): List<MetadataModel> {

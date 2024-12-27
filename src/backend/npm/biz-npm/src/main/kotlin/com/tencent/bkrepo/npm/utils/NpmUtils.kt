@@ -50,7 +50,10 @@ import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_WITH_DOWNLOAD_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PKG_VERSION_METADATA_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.slf4j.LoggerFactory
+import java.io.InputStream
 
 object NpmUtils {
 
@@ -234,5 +237,41 @@ object NpmUtils {
         HAR_FILE_EXT
     } else {
         FILE_SUFFIX
+    }
+
+    /**
+     * 从har包中解析出readme与changelog文件数据
+     *
+     * @param inputStream har文件，由调用方负责关闭
+     * @return (readme，changelog)，不存在时为null
+     */
+    fun getReadmeAndChangeLog(inputStream: InputStream): Pair<ByteArray?, ByteArray?> {
+        var changelog: ByteArray? = null
+        var readme: ByteArray? = null
+        val tar = TarArchiveInputStream(GzipCompressorInputStream(inputStream))
+        do {
+            val entry = tar.nextEntry
+            // package最外层目录未找到readme时放弃搜索
+            if (entry == null || entry.name.endsWith("/")) {
+                break
+            }
+            if (entry.name == "package/README.md" || entry.name == "package/readme.md") {
+                readme = tar.readBytes()
+            }
+            if (entry.name == "package/CHANGELOG.md" || entry.name == "package/changelog.md") {
+                changelog = tar.readBytes()
+            }
+            if (changelog != null && readme != null) {
+                break
+            }
+        } while (true)
+        return Pair(readme, changelog)
+    }
+
+    /**
+     * 移除文件后缀作为readme文件存放目录，例：demo-1.0.0.har -> demo-1.0.0
+     */
+    fun getReadmeDirFromTarballPath(tarballPath: String): String {
+        return tarballPath.substring(0, tarballPath.length - 4)
     }
 }
