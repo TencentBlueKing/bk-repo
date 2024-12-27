@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.job.DATA_RECORDS_BACKUP
 import com.tencent.bkrepo.job.DATA_RECORDS_RESTORE
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
@@ -59,7 +60,7 @@ class DataBackupServiceImpl(
     private fun contentCheck(request: BackupTaskRequest) {
         with(request) {
             try {
-                val targetFile = Paths.get(storeLocation).toFile()
+                val targetFile = Paths.get(storeLocation).createFile()
                 if (!targetFile.exists()) throw FileNotFoundException(storeLocation)
             } catch (e: Exception) {
                 logger.warn("backup store location [$storeLocation] is illegal!")
