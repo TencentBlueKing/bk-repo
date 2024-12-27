@@ -2,6 +2,7 @@ package com.tencent.bkrepo.job.backup.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.job.backup.config.DataBackupConfig
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
 import com.tencent.bkrepo.job.backup.pojo.BackupTaskState
@@ -81,6 +82,7 @@ class DataRecordsRestoreServiceImpl(
         val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss"))
         val tempFolder = sourcePath.name.removeSuffix(ZIP_FILE_SUFFIX) + StringPool.DASH + currentDateStr
         val unZipTempFolder = Paths.get(sourcePath.parent.toString(), tempFolder)
+        unZipTempFolder.createFile()
         ZipFileUtil.decompressFile(context.task.storeLocation, unZipTempFolder.toString())
         if (!Files.exists(unZipTempFolder)) {
             throw FileNotFoundException(unZipTempFolder.toString())
