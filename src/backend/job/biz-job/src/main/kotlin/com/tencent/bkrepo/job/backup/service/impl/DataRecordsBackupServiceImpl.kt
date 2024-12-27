@@ -2,12 +2,12 @@ package com.tencent.bkrepo.job.backup.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.EscapeUtils
-import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.job.BATCH_SIZE
+import com.tencent.bkrepo.job.NAME
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.backup.config.DataBackupConfig
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
@@ -156,15 +156,15 @@ class DataRecordsBackupServiceImpl(
         if (project.repoList.isNullOrEmpty()) {
             if (project.repoRegex.isNullOrEmpty()) {
                 if (!project.excludeRepos.isNullOrEmpty()) {
-                    criteria.and(REPO_NAME).nin(project.excludeRepos)
+                    criteria.and(NAME).nin(project.excludeRepos)
                 }
             } else {
                 val escapeValue = EscapeUtils.escapeRegexExceptWildcard(project.repoRegex)
                 val regexPattern = escapeValue.replace("*", ".*")
-                criteria.and(REPO_NAME).regex("^$regexPattern")
+                criteria.and(NAME).regex("^$regexPattern")
             }
         } else {
-            criteria.and(REPO_NAME).`in`(project.repoList)
+            criteria.and(NAME).`in`(project.repoList)
         }
         return criteria
     }
