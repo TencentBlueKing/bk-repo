@@ -259,10 +259,8 @@ class NpmClientServiceImpl(
             fullPathList.add(tarballPath)
             if (ohpm) {
                 val hspPath = NpmUtils.harPathToHspPath(tarballPath)
-                val readmeDir = NpmUtils.getReadmeDirFromTarballPath(tarballPath)
                 fullPathList.add(hspPath)
-                fullPathList.add("$readmeDir/$OHPM_README_FILE_NAME")
-                fullPathList.add("$readmeDir/$OHPM_CHANGELOG_FILE_NAME")
+                fullPathList.add(NpmUtils.getReadmeDirFromTarballPath(tarballPath))
             }
             fullPathList.add(NpmUtils.getVersionPackageMetadataPath(name, version))
             val context = ArtifactRemoveContext()
