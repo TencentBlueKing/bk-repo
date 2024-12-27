@@ -4,6 +4,8 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.util.createFile
@@ -61,6 +63,14 @@ open class BaseService {
                 throw StorageErrorException(StorageMessageCode.STORE_ERROR)
             }
         }
+    }
+
+    fun onCreateClient(credentials: InnerCosCredentials): CosClient {
+        require(credentials.secretId.isNotBlank())
+        require(credentials.secretKey.isNotBlank())
+        require(credentials.region.isNotBlank())
+        require(credentials.bucket.isNotBlank())
+        return CosClient(credentials)
     }
 
     fun deleteFolder(targetPath: Path) {

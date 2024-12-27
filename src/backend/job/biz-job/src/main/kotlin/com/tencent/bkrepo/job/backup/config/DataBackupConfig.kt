@@ -12,5 +12,5 @@ data class DataBackupConfig(
     /**
      * 备份数据存储实例
      * */
-    var cos: StorageCredentials = InnerCosCredentials(),
+    var cos: InnerCosCredentials = InnerCosCredentials(),
 )

@@ -1,13 +1,10 @@
 package com.tencent.bkrepo.job.backup.service.impl
 
-import com.google.common.util.concurrent.UncheckedExecutionException
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.EscapeUtils
-import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.job.BATCH_SIZE
@@ -43,7 +40,6 @@ import java.time.format.DateTimeFormatter
 class DataRecordsBackupServiceImpl(
     private val mongoTemplate: MongoTemplate,
     private val backupTaskDao: BackupTaskDao,
-    private val storageService: StorageService,
     private val dataBackupConfig: DataBackupConfig,
 ) : DataRecordsBackupService, BaseService() {
     override fun projectDataBackup(context: BackupContext) {
@@ -67,17 +63,19 @@ class DataRecordsBackupServiceImpl(
             //  最后进行压缩
             if (task.content!!.compression) {
                 // TODO 使用压缩需要关注对CPU的影响
+                logger.info("start to compress file and upload to cos")
                 val zipFileName = buildZipFileName(context)
+                val zipFilePath = buildZipFilePath(context)
                 try {
-                    ZipFileUtil.compressDirectory(targertPath.toString(), zipFileName)
-                    val zipFile = File(targertPath.toString(), zipFileName)
-                    storageService.store(zipFileName, zipFile.toArtifactFile(), dataBackupConfig.cos)
-                } catch (unchecked: UncheckedExecutionException) {
-                    logger.error("cos config is null, $unchecked")
-                    throw unchecked
-                } finally {
-                    deleteFolder(targertPath)
+                    ZipFileUtil.compressDirectory(targertPath.toString(), zipFilePath)
+                    val zipFile = File(zipFilePath)
+                    val cosClient = onCreateClient(dataBackupConfig.cos)
+                    cosClient.putFileObject(zipFileName, zipFile)
+                } catch (e: Exception) {
+                    logger.error("compress or upload zip file to cos error, $e")
+                    throw StorageErrorException(StorageMessageCode.STORE_ERROR)
                 }
+                deleteFolder(targertPath)
             }
             backupTaskDao.updateState(taskId, BackupTaskState.FINISHED, endDate = LocalDateTime.now())
             logger.info("Backup task ${context.task} has been finished!")
@@ -173,8 +171,12 @@ class DataRecordsBackupServiceImpl(
 
     private fun buildZipFileName(context: BackupContext): String {
         val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss"))
-        val path = context.task.name + StringPool.DASH + currentDateStr + ZIP_FILE_SUFFIX
-        return Paths.get(context.task.storeLocation, context.task.name, path).toString()
+        return context.task.name + StringPool.DASH + currentDateStr + ZIP_FILE_SUFFIX
+    }
+
+    private fun buildZipFilePath(context: BackupContext): String {
+        val fileName = buildZipFileName(context)
+        return Paths.get(context.task.storeLocation, context.task.name, fileName).toString()
     }
 
     private fun queryResult(
