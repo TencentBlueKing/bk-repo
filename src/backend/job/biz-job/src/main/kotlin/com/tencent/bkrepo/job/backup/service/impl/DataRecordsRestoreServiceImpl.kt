@@ -1,8 +1,9 @@
 package com.tencent.bkrepo.job.backup.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.job.backup.config.DataBackupConfig
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
 import com.tencent.bkrepo.job.backup.pojo.BackupTaskState
@@ -11,6 +12,7 @@ import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum.Companion.P
 import com.tencent.bkrepo.job.backup.pojo.query.enums.BackupDataEnum.Companion.PUBLIC_TYPE
 import com.tencent.bkrepo.job.backup.pojo.record.BackupContext
 import com.tencent.bkrepo.job.backup.pojo.task.BackupContent
+import com.tencent.bkrepo.job.backup.pojo.task.BackupTaskRequest
 import com.tencent.bkrepo.job.backup.pojo.task.ProjectContentInfo
 import com.tencent.bkrepo.job.backup.service.DataRecordsRestoreService
 import com.tencent.bkrepo.job.backup.service.impl.base.BackupDataMappings
@@ -69,7 +71,15 @@ class DataRecordsRestoreServiceImpl(
             }
             val targetFolder = if (task.content!!.compression) {
                 freeSpaceCheck(context, dataBackupConfig.usageThreshold)
-                decompressZipFile(path, context)
+                try {
+                    decompressZipFile(path, context)
+                } catch (e: Exception) {
+                    logger.error("decompress zip file error: ${e.message}")
+                    throw BadRequestException(
+                        CommonMessageCode.PARAMETER_INVALID,
+                        BackupTaskRequest::storeLocation.name
+                    )
+                }
             } else {
                 path
             }
@@ -82,7 +92,7 @@ class DataRecordsRestoreServiceImpl(
         val currentDateStr = context.startDate.format(DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss"))
         val tempFolder = sourcePath.name.removeSuffix(ZIP_FILE_SUFFIX) + StringPool.DASH + currentDateStr
         val unZipTempFolder = Paths.get(sourcePath.parent.toString(), tempFolder)
-        unZipTempFolder.createFile()
+        Files.createDirectories(unZipTempFolder)
         ZipFileUtil.decompressFile(context.task.storeLocation, unZipTempFolder.toString())
         if (!Files.exists(unZipTempFolder)) {
             throw FileNotFoundException(unZipTempFolder.toString())

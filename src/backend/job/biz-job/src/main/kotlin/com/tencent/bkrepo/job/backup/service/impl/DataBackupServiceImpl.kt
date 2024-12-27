@@ -5,7 +5,6 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.job.DATA_RECORDS_BACKUP
 import com.tencent.bkrepo.job.DATA_RECORDS_RESTORE
 import com.tencent.bkrepo.job.backup.dao.BackupTaskDao
@@ -22,6 +21,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import java.io.FileNotFoundException
+import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
 
@@ -59,28 +60,45 @@ class DataBackupServiceImpl(
 
     private fun contentCheck(request: BackupTaskRequest) {
         with(request) {
+
+            if (content == null || content!!.projects.isNullOrEmpty()) {
+                logger.warn("backup content [$content] is illegal!")
+                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, BackupTaskRequest::content.name)
+            }
             try {
-                val targetFile = Paths.get(storeLocation).createFile()
-                if (!targetFile.exists()) throw FileNotFoundException(storeLocation)
+                val targetFile = Paths.get(storeLocation)
+                storeLocationHandler(request.type, targetFile)
+                if (!targetFile.toFile().exists()) throw FileNotFoundException(storeLocation)
             } catch (e: Exception) {
                 logger.warn("backup store location [$storeLocation] is illegal!")
-                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, BackupTaskRequest::storeLocation.name)
+                throw BadRequestException(
+                    CommonMessageCode.PARAMETER_INVALID,
+                    BackupTaskRequest::storeLocation.name
+                )
             }
-            when (type) {
-                DATA_RECORDS_BACKUP -> {
-                    if (content == null || content!!.projects.isNullOrEmpty()) {
-                        logger.warn("backup content [$content] is illegal!")
-                        throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, BackupTaskRequest::content.name)
-                    }
-                    return
+        }
+    }
+
+    private fun storeLocationHandler(type: String, targetFile: Path) {
+        when (type) {
+            DATA_RECORDS_BACKUP -> {
+                try {
+                    Files.createDirectories(targetFile)
+                } catch (e: Exception) {
+                    logger.warn("backup store location [$targetFile] is illegal!")
+                    throw BadRequestException(
+                        CommonMessageCode.PARAMETER_INVALID,
+                        BackupTaskRequest::storeLocation.name
+                    )
                 }
-                DATA_RECORDS_RESTORE -> {
-                    return
-                }
-                else -> {
-                    logger.warn("task type [$type] is illegal!")
-                    throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, BackupTaskRequest::type.name)
-                }
+                return
+            }
+            DATA_RECORDS_RESTORE -> {
+                return
+            }
+            else -> {
+                logger.warn("task type [$type] is illegal!")
+                throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, BackupTaskRequest::type.name)
             }
         }
     }
