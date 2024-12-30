@@ -2,6 +2,12 @@ FROM blueking/jdk:0.0.2
 
 LABEL maintainer="Tencent BlueKing Devops"
 
+# 设置UTF-8编码环境
+ENV LANG=zh_CN.utf-8
+ENV LC_ALL=zh_CN.utf-8
+ENV LC_CTYPE=zh_CN.utf-8
+RUN echo "LANG=zh_CN.utf-8" >> /etc/environment
+
 RUN yum -y install ca-certificates && \
     yum -y install glibc-common wget bzip2 && \
     # 安装必要的字体包
@@ -19,8 +25,6 @@ RUN yum -y install ca-certificates && \
     rm -f /tmp/dejavu-fonts.tar.bz2 && \
     yum -y install fontconfig && \
     fc-cache -fv && \
-    # 设置中文环境
-    localedef -i zh_CN -c -f UTF-8 -A /usr/share/locale/locale.alias zh_CN.UTF-8 && \
     # 设置时区
     export DEBIAN_FRONTEND=noninteractive && \
     yum -y install tzdata && \
@@ -35,12 +39,6 @@ RUN yum -y install ca-certificates && \
     cd /tmp/LibreOffice_7.6.7.1_Linux_x86-64_rpm/RPMS && \
     yum -y install *.rpm && \
     rm -rf /tmp/* && rm -rf /var/lib/apt/lists/*
-
-# 设置环境变量，支持中文
-ENV LANG=zh_CN.utf-8
-ENV LC_ALL=zh_CN.utf-8
-ENV LC_CTYPE=zh_CN.utf-8
-RUN echo "LANG=zh_CN.utf-8" >> /etc/environment
 
 ENV BK_REPO_HOME=/data/workspace \
     BK_REPO_LOGS_DIR=/data/workspace/logs \
