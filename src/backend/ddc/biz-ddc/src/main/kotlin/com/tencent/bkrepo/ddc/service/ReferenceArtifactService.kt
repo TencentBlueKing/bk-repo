@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.ddc.service
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.HttpStatus.NOT_FOUND
+import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -102,6 +104,7 @@ class ReferenceArtifactService(
                 throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "blake3")
             }
             val res = referenceService.finalize(ref, ref.inlineBlob!!)
+            HttpContextHolder.getResponse().setHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON)
             HttpContextHolder.getResponse().writer.println(res.toJsonString())
         }
     }
