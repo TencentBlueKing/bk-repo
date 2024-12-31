@@ -42,7 +42,6 @@ class HealthController {
         "$LEGACY_PREFIX{projectId}/health/ready"
     )
     fun ready() {
-        HttpContextHolder.getResponse().setHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON)
         HttpContextHolder.getResponse().apply {
             status = HttpStatus.OK.value
             contentType = "text/plain"
