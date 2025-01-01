@@ -32,10 +32,12 @@ import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.properties.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.listener.NodeUpdateAccessDateEventListener
 import com.tencent.bkrepo.common.metadata.permission.EdgePermissionManager
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.permission.ProxyPermissionManager
@@ -55,6 +57,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
+import org.springframework.messaging.Message
+import java.util.function.Consumer
 
 @Configuration
 @ConditionalOnWebApplication
@@ -135,5 +139,15 @@ class MetadataAutoConfiguration {
             httpAuthProperties = httpAuthProperties,
             principalManager = principalManager
         )
+    }
+
+    // 之前继承Consumer方式框架升级后会报错，https://github.com/spring-cloud/spring-cloud-stream/issues/2704
+    @Bean("nodeUpdateAccessDate")
+    fun nodeUpdateAccessDateEventConsumer(
+        nodeUpdateAccessDateEventListener: NodeUpdateAccessDateEventListener
+    ): Consumer<Message<ArtifactEvent>> {
+        return Consumer {
+            nodeUpdateAccessDateEventListener.accept(it)
+        }
     }
 }
