@@ -1,4 +1,4 @@
-FROM blueking/bk-repo-preview-base:0.0.1
+FROM bkrepo/bk-repo-preview-base:0.0.1
 
 LABEL maintainer="Tencent BlueKing Devops"
 
