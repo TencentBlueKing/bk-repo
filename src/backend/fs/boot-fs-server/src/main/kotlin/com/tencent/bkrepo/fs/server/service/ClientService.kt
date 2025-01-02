@@ -152,7 +152,7 @@ class ClientService(
             repoName = request.repoName,
             mountPoint = request.mountPoint,
             userId = ReactiveSecurityUtils.getUser(),
-            ip = ReactiveRequestContextHolder.getClientAddress(),
+            ip = if (request.ip.isNullOrBlank()) ReactiveRequestContextHolder.getClientAddress() else request.ip,
             version = request.version,
             os = request.os,
             arch = request.arch,
