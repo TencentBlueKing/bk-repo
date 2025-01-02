@@ -28,8 +28,7 @@
 package com.tencent.bkrepo.websocket.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
@@ -86,24 +85,34 @@ class ClipboardService(
         if (userId != copyPDU.userId) {
             throw PermissionException("can't send copy pdu with userId[${copyPDU.userId}]")
         }
-        if (devXProperties.workspaceSearchUrl.isEmpty()) {
+        if (devXProperties.groupWorkspaceUrl.isEmpty() || devXProperties.personalWorkspaceUrl.isEmpty()) {
             return null
         }
+        return if (copyPDU.projectId.startsWith(StringPool.UNDERSCORE)) {
+            checkWorkspace(devXProperties.personalWorkspaceUrl, copyPDU)
+        } else {
+            checkWorkspace(devXProperties.groupWorkspaceUrl, copyPDU)
+        }
+    }
+
+    private fun checkWorkspace(url: String, copyPDU: CopyPDU): String? {
+        val userId = copyPDU.userId
         val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
         val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
         val request = Request.Builder().url(
-            "${devXProperties.workspaceSearchUrl}?projectId=${copyPDU.projectId}&workspaceName=${copyPDU.workspaceName}"
+            "$url?projectId=${copyPDU.projectId}&workspaceName=${copyPDU.workspaceName}"
         )
             .header("X-Bkapi-Authorization", token)
             .header("X-Devops-Uid", userId)
-            .header(HttpHeaders.CONTENT_TYPE, MediaTypes.APPLICATION_JSON)
             .get()
             .build()
         try {
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    logger.error("request url failed: " +
-                        "${request.url}, ${response.code}, ${response.headers["X-Devops-RID"]}")
+                    logger.error(
+                        "request url failed: " +
+                            "${request.url}, ${response.code}, ${response.headers["X-Devops-RID"]}"
+                    )
                     return null
                 }
                 val workspace = response.body!!.string().readJsonString<Response<DevXWorkSpace>>().data
