@@ -147,5 +147,9 @@ data class DevXProperties(
      */
     var authToken: String = "",
 
+    /**
+     * 搜索云桌面接口url
+     */
+    var workspaceSearchUrl: String = "",
 
 )
