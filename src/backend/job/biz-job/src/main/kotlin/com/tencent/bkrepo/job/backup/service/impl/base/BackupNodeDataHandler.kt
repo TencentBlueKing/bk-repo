@@ -78,7 +78,11 @@ class BackupNodeDataHandler(
             if (context.task.backupSetting.conflictStrategy == BackupConflictStrategy.SKIP) {
                 return
             }
-            updateExistNode(record, collectionName)
+            try {
+                updateExistNode(record, collectionName)
+            } catch (e: DuplicateKeyException) {
+                updateDuplicateNode(record, collectionName)
+            }
         } else {
             try {
                 mongoTemplate.save(record, collectionName)
@@ -259,7 +263,7 @@ class BackupNodeDataHandler(
             .set(NodeDetailInfo::md5.name, record.md5)
             .set(NodeDetailInfo::size.name, record.size)
             .set(NodeDetailInfo::id.name, record.id)
-        mongoTemplate.upsert(existNodeQuery, update, collectionName)
+        mongoTemplate.updateFirst(existNodeQuery, update, collectionName)
     }
 
     /**
