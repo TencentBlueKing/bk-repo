@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.ddc.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -216,6 +218,7 @@ class DdcLocalRepository(
                 val artifactFile = context.getArtifactFile()
                 val repoDetail = context.repositoryDetail
                 val res = uploadReference(repoDetail, artifactInfo, artifactFile, context.userId).toJsonString()
+                HttpContextHolder.getResponse().setHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON)
                 HttpContextHolder.getResponse().writer.println(res)
             }
 
@@ -291,6 +294,7 @@ class DdcLocalRepository(
             )
             storageManager.storeArtifactFile(createRequest, getArtifactFile(), storageCredentials)
             blobService.create(Blob.from(artifactInfo, getArtifactSha256(), getArtifactFile().getSize()))
+            HttpContextHolder.getResponse().setHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON)
             HttpContextHolder
                 .getResponse()
                 .writer
