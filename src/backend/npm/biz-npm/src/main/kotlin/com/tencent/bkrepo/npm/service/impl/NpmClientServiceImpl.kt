@@ -33,7 +33,9 @@ package com.tencent.bkrepo.npm.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -49,6 +51,7 @@ import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
 import com.tencent.bkrepo.npm.constants.CREATED
 import com.tencent.bkrepo.npm.constants.HAR_FILE_EXT
 import com.tencent.bkrepo.npm.constants.HSP_TYPE
+import com.tencent.bkrepo.npm.constants.HSP_TYPE_BUNDLE_APP
 import com.tencent.bkrepo.npm.constants.LATEST
 import com.tencent.bkrepo.npm.constants.MODIFIED
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
@@ -57,6 +60,8 @@ import com.tencent.bkrepo.npm.constants.OHPM_ARTIFACT_TYPE
 import com.tencent.bkrepo.npm.constants.OHPM_CHANGELOG_FILE_NAME
 import com.tencent.bkrepo.npm.constants.OHPM_DEFAULT_ARTIFACT_TYPE
 import com.tencent.bkrepo.npm.constants.OHPM_DEPRECATE
+import com.tencent.bkrepo.npm.constants.OHPM_PACKAGE_TYPE
+import com.tencent.bkrepo.npm.constants.OHPM_PACKAGE_TYPE_HSP
 import com.tencent.bkrepo.npm.constants.OHPM_README_FILE_NAME
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SIZE
@@ -73,6 +78,7 @@ import com.tencent.bkrepo.npm.model.properties.PackageProperties
 import com.tencent.bkrepo.npm.pojo.NpmSearchInfoMap
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
+import com.tencent.bkrepo.npm.pojo.OhpmResponse
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction.UNPUBLISH
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
@@ -86,6 +92,8 @@ import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -143,6 +151,25 @@ class NpmClientServiceImpl(
             logger.error("Exception while reading package metadata: ${exception.message}")
             throw exception
         }
+    }
+
+    @Permission(ResourceType.REPO, PermissionAction.WRITE)
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun ohpmStreamPublishOrUpdatePackage(
+        userId: String,
+        artifactInfo: NpmArtifactInfo,
+        npmPackageMetaData: NpmPackageMetaData,
+        artifactFile: ArtifactFile
+    ): OhpmResponse {
+        measureTimeMillis {
+            handlerPackagePublish(userId, artifactInfo, npmPackageMetaData, artifactFile)
+        }.apply {
+            logger.info(
+                "user [$userId] public ohpm package [${npmPackageMetaData.name}] " +
+                        "to repo [${artifactInfo.getRepoIdentify()}] success, elapse $this ms"
+            )
+        }
+        return OhpmResponse.success()
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
@@ -365,20 +392,26 @@ class NpmClientServiceImpl(
     private fun handlerPackagePublish(
         userId: String,
         artifactInfo: NpmArtifactInfo,
-        npmPackageMetaData: NpmPackageMetaData
+        npmPackageMetaData: NpmPackageMetaData,
+        artifactFile: ArtifactFile? = null
     ) {
-        if (npmPackageMetaData.attachments == null) {
+        if (npmPackageMetaData.attachments == null && artifactFile == null) {
             val message = "Missing attachments with tarball data, aborting upload for '${npmPackageMetaData.name}'"
             logger.warn(message)
             throw NpmBadRequestException(message)
         }
         try {
-            val size = npmPackageMetaData.attachments!!.getMap().values.iterator().next().length!!.toLong()
+            var size = 0L
+            if (artifactFile != null) {
+                size = artifactFile.getSize()
+            } else {
+                npmPackageMetaData.attachments!!.getMap().values.forEach { size += it.length!!.toLong() }
+            }
             val ohpm = ArtifactContextHolder.getRepoDetail()!!.type == RepositoryType.OHPM
             if (ohpm) {
                 resolveOhpm(npmPackageMetaData)
             }
-            handlerAttachmentsUpload(userId, artifactInfo, npmPackageMetaData)
+            handlerAttachmentsUpload(userId, artifactInfo, npmPackageMetaData, artifactFile)
             handlerPackageFileUpload(userId, artifactInfo, npmPackageMetaData, size, ohpm)
             handlerVersionFileUpload(userId, artifactInfo, npmPackageMetaData, size)
             npmDependentHandler.updatePackageDependents(
@@ -506,7 +539,8 @@ class NpmClientServiceImpl(
     private fun handlerAttachmentsUpload(
         userId: String,
         artifactInfo: NpmArtifactInfo,
-        npmPackageMetaData: NpmPackageMetaData
+        npmPackageMetaData: NpmPackageMetaData,
+        artifactFile: ArtifactFile? = null,
     ) {
         val versionMetadata = npmPackageMetaData.versions.map.values.iterator().next()
         val packageKey = NpmUtils.packageKeyByRepoType(versionMetadata.name.orEmpty())
@@ -520,26 +554,78 @@ class NpmClientServiceImpl(
                 )
             }
         }
-        npmPackageMetaData.attachments!!.getMap().forEach {
-            val fullPath = "${versionMetadata.name}/-/${it.key}"
-            handlerAttachmentsUpload(userId, artifactInfo, it.value, fullPath)
+
+        if (artifactFile == null) {
+            // 从package metadata中获取tarball数据
+            npmPackageMetaData.attachments!!.getMap().forEach { attachment ->
+                val fullPath = "${versionMetadata.name}/-/${attachment.key}"
+                val inputStream = tgzContentToInputStream(attachment.value.data!!)
+                val attachmentArtifactFile = inputStream.use { ArtifactFileFactory.build(it) }
+                handlerAttachmentsUpload(
+                    userId,
+                    artifactInfo,
+                    attachment.value.contentType!!,
+                    attachment.value.length!!,
+                    attachmentArtifactFile,
+                    fullPath
+                )
+                attachmentArtifactFile.delete()
+            }
+            // 将attachments移除
+            npmPackageMetaData.attachments = null
+            return
         }
-        // 将attachments移除
-        npmPackageMetaData.attachments = null
+
+        // 从artifactFile中获取tarball数据
+        val ohpmPackageType = npmPackageMetaData.any()[OHPM_PACKAGE_TYPE]
+        val hspType = npmPackageMetaData.any()[HSP_TYPE]
+        if (ohpmPackageType != OHPM_PACKAGE_TYPE_HSP || hspType != HSP_TYPE_BUNDLE_APP) {
+            // har
+            val fullPath = NpmUtils.getTgzPath(versionMetadata.name!!, version, true, HAR_FILE_EXT)
+            handlerAttachmentsUpload(
+                userId,
+                artifactInfo,
+                MediaTypes.APPLICATION_OCTET_STREAM,
+                artifactFile.getSize().toInt(),
+                artifactFile,
+                fullPath
+            )
+            return
+        }
+
+        // hsp
+        artifactFile.getInputStream().use { artifactInputStream ->
+            val tgz = TarArchiveInputStream(GzipCompressorInputStream(artifactInputStream))
+            do {
+                val entry = tgz.nextEntry ?: break
+                val fileNameExt = entry.name.substring(entry.name.length - 4, entry.name.length)
+                val fullPath = NpmUtils.getTgzPath(versionMetadata.name!!, version, true, fileNameExt)
+                val tarballArtifactFile = ArtifactFileFactory.build(tgz, entry.size)
+                handlerAttachmentsUpload(
+                    userId,
+                    artifactInfo,
+                    MediaTypes.APPLICATION_OCTET_STREAM,
+                    entry.size.toInt(),
+                    tarballArtifactFile,
+                    fullPath
+                )
+                tarballArtifactFile.delete()
+            } while (true)
+        }
     }
 
     private fun handlerAttachmentsUpload(
         userId: String,
         artifactInfo: NpmArtifactInfo,
-        attachment: NpmPackageMetaData.Attachment,
+        contentType: String,
+        contentLength: Int,
+        artifactFile: ArtifactFile,
         fullPath: String,
     ) {
         val projectId = artifactInfo.projectId
         val repoName = artifactInfo.repoName
         logger.info("user [$userId] deploying npm package [$fullPath] into repo [$projectId/$repoName]")
         try {
-            val inputStream = tgzContentToInputStream(attachment.data!!)
-            val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
             if (fullPath.endsWith(HAR_FILE_EXT)) {
                 // 保存readme,changelog文件
                 val readmeDir = NpmUtils.getReadmeDirFromTarballPath(fullPath)
@@ -547,12 +633,11 @@ class NpmClientServiceImpl(
             }
             val context = ArtifactUploadContext(artifactFile)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
-            context.putAttribute("attachments.content_type", attachment.contentType!!)
-            context.putAttribute("attachments.length", attachment.length!!)
+            context.putAttribute("attachments.content_type", contentType)
+            context.putAttribute("attachments.length", contentLength)
             context.putAttribute("name", NPM_PACKAGE_TGZ_FILE)
             // context.putAttribute(NPM_METADATA, buildProperties(versionMetadata))
             ArtifactContextHolder.getRepository().upload(context)
-            artifactFile.delete()
         } catch (exception: IOException) {
             logger.error(
                 "Failed deploying npm package [$fullPath] into repo [$projectId/$repoName] due to : $exception"

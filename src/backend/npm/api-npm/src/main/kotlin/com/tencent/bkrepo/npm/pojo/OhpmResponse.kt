@@ -34,7 +34,14 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 data class OhpmResponse(
     val code: Int = HttpStatus.OK.value,
     val message: String? = null,
+    /**
+     * 出错时ohpm客户端会取响应体中error字段的值进行打印提示
+     */
     val error: String? = null,
+    /**
+     * ohpm客户端会在发布包成功后打印该字段的值
+     */
+    val additionalMsg: String? = null,
 ) {
     companion object {
         fun success(message: String = "success") = OhpmResponse(HttpStatus.OK.value, message)

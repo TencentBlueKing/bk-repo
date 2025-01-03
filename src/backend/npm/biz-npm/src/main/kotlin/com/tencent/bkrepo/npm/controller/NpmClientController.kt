@@ -34,6 +34,8 @@ package com.tencent.bkrepo.npm.controller
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -56,6 +58,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
@@ -106,6 +109,25 @@ class NpmClientController(
     ): NpmSuccessResponse {
         val pkgName = String.format("@%s/%s", scope, name)
         return npmClientService.publishOrUpdatePackage(userId, artifactInfo, pkgName)
+    }
+
+    @PostMapping("/{projectId}/{repoName}/stream/{name}")
+    fun ohpmStreamPublishOrUpdatePackage(
+        @RequestAttribute userId: String,
+        @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
+        @PathVariable name: String,
+        artifactFileMap: ArtifactFileMap,
+    ): OhpmResponse {
+        val npmPackageMetadata = HttpContextHolder
+            .getRequest()
+            .getParameter("metadata")
+            .readJsonString<NpmPackageMetaData>()
+        return npmClientService.ohpmStreamPublishOrUpdatePackage(
+            userId,
+            artifactInfo,
+            npmPackageMetadata,
+            artifactFileMap["pkg_stream"]!!
+        )
     }
 
     /**

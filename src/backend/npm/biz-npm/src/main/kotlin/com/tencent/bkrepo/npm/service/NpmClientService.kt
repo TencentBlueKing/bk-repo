@@ -31,11 +31,13 @@
 
 package com.tencent.bkrepo.npm.service
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
+import com.tencent.bkrepo.npm.pojo.OhpmResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.metadata.disttags.DistTags
 
@@ -44,6 +46,16 @@ interface NpmClientService {
      * npm publish or update package
      */
     fun publishOrUpdatePackage(userId: String, artifactInfo: NpmArtifactInfo, name: String): NpmSuccessResponse
+
+    /**
+     * ohpm 流式上传
+     */
+    fun ohpmStreamPublishOrUpdatePackage(
+        userId: String,
+        artifactInfo: NpmArtifactInfo,
+        npmPackageMetaData: NpmPackageMetaData,
+        artifactFile: ArtifactFile
+    ): OhpmResponse
 
     /**
      * 查询npm包的package.json元数据信息
