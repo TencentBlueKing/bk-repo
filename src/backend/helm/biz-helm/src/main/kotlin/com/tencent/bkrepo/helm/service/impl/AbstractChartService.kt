@@ -602,10 +602,14 @@ open class AbstractChartService : ArtifactService() {
         domain: String,
         projectId: String,
         repoName: String,
-        helmIndexYamlMetadata: HelmIndexYamlMetadata
+        helmIndexYamlMetadata: HelmIndexYamlMetadata,
+        initProxyUrls: Boolean = true
     ) {
         helmIndexYamlMetadata.entries.values.forEach {
             it.forEach { chart ->
+                if (initProxyUrls) {
+                    chart.proxyDownloadUrl = chart.urls.firstOrNull()
+                }
                 chart.urls = listOf(
                     UrlFormatter.format(
                         domain, "$projectId/$repoName/charts/${chart.name}-${chart.version}.tgz"

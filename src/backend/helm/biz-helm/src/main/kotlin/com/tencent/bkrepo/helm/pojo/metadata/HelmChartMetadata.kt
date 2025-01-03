@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.helm.pojo.metadata
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.github.zafarkhaja.semver.Version
@@ -52,6 +53,8 @@ data class HelmChartMetadata(
     var name: String,
     var sources: List<String> = emptyList(),
     var urls: List<String> = emptyList(),
+    @JsonIgnore
+    var proxyDownloadUrl: String? = null,
     var version: String,
     var type: String?,
     var annotations: Map<String, Any>?

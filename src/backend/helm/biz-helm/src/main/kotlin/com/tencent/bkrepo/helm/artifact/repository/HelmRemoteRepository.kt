@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.helm.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -47,6 +48,8 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.artifact.util.FileNameParser
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.constants.CHART
 import com.tencent.bkrepo.helm.constants.FILE_TYPE
@@ -66,6 +69,7 @@ import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
+import com.tencent.bkrepo.repository.constant.PROXY_DOWNLOAD_URL
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -161,8 +165,33 @@ class HelmRemoteRepository(
         val remoteDomain = remoteConfiguration.url.trimEnd('/')
         return when (fullPath) {
             HelmUtils.getIndexCacheYamlFullPath() -> INDEX_REQUEST_URL.format(remoteDomain, INDEX_YAML)
-            else -> CHART_REQUEST_URL.format(remoteDomain, fullPath)
+            else -> buildDownloadUrl(context, fullPath, remoteDomain)
         }
+    }
+
+    private fun buildDownloadUrl(context: ArtifactContext, fullPath: String?, remoteDomain: String): String {
+        val map = FileNameParser.parseNameAndVersionWithRegex(fullPath!!)
+        val name = map[NAME].toString()
+        val version = map[VERSION].toString()
+        val packageVersion = packageService.findVersionByName(
+            projectId = context.projectId,
+            repoName = context.repoName,
+            packageKey = PackageKeys.ofHelm(name),
+            versionName = version
+        )
+        var downloadUrl = CHART_REQUEST_URL.format(remoteDomain, fullPath)
+        if (packageVersion != null) {
+            val proxyDownloadUrl = packageVersion.metadata[PROXY_DOWNLOAD_URL]?.toString()
+            if (proxyDownloadUrl != null) {
+                downloadUrl = if (!proxyDownloadUrl.contains(remoteDomain)) {
+                    remoteDomain + StringPool.SLASH + proxyDownloadUrl
+                } else {
+                    proxyDownloadUrl
+                }
+            }
+        }
+        logger.info("remote chart download url is $downloadUrl")
+        return downloadUrl
     }
 
     /**

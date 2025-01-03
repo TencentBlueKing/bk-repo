@@ -104,10 +104,10 @@ class HelmOperationService(
             // 删除index文件
             nodeService.deleteNode(
                 NodeDeleteRequest(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = HelmUtils.getIndexCacheYamlFullPath(),
-                operator = SecurityUtils.getUserId()
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = HelmUtils.getIndexCacheYamlFullPath(),
+                    operator = SecurityUtils.getUserId()
                 )
             )
         }
@@ -213,7 +213,8 @@ class HelmOperationService(
             domain = helmProperties.domain,
             projectId = repoDetail.projectId,
             repoName = repoDetail.name,
-            helmIndexYamlMetadata = oldIndex
+            helmIndexYamlMetadata = oldIndex,
+            initProxyUrls = false
         )
         // 存储新index文件
         storeIndex(

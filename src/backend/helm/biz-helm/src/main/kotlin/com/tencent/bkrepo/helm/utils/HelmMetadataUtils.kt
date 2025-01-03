@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
+import com.tencent.bkrepo.repository.constant.PROXY_DOWNLOAD_URL
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 
 object HelmMetadataUtils {
@@ -52,6 +53,9 @@ object HelmMetadataUtils {
         } as MutableList<MetadataModel>
         sourceType?.let {
             mutableMap.add(MetadataModel(SOURCE_TYPE, sourceType))
+        }
+        if (!chartInfo.proxyDownloadUrl.isNullOrEmpty()) {
+            mutableMap.add(MetadataModel(PROXY_DOWNLOAD_URL, chartInfo.proxyDownloadUrl!!))
         }
         return mutableMap
     }
