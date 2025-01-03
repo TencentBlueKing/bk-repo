@@ -220,11 +220,11 @@ open class NodeDeleteSupport(
                 deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
                 quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             }
-            fullPaths?.forEach {
+            fullPaths?.forEach { fullPath ->
                 if (routerControllerProperties.enabled) {
-                    routerControllerClient.removeNodes(projectId, repoName, it)
+                    routerControllerClient.removeNodes(projectId, repoName, fullPath)
                 }
-                publishEvent(buildDeletedEvent(projectId, repoName, it, operator))
+                publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator))
             }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[$resourceKey] by [$operator] error: [${exception.message}]")
