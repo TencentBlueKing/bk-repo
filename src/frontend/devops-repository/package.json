@@ -19,6 +19,7 @@
     "@vue-office/pdf": "^2.0.2",
     "@vue/composition-api": "^1.7.2",
     "axios": "^1.7.7",
+    "js-base64": "^3.7.7",
     "js-cookie": "^2.2.1",
     "marked": "^4.3.0",
     "qrcode": "^1.5.0",

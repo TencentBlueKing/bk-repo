@@ -67,10 +67,12 @@ const routes = [
                 }
             },
             {
-                path: 'filePreview/:repoName/*',
+                path: 'filePreview/:repoType/:extraParam/:repoName/*',
                 name: 'filePreview',
                 component: filePreview,
                 props: route => ({
+                    repoType: route.params.repoType,
+                    extraParam: route.params.extraParam,
                     repoName: route.params.repoName,
                     filePath: route.params.pathMatch // 这里将捕获所有后续的路径
                 })

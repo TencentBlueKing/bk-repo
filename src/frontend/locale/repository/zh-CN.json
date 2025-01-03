@@ -906,5 +906,6 @@
     "conanCreditGuideSubTitle2":"2、在命令行执行以下命令配置制品仓库凭据(conan1.x)",
     "conanRecipePlaceholder":"RECIPE的格式为<NAME>/VERSION>@<USER>/CHANNEL>",
     "conanPullGuideSubTitle":"请在命令行执行以下命令进行拉取(conan1.x)：",
-    "projectNoPermissionTip": "请求项目{0}无权限，已切换"
+    "projectNoPermissionTip": "请求项目{0}无权限，已切换",
+    "fileLoadingTip": "文件加载中，请稍后"
 }
