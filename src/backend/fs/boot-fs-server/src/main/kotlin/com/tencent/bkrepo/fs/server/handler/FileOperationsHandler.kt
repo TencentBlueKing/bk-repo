@@ -103,16 +103,19 @@ class FileOperationsHandler(
             headers.contentLength = artifactInputStream.range.length
             headers.set(HttpHeaders.ACCEPT_RANGES, "bytes")
             headers.add("Content-Range", "bytes ${range.start}-${range.end}/${node.size}")
-            if (artifactInputStream is FileArtifactInputStream) {
-                (response as ZeroCopyHttpOutputMessage).writeWith(
-                    artifactInputStream.file,
-                    artifactInputStream.range.start,
-                    artifactInputStream.range.length
-                ).awaitSingleOrNull()
-            } else {
-                val source = RegionInputStreamResource(artifactInputStream, range.total!!)
-                val body = DataBufferUtils.read(source, DefaultDataBufferFactory.sharedInstance, DEFAULT_BUFFER_SIZE)
-                response.writeWith(body).awaitSingleOrNull()
+            artifactInputStream.use {
+                if (artifactInputStream is FileArtifactInputStream) {
+                    (response as ZeroCopyHttpOutputMessage).writeWith(
+                        artifactInputStream.file,
+                        artifactInputStream.range.start,
+                        artifactInputStream.range.length
+                    ).awaitSingleOrNull()
+                } else {
+                    val source = RegionInputStreamResource(artifactInputStream, range.total!!)
+                    val body =
+                        DataBufferUtils.read(source, DefaultDataBufferFactory.sharedInstance, DEFAULT_BUFFER_SIZE)
+                    response.writeWith(body).awaitSingleOrNull()
+                }
             }
             return ok().buildAndAwait()
         }
