@@ -35,4 +35,5 @@ dependencies {
     api(project(":common:common-artifact:artifact-service"))
     implementation("org.springframework.retry:spring-retry")
     implementation("com.google.code.gson:gson")
+    implementation("com.github.zafarkhaja:java-semver")
 }
