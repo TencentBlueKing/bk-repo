@@ -148,8 +148,13 @@ data class DevXProperties(
     var authToken: String = "",
 
     /**
-     * 搜索云桌面接口url
+     * 查询团队云桌面接口url
      */
-    var workspaceSearchUrl: String = "",
+    var groupWorkspaceUrl: String = "",
+
+    /**
+     * 查询个人云桌面接口url
+     */
+    var personalWorkspaceUrl: String = "",
 
 )
