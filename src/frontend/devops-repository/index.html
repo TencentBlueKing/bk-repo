@@ -9,6 +9,7 @@
     <script src="/ui/libs/vuex.min.js"></script>
     <script src="/ui/libs/vue-router.min.js"></script>
     <script src="/ui/libs/jsencrypt.min.js"></script>
+    <script src="/ui/watermark.js"></script>
     <link rel='preload' as='script' href="/ui/libs/bk-magic-vue/bk-magic-vue.min.js" />
     <link href="/ui/libs/bk-magic-vue/bk-magic-vue.min.css" rel="stylesheet">
     <link href="/ui/iconfont.css" rel="stylesheet">
@@ -56,7 +57,7 @@
         // standalone: 独立部署模式
         // ci: ci模式接入devops平台
         // saas: saas模式接入蓝鲸底座
-        var MODE_CONFIG = '__BK_REPO_DEPLOY_MODE__' || 'standalone'
+        var MODE_CONFIG = 'standalone'
         // 是否显示项目设置菜单
         var SHOW_PROJECT_CONFIG_MENU = MODE_CONFIG !== 'ci'
         // 是否显示制品分析菜单

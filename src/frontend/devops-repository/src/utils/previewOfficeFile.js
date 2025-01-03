@@ -13,6 +13,32 @@ export function customizePreviewOfficeFile (projectId, repoName, fullPath) {
     })
 }
 
+export function getPreviewLocalOfficeFileInfo (projectId, repoName, fullPath) {
+    const url = projectId + '/' + repoName + fullPath
+    return axios({
+        url: `${location.origin}/web/preview/api/file/getPreviewInfo/` + url,
+        method: 'get',
+        // 注意，此处需要设置下载的文件的返回类型为二进制，即 blob
+        withCredentials: true,
+        xsrfCookieName: (MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') ? 'bk_token' : 'bkrepo_ticket', // 注入csrfToken
+        xsrfHeaderName: 'X-CSRFToken' // 注入csrfToken
+    })
+}
+
+export function getPreviewRemoteOfficeFileInfo(extraParam) {
+    return axios({
+        url: `${location.origin}/web/preview/api/file/getPreviewInfo/`,
+        method: 'get',
+        params: {
+            extraParam: extraParam
+        },
+        // 注意，此处需要设置下载的文件的返回类型为二进制，即 blob
+        withCredentials: true,
+        xsrfCookieName: (MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') ? 'bk_token' : 'bkrepo_ticket', // 注入csrfToken
+        xsrfHeaderName: 'X-CSRFToken' // 注入csrfToken
+    })
+}
+
 export function customizePreviewLocalOfficeFile (projectId, repoName, fullPath) {
     const url = projectId + '/' + repoName + fullPath
     return axios({
