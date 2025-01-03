@@ -190,6 +190,7 @@ class HelmRemoteRepository(
                 }
             }
         }
+        logger.info("remote chart download url is $downloadUrl")
         return downloadUrl
     }
 

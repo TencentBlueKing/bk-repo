@@ -122,6 +122,7 @@ class CommonRemoteRepository : RemoteRepository() {
                 }
             }
         }
+        logger.info("remote chart download url is $downloadUrl")
         return downloadUrl
     }
 
