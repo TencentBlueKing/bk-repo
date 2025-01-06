@@ -245,7 +245,6 @@ class UploadService(
             operator = userId,
             expires = getLongHeader(HEADER_EXPIRES),
             nodeMetadata = repository.resolveMetadata(HttpContextHolder.getRequest()),
-            separate = true
         )
         ActionAuditContext.current().setInstance(request)
         nodeService.createNode(request)
