@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildNodeCleanEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -183,6 +184,37 @@ open class NodeDeleteSupport(
             )
         )
         return nodeDeleteResult
+    }
+
+    override fun deleteOldNode(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String,
+        nodeId: String
+    ): NodeDeleteResult {
+        require(!PathUtils.isRoot(fullPath)) { "Cannot delete root node." }
+        val deleteTime = LocalDateTime.now()
+
+        val criteria = buildCriteria(projectId, repoName, fullPath).apply {
+            and(ID).isEqualTo(nodeId)
+        }
+        val query = Query(criteria)
+
+        // 删除旧节点
+        val updateDefinition = NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)
+        val updateResult = nodeDao.updateFirst(query, updateDefinition)
+        val deletedNum = updateResult.modifiedCount
+
+        if (deletedNum == 0L) return NodeDeleteResult(0L, 0L, deleteTime)
+
+        // 计算删除的文件大小
+        val deletedSize = nodeBaseService.aggregateComputeSize(criteria.apply {
+            and(TNode::deleted.name).isEqualTo(deleteTime)
+        })
+        quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
+
+        return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
 
     private fun delete(

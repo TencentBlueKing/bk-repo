@@ -87,7 +87,6 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
-import com.tencent.bkrepo.fs.server.constant.VERSION_KEY
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
@@ -103,6 +102,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_SIZE
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
+import com.tencent.bkrepo.generic.constant.SEPARATE_UPLOAD
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
 import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
@@ -155,13 +155,6 @@ class GenericLocalRepository(
         super.onUploadBefore(context)
         // 若不允许覆盖, 提前检查节点是否存在
         checkNodeExist(context)
-        // 通用上传前检查
-        baseUploadBefore(context)
-        // 二次检查，防止接收文件过程中，有并发上传成功的情况
-        checkNodeExist(context)
-    }
-
-    private fun baseUploadBefore(context: ArtifactUploadContext){
         // 检查是否是覆盖流水线构件
         checkIfOverwritePipelineArtifact(context)
         // 校验sha256
@@ -176,22 +169,28 @@ class GenericLocalRepository(
         if (uploadMd5 != null && !calculatedMd5.equals(uploadMd5, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
         }
+        // 二次检查，防止接收文件过程中，有并发上传成功的情况
+        checkNodeExist(context)
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
         val uploadId = context.request.getHeader(HEADER_UPLOAD_ID)
-        if (isSeparateUpload(uploadId)){
-            onSeparateUpload(context, uploadId)
-        } else{
-            val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
-            val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
-            if (isBlockUpload(uploadId, sequence)) {
+        val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
+        val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
+
+        when {
+            isSeparateUpload(uploadType) -> {
+                onSeparateUpload(context, uploadId)
+            }
+            isBlockUpload(uploadId, sequence) -> {
                 this.blockUpload(uploadId, sequence!!, context)
                 context.response.contentType = MediaTypes.APPLICATION_JSON
                 context.response.writer.println(ResponseBuilder.success().toJsonString())
-            } else if (isChunkedUpload(uploadType)) {
+            }
+            isChunkedUpload(uploadType) -> {
                 chunkedUpload(context)
-            } else {
+            }
+            else -> {
                 val nodeDetail = storageManager.storeArtifactFile(
                     buildNodeCreateRequest(context),
                     context.getArtifactFile(),
@@ -208,32 +207,30 @@ class GenericLocalRepository(
     private fun onSeparateUpload(context: ArtifactUploadContext, uploadId: String) {
         with(context) {
 
-            val bArtifactFile = getArtifactFile()
+            val blockArtifactFile = getArtifactFile()
             val sha256 = getArtifactSha256()
 
-            val sequence = context.request.getHeader(HEADER_SEQUENCE).toLongOrNull()
             val offset = context.request.getHeader(HEADER_OFFSET)?.toLongOrNull()
 
             val blockNode = TBlockNode(
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 nodeFullPath = artifactInfo.getArtifactFullPath(),
-                startPos = offset ?: sequence
-                            ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND),
+                startPos = offset ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND),
                 sha256 = sha256,
                 projectId = projectId,
                 repoName = repoName,
-                size = bArtifactFile.getSize(),
-                version = uploadId
+                size = blockArtifactFile.getSize(),
+                uploadId = uploadId
             )
 
-            val stored = storageService.store(sha256, bArtifactFile, storageCredentials)
+            val stored = storageService.store(sha256, blockArtifactFile, storageCredentials)
 
             try {
                 blockNodeService.createBlock(blockNode, storageCredentials)
             } catch (e: Exception) {
                 if (stored > 1) {
-                    storageService.delete(sha256, storageCredentials)
+                    blockNodeService.deleteBlock(blockNode)
                 }
                 // Log the exception for debugging purposes
                 logger.error("Failed to create block node", e)
@@ -246,8 +243,8 @@ class GenericLocalRepository(
         }
     }
 
-    private fun isSeparateUpload(uploadId: String?): Boolean {
-        return uploadId?.substringAfter("/") == VERSION_KEY
+    private fun isSeparateUpload(uploadType: String?): Boolean {
+        return !uploadType.isNullOrEmpty() && uploadType == SEPARATE_UPLOAD
     }
 
     override fun onUploadSuccess(context: ArtifactUploadContext) {

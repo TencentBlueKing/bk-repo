@@ -27,28 +27,12 @@
 
 package com.tencent.bkrepo.common.metadata.dao.blocknode
 
-import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
 import org.springframework.context.annotation.Conditional
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
 
 @Repository
 @Conditional(SyncCondition::class)
-class BlockNodeDao : HashShardingMongoDao<TBlockNode>(){
-
-    fun updateBlock(query: Query, update: Update): UpdateResult {
-        if (logger.isDebugEnabled) {
-            logger.debug("Mongo Dao updateFirst: [$query], [$update]")
-        }
-        return determineMongoTemplate()
-            .updateFirst(
-                query,
-                update,
-                TBlockNode::class.java,
-                determineCollectionName(query))
-    }
-}
+class BlockNodeDao : HashShardingMongoDao<TBlockNode>()

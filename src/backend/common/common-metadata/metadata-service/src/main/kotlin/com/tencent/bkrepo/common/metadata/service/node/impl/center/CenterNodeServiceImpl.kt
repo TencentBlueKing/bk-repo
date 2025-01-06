@@ -156,9 +156,9 @@ class CenterNodeServiceImpl(
         return node
     }
 
-    override fun doCreate(node: TNode, repository: TRepository?): TNode {
+    override fun doCreate(node: TNode, repository: TRepository?, separate: Boolean): TNode {
         if (SecurityUtils.getClusterName().isNullOrBlank()) {
-            return super.doCreate(node, repository)
+            return super.doCreate(node, repository, false)
         }
         try {
             nodeDao.insert(node)

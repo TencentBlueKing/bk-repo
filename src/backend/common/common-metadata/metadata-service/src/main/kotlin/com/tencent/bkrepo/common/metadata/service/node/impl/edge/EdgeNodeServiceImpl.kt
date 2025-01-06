@@ -201,6 +201,16 @@ class EdgeNodeServiceImpl(
         return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path, decreaseVolume)
     }
 
+    override fun deleteOldNode(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String,
+        nodeId: String
+    ): NodeDeleteResult {
+        return NodeDeleteSupport(this).deleteOldNode(projectId, repoName, fullPath, operator, nodeId)
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         ignoreException(

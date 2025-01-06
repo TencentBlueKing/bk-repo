@@ -84,4 +84,15 @@ interface NodeDeleteOperation {
         path: String,
         decreaseVolume: Boolean = true
     ): NodeDeleteResult
+
+    /**
+     * 删除旧node
+     */
+    fun deleteOldNode(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String,
+        nodeId: String
+    ): NodeDeleteResult
 }

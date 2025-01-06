@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
@@ -70,6 +71,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.constant.UPLOADID_KEY
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -195,7 +197,7 @@ abstract class NodeBaseService(
             mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
             val node = buildTNode(this)
-            doCreate(node)
+            doCreate(node, separate = separate)
             afterCreate(repo, node)
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
             return convertToDetail(node)!!
@@ -355,7 +357,7 @@ abstract class NodeBaseService(
         }
     }
 
-    open fun doCreate(node: TNode, repository: TRepository? = null): TNode {
+    open fun doCreate(node: TNode, repository: TRepository? = null, separate: Boolean = false): TNode {
         try {
             nodeDao.insert(node)
             if (!node.folder) {
@@ -367,6 +369,9 @@ abstract class NodeBaseService(
             }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Insert node[$node] error: [${exception.message}]")
+            if (separate){
+                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, node.fullPath)
+            }
         }
 
         return node
@@ -417,6 +422,18 @@ abstract class NodeBaseService(
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
                 } else if (existNode.folder || this.folder) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
+                } else if (separate) {
+                    val currentVersion = createRequest.metadata!![UPLOADID_KEY].toString()
+                    val oldNodeId = currentVersion.substringAfter("/")
+                    if (oldNodeId == FAKE_SEPARATE){
+                        return
+                    }
+                    val deleteRes = deleteOldNode(projectId, repoName, fullPath, operator, oldNodeId)
+                    if (deleteRes.deletedNumber == 0L){
+                        logger.warn("Delete block base node[$fullPath] by [$operator] error: node was deleted")
+                        throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+                    }
+                    quotaService.decreaseUsedVolume(projectId, repoName, deleteRes.deletedSize)
                 } else {
                     val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
                     quotaService.checkRepoQuota(projectId, repoName, changeSize)

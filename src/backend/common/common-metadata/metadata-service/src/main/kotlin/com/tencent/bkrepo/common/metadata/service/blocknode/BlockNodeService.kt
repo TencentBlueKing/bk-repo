@@ -50,12 +50,12 @@ interface BlockNodeService {
     /**
      * 查询出当前版本内的分块
      */
-    fun listBlocksInVersion(
+    fun listBlocksInUploadId(
         projectId: String,
         repoName: String,
         fullPath: String,
         createdDate: String? = null,
-        version: String
+        uploadId: String
     ): List<TBlockNode>
 
     /**
@@ -69,10 +69,11 @@ interface BlockNodeService {
     /**
      * 更新分块
      * */
-    fun updateBlock(
-        blockNode: TBlockNode,
-        startPos: Long,
-        endPos: Long,
+    fun updateBlockUploadId(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        uploadId: String
     )
 
     /**
@@ -87,7 +88,11 @@ interface BlockNodeService {
         projectId: String,
         repoName: String,
         fullPath: String,
-        version: String? = null
+        uploadId: String? = null
+    )
+
+    fun deleteBlock(
+        blockNode: TBlockNode
     )
 
     /**

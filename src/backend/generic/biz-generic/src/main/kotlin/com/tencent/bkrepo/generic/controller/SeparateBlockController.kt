@@ -45,7 +45,7 @@ import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
-import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.BLOCK_MAPPING_URI
+import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.SEPARATE_MAPPING_URI
 import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
 import com.tencent.bkrepo.generic.pojo.SeparateBlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
@@ -56,17 +56,15 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestHeader
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/separate")
 class SeparateBlockController(
     private val uploadService: UploadService,
 ) {
 
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
-    @PostMapping(BLOCK_MAPPING_URI)
+    @PostMapping(SEPARATE_MAPPING_URI)
     fun startSeparateBlockUpload(
         @RequestAttribute userId: String,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
@@ -92,7 +90,7 @@ class SeparateBlockController(
         content = ActionAuditContent.NODE_UPLOAD_CONTENT
     )
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
-    @PutMapping(BLOCK_MAPPING_URI)
+    @PutMapping(SEPARATE_MAPPING_URI)
     fun completeSeparateBlockUpload(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
@@ -103,7 +101,7 @@ class SeparateBlockController(
     }
 
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
-    @DeleteMapping(BLOCK_MAPPING_URI)
+    @DeleteMapping(SEPARATE_MAPPING_URI)
     fun abortSeparateBlockUpload(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
@@ -114,7 +112,7 @@ class SeparateBlockController(
     }
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    @GetMapping(BLOCK_MAPPING_URI)
+    @GetMapping(SEPARATE_MAPPING_URI)
     fun listSeparateBlock(
         @RequestAttribute userId: String,
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
