@@ -417,31 +417,41 @@ abstract class NodeBaseService(
     open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
-            if (existNode != null) {
-                if (!overwrite) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
-                } else if (existNode.folder || this.folder) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
-                } else if (separate) {
-                    val currentVersion = createRequest.metadata!![UPLOADID_KEY].toString()
-                    val oldNodeId = currentVersion.substringAfter("/")
-                    if (oldNodeId == FAKE_SEPARATE){
-                        return
-                    }
-                    val deleteRes = deleteOldNode(projectId, repoName, fullPath, operator, oldNodeId)
-                    if (deleteRes.deletedNumber == 0L){
-                        logger.warn("Delete block base node[$fullPath] by [$operator] error: node was deleted")
-                        throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-                    }
-                    quotaService.decreaseUsedVolume(projectId, repoName, deleteRes.deletedSize)
-                } else {
-                    val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
-                    quotaService.checkRepoQuota(projectId, repoName, changeSize)
-                    deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
-                    quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
-                }
-            } else {
+
+            // 如果节点不存在，进行配额检查后直接返回
+            if (existNode == null) {
                 quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
+                return
+            }
+
+            // 如果不允许覆盖，抛出节点已存在异常
+            if (!overwrite) {
+                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+            }
+
+            // 如果存在文件夹冲突，抛出节点冲突异常
+            if (existNode.folder || this.folder) {
+                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
+            }
+
+            // 根据 separate 参数执行不同的逻辑
+            if (separate) {
+                val currentVersion = createRequest.metadata!![UPLOADID_KEY].toString()
+                val oldNodeId = currentVersion.substringAfter("/")
+                if (oldNodeId == FAKE_SEPARATE) {
+                    return
+                }
+                val deleteRes = deleteOldNode(projectId, repoName, fullPath, operator, oldNodeId)
+                if (deleteRes.deletedNumber == 0L) {
+                    logger.warn("Delete block base node[$fullPath] by [$operator] error: node was deleted")
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+                }
+                quotaService.decreaseUsedVolume(projectId, repoName, deleteRes.deletedSize)
+            } else {
+                val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
+                quotaService.checkRepoQuota(projectId, repoName, changeSize)
+                deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
+                quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
             }
         }
     }

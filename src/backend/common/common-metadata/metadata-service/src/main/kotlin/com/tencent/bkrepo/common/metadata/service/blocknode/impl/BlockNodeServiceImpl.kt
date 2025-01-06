@@ -126,7 +126,8 @@ class BlockNodeServiceImpl(
                 .and(TBlockNode::uploadId.name).isEqualTo(uploadId)
             val update = BlockNodeQueryHelper.deleteUpdate()
             blockNodeDao.updateFirst(Query(criteria), update)
-            logger.info("Delete single node block[$projectId/$repoName$nodeFullPath] success. Id: $id, UPLOADID: $uploadId")
+            logger.info("Delete single node block[$projectId/$repoName$nodeFullPath] success. " +
+                    "Id: $id, UPLOADID: $uploadId")
         }
     }
 
