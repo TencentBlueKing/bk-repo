@@ -135,7 +135,7 @@ class BlockNodeServiceTest {
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             fullPath = "/file",
-            version = UT_VERSION
+            uploadId = UT_VERSION
         )
 
         val deleteBlocksQuery = deleteBlocksQuery("/file", UT_PROJECT_ID, UT_REPO_NAME, createdDate)
@@ -196,24 +196,24 @@ class BlockNodeServiceTest {
             createdBy = UT_USER,
             createdDate = LocalDateTime.now(),
             nodeFullPath = fullPath,
-            startPos = i.toLong(),
+            startPos = i * BLOCK_SIZE,
             sha256 = "$UT_SHA256$i",
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             size = BLOCK_SIZE,
-            version = UT_VERSION
+            uploadId = UT_VERSION
         )
         val artifactFile = createTempArtifactFile()
         storageService.store(blockNode.sha256, artifactFile, storageCredentials)
         blockNodeService.createBlock(blockNode, storageCredentials)
     }
     private fun listBlocks(createdDate: LocalDateTime, fullPath: String = "/file"): List<TBlockNode> {
-        return blockNodeService.listBlocksInVersion(
+        return blockNodeService.listBlocksInUploadId(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             fullPath = fullPath,
             createdDate = createdDate.toString(),
-            version = UT_VERSION,
+            uploadId = UT_VERSION,
         )
     }
 
@@ -225,16 +225,19 @@ class BlockNodeServiceTest {
         blocks.forEach { block ->
             Assertions.assertEquals(blockSize, block.size)
             Assertions.assertTrue(storageService.exist(block.sha256, storageCredentials))
-            Assertions.assertEquals(block.version, version)
+            Assertions.assertEquals(block.uploadId, version)
         }
     }
 
     private fun completeUpload(blocks: List<TBlockNode>) {
-        var offset = 0L
-        blocks.sortedBy { it.startPos }.forEach { blockInfo ->
-            val blockSize = blockInfo.size
-            blockNodeService.updateBlock(blockInfo, offset, offset + blockSize - 1)
-            offset += blockSize  // 更新偏移量
+        val block = blocks.first()
+        block.uploadId?.let {
+            blockNodeService.updateBlockUploadId(
+                block.projectId,
+                block.repoName,
+                block.nodeFullPath,
+                it
+            )
         }
     }
 
