@@ -36,9 +36,12 @@ import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PROMPT
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.pojo.NpmErrorResponse
+import com.tencent.bkrepo.npm.pojo.OhpmResponse
 import com.tencent.bkrepo.npm.pojo.auth.AuthFailInfo
 import com.tencent.bkrepo.npm.pojo.auth.NpmAuthFailResponse
 import com.tencent.bkrepo.npm.pojo.auth.NpmAuthResponse
@@ -62,49 +65,49 @@ class NpmExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerBadRequestException(exception: NpmBadRequestException) {
         val responseObject = NpmErrorResponse("bad request", exception.message)
-        npmResponse(responseObject, exception)
+        response(responseObject, exception, HttpStatus.BAD_REQUEST, responseObject.reason)
     }
 
     @ExceptionHandler(NpmRepoNotFoundException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerRepoNotFoundException(exception: NpmRepoNotFoundException) {
         val responseObject = NpmErrorResponse("bad request", exception.message)
-        npmResponse(responseObject, exception)
+        response(responseObject, exception, HttpStatus.BAD_REQUEST, responseObject.reason)
     }
 
     @ExceptionHandler(ExecutionException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handlerExecutionException(exception: ExecutionException) {
         val responseObject = NpmErrorResponse("execution exception", exception.message.orEmpty())
-        npmResponse(responseObject, exception)
+        response(responseObject, exception, HttpStatus.BAD_REQUEST, responseObject.reason)
     }
 
     @ExceptionHandler(NpmArgumentResolverException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handlerNpmArgumentResolverException(exception: NpmArgumentResolverException) {
         val fail = NpmAuthResponse.fail(exception.message)
-        npmResponse(fail, exception)
+        response(fail, exception, HttpStatus.INTERNAL_SERVER_ERROR, exception.message)
     }
 
     @ExceptionHandler(AuthenticationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerClientAuthException(exception: AuthenticationException) {
         val responseObject = NpmErrorResponse("Unauthorized", "Authentication required")
-        npmResponse(responseObject, exception)
+        response(responseObject, exception, HttpStatus.UNAUTHORIZED, responseObject.reason)
     }
 
     @ExceptionHandler(NpmClientAuthException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerNpmClientAuthException(exception: NpmClientAuthException) {
         val responseObject = NpmErrorResponse("Unauthorized", "Authentication required")
-        npmResponse(responseObject, exception)
+        response(responseObject, exception, HttpStatus.UNAUTHORIZED, responseObject.reason)
     }
 
     @ExceptionHandler(NpmLoginFailException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handlerNpmLoginFailException(exception: NpmLoginFailException) {
         val fail = NpmAuthResponse.fail(exception.message)
-        npmResponse(fail, exception)
+        response(fail, exception, HttpStatus.UNAUTHORIZED, exception.message)
     }
 
     @ExceptionHandler(NpmTokenIllegalException::class)
@@ -117,64 +120,44 @@ class NpmExceptionHandler {
         )
         val npmAuthFailResponse =
             NpmAuthFailResponse(errors = listOf(authFailInfo))
-        npmResponse(npmAuthFailResponse, exception)
+        response(npmAuthFailResponse, exception, HttpStatus.UNAUTHORIZED, exception.message)
     }
 
     @ExceptionHandler(NpmArtifactNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerNpmArtifactNotFoundException(exception: NpmArtifactNotFoundException) {
         val responseObject = NpmErrorResponse.notFound()
-        npmResponse(responseObject, exception)
+        response(responseObject, exception, HttpStatus.NOT_FOUND, responseObject.reason)
     }
 
     @ExceptionHandler(NpmArgumentNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerNpmArgumentNotFoundException(exception: NpmArgumentNotFoundException) {
         val responseObject = NpmErrorResponse.notFound()
-        npmResponse(responseObject, exception)
+        response(responseObject, exception, HttpStatus.NOT_FOUND, responseObject.reason)
     }
 
     @ExceptionHandler(NpmArtifactExistException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     fun handlerNpmArtifactExistException(exception: NpmArtifactExistException) {
         val responseObject = NpmErrorResponse(exception.message, "forbidden")
-        npmResponse(responseObject, exception)
+        response(responseObject, exception, HttpStatus.FORBIDDEN, responseObject.reason)
     }
 
     @ExceptionHandler(NpmTagNotExistException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun handlerNpmTagNotExistException(exception: NpmTagNotExistException) {
         val responseObject = NpmErrorResponse("not found", exception.message)
-        npmResponse(responseObject, exception)
+        response(responseObject, exception, HttpStatus.NOT_FOUND, responseObject.reason)
     }
 
-    private fun npmResponse(responseObject: NpmErrorResponse, exception: NpmException) {
+    private fun response(responseObject: Any, exception: Exception, status: HttpStatus, message: String) {
         logNpmException(exception)
-        val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
-        val response = HttpContextHolder.getResponse()
-        response.contentType = "application/json; charset=utf-8"
-        response.writer.println(responseString)
-    }
-
-    private fun npmResponse(npmAuthResponse: NpmAuthResponse<Void>, exception: NpmException) {
-        logNpmException(exception)
-        val responseString = JsonUtils.objectMapper.writeValueAsString(npmAuthResponse)
-        val response = HttpContextHolder.getResponse()
-        response.contentType = "application/json; charset=utf-8"
-        response.writer.println(responseString)
-    }
-
-    private fun npmResponse(responseObject: NpmErrorResponse, exception: Exception) {
-        logNpmException(exception)
-        val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
-        val response = HttpContextHolder.getResponse()
-        response.contentType = "application/json; charset=utf-8"
-        response.writer.println(responseString)
-    }
-
-    private fun npmResponse(npmAuthFailResponse: NpmAuthFailResponse, exception: NpmException) {
-        logNpmException(exception)
-        val responseString = JsonUtils.objectMapper.writeValueAsString(npmAuthFailResponse)
+        val responseString = if (ArtifactContextHolder.getRepoDetailOrNull()?.type == RepositoryType.OHPM) {
+            JsonUtils.objectMapper.writeValueAsString(OhpmResponse.error(status.value(), message))
+        } else {
+            JsonUtils.objectMapper.writeValueAsString(responseObject)
+        }
         val response = HttpContextHolder.getResponse()
         response.contentType = "application/json; charset=utf-8"
         response.writer.println(responseString)

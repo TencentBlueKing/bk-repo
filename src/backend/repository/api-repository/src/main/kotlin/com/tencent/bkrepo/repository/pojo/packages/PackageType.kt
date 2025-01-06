@@ -46,5 +46,6 @@ enum class PackageType {
     NUGET,
     GIT,
     CONAN,
-    OCI
+    OCI,
+    OHPM
 }
