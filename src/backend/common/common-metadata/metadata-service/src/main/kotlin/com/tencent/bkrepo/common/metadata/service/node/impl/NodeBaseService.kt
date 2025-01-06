@@ -417,6 +417,7 @@ abstract class NodeBaseService(
 
     open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
+            logger.info("checkConflictAndQuota was be called: $fullPath, separate: $separate")
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
 
             // 如果节点不存在，进行配额检查后直接返回

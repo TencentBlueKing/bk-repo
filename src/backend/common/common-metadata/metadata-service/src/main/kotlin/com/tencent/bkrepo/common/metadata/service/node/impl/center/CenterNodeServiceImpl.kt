@@ -177,6 +177,7 @@ class CenterNodeServiceImpl(
         with(createRequest) {
             if (sha256 == FAKE_SHA256 && separate)
             {
+                logger.info("Create block base node by node base service")
                 return super.createNode(createRequest)
             }
             val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()
