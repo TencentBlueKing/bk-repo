@@ -35,6 +35,7 @@ const oauth = () => import('@repository/views/oauth')
 const userGroup = () => import('@repository/views/userGroup')
 
 const filePreview = () => import('@repository/components/FilePreview/filePreview')
+const outsideFilePreview = () => import('@repository/components/FilePreview/outsideFilePreview')
 
 const routes = [
     {
@@ -65,6 +66,14 @@ const routes = [
                         { to: 'repositories', name: 'browser', label: '仓库列表' }
                     ]
                 }
+            },
+            {
+                path: 'outsideFilePreview/:extraParam',
+                name: 'outsideFilePreview',
+                component: outsideFilePreview,
+                props: route => ({
+                    extraParam: route.params.extraParam
+                })
             },
             {
                 path: 'filePreview/:repoType/:extraParam/:repoName/*',
