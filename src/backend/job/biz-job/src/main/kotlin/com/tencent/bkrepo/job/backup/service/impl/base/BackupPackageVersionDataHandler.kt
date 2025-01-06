@@ -100,6 +100,7 @@ class BackupPackageVersionDataHandler(
             .set(BackupPackageVersionInfo::downloads.name, versionInfo.downloads)
             .set(BackupPackageVersionInfo::manifestPath.name, versionInfo.manifestPath)
             .set(BackupPackageVersionInfo::artifactPath.name, versionInfo.artifactPath)
+            .set(BackupPackageVersionInfo::artifactPaths.name, versionInfo.artifactPaths)
             .set(BackupPackageVersionInfo::stageTag.name, versionInfo.stageTag)
             .set(BackupPackageVersionInfo::metadata.name, versionInfo.metadata)
             .set(BackupPackageVersionInfo::tags.name, versionInfo.tags)
@@ -129,6 +130,7 @@ class BackupPackageVersionDataHandler(
                 downloads = downloads,
                 manifestPath = manifestPath,
                 artifactPath = artifactPath,
+                artifactPaths = artifactPaths,
                 stageTag = stageTag,
                 metadata = metadata,
                 tags = tags,

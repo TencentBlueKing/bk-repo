@@ -23,6 +23,7 @@ import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -72,8 +73,9 @@ class BackupNodeDataHandler(
     override fun <T> storeRestoreDataHandler(record: T, backupDataEnum: BackupDataEnum, context: BackupContext) {
         val record = record as BackupNodeInfo?
         val collectionName = SeparationUtils.getNodeCollectionName(record!!.projectId)
-        uploadFile(record, context)
-        val existRecord = findExistNode(record)
+        val repo = RepositoryCommonUtils.getRepositoryDetail(record.projectId, record.repoName)
+        uploadFile(record, context, repo)
+        var existRecord = findExistNode(record)
         if (existRecord != null) {
             if (context.task.backupSetting.conflictStrategy == BackupConflictStrategy.SKIP) {
                 return
@@ -82,17 +84,29 @@ class BackupNodeDataHandler(
                 updateExistNode(record, collectionName)
             } catch (e: DuplicateKeyException) {
                 updateDuplicateNode(record, collectionName)
+                if (sha256Check(record.folder, record.sha256)) {
+                    increment(record.sha256!!, repo.storageCredentials?.key)
+                    increment(existRecord.sha256!!, repo.storageCredentials?.key, -1)
+                }
             }
         } else {
             try {
                 mongoTemplate.save(record, collectionName)
+                if (sha256Check(record.folder, record.sha256)) {
+                    increment(record.sha256!!, repo.storageCredentials?.key)
+                }
                 logger.info("Create node ${record.fullPath} in ${record.projectId}|${record.repoName} success!")
             } catch (exception: DuplicateKeyException) {
                 if (context.task.backupSetting.conflictStrategy == BackupConflictStrategy.SKIP) {
                     return
                 }
+                existRecord = findExistNode(record, false)
                 // 可能存在已经上传的节点记录不在备份数据里
                 updateDuplicateNode(record, collectionName)
+                if (sha256Check(record.folder, record.sha256)) {
+                    increment(record.sha256!!, repo.storageCredentials?.key)
+                    increment(existRecord!!.sha256!!, repo.storageCredentials?.key, -1)
+                }
             }
         }
     }
@@ -172,13 +186,12 @@ class BackupNodeDataHandler(
         return metadataList?.associate { it.key to it.value }.orEmpty()
     }
 
-    private fun findExistNode(record: BackupNodeInfo): BackupNodeInfo? {
-        val existNodeQuery = Query(
-            Criteria.where(BackupNodeInfo::repoName.name).isEqualTo(record.repoName)
-                .and(BackupNodeInfo::projectId.name).isEqualTo(record.projectId)
-                .and(BackupNodeInfo::fullPath.name).isEqualTo(record.fullPath)
-                .and(BackupNodeInfo::id.name).isEqualTo(record.id)
-        )
+    private fun findExistNode(record: BackupNodeInfo, findById: Boolean = true): BackupNodeInfo? {
+        val existNodeQuery = if (findById) {
+            buildIdQuery(record)
+        } else {
+            buildQuery(record)
+        }
         val collectionName = SeparationUtils.getNodeCollectionName(record.projectId)
         return mongoTemplate.findOne(existNodeQuery, BackupNodeInfo::class.java, collectionName)
     }
@@ -206,15 +219,12 @@ class BackupNodeDataHandler(
     }
 
 
-    fun uploadFile(record: BackupNodeInfo, context: BackupContext) {
+    fun uploadFile(record: BackupNodeInfo, context: BackupContext, repo: RepositoryDetail) {
         if (!sha256Check(record.folder, record.sha256)) return
-        val repo = RepositoryCommonUtils.getRepositoryDetail(record.projectId, record.repoName)
         val filePath = generateRandomPath(context.targertPath, record.sha256!!)
         val artifactFile = filePath.toFile().toArtifactFile()
         // TODO 增加重试以及异常捕获
         storageService.store(record.sha256!!, artifactFile, repo.storageCredentials)
-        // 只有新增的时候才去尽显文件索引新增
-        increment(record.sha256!!, repo.storageCredentials?.key)
     }
 
     fun sha256Check(folder: Boolean, sha256: String?): Boolean {
@@ -225,12 +235,12 @@ class BackupNodeDataHandler(
         return true
     }
 
-    fun increment(sha256: String, credentialsKey: String?) {
+    fun increment(sha256: String, credentialsKey: String?, inc: Long = 1) {
         val collectionName = SeparationUtils.getFileReferenceCollectionName(sha256)
         val criteria = Criteria.where(BackupFileReferenceInfo::sha256.name).`is`(sha256)
             .and(BackupFileReferenceInfo::credentialsKey.name).`is`(credentialsKey)
         val query = Query(criteria)
-        val update = Update().inc(BackupFileReferenceInfo::count.name, 1)
+        val update = Update().inc(BackupFileReferenceInfo::count.name, inc)
         try {
             mongoTemplate.upsert(query, update, collectionName)
         } catch (exception: DuplicateKeyException) {
@@ -241,12 +251,7 @@ class BackupNodeDataHandler(
     }
 
     fun updateDuplicateNode(record: BackupNodeInfo, collectionName: String) {
-        val existNodeQuery = Query(
-            Criteria.where(BackupNodeInfo::repoName.name).isEqualTo(record.repoName)
-                .and(BackupNodeInfo::projectId.name).isEqualTo(record.projectId)
-                .and(BackupNodeInfo::fullPath.name).isEqualTo(record.fullPath)
-                .and(BackupNodeInfo::deleted.name).isEqualTo(record.deleted)
-        )
+        val existNodeQuery = buildQuery(record)
         val update = Update()
             .set(NodeDetailInfo::createdBy.name, record.createdBy)
             .set(NodeDetailInfo::createdDate.name, record.createdDate)
@@ -264,6 +269,24 @@ class BackupNodeDataHandler(
             .set(NodeDetailInfo::size.name, record.size)
             .set(NodeDetailInfo::id.name, record.id)
         mongoTemplate.updateFirst(existNodeQuery, update, collectionName)
+    }
+
+    private fun buildQuery(record: BackupNodeInfo): Query {
+        return Query(
+            Criteria.where(BackupNodeInfo::repoName.name).isEqualTo(record.repoName)
+                .and(BackupNodeInfo::projectId.name).isEqualTo(record.projectId)
+                .and(BackupNodeInfo::fullPath.name).isEqualTo(record.fullPath)
+                .and(BackupNodeInfo::deleted.name).isEqualTo(record.deleted)
+        )
+    }
+
+    private fun buildIdQuery(record: BackupNodeInfo): Query {
+        return Query(
+            Criteria.where(BackupNodeInfo::repoName.name).isEqualTo(record.repoName)
+                .and(BackupNodeInfo::projectId.name).isEqualTo(record.projectId)
+                .and(BackupNodeInfo::fullPath.name).isEqualTo(record.fullPath)
+                .and(BackupNodeInfo::id.name).isEqualTo(record.id)
+        )
     }
 
     /**

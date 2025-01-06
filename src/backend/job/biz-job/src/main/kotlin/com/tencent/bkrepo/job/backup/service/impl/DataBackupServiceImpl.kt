@@ -39,8 +39,8 @@ class DataBackupServiceImpl(
     }
 
     override fun executeTask(taskId: String) {
-        val records = backupTaskDao.findTasksById(taskId)
-        val task = records.firstOrNull() ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "taskId")
+        val task = backupTaskDao.findTasksById(taskId)
+            ?: throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "taskId")
         if (task.state != BackupTaskState.PENDING.name)
             throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "state")
         if (task.type == DATA_RECORDS_BACKUP) {

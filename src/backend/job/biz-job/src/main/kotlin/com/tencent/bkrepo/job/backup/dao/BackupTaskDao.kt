@@ -69,9 +69,9 @@ import java.time.LocalDateTime
 @Repository
 class BackupTaskDao : SimpleMongoDao<TBackupTask>() {
 
-    fun findTasksById(taskId: String): List<TBackupTask> {
+    fun findTasksById(taskId: String): TBackupTask? {
         val criteria = Criteria().and(TBackupTask::id.name).isEqualTo(taskId)
-        return find(Query(criteria))
+        return findOne(Query(criteria))
     }
 
     fun find(state: String?, pageRequest: PageRequest): List<TBackupTask> {

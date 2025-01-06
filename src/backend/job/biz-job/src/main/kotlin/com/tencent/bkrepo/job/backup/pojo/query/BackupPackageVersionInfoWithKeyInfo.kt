@@ -71,6 +71,7 @@ data class BackupPackageVersionInfoWithKeyInfo(
     var downloads: Long,
     var manifestPath: String? = null,
     var artifactPath: String? = null,
+    var artifactPaths: MutableSet<String>? = null,
     var stageTag: List<String>,
     var metadata: List<MetadataModel>,
     var tags: List<String>? = null,
