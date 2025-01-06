@@ -32,14 +32,12 @@
 package com.tencent.bkrepo.npm.handler
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.packages.PackageDependentsService
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils.packageKey
-import com.tencent.bkrepo.repository.api.PackageDependentsClient
 import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -54,8 +52,8 @@ class NpmDependentHandler {
 
     fun existsPackageDependents(projectId: String, repoName: String, name: String, ohpm: Boolean): Boolean {
         val packageKey = packageKey(name, ohpm)
-        val dependents = packageDependentsClient.queryDependents(projectId, repoName, packageKey).data
-        return !dependents.isNullOrEmpty()
+        val dependents = packageDependentsService.findByPackageKey(projectId, repoName, packageKey)
+        return dependents.isNotEmpty()
     }
 
     @Async

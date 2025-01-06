@@ -48,7 +48,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
