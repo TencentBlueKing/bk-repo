@@ -185,7 +185,6 @@ abstract class NodeBaseService(
     @Transactional(rollbackFor = [Throwable::class])
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
-            logger.info("Create block base node by node base service")
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             Preconditions.checkArgument(!PathUtils.isRoot(fullPath), this::fullPath.name)
             Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
@@ -193,13 +192,11 @@ abstract class NodeBaseService(
             // 仓库是否存在
             val repo = checkRepo(projectId, repoName)
             // 路径唯一性校验
-             logger.info("checkConflictAndQuota was be called before: $fullPath, separate: $separate")
             checkConflictAndQuota(createRequest, fullPath)
             // 判断父目录是否存在，不存在先创建
             mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
             val node = buildTNode(this)
-            logger.info("Ready to create node[$node].")
             doCreate(node, separate = separate)
             afterCreate(repo, node)
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
@@ -362,7 +359,6 @@ abstract class NodeBaseService(
 
     open fun doCreate(node: TNode, repository: TRepository? = null, separate: Boolean = false): TNode {
         try {
-            logger.info("Do create node in NodeBaseService")
             nodeDao.insert(node)
             if (!node.folder) {
                 // 软链接node或fs-server创建的node的sha256为FAKE_SHA256不会关联实际文件，无需增加引用数
@@ -421,7 +417,6 @@ abstract class NodeBaseService(
 
     open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
-            logger.info("checkConflictAndQuota was be called in NodeBaseService: $fullPath, separate: $separate")
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
 
             // 如果节点不存在，进行配额检查后直接返回
@@ -440,18 +435,25 @@ abstract class NodeBaseService(
                 throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
             }
 
+            // 子类的附加检查方法
+            additionalCheck(existNode)
+
             // 根据 separate 参数执行不同的逻辑
             if (separate) {
-                val currentVersion = createRequest.metadata!![UPLOADID_KEY].toString()
+                // 删除旧节点 并 检查旧节点是否删除 防止并发删除
+                val currentVersion = metadata!![UPLOADID_KEY].toString()
                 val oldNodeId = currentVersion.substringAfter("/")
+
                 if (oldNodeId == FAKE_SEPARATE) {
                     return
                 }
+
                 val deleteRes = deleteOldNode(projectId, repoName, fullPath, operator, oldNodeId)
                 if (deleteRes.deletedNumber == 0L) {
                     logger.warn("Delete block base node[$fullPath] by [$operator] error: node was deleted")
                     throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
                 }
+                logger.info("Delete block base node[$fullPath] by [$operator] success: $oldNodeId.")
                 quotaService.decreaseUsedVolume(projectId, repoName, deleteRes.deletedSize)
             } else {
                 val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
@@ -460,6 +462,10 @@ abstract class NodeBaseService(
                 quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
             }
         }
+    }
+
+    open fun additionalCheck(existNode: TNode) {
+        // 默认不做任何操作
     }
 
     private fun incrementFileReference(node: TNode, repository: TRepository?): Boolean {

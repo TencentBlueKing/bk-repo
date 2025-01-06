@@ -45,6 +45,8 @@ import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService
+import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService.Companion
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeServiceImpl
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
@@ -117,28 +119,6 @@ class CenterNodeServiceImpl(
         return repo
     }
 
-    override fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
-        with(createRequest) {
-            logger.info("checkConflictAndQuota was be called in CenterNodeService: $fullPath, separate: $separate")
-            val existNode = nodeDao.findNode(projectId, repoName, fullPath)
-            if (existNode != null) {
-                if (!overwrite) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
-                } else if (existNode.folder || this.folder) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
-                } else {
-                    ClusterUtils.checkIsSrcCluster(existNode.clusterNames)
-                    val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
-                    quotaService.checkRepoQuota(projectId, repoName, changeSize)
-                    deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
-                    quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
-                }
-            } else {
-                quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
-            }
-        }
-    }
-
     override fun deleteByFullPathWithoutDecreaseVolume(
         projectId: String, repoName: String, fullPath: String, operator: String
     ) {
@@ -159,10 +139,8 @@ class CenterNodeServiceImpl(
     }
 
     override fun doCreate(node: TNode, repository: TRepository?, separate: Boolean): TNode {
-        logger.info("Do create node in CenterNodeServiceImpl")
         if (SecurityUtils.getClusterName().isNullOrBlank()) {
-            logger.info("Create node in super do create")
-            return super.doCreate(node, repository, false)
+            return super.doCreate(node, repository, separate)
         }
         try {
             nodeDao.insert(node)
@@ -170,6 +148,10 @@ class CenterNodeServiceImpl(
                 quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
             }
         } catch (exception: DuplicateKeyException) {
+            if (separate){
+                logger.warn("Insert block base node[$node] error: [${exception.message}]")
+                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, node.fullPath)
+            }
             logger.warn("Insert node[$node] error: [${exception.message}]")
         }
 
@@ -178,15 +160,11 @@ class CenterNodeServiceImpl(
 
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
-            if (sha256 == FAKE_SHA256 && separate)
-            {
-                return super.createNode(createRequest)
-            }
             val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()
             val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
             val existNode = nodeDao.findNode(projectId, repoName, normalizeFullPath)
                 ?: return super.createNode(createRequest)
-            if (sha256 == existNode.sha256) {
+            if (sha256 == existNode.sha256 && sha256 != FAKE_SHA256) {
                 val clusterNames = existNode.clusterNames.orEmpty().toMutableSet()
                 clusterNames.add(srcCluster)
                 val query = NodeQueryHelper.nodeQuery(projectId, repoName, normalizeFullPath)
@@ -275,6 +253,11 @@ class CenterNodeServiceImpl(
 
     override fun renameNode(renameRequest: NodeRenameRequest) {
         return CenterNodeRenameSupport(this, clusterProperties).renameNode(renameRequest)
+    }
+
+    override fun additionalCheck(existNode: TNode) {
+        // center 检查请求来源cluster是否是资源的唯一拥有者
+        ClusterUtils.checkIsSrcCluster(existNode.clusterNames)
     }
 
     companion object {
