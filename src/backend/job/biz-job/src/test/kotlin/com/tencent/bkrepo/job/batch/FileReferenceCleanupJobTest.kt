@@ -29,31 +29,40 @@ package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.job.CREDENTIALS
+import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.task.clean.FileReferenceCleanupJob
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.repository.JobSnapshotRepository
-import com.tencent.bkrepo.repository.api.FileReferenceClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.bson.Document
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -74,13 +83,25 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     lateinit var storageService: StorageService
 
     @MockBean
-    lateinit var storageCredentialsClient: StorageCredentialsClient
+    lateinit var storageCredentialService: StorageCredentialService
 
     @MockBean
     lateinit var archiveClient: ArchiveClient
 
     @MockBean
-    lateinit var repositoryClient: RepositoryClient
+    lateinit var repositoryService: RepositoryService
+
+    @MockBean
+    private lateinit var messageSupplier: MessageSupplier
+
+    @MockBean
+    private lateinit var servicePermissionClient: ServicePermissionClient
+
+    @MockBean
+    private lateinit var routerControllerClient: RouterControllerClient
+
+    @MockBean
+    private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
     @MockBean
     lateinit var jobSnapshotRepository: JobSnapshotRepository
@@ -104,35 +125,33 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     lateinit var fileReferenceCleanupJobProperties: FileReferenceCleanupJobProperties
 
     @MockBean
-    lateinit var fileReferenceClient: FileReferenceClient
+    lateinit var operateLogService: OperateLogService
 
     @BeforeEach
     fun beforeEach() {
         Mockito.`when`(storageService.exist(anyString(), any())).thenReturn(true)
         val credentials = InnerCosCredentials()
-        Mockito.`when`(storageCredentialsClient.findByKey(anyString())).thenReturn(
-            ResponseBuilder.success(credentials),
+        Mockito.`when`(storageCredentialService.findByKey(anyString())).thenReturn(
+            credentials
         )
-        Mockito.`when`(repositoryClient.getRepoDetail(anyString(), anyString(), anyString())).thenReturn(
-            ResponseBuilder.success(
-                RepositoryDetail(
-                    projectId = "ut-project",
-                    name = "ut-repo",
-                    storageCredentials = InnerCosCredentials(key = "0"),
-                    type = RepositoryType.NONE,
-                    category = RepositoryCategory.LOCAL,
-                    public = false,
-                    description = "",
-                    configuration = LocalConfiguration(),
-                    createdBy = "",
-                    createdDate = "",
-                    lastModifiedBy = "",
-                    lastModifiedDate = "",
-                    oldCredentialsKey = null,
-                    quota = 0,
-                    used = 0,
-                ),
-            ),
+        Mockito.`when`(repositoryService.getRepoDetail(anyString(), anyString(), anyString())).thenReturn(
+            RepositoryDetail(
+                projectId = "ut-project",
+                name = "ut-repo",
+                storageCredentials = InnerCosCredentials(key = "0"),
+                type = RepositoryType.NONE,
+                category = RepositoryCategory.LOCAL,
+                public = false,
+                description = "",
+                configuration = LocalConfiguration(),
+                createdBy = "",
+                createdDate = "",
+                lastModifiedBy = "",
+                lastModifiedDate = "",
+                oldCredentialsKey = null,
+                quota = 0,
+                used = 0,
+            )
         )
         fileReferenceCleanupJobProperties.expectedNodes = 50_000
     }
@@ -247,6 +266,59 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         val finds = mongoTemplate.find<Map<String, Any?>>(query, collectionName)
         Assertions.assertEquals(1, finds.size)
         Assertions.assertEquals("key2", finds.first()["credentialsKey"])
+    }
+
+    @Test
+    fun mappingStorageKeyTest() {
+        whenever(storageCredentialService.getStorageKeyMapping()).thenReturn(
+            mapOf(
+                "key1" to setOf("key2", "key4", DEFAULT_STORAGE_KEY),
+                "key2" to setOf("key1", "key4", DEFAULT_STORAGE_KEY),
+                "key4" to setOf("key1", "key2", DEFAULT_STORAGE_KEY),
+                DEFAULT_STORAGE_KEY to setOf("key1", "key2", "key4"),
+            )
+        )
+        val collectionName = fileReferenceCleanupJob.collectionNames().first()
+        val sha2561 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c1"
+        val sha2562 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c2"
+        val sha2563 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c3"
+        insertOne(sha2561, "key1", 0, collectionName)
+        insertOne(sha2561, "key2", 1, collectionName)
+        insertOne(sha2563, "key3", 0, collectionName)
+        insertOne(sha2562, "key4", 0, collectionName)
+        insertOne(sha2562, null, 1, collectionName)
+
+        val deleted = HashSet<String>()
+        whenever(storageService.delete(anyString(), any())).then {
+            deleted.add(it.getArgument(0))
+        }
+        fileReferenceCleanupJob.start()
+
+        // assert
+        assertTrue(deleted.size == 1 && deleted.contains(sha2563))
+
+        assertFalse(existsRef(sha2561, "key1", collectionName))
+        assertTrue(existsRef(sha2561, "key2", collectionName))
+        assertFalse(existsRef(sha2563, "key3", collectionName))
+        assertFalse(existsRef(sha2562, "key4", collectionName))
+        assertTrue(existsRef(sha2562, null, collectionName))
+    }
+
+    private fun existsRef(sha256: String, key: String?, collectionName: String): Boolean {
+        val criteria = Criteria.where(SHA256).isEqualTo(sha256).and(CREDENTIALS).isEqualTo(key)
+        return mongoTemplate.exists(Query(criteria), collectionName)
+    }
+
+    private fun insertOne(sha256: String, key: String?, count: Int, collectionName: String) {
+        mongoTemplate.insert(
+            Document(
+                mutableMapOf(
+                    "sha256" to sha256,
+                    "credentialsKey" to key,
+                    "count" to count,
+                ) as Map<String, Any>?,
+            ), collectionName
+        )
     }
 
     private fun insertMany(num: Int, collectionName: String) {

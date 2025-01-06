@@ -28,18 +28,21 @@
 package com.tencent.bkrepo.common.mongo.reactive.dao
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.mongodb.core.ReactiveMongoOperations
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
+import org.springframework.data.mongodb.core.aggregation.Aggregation
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 
 open class SimpleMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
 
     // 抽象类使用构造器注入不方便
     @Suppress("LateinitUsage")
     @Autowired
-    lateinit var reactiveMongoOperations: ReactiveMongoOperations
+    lateinit var reactiveMongoTemplate: ReactiveMongoTemplate
 
-    override fun determineReactiveMongoOperations(): ReactiveMongoOperations {
-        return reactiveMongoOperations
+    override fun determineReactiveMongoOperations(): ReactiveMongoTemplate {
+        return reactiveMongoTemplate
     }
 
     override fun determineCollectionName(query: Query): String {
@@ -48,5 +51,18 @@ open class SimpleMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
 
     override fun determineCollectionName(entity: E): String {
         return collectionName
+    }
+
+    override fun determineCollectionName(aggregation: Aggregation): String {
+        return collectionName
+    }
+    /**
+     * 根据主键"_id"查找记录
+     */
+    suspend fun findById(id: String): E? {
+        if (id.isBlank()) {
+            return null
+        }
+        return this.findOne(Query.query(Criteria.where(ID).isEqualTo(id)))
     }
 }

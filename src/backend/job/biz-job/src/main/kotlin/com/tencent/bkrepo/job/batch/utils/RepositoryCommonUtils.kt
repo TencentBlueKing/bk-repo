@@ -4,27 +4,27 @@ import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 @Component
 class RepositoryCommonUtils(
-    storageCredentialsClient: StorageCredentialsClient,
-    repositoryClient: RepositoryClient
+    storageCredentialService: StorageCredentialService,
+    repositoryService: RepositoryService
 ) {
 
     init {
-        Companion.storageCredentialsClient = storageCredentialsClient
-        Companion.repositoryClient = repositoryClient
+        Companion.storageCredentialService = storageCredentialService
+        Companion.repositoryService = repositoryService
     }
 
     companion object {
-        private lateinit var storageCredentialsClient: StorageCredentialsClient
-        private lateinit var repositoryClient: RepositoryClient
+        private lateinit var storageCredentialService: StorageCredentialService
+        private lateinit var repositoryService: RepositoryService
         private val repositoryCache = CacheBuilder.newBuilder()
             .maximumSize(10000)
             .expireAfterWrite(5, TimeUnit.MINUTES)
@@ -36,9 +36,9 @@ class RepositoryCommonUtils(
             .build<String, StorageCredentials?>()
 
         fun getStorageCredentials(credentialsKey: String): StorageCredentials? {
-            return storageCredentialsCache.getIfPresent(credentialsKey) ?: storageCredentialsClient.findByKey(
+            return storageCredentialsCache.getIfPresent(credentialsKey) ?: storageCredentialService.findByKey(
                 credentialsKey
-            ).data?.apply { storageCredentialsCache.put(credentialsKey, this) }
+            )?.apply { storageCredentialsCache.put(credentialsKey, this) }
         }
 
         fun getRepositoryDetail(
@@ -48,7 +48,7 @@ class RepositoryCommonUtils(
         ): RepositoryDetail {
             val repositoryId = RepositoryId(projectId, repoName, type)
             return repositoryCache.getOrPut(repositoryId) {
-                repositoryClient.getRepoDetail(projectId, repoName, type.name).data
+                repositoryService.getRepoDetail(projectId, repoName, type.name)
                     ?: throw RepoNotFoundException("$projectId/$repoName")
             }
         }

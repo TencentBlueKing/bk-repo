@@ -39,11 +39,13 @@ import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.apache.commons.codec.binary.Hex
@@ -64,9 +66,10 @@ import java.security.MessageDigest
 @Component
 class FileLoader(
     private val executorProperties: ScannerExecutorProperties,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService,
     private val storageManager: StorageManager,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
 ) {
     /**
      * 加载[subtask]要扫描的制品
@@ -82,8 +85,8 @@ class FileLoader(
             }
 
             // 获取存储凭据
-            val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
-            val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            val storageCredentials = credentialsKey?.let { storageCredentialService.findByKey(it)!! }
+            val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             // 获取文件
             val file = File(tempDir, fileName(taskId, fileName(), repoType))
             val fos = DigestOutputStream(file.outputStream(), MessageDigest.getInstance("SHA-256"))
@@ -173,7 +176,7 @@ class FileLoader(
     }
 
     private fun getNode(projectId: String, repoName: String, sha256: String): NodeDetail? {
-        val nodes = nodeClient.queryWithoutCount(
+        val nodes = nodeSearchService.searchWithoutCount(
             NodeQueryBuilder()
                 .projectId(projectId)
                 .repoName(repoName)
@@ -182,11 +185,11 @@ class FileLoader(
                 .page(1, 1)
                 .build()
         )
-        if (nodes.isNotOk() || nodes.data!!.records.isEmpty()) {
+        if (nodes.records.isEmpty()) {
             throw SystemErrorException(CommonMessageCode.RESOURCE_NOT_FOUND, sha256)
         }
-        val fullPath = nodes.data!!.records[0][NodeDetail::fullPath.name].toString()
-        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val fullPath = nodes.records[0][NodeDetail::fullPath.name].toString()
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
     }
 
     /**

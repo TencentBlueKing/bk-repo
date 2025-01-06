@@ -86,8 +86,6 @@ class RouteConfiguration(
 
         "/service/block".nest {
             GET("/list$DEFAULT_MAPPING_URI", fsNodeHandler::listBlocks)
-            POST("/restore$DEFAULT_MAPPING_URI", fsNodeHandler::restoreBlock)
-            DELETE("/delete$DEFAULT_MAPPING_URI", fsNodeHandler::deleteBlock)
         }
 
         "/node".nest {
@@ -112,6 +110,13 @@ class RouteConfiguration(
             PUT("/{offset}$DEFAULT_MAPPING_URI", fileOperationsHandler::write)
             addMetrics(serverMetrics.uploadingCount)
         }
+
+        "/stream".nest{
+            filter(artifactFileCleanupFilterFunction::filter)
+            PUT(DEFAULT_MAPPING_URI, fileOperationsHandler::stream)
+            addMetrics(serverMetrics.uploadingCount)
+        }
+
 
         "/client".nest {
             POST("/create/{projectId}/{repoName}", clientHandler::createClient)

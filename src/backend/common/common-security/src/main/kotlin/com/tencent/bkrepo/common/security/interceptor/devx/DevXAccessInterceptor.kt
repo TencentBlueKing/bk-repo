@@ -74,7 +74,10 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         .refreshAfterWrite(devXProperties.cacheExpireTime)
         .build(object : CacheLoader<String, Set<String>>() {
             override fun load(key: String): Set<String> {
-                return listIpFromProject(key) + listCvmIpFromProject(key) + listIpFromProps(key)
+                return listIpFromProject(key) +
+                        listCvmIpFromProject(key) +
+                        listIpFromProps(key) +
+                        listIpFromProjects(key)
             }
 
             override fun reload(key: String, oldValue: Set<String>): ListenableFuture<Set<String>> {
@@ -146,6 +149,16 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         val ips = HashSet<String>()
         doRequest<List<DevXWorkSpace>>(reqBuilder, jacksonTypeRef())?.forEach { workspace ->
             workspace.innerIp?.substringAfter('.')?.let { ips.add(it) }
+        }
+        return ips
+    }
+
+    private fun listIpFromProjects(projectId: String): Set<String>{
+        val projectIdList = devXProperties.projectWhiteList[projectId] ?: emptySet()
+        val ips = HashSet<String>()
+        projectIdList.forEach {
+            ips.addAll(listIpFromProject(it))
+            ips.addAll(listCvmIpFromProject(it))
         }
         return ips
     }

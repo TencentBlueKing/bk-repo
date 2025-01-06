@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.router
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.router.api.RouterControllerClient

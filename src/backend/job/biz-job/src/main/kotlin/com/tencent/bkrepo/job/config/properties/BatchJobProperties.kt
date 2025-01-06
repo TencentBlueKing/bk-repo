@@ -56,4 +56,20 @@ open class BatchJobProperties(
      * 任务分布式锁名
      */
     var lockName: String? = null,
+
+    // ----v2 job----
+    /**
+     * 是否在新调度框架下开启任务
+     * */
+    open var enabledV2: Boolean = false,
+
+    /**
+     * 工作组名称，为空则使用默认工作组
+     * */
+    open var workerGroup: String = "",
+
+    /**
+     * 任务是否动态分片
+     * */
+    open var sharding: Boolean = false,
 )

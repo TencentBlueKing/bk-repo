@@ -113,7 +113,7 @@ object RpmMetadataUtils {
                     )
                 )
             ),
-            1L
+            packageNum = 1L
         )
     }
 

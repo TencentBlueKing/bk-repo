@@ -35,6 +35,9 @@
           </template>
         </el-autocomplete>
       </el-form-item>
+      <el-form-item style="margin-left: 15px" label="用户Id" prop="version">
+        <el-input v-model="clientQuery.userId" type="text" size="small" width="50" placeholder="请输入用户ID" />
+      </el-form-item>
       <el-form-item style="margin-left: 15px" label="是否在线" prop="online">
         <el-select v-model="clientQuery.online" clearable placeholder="请选择">
           <el-option
@@ -123,6 +126,10 @@ import FileSystemStatusRecordDialog from '@/views/node/components/FileSystemStat
 export default {
   name: 'FileSystem',
   components: { FileSystemStatusRecordDialog },
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
+  },
   data() {
     return {
       loading: false,
@@ -137,7 +144,8 @@ export default {
         online: '',
         ip: '',
         version: '',
-        mountPoint: ''
+        mountPoint: '',
+        userId: ''
       },
       clients: [],
       options: [{
@@ -153,10 +161,6 @@ export default {
   },
   mounted() {
     this.onRouteUpdate(this.$route)
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
   },
   methods: {
     queryProjects(queryStr, cb) {
@@ -204,6 +208,7 @@ export default {
       }
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
+      query.userId = this.clientQuery.userId
       query.online = this.clientQuery.online
       query.ip = this.clientQuery.ip
       query.version = this.clientQuery.version
@@ -215,6 +220,7 @@ export default {
       const clientQuery = this.clientQuery
       clientQuery.projectId = query.projectId ? query.projectId : ''
       clientQuery.repoName = query.repoName ? query.repoName : ''
+      clientQuery.userId = query.userId ? query.userId : ''
       clientQuery.pageNumber = query.page ? Number(query.page) : 1
       clientQuery.pageSize = query.pageSize ? Number(query.pageSize) : 10
       clientQuery.online = query.online ? query.online : ''

@@ -1,7 +1,7 @@
 <template>
     <div class="bkrepo-main flex-column">
         <notice-component v-if="!ciMode && !isSubSaas" api-url="/web/repository/api/notice" />
-        <Header v-if="!ciMode && !isSubSaas" />
+        <Header ref="head" v-if="!ciMode && !isSubSaas" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
         <GlobalUploadViewport />
@@ -17,6 +17,7 @@
     import Login from '@repository/components/Login'
     import cookies from 'js-cookie'
     import { mapActions } from 'vuex'
+    import { getTrueVersions } from '@repository/utils/versionLogs'
     export default {
         components: { NoticeComponent, Header, Login },
         mixins: [mixin],
@@ -30,10 +31,18 @@
                 return subEnv
             }
         },
-        created () {
+        async created () {
             const username = cookies.get('bk_uid')
             username && this.SET_USER_INFO({ username })
             this.getPermissionDialogConfig()
+            const hasShowLog = cookies.get('hasShowLog') || ''
+            const logs = await getTrueVersions()
+            if (logs.length > 0 && !this.ciMode && !this.isSubSaas) {
+                this.$store.commit('SET_VERSION_LOGS', logs)
+                if (hasShowLog !== logs[0].version) {
+                    this.$refs.head.showVersionLogs()
+                }
+            }
             if (!this.isSubSaas && this.ciMode) {
                 this.loadDevopsUtils('/ui/devops-utils.js')
                 // 请求管理员信息
@@ -72,7 +81,14 @@
                         }
                     } else {
                         let projectId = ''
-                        if (this.projectList.find(v => v.id === urlProjectId)) {
+                        const hasUrlProjectId = this.projectList.find(v => v.id === urlProjectId)
+                        if (!hasUrlProjectId) {
+                            this.$bkMessage({
+                                message: this.$t('projectNoPermissionTip', { 0: urlProjectId }),
+                                theme: 'error'
+                            })
+                        }
+                        if (hasUrlProjectId) {
                             projectId = urlProjectId
                         } else if (this.projectList.find(v => v.id === localProjectId)) {
                             projectId = localProjectId

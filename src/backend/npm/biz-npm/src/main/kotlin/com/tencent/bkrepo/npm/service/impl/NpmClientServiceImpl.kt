@@ -31,6 +31,10 @@
 
 package com.tencent.bkrepo.npm.service.impl
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.MediaTypes
@@ -44,6 +48,11 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
@@ -88,7 +97,6 @@ import com.tencent.bkrepo.npm.service.NpmClientService
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
-import com.tencent.bkrepo.repository.api.MetadataClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.apache.commons.codec.binary.Base64
@@ -106,7 +114,7 @@ import kotlin.system.measureTimeMillis
 @Service
 class NpmClientServiceImpl(
     private val npmDependentHandler: NpmDependentHandler,
-    private val metadataClient: MetadataClient,
+    private val metadataService: MetadataService,
     private val npmPackageHandler: NpmPackageHandler
 ) : NpmClientService, AbstractNpmService() {
 
@@ -389,6 +397,23 @@ class NpmClientServiceImpl(
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     private fun handlerPackagePublish(
         userId: String,
         artifactInfo: NpmArtifactInfo,
@@ -707,7 +732,7 @@ class NpmClientServiceImpl(
                 ?.contains(TGZ_FULL_PATH_WITH_DASH_SEPARATOR) ?: true
             val tgzFullPath = NpmUtils.getTarballPathByRepoType(npmPackageMetaData.name!!, entry.key, pathWithDash)
             if (entry.value.any().containsKey("deprecated")) {
-                metadataClient.saveMetadata(
+                metadataService.saveMetadata(
                     MetadataSaveRequest(
                         projectId = artifactInfo.projectId,
                         repoName = artifactInfo.repoName,

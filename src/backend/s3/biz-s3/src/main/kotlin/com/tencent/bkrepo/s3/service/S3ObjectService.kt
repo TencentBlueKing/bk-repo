@@ -31,22 +31,35 @@
 
 package com.tencent.bkrepo.s3.service
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.generic.configuration.AutoIndexRepositorySettings
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.repository.api.MetadataClient
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -73,10 +86,28 @@ import java.net.URLDecoder
  */
 @Service
 class S3ObjectService(
-    private val nodeClient: NodeClient,
-    private val metadataClient: MetadataClient
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService,
+    private val metadataService: MetadataService
 ) : ArtifactService() {
 
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     fun getObject(artifactInfo: S3ArtifactInfo) {
         val node = ArtifactContextHolder.getNodeDetail(artifactInfo) ?:
             throw S3NotFoundException(
@@ -100,11 +131,46 @@ class S3ObjectService(
         repository.download(context)
     }
 
+
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     fun putObject(artifactInfo: S3ArtifactInfo, file: ArtifactFile) {
         val context = ArtifactUploadContext(file)
         repository.upload(context)
     }
 
+    @AuditEntry(
+        actionId = NODE_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#prefix",
+            instanceNames = "#prefix"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_VIEW_CONTENT
+    )
     fun listObjects(
         artifactInfo: S3ArtifactInfo,
         marker: Int,
@@ -127,7 +193,7 @@ class S3ObjectService(
 
         val folders = if (delimiter.isNotEmpty()) {
             val folderQueryBuilder = nodeQueryBuilder.newBuilder().excludeFile().select(NodeDetail::fullPath.name)
-            nodeClient.queryWithoutCount(folderQueryBuilder.build()).data!!.records
+            nodeSearchService.searchWithoutCount(folderQueryBuilder.build()).records
                 .map {
                     it[NodeDetail::fullPath.name].toString().removePrefix(SLASH).ensureSuffix(SLASH)
                 }
@@ -140,24 +206,43 @@ class S3ObjectService(
                     excludeFolder()
                 }
             }
-        val data = nodeClient.search(queryBuilder.build()).data!!
+        val data = nodeSearchService.search(queryBuilder.build())
         val currentNode = if (data.pageNumber.toLong() == data.totalPages || data.totalPages == 0L) {
-            nodeClient.getNodeDetail(projectId, repoName, PathUtils.normalizeFullPath(queryPrefix)).data?.run {
-                mapOf(
-                    NodeDetail::createdBy.name to createdBy,
-                    NodeDetail::folder.name to folder,
-                    NodeDetail::fullPath.name to fullPath,
-                    NodeDetail::lastModifiedDate.name to lastModifiedDate,
-                    NodeDetail::md5.name to md5,
-                    NodeDetail::size.name to size
-                )
-            }
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, PathUtils.normalizeFullPath(queryPrefix)))
+                ?.run {
+                    mapOf(
+                        NodeDetail::createdBy.name to createdBy,
+                        NodeDetail::folder.name to folder,
+                        NodeDetail::fullPath.name to fullPath,
+                        NodeDetail::lastModifiedDate.name to lastModifiedDate,
+                        NodeDetail::md5.name to md5,
+                        NodeDetail::size.name to size
+                    )
+                }
         } else {
             null
         }
         return ListBucketResult(repoName, data, maxKeys, prefix, folders, delimiter, currentNode)
     }
 
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#artifactInfo?.getArtifactFullPath()")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_COPY_CONTENT
+    )
     fun copyObject(artifactInfo: S3ArtifactInfo): CopyObjectResult {
         val source = HeaderUtils.getHeader(X_AMZ_COPY_SOURCE) ?: throw IllegalArgumentException(X_AMZ_COPY_SOURCE)
         val delimiterIndex = source.indexOf(SLASH)
@@ -173,7 +258,8 @@ class S3ObjectService(
             overwrite = true,
             operator = SecurityUtils.getUserId()
         )
-        var dstNode = nodeClient.copyNode(copyRequest).data!!
+        ActionAuditContext.current().setInstance(copyRequest)
+        var dstNode = nodeService.copyNode(copyRequest)
         dstNode = replaceMetadata(dstNode)
         return CopyObjectResult(
             eTag = "\"${dstNode.md5}\"",
@@ -187,7 +273,7 @@ class S3ObjectService(
 
     fun deleteObject(artifactInfo: S3ArtifactInfo) {
         with(artifactInfo) {
-            nodeClient.deleteNode(NodeDeleteRequest(
+            nodeService.deleteNode(NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = getArtifactFullPath(),
@@ -209,7 +295,7 @@ class S3ObjectService(
                 nodeMetadata = metadataHeader.map { MetadataModel(it, HeaderUtils.getHeader(it).toString()) },
                 replace = true
             )
-            metadataClient.saveMetadata(saveRequest)
+            metadataService.saveMetadata(saveRequest)
             return nodeDetail.copy(nodeMetadata = saveRequest.nodeMetadata!!)
         }
         return nodeDetail

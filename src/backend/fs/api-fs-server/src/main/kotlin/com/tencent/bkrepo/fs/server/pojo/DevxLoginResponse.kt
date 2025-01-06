@@ -29,5 +29,6 @@ package com.tencent.bkrepo.fs.server.pojo
 
 data class DevxLoginResponse(
     val projectId: String,
-    val token: String
+    val token: String,
+    val workspaceName: String
 )

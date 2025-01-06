@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -139,7 +140,7 @@ class NpmLocalRepository(
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         if (node == null || node.folder) return null
         return storageManager.loadFullArtifactInputStream(node, context.storageCredentials)
             .also {
@@ -180,10 +181,7 @@ class NpmLocalRepository(
             .metadata("version", searchRequest.text, OperationType.MATCH)
             .metadata("keywords", searchRequest.text, OperationType.MATCH)
             .build()
-        val data = nodeClient.queryWithoutCount(queryModel).data ?: run {
-            logger.warn("failed to find npm package in repo [${context.projectId}/${context.repoName}]")
-            return emptyList()
-        }
+        val data = nodeSearchService.searchWithoutCount(queryModel)
         return transferRecords(data.records)
     }
 
@@ -200,7 +198,7 @@ class NpmLocalRepository(
                         metadata["description"] as? String,
                         metadata["maintainers"] as? List<Map<String, Any>> ?: emptyList(),
                         metadata["version"] as? String,
-                        it["lastModifiedDate"] as String,
+                        (it["lastModifiedDate"] as LocalDateTime).toString(),
                         metadata["keywords"] as? List<String> ?: emptyList(),
                         metadata["author"] as? Map<String, Any> ?: emptyMap()
                     )
@@ -217,7 +215,7 @@ class NpmLocalRepository(
         val fullPath = context.getAttribute<List<*>>(NPM_FILE_FULL_PATH)
         val userId = context.userId
         fullPath?.forEach {
-            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, it.toString(), userId))
+            nodeService.deleteNode(NodeDeleteRequest(projectId, repoName, it.toString(), userId))
             logger.info("delete artifact $it success in repo [${context.artifactInfo.getRepoIdentify()}].")
         }
     }
@@ -227,7 +225,7 @@ class NpmLocalRepository(
             val (packageName, packageVersion) =
                 NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
             val packageKey = NpmUtils.packageKeyByRepoType(packageName, context.repositoryDetail.type)
-            return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion).data
+            return packageService.findVersionByName(projectId, repoName, packageKey, packageVersion)
         }
     }
 
@@ -383,7 +381,7 @@ class NpmLocalRepository(
     }
 
     private fun ArtifactMigrateContext.npmPackageMetaData(fullPath: String): NpmPackageMetaData? {
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         return node?.let {
             val inputStream = storageManager.loadFullArtifactInputStream(it, storageCredentials)
             JsonUtils.objectMapper.readValue(inputStream, NpmPackageMetaData::class.java)
@@ -536,7 +534,7 @@ class NpmLocalRepository(
             val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
             val fullPath = NpmUtils.getVersionPackageMetadataPath(name, version)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
-            if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
+            if (nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))) {
                 logger.info(
                     "package [$name] with version metadata [$name-$version.json] " +
                         "is already exists in repository [$projectId/$repoName], skip migration."
@@ -563,7 +561,7 @@ class NpmLocalRepository(
             var response: Response? = null
             val fullPath = NpmUtils.getTgzPath(name, version, true, ext)
             // hit cache continue
-            if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
+            if (nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))) {
                 logger.info(
                     "package [$name] with tgz file [$fullPath] is " +
                         "already exists in repository [$projectId/$repoName], skip migration."
@@ -644,9 +642,9 @@ class NpmLocalRepository(
     private fun deleteVersionMetadata(context: ArtifactMigrateContext, name: String, version: String) {
         val fullPath = NpmUtils.getVersionPackageMetadataPath(name, version)
         with(context) {
-            if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
+            if (nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))) {
                 val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, fullPath, userId)
-                nodeClient.deleteNode(nodeDeleteRequest)
+                nodeService.deleteNode(nodeDeleteRequest)
                 logger.info(
                     "migrate package [$name] with version [$version] failed, " +
                         "delete package version metadata [$fullPath] success."

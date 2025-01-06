@@ -31,12 +31,22 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -44,7 +54,6 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataSaveRequest
-import com.tencent.bkrepo.repository.service.metadata.MetadataService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -65,6 +74,23 @@ class UserMetadataController(
     private val metadataService: MetadataService
 ) {
 
+    @AuditEntry(
+        actionId = NODE_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_METADATA_VIEW_CONTENT
+    )
     @ApiOperation("查询元数据列表")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping(DEFAULT_MAPPING_URI)
@@ -77,6 +103,23 @@ class UserMetadataController(
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_METADATA_EDIT_CONTENT
+    )
     @ApiOperation("创建/更新元数据列表")
     @Permission(type = ResourceType.NODE, action = PermissionAction.WRITE)
     @PostMapping(DEFAULT_MAPPING_URI)
@@ -94,11 +137,29 @@ class UserMetadataController(
                 nodeMetadata = metadataSaveRequest.nodeMetadata?.map { it.copy(system = false) },
                 operator = SecurityUtils.getUserId()
             )
+            ActionAuditContext.current().setInstance(request)
             metadataService.saveMetadata(request)
             return ResponseBuilder.success()
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_METADATA_FORBID_CONTENT
+    )
     @ApiOperation("创建/更新禁用元数据")
     @Permission(type = ResourceType.REPO, action = PermissionAction.UPDATE)
     @PostMapping("/forbid$DEFAULT_MAPPING_URI")
@@ -114,11 +175,29 @@ class UserMetadataController(
                 fullPath = getArtifactFullPath(),
                 nodeMetadata = metadataSaveRequest.nodeMetadata
             )
+            ActionAuditContext.current().setInstance(request)
             metadataService.addForbidMetadata(request)
             return ResponseBuilder.success()
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_METADATA_DELETE_CONTENT
+    )
     @ApiOperation("删除元数据")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping(DEFAULT_MAPPING_URI)
@@ -135,6 +214,7 @@ class UserMetadataController(
                 keyList = metadataDeleteRequest.keyList,
                 operator = SecurityUtils.getUserId()
             )
+            ActionAuditContext.current().setInstance(request)
             metadataService.deleteMetadata(request, false)
             return ResponseBuilder.success()
         }

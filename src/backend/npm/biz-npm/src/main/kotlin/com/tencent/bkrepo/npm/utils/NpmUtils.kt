@@ -157,28 +157,30 @@ object NpmUtils {
         oldTarball: String,
         domain: String,
         tarballPrefix: String,
+        returnRepoId: Boolean,
         name: String,
         artifactInfo: ArtifactInfo
     ): String {
-        val tgzSuffix = getTgzSuffix(oldTarball, name)
-        val npmPrefixHeader = HeaderUtils.getHeader(NPM_TGZ_TARBALL_PREFIX)
+        val tgzSuffix = getTgzSuffix(oldTarball, name).trimStart(SLASH)
+        val npmPrefixHeader = HeaderUtils.getHeader(NPM_TGZ_TARBALL_PREFIX)?.trimEnd(SLASH)
         val newTarball = StringBuilder()
-        npmPrefixHeader?.let {
-            newTarball.append(it.trimEnd(SLASH))
-                // .append(SLASH).append(artifactInfo.getRepoIdentify())
-                .append(SLASH).append(tgzSuffix.trimStart(SLASH))
-        } ?: if (tarballPrefix.isEmpty()) {
+        if (npmPrefixHeader != null) {
+            newTarball.append(npmPrefixHeader)
+            if (returnRepoId) {
+                newTarball.append(artifactInfo.getRepoIdentify())
+            }
+        } else if (tarballPrefix.isEmpty()) {
             // 远程仓库返回的是代理地址
             newTarball.append(UrlFormatter.formatUrl(domain).trimEnd(SLASH))
                 .append(artifactInfo.getRepoIdentify())
-                .append(SLASH)
-                .append(tgzSuffix)
         } else {
             val formatUrl = UrlFormatter.formatUrl(tarballPrefix)
             newTarball.append(formatUrl.trimEnd(SLASH))
-                .append(artifactInfo.getRepoIdentify())
-                .append(SLASH).append(tgzSuffix.trimStart(SLASH))
+            if (returnRepoId) {
+                newTarball.append(artifactInfo.getRepoIdentify())
+            }
         }
+        newTarball.append(SLASH).append(tgzSuffix)
         return newTarball.toString()
     }
 

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
@@ -37,7 +38,6 @@ import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadPoolExecutor
 import com.tencent.bkrepo.job.migrate.utils.NodeIterator
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit
 @Component
 class CorrectExecutor(
     properties: MigrateRepoStorageProperties,
-    fileReferenceClient: FileReferenceClient,
+    fileReferenceService: FileReferenceService,
     migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
@@ -59,7 +59,7 @@ class CorrectExecutor(
     properties,
     migrateRepoStorageTaskDao,
     migrateFailedNodeDao,
-    fileReferenceClient,
+    fileReferenceService,
     storageService,
     executingTaskRecorder,
 ) {

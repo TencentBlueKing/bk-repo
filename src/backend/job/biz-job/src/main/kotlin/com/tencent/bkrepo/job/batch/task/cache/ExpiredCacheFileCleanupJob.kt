@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.util.toPath
@@ -94,7 +94,7 @@ class ExpiredCacheFileCleanupJob(
         }.apply {
             first[storage.cache.path.toPath()]?.let {
                 storageCacheMetrics.setCacheMetrics(key, it.rootDirNotDeletedSize, it.rootDirNotDeletedFile)
-                storageCacheMetrics.setRetainCacheMetrics(key, it.retainSize, it.retainFile)
+                storageCacheMetrics.setProjectRetainCacheMetrics(key, it.retainSha256)
             }
             logger.info("Clean up on storage[$key] completed, summary: $first, elapse [${second.seconds}] s.")
         }

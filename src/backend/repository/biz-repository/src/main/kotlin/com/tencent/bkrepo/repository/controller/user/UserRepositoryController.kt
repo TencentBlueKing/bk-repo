@@ -27,11 +27,28 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.annotations.AuditRequestBody
+import com.tencent.bk.audit.context.ActionAuditContext
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_VIEW_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_DELETE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.REPO_VIEW_ACTION
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.repo.ArchiveInfo
@@ -44,8 +61,6 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoUpdateRequest
-import com.tencent.bkrepo.repository.service.repo.QuotaService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -66,8 +81,25 @@ class UserRepositoryController(
     private val permissionManager: PermissionManager,
     private val repositoryService: RepositoryService,
     private val quotaService: QuotaService,
+    private val nodeService: NodeService
 ) {
 
+    @AuditEntry(
+        actionId = REPO_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#repoName",
+            instanceNames = "#repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
+        scopeId = "#projectId",
+        content = ActionAuditContent.REPO_VIEW_CONTENT
+    )
     @ApiOperation("根据名称类型查询仓库")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/info/{projectId}/{repoName}", "/info/{projectId}/{repoName}/{type}")
@@ -98,10 +130,30 @@ class UserRepositoryController(
         return ResponseBuilder.success(repositoryService.checkExist(projectId, repoName))
     }
 
+    @AuditEntry(
+        actionId = REPO_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#userRepoCreateRequest?.name",
+            instanceNames = "#userRepoCreateRequest?.name"
+        ),
+        attributes = [
+            AuditAttribute(
+                name = ActionAuditContent.PROJECT_CODE_TEMPLATE,
+                value = "#userRepoCreateRequest?.projectId"
+            ),
+        ],
+        scopeId = "#userRepoCreateRequest?.projectId",
+        content = ActionAuditContent.REPO_CREATE_CONTENT
+    )
     @ApiOperation("创建仓库")
     @PostMapping("/create")
     fun createRepo(
         @RequestAttribute userId: String,
+        @AuditRequestBody
         @RequestBody userRepoCreateRequest: UserRepoCreateRequest,
     ): Response<RepositoryDetail> {
         val createRequest = with(userRepoCreateRequest) {
@@ -124,9 +176,26 @@ class UserRepositoryController(
                 display = display,
             )
         }
+        ActionAuditContext.current().setInstance(createRequest)
         return ResponseBuilder.success(repositoryService.createRepo(createRequest))
     }
 
+    @AuditEntry(
+        actionId = REPO_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#repoListOption?.name",
+            instanceNames = "#repoListOption?.name",
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
+        scopeId = "#projectId",
+        content = ActionAuditContent.REPO_LIST_CONTENT
+    )
     @ApiOperation("查询有权限的仓库列表")
     @GetMapping("/list/{projectId}")
     fun listUserRepo(
@@ -139,6 +208,22 @@ class UserRepositoryController(
         return ResponseBuilder.success(repositoryService.listPermissionRepo(userId, projectId, repoListOption))
     }
 
+    @AuditEntry(
+        actionId = PROJECT_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#projectId",
+            instanceNames = "#projectId",
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
+        scopeId = "#projectId",
+        content = ActionAuditContent.REPO_LIST_CONTENT
+    )
     @ApiOperation("分页查询有权限的仓库列表")
     @GetMapping("/page/{projectId}/{pageNumber}/{pageSize}")
     fun listUserRepoPage(
@@ -158,6 +243,22 @@ class UserRepositoryController(
         return ResponseBuilder.success(page)
     }
 
+    @AuditEntry(
+        actionId = REPO_VIEW_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_VIEW_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#repoName",
+            instanceNames = "#repoName",
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
+        scopeId = "#projectId",
+        content = ActionAuditContent.REPO_QUOTE_VIEW_CONTENT
+    )
     @ApiOperation("查询仓库配额")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/quota/{projectId}/{repoName}")
@@ -172,6 +273,23 @@ class UserRepositoryController(
         return ResponseBuilder.success(quotaService.getRepoQuotaInfo(projectId, repoName))
     }
 
+
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#repoName",
+            instanceNames = "#repoName",
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
+        scopeId = "#projectId",
+        content = ActionAuditContent.REPO_QUOTE_EDIT_CONTENT
+    )
     @ApiOperation("修改仓库配额")
     @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
     @PostMapping("/quota/{projectId}/{repoName}")
@@ -193,10 +311,27 @@ class UserRepositoryController(
             quota = quota,
             operator = userId,
         )
+        ActionAuditContext.current().setInstance(repoUpdateRequest)
         repositoryService.updateRepo(repoUpdateRequest)
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = REPO_DELETE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_DELETE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#repoName",
+            instanceNames = "#repoName",
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
+        scopeId = "#projectId",
+        content = ActionAuditContent.REPO_DELETE_CONTENT
+    )
     @ApiOperation("删除仓库")
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     @DeleteMapping("/delete/{projectId}/{repoName}")
@@ -216,6 +351,22 @@ class UserRepositoryController(
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#repoName",
+            instanceNames = "#repoName",
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#projectId"),
+        ],
+        scopeId = "#projectId",
+        content = ActionAuditContent.REPO_EDIT_CONTENT
+    )
     @ApiOperation("更新仓库")
     @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
     @PostMapping("/update/{projectId}/{repoName}")
@@ -238,10 +389,29 @@ class UserRepositoryController(
             operator = userId,
             display = request.display
         )
+        ActionAuditContext.current().setInstance(repoUpdateRequest)
         repositoryService.updateRepo(repoUpdateRequest)
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = REPO_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#userRepoCreateRequest?.name",
+            instanceNames = "#userRepoCreateRequest?.name"
+        ),
+        attributes = [
+            AuditAttribute(
+                name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#userRepoCreateRequest?.projectId"
+            ),
+        ],
+        scopeId = "#userRepoCreateRequest?.projectId",
+        content = ActionAuditContent.REPO_CREATE_CONTENT
+    )
     @Deprecated("waiting kb-ci and bk", replaceWith = ReplaceWith("createRepo"))
     @ApiOperation("创建仓库")
     @PostMapping
@@ -263,7 +433,7 @@ class UserRepositoryController(
     ): Response<ArchiveInfo> {
         permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId, userId)
         val archiveInfo = ArchiveInfo(
-            available = repositoryService.getArchivableSize(projectId, repoName, days, size),
+            available = nodeService.getArchivableSize(projectId, repoName, days, size),
         )
         return ResponseBuilder.success(archiveInfo)
     }

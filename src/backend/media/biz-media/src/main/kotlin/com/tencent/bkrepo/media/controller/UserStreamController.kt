@@ -4,7 +4,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -30,16 +31,16 @@ class UserStreamController(
      * 生成推流地址
      * */
     @PostMapping("/create/{projectId}/{repoName}")
-    @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
     fun createStream(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
+        @RequestParam(required = false, defaultValue = "true") display: Boolean = true,
     ): Response<String> {
         permissionManager.checkProjectPermission(
             action = PermissionAction.MANAGE,
             projectId = projectId,
         )
-        return ResponseBuilder.success(streamService.createStream(projectId, repoName))
+        return ResponseBuilder.success(streamService.createStream(projectId, repoName, display))
     }
 
     /**

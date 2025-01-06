@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.job.BATCH_SIZE
+import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.repo.SeparationMavenMetadataDao
 import com.tencent.bkrepo.job.separation.model.TSeparationNode
@@ -46,7 +46,7 @@ import com.tencent.bkrepo.job.separation.pojo.query.NodeDetailInfo
 import com.tencent.bkrepo.job.separation.service.RepoSpecialDataSeparator
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import com.tencent.bkrepo.job.separation.util.SeparationUtils.getNodeCollectionName
-import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
+import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
 import com.tencent.bkrepo.maven.util.MavenUtil.extractGroupIdAndArtifactId
 import com.tencent.bkrepo.maven.util.MavenUtil.extractPath
@@ -68,6 +68,7 @@ class MavenRepoSpecialDataSeparatorHandler(
     private val separationMavenMetadataDao: SeparationMavenMetadataDao,
     private val separationNodeDao: SeparationNodeDao,
     private val mongoTemplate: MongoTemplate,
+    private val dataSeparationConfig: DataSeparationConfig,
 ) : RepoSpecialDataSeparator {
 
     override fun type(): RepositoryType {
@@ -118,13 +119,13 @@ class MavenRepoSpecialDataSeparatorHandler(
                 .and(NodeDetailInfo::path.name).isEqualTo(versionPath)
                 .and(NodeDetailInfo::folder.name).isEqualTo(false)
             val fullPathsMap = mutableMapOf<String, String>()
-            val pageSize = BATCH_SIZE
+            val pageSize = dataSeparationConfig.batchSize
             var querySize: Int
             var lastId = ObjectId(MIN_OBJECT_ID)
             do {
                 val query = Query(criteria)
                     .addCriteria(Criteria.where(ID).gt(lastId))
-                    .limit(BATCH_SIZE)
+                    .limit(dataSeparationConfig.batchSize)
                     .with(Sort.by(ID).ascending())
                 val nodeBaseInfos = mongoTemplate.find(query, NodeBaseInfo::class.java, nodeCollectionName)
                 if (nodeBaseInfos.isEmpty()) {
@@ -149,7 +150,7 @@ class MavenRepoSpecialDataSeparatorHandler(
             val packagePath = PathUtils.normalizeFullPath(extractPath(packageKey))
             val versionPath = PathUtils.combinePath(packagePath, version)
             var pageNumber = 0
-            val pageSize = BATCH_SIZE
+            val pageSize = dataSeparationConfig.batchSize
             var querySize: Int
             val query = pathQuery(projectId, repoName, versionPath, separationDate)
             val fullPathsMap = mutableMapOf<String, String>()
@@ -209,7 +210,7 @@ class MavenRepoSpecialDataSeparatorHandler(
 
     override fun getRecoveryPackageVersionData(recoveryInfo: RecoveryNodeInfo): RecoveryVersionInfo {
         with(recoveryInfo) {
-            val mavenGAVC = fullPath.toMavenGAVC()
+            val mavenGAVC = fullPath.mavenGAVC()
             val version = mavenGAVC.version
             val artifactId = mavenGAVC.artifactId
             val groupId = mavenGAVC.groupId.formatSeparator("/", ".")

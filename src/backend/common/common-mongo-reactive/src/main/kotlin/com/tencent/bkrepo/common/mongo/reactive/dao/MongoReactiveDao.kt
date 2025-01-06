@@ -29,8 +29,11 @@ package com.tencent.bkrepo.common.mongo.reactive.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
+import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import reactor.core.publisher.Flux
 
 /**
  * mongo db reactive 数据访问层接口
@@ -48,9 +51,29 @@ interface MongoReactiveDao<E> {
     suspend fun <T> find(query: Query, clazz: Class<T>): List<T>
 
     /**
+     * 通过查询对象查询文档集合，返回元素类型由clazz指定
+     */
+    suspend fun <T> findAll(clazz: Class<T>): List<T>
+
+    /**
      * 新增文档到数据库的集合中
      */
     suspend fun save(entity: E): E
+
+    /**
+     * 插入文档到数据库的集合中
+     */
+    suspend fun insert(entity: E): E
+
+    /**
+     * 新增文档到数据库的集合中
+     */
+    suspend fun insert(entityCollection: Collection<E>): Collection<E>
+
+    /**
+     * 更新单条文档
+     */
+    suspend fun updateFirst(query: Query, update: Update): UpdateResult
 
     /**
      * 更新文档
@@ -71,4 +94,24 @@ interface MongoReactiveDao<E> {
      * count
      */
     suspend fun count(query: Query): Long
+
+    /**
+     * 判断文档是否存在
+     */
+    suspend fun exists(query: Query): Boolean
+
+    /**
+     * 查询并更新操作
+     */
+    suspend fun <T> findAndModify(query: Query, update: Update, options: FindAndModifyOptions, clazz: Class<T>): T?
+
+    /**
+     * 流查询
+     */
+    suspend fun <T> stream(query: Query, clazz: Class<T>): Flux<T>
+
+    /**
+     * 文档聚合操作
+     */
+    suspend fun <O> aggregate(aggregation: Aggregation, outputType: Class<O>): MutableList<O>
 }

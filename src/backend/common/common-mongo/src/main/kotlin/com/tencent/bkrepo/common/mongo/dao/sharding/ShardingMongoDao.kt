@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.common.mongo.dao.sharding
 
 import com.mongodb.BasicDBList
+import com.tencent.bkrepo.common.api.mongo.ShardingDocument
+import com.tencent.bkrepo.common.api.mongo.ShardingKey
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.ShardingUtils
@@ -310,6 +312,6 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     companion object {
 
         private val logger = LoggerFactory.getLogger(ShardingMongoDao::class.java)
-        private const val MAX_SHARDING_COUNT_OF_PAGE_QUERY = 256
+        const val MAX_SHARDING_COUNT_OF_PAGE_QUERY = 256
     }
 }

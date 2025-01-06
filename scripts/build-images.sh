@@ -194,11 +194,16 @@ if [[ $ALL -eq 1 || $BACKEND -eq 1 ]] ; then
     for SERVICE in "${BACKENDS[@]}";
     do
         log "构建${SERVICE}镜像..."
+        if [[ $SERVICE == "preview" ]]; then
+            DOCKERFILE="$IMAGE_DIR/backend/preview.Dockerfile"
+        else
+            DOCKERFILE="$IMAGE_DIR/backend/backend.Dockerfile"
+        fi
         $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
         rm -rf $tmp_dir/*
         cp $IMAGE_DIR/backend/startup.sh $tmp_dir/
         cp $BACKEND_DIR/release/boot-$SERVICE.jar $tmp_dir/app.jar
-        docker build -f $IMAGE_DIR/backend/backend.Dockerfile -t $REGISTRY/$NAMESPACE/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
+        docker build -f $DOCKERFILE -t $REGISTRY/$NAMESPACE/bkrepo-$SERVICE:$VERSION $tmp_dir --network=host
         if [[ $PUSH -eq 1 ]] ; then
             docker push $REGISTRY/$NAMESPACE/bkrepo-$SERVICE:$VERSION
         fi

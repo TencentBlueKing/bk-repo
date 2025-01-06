@@ -31,16 +31,16 @@
 
 package com.tencent.bkrepo.auth.config
 
-import com.tencent.bkrepo.auth.dao.PermissionDao
-import com.tencent.bkrepo.auth.dao.UserDao
-import com.tencent.bkrepo.auth.dao.AccountDao
-import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
-import com.tencent.bkrepo.auth.dao.repository.RoleRepository
-import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.condition.BkV3RbacAuthCondition
+import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.condition.LocalAuthCondition
+import com.tencent.bkrepo.auth.dao.AccountDao
+import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
+import com.tencent.bkrepo.auth.dao.UserDao
+import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
+import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
@@ -54,8 +54,8 @@ import com.tencent.bkrepo.auth.service.local.AccountServiceImpl
 import com.tencent.bkrepo.auth.service.local.PermissionServiceImpl
 import com.tencent.bkrepo.auth.service.local.RoleServiceImpl
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
-import com.tencent.bkrepo.repository.api.ProjectClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -71,11 +71,11 @@ class AuthServiceConfig {
 
     @Autowired
     @Lazy
-    private lateinit var repositoryClient: RepositoryClient
+    private lateinit var repositoryService: RepositoryService
 
     @Autowired
     @Lazy
-    private lateinit var projectClient: ProjectClient
+    private lateinit var projectService: ProjectService
 
     @Bean
     @ConditionalOnMissingBean(AccountService::class)
@@ -102,8 +102,8 @@ class AuthServiceConfig {
             userDao,
             personalPathDao,
             repoAuthConfigDao,
-            repositoryClient,
-            projectClient
+            repositoryService,
+            projectService
         )
     }
 
@@ -116,7 +116,6 @@ class AuthServiceConfig {
         roleRepository: RoleRepository,
         accountDao: AccountDao,
         permissionDao: PermissionDao,
-        repoClient: RepositoryClient
     ): PermissionService {
         return BkIamV3PermissionServiceImpl(
             bkiamV3Service,
@@ -126,8 +125,8 @@ class AuthServiceConfig {
             permissionDao,
             personalPathDao,
             repoAuthConfigDao,
-            repoClient,
-            projectClient
+            repositoryService,
+            projectService
         )
     }
 
@@ -155,8 +154,8 @@ class AuthServiceConfig {
             bkAuthConfig,
             bkAuthPipelineService,
             bkAuthProjectService,
-            repositoryClient,
-            projectClient,
+            repositoryService,
+            projectService,
             bkiamV3Service
         )
     }

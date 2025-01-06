@@ -34,6 +34,8 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.DEFAULT_KEY
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.DeleteCompressRequest
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -49,7 +51,6 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.job.exception.RepoMigratingException
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
@@ -72,7 +73,7 @@ import kotlin.reflect.KClass
 @Suppress("UnstableApiUsage")
 class FileReferenceCleanupJob(
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val properties: FileReferenceCleanupJobProperties,
     private val archiveClient: ArchiveClient,
 ) : MongoDbBatchJob<FileReferenceCleanupJob.FileReferenceData, FileJobContext>(properties) {
@@ -84,8 +85,21 @@ class FileReferenceCleanupJob(
      * */
     private lateinit var bf: BloomFilter<CharSequence>
 
+    /**
+     *
+     * 两个credentials使用相同的存储时（例如同一个对象存储桶），可能导致数据误删，
+     * 例如存储迁移的场景，迁移前后的存储桶一样仅缓存路径改变的情况
+     * 此时需要获取相同存储的映射关系，避免迁移结束旧存储引用减到0后将后端存储的数据删除，导致数据丢失
+     *
+     * 设置映射关系后会检查映射的StorageCredentialsKey是否存在对应引用，存在时将不删实际存储文件仅删除存储自身的引用
+     */
+    @Volatile
+    private lateinit var storageKeyMapping: Map<String, Set<String>>
+
     override fun createJobContext(): FileJobContext {
         bf = buildBloomFilter()
+        storageKeyMapping = storageCredentialService.getStorageKeyMapping()
+        logger.info("storage key mapping: [$storageKeyMapping]")
         return FileJobContext()
     }
 
@@ -135,14 +149,23 @@ class FileReferenceCleanupJob(
                 logger.info("Mock delete $sha256 on $credentialsKey.")
                 return
             }
-            var successToDeleted = cleanupRelatedResources(sha256, credentialsKey)
-            if (storageService.exist(sha256, storageCredentials)) {
+
+            // 删除文件
+            var successToDeleted = false
+            val existsRefOfMappingStorage = existsRefOfMappingStorage(row, collectionName)
+            if (!existsRefOfMappingStorage) {
+                successToDeleted = cleanupRelatedResources(sha256, credentialsKey)
+            }
+            if (!existsRefOfMappingStorage && storageService.exist(sha256, storageCredentials)) {
                 storageService.delete(sha256, storageCredentials)
                 successToDeleted = true
             }
             if (!successToDeleted) {
                 context.fileMissing.incrementAndGet()
-                logger.warn("File[$sha256] is missing on [$storageCredentials], skip cleaning up.")
+                logger.warn(
+                    "File[$sha256] is missing on [${storageCredentials?.key}] or " +
+                            "existsRefOfMappingStorage[$existsRefOfMappingStorage], skip cleaning up."
+                )
             }
             mongoTemplate.remove(Query(Criteria(ID).isEqualTo(id)), collectionName)
         } catch (e: Exception) {
@@ -217,9 +240,37 @@ class FileReferenceCleanupJob(
         return bf
     }
 
+    /**
+     * 是否在映射存储中存在相同sha256的引用
+     */
+    private fun existsRefOfMappingStorage(ref: FileReferenceData, collectionName: String): Boolean {
+        // 查询是否存在映射的key
+        val mappingKeys = storageKeyMapping[ref.credentialsKey ?: DEFAULT_STORAGE_KEY]
+        if (mappingKeys.isNullOrEmpty()) {
+            return false
+        }
+
+        mappingKeys.forEach { mappingKey ->
+            // 兼容默认存储
+            val mappingStorageKey = if (mappingKey == DEFAULT_STORAGE_KEY) {
+                null
+            } else {
+                mappingKey
+            }
+
+            // 查询映射存储中是否存在对应的引用
+            val criteria = Criteria.where(SHA256).isEqualTo(ref.sha256).and(CREDENTIALS).isEqualTo(mappingStorageKey)
+            if (mongoTemplate.exists(Query(criteria), collectionName)) {
+                return true
+            }
+        }
+
+        return false
+    }
+
     private fun getCredentials(key: String): StorageCredentials? {
         return cacheMap.getOrPut(key) {
-            storageCredentialsClient.findByKey(key).data ?: return null
+            storageCredentialService.findByKey(key) ?: return null
         }
     }
 

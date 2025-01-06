@@ -613,7 +613,7 @@
     "visits":"访问次数",
     "sharePlaceHolder2":"请输入访问次数，为空则不限制",
     "sharePlaceHolder3":"请选择过期时间",
-    "RepoManage": "制品管理",
+    "RepoManage": "制品库",
     "inputProject":"请选择项目",
     "log":"日志",
     "planPlaceHolder":"请输入计划名称, 按Enter键搜索",
@@ -730,7 +730,7 @@
     "searchRelatedResults":"搜索到相关结果",
     "allRepoTotal":"全部制品共",
     "clusterNames": "地点",
-    "webTitle": "制品库 | 腾讯蓝鲸智云",
+    "webTitle": "制品库 | 蓝鲸智云",
     "ignoreRuleMinSeverity": "级别",
     "ignoredVul": "已忽略的漏洞",
     "activeVul": "未忽略的漏洞",
@@ -889,5 +889,22 @@
     "rootDirectoryPermissionTip": "开启之后项目成员访问此仓库下路径需要授权",
     "errMsg": "错误信息",
     "blackUserList": "办公网访问黑名单",
-    "controlConfigPlaceholder": "可选择多个用户组"
+    "controlConfigPlaceholder": "可选择多个用户组",
+    "hasSelectTip": "已选择{0}条,",
+    "changeSelectAllTip": "选择全量数据",
+    "selectAllTip": "已选择全量数据{0}条，",
+    "clearSelectTip":"清除选择",
+    "previewErrorTip": "文件预览失败",
+    "helps": {
+        "documentation": "产品文档",
+        "releaseNote": "版本日志",
+        "feedback": "问题反馈",
+        "openSource": "开源社区"
+    },
+    "currentVersion": "当前版本",
+    "conanCreditGuideSubTitle1":"1、在命令行执行以下命令配置远程仓库",
+    "conanCreditGuideSubTitle2":"2、在命令行执行以下命令配置制品仓库凭据(conan1.x)",
+    "conanRecipePlaceholder":"RECIPE的格式为<NAME>/VERSION>@<USER>/CHANNEL>",
+    "conanPullGuideSubTitle":"请在命令行执行以下命令进行拉取(conan1.x)：",
+    "projectNoPermissionTip": "请求项目{0}无权限，已切换"
 }

@@ -32,13 +32,14 @@ import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
@@ -51,7 +52,7 @@ class LocalNodeResource(
     private val range: Range,
     private val storageCredentials: StorageCredentials?,
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val archiveClient: ArchiveClient,
 ) : AbstractNodeResource() {
 
@@ -98,7 +99,7 @@ class LocalNodeResource(
         node.copyFromCredentialsKey?.let {
             val digest = node.sha256!!
             logger.info("load data [$digest] from copy credentialsKey [$it]")
-            val fromCredentialsKey = storageCredentialsClient.findByKey(it).data
+            val fromCredentialsKey = storageCredentialService.findByKey(it)
             return storageService.load(digest, range, fromCredentialsKey)
         }
         return null
@@ -137,7 +138,7 @@ class LocalNodeResource(
                 }
             }
             // 如果是异步或者请求上下文找不到，则通过查询，并进行缓存
-            val repositoryId = ArtifactContextHolder.RepositoryId(
+            val repositoryId = RepositoryId(
                 projectId = projectId,
                 repoName = repoName,
             )
@@ -150,7 +151,7 @@ class LocalNodeResource(
      * */
     private fun findStorageCredentialsByKey(credentialsKey: String?): StorageCredentials? {
         credentialsKey ?: return null
-        return storageCredentialsClient.findByKey(credentialsKey).data
+        return storageCredentialService.findByKey(credentialsKey)
     }
 
     private fun restore(node: NodeInfo, storageCredentials: StorageCredentials?) {

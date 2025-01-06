@@ -32,15 +32,15 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadConfiguration
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
@@ -66,14 +66,15 @@ open class ArtifactPreloadBaseServiceTest(
     protected val fileLocator: FileLocator,
     protected val storageProperties: StorageProperties,
 ) {
-    @MockBean
-    protected lateinit var nodeClient: NodeClient
 
     @MockBean
-    protected lateinit var repositoryClient: RepositoryClient
+    protected lateinit var nodeService: NodeService
 
     @MockBean
-    protected lateinit var storageCredentialsClient: StorageCredentialsClient
+    protected lateinit var repositoryService: RepositoryService
+
+    @MockBean
+    protected lateinit var storageCredentialService: StorageCredentialService
 
     protected fun createTempArtifactFile(size: Long): ArtifactFile {
         val tempFile = File.createTempFile("preload-", ".tmp")

@@ -27,14 +27,15 @@
 
 package com.tencent.bkrepo.fs.server.handler
 
-import com.github.benmanes.caffeine.cache.Caffeine
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.service.fs.FsService
+import com.tencent.bkrepo.common.metadata.service.metadata.RMetadataService
+import com.tencent.bkrepo.common.metadata.service.repo.RRepositoryService
 import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
-import com.tencent.bkrepo.fs.server.api.RGenericClient
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
-import com.tencent.bkrepo.fs.server.constant.FAKE_MD5
-import com.tencent.bkrepo.fs.server.constant.FAKE_SHA256
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.NodeAttribute
@@ -49,6 +50,7 @@ import com.tencent.bkrepo.fs.server.request.SetLengthRequest
 import com.tencent.bkrepo.fs.server.resolveRange
 import com.tencent.bkrepo.fs.server.response.StatResponse
 import com.tencent.bkrepo.fs.server.service.FileNodeService
+import com.tencent.bkrepo.fs.server.service.node.RNodeService
 import com.tencent.bkrepo.fs.server.toNode
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
@@ -61,14 +63,12 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
-import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
 import reactivefeign.client.ReadTimeoutException
-import java.time.Duration
 
 /**
  * 节点操作相关的处理器
@@ -76,18 +76,18 @@ import java.time.Duration
  * 处理节点操作的请求
  * */
 class NodeOperationsHandler(
-    rGenericClient: RGenericClient,
-    private val rRepositoryClient: RRepositoryClient,
-    private val fileNodeService: FileNodeService
+    private val fileNodeService: FileNodeService,
+    private val fsService: FsService,
+    private val nodeService: RNodeService,
+    private val repositoryService: RRepositoryService,
+    private val metadataService: RMetadataService
 ) {
 
     suspend fun getNode(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
-            val nodeDetail = rRepositoryClient.getNodeDetail(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath
-            ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
+            val nodeDetail = nodeService.getNodeDetail(
+                ArtifactInfo(projectId, repoName, fullPath)
+            ) ?: return ServerResponse.notFound().buildAndAwait()
             return ReactiveResponseBuilder.success(nodeDetail.nodeInfo.toNode())
         }
     }
@@ -95,13 +95,10 @@ class NodeOperationsHandler(
     suspend fun listNodes(request: ServerRequest): ServerResponse {
         val pageRequest = NodePageRequest(request)
         with(pageRequest) {
-            val nodes = rRepositoryClient.listNodePage(
-                path = fullPath,
-                projectId = projectId,
-                repoName = repoName,
+            val nodes = nodeService.listNodePage(
+                artifact = ArtifactInfo(projectId, repoName, fullPath),
                 option = listOption
-            ).awaitSingle().data?.records?.map { it.toNode() }?.toList()
-                ?: return ServerResponse.notFound().buildAndAwait()
+            ).records.map { it.toNode() }.toList()
             return ReactiveResponseBuilder.success(nodes)
         }
     }
@@ -117,7 +114,7 @@ class NodeOperationsHandler(
                 fullPath = fullPath,
                 operator = ReactiveSecurityUtils.getUser()
             )
-            rRepositoryClient.deleteNode(nodeDeleteRequest).awaitSingle().data
+            nodeService.deleteNode(nodeDeleteRequest)
             fileNodeService.deleteNodeBlocks(projectId, repoName, fullPath)
             return ReactiveResponseBuilder.success()
         }
@@ -126,8 +123,7 @@ class NodeOperationsHandler(
     @Suppress("UNCHECKED_CAST")
     suspend fun changeAttribute(request: ServerRequest): ServerResponse {
         with(ChangeAttributeRequest(request)) {
-            val preFsAttributeStr = rRepositoryClient.listMetadata(projectId, repoName, fullPath).awaitSingle().data
-                ?.get(FS_ATTR_KEY)
+            val preFsAttributeStr = metadataService.listMetadata(projectId, repoName, fullPath)[FS_ATTR_KEY]
             val attrMap = preFsAttributeStr as? Map<String, Any> ?: mapOf()
             val preFsAttribute = NodeAttribute(
                 uid = attrMap[NodeAttribute::uid.name] as? String ?: NOBODY,
@@ -157,31 +153,26 @@ class NodeOperationsHandler(
                 nodeMetadata = listOf(fsAttr),
                 operator = ReactiveSecurityUtils.getUser()
             )
-            rRepositoryClient.saveMetadata(saveMetaDataRequest).awaitSingle()
+            metadataService.saveMetadata(saveMetaDataRequest)
             return ReactiveResponseBuilder.success(attributes)
         }
     }
 
     suspend fun getStat(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
-            val cacheKey = "$projectId-$repoName-$fullPath"
-            var res = statCache.getIfPresent(cacheKey)
-            if (res == null) {
-                val cap = ReactiveArtifactContextHolder.getRepoDetail().quota
-                val nodeStat = try {
-                    rRepositoryClient.statRepo(projectId, repoName).awaitSingle().data
-                } catch (e: ReadTimeoutException) {
-                    logger.warn("get repo[$projectId/$repoName] stat timeout")
-                    NodeSizeInfo(0, 0, UNKNOWN)
-                }
-
-                res = StatResponse(
-                    subNodeCount = nodeStat?.subNodeCount ?: UNKNOWN,
-                    size = nodeStat?.size ?: UNKNOWN,
-                    capacity = cap ?: UNKNOWN
-                )
-                statCache.put(cacheKey, res)
+            val cap = ReactiveArtifactContextHolder.getRepoDetail().quota
+            val nodeStat = try {
+                repositoryService.statRepo(projectId, repoName)
+            } catch (e: ReadTimeoutException) {
+                logger.warn("get repo[$projectId/$repoName] stat timeout")
+                NodeSizeInfo(0, 0, UNKNOWN)
             }
+
+            val res = StatResponse(
+                subNodeCount = nodeStat.subNodeCount,
+                size = nodeStat.size,
+                capacity = cap ?: UNKNOWN
+            )
 
             return ReactiveResponseBuilder.success(res)
         }
@@ -193,18 +184,14 @@ class NodeOperationsHandler(
     suspend fun move(request: ServerRequest): ServerResponse {
         with(MoveRequest(request)) {
             if (overwrite) {
-                rRepositoryClient.getNodeDetail(
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = dst
-                ).awaitSingle().data?.let {
+                nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, dst))?.let {
                     val nodeDeleteRequest = NodeDeleteRequest(
                         projectId = projectId,
                         repoName = repoName,
                         fullPath = dst,
                         operator = ReactiveSecurityUtils.getUser()
                     )
-                    rRepositoryClient.deleteNode(nodeDeleteRequest).awaitSingle()
+                    nodeService.deleteNode(nodeDeleteRequest)
                 }
             }
             val moveRequest = NodeRenameRequest(
@@ -214,7 +201,7 @@ class NodeOperationsHandler(
                 newFullPath = dst,
                 operator = ReactiveSecurityUtils.getUser()
             )
-            rRepositoryClient.renameNode(moveRequest).awaitSingle()
+            nodeService.renameNode(moveRequest)
             fileNodeService.renameNodeBlocks(projectId, repoName, fullPath, dst)
             return ReactiveResponseBuilder.success()
         }
@@ -222,11 +209,9 @@ class NodeOperationsHandler(
 
     suspend fun info(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
-            val nodeDetail = rRepositoryClient.getNodeDetail(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = fullPath
-            ).awaitSingle().data ?: return ServerResponse.notFound().buildAndAwait()
+            val nodeDetail = nodeService.getNodeDetail(
+                ArtifactInfo(projectId, repoName, fullPath)
+            ) ?: return ServerResponse.notFound().buildAndAwait()
             val range = try {
                 request.resolveRange(nodeDetail.size)
             } catch (e: IllegalArgumentException) {
@@ -267,7 +252,7 @@ class NodeOperationsHandler(
                 operator = ReactiveSecurityUtils.getUser()
             )
         }
-        val node = rRepositoryClient.link(nodeLinkRequest).awaitSingle().data!!
+        val node = nodeService.link(nodeLinkRequest)
         return ReactiveResponseBuilder.success(node.nodeInfo.toNode())
     }
 
@@ -298,7 +283,7 @@ class NodeOperationsHandler(
                 nodeMetadata = listOf(fsAttr),
                 operator = user
             )
-            return rRepositoryClient.createNode(nodeCreateRequest).awaitSingle().data!!
+            return fsService.createNode(nodeCreateRequest)
         }
     }
 
@@ -312,13 +297,10 @@ class NodeOperationsHandler(
                 newLength = length,
                 operator = user
             )
-            rRepositoryClient.setLength(nodeSetLengthRequest).awaitSingle()
+            fsService.setLength(nodeSetLengthRequest)
             return ReactiveResponseBuilder.success()
         }
     }
-
-    private val statCache = Caffeine.newBuilder()
-        .maximumSize(1000).expireAfterWrite(Duration.ofDays(1)).build<String, StatResponse>()
 
     companion object {
         private const val UNKNOWN = -1L

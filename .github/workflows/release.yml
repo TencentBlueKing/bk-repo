@@ -18,8 +18,9 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           branch="${version%%-rc.*}"
-          rc="$(echo $version | grep -o '[0-9]*$')"
-          if [[ "$rc" == "1" ]]; then
+          IFS='.' read -ra ADDR <<< "$branch"
+          patch=${ADDR[2]}
+          if [[ "$patch" == "0" ]]; then
             git checkout -b release-$branch
             git push origin release-$branch
           fi
@@ -46,7 +47,7 @@ jobs:
         run: yarn --prefer-offline
       - run: yarn install && yarn start && yarn public
         working-directory: src/frontend
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v4
         with:
           name: frontend
           path: src/frontend/frontend
@@ -79,7 +80,7 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           ci_pkg_dir=/dev/shm/bkrepo ./scripts/packager-repo.sh "$version" bkrepo-slim.tar.gz
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v4
         with:
           name: bkrepo
           path: bkrepo-slim.tar.gz
@@ -117,7 +118,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           ./build.sh --version $version --app-version $version
           mv bkrepo-$version.tgz bkrepo-charts.tgz
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v4
         with:
           name: bkrepo-chart
           path: support-files/kubernetes/charts/bkrepo-charts.tgz

@@ -49,7 +49,8 @@ interface FsClientClient {
         @RequestParam pageSize: Int?,
         @RequestParam online: Boolean?,
         @RequestParam ip: String?,
-        @RequestParam version: String?,
+        @RequestParam userId: String?,
+        @RequestParam version: String?
     ): Response<Page<ClientDetail>>
 
     @GetMapping("/daily/list")

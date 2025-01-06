@@ -52,7 +52,6 @@ import com.tencent.bkrepo.auth.condition.MultipleAuthCondition
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_PREFIX
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_NAME
 import com.tencent.bkrepo.auth.constant.AUTH_CONFIG_TYPE_VALUE_BKIAMV3
-import com.tencent.bkrepo.auth.constant.BKIAMV3_CHECK
 import com.tencent.bkrepo.auth.dao.repository.BkIamAuthManagerRepository
 import com.tencent.bkrepo.auth.model.TBkIamAuthManager
 import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupType
@@ -60,6 +59,7 @@ import com.tencent.bkrepo.auth.pojo.enums.DefaultGroupTypeAndActions
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.iam.ResourceInfo
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.service.RepoModeService
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.BkIamV3Utils
 import com.tencent.bkrepo.auth.util.BkIamV3Utils.buildId
@@ -68,11 +68,12 @@ import com.tencent.bkrepo.auth.util.IamGroupUtils
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.ProjectClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -82,6 +83,7 @@ import org.springframework.context.annotation.Lazy
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -92,18 +94,17 @@ class BkIamV3ServiceImpl(
     private val managerService: V2ManagerService,
     private val managerServiceV1: ManagerService,
     private val authManagerRepository: BkIamAuthManagerRepository,
-    val mongoTemplate: MongoTemplate
-    ) : BkIamV3Service, BkiamV3BaseService(mongoTemplate) {
+    mongoTemplate: MongoTemplate
+) : BkIamV3Service, BkiamV3BaseService(mongoTemplate) {
 
 
     @Autowired
     @Lazy
-    private lateinit var projectClient: ProjectClient
+    private lateinit var projectService: ProjectService
 
     @Autowired
     @Lazy
-    private lateinit var nodeClient: NodeClient
-
+    private lateinit var nodeService: NodeService
 
     @Autowired
     @Lazy
@@ -111,7 +112,11 @@ class BkIamV3ServiceImpl(
 
     @Autowired
     @Lazy
-    private lateinit var repositoryClient: RepositoryClient
+    private lateinit var repoModeService: RepoModeService
+
+    @Autowired
+    @Lazy
+    private lateinit var repositoryService: RepositoryService
 
     @Value("\${$AUTH_CONFIG_PREFIX.$AUTH_CONFIG_TYPE_NAME}")
     private var ciAuthServer: String = ""
@@ -144,8 +149,7 @@ class BkIamV3ServiceImpl(
         // 如果配置是bkiamv3，默认走bkiamv3校验
         if (ciAuthServer == AUTH_CONFIG_TYPE_VALUE_BKIAMV3) return true
         if (projectId != null && repoName != null) {
-            val repoInfo = repositoryClient.getRepoInfo(projectId, repoName).data ?: return false
-            return repoInfo.configuration.getBooleanSetting(BKIAMV3_CHECK) ?: false
+            return repoModeService.getAccessControlStatus(projectId, repoName).bkiamv3Check
         }
         return false
     }
@@ -155,8 +159,8 @@ class BkIamV3ServiceImpl(
     ): String? {
         logger.debug(
             "v3 getPermissionUrl, userId: ${request.uid}, projectId: ${request.projectId}, " +
-                "repoName: ${request.repoName} resourceType: ${request.resourceType}, " +
-                "action: ${request.action}, path: ${request.path}"
+                    "repoName: ${request.repoName} resourceType: ${request.resourceType}, " +
+                    "action: ${request.action}, path: ${request.path}"
         )
         if (!checkIamConfiguration()) return null
         return if (request.projectId.isNullOrEmpty() && request.repoName.isNullOrEmpty()) {
@@ -177,8 +181,8 @@ class BkIamV3ServiceImpl(
                 resourceType, projectId, repoName, path
             )
             val action = BkIamV3Utils.convertActionType(request.resourceType, request.action)
-            val resourceType = request.resourceType.toLowerCase()
-            if (repoName != null && !checkBkiamv3Config(projectId, repoName))  return null
+            val resourceType = request.resourceType.lowercase(Locale.getDefault())
+            if (repoName != null && !checkBkiamv3Config(projectId, repoName)) return null
             authManagerRepository.findByTypeAndResourceIdAndParentResId(
                 ResourceType.PROJECT, projectId!!, null
             )?.managerId ?: return null
@@ -226,8 +230,10 @@ class BkIamV3ServiceImpl(
             val pUrl = try {
                 managerServiceV1.getPermissionUrl(pUrlRequest)
             } catch (e: Exception) {
-                logger.error( "v3 getPermissionUrl with userId: $uid, action: $action," +
-                                  " pUrlRequest: $pUrlRequest\" error: ${e.message}")
+                logger.error(
+                    "v3 getPermissionUrl with userId: $uid, action: $action," +
+                            " pUrlRequest: $pUrlRequest\" error: ${e.message}"
+                )
                 StringPool.EMPTY
             }
             return pUrl
@@ -245,7 +251,7 @@ class BkIamV3ServiceImpl(
     ): Boolean {
         logger.debug(
             "v3 validateResourcePermission, userId: $userId, projectId: $projectId, repoName: $repoName" +
-                " resourceType: $resourceType, action: $action, resourceId: $resourceId, appId: $appId"
+                    " resourceType: $resourceType, action: $action, resourceId: $resourceId, appId: $appId"
         )
         if (!checkIamConfiguration()) return false
         val instanceDTO = InstanceDTO()
@@ -284,7 +290,7 @@ class BkIamV3ServiceImpl(
         } catch (e: Exception) {
             logger.error(
                 "try bkiamv3 check with userId: $userId, action: $action," +
-                    " instanceDTO: $instanceDTO\" error: ${e.message}"
+                        " instanceDTO: $instanceDTO\" error: ${e.message}"
             )
             allowed = false
         }
@@ -295,12 +301,12 @@ class BkIamV3ServiceImpl(
     }
 
     override fun convertRepoResourceId(projectId: String, repoName: String): String? {
-        return repositoryClient.getRepoInfo(projectId, repoName).data?.id
+        return repositoryService.getRepoInfo(projectId, repoName)?.id
     }
 
     override fun convertNodeResourceId(projectId: String, repoName: String, fullPath: String): String? {
         val index = HashShardingUtils.shardingSequenceFor(projectId, 256).toString()
-        val nodeId = nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.nodeInfo?.id ?: return null
+        val nodeId = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))?.nodeInfo?.id ?: return null
         return buildId(nodeId, index)
     }
 
@@ -312,15 +318,16 @@ class BkIamV3ServiceImpl(
     ): List<String> {
         logger.debug(
             "v3 listPermissionResources, userId: $userId, projectId: $projectId" +
-                " resourceType: $resourceType, action: $action"
+                    " resourceType: $resourceType, action: $action"
         )
         if (!checkIamConfiguration()) return emptyList()
         val actionDto = ActionDTO()
         actionDto.id = action
-        return when(resourceType) {
+        return when (resourceType) {
             ResourceType.PROJECT.id() -> {
                 authHelper.getInstanceList(userId, action, resourceType)
             }
+
             ResourceType.REPO.id() -> {
                 val pathInfoDTO = PathInfoDTO()
                 pathInfoDTO.id = projectId
@@ -333,13 +340,14 @@ class BkIamV3ServiceImpl(
                     it[RepositoryInfo::name.name].toString()
                 }
             }
+
             else -> emptyList()
-         }
+        }
     }
 
     override fun refreshProjectManager(userId: String?, projectId: String): Boolean {
         logger.info("v3 refreshProjectManager projectId: $projectId and userId: $userId")
-        val projectInfo = projectClient.getProjectInfo(projectId).data
+        val projectInfo = projectService.getProjectInfo(projectId)
             ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, projectId)
         val uId = if (userId.isNullOrEmpty()) {
             projectInfo.createdBy
@@ -399,7 +407,7 @@ class BkIamV3ServiceImpl(
         )?.managerId ?: return true
         return try {
             managerService.deleteManagerV2(managerId.toString())
-            authManagerRepository.findAllByTypeAndParentResId(ResourceType.REPO, projectId).forEach{
+            authManagerRepository.findAllByTypeAndParentResId(ResourceType.REPO, projectId).forEach {
                 authManagerRepository.deleteByTypeAndResourceIdAndParentResId(
                     ResourceType.REPO, it.resourceId, projectId
                 )
@@ -411,11 +419,12 @@ class BkIamV3ServiceImpl(
             false
         }
     }
+
     fun createProjectGradeManager(
         userId: String,
         projectId: String
     ): String? {
-        val projectInfo = projectClient.getProjectInfo(projectId).data!!
+        val projectInfo = projectService.getProjectInfo(projectId)!!
         logger.debug("v3 start to create grade manager for project $projectId with user $userId")
         // 如果已经创建project管理员，则返回
         var managerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
@@ -480,8 +489,8 @@ class BkIamV3ServiceImpl(
         projectId: String,
         repoName: String
     ): String? {
-        val projectInfo = projectClient.getProjectInfo(projectId).data!!
-        val repoDetail = repositoryClient.getRepoInfo(projectId, repoName).data!!
+        val projectInfo = projectService.getProjectInfo(projectId)!!
+        val repoDetail = repositoryService.getRepoInfo(projectId, repoName)!!
         // 如果已经创建repo管理员，则返回
         var repoManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
             ResourceType.REPO, repoName, projectId
@@ -502,45 +511,54 @@ class BkIamV3ServiceImpl(
             iamConfiguration = iamConfiguration
         )
         try {
-        // 如果项目没有创建managerId,则补充创建
-        var projectManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
-            ResourceType.PROJECT, projectId, null
-        )?.managerId
-            ?: run {
-                val realUserId = userService.getUserInfoById(projectInfo.createdBy)?.asstUsers?.firstOrNull()
-                    ?: projectInfo.createdBy
-                createProjectGradeManager(realUserId, projectId)
+            // 如果项目没有创建managerId,则补充创建
+            var projectManagerId = authManagerRepository.findByTypeAndResourceIdAndParentResId(
+                ResourceType.PROJECT, projectId, null
+            )?.managerId
+                ?: run {
+                    val realUserId = userService.getUserInfoById(projectInfo.createdBy)?.asstUsers?.firstOrNull()
+                        ?: projectInfo.createdBy
+                    createProjectGradeManager(realUserId, projectId)
+                }
+            if (projectManagerId == null) {
+                projectManagerId = createProjectGradeManager(userId, projectId)
             }
-        if (projectManagerId == null) {
-            projectManagerId = createProjectGradeManager(userId, projectId)
-        }
-        logger.debug("v3 create grade manager for repo [${projectInfo.name}|$repoName]," +
-                         " projectManagerId: $projectManagerId")
-        val secondManagerMembers = mutableSetOf<String>()
-        secondManagerMembers.add(userId)
-        val createRepoManagerDTO = CreateSubsetManagerDTO.builder()
-            .name("$SYSTEM_DEFAULT_NAME-$PROJECT_DEFAULT_NAME-${projectInfo.displayName}" +
-                      "-$REPO_DEFAULT_NAME-${repoDetail.name}")
-            .description(IamGroupUtils.buildManagerDescription("${projectInfo.displayName}-${repoDetail.name}", userId))
-            .members(secondManagerMembers.toList())
-            .authorizationScopes(authorizationScopes)
-            .subjectScopes(iamSubjectScopes).build()
-        repoManagerId=  managerService.createSubsetManager(projectManagerId.toString(), createRepoManagerDTO)
-        logger.debug("v3 The id of repo [${projectInfo.name}|$repoName]'s grade manager is $repoManagerId")
-        saveTBkIamAuthManager(projectId, repoName, repoManagerId, userId)
-        batchCreateDefaultGroups(
-            userId = userId,
-            gradeManagerId = repoManagerId,
-            projectResInfo = projectResInfo,
-            repoResInfo = repoResInfo,
-            members = secondManagerMembers,
-            groupList = listOf(
-                DefaultGroupType.REPO_MANAGER,
-                DefaultGroupType.REPO_DOWNLOAD,
-                DefaultGroupType.REPO_UPLOAD_DELETE
+            logger.debug(
+                "v3 create grade manager for repo [${projectInfo.name}|$repoName]," +
+                        " projectManagerId: $projectManagerId"
             )
-        )
-        return repoManagerId.toString()
+            val secondManagerMembers = mutableSetOf<String>()
+            secondManagerMembers.add(userId)
+            val createRepoManagerDTO = CreateSubsetManagerDTO.builder()
+                .name(
+                    "$SYSTEM_DEFAULT_NAME-$PROJECT_DEFAULT_NAME-${projectInfo.displayName}" +
+                            "-$REPO_DEFAULT_NAME-${repoDetail.name}"
+                )
+                .description(
+                    IamGroupUtils.buildManagerDescription(
+                        "${projectInfo.displayName}-${repoDetail.name}",
+                        userId
+                    )
+                )
+                .members(secondManagerMembers.toList())
+                .authorizationScopes(authorizationScopes)
+                .subjectScopes(iamSubjectScopes).build()
+            repoManagerId = managerService.createSubsetManager(projectManagerId.toString(), createRepoManagerDTO)
+            logger.debug("v3 The id of repo [${projectInfo.name}|$repoName]'s grade manager is $repoManagerId")
+            saveTBkIamAuthManager(projectId, repoName, repoManagerId, userId)
+            batchCreateDefaultGroups(
+                userId = userId,
+                gradeManagerId = repoManagerId,
+                projectResInfo = projectResInfo,
+                repoResInfo = repoResInfo,
+                members = secondManagerMembers,
+                groupList = listOf(
+                    DefaultGroupType.REPO_MANAGER,
+                    DefaultGroupType.REPO_DOWNLOAD,
+                    DefaultGroupType.REPO_UPLOAD_DELETE
+                )
+            )
+            return repoManagerId.toString()
         } catch (e: Exception) {
             logger.error("v3 create grade manager for repo [${projectInfo.name}|$repoName] error: ${e.message}")
             return null
@@ -553,8 +571,10 @@ class BkIamV3ServiceImpl(
             ResourceType.PROJECT.toString() -> projectId!!
             ResourceType.REPO.toString() ->
                 convertRepoResourceId(projectId!!, repoName!!)
+
             ResourceType.NODE.toString() ->
                 convertNodeResourceId(projectId!!, repoName!!, path!!)
+
             else -> throw IllegalArgumentException("invalid resource type")
         }
     }
@@ -585,7 +605,8 @@ class BkIamV3ServiceImpl(
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
-                lastModifiedDate = LocalDateTime.now())
+                lastModifiedDate = LocalDateTime.now()
+            )
         } else {
             TBkIamAuthManager(
                 resourceId = repoName,
@@ -650,7 +671,7 @@ class BkIamV3ServiceImpl(
         )
         val managerRoleGroup = ManagerRoleGroupDTO.builder().groups(listOf(defaultGroup)).build()
         val roleId = try {
-            when(resType) {
+            when (resType) {
                 ResourceType.PROJECT -> managerService.batchCreateRoleGroupV2(gradeManagerId, managerRoleGroup)
                 ResourceType.REPO -> managerService.batchCreateSubsetRoleGroup(gradeManagerId, managerRoleGroup)
                 else -> return
@@ -663,13 +684,13 @@ class BkIamV3ServiceImpl(
         // 赋予权限
         try {
             createRoleGroupMember(defaultGroupType, roleId, members)
-            val actions = DefaultGroupTypeAndActions.get(defaultGroupType.name.toLowerCase()).actions
+            val actions = DefaultGroupTypeAndActions.get(defaultGroupType.name.lowercase(Locale.getDefault())).actions
             grantGroupPermission(projectResInfo, repoResInfo, roleId, actions)
         } catch (e: Exception) {
             managerService.deleteRoleGroupV2(roleId)
             logger.error(
                 "v3 create iam group permission fail : $projectResInfo|$repoResInfo" +
-                    " iamRoleId = $roleId | groupInfo = ${defaultGroupType.value}",
+                        " iamRoleId = $roleId | groupInfo = ${defaultGroupType.value}",
                 e
             )
         }
@@ -679,7 +700,7 @@ class BkIamV3ServiceImpl(
         if (defaultGroupType != DefaultGroupType.PROJECT_MANAGER && defaultGroupType != DefaultGroupType.REPO_MANAGER) {
             return
         }
-        val groupMembers =  userIds.map { ManagerMember(ManagerScopesEnum.getType(ManagerScopesEnum.USER), it) }
+        val groupMembers = userIds.map { ManagerMember(ManagerScopesEnum.getType(ManagerScopesEnum.USER), it) }
         val expired = System.currentTimeMillis() / 1000 + TimeUnit.DAYS.toSeconds(DEFAULT_EXPIRED_AT)
         val managerMemberGroup = ManagerMemberGroupDTO.builder().members(groupMembers)
             .expiredAt(expired).build()
@@ -698,7 +719,7 @@ class BkIamV3ServiceImpl(
     ) {
         logger.debug("v3 grant role permission for group $roleId in $projectResInfo|$repoResInfo with actions $actions")
         try {
-            actions.forEach{
+            actions.forEach {
                 val permission = buildResource(
                     projectResInfo = projectResInfo,
                     repoResInfo = repoResInfo,

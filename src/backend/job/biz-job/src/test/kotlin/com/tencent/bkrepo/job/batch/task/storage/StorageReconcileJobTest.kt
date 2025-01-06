@@ -1,18 +1,22 @@
 package com.tencent.bkrepo.job.batch.task.storage
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.util.toPath
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.repository.api.FileReferenceClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -36,19 +40,35 @@ class StorageReconcileJobTest @Autowired constructor(
 ) : JobBaseTest() {
 
     @MockBean
+    private lateinit var routerControllerClient: RouterControllerClient
+
+    @MockBean
+    lateinit var servicePermissionClient: ServicePermissionClient
+
+    @MockBean
+    lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
+
+    @MockBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
     @MockBean
-    lateinit var storageCredentialsClient: StorageCredentialsClient
+    lateinit var messageSupplier: MessageSupplier
 
     @MockBean
-    lateinit var fileReferenceClient: FileReferenceClient
+    lateinit var archiveClient: ArchiveClient
 
     @MockBean
-    lateinit var repositoryClient: RepositoryClient
+    lateinit var storageCredentialService: StorageCredentialService
+
+    @MockBean
+    lateinit var fileReferenceService: FileReferenceService
+
+    @MockBean
+    lateinit var operateLogService: OperateLogService
 
     @Autowired
     lateinit var nodeCommonUtils: NodeCommonUtils
+
     private val cred = storageProperties.defaultStorageCredentials() as FileSystemCredentials
 
     init {
@@ -57,7 +77,7 @@ class StorageReconcileJobTest @Autowired constructor(
 
     @BeforeEach
     fun before() {
-        `when`(storageCredentialsClient.list(null)).thenReturn(ResponseBuilder.success(emptyList()))
+        `when`(storageCredentialService.list(null)).thenReturn(emptyList())
     }
 
     @AfterEach
@@ -68,12 +88,12 @@ class StorageReconcileJobTest @Autowired constructor(
     @Test
     fun reconcileTest() {
         var checked = 0
-        `when`(fileReferenceClient.increment(anyString(), isNull(), anyLong())).then {
+        `when`(fileReferenceService.increment(anyString(), isNull(), anyLong())).then {
             checked++
-            ResponseBuilder.success(true)
+            true
         }
-        `when`(fileReferenceClient.exists(anyString(), isNull())).then {
-            ResponseBuilder.success(false)
+        `when`(fileReferenceService.exists(anyString(), isNull())).then {
+            false
         }
         repeat(10) {
             val file = createTempArtifactFile()

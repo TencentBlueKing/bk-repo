@@ -80,7 +80,7 @@
   {
     "projectId": "",
     "repoName": "",
-    "fullPathList": "",
+    "fullPathList": [],
     "authorizedUserList": ["user1", "user2"],
     "authorizedIpList": ["192.168.1.1", "127.0.0.1"],
     "expireSeconds": 3600
@@ -93,7 +93,7 @@
   |---|---|---|---|---|---|
   |projectId|string|是|无|项目名称|project name|
   |repoName|string|是|无|仓库名称|repo name|
-  |fullPathList|string|是|无|完整路径列表|full path list|
+  |fullPathList|list|是|无|完整路径列表|full path list|
   |authorizedUserList|[string]|否|无|授权用户列表，若为空所有用户可下载|share user list|
   |authorizedIpList|[string]|否|无|授权ip列表，若为空所有ip可下载|share ip list|
   |expireSeconds|long|否|0|下载链接有效时间，单位秒|expire seconds|

@@ -27,12 +27,19 @@
 
 package com.tencent.bkrepo.ddc.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.ddc.artifact.CompressedBlobArtifactInfo
+import com.tencent.bkrepo.ddc.component.PermissionHelper
 import com.tencent.bkrepo.ddc.service.CompressedBlobService
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_UNREAL_COMPRESSED_BUFFER
 import io.swagger.annotations.ApiOperation
@@ -47,32 +54,67 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/{projectId}/api/v1/compressed-blobs")
 @RestController
 class CompressedBlobController(
-    private val compressedBlobService: CompressedBlobService
+    private val compressedBlobService: CompressedBlobService,
+    private val permissionHelper: PermissionHelper,
 ) {
 
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @ApiOperation("获取压缩后的缓存")
     @GetMapping(
         "/{repoName}/{$PATH_VARIABLE_CONTENT_ID}",
         produces = [MEDIA_TYPE_UNREAL_UNREAL_COMPRESSED_BUFFER, MediaType.APPLICATION_OCTET_STREAM_VALUE]
     )
-    @Permission(ResourceType.REPO, action = PermissionAction.READ)
     fun get(
         @ApiParam(value = "ddc compressed blob", required = true)
         @ArtifactPathVariable
         artifactInfo: CompressedBlobArtifactInfo,
     ) {
+        permissionHelper.checkPathPermission(PermissionAction.DOWNLOAD)
         compressedBlobService.get(artifactInfo)
     }
 
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     @ApiOperation("上传压缩后的缓存")
     @PutMapping("/{repoName}/{$PATH_VARIABLE_CONTENT_ID}", consumes = [MEDIA_TYPE_UNREAL_UNREAL_COMPRESSED_BUFFER])
-    @Permission(ResourceType.REPO, action = PermissionAction.WRITE)
     fun put(
         @ApiParam(value = "ddc compressed blob", required = true)
         @ArtifactPathVariable
         artifactInfo: CompressedBlobArtifactInfo,
         artifactFile: ArtifactFile
     ) {
+        permissionHelper.checkPathPermission(PermissionAction.WRITE)
         compressedBlobService.put(artifactInfo, artifactFile)
     }
 

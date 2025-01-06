@@ -4,5 +4,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "pypi")
 data class PypiProperties(
-    var domain: String = "localhost"
+    var domain: String = "localhost",
+    var enableRegexQuery: Boolean = true,
 )

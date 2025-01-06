@@ -31,8 +31,15 @@
 
 package com.tencent.bkrepo.pypi.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.service.PypiWebService
@@ -50,6 +57,24 @@ import org.springframework.web.bind.annotation.RestController
 class PypiWebResourceController(
     private val pypiWebService: PypiWebService
 ) {
+
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#pypiArtifactInfo?.repoName",
+            instanceNames = "#pypiArtifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#pypiArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey")
+        ],
+        scopeId = "#pypiArtifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
+    )
     @ApiOperation("pypi包删除接口")
     @DeleteMapping(PypiArtifactInfo.PYPI_EXT_PACKAGE_DELETE)
     fun deletePackage(pypiArtifactInfo: PypiArtifactInfo, packageKey: String): Response<Void> {
@@ -57,14 +82,34 @@ class PypiWebResourceController(
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#pypiArtifactInfo?.repoName",
+            instanceNames = "#pypiArtifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#pypiArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey"),
+            AuditAttribute(name = ActionAuditContent.VERSION_TEMPLATE, value = "#version")
+
+        ],
+        scopeId = "#pypiArtifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
+    )
     @ApiOperation("pypi版本删除接口")
     @DeleteMapping(PypiArtifactInfo.PYPI_EXT_VERSION_DELETE)
     fun deleteVersion(
         pypiArtifactInfo: PypiArtifactInfo,
         packageKey: String,
-        version: String?
+        version: String?,
+        contentPath: String?
     ): Response<Void> {
-        pypiWebService.delete(pypiArtifactInfo, packageKey, version)
+        pypiWebService.delete(pypiArtifactInfo, packageKey, version, contentPath)
         return ResponseBuilder.success()
     }
 

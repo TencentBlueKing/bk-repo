@@ -44,13 +44,14 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.constant.REPO_RATE_LIMIT_KEY
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.proxy.ProxyRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.config.RateLimitProperties
+import com.tencent.bkrepo.common.storage.config.RateLimitProperties
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.ObjectProvider
@@ -66,7 +67,7 @@ class ArtifactContextHolder(
     compositeRepository: CompositeRepository,
     proxyRepository: ProxyRepository,
     artifactClient: ArtifactClient,
-    private val httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
+    httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
 ) {
 
     init {
@@ -313,15 +314,6 @@ class ArtifactContextHolder(
             } catch (e: Exception) {
                 DataSize.ofBytes(-1)
             }
-        }
-    }
-
-    /**
-     * 仓库标识类
-     */
-    data class RepositoryId(val projectId: String, val repoName: String) {
-        override fun toString(): String {
-            return StringBuilder(projectId).append(CharPool.SLASH).append(repoName).toString()
         }
     }
 }

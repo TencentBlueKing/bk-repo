@@ -31,7 +31,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.cluster.ClusterNodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
@@ -41,11 +41,11 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
-import com.tencent.bkrepo.repository.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
 

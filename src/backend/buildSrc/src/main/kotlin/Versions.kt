@@ -32,12 +32,13 @@ object Release {
 
 object Versions {
     const val DevopsBoot = "0.0.9"
+    const val DevopsBootSNAPSHOT = "0.0.10-SNAPSHOT"
     const val Jersey = "2.35"
     const val Jsoup = "1.17.2"
     const val Redline = "1.2.10"
     const val SkyWalkingApmToolkit = "8.10.0"
     const val Gson = "2.9.0"
-    const val ProtobufJava = "3.24.0"
+    const val ProtobufJava = "3.19.4"
     const val Guava = "31.1-jre"
     const val Shedlock = "4.12.0"
     const val JGit = "5.11.0.202103091610-r"
@@ -70,5 +71,9 @@ object Versions {
     const val JavaCpp = "1.5.9"
     const val Notice = "1.0.0"
     const val SpringCloudFunction = "3.2.11"
-    const val Milvus = "2.4.1"
+    const val Audit = "1.0.8"
+    const val JodConverter = "4.4.6"
+    const val Galimatias = "0.2.1"
+    const val CommonsNet = "3.9.0"
+    const val JuniversalCharDet = "1.0.3"
 }

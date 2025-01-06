@@ -29,6 +29,7 @@ package com.tencent.bkrepo.fs.server.utils
 
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 
 object ResponseBuilder {
 

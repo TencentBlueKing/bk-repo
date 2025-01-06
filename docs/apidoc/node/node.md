@@ -208,14 +208,17 @@
 
 - 响应体
 
-  ```json
-  {
-    "code": 0,
-    "message": null,
-    "data": null,
-    "traceId": null
-  }
-  ```
+```json
+{
+  "code": 0,
+  "message": null,
+  "data": {"deletedNumber": 0,
+           "deletedSize": 0,
+           "deletedTime": "yyyy-MM-dd'T'HH:mm:ss.SSSXXX"
+          },
+  "traceId": null
+}
+```
 
 ## 更新节点
 

@@ -32,9 +32,10 @@ import com.google.common.base.CaseFormat.UPPER_CAMEL
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration.Companion.SERVICE_INSTANCE_ID
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
@@ -59,7 +60,6 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageRequest
@@ -76,7 +76,7 @@ class MigrateRepoStorageService(
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     private val executors: Map<String, TaskExecutor>,
     private val executingTaskRecorder: ExecutingTaskRecorder,
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
 ) {
     @Value(SERVICE_INSTANCE_ID)
     protected lateinit var instanceId: String
@@ -92,7 +92,7 @@ class MigrateRepoStorageService(
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, "$projectId/$repoName")
             }
             val now = LocalDateTime.now()
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data!!
+            val repo = repositoryService.getRepoDetail(projectId, repoName)!!
             if (repo.storageCredentials?.key == dstCredentialsKey) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "src key cant be same as dst key")
             }

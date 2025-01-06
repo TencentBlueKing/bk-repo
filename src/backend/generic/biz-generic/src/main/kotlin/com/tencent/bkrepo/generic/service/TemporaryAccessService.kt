@@ -31,11 +31,16 @@
 
 package com.tencent.bkrepo.generic.service
 
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.AUDITED_UID
+import com.tencent.bkrepo.common.api.constant.AUDIT_REQUEST_URI
+import com.tencent.bkrepo.common.api.constant.AUDIT_SHARE_USER_ID
 import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -51,6 +56,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.event.ChunkArtifactTransferEvent
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
@@ -58,7 +64,8 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -78,7 +85,6 @@ import com.tencent.bkrepo.generic.pojo.TemporaryAccessToken
 import com.tencent.bkrepo.generic.pojo.TemporaryAccessUrl
 import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
 import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
 import org.slf4j.LoggerFactory
@@ -93,7 +99,7 @@ import java.time.format.DateTimeFormatter
 @Service
 class TemporaryAccessService(
     private val temporaryTokenClient: ServiceTemporaryTokenClient,
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
     private val genericProperties: GenericProperties,
     private val pluginManager: PluginManager,
     private val deltaSyncService: DeltaSyncService,
@@ -106,7 +112,7 @@ class TemporaryAccessService(
      */
     fun upload(artifactInfo: GenericArtifactInfo, file: ArtifactFile) {
         with(artifactInfo) {
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactUploadContext(repo, file)
             ArtifactContextHolder.getRepository(repo.category).upload(context)
@@ -118,11 +124,45 @@ class TemporaryAccessService(
      */
     fun download(artifactInfo: GenericArtifactInfo) {
         with(artifactInfo) {
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             HttpContextHolder.getRequest().setAttribute(REPO_KEY, repo)
             val context = ArtifactDownloadContext(repo)
             ArtifactContextHolder.getRepository(repo.category).download(context)
+        }
+    }
+
+    fun downloadByShare(userId: String, shareBy: String, artifactInfo: ArtifactInfo) {
+        logger.info("share artifact[$artifactInfo] download user: $userId")
+        checkAlphaApkDownloadUser(userId, artifactInfo, shareBy)
+        with(artifactInfo) {
+            val downloadUser = if (userId == ANONYMOUS_USER) shareBy else userId
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
+                ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
+            val context = ArtifactDownloadContext(repo = repo, userId = downloadUser)
+            HttpContextHolder.getRequest().setAttribute(USER_KEY, downloadUser)
+            ActionAuditContext.current().addExtendData(AUDITED_UID, downloadUser)
+            ActionAuditContext.current().addExtendData(
+                AUDIT_REQUEST_URI, "{${HttpContextHolder.getRequestOrNull()?.requestURI}}"
+            )
+            ActionAuditContext.current().addExtendData(AUDIT_SHARE_USER_ID, shareBy)
+            context.shareUserId = shareBy
+            val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
+            repository.download(context)
+        }
+    }
+
+    /**
+     * 加固签名的apk包，匿名下载时，使用分享人身份下载
+     */
+    private fun checkAlphaApkDownloadUser(userId: String, artifactInfo: ArtifactInfo, shareUserId: String) {
+        val nodeDetail = ArtifactContextHolder.getNodeDetail(artifactInfo)
+            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        val appStageKey = nodeDetail.metadata.keys.find { it.equals(BK_CI_APP_STAGE_KEY, true) }
+            ?: return
+        val alphaApk = nodeDetail.metadata[appStageKey]?.toString().equals(ALPHA, true)
+        if (alphaApk && userId == ANONYMOUS_USER) {
+            HttpContextHolder.getRequest().setAttribute(USER_KEY, shareUserId)
         }
     }
 
@@ -231,7 +271,7 @@ class TemporaryAccessService(
      * */
     fun sign(artifactInfo: GenericArtifactInfo, md5: String?) {
         with(artifactInfo) {
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val request = HttpContextHolder.getRequest()
             request.setAttribute(REPO_KEY, repo)
@@ -244,7 +284,7 @@ class TemporaryAccessService(
      * */
     fun patch(artifactInfo: GenericArtifactInfo, oldFilePath: String, deltaFile: ArtifactFile): SseEmitter {
         with(artifactInfo) {
-            val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+            val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val request = HttpContextHolder.getRequest()
             request.setAttribute(REPO_KEY, repo)
@@ -262,7 +302,7 @@ class TemporaryAccessService(
 
     fun getUuidForChunkedUpload(artifactInfo: GenericChunkedArtifactInfo, artifactFile: ArtifactFile) {
         with(artifactInfo) {
-            val result = repositoryClient.getRepoDetail(projectId, repoName).data
+            val result = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw RepoNotFoundException(repoName)
             val responseProperty = if (uuid.isNullOrEmpty()) {
                 val uuidCreated = storageService.createAppendId(result.storageCredentials)
@@ -302,7 +342,7 @@ class TemporaryAccessService(
 
     fun reportChunkedMetrics(metrics: ChunkArtifactTransferMetrics) {
         if (metrics.success) {
-            val repo = repositoryClient.getRepoDetail(metrics.projectId, metrics.repoName).data ?: return
+            val repo = repositoryService.getRepoDetail(metrics.projectId, metrics.repoName) ?: return
             metrics.storage = repo.storageCredentials?.key ?: DEFAULT_STORAGE_KEY
             SpringContextUtils.publishEvent(ChunkArtifactTransferEvent(metrics))
         }
@@ -418,6 +458,11 @@ class TemporaryAccessService(
         }
         // 设置审计uid到session中
         HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, auditedUid)
+        ActionAuditContext.current().addExtendData(AUDITED_UID, auditedUid)
+        ActionAuditContext.current().addExtendData(
+            AUDIT_REQUEST_URI, "{${HttpContextHolder.getRequestOrNull()?.requestURI}}"
+        )
+        ActionAuditContext.current().addExtendData(AUDIT_SHARE_USER_ID, tokenInfo.createdBy)
         // 校验ip授权
         val clientIp = HttpContextHolder.getClientAddress()
         if (tokenInfo.authorizedIpList.isNotEmpty() && clientIp !in tokenInfo.authorizedIpList) {
@@ -429,5 +474,7 @@ class TemporaryAccessService(
         private val logger = LoggerFactory.getLogger(TemporaryAccessService::class.java)
         private const val TEMPORARY_DOWNLOAD_ENDPOINT = "/temporary/download"
         private const val TEMPORARY_UPLOAD_ENDPOINT = "/temporary/upload"
+        private const val BK_CI_APP_STAGE_KEY = "BK-CI-APP-STAGE"
+        private const val ALPHA = "Alpha"
     }
 }

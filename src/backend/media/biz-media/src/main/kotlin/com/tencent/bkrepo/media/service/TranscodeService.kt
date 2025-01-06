@@ -11,11 +11,13 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.config.MediaProperties
-import com.tencent.bkrepo.media.stream.TranscodeParam
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import com.tencent.bkrepo.media.stream.TranscodeHelper
+import com.tencent.bkrepo.media.stream.TranscodeParam
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -23,7 +25,11 @@ import org.springframework.stereotype.Service
  * 视频转码服务
  * */
 @Service
-class TranscodeService(private val tokenService: TokenService, private val mediaProperties: MediaProperties) :
+class TranscodeService(
+    private val tokenService: TokenService,
+    private val mediaProperties: MediaProperties,
+    private val metadataService: MetadataService,
+) :
     ArtifactService() {
 
     /**
@@ -63,6 +69,16 @@ class TranscodeService(private val tokenService: TokenService, private val media
             val context = ArtifactUploadContext(repo, newArtifactFile, newArtifactInfo)
             repository.upload(context)
             logger.info("Upload new file[$newArtifactInfo]")
+            // 复制原有视频的metadata
+            val originMetadata =
+                metadataService.listMetadata(projectId, repoName, originArtifactInfo.getArtifactFullPath())
+            val copyRequest = MetadataSaveRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = newArtifactInfo.getArtifactFullPath(),
+                metadata = originMetadata,
+            )
+            metadataService.saveMetadata(copyRequest)
             val removeContext = ArtifactRemoveContext(repo, originArtifactInfo)
             repository.remove(removeContext)
             logger.info("Delete origin file[$originArtifactInfo]")
@@ -90,6 +106,7 @@ class TranscodeService(private val tokenService: TokenService, private val media
                 audioCodec = audioCodec,
                 inputFileName = artifactInfo.getResponseName(),
                 outputFileName = outputArtifactInfo.getResponseName(),
+                extraParams = transcodeConfig.extraParams.orEmpty(),
             )
         }
     }

@@ -29,10 +29,9 @@ package com.tencent.bkrepo.fs.server
 
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
+import com.tencent.bkrepo.common.metadata.service.repo.RRepositoryService
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.reactor.awaitSingle
 
 /**
  * 仓库缓存
@@ -40,15 +39,15 @@ import kotlinx.coroutines.reactor.awaitSingle
  * 因为仓库需要通过请求获取，并且一般情况下没有变化，所以这里进行缓存
  * */
 class RepositoryCache(
-    rRepositoryClient: RRepositoryClient
+    repositoryService: RRepositoryService
 ) {
 
     init {
-        Companion.rRepositoryClient = rRepositoryClient
+        Companion.repositoryService = repositoryService
     }
 
     companion object {
-        private lateinit var rRepositoryClient: RRepositoryClient
+        private lateinit var repositoryService: RRepositoryService
         private val repositoryDetailCache = CacheBuilder.newBuilder()
             .maximumSize(1000)
             .expireAfterWrite(60, TimeUnit.SECONDS)
@@ -63,7 +62,7 @@ class RepositoryCache(
 
         private suspend fun queryRepoDetail(repositoryId: RepositoryId): RepositoryDetail {
             with(repositoryId) {
-                return rRepositoryClient.getRepoDetail(projectId, repoName).awaitSingle().data
+                return repositoryService.getRepoDetail(projectId, repoName)
                     ?: throw RepoNotFoundException(repositoryId.toString())
             }
         }

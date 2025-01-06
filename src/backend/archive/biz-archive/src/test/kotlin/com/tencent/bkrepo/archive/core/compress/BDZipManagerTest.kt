@@ -10,12 +10,9 @@ import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.bksync.file.BkSyncDeltaSource.Companion.toBkSyncDeltaSource
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.FileReferenceClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -44,13 +41,7 @@ class BDZipManagerTest @Autowired constructor(
 ) : BaseTest() {
 
     @MockBean
-    lateinit var fileReferenceClient: FileReferenceClient
-
-    @MockBean
-    lateinit var storageCredentialsClient: StorageCredentialsClient
-
-    @MockBean
-    lateinit var repositoryClient: RepositoryClient
+    lateinit var fileReferenceService: FileReferenceService
 
     private val timeout = Duration.ofSeconds(10)
 
@@ -84,10 +75,10 @@ class BDZipManagerTest @Autowired constructor(
     @Test
     fun compressFailedTest() {
         var decrement = 0
-        Mockito.`when`(fileReferenceClient.decrement(ArgumentMatchers.anyString(), ArgumentMatchers.isNull())).then {
+        Mockito.`when`(fileReferenceService.decrement(ArgumentMatchers.anyString(), ArgumentMatchers.isNull())).then {
             println("decrement file reference")
             decrement++
-            ResponseBuilder.success(true)
+            true
         }
         val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
         val data2 = data1.copyOfRange(Random.nextInt(1, 10), data1.size)

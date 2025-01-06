@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
@@ -95,7 +94,7 @@ class CorrectExecutorTest @Autowired constructor(
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then {
             throw FileNotFoundException()
         }
-        whenever(fileReferenceClient.count(anyString(), anyOrNull())).thenReturn(Response(0, data = 1L))
+        whenever(fileReferenceService.count(anyString(), anyOrNull())).thenReturn(1L)
         // 创建node用于模拟遍历迁移
         val now = LocalDateTime.now()
         mongoTemplate.createNode(createDate = now.plusMinutes(1L))

@@ -36,13 +36,14 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategy
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyCreateRequest
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadStrategyUpdateRequest
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanService
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadStrategyService
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.security.manager.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -97,9 +98,10 @@ class UserArtifactPreloadController(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @PathVariable id: String,
-    ) {
+    ): Response<Void> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
         preloadStrategyService.delete(projectId, repoName, id)
+        return ResponseBuilder.success()
     }
 
     @ApiOperation("获取所有预加载策略")
@@ -111,6 +113,14 @@ class UserArtifactPreloadController(
     ): Response<List<ArtifactPreloadStrategy>> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
         return ResponseBuilder.success(preloadStrategyService.list(projectId, repoName))
+    }
+
+    @ApiOperation("创建预加载计划")
+    @PostMapping("/plan")
+    fun preload(@RequestBody request: ArtifactPreloadPlanCreateRequest): Response<ArtifactPreloadPlan> {
+        checkPreloadEnabled(preloadPlanService, preloadStrategyService)
+        permissionManager.checkRepoPermission(PermissionAction.MANAGE, request.projectId, request.repoName)
+        return ResponseBuilder.success(preloadPlanService.createPlan(request))
     }
 
     @ApiOperation("分页查询预加载计划")
@@ -134,9 +144,10 @@ class UserArtifactPreloadController(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @PathVariable id: String,
-    ) {
+    ): Response<Void> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
         preloadPlanService.deletePlan(projectId, repoName, id)
+        return ResponseBuilder.success()
     }
 
     @ApiOperation("删除仓库的所有预加载计划")
@@ -145,9 +156,10 @@ class UserArtifactPreloadController(
     fun deleteAllPlans(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-    ) {
+    ): Response<Void> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
         preloadPlanService.deletePlan(projectId, repoName)
+        return ResponseBuilder.success()
     }
 
     private fun checkPreloadEnabled(

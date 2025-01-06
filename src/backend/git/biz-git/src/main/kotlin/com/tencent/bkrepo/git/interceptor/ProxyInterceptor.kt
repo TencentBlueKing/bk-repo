@@ -22,9 +22,9 @@ class ProxyInterceptor : HandlerInterceptor {
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) ?: return false
-        val repo = ArtifactContextHolder.getRepoDetail()!!
+        val repo = ArtifactContextHolder.getRepoDetailOrNull()
         // 只有PROXY类型的仓库才进行拦截
-        if (repo.category != RepositoryCategory.PROXY) {
+        if (repo == null || repo.category != RepositoryCategory.PROXY) {
             return true
         }
         val projectId = repo.projectId

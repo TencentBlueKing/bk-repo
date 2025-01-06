@@ -78,6 +78,11 @@ data class DevXProperties(
      */
     var projectCvmWhiteList: Map<String, Set<String>> = emptyMap(),
     /**
+     * 配置可以被访问的项目
+     * key 为项目id， value为可被访问的项目id
+     */
+    var projectWhiteList: Map<String, Set<String>> = emptyMap(),
+    /**
      * 可以从任意来源访问的用户
      */
     var userWhiteList: Set<String> = emptySet(),
@@ -131,4 +136,25 @@ data class DevXProperties(
      * 应用devX拦截器的接口
      */
     var includePatterns: List<String> = emptyList(),
+
+    /**
+     * 校验devx token接口url
+     */
+    var validateTokenUrl: String = "",
+
+    /**
+     * 校验devx token接口的认证token
+     */
+    var authToken: String = "",
+
+    /**
+     * 查询团队云桌面接口url
+     */
+    var groupWorkspaceUrl: String = "",
+
+    /**
+     * 查询个人云桌面接口url
+     */
+    var personalWorkspaceUrl: String = "",
+
 )

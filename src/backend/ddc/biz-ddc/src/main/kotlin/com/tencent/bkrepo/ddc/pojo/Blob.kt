@@ -39,7 +39,6 @@ data class Blob(
     val size: Long,
     val blobId: ContentHash,
     val contentId: ContentHash,
-    val references: Set<String> = emptySet(),
     val sha1: String? = null,
 ) {
     companion object {
@@ -52,7 +51,6 @@ data class Blob(
                 size = size,
                 blobId = ContentHash.fromHex(blobId),
                 contentId = ContentHash.fromHex(contentId),
-                references = references,
                 sha1 = sha1
             )
         }

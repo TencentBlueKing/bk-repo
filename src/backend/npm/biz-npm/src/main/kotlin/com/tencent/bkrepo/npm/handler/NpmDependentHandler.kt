@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.npm.handler
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.packages.PackageDependentsService
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
@@ -48,7 +50,7 @@ import org.springframework.stereotype.Component
 class NpmDependentHandler {
 
     @Autowired
-    private lateinit var packageDependentsClient: PackageDependentsClient
+    private lateinit var packageDependentsService: PackageDependentsService
 
     fun existsPackageDependents(projectId: String, repoName: String, name: String, ohpm: Boolean): Boolean {
         val packageKey = packageKey(name, ohpm)
@@ -97,7 +99,7 @@ class NpmDependentHandler {
                 packageKey = name,
                 dependencies = versionMetaData.dependencies?.keys.orEmpty().map { packageKey(it, ohpm) }.toSet()
             )
-            packageDependentsClient.addDependents(relation)
+            packageDependentsService.addDependents(relation)
             logger.info("user [$userId] publish dependent for package: [$name] success.")
         }
     }
@@ -117,7 +119,7 @@ class NpmDependentHandler {
                 packageKey = name,
                 dependencies = versionMetaData.dependencies?.keys.orEmpty().map { packageKey(it, ohpm) }.toSet()
             )
-            packageDependentsClient.reduceDependents(relation)
+            packageDependentsService.reduceDependents(relation)
             logger.info("user [$userId] delete dependent for package: [$name] success.")
         }
     }

@@ -36,7 +36,8 @@ import com.tencent.bkrepo.common.artifact.cache.service.PreloadListener
 import com.tencent.bkrepo.common.artifact.cache.service.PreloadPlanExecutor
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
@@ -44,7 +45,6 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.common.storage.util.existReal
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -60,7 +60,7 @@ import java.util.concurrent.TimeUnit
 class DefaultPreloadPlanExecutor(
     private val preloadProperties: ArtifactPreloadProperties,
     private val cacheStorageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
+    private val storageCredentialService: StorageCredentialService,
     private val fileLocator: FileLocator,
     private val storageProperties: StorageProperties,
 ) : PreloadPlanExecutor {
@@ -75,7 +75,7 @@ class DefaultPreloadPlanExecutor(
         require(cacheStorageService is CacheStorageService)
         updateExecutor()
         val credentials = if (plan.credentialsKey != null) {
-            storageCredentialsClient.findByKey(plan.credentialsKey).data!!
+            storageCredentialService.findByKey(plan.credentialsKey)!!
         } else {
             storageProperties.defaultStorageCredentials()
         }
@@ -104,7 +104,7 @@ class DefaultPreloadPlanExecutor(
             }
             val throughput = load(plan, credentials)
             logger.info("preload success, ${plan.artifactInfo()}, throughput[$throughput]")
-            listener?.onPreloadSuccess(plan)
+            listener?.onPreloadSuccess(plan, throughput)
         } catch (e: Exception) {
             listener?.onPreloadFailed(plan)
             logger.warn("preload failed, ${plan.artifactInfo()}", e)

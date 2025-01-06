@@ -8,9 +8,6 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.StorageService
-import com.tencent.bkrepo.repository.api.FileReferenceClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -20,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
 import java.time.LocalDateTime
 import kotlin.random.Random
@@ -34,15 +30,6 @@ class FileCoreProcessorTest @Autowired constructor(
     private val storageService: StorageService,
     private val compressFileRepository: CompressFileRepository,
 ) : BaseTest() {
-
-    @MockBean
-    lateinit var fileReferenceClient: FileReferenceClient
-
-    @MockBean
-    lateinit var storageCredentialsClient: StorageCredentialsClient
-
-    @MockBean
-    lateinit var repositoryClient: RepositoryClient
 
     @BeforeAll
     fun beforeAll() {

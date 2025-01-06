@@ -31,12 +31,19 @@
 
 package com.tencent.bkrepo.npm.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -189,6 +196,23 @@ class NpmClientController(
     /**
      * download tgz file
      */
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @GetMapping("/{projectId}/{repoName}/**/*.{tgz,har,hsp,md}")
     fun download(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo

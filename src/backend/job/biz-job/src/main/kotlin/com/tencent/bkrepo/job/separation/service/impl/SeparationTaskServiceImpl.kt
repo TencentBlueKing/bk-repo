@@ -32,11 +32,11 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.job.RESTORE
 import com.tencent.bkrepo.job.SEPARATE
-import com.tencent.bkrepo.job.SEPARATION_TASK_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
@@ -47,7 +47,6 @@ import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask.Companion.toDt
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
@@ -64,7 +63,7 @@ import java.time.format.DateTimeParseException
 @Component
 class SeparationTaskServiceImpl(
     private val dataSeparationConfig: DataSeparationConfig,
-    private val repositoryClient: RepositoryClient,
+    private val repositoryService: RepositoryService,
     private val separationTaskDao: SeparationTaskDao,
     private val separationFailedRecordDao: SeparationFailedRecordDao,
     private val mongoTemplate: MongoTemplate,
@@ -77,9 +76,10 @@ class SeparationTaskServiceImpl(
                 SEPARATE -> {
                     validateSeparateTaskParams(request)
                     val task = buildSeparationTask(request)
-                    separationTaskDao.save(task)
+                    createTask(task)
                 }
                 RESTORE -> {
+                    restoreTaskCheck(request.projectId, request.repoName)
                     createRestoreTask(request)
                 }
                 else -> {
@@ -99,10 +99,10 @@ class SeparationTaskServiceImpl(
         projectId?.apply { criteria.and(TSeparationTask::projectId.name).isEqualTo(projectId) }
         repoName?.apply { criteria.and(TSeparationTask::repoName.name).isEqualTo(repoName) }
         val query = Query(criteria)
-        val dateRecords = mongoTemplate.findDistinct(
-            query, TSeparationTask::separationDate.name, SEPARATION_TASK_COLLECTION_NAME, LocalDateTime::class.java
-        )
-        result.addAll(dateRecords)
+        val dateRecords = mongoTemplate.find(query, TSeparationTask::class.java)
+        dateRecords.forEach {
+            result.add(it.separationDate)
+        }
         return result
     }
 
@@ -124,6 +124,24 @@ class SeparationTaskServiceImpl(
         return exist || failedExist
     }
 
+    private fun restoreTaskCheck(
+        projectId: String,
+        repoName: String,
+    ) {
+        var flag = false
+        val projectRepoKey = "${projectId}/${repoName}"
+        dataSeparationConfig.specialRestoreRepos.forEach {
+            val regex = Regex(it.replace("*", ".*"))
+            if (regex.matches(projectRepoKey)) {
+                flag = true
+            }
+        }
+        if (!flag) throw BadRequestException(
+            CommonMessageCode.PARAMETER_INVALID,
+            projectRepoKey
+        )
+    }
+
     private fun createRestoreTask(request: SeparationTaskRequest) {
         with(request) {
             if (separateAt.isNullOrEmpty()) {
@@ -136,18 +154,35 @@ class SeparationTaskServiceImpl(
                 }
                 separatedDates.forEach {
                     val task = buildSeparationTask(request, it)
-                    separationTaskDao.save(task)
+                    createTask(task)
                 }
             } else {
                 val date = LocalDateTime.parse(separateAt, DateTimeFormatter.ISO_DATE_TIME)
                 val task = buildSeparationTask(request, date)
-                separationTaskDao.save(task)
+                createTask(task)
             }
         }
     }
 
+    private fun createTask(task: TSeparationTask) {
+        val exist = separationTaskDao.exist(
+            projectId = task.projectId,
+            repoName = task.repoName,
+            state = SeparationTaskState.FINISHED.name,
+            content = task.content,
+            type = task.type,
+            separationDate = task.separationDate,
+            overwrite = task.overwrite
+        )
+        if (exist) {
+            logger.info("$task is existed, ignore")
+            return
+        }
+        separationTaskDao.save(task)
+    }
+
     private fun getRepoInfo(projectId: String, repoName: String): RepositoryDetail {
-        val repo = repositoryClient.getRepoDetail(projectId, repoName).data
+        val repo = repositoryService.getRepoDetail(projectId, repoName)
             ?: run {
                 logger.warn("Repo [$projectId|$repoName] not exist.")
                 throw NotFoundException(
@@ -167,6 +202,20 @@ class SeparationTaskServiceImpl(
                     SeparationTaskRequest::separateAt.name
                 )
             }
+
+            var flag = false
+            val projectRepoKey = "$projectId/$repoName"
+            dataSeparationConfig.specialSeparateRepos.forEach {
+                val regex = Regex(it.replace("*", ".*"))
+                if (regex.matches(projectRepoKey)) {
+                    flag = true
+                }
+            }
+            if (!flag) throw BadRequestException(
+                CommonMessageCode.PARAMETER_INVALID,
+                projectRepoKey
+            )
+
             val separateDate = try {
                 LocalDateTime.parse(separateAt, DateTimeFormatter.ISO_DATE_TIME)
             } catch (e: DateTimeParseException) {
@@ -179,13 +228,7 @@ class SeparationTaskServiceImpl(
             if (LocalDateTime.now().minusDays(dataSeparationConfig.keepDays.toDays()).isAfter(separateDate)) {
                 return
             }
-            val projectRepoKey = "$projectId/$repoName"
-            dataSeparationConfig.specialRepos.forEach {
-                val regex = Regex(it.replace("*", ".*"))
-                if (regex.matches(projectRepoKey)) {
-                    return
-                }
-            }
+
             logger.warn("Separation date [$separateAt] is illegal!")
             throw BadRequestException(
                 CommonMessageCode.PARAMETER_INVALID,

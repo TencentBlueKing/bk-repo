@@ -50,14 +50,16 @@ import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.RESOURCE_NOT_FOUND
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.SYSTEM_ERROR
 import com.tencent.bkrepo.common.api.util.StreamUtils.readText
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.oci.util.OciUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
@@ -75,8 +77,9 @@ class TemporaryScanTokenServiceImpl(
     private val redisTemplate: RedisTemplate<String, String>,
     private val scannerProperties: ScannerProperties,
     private val storageManager: StorageManager,
-    private val storageCredentialsClient: StorageCredentialsClient,
-    private val nodeClient: NodeClient
+    private val storageCredentialService: StorageCredentialService,
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService
 ) : TemporaryScanTokenService {
     private val baseUrl
         get() = scannerProperties.baseUrl.removeSuffix(SLASH)
@@ -220,8 +223,8 @@ class TemporaryScanTokenServiceImpl(
     }
 
     private fun readManifest(projectId: String, repoName: String, sha256: String, credentialsKey: String?): String {
-        val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
-        val nodes = nodeClient.queryWithoutCount(
+        val storageCredentials = credentialsKey?.let { storageCredentialService.findByKey(it)!! }
+        val nodes = nodeSearchService.searchWithoutCount(
             NodeQueryBuilder()
                 .projectId(projectId)
                 .repoName(repoName)
@@ -230,11 +233,11 @@ class TemporaryScanTokenServiceImpl(
                 .page(1, 1)
                 .build()
         )
-        if (nodes.isNotOk() || nodes.data!!.records.isEmpty()) {
-            throw SystemErrorException(RESOURCE_NOT_FOUND, sha256)
+        if (nodes.records.isEmpty()) {
+            throw ErrorCodeException(RESOURCE_NOT_FOUND, "file[$sha256] of [$projectId:$repoName] not found")
         }
-        val fullPath = nodes.data!!.records[0][NodeDetail::fullPath.name].toString()
-        return nodeClient.getNodeDetail(projectId, repoName, fullPath).data?.let { node ->
+        val fullPath = nodes.records[0][NodeDetail::fullPath.name].toString()
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))?.let { node ->
             storageManager.loadFullArtifactInputStream(node, storageCredentials)?.readText()
         } ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "file [$projectId:$repoName:$fullPath] not found")
     }
@@ -243,7 +246,7 @@ class TemporaryScanTokenServiceImpl(
 
     private fun getNodes(projectId: String, repoName: String, sha256: List<String>): List<Map<String, Any?>> {
         return sha256.toSet().map {
-            val res = nodeClient.queryWithoutCount(
+            val res = nodeSearchService.searchWithoutCount(
                 NodeQueryBuilder()
                     .projectId(projectId)
                     .repoName(repoName)
@@ -253,16 +256,11 @@ class TemporaryScanTokenServiceImpl(
                     .build()
             )
 
-            if (res.isNotOk()) {
-                logger.error("get node of layer[$it] failed, msg[${res.message}]")
-                throw SystemErrorException()
-            }
-
-            if (res.data!!.records.isEmpty()) {
+            if (res.records.isEmpty()) {
                 throw ArtifactDeletedException(it)
             }
 
-            res.data!!.records.first()
+            res.records.first()
         }
     }
 

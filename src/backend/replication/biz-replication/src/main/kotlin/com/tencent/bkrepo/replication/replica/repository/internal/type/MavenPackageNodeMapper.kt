@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.replication.replica.repository.internal.type
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.repository.api.NodeClient
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
@@ -36,7 +38,7 @@ import org.springframework.stereotype.Component
 
 @Component
 class MavenPackageNodeMapper(
-    private val nodeClient: NodeClient
+    private val nodeService: NodeService
 ) : PackageNodeMapper {
 
     override fun type() = RepositoryType.MAVEN
@@ -53,7 +55,7 @@ class MavenPackageNodeMapper(
             val artifactPath = packageVersion.contentPath
             require(artifactPath != null) { "artifactPath for $key is null in [$projectId/$repoName]" }
             val path = artifactPath.substringBeforeLast('/')
-            val listNodePage = nodeClient.listNode(projectId, repoName, path).data!!
+            val listNodePage = nodeService.listNode(ArtifactInfo(projectId, repoName, path), NodeListOption())
             val fullPathList = listNodePage.map { it.fullPath }
             if (logger.isDebugEnabled) {
                 logger.debug(

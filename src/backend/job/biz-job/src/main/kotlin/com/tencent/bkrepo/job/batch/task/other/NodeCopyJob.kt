@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.other
 
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -37,8 +38,8 @@ import com.tencent.bkrepo.job.batch.context.NodeCopyJobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeCopyJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import com.tencent.bkrepo.repository.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
+import java.time.Duration
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -52,13 +53,15 @@ import kotlin.reflect.KClass
 @EnableConfigurationProperties(NodeCopyJobProperties::class)
 class NodeCopyJob(
     private val storageService: StorageService,
-    private val fileReferenceClient: FileReferenceClient,
+    private val fileReferenceService: FileReferenceService,
     properties: NodeCopyJobProperties
 ) : MongoDbBatchJob<NodeCopyJob.NodeCopyData, NodeCopyJobContext>(properties) {
 
     override fun start(): Boolean {
         return super.start()
     }
+
+    override fun getLockAtMostFor(): Duration = Duration.ofDays(3)
 
     override fun collectionNames(): List<String> {
         return (0 until SHARDING_COUNT)
@@ -142,12 +145,12 @@ class NodeCopyJob(
     ) {
         var dstCredentialsKey: String? = dstCredentials?.key ?: DEFAULT_STORAGE_CREDENTIALS_KEY
         if (dstCredentialsKey != node.copyIntoCredentialsKey) {
-            fileReferenceClient.decrement(digest, node.copyIntoCredentialsKey)
+            fileReferenceService.decrement(digest, node.copyIntoCredentialsKey)
             if (dstCredentialsKey == DEFAULT_STORAGE_CREDENTIALS_KEY) {
                 // 还原为默认存储key为null
                 dstCredentialsKey = null
             }
-            fileReferenceClient.increment(digest, dstCredentialsKey)
+            fileReferenceService.increment(digest, dstCredentialsKey)
         }
     }
 

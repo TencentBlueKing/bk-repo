@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.Constant.MAX_MIGRATE_FAILED_RETRY_TIMES
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
@@ -40,7 +41,6 @@ import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadPoolExecutor
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
-import com.tencent.bkrepo.repository.api.FileReferenceClient
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit
 @Component
 class MigrateFailedNodeExecutor(
     properties: MigrateRepoStorageProperties,
-    fileReferenceClient: FileReferenceClient,
+    fileReferenceService: FileReferenceService,
     migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
@@ -60,7 +60,7 @@ class MigrateFailedNodeExecutor(
     properties,
     migrateRepoStorageTaskDao,
     migrateFailedNodeDao,
-    fileReferenceClient,
+    fileReferenceService,
     storageService,
     executingTaskRecorder,
 ) {

@@ -27,23 +27,27 @@
 
 package com.tencent.bkrepo.ddc.service
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.ddc.exception.BlobNotFoundException
 import com.tencent.bkrepo.ddc.model.TDdcBlob
 import com.tencent.bkrepo.ddc.pojo.Blob
 import com.tencent.bkrepo.ddc.pojo.Reference
+import com.tencent.bkrepo.ddc.repository.BlobRefRepository
 import com.tencent.bkrepo.ddc.repository.BlobRepository
-import com.tencent.bkrepo.repository.api.NodeClient
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
 class BlobService(
     private val blobRepository: BlobRepository,
-    private val nodeClient: NodeClient,
+    private val blobRefRepository: BlobRefRepository,
+    private val nodeService: NodeService,
     private val storageManager: StorageManager
 ) {
     fun create(blob: Blob): Blob {
@@ -86,8 +90,8 @@ class BlobService(
 
     fun loadBlob(blob: Blob): ArtifactInputStream {
         val repo =
-            ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(blob.projectId, blob.repoName))
-        val node = nodeClient.getNodeDetail(blob.projectId, blob.repoName, blob.fullPath).data
+            ArtifactContextHolder.getRepoDetail(RepositoryId(blob.projectId, blob.repoName))
+        val node = nodeService.getNodeDetail(ArtifactInfo(blob.projectId, blob.repoName, blob.fullPath))
             ?: throw BlobNotFoundException(blob.projectId, blob.repoName, blob.blobId.toString())
         return storageManager.loadArtifactInputStream(node, repo.storageCredentials)
             ?: throw BlobNotFoundException(blob.projectId, blob.repoName, blob.blobId.toString())
@@ -105,10 +109,21 @@ class BlobService(
     }
 
     fun addRefToBlobs(ref: Reference, blobIds: Set<String>) {
-        blobRepository.addRefToBlob(ref.projectId, ref.repoName, ref.bucket, ref.key.toString(), blobIds)
+        with(ref) {
+            val addedBlobIds = blobRefRepository.addRefToBlob(projectId, repoName, bucket, key.toString(), blobIds)
+            if (addedBlobIds.isNotEmpty()) {
+                blobRepository.incRefCount(projectId, repoName, addedBlobIds)
+            }
+        }
     }
 
     fun removeRefFromBlobs(projectId: String, repoName: String, bucket: String, key: String) {
+        val blobIds = HashSet<String>()
+        blobRefRepository.removeRefFromBlob(projectId, repoName, bucket, key).mapTo(blobIds) { it.blobId }
+        if (blobIds.isNotEmpty()) {
+            blobRepository.incRefCount(projectId, repoName, blobIds, -1L)
+        }
+        // 兼容旧逻辑，所有blob的references字段为空后可以移除该逻辑
         blobRepository.removeRefFromBlob(projectId, repoName, bucket, key)
     }
 }

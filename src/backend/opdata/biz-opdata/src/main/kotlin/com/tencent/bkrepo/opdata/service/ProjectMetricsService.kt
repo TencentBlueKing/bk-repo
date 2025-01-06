@@ -34,9 +34,10 @@ import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.operate.api.ProjectUsageStatisticsService
-import com.tencent.bkrepo.common.operate.api.pojo.ProjectUsageStatistics
+import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectUsageStatistics
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.job.api.JobClient
 import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
@@ -54,7 +55,6 @@ import com.tencent.bkrepo.opdata.util.EasyExcelUtils
 import com.tencent.bkrepo.opdata.util.MetricsCacheUtil
 import com.tencent.bkrepo.opdata.util.MetricsHandlerThreadPoolExecutor
 import com.tencent.bkrepo.opdata.util.StatDateUtil
-import com.tencent.bkrepo.repository.api.ProjectClient
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_BG_NAME
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_CENTER_NAME
@@ -78,7 +78,7 @@ import java.util.concurrent.TimeUnit
 @Service
 class ProjectMetricsService (
     private val projectMetricsRepository: ProjectMetricsRepository,
-    private val projectClient: ProjectClient,
+    private val projectService: ProjectService,
     private val jobClient: JobClient,
     private val projectUsageStatisticsService: ProjectUsageStatisticsService,
     private val pluginManager: PluginManager,
@@ -87,7 +87,7 @@ class ProjectMetricsService (
     private val projectInfoCache: LoadingCache<String, Optional<ProjectInfo>> = CacheBuilder.newBuilder()
         .maximumSize(DEFAULT_PROJECT_CACHE_SIZE)
         .expireAfterWrite(1, TimeUnit.DAYS)
-        .build(CacheLoader.from { key -> Optional.ofNullable(projectClient.getProjectInfo(key).data) })
+        .build(CacheLoader.from { key -> Optional.ofNullable(projectService.getProjectInfo(key)) })
 
     private val activeProjectsCache:  LoadingCache<String, MutableSet<String>> by lazy {
         val cacheLoader = object : CacheLoader<String, MutableSet<String>>() {

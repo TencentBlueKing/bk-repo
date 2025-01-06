@@ -113,7 +113,10 @@ class BlobReplicaController(
         return if (fileName.isNullOrEmpty()) {
             ArtifactFileFactory.build(file, credentials)
         } else {
-            val filepath: String = credentials.upload.location + "/" + fileName
+            val randomId = System.nanoTime()
+            // 文件名加个随机值，避免并发存储同一个文件时，
+            // 前一个文件存储完后删除临时文件，导致其他线程读取时大小为0，导致文件存储异常
+            val filepath: String = credentials.upload.location + "/" + fileName+"-$randomId"
             ArtifactFileFactory.build(file, filepath)
         }
     }

@@ -43,8 +43,9 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
-import com.tencent.bkrepo.repository.service.packages.PackageService
-import com.tencent.bkrepo.repository.service.packages.PackageStatisticsService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageStatisticsService
+import com.tencent.bkrepo.repository.service.packages.PackageDownloadService
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -62,6 +63,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api")
 class UserPackageController(
     private val packageService: PackageService,
+    private val packageDownloadService: PackageDownloadService,
     private val packageStatisticsService: PackageStatisticsService
 ) {
 
@@ -133,9 +135,10 @@ class UserPackageController(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
-        @RequestParam version: String
+        @RequestParam version: String,
+        @RequestParam contentPath: String?
     ): Response<Void> {
-        packageService.deleteVersion(projectId, repoName, packageKey, version)
+        packageService.deleteVersion(projectId, repoName, packageKey, version, contentPath)
         return ResponseBuilder.success()
     }
 
@@ -156,7 +159,7 @@ class UserPackageController(
         @RequestParam packageKey: String,
         @RequestParam version: String
     ) {
-        packageService.downloadVersion(projectId, repoName, packageKey, version)
+        packageDownloadService.downloadVersion(projectId, repoName, packageKey, version)
     }
 
     @ApiOperation("仓库 包数量 总览")

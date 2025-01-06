@@ -12,6 +12,7 @@ export function queryFileSystemClient(body) {
       pageSize: body.pageSize,
       projectId: body.projectId === '' ? null : body.projectId,
       repoName: body.repoName === '' ? null : body.repoName,
+      userId: body.userId === '' ? null : body.userId,
       online: body.online === '' ? null : body.online,
       ip: body.ip === '' ? null : body.ip,
       version: body.version === '' ? null : body.version

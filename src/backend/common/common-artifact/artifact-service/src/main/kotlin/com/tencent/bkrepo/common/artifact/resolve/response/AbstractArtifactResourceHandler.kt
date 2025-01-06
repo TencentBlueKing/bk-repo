@@ -35,7 +35,10 @@ import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
+import com.tencent.bkrepo.common.api.exception.OverloadException
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
+import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import org.slf4j.LoggerFactory
@@ -47,7 +50,8 @@ import javax.servlet.http.HttpServletResponse
 
 
 abstract class AbstractArtifactResourceHandler(
-    private val storageProperties: StorageProperties
+    private val storageProperties: StorageProperties,
+    private val requestLimitCheckService: RequestLimitCheckService
 ) : ArtifactResourceWriter {
     /**
      * 获取动态buffer size
@@ -89,6 +93,14 @@ abstract class AbstractArtifactResourceHandler(
     }
 
     /**
+     * 当仓库配置下载限速小于等于最低限速时则直接将请求断开, 避免占用过多连接
+     */
+    protected fun downloadRateLimitCheck(resource: ArtifactResource) {
+        val applyPermits = resource.getSingleStream().range.length
+        requestLimitCheckService.postLimitCheck(applyPermits)
+    }
+
+    /**
      * 将数据流以Range方式写入响应
      */
     protected fun writeRangeStream(
@@ -100,13 +112,23 @@ abstract class AbstractArtifactResourceHandler(
         if (request.method == HttpMethod.HEAD.name) {
             return Throughput.EMPTY
         }
+        val length = inputStream.range.length
+        var rateLimitFlag = false
+        var exp: Exception? = null
         val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
             return measureThroughput {
-                recordAbleInputStream.rateLimit(responseRateLimitWrapper(storageProperties.response.rateLimit)).use {
+                val stream = requestLimitCheckService.bandwidthCheck(
+                    recordAbleInputStream, storageProperties.response.circuitBreakerThreshold,
+                    length
+                ) ?: recordAbleInputStream.rateLimit(
+                    responseRateLimitWrapper(storageProperties.response.rateLimit)
+                )
+                rateLimitFlag = stream is CommonRateLimitInputStream
+                stream.use {
                     it.copyTo(
                         out = response.outputStream,
-                        bufferSize = getBufferSize(inputStream.range.length)
+                        bufferSize = getBufferSize(length)
                     )
                 }
             }
@@ -116,13 +138,21 @@ abstract class AbstractArtifactResourceHandler(
             // org.springframework.http.converter.HttpMessageNotWritableException异常，会重定向到/error页面
             // 又因为/error页面不存在，最终返回404，所以要对IOException进行包装，在上一层捕捉处理
             val message = exception.message.orEmpty()
-            val status = if (IOExceptionUtils.isClientBroken(exception)){
+            val status = if (IOExceptionUtils.isClientBroken(exception)) {
                 HttpStatus.BAD_REQUEST
             } else {
                 logger.warn("write range stream failed", exception)
                 HttpStatus.INTERNAL_SERVER_ERROR
             }
+            exp = exception
             throw ArtifactResponseException(message, status)
+        } catch (overloadEx: OverloadException) {
+            exp = overloadEx
+            throw overloadEx
+        } finally {
+            if (rateLimitFlag) {
+                requestLimitCheckService.bandwidthFinish(exp)
+            }
         }
     }
 

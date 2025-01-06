@@ -33,13 +33,13 @@ package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
 import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
-import com.tencent.bkrepo.repository.service.packages.PackageDownloadsService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.PostMapping

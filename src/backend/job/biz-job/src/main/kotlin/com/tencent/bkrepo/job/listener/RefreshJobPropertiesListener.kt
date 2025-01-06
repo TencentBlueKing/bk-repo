@@ -27,7 +27,12 @@
 
 package com.tencent.bkrepo.job.listener
 
-import com.tencent.bkrepo.job.config.ScheduledTaskConfigurer
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.job.batch.base.BatchJob
+import com.tencent.bkrepo.job.schedule.JobRegistrar
+import com.tencent.bkrepo.job.schedule.JobUtils
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.NoSuchBeanDefinitionException
 import org.springframework.cloud.context.environment.EnvironmentChangeEvent
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent
 import org.springframework.context.ApplicationEvent
@@ -35,18 +40,32 @@ import org.springframework.context.event.SmartApplicationListener
 import org.springframework.stereotype.Component
 
 @Component
-class RefreshJobPropertiesListener : SmartApplicationListener {
-
-    private var refresh = false
+class RefreshJobPropertiesListener(private val jobRegistrar: JobRegistrar) : SmartApplicationListener {
+    private var refreshKeys = mutableListOf<String>()
+    private val pattern = "-[a-z]".toRegex()
     override fun onApplicationEvent(event: ApplicationEvent) {
         if (event is EnvironmentChangeEvent) {
-            val size = event.keys.filter { JOB_PROP_KEY_REGEX.find(it)?.value != null }.size
-            refresh = size > 0
+            val keys = event.keys.mapNotNull { JOB_PROP_KEY_REGEX.find(it)?.value }
+            refreshKeys.addAll(keys)
             return
         }
-        if (event is RefreshScopeRefreshedEvent && refresh) {
-            ScheduledTaskConfigurer.reloadScheduledTask()
-            refresh = false
+        if (event is RefreshScopeRefreshedEvent && refreshKeys.isNotEmpty()) {
+            refreshKeys.forEach { key ->
+                try {
+                    val jobName = key.substring(4, key.indexOf(".", 4))
+                        .replace(pattern) { it.value.last().uppercase() }
+                        .replaceFirstChar { it.lowercase() } + JOB_SUFFIX
+                    val jobBean = SpringContextUtils.getBean(BatchJob::class.java, jobName)
+                    logger.info("Job [$jobName] config updated")
+                    val job = JobUtils.parseBatchJob(jobBean)
+                    jobRegistrar.update(job)
+                } catch (_: NoSuchBeanDefinitionException) {
+                    // ignore
+                } catch (e: Exception) {
+                    logger.error("Refresh key [$key] failed.")
+                }
+            }
+            refreshKeys.clear()
             return
         }
     }
@@ -57,6 +76,8 @@ class RefreshJobPropertiesListener : SmartApplicationListener {
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(RefreshJobPropertiesListener::class.java)
+        private const val JOB_SUFFIX = "Job"
         private val JOB_PROP_KEY_REGEX = Regex("job.[\\w-]+.(cron$|fixedDelay$|fixedRate$)")
     }
 }

@@ -72,5 +72,13 @@ data class ArtifactMetricsProperties(
     /**
      * web 平台账号id
      */
-    var webPlatformId: String = ""
+    var webPlatformId: String = "",
+    /**
+     * 超过该大小的文件未命中缓存时将计入大文件缓存未命中监控数据
+     */
+    var largeFileThreshold: DataSize = DataSize.ofGigabytes(3L),
+    /**
+     * 允许上报未知项目信息
+     * */
+    var allowUnknownProjectExport: Boolean = false,
 )

@@ -45,7 +45,7 @@ abstract class AbstractRevisionOperation(
                     "in repo [$projectId/$repoName] by User [$operator]"
             )
             stopWatch.start()
-            commonService.lockAction(projectId, repoName, refStr) { handleOperation(this) }
+            commonService.lockAction(projectId, repoName, revPath) { handleOperation(this) }
             stopWatch.stop()
             logger.info(
                 "Total cost for refreshing index.json" +
@@ -78,7 +78,6 @@ abstract class AbstractRevisionOperation(
                 )
                 handleEvent(indexInfo)
                 logger.info("index.json in repo [$projectId/$repoName] is ready to upload...")
-
                 commonService.uploadIndexJson(
                     projectId = projectId,
                     repoName = repoName,

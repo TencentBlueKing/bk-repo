@@ -27,36 +27,40 @@
 
 package com.tencent.bkrepo.job.batch.task.cache.preload
 
-import com.tencent.bkrepo.auth.constant.PIPELINE
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
-import com.tencent.bkrepo.common.operate.service.model.TOperateLog
+import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.Document
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStore
-import com.tencent.bkrepo.job.batch.task.cache.preload.ai.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.VectorStore
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStore
+import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusVectorStoreProperties
 import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobProperties
-import io.milvus.client.MilvusClient
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
+import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.gte
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
+import kotlin.math.abs
 import kotlin.system.measureTimeMillis
 
 @Component
@@ -73,12 +77,14 @@ class ArtifactAccessLogEmbeddingJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7L)
 
     override fun doStart0(jobContext: JobContext) {
+        val deprecatedVectorStore = createVectorStore(2L)
         val lastMonthVectorStore = createVectorStore(1L)
         val curMonthVectorStore = createVectorStore(0L)
+        val deprecatedCollectionExists = deprecatedVectorStore.collectionExists()
         var lastMonthCollectionExists = lastMonthVectorStore.collectionExists()
         val curMonthCollectionExists = curMonthVectorStore.collectionExists()
 
-        if (lastMonthCollectionExists && !curMonthCollectionExists) {
+        if (lastMonthCollectionExists && !curMonthCollectionExists && !deprecatedCollectionExists) {
             // 可能由于数据生成过程被中断导致存在上月数据不存在当月数据，需要删除重新生成
             lastMonthVectorStore.dropCollection()
             lastMonthCollectionExists = false
@@ -88,7 +94,7 @@ class ArtifactAccessLogEmbeddingJob(
             // 上个月的数据不存在时，使用上个月的访问记录生成数据
             logger.info("collection[${lastMonthVectorStore.collectionName()}] not exists, try to create")
             lastMonthVectorStore.createCollection()
-            lastMonthVectorStore.findAccessLogAndInsert(1L)
+            findAndHandle(1L, null, null) { lastMonthVectorStore.insert(it.values) }
             logger.info("insert data into collection[${lastMonthVectorStore.collectionName()}] success")
         }
 
@@ -96,19 +102,19 @@ class ArtifactAccessLogEmbeddingJob(
             // 当月数据不存在时候，使用月初至今的访问记录生成数据
             logger.info("collection[${curMonthVectorStore.collectionName()}] not exists, try to create")
             curMonthVectorStore.createCollection()
-            curMonthVectorStore.findAccessLogAndInsert(0L, before = LocalDate.now().atStartOfDay())
+            val startOfToday = LocalDate.now().atStartOfDay()
+            findAndHandle(0L, null, startOfToday) { curMonthVectorStore.insert(it.values) }
         } else {
             // 已有数据，使用昨日数据生成记录
             logger.info("collection[${curMonthVectorStore.collectionName()}] exists, insert data of last day")
             val startOfToday = LocalDate.now().atStartOfDay()
             val startOfLastDay = LocalDate.now().minusDays(1L).atStartOfDay()
-            curMonthVectorStore.findAccessLogAndInsert(0L, after = startOfLastDay, before = startOfToday)
+            findAndHandle(0L, startOfLastDay, startOfToday) { curMonthVectorStore.insert(it.values) }
         }
         logger.info("insert data into collection[${curMonthVectorStore.collectionName()}] success")
 
         // 删除过期数据
-        val deprecatedVectorStore = createVectorStore(2L)
-        if (deprecatedVectorStore.collectionExists()) {
+        if (deprecatedCollectionExists) {
             logger.info("deprecated collection[${deprecatedVectorStore.collectionName()}] exists")
             deprecatedVectorStore.dropCollection()
             logger.info("drop collection [${deprecatedVectorStore.collectionName()}] success")
@@ -116,20 +122,42 @@ class ArtifactAccessLogEmbeddingJob(
     }
 
     /**
-     * 获取访问记录并写入向量数据库
+     * 对指定项目的访问日志进行向量化
+     *
+     * @param projectId 需要对访问日志进行向量化的项目
      */
-    private fun VectorStore.findAccessLogAndInsert(
-        minusMonth: Long,
-        after: LocalDateTime? = null,
-        before: LocalDateTime? = null
-    ) {
-        properties.projects.forEach { projectId ->
-            processDataBatch(projectId, minusMonth, after, before) { paths ->
-                val documents = paths.map { Document(content = it, metadata = emptyMap()) }
-                val elapsed = measureTimeMillis { insert(documents) }
-                logger.info("[$projectId] insert ${documents.size} data into [${collectionName()}] in $elapsed ms")
-            }
+    fun embedAccessLog(projectId: String) {
+        if (!properties.enabled) {
+            return
         }
+        logger.info("embed [$projectId] access log start")
+        val lastMonthVectorStore = createVectorStore(1L)
+        val curMonthVectorStore = createVectorStore(0L)
+        if (!lastMonthVectorStore.collectionExists() || !curMonthVectorStore.collectionExists()) {
+            throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, "collection has not been created")
+        }
+        findAndHandleByProjectId(projectId, 1L, null, null) {
+            lastMonthVectorStore.insert(it.values)
+        }
+        findAndHandleByProjectId(projectId, 0L, null, LocalDate.now().atStartOfDay()) {
+            curMonthVectorStore.insert(it.values)
+        }
+        logger.info("embed [$projectId] access log finished")
+    }
+
+    private fun VectorStore.insert(paths: Collection<AccessLog>) {
+        if (paths.isEmpty()) {
+            return
+        }
+        val documents = paths.map {
+            val metadata = mapOf(
+                METADATA_KEY_DOWNLOAD_TIMESTAMP to it.downloadTimestamp.joinToString(","),
+                METADATA_KEY_ACCESS_COUNT to it.count.toString()
+            )
+            Document(content = it.projectRepoFullPath, metadata = metadata)
+        }
+        val elapsed = measureTimeMillis { insert(documents) }
+        logger.info("insert ${documents.size} data into [${collectionName()}] in $elapsed ms")
     }
 
     private fun createVectorStore(minusMonth: Long): VectorStore {
@@ -144,15 +172,105 @@ class ArtifactAccessLogEmbeddingJob(
         return MilvusVectorStore(config, milvusClient, embeddingModel)
     }
 
-    /**
-     * 获取有访问记录的路径
-     */
-    private fun processDataBatch(
+    private fun findAndHandle(
+        minusMonth: Long,
+        after: LocalDateTime? = null,
+        before: LocalDateTime? = null,
+        handler: (Map<String, AccessLog>) -> Unit
+    ) {
+        val collectionName = collectionName(minusMonth)
+        // buffer存储的内容结构为(projectId, (path, accessLog))
+        val projectBuffer = HashMap<String, MutableMap<String, AccessLog>>()
+        iterateCollection(collectionName, findFirstObjectId(collectionName, after)) { operateLog ->
+            val createDate = operateLog.createdDate
+            val outOfDateRange =
+                after != null && createDate.isBefore(after) || before != null && createDate.isAfter(before)
+            val acceptableType = operateLog.type == EventType.NODE_DOWNLOADED.name
+            val acceptableProject = operateLog.projectId in properties.projects
+
+            if (!outOfDateRange && acceptableProject && acceptableType) {
+                val shouldFlush = projectBuffer.addToBuffer(operateLog)
+                if (shouldFlush) {
+                    handler(projectBuffer[operateLog.projectId]!!)
+                    projectBuffer.remove(operateLog.projectId)
+                }
+            }
+        }
+        projectBuffer.forEach { (_, paths) -> handler(paths) }
+    }
+
+    private fun findAndHandleByProjectId(
+        projectId: String,
+        minusMonth: Long,
+        after: LocalDateTime? = null,
+        before: LocalDateTime? = null,
+        handler: (Map<String, AccessLog>) -> Unit
+    ) {
+        // buffer存储的内容结构为(projectId, (path, accessLog))
+        val projectBuffer = HashMap<String, MutableMap<String, AccessLog>>()
+        findByProject(projectId, minusMonth, after, before) { operateLog ->
+            if (projectBuffer.addToBuffer(operateLog)) {
+                handler(projectBuffer[operateLog.projectId]!!)
+                projectBuffer.remove(operateLog.projectId)
+            }
+        }
+        handler(projectBuffer[projectId] ?: emptyMap())
+    }
+
+    private fun HashMap<String, MutableMap<String, AccessLog>>.addToBuffer(operateLog: OperateLog): Boolean {
+        with(operateLog) {
+            val projectRepoFullPath = projectRepoFullPath(projectId, repoName, resourceKey)
+            val buffer = getOrPut(projectId) { HashMap() }
+            val accessLog = buffer.getOrPut(projectRepoFullPath) {
+                AccessLog(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = resourceKey,
+                    projectRepoFullPath = projectRepoFullPath
+                )
+            }
+            accessLog.count += 1
+            // 只添加间隔超过10分钟的下载时间戳，可能会导致时间戳数量小于count
+            val createdTimestamp = createdDate.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val lastTimestamp = accessLog.downloadTimestamp.lastOrNull() ?: 0L
+            if (abs(createdTimestamp - lastTimestamp) > 600_000) {
+                accessLog.downloadTimestamp.add(createdTimestamp)
+            }
+            return buffer.size >= properties.batchToInsert ||
+                    accessLog.downloadTimestamp.size >= properties.batchToInsert
+        }
+    }
+
+    private fun iterateCollection(collectionName: String, startId: ObjectId, handler: (OperateLog) -> Unit) {
+        if (!mongoTemplate.collectionExists(collectionName)) {
+            logger.warn("mongo collection[$collectionName] not exists")
+            return
+        }
+        var progress = 0
+        var records: List<OperateLog>
+        var lastId = startId
+        do {
+            val query = buildQuery(lastId)
+            val start = System.currentTimeMillis()
+            records = mongoTemplate.find(query, OperateLog::class.java, collectionName)
+
+            progress += records.size
+            if (progress % 1000000 == 0) {
+                val end = System.currentTimeMillis()
+                logger.info("find access log from db elapsed[${end - start}]ms, $progress")
+            }
+
+            records.forEach { handler(it) }
+            lastId = records.lastOrNull()?.id ?: break
+        } while (records.size == query.limit && shouldRun())
+    }
+
+    private fun findByProject(
         projectId: String,
         minusMonth: Long,
         after: LocalDateTime?,
         before: LocalDateTime?,
-        handler: (paths: Set<String>) -> Unit,
+        handler: (OperateLog) -> Unit,
     ) {
         val collectionName = collectionName(minusMonth)
         if (!mongoTemplate.collectionExists(collectionName)) {
@@ -160,52 +278,40 @@ class ArtifactAccessLogEmbeddingJob(
             return
         }
         val pageSize = properties.batchSize
-        var lastId = ObjectId(MIN_OBJECT_ID)
-        var querySize: Int
-        val criteria = buildCriteria(projectId, after, before)
+        var offset = 0L
+        var resultSize: Int
+        val criteria = buildProjectCriteria(projectId, after, before)
+        var progress = 0
         do {
             val query = Query(criteria)
-                .addCriteria(Criteria.where(ID).gt(lastId))
                 .limit(pageSize)
-                .with(Sort.by(ID).ascending())
+                .skip(offset)
+                .with(Sort.by(TOperateLog::projectId.name).ascending())
             query.fields().include(
+                ID,
+                TOperateLog::projectId.name,
                 TOperateLog::repoName.name,
+                TOperateLog::type.name,
                 TOperateLog::resourceKey.name,
                 TOperateLog::createdDate.name
             )
-            val data = mongoTemplate.find<Map<String, Any?>>(query, collectionName)
-            if (data.isEmpty()) {
-                break
+
+            val start = System.currentTimeMillis()
+            val records = mongoTemplate.find(query, OperateLog::class.java, collectionName)
+            progress += records.size
+            if (progress % 10000 == 0) {
+                val end = System.currentTimeMillis()
+                logger.info("find [$projectId] access log from db elapsed[${end - start}]ms, $progress")
             }
+
             // 记录制品访问时间
-            val accessPaths = data.mapTo(HashSet(pageSize)) {
-                val repoName = it[TOperateLog::repoName.name] as String
-                val fullPath = it[TOperateLog::resourceKey.name] as String
-                val projectRepoFullPath = if (repoName == PIPELINE) {
-                    // 流水线仓库路径/p-xxx/b-xxx/xxx中的构建id不参与相似度计算
-                    val secondSlashIndex = fullPath.indexOf("/", 1)
-                    val pipelinePath = fullPath.substring(0, secondSlashIndex)
-                    val artifactPath = fullPath.substring(fullPath.indexOf("/", secondSlashIndex + 1))
-                    pipelinePath + artifactPath
-                } else {
-                    fullPath
-                }
-                "/$projectId/$repoName$projectRepoFullPath"
-            }
-
-            handler(accessPaths)
-            querySize = data.size
-            lastId = data.last()[ID] as ObjectId
-        } while (querySize == pageSize && shouldRun())
+            records.forEach { handler(it) }
+            resultSize = records.size
+            offset += records.size
+        } while (resultSize == pageSize)
     }
 
-    private fun collectionName(minusMonth: Long): String {
-        // 查询上个月的记录
-        val seq = MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.now().minusMonths(minusMonth), 1)
-        return "artifact_oplog_$seq"
-    }
-
-    private fun buildCriteria(projectId: String, after: LocalDateTime?, before: LocalDateTime?): Criteria {
+    private fun buildProjectCriteria(projectId: String, after: LocalDateTime?, before: LocalDateTime?): Criteria {
         val criteria = Criteria
             .where(TOperateLog::projectId.name).isEqualTo(projectId)
             .and(TOperateLog::type.name).isEqualTo(EventType.NODE_DOWNLOADED.name)
@@ -218,7 +324,58 @@ class ArtifactAccessLogEmbeddingJob(
         return criteria
     }
 
+    private fun buildQuery(lastId: ObjectId): Query {
+        val query = Query(Criteria.where(ID).gt(lastId)).limit(properties.batchSize).with(Sort.by(ID).ascending())
+        query.fields().include(
+            ID,
+            TOperateLog::projectId.name,
+            TOperateLog::repoName.name,
+            TOperateLog::type.name,
+            TOperateLog::resourceKey.name,
+            TOperateLog::createdDate.name
+        )
+        return query
+    }
+
+    private fun findFirstObjectId(collectionName: String, after: LocalDateTime?): ObjectId {
+        if (after == null) {
+            return ObjectId(MIN_OBJECT_ID)
+        }
+        // 找到after之前1小时的记录作为起始遍历点，1小时之前没有访问记录表示访问量较小可以直接从最小ID开始遍历
+        val startDateTime = after.minusHours(1L)
+        val query = Query(TOperateLog::createdDate.gte(startDateTime).lt(after))
+        query.fields().include(ID)
+        val id = mongoTemplate.findOne<Map<String, Any?>>(query, collectionName)?.let { it[ID] as ObjectId }
+        return id ?: ObjectId(MIN_OBJECT_ID)
+    }
+
+    private fun collectionName(minusMonth: Long): String {
+        // 查询上个月的记录
+        val seq = MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.now().minusMonths(minusMonth), 1)
+        return "artifact_oplog_$seq"
+    }
+
+    private data class OperateLog(
+        var id: ObjectId,
+        val projectId: String,
+        val repoName: String,
+        val resourceKey: String,
+        val createdDate: LocalDateTime,
+        val type: String,
+    )
+
+    private data class AccessLog(
+        val projectId: String,
+        val repoName: String,
+        val fullPath: String,
+        val projectRepoFullPath: String,
+        var count: Long = 0,
+        val downloadTimestamp: LinkedHashSet<Long> = LinkedHashSet(),
+    )
+
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactAccessLogEmbeddingJob::class.java)
+        private const val METADATA_KEY_DOWNLOAD_TIMESTAMP = "download_timestamp"
+        private const val METADATA_KEY_ACCESS_COUNT = "access_count"
     }
 }

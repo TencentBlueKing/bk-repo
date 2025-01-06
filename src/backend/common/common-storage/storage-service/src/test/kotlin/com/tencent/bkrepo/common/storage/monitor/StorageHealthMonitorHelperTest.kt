@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.storage.config.UploadProperties
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

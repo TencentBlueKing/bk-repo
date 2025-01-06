@@ -33,13 +33,13 @@ package com.tencent.bkrepo.repository.controller.cluster
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.cluster.ClusterPackageClient
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
-import com.tencent.bkrepo.repository.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -70,10 +70,11 @@ class ClusterPackageController(
         repoName: String,
         packageKey: String,
         version: String,
+        contentPath: String?,
         realIpAddress: String?
     ): Response<Void> {
         permissionManager.checkRepoPermission(PermissionAction.WRITE, projectId, repoName)
-        packageService.deleteVersion(projectId, repoName, packageKey, version, realIpAddress)
+        packageService.deleteVersion(projectId, repoName, packageKey, version, contentPath, realIpAddress)
         return ResponseBuilder.success()
     }
 

@@ -11,7 +11,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.stereotype.Service
@@ -150,7 +150,7 @@ class TokenService(
     /**
      * 检查token并返回token信息
      */
-    private fun checkToken(token: String): TemporaryTokenInfo {
+    fun checkToken(token: String): TemporaryTokenInfo {
         if (token.isBlank()) {
             throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, token)
         }

@@ -4,25 +4,26 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.media.STREAM_PATH
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.config.MediaProperties
-import com.tencent.bkrepo.media.stream.MediaArtifactFileConsumer
 import com.tencent.bkrepo.media.stream.ArtifactFileRecordingListener
 import com.tencent.bkrepo.media.stream.ClientStream
+import com.tencent.bkrepo.media.stream.MediaArtifactFileConsumer
 import com.tencent.bkrepo.media.stream.MediaType
 import com.tencent.bkrepo.media.stream.RemuxRecordingListener
 import com.tencent.bkrepo.media.stream.StreamManger
 import com.tencent.bkrepo.media.stream.StreamMode
 import com.tencent.bkrepo.media.stream.TranscodeConfig
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
@@ -32,8 +33,8 @@ import org.springframework.stereotype.Service
 @Service
 class StreamService(
     private val mediaProperties: MediaProperties,
-    private val repositoryClient: RepositoryClient,
-    private val nodeClient: NodeClient,
+    private val repositoryService: RepositoryService,
+    private val nodeService: NodeService,
     private val tokenService: TokenService,
     private val scheduler: ThreadPoolTaskScheduler,
     private val storageManager: StorageManager,
@@ -45,21 +46,22 @@ class StreamService(
     /**
      * 创建推流地址
      * */
-    fun createStream(projectId: String, repoName: String): String {
+    fun createStream(projectId: String, repoName: String, display: Boolean): String {
         /*
         * 1. 创建媒体库
         * 2. 创建streams目录
         * 3. 创建streams目录写权限url =》 推流地址/{projectId}/{pushId}/streams
         * */
-        repositoryClient.getRepoDetail(projectId, repoName).data ?: let {
+        repositoryService.getRepoDetail(projectId, repoName) ?: let {
             val createRepoRequest = RepoCreateRequest(
                 projectId = projectId,
                 name = repoName,
                 type = RepositoryType.MEDIA,
                 category = RepositoryCategory.LOCAL,
                 public = false,
+                display = display,
             )
-            repositoryClient.createRepo(createRepoRequest)
+            repositoryService.createRepo(createRepoRequest)
             val nodeCreateRequest = NodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -67,7 +69,7 @@ class StreamService(
                 folder = true,
                 overwrite = false,
             )
-            nodeClient.createNode(nodeCreateRequest)
+            nodeService.createNode(nodeCreateRequest)
             logger.info("Create media repository for [$repoName].")
         }
         val temporaryTokenRequest = TemporaryTokenCreateRequest(
@@ -96,19 +98,24 @@ class StreamService(
         name: String,
         mode: StreamMode,
         userId: String,
+        author: String,
         remux: Boolean = false,
         saveType: MediaType = MediaType.RAW,
+        transcodeExtraParams: String? = null,
     ): ClientStream {
-        val repoId = ArtifactContextHolder.RepositoryId(projectId, repoName)
+        val repoId = RepositoryId(projectId, repoName)
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
         val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
+        val transcodeConfig = getTranscodeConfig(projectId)
+        transcodeConfig?.let { it.extraParams = transcodeExtraParams }
         val fileConsumer = MediaArtifactFileConsumer(
             storageManager,
             transcodeService,
             repo,
             userId,
+            author,
             STREAM_PATH,
-            getTranscodeConfig(projectId),
+            transcodeConfig,
         )
         val recordingListener = if (remux) {
             RemuxRecordingListener(credentials.upload.location, scheduler, saveType, fileConsumer)
@@ -124,7 +131,7 @@ class StreamService(
             stream.saveAs()
         }
         stream.startPublish()
-        logger.info("User[$userId] publish stream $streamId")
+        logger.info("User[$author] publish stream $streamId")
         return stream
     }
 

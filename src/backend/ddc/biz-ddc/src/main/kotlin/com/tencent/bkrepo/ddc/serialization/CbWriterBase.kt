@@ -313,6 +313,10 @@ abstract class CbWriterBase : ICbWriter {
         return buffer.array()
     }
 
+    fun toObject(): CbObject {
+        return CbObject(ByteBuffer.wrap(toByteArray()))
+    }
+
     fun getSegments(): List<ByteBuffer> {
         val segments = mutableListOf<ByteBuffer>()
         getSegments(rootScope, segments)

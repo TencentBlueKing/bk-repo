@@ -68,7 +68,9 @@ class CbFieldTest {
 
         // Test CbField(None|Type|Name)
         var fieldType = CbFieldType.None.value or CbFieldType.HasFieldName.value
-        var noneBytes = byteBufferOf(fieldType, 4, 'N'.toByte(), 'a'.toByte(), 'm'.toByte(), 'e'.toByte())
+        var noneBytes = byteBufferOf(
+            fieldType, 4, 'N'.code.toByte(), 'a'.code.toByte(), 'm'.code.toByte(), 'e'.code.toByte()
+        )
 
         noneField = CbField(noneBytes)
         assertEquals(noneField.getSize(), noneBytes.remaining())
@@ -100,7 +102,9 @@ class CbFieldTest {
 
         // Test CbField(None|Name)
         fieldType = CbFieldType.None.value or CbFieldType.HasFieldName.value
-        noneBytes = byteBufferOf(fieldType, 4, 'N'.toByte(), 'a'.toByte(), 'm'.toByte(), 'e'.toByte())
+        noneBytes = byteBufferOf(
+            fieldType, 4, 'N'.code.toByte(), 'a'.code.toByte(), 'm'.code.toByte(), 'e'.code.toByte()
+        )
 
         var b = noneBytes.asReadOnlyBuffer()
         b.position(1)
@@ -176,9 +180,9 @@ class CbFieldTest {
         val intType: Byte = (CbFieldType.HasFieldName.value or CbFieldType.IntegerPositive.value)
         var payload = byteBufferOf(
             12,
-            intType, 1, 'A'.toByte(), 1,
-            intType, 1, 'B'.toByte(), 2,
-            intType, 1, 'C'.toByte(), 3
+            intType, 1, 'A'.code.toByte(), 1,
+            intType, 1, 'B'.code.toByte(), 2,
+            intType, 1, 'C'.code.toByte(), 3
         )
         var field = CbField(payload.asReadOnlyBuffer(), CbFieldType.Object)
         testField(CbFieldType.Object, field, CbObject(payload, CbFieldType.Object))
@@ -197,9 +201,9 @@ class CbFieldTest {
         // Test CbField(UniformObject, NotEmpty)
         payload = byteBufferOf(
             10, intType,
-            1, 'A'.toByte(), 1,
-            1, 'B'.toByte(), 2,
-            1, 'C'.toByte(), 3
+            1, 'A'.code.toByte(), 1,
+            1, 'B'.code.toByte(), 2,
+            1, 'C'.code.toByte(), 3
         )
         field = CbField(payload.asReadOnlyBuffer(), CbFieldType.UniformObject)
         testField(CbFieldType.UniformObject, field, CbObject(payload, CbFieldType.UniformObject))
@@ -216,11 +220,11 @@ class CbFieldTest {
 
         // Equals
         val namedPayload = byteBufferOf(
-            1, 'O'.toByte(),
+            1, 'O'.code.toByte(),
             10, intType,
-            1, 'A'.toByte(), 1,
-            1, 'B'.toByte(), 2,
-            1, 'C'.toByte(), 3
+            1, 'A'.code.toByte(), 1,
+            1, 'B'.code.toByte(), 2,
+            1, 'C'.code.toByte(), 3
         )
         val namedField = CbField(namedPayload, CbFieldType.UniformObject.value or CbFieldType.HasFieldName.value)
         assertTrue(field.asObject() == namedField.asObject())
@@ -244,10 +248,10 @@ class CbFieldTest {
         val objectType = (CbFieldType.Object.value or CbFieldType.HasFieldName.value)
         val buffer = byteBufferOf(
             objectType,
-            3, 'K'.toByte(), 'e'.toByte(), 'y'.toByte(),
+            3, 'K'.code.toByte(), 'e'.code.toByte(), 'y'.code.toByte(),
             4,
             (CbFieldType.HasFieldName.value or CbFieldType.IntegerPositive.value),
-            1, 'F'.toByte(),
+            1, 'F'.code.toByte(),
             8
         )
         var o = CbObject(buffer)
@@ -304,7 +308,7 @@ class CbFieldTest {
         assertTrue(array == field.asArray())
 
         // Equals
-        val namedPayload = byteBufferOf(1, 'A'.toByte(), 5, 3, intType, 1, 2, 3)
+        val namedPayload = byteBufferOf(1, 'A'.code.toByte(), 5, 3, intType, 1, 2, 3)
         val namedField = CbField(namedPayload, CbFieldType.UniformArray.value or CbFieldType.HasFieldName.value)
         assertTrue(field.asArray() == namedField.asArray())
         assertTrue(field == field.asArray().asField())
@@ -334,7 +338,7 @@ class CbFieldTest {
         val arrayType: Byte = (CbFieldType.Array.value or CbFieldType.HasFieldName.value)
         val buffer = byteBufferOf(
             arrayType,
-            3, 'K'.toByte(), 'e'.toByte(), 'y'.toByte(),
+            3, 'K'.code.toByte(), 'e'.code.toByte(), 'y'.code.toByte(),
             3, 1, CbFieldType.IntegerPositive.value, 8
         )
         array = CbArray(buffer)
@@ -388,7 +392,8 @@ class CbFieldTest {
 
         // Test CbField(String, Value)
         run {
-            val payload = byteBufferOf(3, 'A'.toByte(), 'B'.toByte(), 'C'.toByte()) // Size: 3, Data: ABC
+            // Size: 3, Data: ABC
+            val payload = byteBufferOf(3, 'A'.code.toByte(), 'B'.code.toByte(), 'C'.code.toByte())
             testField(CbFieldType.String, payload, "ABC")
         }
 

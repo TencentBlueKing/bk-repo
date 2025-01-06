@@ -42,6 +42,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -223,10 +224,7 @@ class NpmFixToolServiceImpl(
 		val packageManagerList = mutableListOf<PackageManagerResponse>()
 		// 查找所有仓库
 		logger.info("starting add package manager function to historical data.")
-		val repositoryList = repositoryClient.pageByType(0, 1000, "NPM").data?.records ?: run {
-			logger.warn("no npm repository found, return.")
-			return emptyList()
-		}
+		val repositoryList = repositoryService.listRepoPageByType("NPM", 0, 1000).records
 		val npmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
 		logger.info(
 			"find [${npmLocalRepositoryList.size}] NPM local" +
@@ -333,7 +331,7 @@ class NpmFixToolServiceImpl(
 			select = mutableListOf(),
 			rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
 		)
-		val queryResult = nodeClient.queryWithoutCount(queryModel).data!!
+		val queryResult = nodeSearchService.searchWithoutCount(queryModel)
 		return queryResult.records.associateBy(
 			{ resolverVersion(packageName, it["fullPath"] as String) },
 			{ resolveNode(it) }
@@ -363,15 +361,15 @@ class NpmFixToolServiceImpl(
 			select = mutableListOf(),
 			rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
 		)
-		return nodeClient.queryWithoutCount(queryModel).data!!
+		return nodeSearchService.searchWithoutCount(queryModel)
 	}
 
 	private fun resolveNode(record: Map<String, Any?>): NodeInfo {
 		return NodeInfo(
 			createdBy = record["createdBy"] as String,
-			createdDate = record["createdDate"] as String,
+			createdDate = (record["createdDate"] as LocalDateTime).toString(),
 			lastModifiedBy = record["lastModifiedBy"] as String,
-			lastModifiedDate = record["lastModifiedDate"] as String,
+			lastModifiedDate = (record["lastModifiedDate"] as LocalDateTime).toString(),
 			folder = record["folder"] as Boolean,
 			path = record["path"] as String,
 			name = record["name"] as String,
@@ -395,12 +393,12 @@ class NpmFixToolServiceImpl(
 		 */
 		with(artifactInfo) {
 			val packageKey = NpmUtils.packageKeyByRepoType(name)
-			val packageSummary = packageClient.findPackageByKey(projectId, repoName, packageKey).data
+			val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey)
 				?: throw PackageNotFoundException("package [$name] not found")
 			val packageInfo = queryPackageInfo(this, name, false)
 			val metadataVersions = packageInfo.versions.map.keys
 			val packageVersions =
-				packageClient.listAllVersion(projectId, repoName, packageKey).data.orEmpty().map { it.name }
+				packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption()).map { it.name }
 			val subVersion = metadataVersions subtract packageVersions
 			val fullPathList = mutableListOf<String>()
 			if (subVersion.isNotEmpty()) {

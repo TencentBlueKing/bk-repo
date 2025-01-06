@@ -36,17 +36,19 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
@@ -84,13 +86,16 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
+import java.time.LocalDateTime
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import javax.xml.parsers.SAXParserFactory
 
 @Component
 class JobService(
-    private val nodeClient: NodeClient,
-    private val repositoryClient: RepositoryClient,
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService,
+    private val repositoryService: RepositoryService,
     private val storageManager: StorageManager
 ) {
 
@@ -98,9 +103,9 @@ class JobService(
      * 查询下所有rpm仓库
      */
     fun getAllRpmRepo(): List<RepositoryDetail>? {
-        val repoPage = repositoryClient.pageByType(0, 10, "RPM").data
-        val total = (repoPage?.totalRecords ?: 10).toInt()
-        return repositoryClient.pageByType(0, total + 1, "RPM").data?.records
+        val repoPage = repositoryService.listRepoPageByType("RPM", 0, 10)
+        val total = repoPage.totalRecords.toInt()
+        return repositoryService.listRepoPageByType("RPM", 0, total + 1).records
     }
 
     /**
@@ -122,7 +127,7 @@ class JobService(
         if (logger.isDebugEnabled) {
             logger.debug("queryRepodata: $queryModel")
         }
-        val page = nodeClient.queryWithoutCount(queryModel).data!!
+        val page = nodeSearchService.searchWithoutCount(queryModel)
         return page.records.map { it["fullPath"] as String }
     }
 
@@ -130,7 +135,7 @@ class JobService(
      * 查询rpm仓库属性
      */
     private fun getRpmRepoConf(project: String, repoName: String): RpmRepoConf {
-        val repositoryInfo = repositoryClient.getRepoInfo(project, repoName).data
+        val repositoryInfo = repositoryService.getRepoInfo(project, repoName)
             ?: throw RpmConfNotFoundException("can not found $project | $repoName conf")
         val rpmConfiguration = repositoryInfo.configuration
         return rpmConfiguration.toRpmRepoConf()
@@ -274,7 +279,7 @@ class JobService(
         if (list.size > 2) {
             val surplusNodes = list.subList(2, list.size)
             for (node in surplusNodes) {
-                nodeClient.deleteNode(NodeDeleteRequest(node.projectId, node.repoName, node.fullPath, node.createdBy))
+                nodeService.deleteNode(NodeDeleteRequest(node.projectId, node.repoName, node.fullPath, node.createdBy))
                 logger.info("Success to delete ${node.projectId}/${node.repoName}/${node.fullPath}")
             }
         }
@@ -282,8 +287,8 @@ class JobService(
 
     fun getIndexTypeList(repo: RepositoryDetail, repodataPath: String, indexType: IndexType): List<NodeInfo> {
         val target = "-${indexType.value}.xml.gz"
-        val indexList = nodeClient.listNodePage(
-            repo.projectId, repo.name, repodataPath,
+        val indexList = nodeService.listNodePage(
+            ArtifactInfo(repo.projectId, repo.name, repodataPath),
             NodeListOption(
                 1,
                 100,
@@ -292,7 +297,7 @@ class JobService(
                 deep = false,
                 sort = false
             )
-        ).data?.records ?: return mutableListOf()
+        ).records
         return indexList.filter { it.name.endsWith(target) }.sortedByDescending { it.lastModifiedDate }
     }
 
@@ -331,7 +336,7 @@ class JobService(
             ),
             rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
-        var nodeList = nodeClient.queryWithoutCount(queryModel).data!!.records.map { resolveNode(it) }
+        var nodeList = nodeSearchService.searchWithoutCount(queryModel).records.map { resolveNode(it) }
         val regex = Regex(
             "${IndexType.PRIMARY.value}.xml.gz" +
                 "|${IndexType.OTHER.value}.xml.gz" +
@@ -342,11 +347,11 @@ class JobService(
         }
         // 如果是索引文件则执行
         if (nameSuffix.matches(regex)) {
-            val indexType = IndexType.valueOf(nameSuffix.removeSuffix(".xml.gz").toUpperCase())
+            val indexType = IndexType.valueOf(nameSuffix.removeSuffix(".xml.gz").uppercase(Locale.getDefault()))
             if (nodeList.isEmpty()) {
                 logger.debug("Init [${repo.projectId}|${repo.name}|$repodataPath|${indexType.value} index] ")
                 initIndex(repo, repodataPath, indexType)
-                nodeList = nodeClient.queryWithoutCount(queryModel).data!!.records.map { resolveNode(it) }
+                nodeList = nodeSearchService.searchWithoutCount(queryModel).records.map { resolveNode(it) }
             }
             if (nodeList.isEmpty()) {
                 throw NodeNotFoundException(
@@ -373,11 +378,13 @@ class JobService(
                     ".edu/metadata/rpm\" packages=\"0\">\n" +
                     "</metadata>"
             }
+
             IndexType.FILELISTS -> {
                 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
                     "<metadata xmlns=\"http://linux.duke.edu/metadata/filelists\" packages=\"0\">\n" +
                     "</metadata>"
             }
+
             IndexType.OTHER -> {
                 "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
                     "<metadata xmlns=\"http://linux.duke.edu/metadata/other\" packages=\"0\">\n" +
@@ -424,12 +431,14 @@ class JobService(
                 val markContent = resolveIndexXml(markNodeInfo, indexType, repo) ?: return 0
                 return XmlStrUtils.insertPackageIndex(randomAccessFile, markContent)
             }
+
             ArtifactRepeat.DELETE -> {
                 logger.info("delete index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}]")
                 val rpmVersion = markNodeInfo.metadata!!.toRpmVersion(markNodeInfo.fullPath)
                 val uniqueStr = getLocationStr(indexType, rpmVersion, locationStr)
                 return XmlStrUtils.deletePackageIndex(randomAccessFile, indexType, uniqueStr)
             }
+
             ArtifactRepeat.FULLPATH -> {
                 logger.info("replace index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}]")
                 val rpmVersion = markNodeInfo.metadata!!.toRpmVersion(markNodeInfo.fullPath)
@@ -437,6 +446,7 @@ class JobService(
                 val markContent = resolveIndexXml(markNodeInfo, indexType, repo) ?: return 0
                 return XmlStrUtils.updatePackageIndex(randomAccessFile, indexType, uniqueStr, markContent)
             }
+
             ArtifactRepeat.FULLPATH_SHA256 -> {
                 logger.info("skip index of [${repo.projectId}|${repo.name}|${markNodeInfo.fullPath}]")
                 return 0
@@ -459,6 +469,7 @@ class JobService(
     <version epoch="$epoch" ver="$ver" rel="$rel"/>"""
                 }
             }
+
             IndexType.PRIMARY -> {
                 """<location href="$location"/>"""
             }
@@ -482,8 +493,8 @@ class JobService(
         return NodeInfo(
             createdBy = mapData["createdBy"] as String,
             createdDate = mapData["lastModifiedBy"] as String,
-            lastModifiedBy = mapData["lastModifiedDate"] as String,
-            lastModifiedDate = mapData["lastModifiedDate"] as String,
+            lastModifiedBy = (mapData["lastModifiedDate"] as LocalDateTime).toString(),
+            lastModifiedDate = (mapData["lastModifiedDate"] as LocalDateTime).toString(),
             folder = mapData["folder"] as Boolean,
             path = mapData["path"] as String,
             name = mapData["name"] as String,
@@ -536,7 +547,7 @@ class JobService(
         if (logger.isDebugEnabled) {
             logger.debug("queryModel: $queryModel")
         }
-        val resultPage = nodeClient.search(queryModel).data!!
+        val resultPage = nodeSearchService.search(queryModel)
         with(resultPage) { return Page(pageNumber, pageSize, totalRecords, records.map { resolveNode(it) }) }
     }
 
@@ -561,8 +572,10 @@ class JobService(
                 if (!failNodeList.isNullOrEmpty() &&
                     errorNodeMap.getOrDefault(failNodeList.first().fullPath, 0) > 2
                 ) {
-                    logger.error("${failNodeList.first()}, " +
-                            "failed times: ${errorNodeMap[failNodeList.first().fullPath]}")
+                    logger.error(
+                        "${failNodeList.first()}, " +
+                            "failed times: ${errorNodeMap[failNodeList.first().fullPath]}"
+                    )
                     logger.error(
                         "Single update ${indexType.value}: [${repo.projectId}|${repo.name}|$repodataPath] error"
                     )
@@ -701,7 +714,7 @@ class JobService(
         return if (repeat == ArtifactRepeat.DELETE) {
             updateIndex(randomAccessFile, markNode, repeat, repo, repodataPath, locationHref, indexType)
         } else {
-            val rpmNode = nodeClient.getNodeDetail(markNode.projectId, markNode.repoName, locationStr).data
+            val rpmNode = nodeService.getNodeDetail(ArtifactInfo(markNode.projectId, markNode.repoName, locationStr))
             if (rpmNode == null) {
                 with(markNode) {
                     logger.info("rpm node[$projectId|$repoName|$locationStr] no found, skip index")
@@ -725,7 +738,7 @@ class JobService(
         nodes.forEach { nodeInfo ->
             with(nodeInfo) {
                 try {
-                    nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, fullPath, "system"))
+                    nodeService.deleteNode(NodeDeleteRequest(projectId, repoName, fullPath, "system"))
                     logger.info("node[$projectId|$repoName|$fullPath] deleted")
                 } catch (e: Exception) {
                     logger.info("node[$projectId|$repoName|$fullPath] delete exception, ${e.message}")
@@ -739,7 +752,7 @@ class JobService(
         nodes.forEach { nodeInfo ->
             with(nodeInfo) {
                 try {
-                    nodeClient.updateNode(
+                    nodeService.updateNode(
                         NodeUpdateRequest(projectId, repoName, fullPath, 0L, "system")
                     )
                     logger.info("node[$projectId|$repoName|$fullPath] update")

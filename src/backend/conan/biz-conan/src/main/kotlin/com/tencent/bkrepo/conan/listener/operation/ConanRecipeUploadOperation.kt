@@ -41,10 +41,7 @@ class ConanRecipeUploadOperation(
     override fun handleEvent(indexInfo: IndexInfo) {
         with(request as ConanRecipeUploadRequest) {
             logger.info("${indexInfo.reference} recipe's revision $revision info will be added into index.json")
-            val newRevisions = mutableListOf<RevisionInfo>()
-            newRevisions.addAll(indexInfo.revisions)
-            newRevisions.add(RevisionInfo(revision, dateStr))
-            indexInfo.revisions = newRevisions
+            indexInfo.addRevision(RevisionInfo(revision, dateStr))
         }
     }
 }

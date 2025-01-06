@@ -27,6 +27,10 @@
 
 package com.tencent.bkrepo.generic.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
@@ -36,9 +40,13 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.router.Router
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -62,6 +70,7 @@ import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.TemporaryAccessService
 import com.tencent.bkrepo.generic.service.UploadService
+import io.swagger.annotations.ApiOperation
 import org.springframework.http.HttpMethod
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -103,6 +112,63 @@ class TemporaryAccessController(
         }
     }
 
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()",
+        ),
+        attributes = [
+            AuditAttribute(
+                name = ActionAuditContent.PROJECT_CODE_TEMPLATE,
+                value = "#artifactInfo?.projectId"
+            ),
+            AuditAttribute(
+                name = ActionAuditContent.REPO_NAME_TEMPLATE,
+                value = "#artifactInfo?.repoName"
+            )
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_SHARE_DOWNLOAD_CONTENT
+    )
+    @ApiOperation("下载分享文件")
+    @Router
+    @CrossOrigin
+    @GetMapping("/share/$GENERIC_MAPPING_URI")
+    fun download(
+        @RequestAttribute userId: String,
+        @RequestParam token: String,
+        @RequestParam("userId") downloadUserId: String?,
+        artifactInfo: GenericArtifactInfo
+    ) {
+        val downloadUser = downloadUserId ?: userId
+        val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.DOWNLOAD)
+        temporaryAccessService.downloadByShare(downloadUser, tokenInfo.createdBy, artifactInfo)
+        temporaryAccessService.decrementPermits(tokenInfo)
+    }
+
+
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_WITH_TOKEN_CONTENT
+    )
     @Router
     @CrossOrigin
     @GetMapping("/download/$GENERIC_MAPPING_URI")
@@ -115,6 +181,23 @@ class TemporaryAccessController(
         temporaryAccessService.decrementPermits(tokenInfo)
     }
 
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_WITH_TOKEN_CONTENT
+    )
     @CrossOrigin
     @PutMapping("/upload/$GENERIC_MAPPING_URI")
     fun uploadByToken(

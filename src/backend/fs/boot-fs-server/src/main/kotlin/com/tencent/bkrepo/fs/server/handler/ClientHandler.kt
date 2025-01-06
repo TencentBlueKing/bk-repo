@@ -29,9 +29,9 @@ package com.tencent.bkrepo.fs.server.handler
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
 import com.tencent.bkrepo.fs.server.pojo.ClientListRequest
 import com.tencent.bkrepo.fs.server.pojo.DailyClientListRequest
+import com.tencent.bkrepo.fs.server.request.ClientCreateRequest
 import com.tencent.bkrepo.fs.server.request.ClientPushMetricsRequest
 import com.tencent.bkrepo.fs.server.service.ClientService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
@@ -73,7 +73,8 @@ class ClientHandler(
             pageSize = request.queryParamOrNull(ClientListRequest::pageSize.name)?.toInt() ?: DEFAULT_PAGE_SIZE,
             online = request.queryParamOrNull(ClientListRequest::online.name)?.toBoolean(),
             ip = request.queryParamOrNull(ClientListRequest::ip.name),
-            version = request.queryParamOrNull(ClientListRequest::version.name)
+            version = request.queryParamOrNull(ClientListRequest::version.name),
+            userId = request.queryParamOrNull(ClientListRequest::userId.name)
         )
         return ReactiveResponseBuilder.success(clientService.listClients(listRequest))
     }

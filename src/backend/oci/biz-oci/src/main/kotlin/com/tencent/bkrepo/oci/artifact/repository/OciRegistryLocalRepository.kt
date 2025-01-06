@@ -31,8 +31,13 @@
 
 package com.tencent.bkrepo.oci.artifact.repository
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -43,6 +48,9 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
@@ -78,8 +86,10 @@ import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.util.Locale
 
 @Component
 class OciRegistryLocalRepository(
@@ -102,7 +112,7 @@ class OciRegistryLocalRepository(
             val projectId = repositoryDetail.projectId
             val repoName = repositoryDetail.name
             val fullPath = context.artifactInfo.getArtifactFullPath()
-            val isExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
+            val isExist = nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))
             logger.info(
                 "The file $fullPath that will be uploaded to server is exist: $isExist " +
                     "in repo ${artifactInfo.getRepoIdentify()}, and the flag of force overwrite is $isForce"
@@ -185,6 +195,23 @@ class OciRegistryLocalRepository(
      * blob 上传，直接使用post
      * Pushing a blob monolithically ：A single POST request
      */
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#context.artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#context.artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#context?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#context?.repoName")
+        ],
+        scopeId = "#context?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     private fun postUpload(context: ArtifactUploadContext): ResponseProperty? {
         val artifactFile = context.getArtifactFile()
         val digest = OciDigest.fromSha256(artifactFile.getFileSha256())
@@ -227,6 +254,23 @@ class OciRegistryLocalRepository(
      * 1 blob POST with PUT 上传的put模块处理
      * 2 blob POST PATCH with PUT 上传的put模块处理
      */
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#context.artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#context.artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#context?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#context?.repoName")
+        ],
+        scopeId = "#context?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
     private fun putUploadBlob(context: ArtifactUploadContext): ResponseProperty {
         val artifactInfo = context.artifactInfo as OciBlobArtifactInfo
         val sha256 = artifactInfo.getDigestHex()
@@ -252,9 +296,7 @@ class OciRegistryLocalRepository(
         } catch (e: StorageErrorException) {
             // 计算sha256和转存文件导致时间较长，会出现请求超时，然后发起重试，导致并发操作该临时文件，文件可能已经被删除
             if (storageService.exist(sha256, context.repositoryDetail.storageCredentials)) {
-                val nodeDetail = nodeClient.getNodeDetail(
-                    artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath()
-                ).data
+                val nodeDetail = nodeService.getNodeDetail(artifactInfo)
                 if (nodeDetail == null || nodeDetail.sha256 != sha256) {
                     throw e
                 } else {
@@ -413,13 +455,13 @@ class OciRegistryLocalRepository(
                 ?: throw OciFileNotFoundException(
                     OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
-            nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
                 ?: throw OciFileNotFoundException(
                     OciMessageCode.OCI_FILE_NOT_FOUND, getArtifactFullPath(), getRepoIdentify()
                 )
             logger.info("Ready to delete $fullPath in repo ${getRepoIdentify()}")
             val request = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)
-            nodeClient.deleteNode(request)
+            nodeService.deleteNode(request)
             OciResponseUtils.buildDeleteResponse(context.response)
         }
     }
@@ -447,7 +489,7 @@ class OciRegistryLocalRepository(
             val artifactInfo = context.artifactInfo as OciArtifactInfo
             val packageKey = PackageKeys.ofName(repo.type, artifactInfo.packageName)
             val version = node.metadata[IMAGE_VERSION]?.toString() ?: return null
-            return packageClient.findVersionByName(projectId, repoName, packageKey, version).data
+            return packageService.findVersionByName(projectId, repoName, packageKey, version)
         }
     }
 
@@ -466,7 +508,7 @@ class OciRegistryLocalRepository(
         with(context.artifactInfo as OciTagArtifactInfo) {
             val n = context.getAttribute<Int>(N)
             val last = context.getAttribute<String>(LAST_TAG)
-            val packageList = packageClient.listAllPackageNames(projectId, repoName).data.orEmpty()
+            val packageList = packageService.listAllPackageName(projectId, repoName)
             if (packageList.isEmpty()) return null
             val nameList = mutableListOf<String>().apply {
                 packageList.forEach {
@@ -495,12 +537,9 @@ class OciRegistryLocalRepository(
         with(context.artifactInfo as OciTagArtifactInfo) {
             val n = context.getAttribute<Int>(N)
             val last = context.getAttribute<String>(LAST_TAG)
-            val packageKey = PackageKeys.ofName(context.repositoryDetail.type.name.toLowerCase(), packageName)
-            val versionList = packageClient.listAllVersion(
-                projectId,
-                repoName,
-                packageKey
-            ).data.orEmpty()
+            val packageKey =
+                PackageKeys.ofName(context.repositoryDetail.type.name.lowercase(Locale.getDefault()), packageName)
+            val versionList = packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption())
             if (versionList.isEmpty()) return null
             val tagList = mutableListOf<String>().apply {
                 versionList.forEach {

@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.fs.server.listener
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.service.FileNodeService
-import kotlinx.coroutines.reactor.awaitSingle
+import com.tencent.bkrepo.fs.server.service.node.RNodeService
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
@@ -13,8 +13,8 @@ import java.util.concurrent.Executors
 
 @Component
 class NodeModifyListener(
-    private val rRepositoryClient: RRepositoryClient,
-    private val fileNodeService: FileNodeService
+    private val fileNodeService: FileNodeService,
+    private val nodeService: RNodeService
 ) {
 
     fun accept(message: Message<ArtifactEvent>) {
@@ -30,7 +30,7 @@ class NodeModifyListener(
     private fun consumer(event: ArtifactEvent) {
         runBlocking {
             with(event) {
-                val node = rRepositoryClient.getNodeDetail(projectId, repoName, resourceKey).awaitSingle().data
+                val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, resourceKey))
                 if (node?.folder != true) {
                     fileNodeService.deleteNodeBlocks(projectId, repoName, resourceKey)
                 }

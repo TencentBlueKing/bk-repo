@@ -29,6 +29,7 @@ package com.tencent.bkrepo.generic.artifact
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.common.api.constant.CharPool
@@ -65,6 +66,7 @@ import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
+import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager.Companion.METADATA_BUILD_ID
@@ -110,7 +112,6 @@ import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import com.tencent.bkrepo.repository.api.PipelineNodeClient
 import com.tencent.bkrepo.repository.constant.NODE_DETAIL_LIST_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -125,6 +126,7 @@ import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
 import java.util.Base64
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
@@ -134,7 +136,7 @@ import kotlin.reflect.full.memberProperties
 class GenericLocalRepository(
     private val replicaTaskClient: ReplicaTaskClient,
     private val clusterNodeClient: ClusterNodeClient,
-    private val pipelineNodeClient: PipelineNodeClient,
+    private val pipelineNodeService: PipelineNodeService,
     private val ciPermissionManager: CIPermissionManager
 ) : LocalRepository() {
 
@@ -253,7 +255,7 @@ class GenericLocalRepository(
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
         if (!overwrite && !isBlockUpload(uploadId, sequence) && !isChunkedUpload(uploadType)) {
             with(context.artifactInfo) {
-                nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data?.let {
+                nodeService.getNodeDetail(this)?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
                 }
             }
@@ -266,7 +268,7 @@ class GenericLocalRepository(
             return
         }
         with(context.artifactInfo) {
-            val existNode = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+            val existNode = nodeService.getNodeDetail(this)
             val metadata = resolveMetadata(context.request)
             val mPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true) }?.value?.toString()
                 ?: metadata.find { it.key.equals(METADATA_PIPELINE_ID, true) }?.value?.toString()
@@ -396,11 +398,11 @@ class GenericLocalRepository(
         existNode?.metadata?.keys?.forEach { key ->
             if (CIPermissionManager.PIPELINE_METADATA.any { it.equals(key, true) }) {
                 val mProjectId = existNode.metadata[METADATA_PROJECT_ID]
-                    ?: existNode.metadata[METADATA_PROJECT_ID.toLowerCase()]
+                    ?: existNode.metadata[METADATA_PROJECT_ID.lowercase(Locale.getDefault())]
                 val mPipelineId = existNode.metadata[METADATA_PIPELINE_ID]
-                    ?: existNode.metadata[METADATA_PIPELINE_ID.toLowerCase()]
+                    ?: existNode.metadata[METADATA_PIPELINE_ID.lowercase(Locale.getDefault())]
                 val mBuildId = existNode.metadata[METADATA_BUILD_ID]
-                    ?: existNode.metadata[METADATA_BUILD_ID.toLowerCase()]
+                    ?: existNode.metadata[METADATA_BUILD_ID.lowercase(Locale.getDefault())]
                 return ciPermissionManager.throwOrLogError(
                     messageCode = GenericMessageCode.CUSTOM_ARTIFACT_OVERWRITE_NOT_ALLOWED,
                     existNode.fullPath, "$mProjectId/$mPipelineId/$mBuildId"
@@ -499,8 +501,9 @@ class GenericLocalRepository(
                     includeMetadata = true,
                     deep = true
                 )
-                val records = nodeClient.listNodePage(folder.projectId, folder.repoName, folder.fullPath, option).data
-                    ?.records.takeUnless { it.isNullOrEmpty() }?.map { NodeDetail(it) } ?: break
+                val records =
+                    nodeService.listNodePage(ArtifactInfo(folder.projectId, folder.repoName, folder.fullPath), option)
+                    .records.takeUnless { it.isEmpty() }?.map { NodeDetail(it) } ?: break
                 records.filterNot { it.folder }.forEach { downloadIntercept(context, it) }
                 totalSize += records.sumOf { it.size }
                 checkFileTotalSize(totalSize)
@@ -528,8 +531,8 @@ class GenericLocalRepository(
                 includeMetadata = true,
                 deep = true
             )
-            val records = nodeClient.listNodePage(projectId, repoName, prefix, option).data?.records
-            if (records.isNullOrEmpty()) {
+            val records = nodeService.listNodePage(ArtifactInfo(projectId, repoName, prefix), option).records
+            if (records.isEmpty()) {
                 break
             }
             nodeDetailList.addAll(
@@ -593,15 +596,15 @@ class GenericLocalRepository(
 
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, getArtifactFullPath()).data
+            val node = nodeService.getNodeDetail(this)
                 ?: throw NodeNotFoundException(this.getArtifactFullPath())
             if (node.folder) {
-                if (nodeClient.countFileNode(projectId, repoName, getArtifactFullPath()).data!! > 0) {
+                if (nodeService.countFileNode(this) > 0) {
                     throw ErrorCodeException(ArtifactMessageCode.FOLDER_CONTAINS_FILE)
                 }
             }
             val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, getArtifactFullPath(), context.userId)
-            nodeClient.deleteNode(nodeDeleteRequest)
+            nodeService.deleteNode(nodeDeleteRequest)
         }
     }
 
@@ -619,11 +622,7 @@ class GenericLocalRepository(
 
     override fun query(context: ArtifactQueryContext): Any? {
         val artifactInfo = context.artifactInfo
-        return nodeClient.getNodeDetail(
-            artifactInfo.projectId,
-            artifactInfo.repoName,
-            artifactInfo.getArtifactFullPath()
-        ).data
+        return nodeService.getNodeDetail(artifactInfo)
     }
 
     override fun search(context: ArtifactSearchContext): List<Any> {
@@ -634,7 +633,7 @@ class GenericLocalRepository(
         return if (isSearchPipelineRoot) {
             // 仅在查询流水线仓库第一页时返回用户有权限的流水线目录
             if (queryModel.page.pageNumber == DEFAULT_PAGE_NUMBER) {
-                pipelineNodeClient.listPipeline(context.projectId, context.repoName).data!!.map { node ->
+                pipelineNodeService.listPipeline(context.projectId, context.repoName).map { node ->
                     val nodePropMap = LinkedHashMap<String, Any?>()
                     NodeInfo::class.memberProperties
                         .filter { it.name != NodeInfo::deleted.name }
@@ -648,7 +647,7 @@ class GenericLocalRepository(
         } else {
             // 强制替换为请求的projectId与repoName避免越权
             val newRule = replaceProjectIdAndRepo(queryModel.rule, context.projectId, context.repoName)
-            nodeClient.queryWithoutCount(queryModel.copy(rule = newRule)).data!!.records.onEach { node ->
+            nodeSearchService.searchWithoutCount(queryModel.copy(rule = newRule)).records.onEach { node ->
                 (node as MutableMap<String, Any?>)[RepositoryInfo::category.name] = RepositoryCategory.LOCAL.name
             }
         }
@@ -736,7 +735,7 @@ class GenericLocalRepository(
         val headerNames = request.headerNames
         for (headerName in headerNames) {
             if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
-                val key = headerName.substring(BKREPO_META_PREFIX.length).trim().toLowerCase()
+                val key = headerName.substring(BKREPO_META_PREFIX.length).trim().lowercase(Locale.getDefault())
                 if (key.isNotBlank()) {
                     metadata[key] = HeaderUtils.getUrlDecodedHeader(headerName)!!
                 }
@@ -876,7 +875,8 @@ class GenericLocalRepository(
                 md5 = fileInfo.md5,
                 size = fileInfo.size
             )
-            nodeClient.createNode(nodeRequest)
+            ActionAuditContext.current().setInstance(nodeRequest)
+            nodeService.createNode(nodeRequest)
             return property
         }
     }

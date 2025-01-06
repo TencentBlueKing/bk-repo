@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.manager
 
+import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -35,13 +36,13 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.repository.api.FileReferenceClient
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -54,7 +55,7 @@ import org.slf4j.LoggerFactory
  *
  * 虽然[StorageService]提供了构件存储服务，但保存一个文件节点需要两步操作:
  *   1. [StorageService]保存文件数据
- *   2. [NodeClient]微服务调用创建文件节点
+ *   2. [NodeService]创建文件节点
  * 这样会存在几个问题:
  *   1. 每个地方都会进行同样的操作，增加代码重复率
  *   2. 不支持事务，如果文件保存成功，但节点创建失败，会导致产生垃圾文件并且无法清理
@@ -65,8 +66,8 @@ import org.slf4j.LoggerFactory
 @Suppress("TooGenericExceptionCaught")
 class StorageManager(
     private val storageService: StorageService,
-    private val nodeClient: NodeClient,
-    private val fileReferenceClient: FileReferenceClient,
+    private val nodeService: NodeService,
+    private val fileReferenceService: FileReferenceService,
     private val nodeResourceFactory: NodeResourceFactory,
     private val pluginManager: PluginManager,
 ) {
@@ -82,13 +83,14 @@ class StorageManager(
     ): NodeDetail {
         val affectedCount = storageService.store(request.sha256!!, artifactFile, storageCredentials)
         try {
-            return nodeClient.createNode(request).data!!
+            ActionAuditContext.current().setInstance(request)
+            return nodeService.createNode(request)
         } catch (exception: Exception) {
             if (affectedCount == 1) {
                 try {
                     // 当createNode调用超时，实际node和引用创建成功时不会做任何改变
                     // 当文件创建成功，但是node创建失败时，则创建一个计数为0的fileReference用于清理任务清理垃圾文件
-                    fileReferenceClient.increment(request.sha256!!, storageCredentials?.key, 0L)
+                    fileReferenceService.increment(request.sha256!!, storageCredentials?.key, 0L)
                 } catch (exception: Exception) {
                     // 创建引用失败后会通过定时任务StorageReconcileJob清理垃圾文件
                     logger.error("Failed to create ref for new created file[${request.sha256}]", exception)
@@ -146,6 +148,8 @@ class StorageManager(
             forwardNode = forward(node, SecurityUtils.getUserId())
             forwardNode?.let {
                 logger.info("Load[${node.identity()}] forward to [${it.identity()}].")
+                ActionAuditContext.current().addExtendData("alphaApkSha256", it.sha256)
+                ActionAuditContext.current().addExtendData("alphaApkMd5", it.md5)
             }
         }
         val load = forwardNode ?: node

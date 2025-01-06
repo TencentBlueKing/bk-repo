@@ -101,10 +101,10 @@ class CustomMetricsPushAutoConfiguration {
     fun customMetricsExporter(
         drive: PrometheusDrive,
         prometheusProperties: PrometheusProperties,
-        scheduler: ThreadPoolTaskScheduler,
+        taskScheduler: ThreadPoolTaskScheduler,
         customPushConfig: CustomPushConfig,
     ): CustomMetricsExporter {
-        return CustomMetricsExporter(customPushConfig, CollectorRegistry(), drive, prometheusProperties, scheduler)
+        return CustomMetricsExporter(customPushConfig, CollectorRegistry(), drive, prometheusProperties, taskScheduler)
     }
 
 

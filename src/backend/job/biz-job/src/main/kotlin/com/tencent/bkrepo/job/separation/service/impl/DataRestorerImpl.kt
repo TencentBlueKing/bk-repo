@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.job.separation.service.impl
 
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
 import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
+import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
@@ -72,6 +72,7 @@ class DataRestorerImpl(
     private val separationPackageDao: SeparationPackageDao,
     separationFailedRecordDao: SeparationFailedRecordDao,
     private val separationNodeDao: SeparationNodeDao,
+    private val dataSeparationConfig: DataSeparationConfig,
     separationTaskDao: SeparationTaskDao,
 ) : AbstractHandler(mongoTemplate, separationFailedRecordDao, separationTaskDao), DataRestorer {
     override fun repoRestorer(context: SeparationContext) {
@@ -111,7 +112,7 @@ class DataRestorerImpl(
         with(context) {
             validatePackageParams(pkg)
             var pageNumber = 0
-            val pageSize = BATCH_SIZE
+            val pageSize = dataSeparationConfig.batchSize
             var querySize: Int
             val query = SeparationQueryHelper.packageKeyQuery(
                 projectId, repoName, pkg?.packageKey, pkg?.packageKeyRegex
@@ -140,7 +141,7 @@ class DataRestorerImpl(
     ) {
         with(context) {
             var pageNumber = 0
-            val pageSize = BATCH_SIZE
+            val pageSize = dataSeparationConfig.batchSize
             var querySize: Int
             val query = SeparationQueryHelper.versionListQuery(
                 packageInfo.id!!, separationDate, nameRegex = pkg?.versionRegex,
@@ -611,7 +612,7 @@ class DataRestorerImpl(
         with(context) {
             validateNodeParams(node)
             var pageNumber = 0
-            val pageSize = BATCH_SIZE
+            val pageSize = dataSeparationConfig.batchSize
             var querySize: Int
             val query = SeparationQueryHelper.pathQuery(
                 projectId, repoName, separationDate, node?.path, node?.pathRegex, node?.excludePath

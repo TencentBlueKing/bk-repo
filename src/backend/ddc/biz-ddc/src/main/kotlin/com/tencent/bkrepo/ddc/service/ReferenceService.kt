@@ -29,8 +29,11 @@ package com.tencent.bkrepo.ddc.service
 
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.ddc.config.DdcProperties
 import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
@@ -45,7 +48,6 @@ import com.tencent.bkrepo.ddc.repository.RefBaseRepository
 import com.tencent.bkrepo.ddc.repository.RefRepository
 import com.tencent.bkrepo.ddc.serialization.CbObject
 import com.tencent.bkrepo.ddc.utils.hasAttachments
-import com.tencent.bkrepo.repository.api.NodeClient
 import org.bson.types.Binary
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -59,17 +61,16 @@ class ReferenceService(
     private val refResolver: ReferenceResolver,
     private val refRepository: RefRepository,
     private val legacyRefRepository: LegacyRefRepository,
-    private val nodeClient: NodeClient,
+    private val nodeService: NodeService,
     private val storageManager: StorageManager,
 ) {
-    fun create(ref: Reference): Reference {
+    fun create(ref: Reference, userId: String): Reference {
         val inlineBlob = if (ref.inlineBlob!!.size > ddcProperties.inlineBlobMaxSize.toBytes()) {
             null
         } else {
             ref.inlineBlob
         }
 
-        val userId = SecurityUtils.getUserId()
         val now = LocalDateTime.now()
         val tRef = TDdcRef(
             createdBy = userId,
@@ -135,8 +136,8 @@ class ReferenceService(
 
         val ref = Reference.from(tRef)
         if (ref.inlineBlob == null) {
-            val repo = ArtifactContextHolder.getRepoDetail(ArtifactContextHolder.RepositoryId(projectId, repoName))
-            ref.inlineBlob = nodeClient.getNodeDetail(projectId, repoName, ref.fullPath()).data?.let { node ->
+            val repo = ArtifactContextHolder.getRepoDetail(RepositoryId(projectId, repoName))
+            ref.inlineBlob = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, ref.fullPath()))?.let { node ->
                 storageManager.loadArtifactInputStream(node, repo.storageCredentials)?.use { it.readBytes() }
             }
         }

@@ -33,13 +33,13 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
-import com.tencent.bkrepo.common.artifact.event.ArtifactEventProperties
+import com.tencent.bkrepo.common.artifact.properties.ArtifactEventProperties
 import com.tencent.bkrepo.common.artifact.event.node.NodeDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeUpdateAccessDateEvent
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactClient
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
@@ -163,7 +163,7 @@ class ArtifactDownloadListener(
         try {
             artifactClient.updateAccessDate(updateRequest)
         } catch (ignore: Exception) {
-            logger.warn("update node access time [$updateRequest] error, ${ignore.message}")
+            logger.warn("update node access time [$updateRequest] error: ${ignore.message}, cause: ${ignore.cause}")
         }
     }
 
@@ -229,6 +229,7 @@ class ArtifactDownloadListener(
         data[SHA256] = node.sha256 ?: StringPool.EMPTY
         data[SHARE_USER_ID] = context.shareUserId
         data[USER_AGENT] = request?.getHeader(HttpHeaders.USER_AGENT) ?: StringPool.EMPTY
+        data[SIZE] = node.size
         return NodeDownloadedEvent(
             projectId = node.projectId,
             repoName = node.repoName,
@@ -244,5 +245,6 @@ class ArtifactDownloadListener(
         private const val SHA256 = "sha256"
         private const val SHARE_USER_ID = "shareUserId"
         private const val USER_AGENT = "userAgent"
+        private const val SIZE = "size"
     }
 }

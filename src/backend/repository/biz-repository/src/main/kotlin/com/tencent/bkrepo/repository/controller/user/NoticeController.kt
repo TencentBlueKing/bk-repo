@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.config.BkNoticeProperties
+import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -55,8 +56,16 @@ class NoticeController(
         @RequestParam(required = false) offset: Int? = null,
         @RequestParam(required = false) limit: Int? = null,
     ): Response<List<AnnouncementDTO>> {
+        if (properties.apiBaseUrl.isBlank() || properties.appCode.isBlank() || properties.appSecret.isBlank()) {
+            logger.warn("The config of notice has uncorrected empty")
+            return ResponseBuilder.success()
+        }
         val bkNoticeConfig = BkNoticeConfig(properties.apiBaseUrl, properties.appCode, properties.appSecret)
-        val lang = localeResolver.resolveLocale(HttpContextHolder.getRequest()).toLanguageTag().toLowerCase()
+        val lang = localeResolver.resolveLocale(HttpContextHolder.getRequest()).toLanguageTag().lowercase()
         return ResponseBuilder.success(BkNoticeClient(bkNoticeConfig).getCurrentAnnouncements(lang, offset, limit))
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(NoticeController::class.java)
     }
 }

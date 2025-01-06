@@ -31,16 +31,15 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 @Component
-class CacheableRepositoryClient(private val repositoryClient: RepositoryClient) {
+class CacheableRepositoryClient(private val repositoryService: RepositoryService) {
     private val repoInfoCache: LoadingCache<String, RepositoryInfo> = CacheBuilder.newBuilder()
         .maximumSize(DEFAULT_REPO_INFO_CACHE_SIZE)
         .expireAfterWrite(DEFAULT_REPO_INFO_CACHE_DURATION_MINUTES, TimeUnit.MINUTES)
@@ -52,15 +51,8 @@ class CacheableRepositoryClient(private val repositoryClient: RepositoryClient) 
 
     private fun loadRepoInfo(key: String): RepositoryInfo {
         val (projectId, repoName) = fromKey(key)
-        val repoRes = repositoryClient.getRepoInfo(projectId, repoName)
-        if (repoRes.isNotOk()) {
-            logger.error(
-                "Get repo info failed: code[${repoRes.code}], message[${repoRes.message}]," +
-                    " projectId[$projectId], repoName[$repoName]"
-            )
-            throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, repoRes.message ?: "")
-        }
-        return repoRes.data ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, key)
+        val repo = repositoryService.getRepoInfo(projectId, repoName)
+        return repo ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, key)
     }
 
     private fun fromKey(key: String): Pair<String, String> {

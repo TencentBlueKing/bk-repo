@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -145,8 +146,8 @@ class ChartRepositoryServiceImpl(
                     select = mutableListOf(PROJECT_ID, REPO_NAME, NODE_FULL_PATH, NODE_METADATA),
                     rule = rule
                 )
-                val nodeList: List<Map<String, Any?>>? = nodeClient.queryWithoutCount(queryModel).data?.records
-                if (nodeList.isNullOrEmpty()) HttpStatus.NOT_FOUND else HttpStatus.OK
+                val nodeList: List<Map<String, Any?>> = nodeSearchService.searchWithoutCount(queryModel).records
+                if (nodeList.isEmpty()) HttpStatus.NOT_FOUND else HttpStatus.OK
             } else {
                 HttpStatus.NOT_FOUND
             }
@@ -163,11 +164,11 @@ class ChartRepositoryServiceImpl(
         with(artifactInfo) {
             val name = PackageKeys.resolveHelm(packageKey)
             val fullPath = String.format("/%s-%s.tgz", name, version)
-            val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data ?: run {
+            val nodeDetail = nodeService.getNodeDetail(artifactInfo) ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, fullPath, "$projectId|$repoName")
             }
-            val packageVersion = packageClient.findVersionByName(projectId, repoName, packageKey, version).data ?: run {
+            val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, version) ?: run {
                 logger.warn("packageKey [$packageKey] don't found.")
                 throw PackageNotFoundException(packageKey)
             }
@@ -226,6 +227,8 @@ class ChartRepositoryServiceImpl(
         context.putAttribute(FULL_PATH, HelmUtils.getIndexCacheYamlFullPath())
         try {
             ArtifactContextHolder.getRepository().download(context)
+        } catch (e: OverloadException) {
+            throw e
         } catch (e: Exception) {
             logger.warn("Error occurred while downloading index.yaml, error: ${e.message}")
             throw HelmFileNotFoundException(
@@ -302,7 +305,7 @@ class ChartRepositoryServiceImpl(
                             helmProperties.domain, "$projectId/$repoName/charts/$chartName-$chartVersion.tgz"
                         )
                     )
-                    chartMetadata.created = convertDateTime(it[NODE_CREATE_DATE] as String)
+                    chartMetadata.created = TimeFormatUtil.convertToUtcTime(it[NODE_CREATE_DATE] as LocalDateTime)
                     chartMetadata.digest = it[NODE_SHA256] as String
                     ChartParserUtil.addIndexEntries(indexYamlMetadata, chartMetadata)
                 } catch (ex: HelmFileNotFoundException) {
@@ -333,6 +336,8 @@ class ChartRepositoryServiceImpl(
         context.putAttribute(FILE_TYPE, CHART)
         try {
             ArtifactContextHolder.getRepository().download(context)
+        } catch (e: OverloadException) {
+            throw e
         } catch (e: ArtifactDownloadForbiddenException) {
             throw e
         } catch (e: Exception) {
@@ -350,6 +355,8 @@ class ChartRepositoryServiceImpl(
         context.putAttribute(FILE_TYPE, PROV)
         try {
             ArtifactContextHolder.getRepository().download(context)
+        } catch (e: OverloadException) {
+            throw e
         } catch (e: Exception) {
             logger.warn("Error occurred while installing prov, error: ${e.message}")
             throw HelmFileNotFoundException(
