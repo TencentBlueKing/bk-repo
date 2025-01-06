@@ -271,7 +271,7 @@ class UploadService(
             artifactInfo.getArtifactFullPath()
         )
 
-        // 获取节点并验证版本信息
+        // 获取节点并验证uploadId信息
         val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
             ?.takeIf { it.metadata[UPLOADID_KEY] == uploadId }
             ?: run {
