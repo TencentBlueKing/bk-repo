@@ -214,6 +214,7 @@ open class NodeDeleteSupport(
         })
         quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
 
+        logger.info("Delete old block base node: $fullPath, operator: $operator, delete time: $deleteTime success")
         return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
 

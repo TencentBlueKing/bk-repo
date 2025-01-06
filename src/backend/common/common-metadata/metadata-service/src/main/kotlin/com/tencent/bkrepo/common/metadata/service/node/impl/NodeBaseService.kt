@@ -368,10 +368,11 @@ abstract class NodeBaseService(
                 quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
             }
         } catch (exception: DuplicateKeyException) {
-            logger.warn("Insert node[$node] error: [${exception.message}]")
             if (separate){
+                logger.warn("Insert block base node[$node] error: [${exception.message}]")
                 throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, node.fullPath)
             }
+            logger.warn("Insert node[$node] error: [${exception.message}]")
         }
 
         return node
