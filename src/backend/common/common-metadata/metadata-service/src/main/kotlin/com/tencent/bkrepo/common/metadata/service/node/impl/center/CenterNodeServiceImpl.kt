@@ -119,6 +119,7 @@ class CenterNodeServiceImpl(
 
     override fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
+            logger.info("checkConflictAndQuota was be called in CenterNodeService: $fullPath, separate: $separate")
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
             if (existNode != null) {
                 if (!overwrite) {
@@ -158,7 +159,9 @@ class CenterNodeServiceImpl(
     }
 
     override fun doCreate(node: TNode, repository: TRepository?, separate: Boolean): TNode {
+        logger.info("Do create node in CenterNodeServiceImpl")
         if (SecurityUtils.getClusterName().isNullOrBlank()) {
+            logger.info("Create node in super do create")
             return super.doCreate(node, repository, false)
         }
         try {
@@ -177,7 +180,6 @@ class CenterNodeServiceImpl(
         with(createRequest) {
             if (sha256 == FAKE_SHA256 && separate)
             {
-                logger.info("Create block base node by node base service")
                 return super.createNode(createRequest)
             }
             val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()

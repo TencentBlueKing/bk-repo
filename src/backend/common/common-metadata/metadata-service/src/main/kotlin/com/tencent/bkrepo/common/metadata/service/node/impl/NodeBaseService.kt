@@ -185,6 +185,7 @@ abstract class NodeBaseService(
     @Transactional(rollbackFor = [Throwable::class])
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
+            logger.info("Create block base node by node base service")
             val fullPath = PathUtils.normalizeFullPath(fullPath)
             Preconditions.checkArgument(!PathUtils.isRoot(fullPath), this::fullPath.name)
             Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
@@ -192,11 +193,13 @@ abstract class NodeBaseService(
             // 仓库是否存在
             val repo = checkRepo(projectId, repoName)
             // 路径唯一性校验
+             logger.info("checkConflictAndQuota was be called before: $fullPath, separate: $separate")
             checkConflictAndQuota(createRequest, fullPath)
             // 判断父目录是否存在，不存在先创建
             mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
             val node = buildTNode(this)
+            logger.info("Ready to create node[$node].")
             doCreate(node, separate = separate)
             afterCreate(repo, node)
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
@@ -359,6 +362,7 @@ abstract class NodeBaseService(
 
     open fun doCreate(node: TNode, repository: TRepository? = null, separate: Boolean = false): TNode {
         try {
+            logger.info("Do create node in NodeBaseService")
             nodeDao.insert(node)
             if (!node.folder) {
                 // 软链接node或fs-server创建的node的sha256为FAKE_SHA256不会关联实际文件，无需增加引用数
@@ -417,7 +421,7 @@ abstract class NodeBaseService(
 
     open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
-            logger.info("checkConflictAndQuota was be called: $fullPath, separate: $separate")
+            logger.info("checkConflictAndQuota was be called in NodeBaseService: $fullPath, separate: $separate")
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
 
             // 如果节点不存在，进行配额检查后直接返回
