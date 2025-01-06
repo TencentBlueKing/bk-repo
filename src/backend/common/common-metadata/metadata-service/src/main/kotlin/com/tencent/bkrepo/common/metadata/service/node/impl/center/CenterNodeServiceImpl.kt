@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TMetadata
@@ -174,6 +175,10 @@ class CenterNodeServiceImpl(
 
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
+            if (sha256 == FAKE_SHA256 && separate)
+            {
+                return super.createNode(createRequest)
+            }
             val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()
             val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
             val existNode = nodeDao.findNode(projectId, repoName, normalizeFullPath)
