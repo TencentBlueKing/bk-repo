@@ -45,8 +45,6 @@ import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
-import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService
-import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService.Companion
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeServiceImpl
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
