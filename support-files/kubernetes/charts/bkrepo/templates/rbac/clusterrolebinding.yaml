@@ -17,5 +17,5 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     namespace: {{ .Release.Namespace }}
-    name: {{ include "codecc.serviceAccountName" . }}
+    name: {{ include "bkrepo.serviceAccountName" . }}
 {{- end -}} 
