@@ -36,5 +36,7 @@ data class CopyPDU(
     val workspaceName: String,
     val files: Map<String, Long>,
     val timestamp: Long,
-    val dstPath: String? = null
+    val dstPath: String? = null,
+    val strategy: ConflictStrategy = ConflictStrategy.OVERWRITE,
+    var token: String? = null
 )

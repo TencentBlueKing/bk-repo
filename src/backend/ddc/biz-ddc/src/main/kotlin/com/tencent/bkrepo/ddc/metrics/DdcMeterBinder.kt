@@ -27,14 +27,21 @@
 
 package com.tencent.bkrepo.ddc.metrics
 
+import com.tencent.bkrepo.ddc.config.DdcConfiguration.Companion.BEAN_NAME_REF_BATCH_EXECUTOR
 import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.binder.MeterBinder
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
 
 @Component
-class DdcMeterBinder : MeterBinder {
+class DdcMeterBinder(
+    @Qualifier(BEAN_NAME_REF_BATCH_EXECUTOR)
+    val refBatchExecutor: ThreadPoolTaskExecutor
+) : MeterBinder {
     /**
      * ref inline加载耗时
      */
@@ -103,6 +110,14 @@ class DdcMeterBinder : MeterBinder {
             .tag("type", "compressed")
             .tag("method", "load")
             .register(registry)
+
+        Gauge.builder(DDC_REF_BATCH_EXECUTOR_ACTIVE, refBatchExecutor) { it.activeCount.toDouble() }
+            .description("ddc ref batch executor active thread")
+            .register(registry)
+
+        Gauge.builder(DDC_REF_BATCH_EXECUTOR_QUEUE_SIZE, refBatchExecutor) { it.queueSize.toDouble() }
+            .description("ddc ref batch executor queue size")
+            .register(registry)
     }
 
     /**
@@ -137,5 +152,7 @@ class DdcMeterBinder : MeterBinder {
         private const val DDC_REF_LOAD = "ddc.ref.load"
         private const val DDC_REF_STORE = "ddc.ref.store"
         private const val DDC_BLOB = "ddc.blob"
+        private const val DDC_REF_BATCH_EXECUTOR_ACTIVE = "ddc.ref.batch.executor.active.count"
+        private const val DDC_REF_BATCH_EXECUTOR_QUEUE_SIZE = "ddc.ref.batch.executor.queue.size"
     }
 }

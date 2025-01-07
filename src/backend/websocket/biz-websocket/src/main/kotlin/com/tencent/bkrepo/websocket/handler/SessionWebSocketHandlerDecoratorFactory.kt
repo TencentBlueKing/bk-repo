@@ -29,6 +29,7 @@ package com.tencent.bkrepo.websocket.handler
 
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import com.tencent.bkrepo.websocket.config.WebSocketMetrics
 import com.tencent.bkrepo.websocket.service.WebsocketService
 import org.springframework.web.socket.WebSocketHandler
 import org.springframework.web.socket.handler.WebSocketHandlerDecoratorFactory
@@ -37,9 +38,10 @@ class SessionWebSocketHandlerDecoratorFactory (
     private val websocketService: WebsocketService,
     private val authenticationManager: AuthenticationManager,
     private val jwtAuthProperties: JwtAuthProperties,
+    private val webSocketMetrics: WebSocketMetrics
 ) : WebSocketHandlerDecoratorFactory {
 
     override fun decorate(handler: WebSocketHandler): WebSocketHandler {
-        return SessionHandler(handler, websocketService, authenticationManager, jwtAuthProperties)
+        return SessionHandler(handler, websocketService, authenticationManager, webSocketMetrics, jwtAuthProperties)
     }
 }

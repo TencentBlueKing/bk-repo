@@ -40,7 +40,7 @@ class TransferPushListener(
 ) {
 
     fun accept(message: Message<TransferPush>) {
-        logger.debug(message.payload.toString())
+        logger.debug(message.payload.toJsonString())
         val transferPush = message.payload
         simpMessagingTemplate.convertAndSend(transferPush.topic, transferPush.data.toJsonString())
     }

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.ddc.utils
 
 import com.tencent.bkrepo.ddc.serialization.CbFieldType
+import com.tencent.bkrepo.ddc.serialization.CbObject
 import com.tencent.bkrepo.ddc.serialization.CbWriterBase
 import com.tencent.bkrepo.ddc.serialization.VarULong
 import com.tencent.bkrepo.ddc.utils.BlakeUtils.OUT_LEN
@@ -104,7 +105,8 @@ fun CbWriterBase.writeStringValue(value: String) = writeString(null, value)
 
 fun CbWriterBase.writeString(name: String? = null, value: String?) {
     if (value != null) {
-        writeFieldWithLength(CbFieldType.String, name, value.length).put(value.toByteArray())
+        val valueByteArray = value.toByteArray()
+        writeFieldWithLength(CbFieldType.String, name, valueByteArray.size).put(valueByteArray)
     }
 }
 
@@ -124,3 +126,11 @@ fun CbWriterBase.writeBinary(name: String? = null, value: ByteBuffer) {
 fun CbWriterBase.writeBinaryArrayValue(value: ByteArray) = writeBinaryValue(ByteBuffer.wrap(value))
 
 fun CbWriterBase.writeBinaryArray(name: String, value: ByteArray) = writeBinary(name, ByteBuffer.wrap(value))
+
+fun CbWriterBase.writerObject(name: String, value: CbObject) {
+    val view = value.getView()
+    // 由于类型信息已经包含在view中，此处需要跳过类型信息
+    view.position(1)
+    // 写入数据
+    writeField(CbFieldType.Object, name, view.remaining()).put(view)
+}

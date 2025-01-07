@@ -64,14 +64,13 @@ class ReferenceService(
     private val nodeService: NodeService,
     private val storageManager: StorageManager,
 ) {
-    fun create(ref: Reference): Reference {
+    fun create(ref: Reference, userId: String): Reference {
         val inlineBlob = if (ref.inlineBlob!!.size > ddcProperties.inlineBlobMaxSize.toBytes()) {
             null
         } else {
             ref.inlineBlob
         }
 
-        val userId = SecurityUtils.getUserId()
         val now = LocalDateTime.now()
         val tRef = TDdcRef(
             createdBy = userId,

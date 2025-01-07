@@ -27,6 +27,19 @@
 
 package com.tencent.bkrepo.ddc.pojo
 
+import com.tencent.bkrepo.ddc.serialization.CbFieldType
+import com.tencent.bkrepo.ddc.serialization.CbObject
+import com.tencent.bkrepo.ddc.utils.beginUniformArray
+import com.tencent.bkrepo.ddc.utils.writeStringValue
+
 data class CreateRefResponse(
     val needs: Set<String>
-)
+) {
+    fun serialize(): CbObject {
+        return CbObject.build { writer ->
+            writer.beginUniformArray(CreateRefResponse::needs.name, CbFieldType.String)
+            needs.forEach { writer.writeStringValue(it) }
+            writer.endArray()
+        }
+    }
+}

@@ -41,4 +41,5 @@ data class ClientCreateRequest(
     val version: String,
     val os: String,
     val arch: String,
+    val ip: String?,
 )

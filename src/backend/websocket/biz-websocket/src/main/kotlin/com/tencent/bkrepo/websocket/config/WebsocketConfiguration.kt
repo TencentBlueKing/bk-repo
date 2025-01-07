@@ -42,7 +42,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.Message
 import org.springframework.messaging.simp.config.ChannelRegistration
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
@@ -57,14 +56,12 @@ class WebsocketConfiguration(
     private val websocketService: WebsocketService,
     private val jwtAuthProperties: JwtAuthProperties,
     private val authenticationManager: AuthenticationManager,
-    private val taskScheduler: ThreadPoolTaskScheduler
+    private val webSocketMetrics: WebSocketMetrics
 ) : WebSocketMessageBrokerConfigurer {
 
     override fun configureMessageBroker(config: MessageBrokerRegistry) {
         config.setCacheLimit(webSocketProperties.cacheLimit)
         config.enableSimpleBroker("/topic")
-            .setHeartbeatValue(longArrayOf(3000,3000))
-            .setTaskScheduler(taskScheduler)
         config.setApplicationDestinationPrefixes("/app")
     }
 
@@ -98,6 +95,9 @@ class WebsocketConfiguration(
 
     override fun configureWebSocketTransport(registration: WebSocketTransportRegistration) {
         registration.addDecoratorFactory(wsHandlerDecoratorFactory())
+        registration.setMessageSizeLimit(webSocketProperties.messageSizeLimit)
+        registration.setSendTimeLimit(webSocketProperties.sendTimeLimit)
+        registration.setSendBufferSizeLimit(webSocketProperties.sendBufferSizeLimit)
         super.configureWebSocketTransport(registration)
     }
 
@@ -106,7 +106,8 @@ class WebsocketConfiguration(
         return SessionWebSocketHandlerDecoratorFactory(
             websocketService = websocketService,
             authenticationManager = authenticationManager,
-            jwtAuthProperties = jwtAuthProperties
+            jwtAuthProperties = jwtAuthProperties,
+            webSocketMetrics = webSocketMetrics
         )
     }
 

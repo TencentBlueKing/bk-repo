@@ -20,7 +20,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 -- 访问限制微服务 --
 local allow_services = { "auth", "repository", "generic", "docker", "oci", "maven", "job",
                          "helm", "pypi", "opdata", "rpm", "s3", "git", "npm", "fs-server", "analyst",
-                         "replication", "git", "nuget", "composer", "media", "ddc", "conan", "job-schedule", "websocket" }
+                         "replication", "git", "nuget", "composer", "media", "ddc", "conan", "job-schedule",
+                         "websocket", "preview" }
 local service_name = ngx.var.service
 
 if not arrayUtil:isInArray(service_name, allow_services) then
@@ -52,6 +53,9 @@ if security_paths ~= nil and #security_paths ~= 0 then
     local path = ngx.var.uri
     for _, item in ipairs(security_paths) do
         local pathPattern = "/web/" .. service_name .. item.path
+        if service_name == "fs-server" then
+             pathPattern = "/web/fs%-server" .. item.path
+        end
         if string.find(path, "^" .. pathPattern) ~= nil and service_name == item.service and method == item.method then
             is_secure = true
         end

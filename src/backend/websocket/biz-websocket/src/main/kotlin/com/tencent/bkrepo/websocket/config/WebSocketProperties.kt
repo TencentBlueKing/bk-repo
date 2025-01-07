@@ -33,5 +33,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class WebSocketProperties(
     var cacheLimit: Int = 3600,
     var minThread: Int = 8,
-    var transfer: Boolean = false
+    var transfer: Boolean = false,
+    var messageSizeLimit: Int = 8*1024*1024,
+    var sendTimeLimit: Int = 10*1000,
+    var sendBufferSizeLimit: Int = 1024*1024,
 )

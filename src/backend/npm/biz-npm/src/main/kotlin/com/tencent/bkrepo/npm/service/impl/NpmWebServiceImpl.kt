@@ -33,11 +33,11 @@ package com.tencent.bkrepo.npm.service.impl
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.packages.PackageDependentsService
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.constants.LATEST
@@ -75,14 +75,14 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun detailVersion(artifactInfo: NpmArtifactInfo, packageKey: String, version: String): PackageVersionInfo {
-        val name = PackageKeys.resolveNpm(packageKey)
+        val name = NpmUtils.resolveNameByRepoType(packageKey)
         val packageMetadata = queryPackageInfo(artifactInfo, name, false)
         if (!packageMetadata.versions.map.keys.contains(version)) {
             throw NpmArtifactNotFoundException("version [$version] don't found in package [$name].")
         }
         val pathWithDash = packageMetadata.versions.map[version]?.dist?.tarball?.substringAfter(name)
             ?.contains(TGZ_FULL_PATH_WITH_DASH_SEPARATOR) ?: true
-        val fullPath = NpmUtils.getTgzPath(name, version, pathWithDash)
+        val fullPath = NpmUtils.getTarballPathByRepoType(name, version, pathWithDash)
         with(artifactInfo) {
             checkRepositoryExist(projectId, repoName)
             val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath)) ?: run {
@@ -127,6 +127,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         with(deleteRequest) {
             checkRepositoryExist(projectId, repoName)
             val packageMetadata = queryPackageInfo(artifactInfo, name, false)
+            npmClientService.checkOhpmDependentsAndDeprecate(operator, artifactInfo, packageMetadata, version)
             val versionEntries = packageMetadata.versions.map.entries
             val iterator = versionEntries.iterator()
             // 如果删除最后一个版本直接删除整个包
@@ -135,11 +136,11 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 deletePackage(artifactInfo, deletePackageRequest)
                 return
             }
-            val tgzPath =
+            val tarballPath =
                 packageMetadata.versions.map[version]?.dist?.tarball?.substringAfterLast(
                     artifactInfo.getRepoIdentify()
                 ).orEmpty()
-            npmClientService.deleteVersion(artifactInfo, name, version, tgzPath)
+            npmClientService.deleteVersion(artifactInfo, name, version, tarballPath)
             // 修改package.json文件的内容
             updatePackageWithDeleteVersion(artifactInfo, this, packageMetadata)
         }
@@ -165,6 +166,10 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
                 packageMetaData.time.getMap().remove(version)
                 packageMetaData.distTags.set(LATEST, newLatest)
             }
+            if (ArtifactContextHolder.getRepoDetail()!!.type == RepositoryType.OHPM) {
+                NpmUtils.updateLatestVersion(packageMetaData)
+                packageMetaData.rev = packageMetaData.versions.map.size.toString()
+            }
             reUploadPackageJsonFile(artifactInfo, packageMetaData)
         }
     }
@@ -182,7 +187,7 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
 
     private fun findNewLatest(request: PackageVersionDeleteRequest): String {
         return with(request) {
-            packageService.findPackageByKey(projectId, repoName, PackageKeys.ofNpm(name))?.latest
+            packageService.findPackageByKey(projectId, repoName, NpmUtils.packageKeyByRepoType(name))?.latest
                 ?: run {
                     val message =
                         "delete version by web operator to find new latest version failed with package [$name]"

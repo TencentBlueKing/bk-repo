@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.ddc.artifact.repository
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -39,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.memory.ByteArrayArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -55,6 +58,7 @@ import com.tencent.bkrepo.ddc.exception.ReferenceIsMissingBlobsException
 import com.tencent.bkrepo.ddc.metrics.DdcMeterBinder
 import com.tencent.bkrepo.ddc.pojo.Blob
 import com.tencent.bkrepo.ddc.pojo.ContentHash
+import com.tencent.bkrepo.ddc.pojo.CreateRefResponse
 import com.tencent.bkrepo.ddc.pojo.Reference
 import com.tencent.bkrepo.ddc.pojo.UploadCompressedBlobResponse
 import com.tencent.bkrepo.ddc.serialization.CbObject
@@ -73,6 +77,7 @@ import com.tencent.bkrepo.ddc.utils.isAttachment
 import com.tencent.bkrepo.ddc.utils.isBinaryAttachment
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.ByteArrayInputStream
@@ -207,21 +212,14 @@ class DdcLocalRepository(
     }
 
     private fun onUploadReference(context: ArtifactUploadContext) {
-        val contentType = context.request.contentType
-        val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
-        when (contentType) {
+        when (val contentType = context.request.contentType) {
             MEDIA_TYPE_UNREAL_COMPACT_BINARY -> {
-                val payload = context.getArtifactFile().getInputStream().use { it.readBytes() }
-                val ref = referenceService.create(Reference.from(artifactInfo, payload))
-                if (ref.inlineBlob == null) {
-                    // inlineBlob为null时表示inlineBlob过大，需要存到文件中
-                    val nodeCreateRequest = buildRefNodeCreateRequest(context)
-                    storageManager.storeArtifactFile(
-                        nodeCreateRequest, context.getArtifactFile(), context.storageCredentials
-                    )
-                }
-                val res = referenceService.finalize(ref, payload)
-                HttpContextHolder.getResponse().writer.println(res.toJsonString())
+                val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
+                val artifactFile = context.getArtifactFile()
+                val repoDetail = context.repositoryDetail
+                val res = uploadReference(repoDetail, artifactInfo, artifactFile, context.userId).toJsonString()
+                HttpContextHolder.getResponse().setHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON)
+                HttpContextHolder.getResponse().writer.println(res)
             }
 
             else -> throw BadRequestException(
@@ -230,8 +228,32 @@ class DdcLocalRepository(
         }
     }
 
-    private fun buildRefNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
-        val artifactInfo = context.artifactInfo as ReferenceArtifactInfo
+    fun uploadReference(
+        repositoryDetail: RepositoryDetail,
+        artifactInfo: ReferenceArtifactInfo,
+        artifactFile: ArtifactFile,
+        operator: String,
+    ): CreateRefResponse {
+        val payload = if (artifactFile is ByteArrayArtifactFile) {
+            artifactFile.byteArray()
+        } else {
+            artifactFile.getInputStream().use { it.readBytes() }
+        }
+        val ref = referenceService.create(Reference.from(artifactInfo, payload), operator)
+        if (ref.inlineBlob == null) {
+            // inlineBlob为null时表示inlineBlob过大，需要存到文件中
+            val nodeCreateRequest = buildRefNodeCreateRequest(repositoryDetail, artifactInfo, artifactFile, operator)
+            storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, repositoryDetail.storageCredentials)
+        }
+        return referenceService.finalize(ref, payload)
+    }
+
+    private fun buildRefNodeCreateRequest(
+        repositoryDetail: RepositoryDetail,
+        artifactInfo: ReferenceArtifactInfo,
+        artifactFile: ArtifactFile,
+        operator: String,
+    ): NodeCreateRequest {
         val metadata = ArrayList<MetadataModel>()
         metadata.add(
             MetadataModel(
@@ -241,7 +263,15 @@ class DdcLocalRepository(
             )
         )
 
-        return buildNodeCreateRequest(context).copy(
+        return NodeCreateRequest(
+            projectId = repositoryDetail.projectId,
+            repoName = repositoryDetail.name,
+            folder = false,
+            fullPath = artifactInfo.getArtifactFullPath(),
+            size = artifactFile.getSize(),
+            sha256 = artifactFile.getFileSha256(),
+            md5 = artifactFile.getFileMd5(),
+            operator = operator,
             overwrite = true,
             nodeMetadata = metadata
         )
@@ -264,6 +294,7 @@ class DdcLocalRepository(
             )
             storageManager.storeArtifactFile(createRequest, getArtifactFile(), storageCredentials)
             blobService.create(Blob.from(artifactInfo, getArtifactSha256(), getArtifactFile().getSize()))
+            HttpContextHolder.getResponse().setHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON)
             HttpContextHolder
                 .getResponse()
                 .writer

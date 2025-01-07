@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils
+import com.tencent.bkrepo.websocket.config.WebSocketMetrics
 import com.tencent.bkrepo.websocket.constant.APP_ENDPOINT
 import com.tencent.bkrepo.websocket.constant.DESKTOP_ENDPOINT
 import com.tencent.bkrepo.websocket.constant.SESSION_ID
@@ -59,6 +60,7 @@ class SessionHandler(
     delegate: WebSocketHandler,
     private val websocketService: WebsocketService,
     private val authenticationManager: AuthenticationManager,
+    private val webSocketMetrics: WebSocketMetrics,
     jwtProperties: JwtAuthProperties
 ) : WebSocketHandlerDecorator(delegate) {
 
@@ -73,10 +75,10 @@ class SessionHandler(
         val sessionId = HostUtils.getRealSession(session.uri?.query)
         if (sessionId.isNullOrEmpty()) {
             logger.warn("connection closed can not find sessionId, $uri| ${session.remoteAddress}")
-            super.afterConnectionClosed(session, closeStatus)
+        } else {
+            websocketService.removeCacheSession(sessionId)
         }
-        websocketService.removeCacheSession(sessionId!!)
-
+        webSocketMetrics.connectionCount.decrementAndGet()
         super.afterConnectionClosed(session, closeStatus)
     }
 
@@ -111,7 +113,7 @@ class SessionHandler(
                 val (accessKey, secretKey) = String(Base64.getDecoder().decode(platformToken)).split(COLON)
                 val appId = authenticationManager.checkPlatformAccount(accessKey, secretKey)
                 session.attributes[PLATFORM_KEY] = appId
-                session.attributes[USER_KEY] = session.handshakeHeaders[AUTH_HEADER_UID]
+                session.attributes[USER_KEY] = session.handshakeHeaders[AUTH_HEADER_UID]?.first()
             }
             uri.path.startsWith(APP_ENDPOINT) -> {
                 val token = session.handshakeHeaders[HttpHeaders.AUTHORIZATION]?.firstOrNull().orEmpty()
@@ -123,6 +125,7 @@ class SessionHandler(
         websocketService.addCacheSession(sessionId!!)
         session.attributes[SESSION_ID] = sessionId
         logger.info("connection success: |$sessionId| $uri | $remoteId | ${session.attributes[USER_KEY]} ")
+        webSocketMetrics.connectionCount.incrementAndGet()
         super.afterConnectionEstablished(session)
     }
 

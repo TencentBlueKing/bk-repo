@@ -81,7 +81,14 @@
                         }
                     } else {
                         let projectId = ''
-                        if (this.projectList.find(v => v.id === urlProjectId)) {
+                        const hasUrlProjectId = this.projectList.find(v => v.id === urlProjectId)
+                        if (!hasUrlProjectId) {
+                            this.$bkMessage({
+                                message: this.$t('projectNoPermissionTip', { 0: urlProjectId }),
+                                theme: 'error'
+                            })
+                        }
+                        if (hasUrlProjectId) {
                             projectId = urlProjectId
                         } else if (this.projectList.find(v => v.id === localProjectId)) {
                             projectId = localProjectId
