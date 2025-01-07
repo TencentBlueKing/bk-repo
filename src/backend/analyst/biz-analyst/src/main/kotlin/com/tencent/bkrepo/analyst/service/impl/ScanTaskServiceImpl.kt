@@ -124,7 +124,7 @@ class ScanTaskServiceImpl(
         if (scanTaskQuery.projectId == null) {
             permissionCheckHandler.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
         } else {
-            permissionCheckHandler.checkProjectPermission(scanTaskQuery.projectId!!, PermissionAction.MANAGE)
+            permissionCheckHandler.checkProjectPermission(scanTaskQuery.projectId!!, PermissionAction.READ)
         }
         val taskPage = scanTaskDao.find(scanTaskQuery, pageLimit)
         val records = taskPage.records.map { Converter.convert(it) }
