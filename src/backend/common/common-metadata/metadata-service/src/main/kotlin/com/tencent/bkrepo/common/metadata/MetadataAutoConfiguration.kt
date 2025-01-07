@@ -143,6 +143,7 @@ class MetadataAutoConfiguration {
 
     // 之前继承Consumer方式框架升级后会报错，https://github.com/spring-cloud/spring-cloud-stream/issues/2704
     @Bean("nodeUpdateAccessDate")
+    @Conditional(SyncCondition::class)
     fun nodeUpdateAccessDateEventConsumer(
         nodeUpdateAccessDateEventListener: NodeUpdateAccessDateEventListener
     ): Consumer<Message<ArtifactEvent>> {
