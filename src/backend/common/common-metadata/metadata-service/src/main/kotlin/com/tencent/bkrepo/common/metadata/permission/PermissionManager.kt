@@ -104,6 +104,16 @@ open class PermissionManager(
         CacheBuilder.newBuilder().maximumSize(1).expireAfterWrite(30L, TimeUnit.MINUTES).build(cacheLoader)
     }
 
+
+    private val adminUsersCache: LoadingCache<String, List<String>> by lazy {
+        val cacheLoader = object : CacheLoader<String, List<String>>() {
+            override fun load(userType: String): List<String> {
+                return userResource.listAdminUsers().data ?: emptyList()
+            }
+        }
+        CacheBuilder.newBuilder().maximumSize(1).expireAfterWrite(10, TimeUnit.MINUTES).build(cacheLoader)
+    }
+
     /**
      * 校验项目权限
      * @param action 动作
@@ -557,7 +567,16 @@ open class PermissionManager(
      * 判断是否为管理员
      */
     open fun isAdminUser(userId: String): Boolean {
-        return userResource.userInfoById(userId).data?.admin == true
+        return if (!httpAuthProperties.adminCacheEnabled) {
+            userResource.userInfoById(userId).data?.admin == true
+        } else {
+            try {
+                adminUsersCache.get(ADMIN_USER).contains(userId)
+            } catch (e: Exception) {
+                logger.warn("search admin user cache error: ${e.message}")
+                userResource.userInfoById(userId).data?.admin == true
+            }
+        }
     }
 
 
@@ -575,6 +594,7 @@ open class PermissionManager(
         private const val METADATA = "metadata"
         private const val NODES = "nodes"
         private const val PACKAGE_NAME_PREFIX = "com.tencent.bkrepo"
+        private const val ADMIN_USER = "admin"
 
         /**
          * 检查是否为匿名用户，如果是匿名用户则返回401并提示登录
