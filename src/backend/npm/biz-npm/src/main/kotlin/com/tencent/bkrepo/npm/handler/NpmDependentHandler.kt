@@ -32,12 +32,12 @@
 package com.tencent.bkrepo.npm.handler
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.packages.PackageDependentsService
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.utils.NpmUtils
+import com.tencent.bkrepo.npm.utils.NpmUtils.packageKey
 import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -50,25 +50,32 @@ class NpmDependentHandler {
     @Autowired
     private lateinit var packageDependentsService: PackageDependentsService
 
+    fun existsPackageDependents(projectId: String, repoName: String, name: String, ohpm: Boolean): Boolean {
+        val packageKey = packageKey(name, ohpm)
+        val dependents = packageDependentsService.findByPackageKey(projectId, repoName, packageKey)
+        return dependents.isNotEmpty()
+    }
+
     @Async
     fun updatePackageDependents(
         userId: String,
         artifactInfo: ArtifactInfo,
         npmPackageMetaData: NpmPackageMetaData,
-        action: NpmOperationAction
+        action: NpmOperationAction,
+        ohpm: Boolean = false,
     ) {
         val latestVersion = NpmUtils.getLatestVersionFormDistTags(npmPackageMetaData.distTags)
         val versionMetaData = npmPackageMetaData.versions.map[latestVersion]!!
 
         when (action) {
             NpmOperationAction.PUBLISH -> {
-                doDependentWithPublish(userId, artifactInfo, versionMetaData)
+                doDependentWithPublish(userId, artifactInfo, versionMetaData, ohpm)
             }
             NpmOperationAction.UNPUBLISH -> {
-                doDependentWithUnPublish(userId, artifactInfo, versionMetaData)
+                doDependentWithUnPublish(userId, artifactInfo, versionMetaData, ohpm)
             }
             NpmOperationAction.MIGRATION -> {
-                doDependentWithPublish(userId, artifactInfo, versionMetaData)
+                doDependentWithPublish(userId, artifactInfo, versionMetaData, ohpm)
             }
             else -> {
                 logger.warn("don't find operation action [${action.name}].")
@@ -79,7 +86,8 @@ class NpmDependentHandler {
     private fun doDependentWithPublish(
         userId: String,
         artifactInfo: ArtifactInfo,
-        versionMetaData: NpmVersionMetadata
+        versionMetaData: NpmVersionMetadata,
+        ohpm: Boolean,
     ) {
         val name = versionMetaData.name.orEmpty()
         with(artifactInfo){
@@ -87,7 +95,7 @@ class NpmDependentHandler {
                 projectId = projectId,
                 repoName = repoName,
                 packageKey = name,
-                dependencies = versionMetaData.dependencies?.keys.orEmpty().map { PackageKeys.ofNpm(it) }.toSet()
+                dependencies = versionMetaData.dependencies?.keys.orEmpty().map { packageKey(it, ohpm) }.toSet()
             )
             packageDependentsService.addDependents(relation)
             logger.info("user [$userId] publish dependent for package: [$name] success.")
@@ -97,7 +105,8 @@ class NpmDependentHandler {
     private fun doDependentWithUnPublish(
         userId: String,
         artifactInfo: ArtifactInfo,
-        versionMetaData: NpmVersionMetadata
+        versionMetaData: NpmVersionMetadata,
+        ohpm: Boolean,
     ) {
         val name = versionMetaData.name.orEmpty()
 
@@ -106,7 +115,7 @@ class NpmDependentHandler {
                 projectId = projectId,
                 repoName = repoName,
                 packageKey = name,
-                dependencies = versionMetaData.dependencies?.keys.orEmpty().map { PackageKeys.ofNpm(it) }.toSet()
+                dependencies = versionMetaData.dependencies?.keys.orEmpty().map { packageKey(it, ohpm) }.toSet()
             )
             packageDependentsService.reduceDependents(relation)
             logger.info("user [$userId] delete dependent for package: [$name] success.")
