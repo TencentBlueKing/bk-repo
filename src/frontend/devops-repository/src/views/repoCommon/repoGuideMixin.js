@@ -1268,10 +1268,10 @@ export default {
                             ]
                         },
                         {
-                            subTitle: this.$t('npmCreditGuideSubTitle4')
+                            subTitle: this.$t('ohpmCreditGuideSubTitle4', { 0: this.userName })
                         },
                         {
-                            subTitle: this.$t('npmCreditGuideSubTitle2'),
+                            subTitle: this.$t('ohpmCreditGuideSubTitle5'),
                             codeList: [
                                 `registry=${this.domain.ohpm}/${this.projectId}/${this.repoName}/`,
                                 `publish_registry=${this.domain.ohpm}/${this.projectId}/${this.repoName}/`,
@@ -1295,12 +1295,12 @@ export default {
                         {
                             subTitle: this.$t('ohpmPushGuideSubTitle1'),
                             codeList: [
-                                `ohpm publish "${this.dependInputValue1 || '<PATH_TO_PACKAGE_FILE>'}"`
+                                `ohpm publish ${this.dependInputValue1 || '<PATH_TO_PACKAGE_FILE>'}`
                             ]
                         },
                         {
                             subTitle: this.$t('ohpmPushGuideSubTitle2'),
-                            codeList: [`ohpm publish "${this.dependInputValue1 || '<PATH_TO_PACKAGE_FILE>'}" --publish_registry ${this.domain.ohpm}/${this.projectId}/${this.repoName}/`]
+                            codeList: [`ohpm publish ${this.dependInputValue1 || '<PATH_TO_PACKAGE_FILE>'} --publish_registry ${this.domain.ohpm}/${this.projectId}/${this.repoName}/`]
                         }
                     ]
                 },

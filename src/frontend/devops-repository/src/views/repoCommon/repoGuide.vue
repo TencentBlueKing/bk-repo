@@ -98,7 +98,6 @@
                 }).filter(Boolean) || []
             },
             repoType () {
-                console.log(this.$route.params.repoType)
                 return this.$route.params.repoType || ''
             }
         },

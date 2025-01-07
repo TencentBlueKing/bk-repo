@@ -18,8 +18,9 @@ export default {
     },
     // 删除包
     deletePackage (_, { projectId, repoType, repoName, packageKey }) {
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.delete(
-            `${repoType}/ext/package/delete/${projectId}/${repoName}`,
+            `${type}/ext/package/delete/${projectId}/${repoName}`,
             {
                 params: {
                     packageKey
@@ -55,8 +56,9 @@ export default {
     },
     // 删除包版本
     deleteVersion (_, { projectId, repoType, repoName, packageKey, version }) {
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.delete(
-            `${repoType}/ext/version/delete/${projectId}/${repoName}`,
+            `${type}/ext/version/delete/${projectId}/${repoName}`,
             {
                 params: {
                     packageKey,
@@ -67,8 +69,9 @@ export default {
     },
     // 查询包版本详情
     getVersionDetail (_, { projectId, repoType, repoName, packageKey, version }) {
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.get(
-            `${repoType}/ext/version/detail/${projectId}/${repoName}`,
+            `${type}/ext/version/detail/${projectId}/${repoName}`,
             {
                 params: {
                     packageKey,
@@ -80,12 +83,13 @@ export default {
     // 包搜索-仓库数量
     searchRepoList (_, { projectId, repoType, packageName }) {
         const isGeneric = repoType === 'generic'
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.get(
             `${prefix}/${isGeneric ? 'node' : 'package'}/search/overview`,
             {
                 params: {
                     projectId,
-                    repoType: repoType.toUpperCase(),
+                    repoType: type.toUpperCase(),
                     [isGeneric ? 'name' : 'packageName']: `*${packageName}*`,
                     ...(MODE_CONFIG === 'ci' && isGeneric
                         ? {
@@ -99,6 +103,7 @@ export default {
     // 跨仓库搜索
     searchPackageList (_, { projectId, repoType, repoName, repoNames = [], packageName, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
         const isGeneric = repoType === 'generic'
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.post(
             `${prefix}/${isGeneric ? 'node/queryWithoutCount' : 'package/search'}`,
             {
@@ -119,10 +124,10 @@ export default {
                                 operation: 'EQ'
                             }]
                             : []),
-                        ...((MODE_CONFIG === 'ci' ? !isGeneric : true) && repoType
+                        ...((MODE_CONFIG === 'ci' ? !isGeneric : true) && type
                             ? [{
                                 field: 'repoType',
-                                value: repoType.toUpperCase(),
+                                value: type.toUpperCase(),
                                 operation: 'EQ'
                             }]
                             : []),
