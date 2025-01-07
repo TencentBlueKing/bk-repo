@@ -13,6 +13,8 @@ metadata:
 rules:
   - apiGroups: 
     - ""
+    - apps
+    - extensions
     resources: 
     - configmaps
     - services
