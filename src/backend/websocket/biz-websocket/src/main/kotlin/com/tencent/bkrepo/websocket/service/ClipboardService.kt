@@ -27,7 +27,9 @@
 
 package com.tencent.bkrepo.websocket.service
 
+import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -58,6 +60,7 @@ class ClipboardService(
     private val devXProperties: DevXProperties,
     private val jwtAuthProperties: JwtAuthProperties,
     private val permissionManager: PermissionManager,
+    private val serviceUserClient: ServiceUserClient
 ) {
 
     private val httpClient = HttpClientBuilderFactory.create().build()
@@ -95,6 +98,17 @@ class ClipboardService(
         }
     }
 
+    /**
+     * 如果是分享人，用户第一次上传文件时，系统内还没有用户，会鉴权失败
+     */
+    private fun createUser(userId: String) {
+        val request = CreateUserRequest(
+            userId = userId,
+            name = userId,
+        )
+        serviceUserClient.createUser(request)
+    }
+
     private fun checkWorkspace(url: String, copyPDU: CopyPDU): String? {
         val userId = copyPDU.userId
         val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
@@ -124,6 +138,7 @@ class ClipboardService(
                 return if (workspace.realOwner == userId) {
                     null
                 } else {
+                    createUser(userId)
                     createToken(copyPDU.projectId, userId)
                 }
             }

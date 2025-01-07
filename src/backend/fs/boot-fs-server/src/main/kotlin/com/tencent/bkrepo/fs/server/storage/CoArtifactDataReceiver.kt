@@ -191,10 +191,6 @@ class CoArtifactDataReceiver(
         if (inMemory) {
             val cacheData = cacheData!!.copyOfRange(0, pos.toInt())
             val buf = DefaultDataBufferFactory.sharedInstance.wrap(cacheData)
-            val filePath = this.filePath.apply { this.createFile() }
-            channel = withContext(Dispatchers.IO) {
-                AsynchronousFileChannel.open(filePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
-            }
             DataBufferUtils.write(Mono.just(buf), channel!!).awaitSingle()
             inMemory = false
             // help gc
