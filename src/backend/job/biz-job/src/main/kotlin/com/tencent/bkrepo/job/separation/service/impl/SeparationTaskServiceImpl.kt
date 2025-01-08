@@ -110,10 +110,11 @@ class SeparationTaskServiceImpl(
         state: String?,
         projectId: String?,
         repoName: String?,
+        taskType: String?,
         pageRequest: PageRequest
     ): Page<SeparationTask> {
-        val count = separationTaskDao.count(state, projectId, repoName)
-        val records = separationTaskDao.find(state, projectId, repoName, pageRequest).map { it.toDto() }
+        val count = separationTaskDao.count(state, projectId, repoName, taskType)
+        val records = separationTaskDao.find(state, projectId, repoName, taskType, pageRequest).map { it.toDto() }
         return Pages.ofResponse(pageRequest, count, records)
     }
 

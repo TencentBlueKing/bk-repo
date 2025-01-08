@@ -11,6 +11,16 @@
           />
         </el-select>
       </el-form-item>
+      <el-form-item label="任务类型" style="margin-left: 15px">
+        <el-select v-model="clientQuery.taskType" clearable placeholder="请选择">
+          <el-option
+            v-for="item in taskOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
       <el-form-item ref="project-form-item" label="项目ID" prop="projectId">
         <el-autocomplete
           v-model="clientQuery.projectId"
@@ -153,9 +163,9 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column key="successCount" prop="successCount" label="成功降冷数" align="center" />
-      <el-table-column key="failedCount" prop="failedCount" label="失败降冷数" align="center" />
-      <el-table-column key="skippedCount" prop="skippedCount" label="跳过降冷数" align="center" />
+      <el-table-column key="successCount" prop="successCount" label="成功数" align="center" />
+      <el-table-column key="failedCount" prop="failedCount" label="失败数" align="center" />
+      <el-table-column key="skippedCount" prop="skippedCount" label="忽略数" align="center" />
       <el-table-column key="lastModifiedBy" prop="lastModifiedBy" label="修改人" align="center" />
       <el-table-column prop="lastModifiedDate" label="修改时间" align="center">
         <template slot-scope="scope">
@@ -174,7 +184,7 @@
             type="primary"
             @click="refreshState(scope.row)"
           >
-            重启
+            重置
           </el-button>
         </template>
       </el-table-column>
@@ -218,12 +228,17 @@ export default {
         currentPage: 1,
         state: '',
         projectId: '',
-        repoName: ''
+        repoName: '',
+        taskType: ''
       },
       options: [
-        { label: '请求中', value: 'PENDING' },
-        { label: '运行中', value: 'RUNNING' },
-        { label: '已结束', value: 'FINISHED' }
+        { label: '待执行', value: 'PENDING' },
+        { label: '执行中', value: 'RUNNING' },
+        { label: '执行完成', value: 'FINISHED' }
+      ],
+      taskOptions: [
+        { label: '降冷', value: 'SEPARATE' },
+        { label: '恢复', value: 'RESTORE' }
       ],
       preloadData: [],
       showEditDialog: false,
@@ -278,6 +293,7 @@ export default {
       query.state = this.clientQuery.state
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
+      query.taskType = this.clientQuery.taskType
       this.$router.push({ path: '/separation-config', query: query })
     },
     onRouteUpdate(route) {
@@ -287,6 +303,7 @@ export default {
       clientQuery.pageNumber = query.page ? Number(query.page) : 1
       clientQuery.projectId = query.projectId ? query.projectId : null
       clientQuery.repoName = query.repoName ? query.repoName : null
+      clientQuery.taskType = query.taskType ? query.taskType : null
       this.$nextTick(() => {
         this.queryClients(clientQuery)
       })

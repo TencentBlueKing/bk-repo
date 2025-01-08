@@ -1,6 +1,6 @@
 <template>
   <el-dialog title="创建降冷任务" :visible.sync="showDialog" :before-close="close">
-    <el-form ref="form" :rules="rules" :model="task" status-icon label-position="left" label-width="80px">
+    <el-form ref="form" :rules="rules" :model="task" status-icon label-position="left" label-width="100px">
       <el-form-item label="任务类型" prop="type">
         <el-select
           v-model="task.type"

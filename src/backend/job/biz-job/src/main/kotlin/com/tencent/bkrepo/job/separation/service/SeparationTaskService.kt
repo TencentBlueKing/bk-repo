@@ -45,6 +45,7 @@ interface SeparationTaskService {
         state: String? = null,
         projectId: String? = null,
         repoName: String? = null,
+        taskType: String? = null,
         pageRequest: PageRequest
     ): Page<SeparationTask>
 

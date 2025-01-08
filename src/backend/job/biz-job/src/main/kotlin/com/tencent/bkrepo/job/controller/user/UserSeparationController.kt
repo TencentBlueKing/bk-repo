@@ -77,10 +77,12 @@ class UserSeparationController(
         @RequestParam(required = false) state: String? = null,
         @RequestParam(required = false) projectId: String? = null,
         @RequestParam(required = false) repoName: String? = null,
+        @RequestParam(required = false) taskType: String? = null,
         @RequestParam(required = false, defaultValue = "$DEFAULT_PAGE_NUMBER") pageNumber: Int = DEFAULT_PAGE_NUMBER,
         @RequestParam(required = false, defaultValue = "$DEFAULT_PAGE_SIZE") pageSize: Int = DEFAULT_PAGE_SIZE,
     ): Response<Page<SeparationTask>> {
-        val page = separationTaskService.findTasks(state, projectId, repoName, Pages.ofRequest(pageNumber, pageSize))
+        val page = separationTaskService.findTasks(
+            state, projectId, repoName, taskType ,Pages.ofRequest(pageNumber, pageSize))
         return ResponseBuilder.success(page)
     }
 
