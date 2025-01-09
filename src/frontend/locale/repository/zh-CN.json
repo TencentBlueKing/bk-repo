@@ -907,6 +907,7 @@
     "conanRecipePlaceholder":"RECIPE的格式为<NAME>/VERSION>@<USER>/CHANNEL>",
     "conanPullGuideSubTitle":"请在命令行执行以下命令进行拉取(conan1.x)：",
     "projectNoPermissionTip": "请求项目{0}无权限，已切换",
+    "ohpmCreditGuideSubTitle4":"2、复制{0}:<PERSONAL_ACCESS_TOKEN>至命令行窗口后，按下Enter键",
     "ohpmCreditGuideSubTitle5":"3、复制编码后的token，替换<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>,将下列配置添加到项目的 oh-package.json5 文件同一级目录下的 .ohpmrc 文件中，如没有 .ohpmrc 文件，请新建",
     "ohpmPushPlaceHolder": "请输入待发布的har或tgz文件完整路径",
     "ohpmPushGuideSubTitle1": "在设置仓库地址之后就可以使用如下命令去推送制品",
