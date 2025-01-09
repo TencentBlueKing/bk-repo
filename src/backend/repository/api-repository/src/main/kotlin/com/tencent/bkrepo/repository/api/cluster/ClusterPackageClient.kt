@@ -74,8 +74,8 @@ interface ClusterPackageClient {
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
         @RequestParam version: String,
+        @RequestParam realIpAddress: String? = null,
         @RequestParam contentPath: String? = null,
-        @RequestParam realIpAddress: String? = null
     ): Response<Void>
 
     @ApiOperation("更新包")
