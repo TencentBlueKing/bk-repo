@@ -25,7 +25,6 @@
   | 字段               | 类型    | 必须 | 默认值   | 描述                      | Description                       |
   | ------------------ | ------- | ---- |-------| ------------------------- | --------------------------------- |
   | X-BKREPO-OVERWRITE | boolean | 否   | false | 是否覆盖已存在文件               | Overwrite existing file           |
-  | X-BKREPO-EXPIRES   | long    | 否   | 3600 * 8    | 上传 ID 过期时间，单位秒）  | Upload ID expiration in seconds   |
 
 ### 响应参数
 
@@ -83,7 +82,6 @@
   | X-BKREPO-SHA256    | string  | 否   | 无   | 分块文件的 SHA256 校验值 | SHA256 checksum of the block    |
   | X-BKREPO-MD5       | string  | 否   | 无   | 分块文件的 MD5 校验值 | MD5 checksum of the block       |
   | UPLOAD-TYPE        | string  | 是   | 无   | 上传类型，值为 `SEPARATE-UPLOAD` | Upload type (`SEPARATE-UPLOAD`) |
-  | X-BKREPO-EXPIRES   | long    | 否   | 3600 * 8  | 分块过期时间，单位秒| Block expiration in seconds     |
 
 - **请求体**
 

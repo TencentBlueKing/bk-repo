@@ -2,16 +2,11 @@
 package com.tencent.bkrepo.job.batch.task.other
 
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
-import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.batch.task.clean.DeletedBlockNodeCleanupJob
-import com.tencent.bkrepo.job.batch.task.clean.DeletedBlockNodeCleanupJob.Companion
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ExpiredBlockNodeMarkupJobProperties
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query

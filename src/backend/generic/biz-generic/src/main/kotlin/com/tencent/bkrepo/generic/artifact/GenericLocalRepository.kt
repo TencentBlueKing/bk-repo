@@ -86,6 +86,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
@@ -130,6 +131,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.Base64
 import java.util.Locale
@@ -144,7 +146,8 @@ class GenericLocalRepository(
     private val clusterNodeClient: ClusterNodeClient,
     private val pipelineNodeService: PipelineNodeService,
     private val ciPermissionManager: CIPermissionManager,
-    private val blockNodeServiceImpl: BlockNodeServiceImpl
+    private val blockNodeServiceImpl: BlockNodeServiceImpl,
+    private val storageProperties: StorageProperties,
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -214,7 +217,7 @@ class GenericLocalRepository(
             val sha256 = getArtifactSha256()
 
             val offset = context.request.getHeader(HEADER_OFFSET)?.toLongOrNull()
-            val expires = HeaderUtils.getLongHeader(HEADER_EXPIRES).takeIf { it > 0 } ?: UPLOADING_BLOCK_EXPIRES
+            val expires = storageProperties.filesystem.cache.expireDuration
 
             val blockNode = TBlockNode(
                 createdBy = userId,
@@ -226,7 +229,7 @@ class GenericLocalRepository(
                 repoName = repoName,
                 size = blockArtifactFile.getSize(),
                 uploadId = uploadId,
-                expireDate = LocalDateTime.now().plusSeconds(expires)
+                expireDate = calculateExpiryDateTime(expires)
             )
 
             storageService.store(sha256, blockArtifactFile, storageCredentials)
@@ -941,6 +944,11 @@ class GenericLocalRepository(
         }
     }
 
+    private fun calculateExpiryDateTime(expireDuration: Duration): LocalDateTime {
+        val hoursToAdd = expireDuration.toHours().takeIf { it > 0 } ?: 12 // 如果 expireDuration <= 0，则使用 12 小时
+        return LocalDateTime.now().plusHours(hoursToAdd)
+    }
+
 
     companion object {
         private val logger = LoggerFactory.getLogger(GenericLocalRepository::class.java)
@@ -971,7 +979,5 @@ class GenericLocalRepository(
 
         private const val UPLOAD_CHANNEL_PIPELINE = "pipeline"
         private const val UPLOAD_CHANNEL_PIPELINE_DEBUG = "pipeline-debug"
-
-        private const val UPLOADING_BLOCK_EXPIRES: Long = 3600 * 8L // s
     }
 }
