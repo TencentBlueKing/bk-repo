@@ -111,7 +111,7 @@ open class PermissionManager(
                 return userResource.listAdminUsers().data ?: emptyList()
             }
         }
-        CacheBuilder.newBuilder().maximumSize(1).expireAfterWrite(10, TimeUnit.MINUTES).build(cacheLoader)
+        CacheBuilder.newBuilder().maximumSize(1).expireAfterWrite(2, TimeUnit.MINUTES).build(cacheLoader)
     }
 
     /**
