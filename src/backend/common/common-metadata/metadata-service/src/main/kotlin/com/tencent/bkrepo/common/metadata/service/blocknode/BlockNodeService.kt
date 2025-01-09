@@ -54,7 +54,6 @@ interface BlockNodeService {
         projectId: String,
         repoName: String,
         fullPath: String,
-        createdDate: String? = null,
         uploadId: String
     ): List<TBlockNode>
 
@@ -89,10 +88,6 @@ interface BlockNodeService {
         repoName: String,
         fullPath: String,
         uploadId: String? = null
-    )
-
-    fun deleteBlock(
-        blockNode: TBlockNode
     )
 
     /**

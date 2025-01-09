@@ -186,7 +186,7 @@ open class NodeDeleteSupport(
         return nodeDeleteResult
     }
 
-    override fun deleteOldNode(
+    override fun deleteNodeById(
         projectId: String,
         repoName: String,
         fullPath: String,
@@ -212,9 +212,9 @@ open class NodeDeleteSupport(
         val deletedSize = nodeBaseService.aggregateComputeSize(criteria.apply {
             and(TNode::deleted.name).isEqualTo(deleteTime)
         })
-        quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
 
-        logger.info("Delete old block base node: $fullPath, operator: $operator, delete time: $deleteTime success")
+        logger.info("Delete old block base node: $fullPath, operator: $operator, delete num : $deletedNum, " +
+                "delete time: $deleteTime success")
         return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
     }
 

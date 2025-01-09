@@ -97,7 +97,7 @@ class BlockNodeServiceTest {
     @Test
     fun testBlockUpload() {
         setupBlocks()
-        val blocks = listBlocks(createdDate)
+        val blocks = listBlocks("/file")
         assertBlocks(blocks, expectedSize = 2, blockSize = BLOCK_SIZE, UT_VERSION)
     }
 
@@ -105,7 +105,7 @@ class BlockNodeServiceTest {
     @Test
     fun testBlockCompletion() {
         setupBlocks()
-        val blocks = listBlocks(createdDate)
+        val blocks = listBlocks("/file")
         assertBlocks(blocks, expectedSize = 2, blockSize = BLOCK_SIZE, UT_VERSION)
 
         // 完成上传
@@ -127,7 +127,7 @@ class BlockNodeServiceTest {
     @Test
     fun testBlockAbort() {
         setupBlocks()
-        val blocks = listBlocks(createdDate)
+        val blocks = listBlocks("/file")
         assertBlocks(blocks, expectedSize = 2, blockSize = BLOCK_SIZE, UT_VERSION)
 
         // 中止上传
@@ -201,18 +201,18 @@ class BlockNodeServiceTest {
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             size = BLOCK_SIZE,
-            uploadId = UT_VERSION
+            uploadId = UT_VERSION,
+            expireDate = LocalDateTime.now().plusDays(1)
         )
         val artifactFile = createTempArtifactFile()
         storageService.store(blockNode.sha256, artifactFile, storageCredentials)
         blockNodeService.createBlock(blockNode, storageCredentials)
     }
-    private fun listBlocks(createdDate: LocalDateTime, fullPath: String = "/file"): List<TBlockNode> {
+    private fun listBlocks(fullPath: String = "/file"): List<TBlockNode> {
         return blockNodeService.listBlocksInUploadId(
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             fullPath = fullPath,
-            createdDate = createdDate.toString(),
             uploadId = UT_VERSION,
         )
     }

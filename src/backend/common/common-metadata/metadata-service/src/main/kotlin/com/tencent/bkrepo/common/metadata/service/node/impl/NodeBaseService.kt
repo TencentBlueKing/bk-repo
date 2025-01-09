@@ -438,9 +438,12 @@ abstract class NodeBaseService(
             // 子类的附加检查方法
             additionalCheck(existNode)
 
-            // 根据 separate 参数执行不同的逻辑
+            // 计算变更大小，并检查仓库配额
+            val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
+            quotaService.checkRepoQuota(projectId, repoName, changeSize)
+
             if (separate) {
-                // 删除旧节点 并 检查旧节点是否删除 防止并发删除
+                // 删除旧节点，并检查旧节点是否被删除，防止并发删除
                 val currentVersion = metadata!![UPLOADID_KEY].toString()
                 val oldNodeId = currentVersion.substringAfter("/")
 
@@ -448,19 +451,19 @@ abstract class NodeBaseService(
                     return
                 }
 
-                val deleteRes = deleteOldNode(projectId, repoName, fullPath, operator, oldNodeId)
+                val deleteRes = deleteNodeById(projectId, repoName, fullPath, operator, oldNodeId)
                 if (deleteRes.deletedNumber == 0L) {
                     logger.warn("Delete block base node[$fullPath] by [$operator] error: node was deleted")
                     throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
                 }
                 logger.info("Delete block base node[$fullPath] by [$operator] success: $oldNodeId.")
-                quotaService.decreaseUsedVolume(projectId, repoName, deleteRes.deletedSize)
+
             } else {
-                val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
-                quotaService.checkRepoQuota(projectId, repoName, changeSize)
                 deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
-                quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
             }
+
+            // 更新配额使用量
+            quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
         }
     }
 

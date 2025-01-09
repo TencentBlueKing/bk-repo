@@ -75,10 +75,11 @@ class BlockNodeServiceImpl(
         fullPath: String,
         uploadId: String
     ) {
-            val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath,false)
+            val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
                 criteria.and(TBlockNode::uploadId).isEqualTo(uploadId)
             val update = Update().set(TBlockNode::uploadId.name, null)
                 .set(TBlockNode::createdDate.name, LocalDateTime.now())
+                .set(TBlockNode::expireDate.name, null)
             blockNodeDao.updateMulti(Query(criteria), update)
             logger.info("Update block node[$projectId/$repoName/$fullPath--/uploadId: $uploadId] success.")
     }
@@ -98,11 +99,10 @@ class BlockNodeServiceImpl(
         projectId: String,
         repoName: String,
         fullPath: String,
-        createdDate: String?,
         uploadId: String
     ): List<TBlockNode> {
         val query =
-            BlockNodeQueryHelper.listQueryInUploadId(projectId, repoName, fullPath, createdDate, uploadId)
+            BlockNodeQueryHelper.listQueryInUploadId(projectId, repoName, fullPath, uploadId)
         return blockNodeDao.find(query)
     }
 
@@ -117,18 +117,6 @@ class BlockNodeServiceImpl(
         val update = BlockNodeQueryHelper.deleteUpdate()
         blockNodeDao.updateMulti(Query(criteria), update)
         logger.info("Delete node blocks[$projectId/$repoName$fullPath] success. UPLOADID: $uploadId")
-    }
-
-    override fun deleteBlock(blockNode: TBlockNode) {
-        with(blockNode) {
-            val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, nodeFullPath, false)
-                .and(TBlockNode::startPos.name).isEqualTo(startPos)
-                .and(TBlockNode::uploadId.name).isEqualTo(uploadId)
-            val update = BlockNodeQueryHelper.deleteUpdate()
-            blockNodeDao.updateFirst(Query(criteria), update)
-            logger.info("Delete single node block[$projectId/$repoName$nodeFullPath] success. " +
-                    "Id: $id, UPLOADID: $uploadId")
-        }
     }
 
     override fun moveBlocks(projectId: String, repoName: String, fullPath: String, dstFullPath: String) {

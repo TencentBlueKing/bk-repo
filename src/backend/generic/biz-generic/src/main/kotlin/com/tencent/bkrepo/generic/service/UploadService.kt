@@ -133,19 +133,21 @@ class UploadService(
 
             val node = nodeService.getNodeDetail(this)
 
+            val expires = getLongHeader(HEADER_EXPIRES).takeIf { it > 0 } ?: TRANSACTION_EXPIRES
+
             val oldNodeId = node?.nodeInfo?.id ?: FAKE_SEPARATE
             // 如果不允许覆盖且节点已经存在，抛出异常
             if (node != null && !overwrite) {
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
 
-            // 生成唯一的 blockId，作为上传会话的标识
+            // 生成唯一的 uploadId，作为上传会话的标识
             val uploadId = "${StringPool.uniqueId()}/$oldNodeId"
 
             // 创建上传事务信息，设置过期时间
             val uploadTransaction = UploadTransactionInfo(
                 uploadId = uploadId,
-                expireSeconds = TRANSACTION_EXPIRES
+                expireSeconds = expires
             )
             // 记录上传启动的日志
             logger.info(
@@ -271,14 +273,12 @@ class UploadService(
             artifactInfo.getArtifactFullPath()
         )
 
-        // 获取节点并验证uploadId信息
-        val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
-            ?.takeIf { it.metadata[UPLOADID_KEY] == uploadId }
-            ?: run {
-                logger.warn("Version mismatch for uploadId: $uploadId")
-                abortSeparateBlockUpload(userId, uploadId, artifactInfo)
-                return
-            }
+        // 获取节点信息并验证节点是否存在
+        val node = ArtifactContextHolder.getNodeDetail(artifactInfo) ?: run {
+            logger.warn("Node not found for artifact: ${artifactInfo.getArtifactFullPath()}")
+            throw ErrorCodeException(GenericMessageCode.NODE_DATA_ERROR, artifactInfo)
+        }
+
 
         // 获取并按起始位置排序块信息列表
         val blockInfoList = blockNodeService.listBlocksInUploadId(
@@ -306,7 +306,7 @@ class UploadService(
 
         // 验证节点大小是否与块总大小一致
         if (node.size != totalSize) {
-            throw ErrorCodeException(GenericMessageCode.NODE_DATA_HAS_CHANGED, artifactInfo)
+            throw ErrorCodeException(GenericMessageCode.NODE_DATA_ERROR, artifactInfo)
         }
 
         // 上传完成，记录日志

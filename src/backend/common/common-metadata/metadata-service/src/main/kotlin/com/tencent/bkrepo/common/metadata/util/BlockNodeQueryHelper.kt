@@ -68,7 +68,6 @@ object BlockNodeQueryHelper {
         projectId: String,
         repoName: String,
         fullPath: String,
-        createdDate: String?,
         uploadId: String,
     ):Query {
         val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
@@ -76,11 +75,8 @@ object BlockNodeQueryHelper {
             .and(TBlockNode::repoName).isEqualTo(repoName)
             .and(TBlockNode::deleted).isEqualTo(null)
             .and(TBlockNode::uploadId).isEqualTo(uploadId)
-        createdDate?.let {
-            criteria.and(TBlockNode::createdDate).gt(LocalDateTime.parse(createdDate))
-        }
-        val query = Query(criteria).with(Sort.by(TBlockNode::createdDate.name))
-        return query
+            .and(TBlockNode::expireDate).gt(LocalDateTime.now())
+        return Query(criteria)
     }
 
     fun fullPathCriteria(projectId: String, repoName: String, fullPath: String, deep: Boolean): Criteria {

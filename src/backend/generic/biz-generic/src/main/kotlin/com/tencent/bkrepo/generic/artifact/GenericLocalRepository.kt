@@ -67,6 +67,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.impl.BlockNodeServiceImpl
 import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
@@ -104,6 +105,7 @@ import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.SEPARATE_UPLOAD
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
+import com.tencent.bkrepo.generic.pojo.SeparateBlockInfo
 import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.api.ReplicaTaskClient
@@ -141,7 +143,8 @@ class GenericLocalRepository(
     private val replicaTaskClient: ReplicaTaskClient,
     private val clusterNodeClient: ClusterNodeClient,
     private val pipelineNodeService: PipelineNodeService,
-    private val ciPermissionManager: CIPermissionManager
+    private val ciPermissionManager: CIPermissionManager,
+    private val blockNodeServiceImpl: BlockNodeServiceImpl
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -211,6 +214,7 @@ class GenericLocalRepository(
             val sha256 = getArtifactSha256()
 
             val offset = context.request.getHeader(HEADER_OFFSET)?.toLongOrNull()
+            val expires = HeaderUtils.getLongHeader(HEADER_EXPIRES).takeIf { it > 0 } ?: UPLOADING_BLOCK_EXPIRES
 
             val blockNode = TBlockNode(
                 createdBy = userId,
@@ -221,25 +225,25 @@ class GenericLocalRepository(
                 projectId = projectId,
                 repoName = repoName,
                 size = blockArtifactFile.getSize(),
-                uploadId = uploadId
+                uploadId = uploadId,
+                expireDate = LocalDateTime.now().plusSeconds(expires)
             )
 
-            val stored = storageService.store(sha256, blockArtifactFile, storageCredentials)
+            storageService.store(sha256, blockArtifactFile, storageCredentials)
 
-            try {
-                blockNodeService.createBlock(blockNode, storageCredentials)
-            } catch (e: Exception) {
-                if (stored > 1) {
-                    blockNodeService.deleteBlock(blockNode)
-                }
-                // Log the exception for debugging purposes
-                logger.error("Failed to create block node", e)
-                throw e
-            }
+            val blockNodeInfo = blockNodeServiceImpl.createBlock(blockNode, storageCredentials)
 
             // Set response content type and write success response
             context.response.contentType = MediaTypes.APPLICATION_JSON
-            context.response.writer.println(ResponseBuilder.success().toJsonString())
+            context.response.writer.println(
+                ResponseBuilder.success(
+                    SeparateBlockInfo(
+                        blockNodeInfo.size,
+                        blockNodeInfo.sha256,
+                        blockNodeInfo.startPos,
+                        blockNodeInfo.uploadId)
+                ).toJsonString()
+            )
         }
     }
 
@@ -307,9 +311,9 @@ class GenericLocalRepository(
         val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
         val uploadId = HeaderUtils.getHeader(HEADER_UPLOAD_ID)
         val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
-                    ?: HeaderUtils.getHeader(HEADER_OFFSET)?.toInt()
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
-        if (!overwrite && !isBlockUpload(uploadId, sequence) && !isChunkedUpload(uploadType)) {
+        if (!overwrite && !isBlockUpload(uploadId, sequence)
+            && !isChunkedUpload(uploadType) && !isSeparateUpload(uploadType)) {
             with(context.artifactInfo) {
                 nodeService.getNodeDetail(this)?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
@@ -967,5 +971,7 @@ class GenericLocalRepository(
 
         private const val UPLOAD_CHANNEL_PIPELINE = "pipeline"
         private const val UPLOAD_CHANNEL_PIPELINE_DEBUG = "pipeline-debug"
+
+        private const val UPLOADING_BLOCK_EXPIRES: Long = 3600 * 8L // s
     }
 }

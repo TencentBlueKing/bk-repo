@@ -55,7 +55,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService
@@ -85,9 +84,6 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
     lateinit var nodeService: NodeService
-
-    @Autowired
-    lateinit var blockNodeService: BlockNodeService
 
     @Autowired
     lateinit var nodeSearchService: NodeSearchService

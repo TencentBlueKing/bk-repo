@@ -40,6 +40,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeDeleteSupport
+import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import org.bson.types.ObjectId
 import org.jboss.logging.Logger
@@ -146,6 +147,35 @@ class CenterNodeDeleteSupport(
         return NodeDeleteResult(deletedNum, deletedSize, LocalDateTime.now())
     }
 
+    override fun deleteNodeById(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String,
+        nodeId: String
+    ): NodeDeleteResult {
+        val clusterName = SecurityUtils.getClusterName()
+        if (clusterName.isNullOrEmpty()) {
+            return super.deleteNodeById(projectId, repoName, fullPath, operator, nodeId)
+        }
+
+        val criteria = buildCriteria(projectId, repoName, fullPath).apply {
+            and(ID).isEqualTo(nodeId)
+        }
+        val node = nodeDao.findOne(Query(criteria))
+            ?: return NodeDeleteResult(0,0, LocalDateTime.now())
+
+        if (node.folder) {
+            return delete(node, operator)
+        }
+
+        return if (deleteFileNode(node, operator, nodeId)) {
+            NodeDeleteResult(1, node.size, LocalDateTime.now())
+        } else {
+            NodeDeleteResult(0, 0, LocalDateTime.now())
+        }
+    }
+
     private fun delete(folder: TNode, operator: String): NodeDeleteResult {
         var deletedNumber = 0L
         var deletedSize = 0L
@@ -180,21 +210,30 @@ class CenterNodeDeleteSupport(
 
     private fun deleteFileNode(
         node: TNode,
-        operator: String
+        operator: String,
+        nodeId: String? = null
     ): Boolean {
         if (!ClusterUtils.containsSrcCluster(node.clusterNames)) {
             return false
         }
         val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()
         node.clusterNames = node.clusterNames.orEmpty().minus(srcCluster)
-        if (node.clusterNames.orEmpty().isEmpty()) {
-            super.deleteByFullPathWithoutDecreaseVolume(node.projectId, node.repoName, node.fullPath, operator)
-            quotaService.decreaseUsedVolume(node.projectId, node.repoName, node.size)
-        } else {
+
+        if (node.clusterNames.orEmpty().isNotEmpty()) {
+            // 更新数据库中节点的 clusterNames
             val query = NodeQueryHelper.nodeQuery(node.projectId, node.repoName, node.fullPath)
             val update = Update().pull(TNode::clusterNames.name, srcCluster)
             nodeDao.updateFirst(query, update)
+            return true
         }
+
+        // 当 clusterNames 为空时，删除节点
+        if (nodeId != null) {
+            super.deleteNodeById(node.projectId, node.repoName, node.fullPath, operator, nodeId)
+        } else {
+            super.deleteByFullPathWithoutDecreaseVolume(node.projectId, node.repoName, node.fullPath, operator)
+        }
+        quotaService.decreaseUsedVolume(node.projectId, node.repoName, node.size)
         return true
     }
 

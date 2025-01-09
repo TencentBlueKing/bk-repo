@@ -237,6 +237,22 @@ class CenterNodeServiceImpl(
         )
     }
 
+    override fun deleteNodeById(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String,
+        nodeId: String
+    ): NodeDeleteResult {
+        return CenterNodeDeleteSupport(this, clusterProperties).deleteNodeById(
+            projectId,
+            repoName,
+            fullPath,
+            operator,
+            nodeId
+        )
+    }
+
     override fun restoreNode(restoreContext: RestoreContext): NodeRestoreResult {
         return CenterNodeRestoreSupport(this).restoreNode(restoreContext)
     }

@@ -87,8 +87,9 @@ interface NodeDeleteOperation {
 
     /**
      * 删除旧node
+     * 参数暂时保留，后续只保留nodeId，operator
      */
-    fun deleteOldNode(
+    fun deleteNodeById(
         projectId: String,
         repoName: String,
         fullPath: String,
