@@ -83,13 +83,12 @@ export default {
     // 包搜索-仓库数量
     searchRepoList (_, { projectId, repoType, packageName }) {
         const isGeneric = repoType === 'generic'
-        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.get(
             `${prefix}/${isGeneric ? 'node' : 'package'}/search/overview`,
             {
                 params: {
                     projectId,
-                    repoType: type.toUpperCase(),
+                    repoType: repoType.toUpperCase(),
                     [isGeneric ? 'name' : 'packageName']: `*${packageName}*`,
                     ...(MODE_CONFIG === 'ci' && isGeneric
                         ? {
@@ -103,7 +102,6 @@ export default {
     // 跨仓库搜索
     searchPackageList (_, { projectId, repoType, repoName, repoNames = [], packageName, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
         const isGeneric = repoType === 'generic'
-        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.post(
             `${prefix}/${isGeneric ? 'node/queryWithoutCount' : 'package/search'}`,
             {
@@ -124,10 +122,10 @@ export default {
                                 operation: 'EQ'
                             }]
                             : []),
-                        ...((MODE_CONFIG === 'ci' ? !isGeneric : true) && type
+                        ...((MODE_CONFIG === 'ci' ? !isGeneric : true) && repoType
                             ? [{
                                 field: 'repoType',
-                                value: type.toUpperCase(),
+                                value: repoType.toUpperCase(),
                                 operation: 'EQ'
                             }]
                             : []),
