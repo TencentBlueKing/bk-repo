@@ -1,9 +1,11 @@
 <template>
     <bk-tab class="common-version-container" type="unborder-card" :active.sync="tabName" v-bkloading="{ isLoading }">
         <template #setting>
-            <bk-button v-if="!metadataMap.forbidStatus && repoType !== 'docker'"
+            <bk-button
+                v-if="!metadataMap.forbidStatus && repoType !== 'docker'"
                 outline class="mr10" @click="$emit('download')">{{$t('download')}}</bk-button>
-            <operation-list class="mr20"
+            <operation-list
+                class="mr20"
                 :list="operationBtns">
                 <bk-button icon="ellipsis"></bk-button>
             </operation-list>
@@ -21,20 +23,23 @@
                     <label>OS/ARCH</label>
                     <span class="flex-1 text-overflow" :title="detail.basic.platform.join()">{{ detail.basic.platform.join() }}</span>
                 </div>
-                <div class="grid-item"
+                <div
+                    class="grid-item"
                     v-for="{ name, label, value } in detailInfoMap"
                     :key="name">
                     <label>{{ label }}</label>
                     <span class="flex-1 flex-align-center text-overflow">
                         <span class="text-overflow" :title="value">{{ value }}</span>
                         <template v-if="name === 'version'">
-                            <span class="ml5 repo-tag"
+                            <span
+                                class="ml5 repo-tag"
                                 v-for="tag in detail.basic.stageTag"
                                 :key="tag">
                                 {{ tag }}
                             </span>
                             <scan-tag v-if="showRepoScan" class="ml10" :status="metadataMap.scanStatus"></scan-tag>
-                            <forbid-tag class="ml10"
+                            <forbid-tag
+                                class="ml10"
                                 v-if="metadataMap.forbidStatus"
                                 v-bind="metadataMap">
                             </forbid-tag>
@@ -117,7 +122,8 @@
         <bk-tab-panel v-if="detail.history" name="history" label="IMAGE HISTORY">
             <div class="version-history">
                 <div class="version-history-left">
-                    <div class="version-history-code hover-btn"
+                    <div
+                        class="version-history-code hover-btn"
                         v-for="(code, index) in detail.history"
                         :key="index"
                         :class="{ select: selectedHistory.created_by === code.created_by }"
@@ -127,7 +133,8 @@
                 </div>
                 <div class="version-history-right">
                     <header class="version-history-header">Command</header>
-                    <code-area class="mt20"
+                    <code-area
+                        class="mt20"
                         :show-line-number="false"
                         :code-list="[selectedHistory.created_by]">
                     </code-area>
@@ -136,15 +143,22 @@
         </bk-tab-panel>
         <bk-tab-panel v-if="detail.dependencyInfo" name="dependencyInfo" :label="$t('dependencies')">
             <article class="version-dependencies">
-                <section class="version-dependencies-main display-block"
+                <section
+                    class="version-dependencies-main display-block"
                     v-for="type in ['dependencies', 'devDependencies', 'dependents']"
                     :key="type"
                     :data-title="type">
                     <template v-if="detail.dependencyInfo[type].length">
                         <template
+                            v-if="type !== 'dependents'"
                             v-for="{ name, version } in detail.dependencyInfo[type]">
                             <div class="version-dependencies-key text-overflow" :key="name" :title="name">{{ name }}</div>
-                            <div v-if="type !== 'dependents'" class="version-dependencies-value text-overflow" :key="name + version" :title="version">{{ version }}</div>
+                            <div class="version-dependencies-value text-overflow" :key="name + version" :title="version">{{ version }}</div>
+                        </template>
+                        <template
+                            v-if="type === 'dependents'"
+                            v-for="(item,index) in detail.dependencyInfo['dependents']">
+                            <div class="version-dependencies-key text-overflow" :key="index" :title="item">{{ item }}</div>
                         </template>
                     </template>
                     <empty-data v-else class="version-dependencies-empty"></empty-data>
@@ -163,7 +177,7 @@
     import { convertFileSize, formatDate } from '@repository/utils'
     import repoGuideMixin from '@repository/views/repoCommon/repoGuideMixin'
     export default {
-        name: 'commonVersionDetail',
+        name: 'CommonVersionDetail',
         components: {
             CodeArea,
             OperationList,
