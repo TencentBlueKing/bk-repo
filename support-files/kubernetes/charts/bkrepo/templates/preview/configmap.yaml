@@ -13,9 +13,4 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
-    preview:
-      domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}/preview
-      {{- if keys $.Values.preview.config }}
-        {{- toYaml .Values.preview.config | nindent 6 }}
-      {{- end}}
 {{- end }}
