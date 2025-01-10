@@ -176,7 +176,7 @@ export default {
       } else {
         this.cleanValue = this.repoConfig.configuration.settings.cleanupStrategy.cleanupValue
       }
-      if (this.repoConfig.configuration.settings.cleanupStrategy.cleanTargets.length === 0) {
+      if (!this.repoConfig.configuration.settings.cleanupStrategy.cleanTargets || this.repoConfig.configuration.settings.cleanupStrategy.cleanTargets.length === 0) {
         this.repoConfig.configuration.settings.cleanupStrategy.cleanTargets = ['']
       }
       this.data = this.repoConfig.configuration.settings.cleanupStrategy.cleanupValue

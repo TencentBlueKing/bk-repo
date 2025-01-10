@@ -45,5 +45,7 @@ const val NODE_METADATA = "nodeMetadata"
 const val MD5 = "md5"
 const val SHA256 = "sha256"
 const val PACKAGE_KEY = "key"
+const val VERSION = "version"
 
 const val NODE_DETAIL_LIST_KEY = "nodeDetailList"
+const val PROXY_DOWNLOAD_URL = "proxyDownloadUrl"
