@@ -288,8 +288,8 @@ class PypiLocalRepository(
                 context.repoName,
                 packageKey,
                 version,
+                HttpContextHolder.getClientAddress(),
                 contentPath,
-                HttpContextHolder.getClientAddress()
             )
         }
     }
