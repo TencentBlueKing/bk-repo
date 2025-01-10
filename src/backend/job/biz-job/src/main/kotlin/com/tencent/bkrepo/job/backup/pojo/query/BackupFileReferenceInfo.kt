@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,25 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.config
+package com.tencent.bkrepo.job.backup.pojo.query
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.metadata.listener.NodeUpdateAccessDateEventListener
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
-import org.springframework.messaging.Message
-import java.util.function.Consumer
-
-@Configuration
-class RepositoryConsumerConfig {
-
-    // 之前继承Consumer方式框架升级后会报错，https://github.com/spring-cloud/spring-cloud-stream/issues/2704
-    @Bean("nodeUpdateAccessDate")
-    fun nodeUpdateAccessDateEventConsumer(
-        nodeUpdateAccessDateEventListener: NodeUpdateAccessDateEventListener
-    ): Consumer<Message<ArtifactEvent>> {
-        return Consumer {
-            nodeUpdateAccessDateEventListener.accept(it)
-        }
-    }
-}
+data class BackupFileReferenceInfo(
+    var id: String? = null,
+    var sha256: String,
+    var credentialsKey: String? = null,
+    var count: Long
+)

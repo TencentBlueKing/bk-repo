@@ -113,7 +113,7 @@ class SessionHandler(
                 val (accessKey, secretKey) = String(Base64.getDecoder().decode(platformToken)).split(COLON)
                 val appId = authenticationManager.checkPlatformAccount(accessKey, secretKey)
                 session.attributes[PLATFORM_KEY] = appId
-                session.attributes[USER_KEY] = session.handshakeHeaders[AUTH_HEADER_UID]
+                session.attributes[USER_KEY] = session.handshakeHeaders[AUTH_HEADER_UID]?.first()
             }
             uri.path.startsWith(APP_ENDPOINT) -> {
                 val token = session.handshakeHeaders[HttpHeaders.AUTHORIZATION]?.firstOrNull().orEmpty()

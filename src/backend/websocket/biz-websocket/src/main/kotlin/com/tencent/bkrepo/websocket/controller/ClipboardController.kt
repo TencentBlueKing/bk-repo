@@ -27,10 +27,13 @@
 
 package com.tencent.bkrepo.websocket.controller
 
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.websocket.pojo.fs.CopyPDU
 import com.tencent.bkrepo.websocket.pojo.fs.PastePDU
 import com.tencent.bkrepo.websocket.service.ClipboardService
 import org.springframework.messaging.handler.annotation.MessageMapping
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
 
 @Controller
@@ -40,8 +43,9 @@ class ClipboardController(
 ) {
 
     @MessageMapping("/copy")
-    fun copy(copyPDU: CopyPDU) {
-        clipboardService.copy(copyPDU)
+    fun copy(copyPDU: CopyPDU, accessor: SimpMessageHeaderAccessor) {
+        val userId = accessor.sessionAttributes?.get(USER_KEY)?.toString() ?: ANONYMOUS_USER
+        clipboardService.copy(userId, copyPDU)
     }
 
     @MessageMapping("/paste")

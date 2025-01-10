@@ -147,5 +147,14 @@ data class DevXProperties(
      */
     var authToken: String = "",
 
+    /**
+     * 查询团队云桌面接口url
+     */
+    var groupWorkspaceUrl: String = "",
+
+    /**
+     * 查询个人云桌面接口url
+     */
+    var personalWorkspaceUrl: String = "",
 
 )
