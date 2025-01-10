@@ -1,6 +1,6 @@
 {{- if .Values.rbac.create -}}
 apiVersion: {{ include "common.capabilities.rbac.apiVersion" . }}
-kind: Role
+kind: ClusterRole
 metadata:
   name: {{ include "common.names.fullname" . }}
   labels: {{- include "common.labels.standard" . | nindent 4 }}
@@ -21,7 +21,6 @@ rules:
     - secrets
     - endpoints
     - persistentvolumeclaims
-    - pods
     verbs: 
     - get
     - watch
