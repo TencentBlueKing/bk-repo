@@ -118,7 +118,9 @@ class HelmLocalRepository(
             val projectId = repositoryDetail.projectId
             val repoName = repositoryDetail.name
             val fullPath = getStringAttribute(FULL_PATH).orEmpty()
-            helmOperationService.checkNodePermission(fullPath)
+            if (fullPath != HelmUtils.getIndexCacheYamlFullPath()) {
+                helmOperationService.checkNodePermission(fullPath)
+            }
             val isExist = nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))
             val isOverwrite = isOverwrite(fullPath, isForce)
             putAttribute(OVERWRITE, isOverwrite)
