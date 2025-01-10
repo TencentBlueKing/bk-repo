@@ -38,5 +38,9 @@ data class HttpAuthProperties(
     /**
      * 是否开启认证
      */
-    var enabled: Boolean = true
+    var enabled: Boolean = true,
+    /**
+     * 是否禁用管理员缓存
+     */
+    var adminCacheEnabled: Boolean = true,
 )

@@ -155,4 +155,9 @@ class UserDao : SimpleMongoDao<TUser>() {
         return this.findOne(query)
     }
 
+    fun findAllAdminUsers(): List<TUser> {
+        val query = Query(Criteria.where(TUser::admin.name).`is`(true))
+        return this.find(query)
+    }
+
 }
