@@ -270,8 +270,8 @@ class PackageServiceImpl(
         repoName: String,
         packageKey: String,
         versionName: String,
+        realIpAddress: String?,
         contentPath: String?,
-        realIpAddress: String?
     ) {
         var tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
         val packageId = tPackage.id!!

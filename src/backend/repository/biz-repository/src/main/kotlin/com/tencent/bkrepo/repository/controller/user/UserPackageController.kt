@@ -138,7 +138,7 @@ class UserPackageController(
         @RequestParam version: String,
         @RequestParam contentPath: String?
     ): Response<Void> {
-        packageService.deleteVersion(projectId, repoName, packageKey, version, contentPath)
+        packageService.deleteVersion(projectId, repoName, packageKey, version, null, contentPath)
         return ResponseBuilder.success()
     }
 
