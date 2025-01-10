@@ -156,7 +156,7 @@
                             <div class="version-dependencies-value text-overflow" :key="name + version" :title="version">{{ version }}</div>
                         </template>
                         <template
-                            v-if="type === 'dependents'"
+                            v-else
                             v-for="(item,index) in detail.dependencyInfo['dependents']">
                             <div class="version-dependencies-key text-overflow" :key="index" :title="item">{{ item }}</div>
                         </template>
