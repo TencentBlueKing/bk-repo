@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildNodeCleanEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -185,6 +186,35 @@ open class NodeDeleteSupport(
         return nodeDeleteResult
     }
 
+    override fun deleteNodeById(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String,
+        nodeId: String
+    ): NodeDeleteResult {
+        require(!PathUtils.isRoot(fullPath)) { "Cannot delete root node." }
+        val deleteTime = LocalDateTime.now()
+
+        val criteria = buildCriteria(projectId, repoName, fullPath).apply {
+            and(ID).isEqualTo(nodeId)
+        }
+        val query = Query(criteria)
+
+        // 删除旧节点
+        val updateDefinition = NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime)
+        val updateResult = nodeDao.updateFirst(query, updateDefinition)
+        val deletedNum = updateResult.modifiedCount
+
+        if (deletedNum == 0L) return NodeDeleteResult(0L, 0L, deleteTime)
+
+        logger.info(
+            "Delete old block base node: $fullPath, operator: $operator, delete num : $deletedNum, " +
+                    "delete time: $deleteTime success"
+        )
+        return NodeDeleteResult(deletedNum, 0, deleteTime)
+    }
+
     private fun delete(
         query: Query,
         operator: String,
@@ -220,11 +250,11 @@ open class NodeDeleteSupport(
                 deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
                 quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             }
-            fullPaths?.forEach {
+            fullPaths?.forEach { fullPath ->
                 if (routerControllerProperties.enabled) {
-                    routerControllerClient.removeNodes(projectId, repoName, it)
+                    routerControllerClient.removeNodes(projectId, repoName, fullPath)
                 }
-                publishEvent(buildDeletedEvent(projectId, repoName, it, operator))
+                publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator))
             }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[$resourceKey] by [$operator] error: [${exception.message}]")
