@@ -256,6 +256,27 @@ class UploadService(
 
     fun completeSeparateBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
 
+        // 获取并按起始位置排序块信息列表
+        val blockInfoList = blockNodeService.listBlocksInUploadId(
+            artifactInfo.projectId,
+            artifactInfo.repoName,
+            artifactInfo.getArtifactFullPath(),
+            uploadId = uploadId
+        )
+
+        blockInfoList.ifEmpty {
+            logger.warn("No block information found for uploadId: $uploadId")
+            throw ErrorCodeException(GenericMessageCode.BLOCK_UPDATE_LIST_IS_NULL, artifactInfo)
+        }
+
+        // 计算所有块的总大小
+        val totalSize = blockInfoList.sumOf { it.size }
+
+        // 验证节点大小是否与块总大小一致
+        if (getLongHeader(HEADER_FILE_SIZE) != totalSize) {
+            throw ErrorCodeException(GenericMessageCode.NODE_DATA_ERROR, artifactInfo)
+        }
+
         // 创建新的基础节点（Base Node）
         try {
             blockBaseNodeCreate(userId, artifactInfo, uploadId)
@@ -275,25 +296,6 @@ class UploadService(
             artifactInfo.getArtifactFullPath()
         )
 
-        // 获取节点信息（不再进行节点存在性检查）
-        val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
-
-        // 获取并按起始位置排序块信息列表
-        val blockInfoList = blockNodeService.listBlocksInUploadId(
-            node!!.projectId,
-            node.repoName,
-            node.fullPath,
-            uploadId = uploadId
-        )
-
-        blockInfoList.ifEmpty {
-            logger.warn("No block information found for uploadId: $uploadId")
-            throw ErrorCodeException(GenericMessageCode.BLOCK_UPDATE_LIST_IS_NULL, artifactInfo)
-        }
-
-        // 计算所有块的总大小
-        val totalSize = blockInfoList.sumOf { it.size }
-
         // 更新节点版本信息为null
         blockNodeService.updateBlockUploadId(
             artifactInfo.projectId,
@@ -301,11 +303,6 @@ class UploadService(
             artifactInfo.getArtifactFullPath(),
             uploadId
         )
-
-        // 验证节点大小是否与块总大小一致
-        if (node.size != totalSize) {
-            throw ErrorCodeException(GenericMessageCode.NODE_DATA_ERROR, artifactInfo)
-        }
 
         // 上传完成，记录日志
         logger.info(
