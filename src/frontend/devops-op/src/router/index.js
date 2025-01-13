@@ -141,12 +141,6 @@ export const asyncRoutes = [
         component: () => import('@/views/node/index')
       },
       {
-        path: 'fileCache',
-        name: ROUTER_NAME_FILE_CACHE,
-        meta: { title: '缓存管理', icon: 'file' },
-        component: () => import('@/views/node/FileCache')
-      },
-      {
         path: 'fileSystem',
         name: ROUTER_NAME_FILE_SYSTEM,
         meta: { title: '客户端管理', icon: 'file' },
@@ -175,12 +169,6 @@ export const asyncRoutes = [
         name: ROUTER_NAME_PROJECT_METRICS,
         meta: { title: '仓库大小统计', icon: 'file' },
         component: () => import('@/views/node/ProjectMetrics')
-      },
-      {
-        path: 'preloadConfig',
-        name: ROUTER_NAME_PRELOAD_CONFIG,
-        meta: { title: '制品预加载配置', icon: 'service-config' },
-        component: () => import('@/views/preload/index')
       }
     ]
   },
@@ -337,6 +325,26 @@ export const asyncRoutes = [
         name: ROUTER_NAME_RATE_LIMITER_CONFIG,
         meta: { title: '限流管理', icon: 'permission' },
         component: () => import('@/views/rateLimitConfg/RateLimiter')
+      }
+    ]
+  },
+  {
+    path: '/fileCache',
+    component: Layout,
+    meta: { title: '文件缓存', icon: 'file' },
+    redirect: '/fileCache/fileCacheManage',
+    children: [
+      {
+        path: 'fileCacheManage',
+        name: ROUTER_NAME_FILE_CACHE,
+        meta: { title: '缓存管理', icon: 'file' },
+        component: () => import('@/views/node/FileCache')
+      },
+      {
+        path: 'preloadConfig',
+        name: ROUTER_NAME_PRELOAD_CONFIG,
+        meta: { title: '制品预加载配置', icon: 'service-config' },
+        component: () => import('@/views/preload/index')
       }
     ]
   },
