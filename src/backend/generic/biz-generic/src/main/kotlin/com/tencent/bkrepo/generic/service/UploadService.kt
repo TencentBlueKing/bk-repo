@@ -99,14 +99,14 @@ class UploadService(
 
     fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): UploadTransactionInfo {
         with(artifactInfo) {
-            val expires = getLongHeader(HEADER_EXPIRES)
+
             val overwrite = getBooleanHeader(HEADER_OVERWRITE)
-            Preconditions.checkArgument(expires >= 0, "expires")
+
             // 判断文件是否存在
             if (!overwrite && nodeService.checkExist(this)) {
                 logger.warn(
                     "User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: " +
-                        "artifact already exists."
+                            "artifact already exists."
                 )
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
@@ -152,12 +152,13 @@ class UploadService(
             // 记录上传启动的日志
             logger.info(
                 "User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success, "
-                        + "version: $uploadId.")
+                        + "version: $uploadId."
+            )
             return uploadTransaction
         }
     }
 
-    fun blockBaseNodeCreate(userId: String, artifactInfo: GenericArtifactInfo, uploadId: String){
+    fun blockBaseNodeCreate(userId: String, artifactInfo: GenericArtifactInfo, uploadId: String) {
         val attributes = NodeAttribute(
             uid = NodeAttribute.NOBODY,
             gid = NodeAttribute.NOBODY,
@@ -172,7 +173,7 @@ class UploadService(
             value = uploadId
         )
         val fileSize = getLongHeader(HEADER_FILE_SIZE).takeIf { it > 0L }
-                        ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND)
+            ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND)
         val request = NodeCreateRequest(
             projectId = artifactInfo.projectId,
             repoName = artifactInfo.repoName,
@@ -205,7 +206,8 @@ class UploadService(
             artifactInfo.projectId,
             artifactInfo.repoName,
             artifactInfo.getArtifactFullPath(),
-            uploadId)
+            uploadId
+        )
     }
 
     fun completeBlockUpload(
@@ -222,7 +224,7 @@ class UploadService(
         val fileInfo = if (!sha256.isNullOrEmpty() && !md5.isNullOrEmpty() && size != null) {
             logger.info(
                 "sha256 $sha256, md5 $md5, size $size for " +
-                    "fullPath ${artifactInfo.getArtifactFullPath()} with uploadId $uploadId"
+                        "fullPath ${artifactInfo.getArtifactFullPath()} with uploadId $uploadId"
             )
             FileInfo(sha256, md5, size)
         } else {
@@ -258,10 +260,11 @@ class UploadService(
         // 创建新的基础节点（Base Node）
         try {
             blockBaseNodeCreate(userId, artifactInfo, uploadId)
-        }
-        catch (e: Exception) {
-            logger.error("Create block base node failed, file path [${artifactInfo.getArtifactFullPath()}], " +
-                    "version : $uploadId")
+        } catch (e: Exception) {
+            logger.error(
+                "Create block base node failed, file path [${artifactInfo.getArtifactFullPath()}], " +
+                        "version : $uploadId"
+            )
             abortSeparateBlockUpload(userId, uploadId, artifactInfo)
             throw e
         }
@@ -273,16 +276,12 @@ class UploadService(
             artifactInfo.getArtifactFullPath()
         )
 
-        // 获取节点信息并验证节点是否存在
-        val node = ArtifactContextHolder.getNodeDetail(artifactInfo) ?: run {
-            logger.warn("Node not found for artifact: ${artifactInfo.getArtifactFullPath()}")
-            throw ErrorCodeException(GenericMessageCode.NODE_DATA_ERROR, artifactInfo)
-        }
-
+        // 获取节点信息（不再进行节点存在性检查）
+        val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
 
         // 获取并按起始位置排序块信息列表
         val blockInfoList = blockNodeService.listBlocksInUploadId(
-            node.projectId,
+            node!!.projectId,
             node.repoName,
             node.fullPath,
             uploadId = uploadId
@@ -310,8 +309,10 @@ class UploadService(
         }
 
         // 上传完成，记录日志
-        logger.info("User [$userId] successfully completed block upload [uploadId: $uploadId], " +
-                "file path [${artifactInfo.getArtifactFullPath()}].")
+        logger.info(
+            "User [$userId] successfully completed block upload [uploadId: $uploadId], " +
+                    "file path [${artifactInfo.getArtifactFullPath()}]."
+        )
 
     }
 

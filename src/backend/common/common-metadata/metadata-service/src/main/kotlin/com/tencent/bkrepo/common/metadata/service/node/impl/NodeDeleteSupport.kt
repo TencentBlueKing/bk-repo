@@ -208,14 +208,11 @@ open class NodeDeleteSupport(
 
         if (deletedNum == 0L) return NodeDeleteResult(0L, 0L, deleteTime)
 
-        // 计算删除的文件大小
-        val deletedSize = nodeBaseService.aggregateComputeSize(criteria.apply {
-            and(TNode::deleted.name).isEqualTo(deleteTime)
-        })
-
-        logger.info("Delete old block base node: $fullPath, operator: $operator, delete num : $deletedNum, " +
-                "delete time: $deleteTime success")
-        return NodeDeleteResult(deletedNum, deletedSize, deleteTime)
+        logger.info(
+            "Delete old block base node: $fullPath, operator: $operator, delete num : $deletedNum, " +
+                    "delete time: $deleteTime success"
+        )
+        return NodeDeleteResult(deletedNum, 0, deleteTime)
     }
 
     private fun delete(

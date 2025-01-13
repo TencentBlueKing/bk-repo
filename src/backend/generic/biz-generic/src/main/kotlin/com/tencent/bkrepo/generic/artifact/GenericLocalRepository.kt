@@ -67,7 +67,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
-import com.tencent.bkrepo.common.metadata.service.blocknode.impl.BlockNodeServiceImpl
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
@@ -146,7 +146,7 @@ class GenericLocalRepository(
     private val clusterNodeClient: ClusterNodeClient,
     private val pipelineNodeService: PipelineNodeService,
     private val ciPermissionManager: CIPermissionManager,
-    private val blockNodeServiceImpl: BlockNodeServiceImpl,
+    private val blockNodeService: BlockNodeService,
     private val storageProperties: StorageProperties,
 ) : LocalRepository() {
 
@@ -217,7 +217,7 @@ class GenericLocalRepository(
             val sha256 = getArtifactSha256()
 
             val offset = context.request.getHeader(HEADER_OFFSET)?.toLongOrNull()
-            val expires = storageProperties.filesystem.cache.expireDuration
+            val expires = storageProperties.receive.blockExpireTime
 
             val blockNode = TBlockNode(
                 createdBy = userId,
@@ -234,7 +234,7 @@ class GenericLocalRepository(
 
             storageService.store(sha256, blockArtifactFile, storageCredentials)
 
-            val blockNodeInfo = blockNodeServiceImpl.createBlock(blockNode, storageCredentials)
+            val blockNodeInfo = blockNodeService.createBlock(blockNode, storageCredentials)
 
             // Set response content type and write success response
             context.response.contentType = MediaTypes.APPLICATION_JSON
@@ -244,7 +244,8 @@ class GenericLocalRepository(
                         blockNodeInfo.size,
                         blockNodeInfo.sha256,
                         blockNodeInfo.startPos,
-                        blockNodeInfo.uploadId)
+                        blockNodeInfo.uploadId
+                    )
                 ).toJsonString()
             )
         }
