@@ -90,14 +90,14 @@
         :rules="[{ required: clientQuery.type[1] === 'node' || clientQuery.type[1] === 'version', message: '降冷时间不能为空'}]"
         prop="separationDate"
       >
-        <el-date-picker
-          v-model="clientQuery.separationDate"
-          type="datetime"
-          placeholder="选择日期时间"
-          :clearable="false"
-          :disabled="true"
-          default-time="12:00:00"
-        />
+        <el-select v-model="clientQuery.separationDate" placeholder="请选择">
+          <el-option
+            v-for="item in separationDates"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
       </el-form-item>
       <el-form-item
         v-if="clientQuery.type[1] === 'version'"
@@ -333,7 +333,8 @@ export default {
       deepOption: [
         { label: '是', value: true },
         { label: '否', value: false }
-      ]
+      ],
+      separationDates: []
     }
   },
   watch: {
@@ -372,6 +373,8 @@ export default {
       }
     },
     selectRepo(repo) {
+      this.clientQuery.separationDate = ''
+      this.clientQuery.separationDates = []
       this.$refs['repo-form-item'].resetField()
       this.clientQuery.repoName = repo.name
       // 搜索当前repo的降冷任务配置的时间，将时间带入，没有就没有
@@ -383,11 +386,20 @@ export default {
       query.taskType = 'SEPARATE'
       querySeparateTask(query).then(res => {
         if (res.data.totalRecords > 0) {
+          res.data.records.forEach(record => {
+            const data = {
+              label: formatNormalDate(record.separationDate),
+              value: record.separationDate
+            }
+            this.separationDates.push(data)
+          })
           this.clientQuery.separationDate = res.data.records[0].separationDate
         }
       })
     },
     handleRepoChange(repo) {
+      this.clientQuery.separationDate = ''
+      this.clientQuery.separationDates = []
       if (repo !== '') {
         // 搜索当前repo的降冷任务配置的时间，将时间带入，没有就没有
         const query = {
@@ -397,8 +409,14 @@ export default {
         query.repoName = this.clientQuery.repoName
         query.taskType = 'SEPARATE'
         querySeparateTask(query).then(res => {
-          console.log(res)
           if (res.data.totalRecords > 0) {
+            res.data.records.forEach(record => {
+              const data = {
+                label: formatNormalDate(record.separationDate),
+                value: record.separationDate
+              }
+              this.separationDates.push(data)
+            })
             this.clientQuery.separationDate = res.data.records[0].separationDate
           }
         })
