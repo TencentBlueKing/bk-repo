@@ -109,4 +109,8 @@ interface ServiceUserClient {
     fun userTokenById(
         @PathVariable uid: String
     ): Response<List<String>>
+
+    @ApiOperation("获取admin用户")
+    @GetMapping("/admin/users")
+    fun listAdminUsers(): Response<List<String>>
 }

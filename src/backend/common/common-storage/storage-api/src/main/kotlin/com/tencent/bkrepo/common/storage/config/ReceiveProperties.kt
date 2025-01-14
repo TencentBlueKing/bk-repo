@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.storage.config
 
 import org.springframework.util.unit.DataSize
+import java.time.Duration
 
 /**
  * 文件接收配置
@@ -73,8 +74,14 @@ data class ReceiveProperties(
      * 每秒接收数据量
      */
     var rateLimit: DataSize = DataSize.ofBytes(-1),
+
     /**
      * 限速熔断阈值，当仓库配置的rateLimit小于等于限速熔断阈值时则直接将请求断开
      */
     var circuitBreakerThreshold: DataSize = DataSize.ofKilobytes(1),
+
+    /**
+     * 接受分块过期时间, 默认12小时
+     */
+    var blockExpireTime: Duration = Duration.ofHours(12),
 )

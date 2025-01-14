@@ -48,6 +48,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -68,6 +69,21 @@ class BlockNodeServiceImpl(
         }
     }
 
+    override fun updateBlockUploadId(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        uploadId: String
+    ) {
+            val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
+                criteria.and(TBlockNode::uploadId).isEqualTo(uploadId)
+            val update = Update().set(TBlockNode::uploadId.name, null)
+                .set(TBlockNode::createdDate.name, LocalDateTime.now())
+                .set(TBlockNode::expireDate.name, null)
+            blockNodeDao.updateMulti(Query(criteria), update)
+            logger.info("Update block node[$projectId/$repoName/$fullPath--/uploadId: $uploadId] success.")
+    }
+
     override fun listBlocks(
         range: Range,
         projectId: String,
@@ -79,15 +95,28 @@ class BlockNodeServiceImpl(
         return blockNodeDao.find(query)
     }
 
+    override fun listBlocksInUploadId(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        uploadId: String
+    ): List<TBlockNode> {
+        val query =
+            BlockNodeQueryHelper.listQueryInUploadId(projectId, repoName, fullPath, uploadId)
+        return blockNodeDao.find(query)
+    }
+
     override fun deleteBlocks(
         projectId: String,
         repoName: String,
-        fullPath: String
+        fullPath: String,
+        uploadId: String?
     ) {
         val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
+            .apply { and(TBlockNode::uploadId.name).isEqualTo(uploadId) }
         val update = BlockNodeQueryHelper.deleteUpdate()
         blockNodeDao.updateMulti(Query(criteria), update)
-        logger.info("Delete node blocks[$projectId/$repoName$fullPath] success.")
+        logger.info("Delete node blocks[$projectId/$repoName$fullPath] success. UPLOADID: $uploadId")
     }
 
     override fun moveBlocks(projectId: String, repoName: String, fullPath: String, dstFullPath: String) {

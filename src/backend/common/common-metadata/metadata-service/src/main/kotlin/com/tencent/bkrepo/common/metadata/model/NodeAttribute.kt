@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.fs.server.model
+package com.tencent.bkrepo.common.metadata.model
 
 data class NodeAttribute(
     // 用户id
