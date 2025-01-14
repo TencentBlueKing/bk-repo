@@ -120,15 +120,20 @@ class RepositoryServiceImpl(
     private val resourceClearService: ObjectProvider<ResourceClearService>
 ) : RepositoryService {
 
-    override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
+    override fun getRepoInfo(projectId: String, name: String, type: String?, returnDecrypt: Boolean): RepositoryInfo? {
         val tRepository = repositoryDao.findByNameAndType(projectId, name, type)
-        return convertToInfo(tRepository)
+        return convertToInfo(tRepository, returnDecrypt)
     }
 
-    override fun getRepoDetail(projectId: String, name: String, type: String?): RepositoryDetail? {
+    override fun getRepoDetail(
+        projectId: String,
+        name: String,
+        type: String?,
+        returnDecrypt: Boolean
+    ): RepositoryDetail? {
         val tRepository = repositoryDao.findByNameAndType(projectId, name, type)
         val storageCredentials = tRepository?.credentialsKey?.let { storageCredentialService.findByKey(it) }
-        return convertToDetail(tRepository, storageCredentials)
+        return convertToDetail(tRepository, storageCredentials, returnDecrypt)
     }
 
     override fun updateStorageCredentialsKey(projectId: String, repoName: String, storageCredentialsKey: String?) {
@@ -144,9 +149,15 @@ class RepositoryServiceImpl(
         repositoryDao.unsetOldCredentialsKey(projectId, repoName)
     }
 
-    override fun listRepo(projectId: String, name: String?, type: String?, display: Boolean?): List<RepositoryInfo> {
+    override fun listRepo(
+        projectId: String,
+        name: String?,
+        type: String?,
+        display: Boolean?,
+        returnDecrypt: Boolean
+    ): List<RepositoryInfo> {
         val query = buildListQuery(projectId, name, type, display)
-        return repositoryDao.find(query).map { convertToInfo(it)!! }
+        return repositoryDao.find(query).map { convertToInfo(it, returnDecrypt)!! }
     }
 
     override fun listRepoPage(
@@ -167,6 +178,7 @@ class RepositoryServiceImpl(
         userId: String,
         projectId: String,
         option: RepoListOption,
+        returnDecrypt: Boolean,
     ): List<RepositoryInfo> {
         var names = servicePermissionClient.listPermissionRepo(
             projectId = projectId,
@@ -177,14 +189,14 @@ class RepositoryServiceImpl(
             names = names.filter { it.startsWith(option.name.orEmpty(), true) }
         }
         val query = buildListPermissionRepoQuery(projectId, names, option)
-        val originResults = repositoryDao.find(query).map { convertToInfo(it)!! }
+        val originResults = repositoryDao.find(query).map { convertToInfo(it, returnDecrypt)!! }
         val originNames = originResults.map { it.name }.toSet()
         var includeResults = emptyList<RepositoryInfo>()
         if (names.isNotEmpty() && option.include != null) {
             val inValues = names.intersect(setOf(option.include!!)).minus(originNames)
             val includeCriteria = where(TRepository::projectId).isEqualTo(projectId)
                 .and(TRepository::name).inValues(inValues)
-            includeResults = repositoryDao.find(Query(includeCriteria)).map { convertToInfo(it)!! }
+            includeResults = repositoryDao.find(Query(includeCriteria)).map { convertToInfo(it, returnDecrypt)!! }
         }
         return originResults + includeResults
     }
@@ -195,8 +207,9 @@ class RepositoryServiceImpl(
         pageNumber: Int,
         pageSize: Int,
         option: RepoListOption,
+        returnDecrypt: Boolean,
     ): Page<RepositoryInfo> {
-        val allRepos = listPermissionRepo(userId, projectId, option)
+        val allRepos = listPermissionRepo(userId, projectId, option, returnDecrypt)
         return Pages.buildPage(allRepos, pageNumber, pageSize)
     }
 
@@ -215,7 +228,7 @@ class RepositoryServiceImpl(
     }
 
     @Transactional(rollbackFor = [Throwable::class])
-    override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
+    override fun createRepo(repoCreateRequest: RepoCreateRequest, returnDecrypt: Boolean): RepositoryDetail {
         with(repoCreateRequest) {
             Preconditions.matchPattern(name, REPO_NAME_PATTERN, this::name.name)
             Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
@@ -257,10 +270,10 @@ class RepositoryServiceImpl(
                     key = event.getFullResourceKey(),
                 )
                 logger.info("Create repository [$repoCreateRequest] success.")
-                convertToDetail(repository)!!
+                convertToDetail(repository, returnDecrypt = returnDecrypt)!!
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Insert repository[$projectId/$name] error: [${exception.message}]")
-                getRepoDetail(projectId, name, type.name)!!
+                getRepoDetail(projectId, name, type.name, returnDecrypt)!!
             }
         }
     }

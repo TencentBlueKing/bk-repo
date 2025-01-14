@@ -79,9 +79,9 @@ class EdgeRepositoryServiceImpl(
         )
     }
 
-    override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
+    override fun createRepo(repoCreateRequest: RepoCreateRequest, returnDecrypt: Boolean): RepositoryDetail {
         if (!reportMetadataToCenter(repoCreateRequest.projectId, repoCreateRequest.name)) {
-            return super.createRepo(repoCreateRequest)
+            return super.createRepo(repoCreateRequest, returnDecrypt)
         }
         try {
             centerRepoClient.createRepo(repoCreateRequest)
@@ -90,7 +90,7 @@ class EdgeRepositoryServiceImpl(
                 throw e
             }
         }
-        return super.createRepo(repoCreateRequest)
+        return super.createRepo(repoCreateRequest, returnDecrypt)
     }
 
     override fun deleteRepo(repoDeleteRequest: RepoDeleteRequest) {

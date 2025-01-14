@@ -107,7 +107,7 @@ class CenterRepositoryServiceImpl(
         return exitRepo != null && ClusterUtils.containsSrcCluster(exitRepo.clusterNames)
     }
 
-    override fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail {
+    override fun createRepo(repoCreateRequest: RepoCreateRequest, returnDecrypt: Boolean): RepositoryDetail {
         with(repoCreateRequest) {
             val exitRepo = repositoryDao.findByNameAndType(projectId, name, type.name)
             if (exitRepo != null && ClusterUtils.containsSrcCluster(exitRepo.clusterNames)) {
@@ -118,7 +118,7 @@ class CenterRepositoryServiceImpl(
             }
 
             if (exitRepo == null) {
-                return super.createRepo(repoCreateRequest)
+                return super.createRepo(repoCreateRequest, returnDecrypt)
             }
 
             val query = RepositoryServiceHelper.buildSingleQuery(projectId, name, type.name)
@@ -130,7 +130,7 @@ class CenterRepositoryServiceImpl(
             val update = Update().addToSet(TRepository::clusterNames.name).each(clusterNames)
             exitRepo.clusterNames = clusterNames
             repositoryDao.updateFirst(query, update)
-            return convertToDetail(exitRepo)!!
+            return convertToDetail(exitRepo, returnDecrypt = returnDecrypt)!!
         }
     }
 

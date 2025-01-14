@@ -114,7 +114,7 @@ class UserRepositoryController(
         @PathVariable
         type: String? = null,
     ): Response<RepositoryInfo?> {
-        return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, type))
+        return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, type, true))
     }
 
     @ApiOperation("根据名称查询仓库是否存在")
@@ -177,7 +177,7 @@ class UserRepositoryController(
             )
         }
         ActionAuditContext.current().setInstance(createRequest)
-        return ResponseBuilder.success(repositoryService.createRepo(createRequest))
+        return ResponseBuilder.success(repositoryService.createRepo(createRequest, true))
     }
 
     @AuditEntry(
@@ -205,7 +205,7 @@ class UserRepositoryController(
         projectId: String,
         repoListOption: RepoListOption,
     ): Response<List<RepositoryInfo>> {
-        return ResponseBuilder.success(repositoryService.listPermissionRepo(userId, projectId, repoListOption))
+        return ResponseBuilder.success(repositoryService.listPermissionRepo(userId, projectId, repoListOption, true))
     }
 
     @AuditEntry(
@@ -239,7 +239,9 @@ class UserRepositoryController(
         pageSize: Int,
         repoListOption: RepoListOption,
     ): Response<Page<RepositoryInfo>> {
-        val page = repositoryService.listPermissionRepoPage(userId, projectId, pageNumber, pageSize, repoListOption)
+        val page = repositoryService.listPermissionRepoPage(
+            userId, projectId, pageNumber, pageSize, repoListOption, true
+        )
         return ResponseBuilder.success(page)
     }
 
