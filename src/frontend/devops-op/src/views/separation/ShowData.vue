@@ -205,8 +205,22 @@
         </template>
       </el-table-column>
       <el-table-column v-if="clientQuery.type[1] === 'coldVersion' || clientQuery.type[1] === 'version'" prop="downloads" label="下载次数" align="center" />
-      <el-table-column v-if="clientQuery.type[1] === 'coldVersion' || clientQuery.type[1] === 'version'" prop="tags" label="标签" align="center" />
-      <el-table-column v-if="clientQuery.type[1] === 'coldVersion' || clientQuery.type[1] === 'version'" prop="manifestPath" label="清单文件路径" align="center" />
+      <el-table-column v-if="clientQuery.type[1] === 'coldVersion' || clientQuery.type[1] === 'version'" prop="createdBy" label="创建者" align="center" />
+      <el-table-column v-if="clientQuery.type[1] === 'coldVersion' || clientQuery.type[1] === 'version'" prop="createdDate" label="创建时间" align="center">
+        <template slot-scope="scope">
+          <span>
+            {{ formatNormalDate(scope.row.createdDate) }}
+          </span>
+        </template>
+      </el-table-column>
+      <el-table-column v-if="clientQuery.type[1] === 'coldVersion' || clientQuery.type[1] === 'version'" prop="lastModifiedBy" label="修改者" align="center" />
+      <el-table-column v-if="clientQuery.type[1] === 'coldVersion' || clientQuery.type[1] === 'version'" prop="lastModifiedDate" label="修改时间" align="center">
+        <template slot-scope="scope">
+          <span>
+            {{ formatNormalDate(scope.row.lastModifiedDate) }}
+          </span>
+        </template>
+      </el-table-column>
 
       <el-table-column v-if="clientQuery.type[1] === 'package'" prop="name" label="包名称" align="center" />
       <el-table-column v-if="clientQuery.type[1] === 'package'" prop="key" label="包KEY" align="center" />
@@ -374,7 +388,7 @@ export default {
     },
     selectRepo(repo) {
       this.clientQuery.separationDate = ''
-      this.clientQuery.separationDates = []
+      this.separationDates = []
       this.$refs['repo-form-item'].resetField()
       this.clientQuery.repoName = repo.name
       // 搜索当前repo的降冷任务配置的时间，将时间带入，没有就没有
@@ -384,22 +398,31 @@ export default {
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
       query.taskType = 'SEPARATE'
+      query.pageNumber = 1
+      query.pageSize = 10000
       querySeparateTask(query).then(res => {
-        if (res.data.totalRecords > 0) {
-          res.data.records.forEach(record => {
+        this.handleFilterDates(res)
+      })
+    },
+    handleFilterDates(res) {
+      const set = new Set()
+      if (res.data.totalRecords > 0) {
+        res.data.records.forEach(record => {
+          if (!set.has(record.separationDate)) {
+            set.add(record.separationDate)
             const data = {
               label: formatNormalDate(record.separationDate),
               value: record.separationDate
             }
             this.separationDates.push(data)
-          })
-          this.clientQuery.separationDate = res.data.records[0].separationDate
-        }
-      })
+          }
+        })
+        this.clientQuery.separationDate = res.data.records[0].separationDate
+      }
     },
     handleRepoChange(repo) {
       this.clientQuery.separationDate = ''
-      this.clientQuery.separationDates = []
+      this.separationDates = []
       if (repo !== '') {
         // 搜索当前repo的降冷任务配置的时间，将时间带入，没有就没有
         const query = {
@@ -408,17 +431,10 @@ export default {
         query.projectId = this.clientQuery.projectId
         query.repoName = this.clientQuery.repoName
         query.taskType = 'SEPARATE'
+        query.pageNumber = 1
+        query.pageSize = 10000
         querySeparateTask(query).then(res => {
-          if (res.data.totalRecords > 0) {
-            res.data.records.forEach(record => {
-              const data = {
-                label: formatNormalDate(record.separationDate),
-                value: record.separationDate
-              }
-              this.separationDates.push(data)
-            })
-            this.clientQuery.separationDate = res.data.records[0].separationDate
-          }
+          this.handleFilterDates(res)
         })
       }
     },
