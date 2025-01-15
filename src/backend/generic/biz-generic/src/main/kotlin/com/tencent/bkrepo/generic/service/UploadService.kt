@@ -118,7 +118,7 @@ class UploadService(
             }
             val uploadTransaction = UploadTransactionInfo(
                 uploadId = uploadId,
-                expireSeconds = TRANSACTION_EXPIRES
+                expireSeconds = expires
             )
 
             logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadId.")
