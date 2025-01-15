@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -98,9 +99,9 @@ class UploadService(
 
     fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): UploadTransactionInfo {
         with(artifactInfo) {
-
+            val expires = getLongHeader(HEADER_EXPIRES)
             val overwrite = getBooleanHeader(HEADER_OVERWRITE)
-
+            Preconditions.checkArgument(expires >= 0, "expires")
             // 判断文件是否存在
             if (!overwrite && nodeService.checkExist(this)) {
                 logger.warn(
@@ -132,8 +133,6 @@ class UploadService(
 
             val node = nodeService.getNodeDetail(this)
 
-            val expires = getLongHeader(HEADER_EXPIRES).takeIf { it > 0 } ?: TRANSACTION_EXPIRES
-
             val oldNodeId = node?.nodeInfo?.id ?: FAKE_SEPARATE
             // 如果不允许覆盖且节点已经存在，抛出异常
             if (node != null && !overwrite) {
@@ -146,7 +145,7 @@ class UploadService(
             // 创建上传事务信息，设置过期时间
             val uploadTransaction = UploadTransactionInfo(
                 uploadId = uploadId,
-                expireSeconds = expires
+                expireSeconds = TRANSACTION_EXPIRES
             )
             // 记录上传启动的日志
             logger.info(
@@ -256,11 +255,15 @@ class UploadService(
 
     fun completeSeparateBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
 
+        val projectId = artifactInfo.projectId
+        val repoName = artifactInfo.repoName
+        val artifactFullPath = artifactInfo.getArtifactFullPath()
+
         // 获取并按起始位置排序块信息列表
         val blockInfoList = blockNodeService.listBlocksInUploadId(
-            artifactInfo.projectId,
-            artifactInfo.repoName,
-            artifactInfo.getArtifactFullPath(),
+            projectId,
+            repoName,
+            artifactFullPath,
             uploadId = uploadId
         )
 
@@ -291,25 +294,24 @@ class UploadService(
 
         // 删除旧Block
         blockNodeService.deleteBlocks(
-            artifactInfo.projectId,
-            artifactInfo.repoName,
-            artifactInfo.getArtifactFullPath()
+            projectId,
+            repoName,
+            artifactFullPath
         )
 
         // 更新节点版本信息为null
         blockNodeService.updateBlockUploadId(
-            artifactInfo.projectId,
-            artifactInfo.repoName,
-            artifactInfo.getArtifactFullPath(),
+            projectId,
+            repoName,
+            artifactFullPath,
             uploadId
         )
 
         // 上传完成，记录日志
         logger.info(
             "User [$userId] successfully completed block upload [uploadId: $uploadId], " +
-                    "file path [${artifactInfo.getArtifactFullPath()}]."
+                    "file path [${artifactFullPath}]."
         )
-
     }
 
     fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): List<BlockInfo> {

@@ -94,16 +94,16 @@ import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
-import com.tencent.bkrepo.generic.constant.HEADER_MD5
-import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
-import com.tencent.bkrepo.generic.constant.HEADER_SHA256
-import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
-import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
-import com.tencent.bkrepo.generic.constant.HEADER_OFFSET
-import com.tencent.bkrepo.generic.constant.HEADER_SIZE
-import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
+import com.tencent.bkrepo.generic.constant.HEADER_MD5
+import com.tencent.bkrepo.generic.constant.HEADER_OFFSET
+import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
+import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
+import com.tencent.bkrepo.generic.constant.HEADER_SHA256
+import com.tencent.bkrepo.generic.constant.HEADER_SIZE
+import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
 import com.tencent.bkrepo.generic.constant.SEPARATE_UPLOAD
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
 import com.tencent.bkrepo.generic.pojo.SeparateBlockInfo
@@ -133,9 +133,7 @@ import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
 import java.time.Duration
 import java.time.LocalDateTime
-import java.util.Base64
-import java.util.Locale
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 import kotlin.reflect.full.memberProperties
@@ -185,7 +183,7 @@ class GenericLocalRepository(
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
 
         when {
-            isSeparateUpload(uploadType) -> {
+            isSeparateUpload(uploadId, uploadType) -> {
                 onSeparateUpload(context, uploadId)
             }
             isBlockUpload(uploadId, sequence) -> {
@@ -251,8 +249,8 @@ class GenericLocalRepository(
         }
     }
 
-    private fun isSeparateUpload(uploadType: String?): Boolean {
-        return !uploadType.isNullOrEmpty() && uploadType == SEPARATE_UPLOAD
+    private fun isSeparateUpload(uploadId: String?, uploadType: String?): Boolean {
+        return !uploadType.isNullOrEmpty() && uploadType == SEPARATE_UPLOAD && !uploadId.isNullOrEmpty()
     }
 
     override fun onUploadSuccess(context: ArtifactUploadContext) {
@@ -317,7 +315,7 @@ class GenericLocalRepository(
         val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
         if (!overwrite && !isBlockUpload(uploadId, sequence)
-            && !isChunkedUpload(uploadType) && !isSeparateUpload(uploadType)) {
+            && !isChunkedUpload(uploadType) && !isSeparateUpload(uploadId, uploadType)) {
             with(context.artifactInfo) {
                 nodeService.getNodeDetail(this)?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
