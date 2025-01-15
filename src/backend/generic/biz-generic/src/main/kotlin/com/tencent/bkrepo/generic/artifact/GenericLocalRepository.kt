@@ -183,7 +183,14 @@ class GenericLocalRepository(
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
 
         when {
-            isSeparateUpload(uploadId, uploadType) -> {
+            isSeparateUpload(uploadType) -> {
+                if (uploadId.isNullOrEmpty()) {
+                    logger.error(
+                        "Separate upload id is null or empty error, " +
+                                "please check whether uploadId in the request header is correct"
+                    )
+                    throw ErrorCodeException(GenericMessageCode.BLOCK_UPLOADID_ERROR, uploadId)
+                }
                 onSeparateUpload(context, uploadId)
             }
             isBlockUpload(uploadId, sequence) -> {
@@ -249,8 +256,8 @@ class GenericLocalRepository(
         }
     }
 
-    private fun isSeparateUpload(uploadId: String?, uploadType: String?): Boolean {
-        return !uploadType.isNullOrEmpty() && uploadType == SEPARATE_UPLOAD && !uploadId.isNullOrEmpty()
+    private fun isSeparateUpload(uploadType: String?): Boolean {
+        return !uploadType.isNullOrEmpty() && uploadType == SEPARATE_UPLOAD
     }
 
     override fun onUploadSuccess(context: ArtifactUploadContext) {
@@ -315,7 +322,7 @@ class GenericLocalRepository(
         val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
         if (!overwrite && !isBlockUpload(uploadId, sequence)
-            && !isChunkedUpload(uploadType) && !isSeparateUpload(uploadId, uploadType)) {
+            && !isChunkedUpload(uploadType) && !isSeparateUpload(uploadType)) {
             with(context.artifactInfo) {
                 nodeService.getNodeDetail(this)?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())

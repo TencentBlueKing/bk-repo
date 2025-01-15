@@ -49,7 +49,7 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
     PIPELINE_REPO_MANUAL_UPLOAD_NOT_ALLOWED(10, "generic.pipeline-repo.manual-upload.not-allowed"),
     PIPELINE_ARTIFACT_PATH_ILLEGAL(11, "generic.pipeline.artifact.path.illegal"),
     CHUNKED_ARTIFACT_BROKEN(12, "generic.chunked.artifact.broken"),
-    BLOCK_FILE_NODE_CREATE_FAIL(13, "generic.block.file.node.create.fail"),
+    BLOCK_UPLOADID_ERROR(13, "generic.block.uploadId.error"),
     BLOCK_HEAD_NOT_FOUND(14, "generic.block.node.head.not-found"),
     BLOCK_UPDATE_LIST_IS_NULL(15, "generic.block.update.list.is.null")
     ;

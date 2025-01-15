@@ -200,6 +200,9 @@ class UploadService(
     }
 
     fun abortSeparateBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
+
+        checkUploadIdIsEmpty(uploadId)
+
         blockNodeService.deleteBlocks(
             artifactInfo.projectId,
             artifactInfo.repoName,
@@ -254,6 +257,8 @@ class UploadService(
     }
 
     fun completeSeparateBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
+
+        checkUploadIdIsEmpty(uploadId)
 
         val projectId = artifactInfo.projectId
         val repoName = artifactInfo.repoName
@@ -330,6 +335,8 @@ class UploadService(
         artifactInfo: GenericArtifactInfo
     ): List<SeparateBlockInfo> {
 
+        checkUploadIdIsEmpty(uploadId)
+
         val blockInfoList = blockNodeService.listBlocksInUploadId(
             artifactInfo.projectId,
             artifactInfo.repoName,
@@ -345,6 +352,13 @@ class UploadService(
     private fun checkUploadId(uploadId: String, storageCredentials: StorageCredentials?) {
         if (!storageService.checkBlockId(uploadId, storageCredentials)) {
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
+        }
+    }
+
+    private fun checkUploadIdIsEmpty(uploadId: String) {
+        // 检查uploadId是否为空""
+        if (uploadId.isEmpty()) {
+            throw ErrorCodeException(GenericMessageCode.BLOCK_UPLOADID_ERROR, uploadId)
         }
     }
 
