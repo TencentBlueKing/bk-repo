@@ -187,10 +187,6 @@ class GenericLocalRepository(
         when {
             isSeparateUpload(uploadType) -> {
                 if (uploadId.isNullOrEmpty()) {
-                    logger.error(
-                        "Separate upload id is null or empty error, " +
-                                "please check whether uploadId in the request header is correct"
-                    )
                     throw ErrorCodeException(GenericMessageCode.BLOCK_UPLOADID_ERROR, uploadId)
                 }
                 onSeparateUpload(context, uploadId)
