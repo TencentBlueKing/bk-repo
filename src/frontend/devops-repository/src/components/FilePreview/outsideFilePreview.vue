@@ -28,12 +28,13 @@
 <script>
     import VueOfficeExcel from '@vue-office/excel'
     import {
-        customizePreviewOfficeFile,
         customizePreviewRemoteOfficeFile,
         getPreviewRemoteOfficeFileInfo
     } from '@/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
+    import { isDisplayType, isHtmlType, isText } from '@/utils/file'
+    import cookies from 'js-cookie'
 
     export default {
         name: 'OutsideFilePreview',
@@ -79,88 +80,56 @@
         },
         async created () {
             this.loading = true
-            await getPreviewRemoteOfficeFileInfo(Base64.encode(Base64.decode(this.extraParam))).then(res => {
-                if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+            const param = Base64.decode(this.extraParam)
+            await getPreviewRemoteOfficeFileInfo(Base64.encode(param)).then(res => {
+                // 需解析传递参数，如果传递参数里面携带，优先渲染传递的水印
+                const obj = JSON.parse(param)
+                if (obj.watermarkTxt) {
+                    const watermark = {
+                        watermarkTxt: param.watermarkTxt,
+                        watermark_x_space: param.watermarkXSpace ? Number(param.watermarkXSpace) : 0,
+                        watermark_y_space: param.watermarkYSpace ? Number(param.watermarkYSpace) : 0,
+                        watermark_font: param.watermarkFont ? param.watermarkFont : '',
+                        watermark_fontsize: param.watermarkFontsize ? param.watermarkFontsize : '',
+                        watermark_color: param.watermarkColor ? param.watermarkColor : '',
+                        watermark_alpha: param.watermarkAlpha ? param.watermarkAlpha : '',
+                        watermark_width: param.watermarkWidth ? Number(param.watermarkWidth) : 0,
+                        watermark_height: param.watermarkHeight ? Number(param.watermarkHeight) : 0,
+                        watermark_angle: param.watermarkHeight ? Number(param.watermarkAngle) : 0
+                    }
+                    this.initWaterMark(watermark)
+                } else if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
                     this.initWaterMark(res.data.data.watermark)
                 }
-                if (res.data.data.suffix.endsWith('xlsx')) {
-                    customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                if (isDisplayType(res.data.data.suffix)) {
+                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(fileDate => {
                         this.loading = false
-                        this.previewExcel = true
-                        this.dataSource = res.data
-                    }).catch((e) => {
-                        this.loading = false
-                        this.hasError = true
-                    })
-                } else if (res.data.data.suffix.endsWith('txt')
-                    || res.data.data.suffix.endsWith('sh')
-                    || res.data.data.suffix.endsWith('bat')
-                    || res.data.data.suffix.endsWith('json')
-                    || res.data.data.suffix.endsWith('yaml')
-                    || res.data.data.suffix.endsWith('yml')
-                    || res.data.data.suffix.endsWith('xml')
-                    || res.data.data.suffix.endsWith('log')
-                    || res.data.data.suffix.endsWith('ini')
-                    || res.data.data.suffix.endsWith('log')
-                    || res.data.data.suffix.endsWith('properties')
-                    || res.data.data.suffix.endsWith('toml')) {
-                    this.previewBasicFile({
-                        projectId: this.projectId,
-                        repoName: this.repoName,
-                        path: '/' + this.filePath
-                    }).then(res => {
-                        this.loading = false
-                        this.previewBasic = true
-                        this.basicFileText = res
-                    }).catch((e) => {
-                        this.loading = false
-                        this.hasError = true
-                    })
-                } else if (res.data.data.suffix.endsWith('docx')
-                    || res.data.data.suffix.endsWith('pdf')
-                    || res.data.data.suffix.endsWith('wps')
-                    || res.data.data.suffix.endsWith('doc')
-                    || res.data.data.suffix.endsWith('docm')
-                    || res.data.data.suffix.endsWith('xls')
-                    || res.data.data.suffix.endsWith('xlsm')
-                    || res.data.data.suffix.endsWith('ppt')
-                    || res.data.data.suffix.endsWith('pptx')
-                    || res.data.data.suffix.endsWith('vsd')
-                    || res.data.data.suffix.endsWith('rtf')
-                    || res.data.data.suffix.endsWith('odt')
-                    || res.data.data.suffix.endsWith('wmf')
-                    || res.data.data.suffix.endsWith('emf')
-                    || res.data.data.suffix.endsWith('dps')
-                    || res.data.data.suffix.endsWith('et')
-                    || res.data.data.suffix.endsWith('ods')
-                    || res.data.data.suffix.endsWith('ots')
-                    || res.data.data.suffix.endsWith('tsv')
-                    || res.data.data.suffix.endsWith('odp')
-                    || res.data.data.suffix.endsWith('otp')
-                    || res.data.data.suffix.endsWith('sxi')
-                    || res.data.data.suffix.endsWith('ott')
-                    || res.data.data.suffix.endsWith('vsdx')
-                    || res.data.data.suffix.endsWith('fodt')
-                    || res.data.data.suffix.endsWith('fods')
-                    || res.data.data.suffix.endsWith('xltx')
-                    || res.data.data.suffix.endsWith('tga')
-                    || res.data.data.suffix.endsWith('psd')
-                    || res.data.data.suffix.endsWith('dotm')
-                    || res.data.data.suffix.endsWith('ett')
-                    || res.data.data.suffix.endsWith('xlt')
-                    || res.data.data.suffix.endsWith('xltm')
-                    || res.data.data.suffix.endsWith('wpt')
-                    || res.data.data.suffix.endsWith('dot')
-                    || res.data.data.suffix.endsWith('xlam')
-                    || res.data.data.suffix.endsWith('dotx')
-                    || res.data.data.suffix.endsWith('xla')
-                    || res.data.data.suffix.endsWith('pages')
-                    || res.data.data.suffix.endsWith('eps')) {
-                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(res => {
-                        this.loading = false
-                        const url = URL.createObjectURL(res.data) + '#toolbar=0&navpanes=0'
-                        this.showFrame = true
-                        this.pageUrl = url
+                        if (res.data.data.suffix.endsWith('xlsx')) {
+                            this.previewExcel = true
+                            this.dataSource = fileDate.data
+                        } else if (isHtmlType(res.data.data.suffix)) {
+                            const url = URL.createObjectURL(fileDate.data)
+                            this.showFrame = true
+                            this.pageUrl = url
+                        } else if (isText(res.data.data.suffix)) {
+                            this.loading = false
+                            this.previewBasic = true
+                            const reader = new FileReader()
+                            let text = ''
+                            reader.onload = function (event) {
+                                // 读取的文本内容
+                                text = event.target.result
+                                console.log(text)
+                            }
+                            reader.readAsText(fileDate.data)
+                            this.basicFileText = text
+                        } else {
+                            const language = cookies.get('blueking_language') || 'zh-cn'
+                            const targetLanguage = language === 'zh-cn' ? 'zh-CN' : 'en-US'
+                            const url = location.origin + '/ui/web/viewer.html?file=' + URL.createObjectURL(fileDate.data) + '&language=' + targetLanguage + '&disableopenfile=true&disableprint=true&disabledownload=true&disablebookmark=false'
+                            this.showFrame = true
+                            this.pageUrl = url
+                        }
                     }).catch(() => {
                         this.loading = false
                         this.hasError = true

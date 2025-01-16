@@ -4,6 +4,7 @@
         v-model="previewDialog.show"
         :width="dialogWidth"
         :show-footer="false"
+        @cancel="cancel"
         :title="($t('preview') + ' - ' + previewDialog.title)">
         <div v-if="previewDialog.isLoading" style="windt: 100%;" v-bkloading="{ isLoading: previewDialog.isLoading }"></div>
         <div v-else>
@@ -14,17 +15,43 @@
 </template>
 
 <script>
+    import { getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo } from '@/utils/previewOfficeFile'
+
     export default {
-        name: 'previewBasicFileDialog',
+        name: 'PreviewBasicFileDialog',
         data () {
             return {
                 basicFileText: '',
                 previewDialog: {
                     title: '',
                     show: false,
-                    isLoading: true
+                    isLoading: true,
+                    repoType: '',
+                    extraParam: '',
+                    repoName: '',
+                    filePath: ''
                 },
                 dialogWidth: window.innerWidth - 600
+            }
+        },
+        computed: {
+            projectId () {
+                return this.$route.params.projectId
+            }
+        },
+        created () {
+            if (this.repoType === 'local') {
+                getPreviewLocalOfficeFileInfo(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                    if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                        this.initWaterMark(res.data.data.watermark)
+                    }
+                })
+            } else {
+                getPreviewRemoteOfficeFileInfo(this.extraParam).then(res => {
+                    if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                        this.initWaterMark(res.data.data.watermark)
+                    }
+                })
             }
         },
         methods: {
@@ -36,6 +63,12 @@
                 this.previewDialog = {
                     ...data
                 }
+            },
+            initWaterMark (param) {
+                window.initWaterMark(param)
+            },
+            cancel () {
+                window.resetWaterMark()
             }
         }
     }

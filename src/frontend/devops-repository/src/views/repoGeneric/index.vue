@@ -261,6 +261,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
     import { Base64 } from 'js-base64'
+    import { isDisplayType, isText } from '@/utils/file'
 
     export default {
         name: 'RepoGeneric',
@@ -814,60 +815,7 @@
             },
             // 单击table打开文件夹
             previewFile (row) {
-                if (row.fullPath.endsWith('txt')
-                    || row.fullPath.endsWith('sh')
-                    || row.fullPath.endsWith('bat')
-                    || row.fullPath.endsWith('json')
-                    || row.fullPath.endsWith('yaml')
-                    || row.fullPath.endsWith('yml')
-                    || row.fullPath.endsWith('xml')
-                    || row.fullPath.endsWith('log')
-                    || row.fullPath.endsWith('ini')
-                    || row.fullPath.endsWith('log')
-                    || row.fullPath.endsWith('properties')
-                    || row.fullPath.endsWith('toml')
-                    || row.fullPath.endsWith('docx')
-                    || row.fullPath.endsWith('wps')
-                    || row.fullPath.endsWith('doc')
-                    || row.fullPath.endsWith('docm')
-                    || row.fullPath.endsWith('xls')
-                    || row.fullPath.endsWith('xlsx')
-                    || row.fullPath.endsWith('xlsm')
-                    || row.fullPath.endsWith('ppt')
-                    || row.fullPath.endsWith('pptx')
-                    || row.fullPath.endsWith('vsd')
-                    || row.fullPath.endsWith('rtf')
-                    || row.fullPath.endsWith('odt')
-                    || row.fullPath.endsWith('wmf')
-                    || row.fullPath.endsWith('emf')
-                    || row.fullPath.endsWith('dps')
-                    || row.fullPath.endsWith('et')
-                    || row.fullPath.endsWith('ods')
-                    || row.fullPath.endsWith('ots')
-                    || row.fullPath.endsWith('tsv')
-                    || row.fullPath.endsWith('odp')
-                    || row.fullPath.endsWith('otp')
-                    || row.fullPath.endsWith('sxi')
-                    || row.fullPath.endsWith('ott')
-                    || row.fullPath.endsWith('vsdx')
-                    || row.fullPath.endsWith('fodt')
-                    || row.fullPath.endsWith('fods')
-                    || row.fullPath.endsWith('xltx')
-                    || row.fullPath.endsWith('tga')
-                    || row.fullPath.endsWith('psd')
-                    || row.fullPath.endsWith('dotm')
-                    || row.fullPath.endsWith('ett')
-                    || row.fullPath.endsWith('xlt')
-                    || row.fullPath.endsWith('xltm')
-                    || row.fullPath.endsWith('wpt')
-                    || row.fullPath.endsWith('dot')
-                    || row.fullPath.endsWith('xlam')
-                    || row.fullPath.endsWith('dotx')
-                    || row.fullPath.endsWith('xla')
-                    || row.fullPath.endsWith('pages')
-                    || row.fullPath.endsWith('eps')
-                    || row.fullPath.endsWith('pdf')
-                ) {
+                if (isDisplayType(row.fullPath)) {
                     const isLocal = this.localRepo
                     const typeParam = isLocal ? 'local/' : 'remote/'
                     let extraParam = 0
@@ -1345,59 +1293,18 @@
                 })
             },
             async handlerPreviewBasicsFile (row) {
-                if (row.fullPath.endsWith('docx')
-                    || row.fullPath.endsWith('wps')
-                    || row.fullPath.endsWith('doc')
-                    || row.fullPath.endsWith('docm')
-                    || row.fullPath.endsWith('xls')
-                    || row.fullPath.endsWith('xlsx')
-                    || row.fullPath.endsWith('xlsm')
-                    || row.fullPath.endsWith('ppt')
-                    || row.fullPath.endsWith('pptx')
-                    || row.fullPath.endsWith('vsd')
-                    || row.fullPath.endsWith('rtf')
-                    || row.fullPath.endsWith('odt')
-                    || row.fullPath.endsWith('wmf')
-                    || row.fullPath.endsWith('emf')
-                    || row.fullPath.endsWith('dps')
-                    || row.fullPath.endsWith('et')
-                    || row.fullPath.endsWith('ods')
-                    || row.fullPath.endsWith('ots')
-                    || row.fullPath.endsWith('tsv')
-                    || row.fullPath.endsWith('odp')
-                    || row.fullPath.endsWith('otp')
-                    || row.fullPath.endsWith('sxi')
-                    || row.fullPath.endsWith('ott')
-                    || row.fullPath.endsWith('vsdx')
-                    || row.fullPath.endsWith('fodt')
-                    || row.fullPath.endsWith('fods')
-                    || row.fullPath.endsWith('xltx')
-                    || row.fullPath.endsWith('tga')
-                    || row.fullPath.endsWith('psd')
-                    || row.fullPath.endsWith('dotm')
-                    || row.fullPath.endsWith('ett')
-                    || row.fullPath.endsWith('xlt')
-                    || row.fullPath.endsWith('xltm')
-                    || row.fullPath.endsWith('wpt')
-                    || row.fullPath.endsWith('dot')
-                    || row.fullPath.endsWith('xlam')
-                    || row.fullPath.endsWith('dotx')
-                    || row.fullPath.endsWith('xla')
-                    || row.fullPath.endsWith('pages')
-                    || row.fullPath.endsWith('eps')
-                    || row.fullPath.endsWith('pdf')
-                ) {
-                    let extraParam = 0
-                    const isLocal = this.localRepo
-                    if (!isLocal) {
-                        const res = this.splitBkRepoRemoteUrl(this.currentRepo.configuration.url)
-                        const remotePath = res.baseUrl + '/generic/' + res.projectId + '/' + res.repoName + row.fullPath
-                        const object = {
-                            url: remotePath
-                        }
-                        const json = JSON.stringify(object)
-                        extraParam = Base64.encode(json)
+                const isLocal = this.localRepo
+                let extraParam = 0
+                if (!isLocal) {
+                    const res = this.splitBkRepoRemoteUrl(this.currentRepo.configuration.url)
+                    const remotePath = res.baseUrl + '/generic/' + res.projectId + '/' + res.repoName + row.fullPath
+                    const object = {
+                        url: remotePath
                     }
+                    const json = JSON.stringify(object)
+                    extraParam = Base64.encode(json)
+                }
+                if (!isText(row.fullPath)) {
                     this.$refs.previewOfficeFileDialog.repoName = row.repoName
                     this.$refs.previewOfficeFileDialog.projectId = row.projectId
                     this.$refs.previewOfficeFileDialog.filePath = row.fullPath
@@ -1414,7 +1321,11 @@
                 this.$refs.previewBasicFileDialog.setDialogData({
                     show: true,
                     title: row.name,
-                    isLoading: true
+                    isLoading: true,
+                    repoName: row.repoName,
+                    repoType: isLocal ? 'local' : 'remote',
+                    extraParam: extraParam,
+                    filePath: row.fullPath
                 })
                 const res = await this.previewBasicFile({
                     projectId: this.projectId,
@@ -1542,59 +1453,7 @@
             },
 
             getBtnDisabled (name) {
-                return name.endsWith('txt')
-                    || name.endsWith('sh')
-                    || name.endsWith('bat')
-                    || name.endsWith('json')
-                    || name.endsWith('yaml')
-                    || name.endsWith('yml')
-                    || name.endsWith('xml')
-                    || name.endsWith('log')
-                    || name.endsWith('ini')
-                    || name.endsWith('log')
-                    || name.endsWith('properties')
-                    || name.endsWith('toml')
-                    || name.endsWith('docx')
-                    || name.endsWith('wps')
-                    || name.endsWith('doc')
-                    || name.endsWith('docm')
-                    || name.endsWith('xls')
-                    || name.endsWith('xlsx')
-                    || name.endsWith('xlsm')
-                    || name.endsWith('ppt')
-                    || name.endsWith('pptx')
-                    || name.endsWith('vsd')
-                    || name.endsWith('rtf')
-                    || name.endsWith('odt')
-                    || name.endsWith('wmf')
-                    || name.endsWith('emf')
-                    || name.endsWith('dps')
-                    || name.endsWith('et')
-                    || name.endsWith('ods')
-                    || name.endsWith('ots')
-                    || name.endsWith('tsv')
-                    || name.endsWith('odp')
-                    || name.endsWith('otp')
-                    || name.endsWith('sxi')
-                    || name.endsWith('ott')
-                    || name.endsWith('vsdx')
-                    || name.endsWith('fodt')
-                    || name.endsWith('fods')
-                    || name.endsWith('xltx')
-                    || name.endsWith('tga')
-                    || name.endsWith('psd')
-                    || name.endsWith('dotm')
-                    || name.endsWith('ett')
-                    || name.endsWith('xlt')
-                    || name.endsWith('xltm')
-                    || name.endsWith('wpt')
-                    || name.endsWith('dot')
-                    || name.endsWith('xlam')
-                    || name.endsWith('dotx')
-                    || name.endsWith('xla')
-                    || name.endsWith('pages')
-                    || name.endsWith('eps')
-                    || name.endsWith('pdf')
+                return isDisplayType(name)
             },
             // 文件夹内部的搜索，根据文件名或文件夹名搜索
             inFolderSearchFile () {

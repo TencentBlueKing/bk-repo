@@ -6,7 +6,7 @@
             :options="excelOptions"
             style="max-height: 100vh; overflow-y: auto"
         />
-        <iframe v-if="showFrame" :src="pageUrl" frameborder="0" style="width: 100%; height: 100%"></iframe>
+        <iframe v-if="showFrame" :src="pageUrl" style="width: 100%; height: 100%" />
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <textarea v-model="basicFileText" class="textarea" readonly></textarea>
@@ -35,6 +35,8 @@
     } from '@/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
+    import cookies from 'js-cookie'
+    import { isFormatType, isHtmlType, isText } from '@/utils/file'
 
     export default {
         name: 'FilePreview',
@@ -83,18 +85,34 @@
         },
         async created () {
             this.loading = true
-            if (this.filePath.endsWith('txt')
-                || this.filePath.endsWith('sh')
-                || this.filePath.endsWith('bat')
-                || this.filePath.endsWith('json')
-                || this.filePath.endsWith('yaml')
-                || this.filePath.endsWith('yml')
-                || this.filePath.endsWith('xml')
-                || this.filePath.endsWith('log')
-                || this.filePath.endsWith('ini')
-                || this.filePath.endsWith('log')
-                || this.filePath.endsWith('properties')
-                || this.filePath.endsWith('toml')) {
+            if (this.repoType === 'local') {
+                getPreviewLocalOfficeFileInfo(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                    if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                        this.initWaterMark(res.data.data.watermark)
+                    }
+                })
+            } else {
+                getPreviewRemoteOfficeFileInfo(Base64.encode(Base64.decode(this.extraParam))).then(res => {
+                    if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                        this.initWaterMark(res.data.data.watermark)
+                    }
+                })
+            }
+            if (isText(this.filePath)) {
+                customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                    console.log(res.data)
+                    const blob = new Blob(['Hello, world! This is a text blob.'], { type: 'text/plain' })
+                    const reader = new FileReader()
+                    reader.onload = function (event) {
+                        // 读取的文本内容
+                        const textContent = event.target.result
+                        console.log(textContent)
+                    }
+                    console.log(reader.readAsText(blob))
+                }).catch(() => {
+                    this.loading = false
+                    this.hasError = true
+                })
                 this.previewBasicFile({
                     projectId: this.projectId,
                     repoName: this.repoName,
@@ -116,72 +134,17 @@
                     this.loading = false
                     this.hasError = true
                 })
-            } else if (this.filePath.endsWith('docx')
-                || this.filePath.endsWith('pdf')
-                || this.filePath.endsWith('wps')
-                || this.filePath.endsWith('doc')
-                || this.filePath.endsWith('docm')
-                || this.filePath.endsWith('xls')
-                || this.filePath.endsWith('xlsm')
-                || this.filePath.endsWith('ppt')
-                || this.filePath.endsWith('pptx')
-                || this.filePath.endsWith('vsd')
-                || this.filePath.endsWith('rtf')
-                || this.filePath.endsWith('odt')
-                || this.filePath.endsWith('wmf')
-                || this.filePath.endsWith('emf')
-                || this.filePath.endsWith('dps')
-                || this.filePath.endsWith('et')
-                || this.filePath.endsWith('ods')
-                || this.filePath.endsWith('ots')
-                || this.filePath.endsWith('tsv')
-                || this.filePath.endsWith('odp')
-                || this.filePath.endsWith('otp')
-                || this.filePath.endsWith('sxi')
-                || this.filePath.endsWith('ott')
-                || this.filePath.endsWith('vsdx')
-                || this.filePath.endsWith('fodt')
-                || this.filePath.endsWith('fods')
-                || this.filePath.endsWith('xltx')
-                || this.filePath.endsWith('tga')
-                || this.filePath.endsWith('psd')
-                || this.filePath.endsWith('dotm')
-                || this.filePath.endsWith('ett')
-                || this.filePath.endsWith('xlt')
-                || this.filePath.endsWith('xltm')
-                || this.filePath.endsWith('wpt')
-                || this.filePath.endsWith('dot')
-                || this.filePath.endsWith('xlam')
-                || this.filePath.endsWith('dotx')
-                || this.filePath.endsWith('xla')
-                || this.filePath.endsWith('pages')
-                || this.filePath.endsWith('eps')) {
+            } else if (isFormatType(this.filePath)) {
                 if (this.repoType === 'local') {
-                    getPreviewLocalOfficeFileInfo(this.projectId, this.repoName, '/' + this.filePath).then(res => {
-                        if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
-                            this.initWaterMark(res.data.data.watermark)
-                        }
-                    })
-                    customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(async res => {
-                        this.loading = false
-                        const url = URL.createObjectURL(res.data) + '#toolbar=0&navpanes=0'
-                        this.showFrame = true
-                        this.pageUrl = url
+                    customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                        this.dealDate(res)
                     }).catch(() => {
                         this.loading = false
                         this.hasError = true
                     })
                 } else {
-                    getPreviewRemoteOfficeFileInfo(Base64.encode(Base64.decode(this.extraParam))).then(res => {
-                        if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
-                            this.initWaterMark(res.data.data.watermark)
-                        }
-                    })
                     customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(res => {
-                        this.loading = false
-                        const url = URL.createObjectURL(res.data)+ '#toolbar=0&navpanes=0'
-                        this.showFrame = true
-                        this.pageUrl = url
+                        this.dealDate(res)
                     }).catch(() => {
                         this.loading = false
                         this.hasError = true
@@ -209,6 +172,22 @@
             },
             initWaterMark (param) {
                 window.initWaterMark(param)
+            },
+            dealDate (res) {
+                const language = cookies.get('blueking_language') || 'zh-cn'
+                const targetLanguage = language === 'zh-cn' ? 'zh-CN' : 'en-US'
+                this.loading = false
+                let url
+                if (!isHtmlType(this.filePath)) {
+                    // 注意后面的参数，参数都是自定义的，修改了pdfjs文件的viewer.mjs和view.html的
+                    // 语言切换需注意public/web/local下的语言，需一致
+                    // 各版本pdfjs的viewer.html有差异, 更改viewer.mjs下的方法做匹配显示需注意
+                    url = location.origin + '/ui/web/viewer.html?file=' + URL.createObjectURL(res.data) + '&language=' + targetLanguage + '&disableopenfile=true&disableprint=true&disabledownload=true&disablebookmark=false'
+                } else {
+                    url = URL.createObjectURL(res.data)
+                }
+                this.showFrame = true
+                this.pageUrl = url
             }
         }
     }

@@ -72,6 +72,19 @@
         },
         methods: {
             setData () {
+                if (this.repoType === 'local') {
+                    getPreviewLocalOfficeFileInfo(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                        if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                            this.initWaterMark(res.data.data.watermark)
+                        }
+                    })
+                } else {
+                    getPreviewRemoteOfficeFileInfo(this.extraParam).then(res => {
+                        if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                            this.initWaterMark(res.data.data.watermark)
+                        }
+                    })
+                }
                 if (this.filePath.endsWith('.xlsx')) {
                     this.$refs.showData.style.removeProperty('height')
                     customizePreviewOfficeFile(this.projectId, this.repoName, this.filePath).then(res => {
@@ -90,11 +103,6 @@
                     this.loading = true
                     this.$refs.showData.style.height = '800px'
                     if (this.repoType === 'local') {
-                        getPreviewLocalOfficeFileInfo(this.projectId, this.repoName, '/' + this.filePath).then(res => {
-                            if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
-                                this.initWaterMark(res.data.data.watermark)
-                            }
-                        })
                         customizePreviewLocalOfficeFile(this.projectId, this.repoName, this.filePath).then(res => {
                             this.loading = false
                             this.showFrame = true
@@ -109,11 +117,6 @@
                             })
                         })
                     } else {
-                        getPreviewRemoteOfficeFileInfo(this.extraParam).then(res => {
-                            if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
-                                this.initWaterMark(res.data.data.watermark)
-                            }
-                        })
                         customizePreviewRemoteOfficeFile(this.extraParam).then(res => {
                             this.loading = false
                             this.showFrame = true

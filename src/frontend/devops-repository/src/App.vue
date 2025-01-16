@@ -51,6 +51,7 @@
                 })
             } else {
                 const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
+                const specParam = (location.pathname.match(/\/([^/]+)$/) || [])[1]
                 const localProjectId = localStorage.getItem('projectId')
                 Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(([userInfo]) => {
                     if (!this.ciMode && !this.projectList.length) {
@@ -67,17 +68,20 @@
                                 }
                             })
                         } else {
-                            // TODO: 普通用户无项目提示页
-                            this.$bkMessage({
-                                message: this.$t('noProjectData'),
-                                theme: 'error'
-                            })
-                            this.$router.replace({
-                                name: 'repoToken',
-                                params: {
-                                    projectId: urlProjectId || localProjectId || 'default'
-                                }
-                            })
+                            // 外部预览链接需绕过去
+                            if (specParam !== 'outsideFilePreview') {
+                                // TODO: 普通用户无项目提示页
+                                this.$bkMessage({
+                                    message: this.$t('noProjectData'),
+                                    theme: 'error'
+                                })
+                                this.$router.replace({
+                                    name: 'repoToken',
+                                    params: {
+                                        projectId: urlProjectId || localProjectId || 'default'
+                                    }
+                                })
+                            }
                         }
                     } else {
                         let projectId = ''
