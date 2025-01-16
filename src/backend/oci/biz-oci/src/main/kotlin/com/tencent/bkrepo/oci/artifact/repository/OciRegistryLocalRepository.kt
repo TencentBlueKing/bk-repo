@@ -184,7 +184,7 @@ class OciRegistryLocalRepository(
             // 发现上传时使用的是分块上传，但是不管blob文件大小多大，都是把blob文件当成1个分块
             // 此处记录对于sha256和md5, put请求时对比下sha256，如果一样则可以避免再次计算对应sha256和md5
             val artifactFile = context.getArtifactFile()
-            val key = buildRedisStr(DOCKER_REDIS_KEY_PREFIX, uuid!!)
+            val key = buildRedisStr(DOCKER_REDIS_KEY_PREFIX, context.artifactInfo.getRepoIdentify(), uuid!!)
             val chunkSha256 = artifactFile.getFileSha256()
             val chunkMd5 = artifactFile.getFileMd5()
             val chunkSize = artifactFile.getSize().toString()
@@ -289,7 +289,11 @@ class OciRegistryLocalRepository(
         val artifactInfo = context.artifactInfo as OciBlobArtifactInfo
         val sha256 = artifactInfo.getDigestHex()
         val fileInfo = try {
-            val key = buildRedisStr(DOCKER_REDIS_KEY_PREFIX, artifactInfo.uuid!!)
+            val key = buildRedisStr(
+                DOCKER_REDIS_KEY_PREFIX,
+                context.artifactInfo.getRepoIdentify(),
+                artifactInfo.uuid!!,
+            )
             val fileInfoStr = redisTemplate?.opsForValue()?.get(key)?.toString()
             val chunkFileInfo = if (fileInfoStr.isNullOrEmpty()) {
                 null
