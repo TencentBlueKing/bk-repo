@@ -30,10 +30,10 @@
     import {
         customizePreviewRemoteOfficeFile,
         getPreviewRemoteOfficeFileInfo
-    } from '@/utils/previewOfficeFile'
+    } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isDisplayType, isHtmlType, isText } from '@/utils/file'
+    import { isDisplayType, isHtmlType, isText } from '@repository/utils/file'
     import cookies from 'js-cookie'
 
     export default {

@@ -261,7 +261,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
     import { Base64 } from 'js-base64'
-    import { isDisplayType, isText } from '@/utils/file'
+    import { isDisplayType, isText } from '@repository/utils/file'
 
     export default {
         name: 'RepoGeneric',

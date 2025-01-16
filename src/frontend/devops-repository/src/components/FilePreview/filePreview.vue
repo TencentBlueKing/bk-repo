@@ -32,11 +32,11 @@
         customizePreviewOfficeFile,
         customizePreviewRemoteOfficeFile,
         getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo
-    } from '@/utils/previewOfficeFile'
+    } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
     import cookies from 'js-cookie'
-    import { isFormatType, isHtmlType, isText } from '@/utils/file'
+    import { isFormatType, isHtmlType, isText } from '@repository/utils/file'
 
     export default {
         name: 'FilePreview',

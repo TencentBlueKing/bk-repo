@@ -15,7 +15,7 @@
 </template>
 
 <script>
-    import { getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo } from '@/utils/previewOfficeFile'
+    import { getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo } from '@repository/utils/previewOfficeFile'
 
     export default {
         name: 'PreviewBasicFileDialog',
