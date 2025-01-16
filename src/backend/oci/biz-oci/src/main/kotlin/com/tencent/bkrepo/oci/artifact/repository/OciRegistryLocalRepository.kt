@@ -189,12 +189,12 @@ class OciRegistryLocalRepository(
             val chunkMd5 = artifactFile.getFileMd5()
             val chunkSize = artifactFile.getSize().toString()
             val value = buildRedisStr(chunkSha256, chunkMd5, chunkSize)
-            redisTemplate?.opsForValue()?.set(key, value, KEY_EXPIRED_TIME.toLong(), TimeUnit.SECONDS)
             val patchLen = storageService.append(
                 appendId = uuid!!,
                 artifactFile = artifactFile,
                 storageCredentials = context.repositoryDetail.storageCredentials
             )
+            redisTemplate?.opsForValue()?.set(key, value, KEY_EXPIRED_TIME.toLong(), TimeUnit.SECONDS)
             return ResponseProperty(
                 location = OciLocationUtils.blobUUIDLocation(uuid!!, this),
                 status = HttpStatus.ACCEPTED,
