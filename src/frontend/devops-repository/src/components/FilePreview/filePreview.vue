@@ -99,20 +99,6 @@
                 })
             }
             if (isText(this.filePath)) {
-                customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
-                    console.log(res.data)
-                    const blob = new Blob(['Hello, world! This is a text blob.'], { type: 'text/plain' })
-                    const reader = new FileReader()
-                    reader.onload = function (event) {
-                        // 读取的文本内容
-                        const textContent = event.target.result
-                        console.log(textContent)
-                    }
-                    console.log(reader.readAsText(blob))
-                }).catch(() => {
-                    this.loading = false
-                    this.hasError = true
-                })
                 this.previewBasicFile({
                     projectId: this.projectId,
                     repoName: this.repoName,
