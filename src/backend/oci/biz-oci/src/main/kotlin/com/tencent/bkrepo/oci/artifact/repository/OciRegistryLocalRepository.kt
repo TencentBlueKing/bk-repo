@@ -589,7 +589,7 @@ class OciRegistryLocalRepository(
 
     private fun buildRedisStr(first: String, second: String, third: String? = null): String {
         var result =  first + StringPool.COLON + second
-        third?.let { result + StringPool.COLON + third }
+        third?.let { result = result + StringPool.COLON + third }
         return result
     }
 
