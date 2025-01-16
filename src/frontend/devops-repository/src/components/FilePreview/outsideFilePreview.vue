@@ -11,6 +11,8 @@
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <textarea v-model="basicFileText" class="textarea" readonly></textarea>
         </div>
+        <img v-if="imgShow" :src="imgUrl" />
+        <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
                 <img width="480" height="240" style="float: left;margin-right: 3px" src="/ui/440.svg" />
@@ -30,11 +32,13 @@
     import {
         customizePreviewRemoteOfficeFile,
         getPreviewRemoteOfficeFileInfo
-    } from '@/utils/previewOfficeFile'
+    } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isDisplayType, isHtmlType, isText } from '@/utils/file'
+    import { isHtmlType, isOutDisplayType, isPic, isText } from '@repository/utils/file'
     import cookies from 'js-cookie'
+    import Papa from 'papaparse'
+    import Table from '@wolf-table/table'
 
     export default {
         name: 'OutsideFilePreview',
@@ -70,7 +74,10 @@
                 hasError: false,
                 pageUrl: '',
                 showFrame: false,
-                loading: false
+                loading: false,
+                imgShow: false,
+                imgUrl: '',
+                csvShow: false
             }
         },
         computed: {
@@ -86,22 +93,22 @@
                 const obj = JSON.parse(param)
                 if (obj.watermarkTxt) {
                     const watermark = {
-                        watermarkTxt: param.watermarkTxt,
-                        watermark_x_space: param.watermarkXSpace ? Number(param.watermarkXSpace) : 0,
-                        watermark_y_space: param.watermarkYSpace ? Number(param.watermarkYSpace) : 0,
-                        watermark_font: param.watermarkFont ? param.watermarkFont : '',
-                        watermark_fontsize: param.watermarkFontsize ? param.watermarkFontsize : '',
-                        watermark_color: param.watermarkColor ? param.watermarkColor : '',
-                        watermark_alpha: param.watermarkAlpha ? param.watermarkAlpha : '',
-                        watermark_width: param.watermarkWidth ? Number(param.watermarkWidth) : 0,
-                        watermark_height: param.watermarkHeight ? Number(param.watermarkHeight) : 0,
-                        watermark_angle: param.watermarkHeight ? Number(param.watermarkAngle) : 0
+                        watermarkTxt: obj.watermarkTxt,
+                        watermark_x_space: obj.watermarkXSpace ? Number(obj.watermarkXSpace) : 0,
+                        watermark_y_space: obj.watermarkYSpace ? Number(obj.watermarkYSpace) : 0,
+                        watermark_font: obj.watermarkFont ? obj.watermarkFont : '',
+                        watermark_fontsize: obj.watermarkFontsize ? obj.watermarkFontsize : '',
+                        watermark_color: obj.watermarkColor ? obj.watermarkColor : '',
+                        watermark_alpha: obj.watermarkAlpha ? obj.watermarkAlpha : '',
+                        watermark_width: obj.watermarkWidth ? Number(obj.watermarkWidth) : 0,
+                        watermark_height: obj.watermarkHeight ? Number(obj.watermarkHeight) : 0,
+                        watermark_angle: obj.watermarkHeight ? Number(obj.watermarkAngle) : 0
                     }
                     this.initWaterMark(watermark)
                 } else if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
                     this.initWaterMark(res.data.data.watermark)
                 }
-                if (isDisplayType(res.data.data.suffix)) {
+                if (isOutDisplayType(res.data.data.suffix)) {
                     customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(fileDate => {
                         this.loading = false
                         if (res.data.data.suffix.endsWith('xlsx')) {
@@ -119,10 +126,15 @@
                             reader.onload = function (event) {
                                 // 读取的文本内容
                                 text = event.target.result
-                                console.log(text)
                             }
                             reader.readAsText(fileDate.data)
                             this.basicFileText = text
+                        } else if (isPic(res.data.data.suffix)) {
+                            this.imgShow = true
+                            this.imgUrl = URL.createObjectURL(fileDate.data)
+                        } else if (res.data.data.suffix.endsWith('csv')) {
+                            this.csvShow = true
+                            this.dealCsv(fileDate)
                         } else {
                             const language = cookies.get('blueking_language') || 'zh-cn'
                             const targetLanguage = language === 'zh-cn' ? 'zh-CN' : 'en-US'
@@ -156,11 +168,51 @@
                 this.previewBasic = false
                 this.showFrame = false
                 this.pageUrl = ''
+                this.imgShow = false
+                this.imgUrl = ''
                 this.hasError = false
+                this.csvShow = false
                 window.resetWaterMark()
             },
             initWaterMark (param) {
                 window.initWaterMark(param)
+            },
+            dealCsv (res) {
+                const csvData = []
+                let count = 0
+                const url = URL.createObjectURL(res.data)
+                Papa.parse(url, {
+                    download: true,
+                    step: function (row) {
+                        for (let i = 0; i < row.data.length; i++) {
+                            const ele = []
+                            ele.push(count)
+                            ele.push(i)
+                            ele.push(row.data[i])
+                            csvData.push(ele)
+                        }
+                        count = count + 1
+                    },
+                    complete: function () {
+                        Table.create(
+                            '#csvTable',
+                            () => window.innerWidth,
+                            () => 900,
+                            {
+                                scrollable: true,
+                                resizable: true,
+                                selectable: true,
+                                editable: false,
+                                copyable: true
+                            }
+                        )
+                            .formulaParser((v) => `${v}-formula`)
+                            .data({
+                                cells: csvData
+                            })
+                            .render()
+                    }
+                })
             }
         }
     }

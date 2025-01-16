@@ -261,7 +261,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
     import { Base64 } from 'js-base64'
-    import { isDisplayType, isText } from '@/utils/file'
+    import { isOutDisplayType, isPic, isText } from '@repository/utils/file'
 
     export default {
         name: 'RepoGeneric',
@@ -815,7 +815,7 @@
             },
             // 单击table打开文件夹
             previewFile (row) {
-                if (isDisplayType(row.fullPath)) {
+                if (isOutDisplayType(row.fullPath)) {
                     const isLocal = this.localRepo
                     const typeParam = isLocal ? 'local/' : 'remote/'
                     let extraParam = 0
@@ -1304,7 +1304,7 @@
                     const json = JSON.stringify(object)
                     extraParam = Base64.encode(json)
                 }
-                if (!isText(row.fullPath)) {
+                if (!isText(row.fullPath) && !isPic(row.fullPath)) {
                     this.$refs.previewOfficeFileDialog.repoName = row.repoName
                     this.$refs.previewOfficeFileDialog.projectId = row.projectId
                     this.$refs.previewOfficeFileDialog.filePath = row.fullPath
@@ -1316,57 +1316,68 @@
                         isLoading: true
                     })
                     this.$refs.previewOfficeFileDialog.setData()
-                    return
-                }
-                this.$refs.previewBasicFileDialog.setDialogData({
-                    show: true,
-                    title: row.name,
-                    isLoading: true,
-                    repoName: row.repoName,
-                    repoType: isLocal ? 'local' : 'remote',
-                    extraParam: extraParam,
-                    filePath: row.fullPath
-                })
-                const res = await this.previewBasicFile({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    path: row.fullPath
-                }).catch(e => {
-                    if (e.status === 403) {
-                        this.getPermissionUrl({
-                            body: {
-                                projectId: this.projectId,
-                                action: 'READ',
-                                resourceType: 'NODE',
-                                uid: this.userInfo.name,
-                                repoName: this.repoName,
-                                path: row.fullPath
-                            }
-                        }).then(res => {
-                            if (res !== '') {
-                                this.showIamDenyDialog = true
-                                this.showData = {
+                } else if (isPic(row.fullPath)) {
+                    this.$refs.previewBasicFileDialog.setDialogData({
+                        show: true,
+                        title: row.name,
+                        isLoading: true,
+                        repoName: row.repoName,
+                        repoType: isLocal ? 'local' : 'remote',
+                        extraParam: extraParam,
+                        filePath: row.fullPath
+                    })
+                    this.$refs.previewBasicFileDialog.setPic()
+                } else {
+                    this.$refs.previewBasicFileDialog.setDialogData({
+                        show: true,
+                        title: row.name,
+                        isLoading: true,
+                        repoName: row.repoName,
+                        repoType: isLocal ? 'local' : 'remote',
+                        extraParam: extraParam,
+                        filePath: row.fullPath
+                    })
+                    const res = await this.previewBasicFile({
+                        projectId: this.projectId,
+                        repoName: this.repoName,
+                        path: row.fullPath
+                    }).catch(e => {
+                        if (e.status === 403) {
+                            this.getPermissionUrl({
+                                body: {
                                     projectId: this.projectId,
-                                    repoName: this.repoName,
                                     action: 'READ',
-                                    path: row.fullPath,
-                                    url: res
+                                    resourceType: 'NODE',
+                                    uid: this.userInfo.name,
+                                    repoName: this.repoName,
+                                    path: row.fullPath
                                 }
-                            } else {
-                                this.$bkMessage({
-                                    theme: 'error',
-                                    message: e.message
-                                })
-                            }
-                        })
-                    } else {
-                        this.$bkMessage({
-                            theme: 'error',
-                            message: e.message
-                        })
-                    }
-                })
-                this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
+                            }).then(res => {
+                                if (res !== '') {
+                                    this.showIamDenyDialog = true
+                                    this.showData = {
+                                        projectId: this.projectId,
+                                        repoName: this.repoName,
+                                        action: 'READ',
+                                        path: row.fullPath,
+                                        url: res
+                                    }
+                                } else {
+                                    this.$bkMessage({
+                                        theme: 'error',
+                                        message: e.message
+                                    })
+                                }
+                            })
+                        } else {
+                            this.$bkMessage({
+                                theme: 'error',
+                                message: e.message
+                            })
+                        }
+                    })
+                    this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
+                }
             },
             async handlerPreviewCompressedFile (row) {
                 if (row.size > 1073741824) {
@@ -1453,7 +1464,7 @@
             },
 
             getBtnDisabled (name) {
-                return isDisplayType(name)
+                return isOutDisplayType(name)
             },
             // 文件夹内部的搜索，根据文件名或文件夹名搜索
             inFolderSearchFile () {

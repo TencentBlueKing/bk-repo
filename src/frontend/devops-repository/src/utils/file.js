@@ -64,6 +64,10 @@ const excelType = [
     'xlsx'
 ]
 
+const csvType = [
+    'csv'
+]
+
 const picType = [
     'jpg', 'jpeg', 'png', 'gif', 'bmp', 'ico', 'jfif', 'webp'
 ]
@@ -90,5 +94,13 @@ export function isPic (param) {
 // 判断可预览的类型(不包括pic)
 export function isDisplayType (param) {
     const isExcel = excelType.find(type => param.endsWith(type))
-    return isText(param) || isFormatType(param) || isExcel
+    const isCsv = csvType.find(type => param.endsWith(type))
+    return isText(param) || isFormatType(param) || isExcel || isCsv
+}
+
+// 判断可预览的类型(包括pic)
+export function isOutDisplayType (param) {
+    const isExcel = excelType.find(type => param.endsWith(type))
+    const isCsv = csvType.find(type => param.endsWith(type))
+    return isText(param) || isFormatType(param) || isExcel || isPic(param) || isCsv
 }
