@@ -296,6 +296,7 @@ class OciRegistryLocalRepository(
             } else {
                 val (chunkSha256, chunkMd5, chunkSize) = splitRedisStrValue(fileInfoStr)
                 if (chunkSha256 != null && chunkSha256 == sha256) {
+                    logger.info("blob sha256 $chunkSha256, md5 $chunkMd5, size $chunkSize")
                     FileInfo(chunkSha256, chunkMd5!!, chunkSize!!.toLong())
                 } else {
                     null
