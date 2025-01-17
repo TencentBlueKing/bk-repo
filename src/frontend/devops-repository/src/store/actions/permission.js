@@ -14,7 +14,7 @@ export default {
             return dispatch('getUserInfo', res.userId)
         })
     },
-    getUserInfo ({ state, commit }, { userId }) {
+    getUserInfo ({ state, commit }, userId) {
         return Vue.prototype.$ajax.get(
             `${authPrefix}/user/userinfo/${userId}`
         ).then(res => {
