@@ -40,8 +40,10 @@ import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
+import com.tencent.bkrepo.npm.constants.INTEGRITY_HSP
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
+import com.tencent.bkrepo.npm.constants.RESOLVED_HSP
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmRepoNotFoundException
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
@@ -77,7 +79,7 @@ open class AbstractNpmService {
 	 * 查询仓库是否存在
 	 */
 	fun checkRepositoryExist(projectId: String, repoName: String): RepositoryDetail {
-		return repositoryService.getRepoDetail(projectId, repoName, "NPM") ?: run {
+		return ArtifactContextHolder.getRepoDetailOrNull() ?: run {
 			logger.error("check repository [$repoName] in projectId [$projectId] failed!")
 			throw NpmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
 		}
@@ -144,14 +146,24 @@ open class AbstractNpmService {
 		versionMetadata: NpmVersionMetadata
 	) {
 		val oldTarball = versionMetadata.dist?.tarball!!
-		versionMetadata.dist?.tarball = NpmUtils.buildPackageTgzTarball(
-			oldTarball,
-			npmProperties.domain,
-			npmProperties.tarball.prefix,
-			npmProperties.returnRepoId,
-			name,
-			artifactInfo
-		)
+        versionMetadata.dist?.tarball = NpmUtils.buildPackageTgzTarball(
+            oldTarball,
+            npmProperties.domain,
+            npmProperties.tarball.prefix,
+            npmProperties.returnRepoId,
+            name,
+            artifactInfo
+        )
+		resolveOhpmHsp(versionMetadata)
+	}
+
+	protected fun resolveOhpmHsp(versionMetadata: NpmVersionMetadata) {
+		if (versionMetadata.dist?.any()?.get(INTEGRITY_HSP) == null) {
+			return
+		}
+		// OHPM HSP包
+		val hspTarball = NpmUtils.harPathToHspPath(versionMetadata.dist?.tarball!!)
+		versionMetadata.dist!!.set(RESOLVED_HSP, hspTarball)
 	}
 
 	companion object {

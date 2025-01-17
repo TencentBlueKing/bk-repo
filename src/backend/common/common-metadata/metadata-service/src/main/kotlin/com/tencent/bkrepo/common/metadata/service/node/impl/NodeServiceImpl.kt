@@ -166,6 +166,16 @@ class NodeServiceImpl(
         return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path, decreaseVolume)
     }
 
+    override fun deleteNodeById(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String,
+        nodeId: String
+    ): NodeDeleteResult {
+        return NodeDeleteSupport(this).deleteNodeById(projectId, repoName, fullPath, operator, nodeId)
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         return NodeMoveCopySupport(this).moveNode(moveRequest)

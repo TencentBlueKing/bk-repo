@@ -157,8 +157,8 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         val projectIdList = devXProperties.projectWhiteList[projectId] ?: emptySet()
         val ips = HashSet<String>()
         projectIdList.forEach {
-            val projectIps = listIpFromProject(it)
-            ips.addAll(projectIps)
+            ips.addAll(listIpFromProject(it))
+            ips.addAll(listCvmIpFromProject(it))
         }
         return ips
     }

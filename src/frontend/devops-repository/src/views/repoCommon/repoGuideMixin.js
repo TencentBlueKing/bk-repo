@@ -1255,6 +1255,105 @@ export default {
                 }
             ]
         },
+        ohpmGuide () {
+            return [
+                {
+                    title: this.$t('npmCreditGuideSubTitle1'),
+                    optionType: 'setCredentials',
+                    main: [
+                        {
+                            subTitle: this.$t('npmCreditGuideSubTitle3'),
+                            codeList: [
+                                'node -e "require(\'readline\') .createInterface({input:process.stdin,output:process.stdout,historySize:0}) .question(\'PAT> \',p => { b64=Buffer.from(p.trim()).toString(\'base64\');console.log(b64);process.exit(); })"'
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('ohpmCreditGuideSubTitle4', { 0: this.userName })
+                        },
+                        {
+                            subTitle: this.$t('ohpmCreditGuideSubTitle5'),
+                            codeList: [
+                                `registry=${this.domain.ohpm}/${this.projectId}/${this.repoName}/`,
+                                `publish_registry=${this.domain.ohpm}/${this.projectId}/${this.repoName}/`,
+                                `//${this.domain.ohpm.split('//')[1]}/${this.projectId}/${this.repoName}/:_auth=Basic <BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('push'),
+                    optionType: 'push',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1', // vux中存储的变量名
+                            label: this.$t('filePath'), // 输入框左侧label文案
+                            placeholder: this.$t('ohpmPushPlaceHolder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1' // vuex中mutations中的方法名
+                        }
+                    ],
+                    main: [
+                        {
+                            subTitle: this.$t('ohpmPushGuideSubTitle1'),
+                            codeList: [
+                                `ohpm publish ${this.dependInputValue1 || '<PATH_TO_PACKAGE_FILE>'}`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('ohpmPushGuideSubTitle2'),
+                            codeList: [`ohpm publish ${this.dependInputValue1 || '<PATH_TO_PACKAGE_FILE>'} --publish_registry ${this.domain.ohpm}/${this.projectId}/${this.repoName}/`]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('pull'),
+                    optionType: 'pull',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1', // vux中存储的变量名
+                            label: this.$t('artifactName'), // 输入框左侧label文案
+                            placeholder: this.$t('artifactNamePlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1' // vuex中mutations中的方法名
+                        },
+                        {
+                            key: 'dependInputValue2', // vux中存储的变量名
+                            label: this.$t('artifactVersion'), // 输入框左侧label文案
+                            placeholder: this.$t('npmVersionInputPlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2' // vuex中mutations中的方法名
+                        }
+                    ],
+                    main: [
+                        {
+                            subTitle: this.$t('npmDownloadGuideSubTitle1'),
+                            codeList: [`ohpm install ${this.dependInputValue1 || this.packageName + '@' + this.versionLabel}${this.dependInputValue1 && this.dependInputValue2 ? '@' + this.dependInputValue2 : ''}`]
+                        },
+                        {
+                            subTitle: this.$t('npmDownloadGuideSubTitle1'),
+                            codeList: [`ohpm install ${this.dependInputValue1 || this.packageName + '@' + this.versionLabel}${this.dependInputValue1 && this.dependInputValue2 ? '@' + this.dependInputValue2 : ''} --registry ${this.domain.ohpm}/${this.projectId}/${this.repoName}`]
+                        }
+                    ]
+                }
+            ]
+        },
+        ohpmInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: this.$t('npmDownloadGuideSubTitle1'),
+                            codeList: [
+                                `ohpm install ${this.packageName}@${this.versionLabel}`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('npmDownloadGuideSubTitle2'),
+                            codeList: [
+                                `ohpm install ${this.packageName}@${this.versionLabel} --registry ${this.domain.ohpm}/${this.projectId}/${this.repoName}/`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
         articleGuide () {
             return this[`${guideMap[this.repoType] || this.repoType}Guide`]
         },

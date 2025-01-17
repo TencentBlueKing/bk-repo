@@ -59,27 +59,24 @@ object BlockNodeQueryHelper {
                 TBlockNode::startPos.gt(range.end),
                 TBlockNode::endPos.lt(range.start)
             )
+            .and(TBlockNode::uploadId).isEqualTo(null)
         val query = Query(criteria).with(Sort.by(TBlockNode::createdDate.name))
         return query
     }
 
-    fun listQueryInVersion(
+    fun listQueryInUploadId(
         projectId: String,
         repoName: String,
         fullPath: String,
-        createdDate: String?,
-        version: String,
+        uploadId: String,
     ):Query {
         val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
             .and(TBlockNode::projectId).isEqualTo(projectId)
             .and(TBlockNode::repoName).isEqualTo(repoName)
             .and(TBlockNode::deleted).isEqualTo(null)
-            .and(TBlockNode::version).isEqualTo(version)
-        createdDate?.let {
-            criteria.and(TBlockNode::createdDate).gt(LocalDateTime.parse(createdDate))
-        }
-        val query = Query(criteria).with(Sort.by(TBlockNode::createdDate.name))
-        return query
+            .and(TBlockNode::uploadId).isEqualTo(uploadId)
+            .and(TBlockNode::expireDate).gt(LocalDateTime.now())
+        return Query(criteria)
     }
 
     fun fullPathCriteria(projectId: String, repoName: String, fullPath: String, deep: Boolean): Criteria {
@@ -117,13 +114,6 @@ object BlockNodeQueryHelper {
 
     fun restoreUpdate(): Update {
         return Update().set(TBlockNode::deleted.name, null)
-    }
-
-    fun updateVersionBlocks(startPos: Long, endPos: Long): Update {
-        return Update().set(TBlockNode::version.name, null)
-            .set(TBlockNode::createdDate.name, LocalDateTime.now())
-            .set(TBlockNode::startPos.name, startPos)
-            .set(TBlockNode::endPos.name, endPos)
     }
 
 }

@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.NodeAttribute
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
@@ -59,7 +60,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
-import com.tencent.bkrepo.fs.server.constant.VERSION_KEY
+import com.tencent.bkrepo.fs.server.constant.UPLOADID_KEY
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
@@ -105,7 +106,7 @@ class UploadService(
             if (!overwrite && nodeService.checkExist(this)) {
                 logger.warn(
                     "User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] failed: " +
-                        "artifact already exists."
+                            "artifact already exists."
                 )
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
@@ -117,7 +118,7 @@ class UploadService(
             }
             val uploadTransaction = UploadTransactionInfo(
                 uploadId = uploadId,
-                expireSeconds = TRANSACTION_EXPIRES
+                expireSeconds = expires
             )
 
             logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadId.")
@@ -129,16 +130,17 @@ class UploadService(
         with(artifactInfo) {
             // 获取请求头中是否允许覆盖的参数
             val overwrite = getBooleanHeader(HEADER_OVERWRITE)
-            // 获取当前节点信息
+
             val node = nodeService.getNodeDetail(this)
+
+            val oldNodeId = node?.nodeInfo?.id ?: FAKE_SEPARATE
             // 如果不允许覆盖且节点已经存在，抛出异常
-            if (!overwrite && node != null) {
+            if (node != null && !overwrite) {
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
 
-            // 生成唯一的 blockId，作为上传会话的标识
-            val blockId = StringPool.uniqueId()
-            val uploadId = "$blockId/VERSION"
+            // 生成唯一的 uploadId，作为上传会话的标识
+            val uploadId = "${StringPool.uniqueId()}/$oldNodeId"
 
             // 创建上传事务信息，设置过期时间
             val uploadTransaction = UploadTransactionInfo(
@@ -148,12 +150,13 @@ class UploadService(
             // 记录上传启动的日志
             logger.info(
                 "User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success, "
-                        + "version: $uploadId.")
+                        + "version: $uploadId."
+            )
             return uploadTransaction
         }
     }
 
-    fun blockBaseNodeCreate(userId: String, artifactInfo: GenericArtifactInfo, uploadId: String){
+    fun blockBaseNodeCreate(userId: String, artifactInfo: GenericArtifactInfo, uploadId: String) {
         val attributes = NodeAttribute(
             uid = NodeAttribute.NOBODY,
             gid = NodeAttribute.NOBODY,
@@ -164,11 +167,11 @@ class UploadService(
             value = attributes,
         )
         val versionMetadata = MetadataModel(
-            key = VERSION_KEY,
+            key = UPLOADID_KEY,
             value = uploadId
         )
         val fileSize = getLongHeader(HEADER_FILE_SIZE).takeIf { it > 0L }
-                        ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND)
+            ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND)
         val request = NodeCreateRequest(
             projectId = artifactInfo.projectId,
             repoName = artifactInfo.repoName,
@@ -181,6 +184,8 @@ class UploadService(
             overwrite = getBooleanHeader(HEADER_OVERWRITE),
             expires = getLongHeader(HEADER_EXPIRES),
             nodeMetadata = listOf(fsAttr, versionMetadata),
+            separate = true,
+            metadata = mapOf(UPLOADID_KEY to uploadId)
         )
         ActionAuditContext.current().setInstance(request)
         nodeService.createNode(request)
@@ -195,16 +200,15 @@ class UploadService(
     }
 
     fun abortSeparateBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
-        val deleteBlockList = separateListBlock(userId, uploadId, artifactInfo)
-        val storageCredentials = getStorageCredentials(artifactInfo)
-        deleteBlockList.forEach {
-            storageService.delete(it.sha256, storageCredentials)
-        }
+
+        checkUploadIdIsEmpty(uploadId)
+
         blockNodeService.deleteBlocks(
             artifactInfo.projectId,
             artifactInfo.repoName,
             artifactInfo.getArtifactFullPath(),
-            uploadId)
+            uploadId
+        )
     }
 
     fun completeBlockUpload(
@@ -221,7 +225,7 @@ class UploadService(
         val fileInfo = if (!sha256.isNullOrEmpty() && !md5.isNullOrEmpty() && size != null) {
             logger.info(
                 "sha256 $sha256, md5 $md5, size $size for " +
-                    "fullPath ${artifactInfo.getArtifactFullPath()} with uploadId $uploadId"
+                        "fullPath ${artifactInfo.getArtifactFullPath()} with uploadId $uploadId"
             )
             FileInfo(sha256, md5, size)
         } else {
@@ -245,7 +249,7 @@ class UploadService(
             overwrite = getBooleanHeader(HEADER_OVERWRITE),
             operator = userId,
             expires = getLongHeader(HEADER_EXPIRES),
-            nodeMetadata = repository.resolveMetadata(HttpContextHolder.getRequest())
+            nodeMetadata = repository.resolveMetadata(HttpContextHolder.getRequest()),
         )
         ActionAuditContext.current().setInstance(request)
         nodeService.createNode(request)
@@ -254,64 +258,65 @@ class UploadService(
 
     fun completeSeparateBlockUpload(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo) {
 
-        // 创建新的基础节点（Base Node）
-        try {
-            blockBaseNodeCreate(userId, artifactInfo, uploadId)
-        }
-        catch (e: Exception) {
-            logger.error("Create block base node failed, file path [${artifactInfo.getArtifactFullPath()}], " +
-                    "version : $uploadId")
-            abortSeparateBlockUpload(userId, uploadId, artifactInfo)
-            throw ErrorCodeException(GenericMessageCode.BLOCK_FILE_NODE_CREATE_FAIL, artifactInfo)
-        }
+        checkUploadIdIsEmpty(uploadId)
 
-        // 删除旧Block
-        blockNodeService.deleteBlocks(
-            artifactInfo.projectId,
-            artifactInfo.repoName,
-            artifactInfo.getArtifactFullPath()
-        )
-
-        // 获取节点并验证版本信息
-        val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
-            ?.takeIf { it.metadata[VERSION_KEY] == uploadId }
-            ?: run {
-                logger.error("Failed to retrieve node or version mismatch for uploadId: $uploadId")
-                throw ErrorCodeException(GenericMessageCode.BLOCK_FILE_NODE_CREATE_FAIL, artifactInfo)
-            }
+        val projectId = artifactInfo.projectId
+        val repoName = artifactInfo.repoName
+        val artifactFullPath = artifactInfo.getArtifactFullPath()
 
         // 获取并按起始位置排序块信息列表
-        val blockInfoList = blockNodeService.listBlocksInVersion(
-            node.projectId,
-            node.repoName,
-            node.fullPath,
-            version = uploadId
-        ).sortedBy { it.startPos }
+        val blockInfoList = blockNodeService.listBlocksInUploadId(
+            projectId,
+            repoName,
+            artifactFullPath,
+            uploadId = uploadId
+        )
 
         blockInfoList.ifEmpty {
             logger.warn("No block information found for uploadId: $uploadId")
             throw ErrorCodeException(GenericMessageCode.BLOCK_UPDATE_LIST_IS_NULL, artifactInfo)
         }
 
-        var offset = 0L  // 用于记录当前偏移量
-
-        // 遍历块信息列表，创建对应的块节点
-        blockInfoList.forEach { blockInfo ->
-            val blockSize = blockInfo.size
-            blockNodeService.updateBlock(blockInfo, offset, offset + blockSize - 1)
-            offset += blockInfo.size  // 更新偏移量
-        }
+        // 计算所有块的总大小
+        val totalSize = blockInfoList.sumOf { it.size }
 
         // 验证节点大小是否与块总大小一致
-        if (node.size != offset) {
-            abortSeparateBlockUpload(userId, uploadId, artifactInfo)
-            throw ErrorCodeException(GenericMessageCode.NODE_DATA_HAS_CHANGED, artifactInfo)
+        if (getLongHeader(HEADER_FILE_SIZE) != totalSize) {
+            throw ErrorCodeException(GenericMessageCode.NODE_DATA_ERROR, artifactInfo)
         }
 
-        // 上传完成，记录日志
-        logger.info("User [$userId] successfully completed block upload [uploadId: $uploadId], " +
-                "file path [${artifactInfo.getArtifactFullPath()}].")
+        // 创建新的基础节点（Base Node）
+        try {
+            blockBaseNodeCreate(userId, artifactInfo, uploadId)
+        } catch (e: Exception) {
+            logger.error(
+                "Create block base node failed, file path [${artifactInfo.getArtifactFullPath()}], " +
+                        "version : $uploadId"
+            )
+            abortSeparateBlockUpload(userId, uploadId, artifactInfo)
+            throw e
+        }
 
+        // 删除旧Block
+        blockNodeService.deleteBlocks(
+            projectId,
+            repoName,
+            artifactFullPath
+        )
+
+        // 更新节点版本信息为null
+        blockNodeService.updateBlockUploadId(
+            projectId,
+            repoName,
+            artifactFullPath,
+            uploadId
+        )
+
+        // 上传完成，记录日志
+        logger.info(
+            "User [$userId] successfully completed block upload [uploadId: $uploadId], " +
+                    "file path [${artifactFullPath}]."
+        )
     }
 
     fun listBlock(userId: String, uploadId: String, artifactInfo: GenericArtifactInfo): List<BlockInfo> {
@@ -330,21 +335,30 @@ class UploadService(
         artifactInfo: GenericArtifactInfo
     ): List<SeparateBlockInfo> {
 
-        val blockInfoList = blockNodeService.listBlocksInVersion(
+        checkUploadIdIsEmpty(uploadId)
+
+        val blockInfoList = blockNodeService.listBlocksInUploadId(
             artifactInfo.projectId,
             artifactInfo.repoName,
             artifactInfo.getArtifactFullPath(),
-            version = uploadId
+            uploadId = uploadId
         )
 
         return blockInfoList.map { blockInfo ->
-            SeparateBlockInfo(blockInfo.size, blockInfo.sha256, blockInfo.startPos, blockInfo.version)
+            SeparateBlockInfo(blockInfo.size, blockInfo.sha256, blockInfo.startPos, blockInfo.uploadId)
         }
     }
 
     private fun checkUploadId(uploadId: String, storageCredentials: StorageCredentials?) {
         if (!storageService.checkBlockId(uploadId, storageCredentials)) {
             throw ErrorCodeException(GenericMessageCode.UPLOAD_ID_NOT_FOUND, uploadId)
+        }
+    }
+
+    private fun checkUploadIdIsEmpty(uploadId: String) {
+        // 检查uploadId是否为空""
+        if (uploadId.isEmpty()) {
+            throw ErrorCodeException(GenericMessageCode.BLOCK_UPLOADID_ERROR, uploadId)
         }
     }
 

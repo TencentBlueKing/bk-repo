@@ -69,21 +69,19 @@ class BlockNodeServiceImpl(
         }
     }
 
-    override fun updateBlock(
-        blockNode: TBlockNode,
-        startPos: Long,
-        endPos: Long,
+    override fun updateBlockUploadId(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        uploadId: String
     ) {
-        with(blockNode) {
-            val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, nodeFullPath,false)
-                criteria.and(TBlockNode::id).isEqualTo(id)
-                        .and(TBlockNode::version).isEqualTo(version)
-            val update = BlockNodeQueryHelper.updateVersionBlocks(startPos, endPos)
-            blockNodeDao.updateBlock(Query(criteria), update)
-            logger.info("Update block node[$projectId/$repoName/$nodeFullPath-$startPos], sha256[$sha256] success.")
-        }
-
-
+            val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
+                criteria.and(TBlockNode::uploadId).isEqualTo(uploadId)
+            val update = Update().set(TBlockNode::uploadId.name, null)
+                .set(TBlockNode::createdDate.name, LocalDateTime.now())
+                .set(TBlockNode::expireDate.name, null)
+            blockNodeDao.updateMulti(Query(criteria), update)
+            logger.info("Update block node[$projectId/$repoName/$fullPath--/uploadId: $uploadId] success.")
     }
 
     override fun listBlocks(
@@ -97,15 +95,14 @@ class BlockNodeServiceImpl(
         return blockNodeDao.find(query)
     }
 
-    override fun listBlocksInVersion(
+    override fun listBlocksInUploadId(
         projectId: String,
         repoName: String,
         fullPath: String,
-        createdDate: String?,
-        version: String
+        uploadId: String
     ): List<TBlockNode> {
         val query =
-            BlockNodeQueryHelper.listQueryInVersion(projectId, repoName, fullPath, createdDate, version)
+            BlockNodeQueryHelper.listQueryInUploadId(projectId, repoName, fullPath, uploadId)
         return blockNodeDao.find(query)
     }
 
@@ -113,17 +110,13 @@ class BlockNodeServiceImpl(
         projectId: String,
         repoName: String,
         fullPath: String,
-        version: String?
+        uploadId: String?
     ) {
         val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
-        if (version != null) {
-            criteria.and(TBlockNode::version.name).`is`(version)
-        }else{
-            criteria.and(TBlockNode::version.name).`is`(null)
-        }
+            .apply { and(TBlockNode::uploadId.name).isEqualTo(uploadId) }
         val update = BlockNodeQueryHelper.deleteUpdate()
         blockNodeDao.updateMulti(Query(criteria), update)
-        logger.info("Delete node blocks[$projectId/$repoName$fullPath] success. Version: $version")
+        logger.info("Delete node blocks[$projectId/$repoName$fullPath] success. UPLOADID: $uploadId")
     }
 
     override fun moveBlocks(projectId: String, repoName: String, fullPath: String, dstFullPath: String) {

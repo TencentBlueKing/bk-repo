@@ -12,6 +12,6 @@ data class SeparateBlockInfo(
     val sha256: String,
     @ApiModelProperty("分块起始位置")
     val startPos: Long,
-    @ApiModelProperty("分块版本")
-    val version: String?
+    @ApiModelProperty("分块uploadID")
+    val uploadId: String?
 )

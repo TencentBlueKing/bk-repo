@@ -186,7 +186,12 @@ class DevxWorkspaceUtils(
         private fun listIpFromProjects(projectId: String): Mono<Set<String>> {
             val projectIdList = devXProperties.projectWhiteList[projectId] ?: emptySet()
             return Flux.fromIterable(projectIdList)
-                .flatMap { pid -> listIpFromProject(pid) }
+                .flatMap { id ->
+                    Flux.merge(
+                        listIpFromProject(id),
+                        listCvmIpFromProject(id)
+                    )
+                }
                 .flatMapIterable { it }
                 .collect(Collectors.toSet())
         }

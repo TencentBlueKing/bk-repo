@@ -67,6 +67,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
@@ -85,25 +86,27 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
-import com.tencent.bkrepo.fs.server.constant.VERSION_KEY
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
-import com.tencent.bkrepo.generic.constant.HEADER_MD5
-import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
-import com.tencent.bkrepo.generic.constant.HEADER_SHA256
-import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
-import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
-import com.tencent.bkrepo.generic.constant.HEADER_OFFSET
-import com.tencent.bkrepo.generic.constant.HEADER_SIZE
-import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
 import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
+import com.tencent.bkrepo.generic.constant.HEADER_MD5
+import com.tencent.bkrepo.generic.constant.HEADER_OFFSET
+import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
+import com.tencent.bkrepo.generic.constant.HEADER_SEQUENCE
+import com.tencent.bkrepo.generic.constant.HEADER_SHA256
+import com.tencent.bkrepo.generic.constant.HEADER_SIZE
+import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_ID
+import com.tencent.bkrepo.generic.constant.HEADER_UPLOAD_TYPE
+import com.tencent.bkrepo.generic.constant.SEPARATE_UPLOAD
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
+import com.tencent.bkrepo.generic.pojo.SeparateBlockInfo
 import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.api.ReplicaTaskClient
@@ -128,6 +131,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.net.URLDecoder
+import java.time.Duration
 import java.time.LocalDateTime
 import java.util.Base64
 import java.util.Locale
@@ -141,7 +145,9 @@ class GenericLocalRepository(
     private val replicaTaskClient: ReplicaTaskClient,
     private val clusterNodeClient: ClusterNodeClient,
     private val pipelineNodeService: PipelineNodeService,
-    private val ciPermissionManager: CIPermissionManager
+    private val ciPermissionManager: CIPermissionManager,
+    private val blockNodeService: BlockNodeService,
+    private val storageProperties: StorageProperties,
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -155,13 +161,6 @@ class GenericLocalRepository(
         super.onUploadBefore(context)
         // 若不允许覆盖, 提前检查节点是否存在
         checkNodeExist(context)
-        // 通用上传前检查
-        baseUploadBefore(context)
-        // 二次检查，防止接收文件过程中，有并发上传成功的情况
-        checkNodeExist(context)
-    }
-
-    private fun baseUploadBefore(context: ArtifactUploadContext){
         // 检查是否是覆盖流水线构件
         checkIfOverwritePipelineArtifact(context)
         // 校验sha256
@@ -176,23 +175,31 @@ class GenericLocalRepository(
         if (uploadMd5 != null && !calculatedMd5.equals(uploadMd5, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
         }
+        // 二次检查，防止接收文件过程中，有并发上传成功的情况
+        checkNodeExist(context)
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
         val uploadId = context.request.getHeader(HEADER_UPLOAD_ID)
-        if (isSeparateUpload(uploadId)){
-            onSeparateUpload(context, uploadId)
-        }
-        else{
-            val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
-            val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
-            if (isBlockUpload(uploadId, sequence)) {
+        val sequence = context.request.getHeader(HEADER_SEQUENCE)?.toInt()
+        val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
+
+        when {
+            isSeparateUpload(uploadType) -> {
+                if (uploadId.isNullOrEmpty()) {
+                    throw ErrorCodeException(GenericMessageCode.BLOCK_UPLOADID_ERROR, uploadId)
+                }
+                onSeparateUpload(context, uploadId)
+            }
+            isBlockUpload(uploadId, sequence) -> {
                 this.blockUpload(uploadId, sequence!!, context)
                 context.response.contentType = MediaTypes.APPLICATION_JSON
                 context.response.writer.println(ResponseBuilder.success().toJsonString())
-            } else if (isChunkedUpload(uploadType)) {
+            }
+            isChunkedUpload(uploadType) -> {
                 chunkedUpload(context)
-            } else {
+            }
+            else -> {
                 val nodeDetail = storageManager.storeArtifactFile(
                     buildNodeCreateRequest(context),
                     context.getArtifactFile(),
@@ -209,46 +216,46 @@ class GenericLocalRepository(
     private fun onSeparateUpload(context: ArtifactUploadContext, uploadId: String) {
         with(context) {
 
-            val bArtifactFile = getArtifactFile()
+            val blockArtifactFile = getArtifactFile()
             val sha256 = getArtifactSha256()
 
-            val sequence = context.request.getHeader(HEADER_SEQUENCE).toLongOrNull()
             val offset = context.request.getHeader(HEADER_OFFSET)?.toLongOrNull()
+            val expires = storageProperties.receive.blockExpireTime
 
             val blockNode = TBlockNode(
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 nodeFullPath = artifactInfo.getArtifactFullPath(),
-                startPos = offset ?: sequence
-                            ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND),
+                startPos = offset ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND),
                 sha256 = sha256,
                 projectId = projectId,
                 repoName = repoName,
-                size = bArtifactFile.getSize(),
-                version = uploadId
+                size = blockArtifactFile.getSize(),
+                uploadId = uploadId,
+                expireDate = calculateExpiryDateTime(expires)
             )
 
-            val stored = storageService.store(sha256, bArtifactFile, storageCredentials)
+            storageService.store(sha256, blockArtifactFile, storageCredentials)
 
-            try {
-                blockNodeService.createBlock(blockNode, storageCredentials)
-            } catch (e: Exception) {
-                if (stored > 1) {
-                    storageService.delete(sha256, storageCredentials)
-                }
-                // Log the exception for debugging purposes
-                logger.error("Failed to create block node", e)
-                throw e
-            }
+            val blockNodeInfo = blockNodeService.createBlock(blockNode, storageCredentials)
 
             // Set response content type and write success response
             context.response.contentType = MediaTypes.APPLICATION_JSON
-            context.response.writer.println(ResponseBuilder.success().toJsonString())
+            context.response.writer.println(
+                ResponseBuilder.success(
+                    SeparateBlockInfo(
+                        blockNodeInfo.size,
+                        blockNodeInfo.sha256,
+                        blockNodeInfo.startPos,
+                        blockNodeInfo.uploadId
+                    )
+                ).toJsonString()
+            )
         }
     }
 
-    private fun isSeparateUpload(uploadId: String): Boolean {
-        return uploadId.substringAfter("/") == VERSION_KEY
+    private fun isSeparateUpload(uploadType: String?): Boolean {
+        return !uploadType.isNullOrEmpty() && uploadType == SEPARATE_UPLOAD
     }
 
     override fun onUploadSuccess(context: ArtifactUploadContext) {
@@ -311,9 +318,9 @@ class GenericLocalRepository(
         val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
         val uploadId = HeaderUtils.getHeader(HEADER_UPLOAD_ID)
         val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
-                    ?: HeaderUtils.getHeader(HEADER_OFFSET)?.toInt()
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
-        if (!overwrite && !isBlockUpload(uploadId, sequence) && !isChunkedUpload(uploadType)) {
+        if (!overwrite && !isBlockUpload(uploadId, sequence)
+            && !isChunkedUpload(uploadType) && !isSeparateUpload(uploadType)) {
             with(context.artifactInfo) {
                 nodeService.getNodeDetail(this)?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
@@ -939,6 +946,11 @@ class GenericLocalRepository(
             nodeService.createNode(nodeRequest)
             return property
         }
+    }
+
+    private fun calculateExpiryDateTime(expireDuration: Duration): LocalDateTime {
+        val hoursToAdd = expireDuration.toHours().takeIf { it > 0 } ?: 12 // 如果 expireDuration <= 0，则使用 12 小时
+        return LocalDateTime.now().plusHours(hoursToAdd)
     }
 
 

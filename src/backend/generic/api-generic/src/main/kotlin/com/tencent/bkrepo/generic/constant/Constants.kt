@@ -62,3 +62,8 @@ const val CHUNKED_UPLOAD_CLIENT = "CHUNKED-UPLOAD-CLIENT"
 
 // block上传时直接写入文件指定位置
 const val HEADER_BLOCK_APPEND = BKREPO_PREFIX + "BLOCK-APPEND"
+
+/**
+ * 分块上传版本后缀
+ */
+const val SEPARATE_UPLOAD = "SEPARATE-UPLOAD"

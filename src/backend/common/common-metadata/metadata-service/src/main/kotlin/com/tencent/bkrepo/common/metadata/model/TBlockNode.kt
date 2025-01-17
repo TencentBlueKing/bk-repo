@@ -56,7 +56,8 @@ data class TBlockNode(
     val size: Long,
     val endPos: Long = startPos + size - 1,
     var deleted: LocalDateTime? = null,
-    val version: String? = null
+    val uploadId: String? = null,
+    var expireDate: LocalDateTime? = null,
 ) {
     companion object {
         const val BLOCK_IDX = "start_pos_idx"

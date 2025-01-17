@@ -18,8 +18,9 @@ export default {
     },
     // 删除包
     deletePackage (_, { projectId, repoType, repoName, packageKey }) {
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.delete(
-            `${repoType}/ext/package/delete/${projectId}/${repoName}`,
+            `${type}/ext/package/delete/${projectId}/${repoName}`,
             {
                 params: {
                     packageKey
@@ -55,8 +56,9 @@ export default {
     },
     // 删除包版本
     deleteVersion (_, { projectId, repoType, repoName, packageKey, version }) {
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.delete(
-            `${repoType}/ext/version/delete/${projectId}/${repoName}`,
+            `${type}/ext/version/delete/${projectId}/${repoName}`,
             {
                 params: {
                     packageKey,
@@ -67,8 +69,9 @@ export default {
     },
     // 查询包版本详情
     getVersionDetail (_, { projectId, repoType, repoName, packageKey, version }) {
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.get(
-            `${repoType}/ext/version/detail/${projectId}/${repoName}`,
+            `${type}/ext/version/detail/${projectId}/${repoName}`,
             {
                 params: {
                     packageKey,
@@ -169,7 +172,8 @@ export default {
             docker: 'docker/ext/addr',
             npm: 'npm/ext/address',
             helm: 'helm/ext/address',
-            conan: 'conan/ext/address'
+            conan: 'conan/ext/address',
+            ohpm: 'npm/ext/address'
         }
         if (!urlMap[repoType] || state.domain[repoType]) return
         Vue.prototype.$ajax.get(

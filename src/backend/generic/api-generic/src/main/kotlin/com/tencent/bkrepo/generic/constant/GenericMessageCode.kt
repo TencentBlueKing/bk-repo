@@ -40,7 +40,7 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
     UPLOAD_ID_NOT_FOUND(1, "generic.uploadId.notfound"),
     LIST_DIR_NOT_ALLOWED(2, "generic.dir.not-allowed"),
     SIGN_FILE_NOT_FOUND(3, "generic.delta.sign-file.notfound"),
-    NODE_DATA_HAS_CHANGED(4, "generic.node.data.has.changed"),
+    NODE_DATA_ERROR(4, "generic.node.data.error"),
     DOWNLOAD_DIR_NOT_ALLOWED(5, "generic.download.dir.not-allowed"),
     ARTIFACT_SEARCH_FAILED(6, "generic.artifact.query.failed"),
     PIPELINE_ARTIFACT_OVERWRITE_NOT_ALLOWED(7, "generic.pipeline-artifact.overwrite.not-allowed"),
@@ -49,7 +49,7 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
     PIPELINE_REPO_MANUAL_UPLOAD_NOT_ALLOWED(10, "generic.pipeline-repo.manual-upload.not-allowed"),
     PIPELINE_ARTIFACT_PATH_ILLEGAL(11, "generic.pipeline.artifact.path.illegal"),
     CHUNKED_ARTIFACT_BROKEN(12, "generic.chunked.artifact.broken"),
-    BLOCK_FILE_NODE_CREATE_FAIL(13, "generic.block.file.node.create.fail"),
+    BLOCK_UPLOADID_ERROR(13, "generic.block.uploadId.error"),
     BLOCK_HEAD_NOT_FOUND(14, "generic.block.node.head.not-found"),
     BLOCK_UPDATE_LIST_IS_NULL(15, "generic.block.update.list.is.null")
     ;
