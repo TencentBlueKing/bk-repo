@@ -92,3 +92,9 @@ export function isDisplayType (param) {
     const isExcel = excelType.find(type => param.endsWith(type))
     return isText(param) || isFormatType(param) || isExcel
 }
+
+// 判断可预览的类型(包括pic)
+export function isOutDisplayType (param) {
+    const isExcel = excelType.find(type => param.endsWith(type))
+    return isText(param) || isFormatType(param) || isExcel || isPic(param)
+}

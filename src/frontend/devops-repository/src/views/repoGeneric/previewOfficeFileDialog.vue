@@ -33,6 +33,8 @@
         customizePreviewRemoteOfficeFile,
         getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo
     } from '@repository/utils/previewOfficeFile'
+    import cookies from 'js-cookie'
+    import { isHtmlType } from '@repository/utils/file'
 
     export default {
         name: 'PreviewOfficeFileDialog',
@@ -104,10 +106,7 @@
                     this.$refs.showData.style.height = '800px'
                     if (this.repoType === 'local') {
                         customizePreviewLocalOfficeFile(this.projectId, this.repoName, this.filePath).then(res => {
-                            this.loading = false
-                            this.showFrame = true
-                            const url = URL.createObjectURL(res.data) + '#toolbar=0&navpanes=0'
-                            this.pageUrl = url
+                            this.dealDate(res)
                         }).catch((e) => {
                             this.cancel()
                             const vm = window.repositoryVue
@@ -118,10 +117,7 @@
                         })
                     } else {
                         customizePreviewRemoteOfficeFile(this.extraParam).then(res => {
-                            this.loading = false
-                            this.showFrame = true
-                            const url = URL.createObjectURL(res.data)+ '#toolbar=0&navpanes=0'
-                            this.pageUrl = url
+                            this.dealDate(res)
                         }).catch((e) => {
                             this.cancel()
                             const vm = window.repositoryVue
@@ -152,6 +148,22 @@
             },
             initWaterMark (param) {
                 window.initWaterMark(param)
+            },
+            dealDate (res) {
+                const language = cookies.get('blueking_language') || 'zh-cn'
+                const targetLanguage = language === 'zh-cn' ? 'zh-CN' : 'en-US'
+                this.loading = false
+                let url
+                if (!isHtmlType(this.filePath)) {
+                    // 注意后面的参数，参数都是自定义的，修改了pdfjs文件的viewer.mjs和view.html的
+                    // 语言切换需注意public/web/local下的语言，需一致
+                    // 各版本pdfjs的viewer.html有差异, 更改viewer.mjs下的方法做匹配显示需注意
+                    url = location.origin + '/ui/web/viewer.html?file=' + URL.createObjectURL(res.data) + '&language=' + targetLanguage + '&disableopenfile=true&disableprint=true&disabledownload=true&disablebookmark=false'
+                } else {
+                    url = URL.createObjectURL(res.data)
+                }
+                this.showFrame = true
+                this.pageUrl = url
             }
         }
     }
