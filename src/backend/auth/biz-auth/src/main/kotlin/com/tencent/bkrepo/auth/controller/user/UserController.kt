@@ -64,7 +64,6 @@ import io.swagger.annotations.ApiOperation
 import org.bouncycastle.crypto.CryptoException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -270,8 +269,12 @@ class UserController @Autowired constructor(
         @RequestHeader("x-bkrepo-uid") bkUserId: String?,
         @RequestHeader("x-bkrepo-display-name") displayName: String?,
         @RequestHeader("x-bkrepo-tenant-id") tenantId: String?,
-    ): Response<Map<String, Any?>> {
-        val result = mapOf("userId" to bkUserId, "displayName" to displayName, "tenantId" to tenantId)
+    ): Response<Map<String, Any>> {
+        val result = mapOf(
+            "userId" to bkUserId.orEmpty(),
+            "displayName" to displayName.orEmpty(),
+            "tenantId" to tenantId.orEmpty()
+        )
         return ResponseBuilder.success(result)
     }
 
