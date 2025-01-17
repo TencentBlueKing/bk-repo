@@ -112,9 +112,9 @@ spec:
             - name: BK_APIGW_URL
               value: {{ .Values.gateway.bkApigwUrl }}
             - name: BK_REPO_ENABLE_MULTI_TENANT_MODE
-              value: {{ .Values.gateway.enableMultiTenantMode }}
+              value: {{ default "false" .Values.gateway.enableMultiTenantMode | quote }}
             - name: BK_REPO_OP_TENANT_ID
-              value: {{ .Values.gateway.oPTenantId }}
+              value: {{ default "system" .Values.gateway.oPTenantId | quote }}
             - name: BK_REPO_APP_CODE
               value: {{ .Values.gateway.appCode }}
             - name: BK_REPO_APP_TOKEN
