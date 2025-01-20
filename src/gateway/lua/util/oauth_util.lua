@@ -180,6 +180,73 @@ function _M:verify_bk_token(auth_url, token)
     return user_cache_value
 end
 
+function _M:verify_bk_token_muti_tenant(auth_url, token)
+    local user_cache = ngx.shared.user_info_store
+    local user_cache_value = user_cache:get(token)
+    if user_cache_value == nil then
+        local http_cli = http.new()
+        local oauth = config.oauth
+        local query = "bk_token=" .. token
+        local addr = "http://" .. auth_url .. "/api/bk-login/prod/login/api/v3/open/bk-tokens/userinfo/?" .. query
+        local auth_content = '{"bk_app_code":"' .. oauth.app_code .. '","bk_app_secret":"' .. oauth.app_secret .. '","bk_token":"' .. token .. '"}'
+        --- 开始连接
+        http_cli:set_timeout(3000)
+        http_cli:connect(addr)
+        --- 发送请求
+        local res, err = http_cli:request_uri(addr, {
+            method = "GET",
+            ssl_verify = false,
+            headers = {
+                ["X-Bkapi-Authorization"] = auth_content,
+                ["X-Bk-Tenant-Id"] = config.op_tenant_id
+            }
+        })
+        --- 判断是否出错了
+        if not res then
+            ngx.log(ngx.ERR, "failed to request apigw: error", err)
+            ngx.exit(401)
+            return
+        end
+        --- 判断返回的状态码是否是200
+        if res.status ~= 200 then
+            ngx.log(ngx.STDERR, "failed to request apigw, status: ", res.status)
+            ngx.exit(401)
+            return
+        end
+        --- 转换JSON的返回数据为TABLE
+        local result = json.decode(res.body)
+        --- 判断JSON转换是否成功
+        if result == nil then
+            ngx.log(ngx.ERR, "failed to parse apigw  response：", res.body)
+            ngx.exit(401)
+            return
+        end
+
+        --- 判断返回码:Q!
+        if result.code ~= 0 then
+            if result.code == 1302403 then
+                ngx.log(ngx.ERR, "is_login code is 1302403 , need Authentication")
+                ngx.header["X-DEVOPS-ERROR-RETURN"] = '{"code": 440,"message": "' .. result.message .. '", "data": 1302403,"traceId":null }'
+                ngx.header["X-DEVOPS-ERROR-STATUS"] = 440
+                ngx.exit(401)
+            end
+            ngx.log(ngx.INFO, "invalid user token: ", result.message)
+            ngx.exit(401)
+            return
+        end
+
+        user_data = {
+            ["bk_username"] = result.data.bk_username,
+            ["display_name"] = result.data.display_name,
+            ["tenant_id"] = result.data.tenant_id
+        }
+        user_cache:set(token, json.encode(user_cache_value), 180)
+    else
+        user_data = json.decode(user_cache_value)
+    end
+    return user_data.bk_username, user_data.display_name, user_data.tenant_id
+end
+
 function _M:verify_bkrepo_token(bkrepo_login_token)
     local user_cache = ngx.shared.user_info_store
     local user_cache_value = user_cache:get(bkrepo_login_token)

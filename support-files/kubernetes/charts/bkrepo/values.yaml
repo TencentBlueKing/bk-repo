@@ -273,6 +273,10 @@ gateway:
   bkPaasUrl: paas.example.com
   ## ci模式必填，登录地址
   bkLoginUrl: http://paas.example.com/login/
+  ## 是否开启多租户
+  enableMultiTenantMode: false
+  ## 运营租户默认
+  oPTenantId: system
   ## ci模式必填，ssm ip
   ssmIP0:
   ## ci模式必填，ssm host
