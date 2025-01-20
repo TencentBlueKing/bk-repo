@@ -108,8 +108,9 @@
                             }
                         })
                     }
-
-                    userInfo.admin && this.getClusterList()
+                    if (specParam !== 'outsideFilePreview') {
+                        userInfo.admin && this.getClusterList()
+                    }
                 })
             }
         },
