@@ -11,6 +11,7 @@
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <textarea v-model="basicFileText" class="textarea" readonly></textarea>
         </div>
+        <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
                 <img width="480" height="240" style="float: left;margin-right: 3px" src="/ui/440.svg" />
@@ -37,6 +38,8 @@
     import { Base64 } from 'js-base64'
     import cookies from 'js-cookie'
     import { isFormatType, isHtmlType, isText } from '@repository/utils/file'
+    import Papa from "papaparse";
+    import Table from "@wolf-table/table";
 
     export default {
         name: 'FilePreview',
@@ -75,7 +78,8 @@
                 hasError: false,
                 pageUrl: '',
                 showFrame: false,
-                loading: false
+                loading: false,
+                csvShow: false
             }
         },
         computed: {
@@ -120,6 +124,15 @@
                     this.loading = false
                     this.hasError = true
                 })
+            } else if (this.filePath.endsWith('.csv')) {
+                customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                    this.csvShow = true
+                    this.dealCsv(res)
+                    this.loading = false
+                }).catch((e) => {
+                    this.loading = false
+                    this.hasError = true
+                })
             } else if (isFormatType(this.filePath)) {
                 if (this.repoType === 'local') {
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
@@ -154,6 +167,7 @@
                 this.previewBasic = false
                 this.showFrame = false
                 this.pageUrl = ''
+                this.csvShow = false
                 this.hasError = false
             },
             initWaterMark (param) {
@@ -174,6 +188,43 @@
                 }
                 this.showFrame = true
                 this.pageUrl = url
+            },
+            dealCsv (res) {
+                const csvData = []
+                let count = 0
+                const url = URL.createObjectURL(res.data)
+                Papa.parse(url, {
+                    download: true,
+                    step: function (row) {
+                        for (let i = 0; i < row.data.length; i++) {
+                            const ele = []
+                            ele.push(count)
+                            ele.push(i)
+                            ele.push(row.data[i])
+                            csvData.push(ele)
+                        }
+                        count = count + 1
+                    },
+                    complete: function () {
+                        Table.create(
+                            '#csvTable',
+                            () => window.innerWidth,
+                            () => 900,
+                            {
+                                scrollable: true,
+                                resizable: true,
+                                selectable: true,
+                                editable: false,
+                                copyable: true
+                            }
+                        )
+                            .formulaParser((v) => `${v}-formula`)
+                            .data({
+                                cells: csvData
+                            })
+                            .render()
+                    }
+                })
             }
         }
     }

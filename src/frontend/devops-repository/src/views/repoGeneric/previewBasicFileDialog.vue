@@ -39,25 +39,23 @@
                 return this.$route.params.projectId
             }
         },
-        created () {
-            if (this.repoType === 'local') {
-                getPreviewLocalOfficeFileInfo(this.projectId, this.repoName, '/' + this.filePath).then(res => {
-                    if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
-                        this.initWaterMark(res.data.data.watermark)
-                    }
-                })
-            } else {
-                getPreviewRemoteOfficeFileInfo(this.extraParam).then(res => {
-                    if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
-                        this.initWaterMark(res.data.data.watermark)
-                    }
-                })
-            }
-        },
         methods: {
             setData (data) {
                 this.basicFileText = data
                 this.previewDialog.isLoading = false
+                if (this.previewDialog.repoType === 'local') {
+                    getPreviewLocalOfficeFileInfo(this.projectId, this.previewDialog.repoName, '/' + this.previewDialog.filePath).then(res => {
+                        if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                            this.initWaterMark(res.data.data.watermark)
+                        }
+                    })
+                } else {
+                    getPreviewRemoteOfficeFileInfo(this.previewDialog.extraParam).then(res => {
+                        if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                            this.initWaterMark(res.data.data.watermark)
+                        }
+                    })
+                }
             },
             setDialogData (data) {
                 this.previewDialog = {

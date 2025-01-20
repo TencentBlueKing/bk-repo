@@ -12,6 +12,7 @@
             <textarea v-model="basicFileText" class="textarea" readonly></textarea>
         </div>
         <img v-if="imgShow" :src="imgUrl" />
+        <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
                 <img width="480" height="240" style="float: left;margin-right: 3px" src="/ui/440.svg" />
@@ -36,6 +37,8 @@
     import { Base64 } from 'js-base64'
     import { isHtmlType, isOutDisplayType, isPic, isText } from '@repository/utils/file'
     import cookies from 'js-cookie'
+    import Papa from 'papaparse'
+    import Table from '@wolf-table/table'
 
     export default {
         name: 'OutsideFilePreview',
@@ -73,7 +76,8 @@
                 showFrame: false,
                 loading: false,
                 imgShow: false,
-                imgUrl: ''
+                imgUrl: '',
+                csvShow: false
             }
         },
         computed: {
@@ -122,13 +126,15 @@
                             reader.onload = function (event) {
                                 // 读取的文本内容
                                 text = event.target.result
-                                console.log(text)
                             }
                             reader.readAsText(fileDate.data)
                             this.basicFileText = text
                         } else if (isPic(res.data.data.suffix)) {
-                            this.imgUrl = URL.createObjectURL(fileDate.data)
                             this.imgShow = true
+                            this.imgUrl = URL.createObjectURL(fileDate.data)
+                        } else if (res.data.data.suffix.endsWith('csv')) {
+                            this.csvShow = true
+                            this.dealCsv(fileDate)
                         } else {
                             const language = cookies.get('blueking_language') || 'zh-cn'
                             const targetLanguage = language === 'zh-cn' ? 'zh-CN' : 'en-US'
@@ -165,10 +171,48 @@
                 this.imgShow = false
                 this.imgUrl = ''
                 this.hasError = false
+                this.csvShow = false
                 window.resetWaterMark()
             },
             initWaterMark (param) {
                 window.initWaterMark(param)
+            },
+            dealCsv (res) {
+                const csvData = []
+                let count = 0
+                const url = URL.createObjectURL(res.data)
+                Papa.parse(url, {
+                    download: true,
+                    step: function (row) {
+                        for (let i = 0; i < row.data.length; i++) {
+                            const ele = []
+                            ele.push(count)
+                            ele.push(i)
+                            ele.push(row.data[i])
+                            csvData.push(ele)
+                        }
+                        count = count + 1
+                    },
+                    complete: function () {
+                        Table.create(
+                            '#csvTable',
+                            () => window.innerWidth,
+                            () => 900,
+                            {
+                                scrollable: true,
+                                resizable: true,
+                                selectable: true,
+                                editable: false,
+                                copyable: true
+                            }
+                        )
+                            .formulaParser((v) => `${v}-formula`)
+                            .data({
+                                cells: csvData
+                            })
+                            .render()
+                    }
+                })
             }
         }
     }

@@ -15,6 +15,7 @@
                 :options="excelOptions"
                 style="height: 100vh;"
             />
+            <div v-if="csvShow" id="csvTable"></div>
             <div v-if="loading" class="mainBody">
                 <div class="iconBody">
                     <Icon name="loading" size="80" class="svg-loading" />
@@ -35,6 +36,8 @@
     } from '@repository/utils/previewOfficeFile'
     import cookies from 'js-cookie'
     import { isHtmlType } from '@repository/utils/file'
+    import Papa from 'papaparse'
+    import Table from '@wolf-table/table'
 
     export default {
         name: 'PreviewOfficeFileDialog',
@@ -69,6 +72,7 @@
                 extraParam: '',
                 repoType: '',
                 showFrame: false,
+                csvShow: false,
                 loading: false
             }
         },
@@ -92,6 +96,20 @@
                     customizePreviewOfficeFile(this.projectId, this.repoName, this.filePath).then(res => {
                         this.previewExcel = true
                         this.dataSource = res.data
+                        this.previewDialog.isLoading = false
+                    }).catch((e) => {
+                        this.cancel()
+                        const vm = window.repositoryVue
+                        vm.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    })
+                } else if (this.filePath.endsWith('.csv')) {
+                    this.$refs.showData.style.removeProperty('height')
+                    customizePreviewOfficeFile(this.projectId, this.repoName, this.filePath).then(res => {
+                        this.csvShow = true
+                        this.dealCsv(res)
                         this.previewDialog.isLoading = false
                     }).catch((e) => {
                         this.cancel()
@@ -164,6 +182,43 @@
                 }
                 this.showFrame = true
                 this.pageUrl = url
+            },
+            dealCsv (res) {
+                const csvData = []
+                let count = 0
+                const url = URL.createObjectURL(res.data)
+                Papa.parse(url, {
+                    download: true,
+                    step: function (row) {
+                        for (let i = 0; i < row.data.length; i++) {
+                            const ele = []
+                            ele.push(count)
+                            ele.push(i)
+                            ele.push(row.data[i])
+                            csvData.push(ele)
+                        }
+                        count = count + 1
+                    },
+                    complete: function () {
+                        Table.create(
+                            '#csvTable',
+                            () => 1500,
+                            () => 600,
+                            {
+                                scrollable: true,
+                                resizable: true,
+                                selectable: true,
+                                editable: false,
+                                copyable: true
+                            }
+                        )
+                            .formulaParser((v) => `${v}-formula`)
+                            .data({
+                                cells: csvData
+                            })
+                            .render()
+                    }
+                })
             }
         }
     }
