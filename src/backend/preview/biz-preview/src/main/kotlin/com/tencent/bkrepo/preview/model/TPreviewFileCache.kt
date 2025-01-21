@@ -41,7 +41,8 @@ import java.time.LocalDateTime
  */
 @Document("preview_file_cache")
 @CompoundIndexes(
-    CompoundIndex(name = "md5_idx", def = "{'md5': 1}", unique = true, background = true),
+    CompoundIndex(name = "md5_project_repo_idx", def = "{'md5': 1, 'projectId': 1, 'repoName': 1}", unique = true,
+        background = true),
     CompoundIndex(name = "created_date_idx", def = "{'createdDate': -1}", background = true)
 )
 data class TPreviewFileCache(
