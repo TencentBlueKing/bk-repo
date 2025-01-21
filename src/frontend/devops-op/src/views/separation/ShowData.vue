@@ -162,7 +162,7 @@
         >查询</el-button>
       </el-form-item>
     </el-form>
-    <el-table v-loading="loading" :data="dataInfos" style="width: 100%">
+    <el-table :key="Math.random()" v-loading="loading" :data="dataInfos" style="width: 100%">
       <el-table-column v-if="clientQuery.type[1] === 'coldNode' || clientQuery.type[1] === 'node'" prop="name" label="资源名称" align="center" />
       <el-table-column v-if="clientQuery.type[1] === 'coldNode' || clientQuery.type[1] === 'node'" prop="path" label="路径" align="center" />
       <el-table-column v-if="clientQuery.type[1] === 'coldNode' || clientQuery.type[1] === 'node'" prop="folder" label="是否为文件夹" align="center">
