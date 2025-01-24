@@ -7,6 +7,7 @@
             style="max-height: 100vh; overflow-y: auto"
         />
         <iframe v-if="showFrame" :src="pageUrl" style="width: 100%; height: 100%" />
+        <img v-if="imgShow" :src="imgUrl" />
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <textarea v-model="basicFileText" class="textarea" readonly></textarea>
@@ -37,9 +38,9 @@
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
     import cookies from 'js-cookie'
-    import { isFormatType, isHtmlType, isText } from '@repository/utils/file'
-    import Papa from "papaparse";
-    import Table from "@wolf-table/table";
+    import {isFormatType, isHtmlType, isPic, isText} from '@repository/utils/file'
+    import Papa from 'papaparse'
+    import Table from '@wolf-table/table'
 
     export default {
         name: 'FilePreview',
@@ -79,7 +80,9 @@
                 pageUrl: '',
                 showFrame: false,
                 loading: false,
-                csvShow: false
+                csvShow: false,
+                imgShow: false,
+                imgUrl: ''
             }
         },
         computed: {
@@ -89,19 +92,7 @@
         },
         async created () {
             this.loading = true
-            if (this.repoType === 'local') {
-                getPreviewLocalOfficeFileInfo(this.projectId, this.repoName, '/' + this.filePath).then(res => {
-                    if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
-                        this.initWaterMark(res.data.data.watermark)
-                    }
-                })
-            } else {
-                getPreviewRemoteOfficeFileInfo(Base64.encode(Base64.decode(this.extraParam))).then(res => {
-                    if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
-                        this.initWaterMark(res.data.data.watermark)
-                    }
-                })
-            }
+            this.dealWaterMark()
             if (isText(this.filePath)) {
                 this.previewBasicFile({
                     projectId: this.projectId,
@@ -133,7 +124,7 @@
                     this.loading = false
                     this.hasError = true
                 })
-            } else if (isFormatType(this.filePath)) {
+            } else if (isFormatType(this.filePath) || isPic(this.filePath)) {
                 if (this.repoType === 'local') {
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
                         this.dealDate(res)
@@ -169,6 +160,41 @@
                 this.pageUrl = ''
                 this.csvShow = false
                 this.hasError = false
+                this.imgShow = false
+                this.imgUrl = ''
+            },
+            dealWaterMark () {
+                const param = this.extraParam !== '0' ? Base64.decode(this.extraParam) : ''
+                const obj = param !== '' ? JSON.parse(param) : ''
+                if (obj && obj.watermarkTxt) {
+                    const watermark = {
+                        watermarkTxt: obj.watermarkTxt,
+                        watermark_x_space: obj.watermarkXSpace ? Number(obj.watermarkXSpace) : 0,
+                        watermark_y_space: obj.watermarkYSpace ? Number(obj.watermarkYSpace) : 0,
+                        watermark_font: obj.watermarkFont ? obj.watermarkFont : '',
+                        watermark_fontsize: obj.watermarkFontsize ? obj.watermarkFontsize : '',
+                        watermark_color: obj.watermarkColor ? obj.watermarkColor : '',
+                        watermark_alpha: obj.watermarkAlpha ? obj.watermarkAlpha : '',
+                        watermark_width: obj.watermarkWidth ? Number(obj.watermarkWidth) : 0,
+                        watermark_height: obj.watermarkHeight ? Number(obj.watermarkHeight) : 0,
+                        watermark_angle: obj.watermarkHeight ? Number(obj.watermarkAngle) : 0
+                    }
+                    this.initWaterMark(watermark)
+                } else {
+                    if (this.repoType === 'local') {
+                        getPreviewLocalOfficeFileInfo(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                            if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                                this.initWaterMark(res.data.data.watermark)
+                            }
+                        })
+                    } else {
+                        getPreviewRemoteOfficeFileInfo(Base64.encode(Base64.decode(this.extraParam))).then(res => {
+                            if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                                this.initWaterMark(res.data.data.watermark)
+                            }
+                        })
+                    }
+                }
             },
             initWaterMark (param) {
                 window.initWaterMark(param)
@@ -178,16 +204,21 @@
                 const targetLanguage = language === 'zh-cn' ? 'zh-CN' : 'en-US'
                 this.loading = false
                 let url
-                if (!isHtmlType(this.filePath)) {
+                if (!isHtmlType(this.filePath) && !isPic(this.filePath)) {
                     // 注意后面的参数，参数都是自定义的，修改了pdfjs文件的viewer.mjs和view.html的
                     // 语言切换需注意public/web/local下的语言，需一致
                     // 各版本pdfjs的viewer.html有差异, 更改viewer.mjs下的方法做匹配显示需注意
                     url = location.origin + '/ui/web/viewer.html?file=' + URL.createObjectURL(res.data) + '&language=' + targetLanguage + '&disableopenfile=true&disableprint=true&disabledownload=true&disablebookmark=false'
+                    this.showFrame = true
+                    this.pageUrl = url
+                } else if (isPic(this.filePath)) {
+                    this.imgUrl = URL.createObjectURL(res.data)
+                    this.imgShow = true
                 } else {
                     url = URL.createObjectURL(res.data)
+                    this.showFrame = true
+                    this.pageUrl = url
                 }
-                this.showFrame = true
-                this.pageUrl = url
             },
             dealCsv (res) {
                 const csvData = []
