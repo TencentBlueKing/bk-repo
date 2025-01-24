@@ -52,6 +52,9 @@
             } else {
                 const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
                 const localProjectId = localStorage.getItem('projectId')
+                const specTarget = urlProjectId !== 'outsideFilePreview'
+                    ? location.pathname.indexOf('/outsideFilePreview/') > 0
+                    : location.pathname.indexOf('/outsideFilePreview/outsideFilePreview/') > 0
                 Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(([userInfo]) => {
                     if (!this.ciMode && !this.projectList.length) {
                         if (userInfo.admin) {
@@ -67,17 +70,20 @@
                                 }
                             })
                         } else {
-                            // TODO: 普通用户无项目提示页
-                            this.$bkMessage({
-                                message: this.$t('noProjectData'),
-                                theme: 'error'
-                            })
-                            this.$router.replace({
-                                name: 'repoToken',
-                                params: {
-                                    projectId: urlProjectId || localProjectId || 'default'
-                                }
-                            })
+                            // 外部预览链接需绕过去
+                            if (!specTarget) {
+                                // TODO: 普通用户无项目提示页
+                                this.$bkMessage({
+                                    message: this.$t('noProjectData'),
+                                    theme: 'error'
+                                })
+                                this.$router.replace({
+                                    name: 'repoToken',
+                                    params: {
+                                        projectId: urlProjectId || localProjectId || 'default'
+                                    }
+                                })
+                            }
                         }
                     } else {
                         let projectId = ''
@@ -104,8 +110,9 @@
                             }
                         })
                     }
-
-                    userInfo.admin && this.getClusterList()
+                    if (!specTarget) {
+                        userInfo.admin && this.getClusterList()
+                    }
                 })
             }
         },
