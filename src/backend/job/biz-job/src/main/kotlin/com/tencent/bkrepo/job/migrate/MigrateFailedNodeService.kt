@@ -29,15 +29,28 @@ package com.tencent.bkrepo.job.migrate
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.model.TFileReference
+import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.job.BATCH_SIZE
+import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * 处理迁移失败node服务
@@ -47,6 +60,9 @@ class MigrateFailedNodeService(
     private val migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao,
     private val migrateFailedNodeDao: MigrateFailedNodeDao,
     private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
+    private val fileReferenceService: FileReferenceService,
+    private val storageCredentialsService: StorageCredentialService,
+    private val repositoryDao: RepositoryDao,
 ) {
     /**
      * 无法处理时，或已经手动处理成功则可以移除迁移失败的node
@@ -102,6 +118,49 @@ class MigrateFailedNodeService(
     @Async
     fun autoFix(projectId: String, repoName: String) {
         migrateFailedNodeFixer.fix(projectId, repoName)
+    }
+
+    /**
+     * 整块存储迁移结束后可能存在源存储引用计数未正常减为0的情况，可调用该方法进行修复
+     *
+     * @param srcCredentialKey 源存储
+     * @param dstCredentialKey 目标存储
+     */
+    @Async
+    fun correctMigratedStorageFileReference(srcCredentialKey: String?, dstCredentialKey: String?) {
+        checkCredential(srcCredentialKey, dstCredentialKey)
+
+        val query = Query(Criteria.where(TFileReference::credentialsKey.name).isEqualTo(srcCredentialKey))
+        val cleaned = AtomicLong(0L)
+        NodeCommonUtils.forEachRefByCollectionParallel(query, BATCH_SIZE) { ref ->
+            val sha256 = ref[TFileReference::sha256.name] as String
+            val count = ref[TFileReference::count.name].toString().toLong()
+            logger.info("start clean ref[$sha256], ref count[$count]")
+            if (!fileReferenceService.exists(sha256, dstCredentialKey)) {
+                // 创建目标存储引用并设置引用数为0
+                // 如果还存在Node，在FileReferenceCleanupJob中会修复引用数为非0，如果没有对应的Node则引用会被清理
+                fileReferenceService.increment(sha256, dstCredentialKey, 0L)
+            }
+
+            if (count > 0) {
+                // 将源存储引用减为0后，FileReferenceCleanupJob中会清理该引用
+                fileReferenceService.increment(sha256, srcCredentialKey, -count)
+            }
+            logger.info("finish clean ref[$sha256], cleaned[${cleaned.incrementAndGet()}]")
+        }
+    }
+
+    private fun checkCredential(srcCredentialKey: String?, dstCredentialKey: String?) {
+        if (storageCredentialsService.findByKey(srcCredentialKey) == null ||
+            storageCredentialsService.findByKey(dstCredentialKey) == null
+        ) {
+            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, srcCredentialKey!!, dstCredentialKey!!)
+        }
+
+        // 限制源存储未使用才允许清理引用
+        if (repositoryDao.existsByCredentialsKey(srcCredentialKey)) {
+            throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "storage [$srcCredentialKey] in use")
+        }
     }
 
     companion object {
