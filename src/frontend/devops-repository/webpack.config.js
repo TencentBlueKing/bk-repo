@@ -29,7 +29,8 @@ module.exports = (env, argv) => {
         new CopyWebpackPlugin({
             patterns: [
                 { from: path.join(__dirname, './static'), to: dist },
-                { from: path.join(__dirname, '../../../versionLogs'), to: `${dist}/versionLogs` }
+                { from: path.join(__dirname, '../../../versionLogs'), to: `${dist}/versionLogs` },
+                { from: path.join(__dirname, './public'), to: dist }
             ]
         })
     ]
