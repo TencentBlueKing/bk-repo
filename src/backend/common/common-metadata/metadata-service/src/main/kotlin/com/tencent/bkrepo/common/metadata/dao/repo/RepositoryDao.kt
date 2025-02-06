@@ -70,7 +70,7 @@ class RepositoryDao : SimpleMongoDao<TRepository>() {
     /**
      * 查询是否有使用指定存储凭证的仓库
      */
-    fun existsByCredentialsKey(credentialsKey: String): Boolean {
+    fun existsByCredentialsKey(credentialsKey: String?): Boolean {
         val query = Query(TRepository::credentialsKey.isEqualTo(credentialsKey))
             .addCriteria(TRepository::deleted.isEqualTo(null))
         return this.exists(query)
