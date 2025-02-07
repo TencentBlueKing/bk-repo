@@ -33,18 +33,18 @@ package com.tencent.bkrepo.common.api.pojo
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("数据返回包装模型")
+
+@Schema(title = "数据返回包装模型")
 open class Response<out T>(
-    @ApiModelProperty("返回码")
+    @get:Schema(title = "返回码")
     val code: Int,
-    @ApiModelProperty("错误信息")
+    @get:Schema(title = "错误信息")
     val message: String? = null,
-    @ApiModelProperty("数据")
+    @get:Schema(title = "数据")
     val data: T? = null,
-    @ApiModelProperty("链路追踪id")
+    @get:Schema(title = "链路追踪id")
     val traceId: String? = null
 ) {
     @JsonIgnore

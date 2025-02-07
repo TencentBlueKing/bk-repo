@@ -31,11 +31,11 @@
 
 package com.tencent.bkrepo.repository.pojo.download
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("包下载明细记录")
+
+@Schema(title = "包下载明细记录")
 data class PackageDownloadsDetails(
-    @ApiModelProperty("每天下载数量, key格式为yyyy-mm-dd")
+    @get:Schema(title = "每天下载数量, key格式为yyyy-mm-dd")
     val details: Map<String, Long>
 )

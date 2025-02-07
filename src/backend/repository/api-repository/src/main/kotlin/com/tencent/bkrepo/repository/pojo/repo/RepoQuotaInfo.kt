@@ -31,13 +31,13 @@
 
 package com.tencent.bkrepo.repository.pojo.repo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("仓库配额信息")
+
+@Schema(title = "仓库配额信息")
 data class RepoQuotaInfo(
-    @ApiModelProperty("仓库配额")
+    @get:Schema(title = "仓库配额")
     val quota: Long?,
-    @ApiModelProperty("已使用容量")
+    @get:Schema(title = "已使用容量")
     val used: Long?
 )

@@ -29,23 +29,23 @@ package com.tencent.bkrepo.auth.pojo.externalPermission
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("外部权限列表选项")
+
+@Schema(title = "外部权限列表选项")
 data class ListExtPermissionOption(
-    @ApiModelProperty("外部权限回调地址")
+    @get:Schema(title = "外部权限回调地址")
     val url: String? = null,
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String? = null,
-    @ApiModelProperty("仓库名")
+    @get:Schema(title = "仓库名")
     val repoName: String? = null,
-    @ApiModelProperty("生效接口范围，支持通配符*")
+    @get:Schema(title = "生效接口范围，支持通配符*")
     val scope: String? = null,
-    @ApiModelProperty("是否启用")
+    @get:Schema(title = "是否启用")
     val enabled: Boolean? = null,
-    @ApiModelProperty("页数")
+    @get:Schema(title = "页数")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("页大小")
+    @get:Schema(title = "页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE
 )

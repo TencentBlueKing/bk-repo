@@ -30,29 +30,29 @@ package com.tencent.bkrepo.replication.pojo.task.request
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("同步任务更新请求")
+
+@Schema(title = "同步任务更新请求")
 data class ReplicaTaskUpdateRequest(
-    @ApiModelProperty("任务唯一key", required = true)
+    @get:Schema(title = "任务唯一key", required = true)
     val key: String,
-    @ApiModelProperty("任务名称", required = true)
+    @get:Schema(title = "任务名称", required = true)
     val name: String,
-    @ApiModelProperty("本地项目", required = true)
+    @get:Schema(title = "本地项目", required = true)
     val localProjectId: String,
-    @ApiModelProperty("同步对象类型", required = true)
+    @get:Schema(title = "同步对象类型", required = true)
     val replicaObjectType: ReplicaObjectType,
-    @ApiModelProperty("任务对象信息", required = true)
+    @get:Schema(title = "任务对象信息", required = true)
     val replicaTaskObjects: List<ReplicaObjectInfo>,
-    @ApiModelProperty("任务设置", required = true)
+    @get:Schema(title = "任务设置", required = true)
     val setting: ReplicaSetting,
-    @ApiModelProperty("远程集群集合", required = true)
+    @get:Schema(title = "远程集群集合", required = true)
     val remoteClusterIds: Set<String>,
-    @ApiModelProperty("任务描述", required = false)
+    @get:Schema(title = "任务描述", required = false)
     val description: String? = null,
-    @ApiModelProperty("是否记录分发日志", required = true)
+    @get:Schema(title = "是否记录分发日志", required = true)
     val record: Boolean = true,
-    @ApiModelProperty("分发日志保留天数", required = true)
+    @get:Schema(title = "分发日志保留天数", required = true)
     val recordReserveDays: Long = 30,
 )

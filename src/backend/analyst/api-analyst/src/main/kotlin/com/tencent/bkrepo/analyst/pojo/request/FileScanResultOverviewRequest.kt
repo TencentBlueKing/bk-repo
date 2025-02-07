@@ -27,21 +27,21 @@
 
 package com.tencent.bkrepo.analyst.pojo.request
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("扫描报告预览请求")
+
+@Schema(title = "扫描报告预览请求")
 data class FileScanResultOverviewRequest(
-    @ApiModelProperty("扫描器名")
+    @get:Schema(title = "扫描器名")
     val scanner: String,
-    @ApiModelProperty("查询报告的文件sha256列表，key为credentials，value为sha256列表")
+    @get:Schema(title = "查询报告的文件sha256列表，key为credentials，value为sha256列表")
     val credentialsKeyFiles: List<CredentialsKeyFiles>
 )
 
-@ApiModel("指定存储的文件")
+@Schema(title = "指定存储的文件")
 data class CredentialsKeyFiles(
-    @ApiModelProperty("存储凭据")
+    @get:Schema(title = "存储凭据")
     val credentialsKey: String?,
-    @ApiModelProperty("存储中的文件sha256列表")
+    @get:Schema(title = "存储中的文件sha256列表")
     val sha256List: List<String>
 )

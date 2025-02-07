@@ -32,8 +32,8 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.share.ClusterShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ClusterShareTokenCheckRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
@@ -44,16 +44,16 @@ import org.springframework.web.bind.annotation.RequestMapping
 /**
  * 节点分享服务接口
  */
-@Api("节点分享服务接口")
+@Tag(name = "节点分享服务接口")
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterNodeShareClient", primary = false)
 @RequestMapping("/cluster/node/share")
 interface ClusterNodeShareClient {
-    @ApiOperation("创建分享链接")
+    @Operation(summary = "创建分享链接")
     @PostMapping("/create")
     fun create(@RequestBody request: ClusterShareRecordCreateRequest): Response<ShareRecordInfo>
 
-    @ApiOperation("检查token")
+    @Operation(summary = "检查token")
     @PostMapping("/token")
     fun checkToken(@RequestBody request: ClusterShareTokenCheckRequest): Response<ShareRecordInfo>
 }

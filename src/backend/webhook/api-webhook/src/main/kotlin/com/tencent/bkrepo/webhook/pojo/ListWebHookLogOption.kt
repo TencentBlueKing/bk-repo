@@ -30,19 +30,19 @@ package com.tencent.bkrepo.webhook.pojo
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.webhook.constant.WebHookRequestStatus
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("WebHook日志列表查询选项")
+
+@Schema(title = "WebHook日志列表查询选项")
 data class ListWebHookLogOption(
-    @ApiModelProperty("当前页")
+    @get:Schema(title = "当前页")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("分页大小")
+    @get:Schema(title = "分页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE,
-    @ApiModelProperty("开始日期")
+    @get:Schema(title = "开始日期")
     val startDate: String?,
-    @ApiModelProperty("结束日期")
+    @get:Schema(title = "结束日期")
     val endDate: String?,
-    @ApiModelProperty("请求状态")
+    @get:Schema(title = "请求状态")
     val status: WebHookRequestStatus?
 )

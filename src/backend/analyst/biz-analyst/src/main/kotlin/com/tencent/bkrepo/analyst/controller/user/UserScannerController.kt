@@ -27,18 +27,18 @@
 
 package com.tencent.bkrepo.analyst.controller.user
 
+import com.tencent.bkrepo.analyst.pojo.response.ScannerBase
+import com.tencent.bkrepo.analyst.service.ScannerService
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.analyst.pojo.response.ScannerBase
-import com.tencent.bkrepo.analyst.service.ScannerService
-import com.tencent.bkrepo.common.metadata.annotation.LogOperate
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -50,14 +50,14 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("扫描器配置接口")
+@Tag(name = "扫描器配置接口")
 @RestController
 @RequestMapping("/api/scanners")
 class UserScannerController @Autowired constructor(
     private val scannerService: ScannerService
 ) {
 
-    @ApiOperation("创建扫描器接口")
+    @Operation(summary = "创建扫描器接口")
     @PostMapping
     @Principal(PrincipalType.ADMIN)
     @LogOperate(type = "SCANNER_CREATE", desensitize = true)
@@ -67,7 +67,7 @@ class UserScannerController @Autowired constructor(
         return ResponseBuilder.success(scannerService.create(scanner))
     }
 
-    @ApiOperation("获取扫描器列表")
+    @Operation(summary = "获取扫描器列表")
     @GetMapping
     @Principal(PrincipalType.ADMIN)
     @LogOperate(type = "SCANNER_LIST")
@@ -75,7 +75,7 @@ class UserScannerController @Autowired constructor(
         return ResponseBuilder.success(scannerService.list())
     }
 
-    @ApiOperation("获取扫描器基本信息列表")
+    @Operation(summary = "获取扫描器基本信息列表")
     @GetMapping("/base")
     fun listBaseInf(
         @RequestParam(required = false) packageType: String? = null,
@@ -89,19 +89,19 @@ class UserScannerController @Autowired constructor(
         })
     }
 
-    @ApiOperation("获取支持扫描的文件名后缀")
+    @Operation(summary = "获取支持扫描的文件名后缀")
     @GetMapping("/support/ext")
     fun supportFileNameExt(): Response<Set<String>> {
         return ResponseBuilder.success(scannerService.supportFileNameExt())
     }
 
-    @ApiOperation("获取支持扫描的包类型")
+    @Operation(summary = "获取支持扫描的包类型")
     @GetMapping("/support/package")
     fun supportPackageType(): Response<Set<String>> {
         return ResponseBuilder.success(scannerService.supportPackageType())
     }
 
-    @ApiOperation("获取扫描器")
+    @Operation(summary = "获取扫描器")
     @GetMapping("/{name}")
     @Principal(PrincipalType.ADMIN)
     @LogOperate(type = "SCANNER_GET")
@@ -109,7 +109,7 @@ class UserScannerController @Autowired constructor(
         return ResponseBuilder.success(scannerService.get(name))
     }
 
-    @ApiOperation("删除扫描器")
+    @Operation(summary = "删除扫描器")
     @DeleteMapping("/{name}")
     @Principal(PrincipalType.ADMIN)
     @LogOperate(type = "SCANNER_DELETE")
@@ -118,7 +118,7 @@ class UserScannerController @Autowired constructor(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("更新扫描器")
+    @Operation(summary = "更新扫描器")
     @PutMapping("/{name}")
     @Principal(PrincipalType.ADMIN)
     @LogOperate(type = "SCANNER_UPDATE", desensitize = true)

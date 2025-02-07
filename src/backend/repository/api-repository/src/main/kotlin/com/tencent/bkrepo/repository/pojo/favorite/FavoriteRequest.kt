@@ -31,17 +31,17 @@
 
 package com.tencent.bkrepo.repository.pojo.favorite
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("创建收藏文件夹")
+
+@Schema(title = "创建收藏文件夹")
 data class FavoriteRequest(
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String,
-    @ApiModelProperty("仓库id")
+    @get:Schema(title = "仓库id")
     val repoName: String,
-    @ApiModelProperty("文件夹路径")
+    @get:Schema(title = "文件夹路径")
     val path: String,
-    @ApiModelProperty("文件夹路径")
+    @get:Schema(title = "文件夹路径")
     val type: FavoriteType
 )

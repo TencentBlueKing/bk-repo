@@ -27,17 +27,17 @@
 
 package com.tencent.bkrepo.common.metadata.pojo.project
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("项目使用情况统计数据")
+
+@Schema(title = "项目使用情况统计数据")
 data class ProjectUsageStatistics(
-    @ApiModelProperty("项目ID")
+    @get:Schema(title = "项目ID")
     val projectId: String,
-    @ApiModelProperty("请求次数")
+    @get:Schema(title = "请求次数")
     val reqCount: Long = 0L,
-    @ApiModelProperty("项目上传流量")
+    @get:Schema(title = "项目上传流量")
     var receiveBytes: Long = 0L,
-    @ApiModelProperty("项目下载流量")
+    @get:Schema(title = "项目下载流量")
     var responseBytes: Long = 0L,
 )

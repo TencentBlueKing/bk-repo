@@ -31,18 +31,17 @@
 
 package com.tencent.bkrepo.auth.pojo.token
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("token信息")
+@Schema(title = "token信息")
 data class Token(
-    @ApiModelProperty("tokenName")
+    @get:Schema(title = "tokenName")
     val name: String?,
-    @ApiModelProperty("tokenID")
+    @get:Schema(title = "tokenID")
     val id: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdAt: LocalDateTime,
-    @ApiModelProperty("过期时间")
+    @get:Schema(title = "过期时间")
     val expiredAt: LocalDateTime?
 )

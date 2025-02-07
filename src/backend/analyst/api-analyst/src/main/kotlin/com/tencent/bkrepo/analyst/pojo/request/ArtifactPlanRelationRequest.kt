@@ -27,21 +27,21 @@
 
 package com.tencent.bkrepo.analyst.pojo.request
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("制品与扫描方案关系请求")
+
+@Schema(title = "制品与扫描方案关系请求")
 data class ArtifactPlanRelationRequest(
-    @ApiModelProperty("制品所属项目")
+    @get:Schema(title = "制品所属项目")
     val projectId: String,
-    @ApiModelProperty("仓库名")
+    @get:Schema(title = "仓库名")
     val repoName: String,
-    @ApiModelProperty("仓库类型")
+    @get:Schema(title = "仓库类型")
     val repoType: String,
-    @ApiModelProperty("依赖包标识，比如gav://org.example:test-lib")
+    @get:Schema(title = "依赖包标识，比如gav://org.example:test-lib")
     val packageKey: String? = null,
-    @ApiModelProperty("依赖包版本号")
+    @get:Schema(title = "依赖包版本号")
     val version: String? = null,
-    @ApiModelProperty("制品完整路径")
+    @get:Schema(title = "制品完整路径")
     var fullPath: String? = null
 )

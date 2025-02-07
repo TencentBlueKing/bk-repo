@@ -41,7 +41,7 @@ import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
@@ -57,7 +57,7 @@ class ServiceUserController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    @ApiOperation("创建项目用户")
+    @Operation(summary = "创建项目用户")
     @PostMapping("/create/project")
     override fun createUserToProject(request: CreateUserToProjectRequest): Response<Boolean> {
         userService.createUserToProject(request)

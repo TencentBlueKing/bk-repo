@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.common.metadata.pojo.log
 
-import io.swagger.annotations.Api
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@Api("操作日志")
+@Schema(name = "操作日志")
 data class OperateLogResponse(
     val createdDate: LocalDateTime,
     val operate: String,
