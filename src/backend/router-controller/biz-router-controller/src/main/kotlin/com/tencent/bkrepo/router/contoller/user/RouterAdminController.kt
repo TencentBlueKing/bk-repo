@@ -44,7 +44,7 @@ import com.tencent.bkrepo.router.pojo.user.UserRemoveRouterNodeRequest
 import com.tencent.bkrepo.router.pojo.user.UserRemoveRouterPolicyRequest
 import com.tencent.bkrepo.router.service.RouterAdminService
 import com.tencent.bkrepo.router.service.RouterControllerService
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -62,7 +62,7 @@ class RouterAdminController(
     val routerControllerService: RouterControllerService,
 ) {
 
-    @ApiOperation("增加路由策略")
+    @Operation(summary = "增加路由策略")
     @PostMapping("/policy")
     fun addPolicy(
         @RequestAttribute userId: String,
@@ -79,7 +79,7 @@ class RouterAdminController(
         }
     }
 
-    @ApiOperation("删除路由策略")
+    @Operation(summary = "删除路由策略")
     @DeleteMapping("/policy")
     fun removePolicy(
         @RequestAttribute userId: String,
@@ -95,7 +95,7 @@ class RouterAdminController(
         }
     }
 
-    @ApiOperation("新增路由节点")
+    @Operation(summary = "新增路由节点")
     @PostMapping("/node")
     fun addRouterNode(
         @RequestAttribute userId: String,
@@ -114,7 +114,7 @@ class RouterAdminController(
         }
     }
 
-    @ApiOperation("移除路由节点")
+    @Operation(summary = "移除路由节点")
     @DeleteMapping("/node")
     fun removeRouterNode(
         @RequestAttribute userId: String,
@@ -130,19 +130,19 @@ class RouterAdminController(
         }
     }
 
-    @ApiOperation("获取所有路由策略")
+    @Operation(summary = "获取所有路由策略")
     @GetMapping("/policy/list")
     fun listPolicies(): Response<List<RouterPolicy>> {
         return ResponseBuilder.success(routerAdminService.listPolicies())
     }
 
-    @ApiOperation("获取所有路由节点")
+    @Operation(summary = "获取所有路由节点")
     @GetMapping("/node/list")
     fun listRouterNodes(): Response<List<RouterNode>> {
         return ResponseBuilder.success(routerAdminService.listRouterNodes())
     }
 
-    @ApiOperation("获取文件节点位置")
+    @Operation(summary = "获取文件节点位置")
     @GetMapping("/node/location")
     fun listNodeLocations(
         @RequestParam projectId: String,
@@ -165,7 +165,7 @@ class RouterAdminController(
      * @param fullPath 文件完整路径
      * @param routerNodeId 所在节点id
      * */
-    @ApiOperation("新增文件节点位置")
+    @Operation(summary = "新增文件节点位置")
     @PostMapping("/node/location")
     fun addNode(projectId: String, repoName: String, fullPath: String, routerNodeId: String): Response<NodeLocation> {
         return ResponseBuilder.success(
@@ -185,7 +185,7 @@ class RouterAdminController(
      * @param fullPath 文件完整路径
      * @param routerNodeId 所在节点id
      * */
-    @ApiOperation("删除文件节点位置")
+    @Operation(summary = "删除文件节点位置")
     @DeleteMapping("/node/location")
     fun removeNode(projectId: String, repoName: String, fullPath: String, routerNodeId: String): Response<Void> {
         routerControllerService.removeNode(

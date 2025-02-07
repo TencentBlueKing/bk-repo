@@ -32,46 +32,46 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 更新远端集群以及相关信息请求
  */
-@ApiModel("更新远端集群以及相关信息请求")
+@Schema(title = "更新远端集群以及相关信息请求")
 data class RemoteConfigUpdateRequest(
     // registry与clusterId是二选一
-    @ApiModelProperty("集群id", required = false)
+    @get:Schema(title = "集群id", required = false)
     var clusterId: String? = null,
-    @ApiModelProperty("集群地址", required = false)
+    @get:Schema(title = "集群地址", required = false)
     var registry: String? = null,
-    @ApiModelProperty("集群的证书", required = false)
+    @get:Schema(title = "集群的证书", required = false)
     var certificate: String? = null,
-    @ApiModelProperty("集群认证用户名", required = false)
+    @get:Schema(title = "集群认证用户名", required = false)
     var username: String? = null,
-    @ApiModelProperty("集群认证密码", required = false)
+    @get:Schema(title = "集群认证密码", required = false)
     var password: String? = null,
-    @ApiModelProperty("用于执行分发任务时在远程集群进行认证的用户名", required = false)
+    @get:Schema(title = "用于执行分发任务时在远程集群进行认证的用户名", required = false)
     var remoteUserUsername: String? = null,
-    @ApiModelProperty("用于执行分发任务时在远程集群进行认证的密码", required = false)
+    @get:Schema(title = "用于执行分发任务时在远程集群进行认证的密码", required = false)
     var remoteUserPassword: String? = null,
     // 异构集群分发时以下remoteProjectId/remoteRepoName不需要
-    @ApiModelProperty("远程项目")
+    @get:Schema(title = "远程项目")
     val remoteProjectId: String? = null,
-    @ApiModelProperty("远程仓库")
+    @get:Schema(title = "远程仓库")
     val remoteRepoName: String? = null,
-    @ApiModelProperty("同步对象类型, 只支持clusterId存在的情况", required = true)
+    @get:Schema(title = "同步对象类型, 只支持clusterId存在的情况", required = true)
     val replicaObjectType: ReplicaObjectType? = null,
-    @ApiModelProperty("包限制条件", required = false)
+    @get:Schema(title = "包限制条件", required = false)
     val packageConstraints: List<PackageConstraint>? = null,
-    @ApiModelProperty("路径限制条件", required = false)
+    @get:Schema(title = "路径限制条件", required = false)
     val pathConstraints: List<PathConstraint>? = null,
-    @ApiModelProperty("同步类型", required = false)
+    @get:Schema(title = "同步类型", required = false)
     val replicaType: ReplicaType = ReplicaType.REAL_TIME,
-    @ApiModelProperty("任务设置", required = false)
+    @get:Schema(title = "任务设置", required = false)
     val setting: ReplicaSetting = ReplicaSetting(),
-    @ApiModelProperty("任务描述", required = false)
+    @get:Schema(title = "任务描述", required = false)
     val description: String? = null,
-    @ApiModelProperty("是否启用，默认开启", required = false)
+    @get:Schema(title = "是否启用，默认开启", required = false)
     var enable: Boolean = true
 )

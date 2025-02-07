@@ -31,17 +31,17 @@
 
 package com.tencent.bkrepo.repository.pojo.download
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("包下载总览统计")
+
+@Schema(title = "包下载总览统计")
 data class PackageDownloadsSummary(
-    @ApiModelProperty("下载总数")
+    @get:Schema(title = "下载总数")
     val total: Long,
-    @ApiModelProperty("今日下载数")
+    @get:Schema(title = "今日下载数")
     val today: Long,
-    @ApiModelProperty("本周下载数")
+    @get:Schema(title = "本周下载数")
     val thisWeek: Long,
-    @ApiModelProperty("本月下载数")
+    @get:Schema(title = "本月下载数")
     val thisMonth: Long
 )

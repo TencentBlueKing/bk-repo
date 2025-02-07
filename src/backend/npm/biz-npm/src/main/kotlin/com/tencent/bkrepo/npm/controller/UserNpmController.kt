@@ -51,9 +51,9 @@ import com.tencent.bkrepo.npm.pojo.user.request.PackageDeleteRequest
 import com.tencent.bkrepo.npm.pojo.user.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.npm.service.NpmWebService
 import com.tencent.bkrepo.npm.utils.NpmUtils
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -61,7 +61,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("npm 用户接口")
+@Tag(name = "npm 用户接口")
 @RequestMapping("/ext")
 @Suppress("MVCPathVariableInspection")
 @RestController
@@ -71,15 +71,15 @@ class UserNpmController(
 
 
     @Permission(ResourceType.REPO, PermissionAction.READ)
-    @ApiOperation("查询包的版本详情")
+    @Operation(summary = "查询包的版本详情")
     @GetMapping("/version/detail/{projectId}/{repoName}")
     fun detailVersion(
         @RequestAttribute
         userId: String,
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
-        @ApiParam(value = "包唯一Key", required = true)
+        @Parameter(name = "包唯一Key", required = true)
         @RequestParam packageKey: String,
-        @ApiParam(value = "包版本", required = true)
+        @Parameter(name = "包版本", required = true)
         @RequestParam version: String
     ): Response<PackageVersionInfo> {
         return ResponseBuilder.success(npmWebService.detailVersion(artifactInfo, packageKey, version))
@@ -103,13 +103,13 @@ class UserNpmController(
         content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
     )
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
-    @ApiOperation("删除仓库下的包")
+    @Operation(summary = "删除仓库下的包")
     @DeleteMapping("/package/delete/{projectId}/{repoName}")
     fun deletePackage(
         @RequestAttribute
         userId: String,
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
-        @ApiParam(value = "包名称", required = true)
+        @Parameter(name = "包名称", required = true)
         @RequestParam packageKey: String
     ): Response<Void> {
         with(artifactInfo) {
@@ -142,15 +142,15 @@ class UserNpmController(
         content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
     )
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
-    @ApiOperation("删除仓库下的包版本")
+    @Operation(summary = "删除仓库下的包版本")
     @DeleteMapping("/version/delete/{projectId}/{repoName}")
     fun deleteVersion(
         @RequestAttribute
         userId: String,
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
-        @ApiParam(value = "包名称", required = true)
+        @Parameter(name = "包名称", required = true)
         @RequestParam packageKey: String,
-        @ApiParam(value = "包版本", required = true)
+        @Parameter(name = "包版本", required = true)
         @RequestParam version: String
     ): Response<Void> {
         with(artifactInfo) {
@@ -163,7 +163,7 @@ class UserNpmController(
         }
     }
 
-    @ApiOperation("获取npm域名地址")
+    @Operation(summary = "获取npm域名地址")
     @GetMapping("/address")
     fun getRegistryDomain(): Response<NpmDomainInfo> {
         return ResponseBuilder.success(npmWebService.getRegistryDomain())

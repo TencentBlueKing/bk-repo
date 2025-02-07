@@ -28,25 +28,25 @@
 package com.tencent.bkrepo.auth.pojo.role
 
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("创建角色请求")
+
+@Schema(title = "创建角色请求")
 data class CreateRoleRequest(
-    @ApiModelProperty("角色id")
+    @get:Schema(title = "角色id")
     val roleId: String?,
-    @ApiModelProperty("角色名称")
+    @get:Schema(title = "角色名称")
     val name: String,
-    @ApiModelProperty("角色类型")
+    @get:Schema(title = "角色类型")
     val type: RoleType = RoleType.PROJECT,
-    @ApiModelProperty("项目ID")
+    @get:Schema(title = "项目ID")
     val projectId: String,
-    @ApiModelProperty("仓库名称")
+    @get:Schema(title = "仓库名称")
     val repoName: String? = null,
-    @ApiModelProperty("管理员")
+    @get:Schema(title = "管理员")
     val admin: Boolean = false,
-    @ApiModelProperty("描述信息")
+    @get:Schema(title = "描述信息")
     val description: String? = null,
-    @ApiModelProperty("角色来源")
+    @get:Schema(title = "角色来源")
     val source: RoleSource? = null
 )

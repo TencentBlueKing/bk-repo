@@ -34,14 +34,15 @@ package com.tencent.bkrepo.npm.pojo
 import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.tags.Tag
 
-@Api("npm search 返回格式封装")
+
+@Tag(name = "npm search 返回格式封装")
 @JsonSerialize
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class NpmSearchResponse(
-    @ApiModelProperty("对应数据")
+    @get:Schema(title = "对应数据")
     var objects: List<NpmSearchInfoMap> = emptyList()
 )
 

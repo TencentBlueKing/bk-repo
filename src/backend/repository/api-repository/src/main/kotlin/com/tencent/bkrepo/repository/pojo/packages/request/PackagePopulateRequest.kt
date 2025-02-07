@@ -32,34 +32,34 @@
 package com.tencent.bkrepo.repository.pojo.packages.request
 
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
 data class PackagePopulateRequest(
-    @ApiModelProperty("创建者")
+    @get:Schema(title = "创建者")
     val createdBy: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: LocalDateTime,
-    @ApiModelProperty("修改者")
+    @get:Schema(title = "修改者")
     val lastModifiedBy: String,
-    @ApiModelProperty("修改时间")
+    @get:Schema(title = "修改时间")
     val lastModifiedDate: LocalDateTime,
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String,
-    @ApiModelProperty("仓库名称")
+    @get:Schema(title = "仓库名称")
     val repoName: String,
-    @ApiModelProperty("包名称")
+    @get:Schema(title = "包名称")
     val name: String,
-    @ApiModelProperty("包唯一标识符")
+    @get:Schema(title = "包唯一标识符")
     val key: String,
-    @ApiModelProperty("包类型")
+    @get:Schema(title = "包类型")
     val type: PackageType,
-    @ApiModelProperty("包简要描述")
+    @get:Schema(title = "包简要描述")
     val description: String? = null,
-    @ApiModelProperty("版本列表")
+    @get:Schema(title = "版本列表")
     val versionList: List<PopulatedPackageVersion>,
-    @ApiModelProperty("包版本标签")
+    @get:Schema(title = "包版本标签")
     val versionTag: Map<String, String>? = null,
-    @ApiModelProperty("扩展字段")
+    @get:Schema(title = "扩展字段")
     val extension: Map<String, Any>? = null
 )

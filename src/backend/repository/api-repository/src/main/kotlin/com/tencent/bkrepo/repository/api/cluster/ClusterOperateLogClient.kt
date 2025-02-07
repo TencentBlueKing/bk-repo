@@ -31,33 +31,33 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.metadata.pojo.log.OperateLog
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("操作日志服务接口")
+@Tag(name = "操作日志服务接口")
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterOperateLogClient")
 @RequestMapping("/cluster/log")
 interface ClusterOperateLogClient {
 
-    @ApiOperation("记录操作日志")
+    @Operation(summary = "记录操作日志")
     @PostMapping("/record")
     fun record(@RequestBody event: ArtifactEvent): Response<Void>
 
-    @ApiOperation("批量记录操作日志")
+    @Operation(summary = "批量记录操作日志")
     @PostMapping("/record/batch")
     fun batchRecord(@RequestBody eventList: List<ArtifactEvent>): Response<Void>
 
-    @ApiOperation("记录操作日志")
+    @Operation(summary = "记录操作日志")
     @PostMapping("/save")
     fun save(@RequestBody log: OperateLog): Response<Void>
 
-    @ApiOperation("批量记录操作日志")
+    @Operation(summary = "批量记录操作日志")
     @PostMapping("/save/batch")
     fun batchSave(@RequestBody logs: List<OperateLog>): Response<Void>
 }

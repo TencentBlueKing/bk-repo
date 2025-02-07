@@ -29,23 +29,23 @@ package com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("获取许可扫描详情请求")
+
+@Schema(title = "获取许可扫描详情请求")
 data class ArtifactLicensesDetailRequest(
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     var projectId: String?,
-    @ApiModelProperty("子任务id")
+    @get:Schema(title = "子任务id")
     var subScanTaskId: String?,
-    @ApiModelProperty("许可id")
+    @get:Schema(title = "许可id")
     val licenseId: String? = null,
-    @ApiModelProperty("风险等级")
+    @get:Schema(title = "风险等级")
     val riskLevel: String? = null,
-    @ApiModelProperty("是否仅包含被忽略的许可证")
+    @get:Schema(title = "是否仅包含被忽略的许可证")
     val ignored: Boolean = false,
-    @ApiModelProperty("页数")
+    @get:Schema(title = "页数")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("每页数量")
+    @get:Schema(title = "每页数量")
     val pageSize: Int = DEFAULT_PAGE_SIZE
 )

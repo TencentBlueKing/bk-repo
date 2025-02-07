@@ -32,13 +32,14 @@
 package com.tencent.bkrepo.opdata.pojo
 
 import com.tencent.bkrepo.opdata.pojo.enums.MetricsType
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class QueryResult(
-    @ApiModelProperty("columns")
+    @get:Schema(title = "columns")
     var columns: List<Columns>,
-    @ApiModelProperty("rows")
+    @get:Schema(title = "rows")
     var rows: List<List<Any>>,
-    @ApiModelProperty("metrics类型")
+    @get:Schema(title = "metrics类型")
     var type: MetricsType
 )

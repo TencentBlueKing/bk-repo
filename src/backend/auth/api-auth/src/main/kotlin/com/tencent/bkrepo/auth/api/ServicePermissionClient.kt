@@ -36,9 +36,9 @@ import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
@@ -47,45 +47,45 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api(tags = ["SERVICE_PERMISSION"], description = "服务-权限接口")
+@Tag(name = "SERVICE_PERMISSION", description = "服务-权限接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServicePermissionResource")
 @RequestMapping(AUTH_SERVICE_PERMISSION_PREFIX)
 interface ServicePermissionClient {
 
-    @ApiOperation("list有权限仓库仓库")
+    @Operation(summary = "list有权限仓库仓库")
     @GetMapping("/repo/list")
     fun listPermissionRepo(
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @RequestParam projectId: String,
-        @ApiParam(value = "用户ID")
+        @Parameter(name = "用户ID")
         @RequestParam userId: String,
-        @ApiParam(value = "应用ID")
+        @Parameter(name = "应用ID")
         @RequestParam appId: String?
     ): Response<List<String>>
 
-    @ApiOperation("list有权限项目")
+    @Operation(summary = "list有权限项目")
     @GetMapping("/project/list")
     fun listPermissionProject(
-        @ApiParam(value = "用户ID")
+        @Parameter(name = "用户ID")
         @RequestParam userId: String
     ): Response<List<String>>
 
-    @ApiOperation("list无权限路径")
+    @Operation(summary = "list无权限路径")
     @GetMapping("/path/list")
     fun listPermissionPath(
-        @ApiParam(value = "用户ID")
+        @Parameter(name = "用户ID")
         @RequestParam userId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @RequestParam projectId: String,
-        @ApiParam(value = "仓库名称")
+        @Parameter(name = "仓库名称")
         @RequestParam repoName: String
     ): Response<ListPathResult>
 
-    @ApiOperation("校验权限")
+    @Operation(summary = "校验权限")
     @PostMapping("/check")
     fun checkPermission(
-        @ApiParam(value = "校验权限信息")
+        @Parameter(name = "校验权限信息")
         @RequestBody request: CheckPermissionRequest,
     ): Response<Boolean>
 

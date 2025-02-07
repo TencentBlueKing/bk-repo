@@ -34,7 +34,7 @@ import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.common.api.constant.SCANNER_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Parameter
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -95,7 +95,7 @@ interface ScanClient {
      */
     @PostMapping("/licenseIds")
     fun licenseInfoByIds(
-        @ApiParam(value = "许可证唯一标识集合")
+        @Parameter(name = "许可证唯一标识集合")
         @RequestBody licenseIds: List<String>
     ): Response<Map<String, SpdxLicenseInfo>>
 

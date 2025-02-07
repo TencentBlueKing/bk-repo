@@ -31,11 +31,11 @@
 
 package com.tencent.bkrepo.composer.util.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("composer 构件")
+
+@Schema(title = "composer 构件")
 data class UriArgs(
-    @ApiModelProperty("构件打包格式")
+    @get:Schema(title = "构件打包格式")
     val format: String
 )

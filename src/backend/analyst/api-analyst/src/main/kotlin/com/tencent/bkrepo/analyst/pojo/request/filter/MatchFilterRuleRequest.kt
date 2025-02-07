@@ -27,25 +27,25 @@
 
 package com.tencent.bkrepo.analyst.pojo.request.filter
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("扫描结果忽略规则匹配请求")
+
+@Schema(title = "扫描结果忽略规则匹配请求")
 data class MatchFilterRuleRequest(
-    @ApiModelProperty("项目名")
+    @get:Schema(title = "项目名")
     val projectId: String,
-    @ApiModelProperty("仓库名")
+    @get:Schema(title = "仓库名")
     val repoName: String? = null,
 
-    @ApiModelProperty("扫描方案id")
+    @get:Schema(title = "扫描方案id")
     val planId: String? = null,
 
-    @ApiModelProperty("制品路径")
+    @get:Schema(title = "制品路径")
     val fullPath: String? = null,
 
-    @ApiModelProperty("包名")
+    @get:Schema(title = "包名")
     val packageKey: String? = null,
 
-    @ApiModelProperty("包版本")
+    @get:Schema(title = "包版本")
     val packageVersion: String? = null
 )

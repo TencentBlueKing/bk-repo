@@ -33,7 +33,8 @@ package com.tencent.bkrepo.common.artifact.pojo.configuration.local
 
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.webhook.WebHookConfiguration
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 本地仓库配置
@@ -42,7 +43,7 @@ open class LocalConfiguration(
     /**
      * webHook配置
      */
-    @ApiModelProperty("WebHook配置", required = false)
+    @get:Schema(title = "WebHook配置", required = false)
     var webHook: WebHookConfiguration = WebHookConfiguration()
 ) : RepositoryConfiguration() {
 

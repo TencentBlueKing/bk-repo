@@ -31,23 +31,23 @@
 
 package com.tencent.bkrepo.preview.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("预览属性")
+
+@Schema(title = "预览属性")
 data class PreviewOptions(
-    @ApiModelProperty("是否禁止演示模式")
+    @get:Schema(title = "是否禁止演示模式")
     var pdfPresentationModeDisable: Boolean = true,
-    @ApiModelProperty("是否禁止打开文件")
+    @get:Schema(title = "是否禁止打开文件")
     var pdfOpenFileDisable: Boolean = true,
-    @ApiModelProperty("是否禁止打印转换生成的PDF文件")
+    @get:Schema(title = "是否禁止打印转换生成的PDF文件")
     var pdfPrintDisable: Boolean = true,
-    @ApiModelProperty("是否禁止下载转换生成的PDF文件")
+    @get:Schema(title = "是否禁止下载转换生成的PDF文件")
     var pdfDownloadDisable: Boolean = true,
-    @ApiModelProperty("是否禁止bookmarkFileConvertQueueTask")
+    @get:Schema(title = "是否禁止bookmarkFileConvertQueueTask")
     var pdfBookmarkDisable: Boolean = true,
-    @ApiModelProperty("是否禁止签名")
+    @get:Schema(title = "是否禁止签名")
     var pdfDisableEditing: Boolean = true,
-    @ApiModelProperty("是否关闭 office 预览切换开关")
+    @get:Schema(title = "是否关闭 office 预览切换开关")
     var switchDisabled: Boolean = true,
 )

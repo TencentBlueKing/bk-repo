@@ -31,17 +31,17 @@
 
 package com.tencent.bkrepo.auth.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("项目")
+
+@Schema(title = "项目")
 data class Project(
-    @ApiModelProperty("ID")
+    @get:Schema(title = "ID")
     val id: String,
-    @ApiModelProperty("名称")
+    @get:Schema(title = "名称")
     val name: String,
-    @ApiModelProperty("显示名称")
+    @get:Schema(title = "显示名称")
     val displayName: String,
-    @ApiModelProperty("描述")
+    @get:Schema(title = "描述")
     val description: String
 )

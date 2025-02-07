@@ -28,56 +28,56 @@
 package com.tencent.bkrepo.analyst.pojo.response.filter
 
 import com.tencent.bkrepo.analyst.pojo.Constant.FILTER_RULE_TYPE_IGNORE
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("制品扫描结果忽略规则")
+
+@Schema(title = "制品扫描结果忽略规则")
 data class FilterRule(
-    @ApiModelProperty("id")
+    @get:Schema(title = "id")
     var id: String? = null,
 
-    @ApiModelProperty("规则名")
+    @get:Schema(title = "规则名")
     val name: String,
 
-    @ApiModelProperty("规则描述")
+    @get:Schema(title = "规则描述")
     val description: String,
 
-    @ApiModelProperty("目标项目，系统级的规则为空字符串")
+    @get:Schema(title = "目标项目，系统级的规则为空字符串")
     val projectId: String,
 
-    @ApiModelProperty("需要应用规则的项目，为空表示全部应用，该字段仅对系统级规则有效")
+    @get:Schema(title = "需要应用规则的项目，为空表示全部应用，该字段仅对系统级规则有效")
     val projectIds: List<String>? = null,
 
-    @ApiModelProperty("目标仓库名")
+    @get:Schema(title = "目标仓库名")
     val repoName: String? = null,
 
-    @ApiModelProperty("目标扫描方案ID")
+    @get:Schema(title = "目标扫描方案ID")
     val planId: String? = null,
 
-    @ApiModelProperty("目标路径")
+    @get:Schema(title = "目标路径")
     val fullPath: String? = null,
 
-    @ApiModelProperty("目标包名")
+    @get:Schema(title = "目标包名")
     val packageKey: String? = null,
 
-    @ApiModelProperty("目标版本")
+    @get:Schema(title = "目标版本")
     val packageVersion: String? = null,
 
-    @ApiModelProperty("存在风险的包名")
+    @get:Schema(title = "存在风险的包名")
     val riskyPackageKeys: Set<String>? = null,
 
-    @ApiModelProperty("存在风险的包和版本，key为存在风险的包名，value为存在风险的包版本范围")
+    @get:Schema(title = "存在风险的包和版本，key为存在风险的包名，value为存在风险的包版本范围")
     val riskyPackageVersions: Map<String, String>? = null,
 
-    @ApiModelProperty("需要忽略的漏洞")
+    @get:Schema(title = "需要忽略的漏洞")
     val vulIds: Set<String>? = null,
 
-    @ApiModelProperty("小于该等级的漏洞将被忽略")
+    @get:Schema(title = "小于该等级的漏洞将被忽略")
     val severity: Int? = null,
 
-    @ApiModelProperty("需要忽略的许可证")
+    @get:Schema(title = "需要忽略的许可证")
     val licenseNames: Set<String>? = null,
 
-    @ApiModelProperty("是否忽略")
+    @get:Schema(title = "是否忽略")
     val type: Int = FILTER_RULE_TYPE_IGNORE
 )

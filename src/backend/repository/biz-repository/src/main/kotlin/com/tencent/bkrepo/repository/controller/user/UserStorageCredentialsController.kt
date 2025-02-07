@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.controller.user
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.annotation.LogOperate
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -45,9 +46,8 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -59,7 +59,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("存储凭据管理")
+@Tag(name = "存储凭据管理")
 @Principal(PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/api/storage/credentials")
@@ -67,7 +67,7 @@ class UserStorageCredentialsController(
     private val storageCredentialService: StorageCredentialService
 ) {
 
-    @ApiOperation("创建凭据")
+    @Operation(summary = "创建凭据")
     @PostMapping
     @LogOperate(type = "STORAGE_CREDENTIALS_CREATE", desensitize = true)
     fun create(
@@ -78,7 +78,7 @@ class UserStorageCredentialsController(
         return ResponseBuilder.buildTyped(createdCredential)
     }
 
-    @ApiOperation("更新凭据")
+    @Operation(summary = "更新凭据")
     @PutMapping("/{credentialsKey}")
     @LogOperate(type = "STORAGE_CREDENTIALS_UPDATE", desensitize = true)
     fun update(
@@ -91,7 +91,7 @@ class UserStorageCredentialsController(
         return ResponseBuilder.buildTyped(updatedCredentials)
     }
 
-    @ApiOperation("获取凭据列表")
+    @Operation(summary = "获取凭据列表")
     @GetMapping
     fun list(@RequestParam("region", required = false) region: String?): Response<List<StorageCredentials>> {
         val storageCredentialsList = storageCredentialService.list(region).map {
@@ -104,14 +104,14 @@ class UserStorageCredentialsController(
         return ResponseBuilder.buildTyped(storageCredentialsList)
     }
 
-    @ApiOperation("获取默认凭据")
+    @Operation(summary = "获取默认凭据")
     @GetMapping("/default")
     @LogOperate(type = "STORAGE_CREDENTIALS_LIST")
     fun default(): Response<StorageCredentials> {
         return ResponseBuilder.buildTyped(mask(storageCredentialService.default()))
     }
 
-    @ApiOperation("删除凭据")
+    @Operation(summary = "删除凭据")
     @DeleteMapping("/{credentialKey}")
     @LogOperate(type = "STORAGE_CREDENTIALS_DELETE")
     fun delete(@PathVariable("credentialKey") credentialKey: String): Response<Void> {

@@ -31,25 +31,25 @@ import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("集群间用户服务接口")
+@Tag(name = "集群间用户服务接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterUserResource")
 @RequestMapping(AUTH_CLUSTER_PERMISSION_PREFIX)
 interface ClusterUserClient {
 
-    @ApiOperation("用户信息")
+    @Operation(summary = "用户信息")
     @GetMapping("/info/{uid}")
     fun info(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @PathVariable uid: String
     ): Response<UserInfo?>
 }

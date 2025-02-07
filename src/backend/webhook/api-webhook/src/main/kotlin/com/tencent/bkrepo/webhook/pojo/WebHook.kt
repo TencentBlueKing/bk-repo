@@ -29,32 +29,31 @@ package com.tencent.bkrepo.webhook.pojo
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.webhook.constant.AssociationType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("WebHook信息")
+@Schema(title = "WebHook信息")
 data class WebHook(
-    @ApiModelProperty("id")
+    @get:Schema(title = "id")
     val id: String,
-    @ApiModelProperty("回调地址")
+    @get:Schema(title = "回调地址")
     val url: String,
-    @ApiModelProperty("自定义请求头")
+    @get:Schema(title = "自定义请求头")
     val headers: Map<String, String>? = null,
-    @ApiModelProperty("触发事件")
+    @get:Schema(title = "触发事件")
     val triggers: List<EventType>,
-    @ApiModelProperty("关联对象类型")
+    @get:Schema(title = "关联对象类型")
     val associationType: AssociationType,
-    @ApiModelProperty("关联对象id")
+    @get:Schema(title = "关联对象id")
     val associationId: String,
-    @ApiModelProperty("事件资源key正则模式")
+    @get:Schema(title = "事件资源key正则模式")
     val resourceKeyPattern: String? = null,
-    @ApiModelProperty("创建人")
+    @get:Schema(title = "创建人")
     val createdBy: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: LocalDateTime,
-    @ApiModelProperty("最近修改人")
+    @get:Schema(title = "最近修改人")
     val lastModifiedBy: String,
-    @ApiModelProperty("最近修改时间")
+    @get:Schema(title = "最近修改时间")
     val lastModifiedDate: LocalDateTime
 )

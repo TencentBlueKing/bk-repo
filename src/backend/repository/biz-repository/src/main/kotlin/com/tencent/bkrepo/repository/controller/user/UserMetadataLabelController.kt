@@ -36,8 +36,8 @@ import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelRequest
 import com.tencent.bkrepo.repository.pojo.metadata.label.UserLabelCreateRequest
 import com.tencent.bkrepo.repository.pojo.metadata.label.UserLabelUpdateRequest
 import com.tencent.bkrepo.repository.service.metadata.MetadataLabelService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -47,7 +47,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("元数据标签管理接口")
+@Tag(name = "元数据标签管理接口")
 @RestController
 @RequestMapping("/api/metadata/label")
 class UserMetadataLabelController(
@@ -55,7 +55,7 @@ class UserMetadataLabelController(
     private val permissionManager: PermissionManager
 ) {
 
-    @ApiOperation("创建标签")
+    @Operation(summary = "创建标签")
     @PostMapping("/{projectId}")
     fun create(
         @PathVariable projectId: String,
@@ -72,7 +72,7 @@ class UserMetadataLabelController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("更新标签")
+    @Operation(summary = "更新标签")
     @PutMapping("/{projectId}/{labelKey}")
     fun update(
         @PathVariable projectId: String,
@@ -90,7 +90,7 @@ class UserMetadataLabelController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("查询项目下所有标签")
+    @Operation(summary = "查询项目下所有标签")
     @GetMapping("/{projectId}")
     fun list(
         @PathVariable projectId: String
@@ -99,7 +99,7 @@ class UserMetadataLabelController(
         return ResponseBuilder.success(metadataLabelService.listAll(projectId))
     }
 
-    @ApiOperation("查询标签详情")
+    @Operation(summary = "查询标签详情")
     @GetMapping("/{projectId}/{labelKey}")
     fun detail(
         @PathVariable projectId: String,
@@ -109,7 +109,7 @@ class UserMetadataLabelController(
         return ResponseBuilder.success(metadataLabelService.detail(projectId, labelKey))
     }
 
-    @ApiOperation("删除标签")
+    @Operation(summary = "删除标签")
     @DeleteMapping("/{projectId}/{labelKey}")
     fun delete(
         @PathVariable projectId: String,

@@ -31,13 +31,13 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("annotation查询")
+
+@Schema(title = "annotation查询")
 data class AnnotationsRequest(
-    @ApiModelProperty("appId")
+    @get:Schema(title = "appId")
     val appId: String,
-    @ApiModelProperty("locked状态")
+    @get:Schema(title = "locked状态")
     val locked: Boolean
 )

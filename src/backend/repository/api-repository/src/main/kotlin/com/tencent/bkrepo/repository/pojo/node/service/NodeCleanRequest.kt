@@ -28,18 +28,19 @@
 package com.tencent.bkrepo.repository.pojo.node.service
 
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 import java.time.LocalDateTime
 
 data class NodeCleanRequest(
-    @ApiModelProperty("所属项目", required = true)
+    @get:Schema(title = "所属项目", required = true)
     val projectId: String,
-    @ApiModelProperty("仓库名称", required = true)
+    @get:Schema(title = "仓库名称", required = true)
     val repoName: String,
-    @ApiModelProperty("清理目录", required = true)
+    @get:Schema(title = "清理目录", required = true)
     val path: String,
-    @ApiModelProperty("时间条件", required = true)
+    @get:Schema(title = "时间条件", required = true)
     val date: LocalDateTime,
-    @ApiModelProperty("操作用户", required = true)
+    @get:Schema(title = "操作用户", required = true)
     override val operator: String
 ): ServiceRequest

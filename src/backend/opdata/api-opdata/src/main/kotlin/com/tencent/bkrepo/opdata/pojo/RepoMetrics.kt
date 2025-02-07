@@ -31,17 +31,18 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class RepoMetrics(
-    @ApiModelProperty("repoName")
+    @get:Schema(title = "repoName")
     val repoName: String,
-    @ApiModelProperty("credentialsKey")
+    @get:Schema(title = "credentialsKey")
     val credentialsKey: String? = "default",
-    @ApiModelProperty("size")
+    @get:Schema(title = "size")
     var size: Long,
-    @ApiModelProperty("num")
+    @get:Schema(title = "num")
     val num: Long,
-    @ApiModelProperty("type")
+    @get:Schema(title = "type")
     val type: String? = null
 )

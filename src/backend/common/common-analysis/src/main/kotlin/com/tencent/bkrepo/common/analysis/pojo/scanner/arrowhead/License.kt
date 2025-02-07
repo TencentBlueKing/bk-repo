@@ -29,22 +29,23 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead
 
 
 import com.fasterxml.jackson.annotation.JsonAlias
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 许可证
  */
 data class License(
-    @ApiModelProperty("证书名字")
+    @get:Schema(title = "证书名字")
     @JsonAlias("Name")
     val name: String,
-    @ApiModelProperty("许可证内容")
+    @get:Schema(title = "许可证内容")
     @JsonAlias("Content")
     val content: String,
-    @ApiModelProperty("许可证链接")
+    @get:Schema(title = "许可证链接")
     @JsonAlias("Source")
     val source: String,
-    @ApiModelProperty("证书风险等级， LOW, MEDIUM, HIGH")
+    @get:Schema(title = "证书风险等级， LOW, MEDIUM, HIGH")
     @JsonAlias("Risk")
     val risk: String
 )

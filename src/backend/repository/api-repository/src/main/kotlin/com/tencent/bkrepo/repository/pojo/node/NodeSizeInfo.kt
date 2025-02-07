@@ -31,18 +31,18 @@
 
 package com.tencent.bkrepo.repository.pojo.node
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 节点大小信息
  */
-@ApiModel("节点大小信息")
+@Schema(title = "节点大小信息")
 data class NodeSizeInfo(
-    @ApiModelProperty("子节点数量, 包含文件夹")
+    @get:Schema(title = "子节点数量, 包含文件夹")
     val subNodeCount: Long = 0,
-    @ApiModelProperty("子节点数量, 不包含文件夹")
+    @get:Schema(title = "子节点数量, 不包含文件夹")
     val subNodeWithoutFolderCount: Long = 0,
-    @ApiModelProperty("文件大小总和")
+    @get:Schema(title = "文件大小总和")
     val size: Long
 )

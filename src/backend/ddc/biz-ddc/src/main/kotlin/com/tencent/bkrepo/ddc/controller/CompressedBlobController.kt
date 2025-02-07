@@ -42,8 +42,8 @@ import com.tencent.bkrepo.ddc.artifact.CompressedBlobArtifactInfo
 import com.tencent.bkrepo.ddc.component.PermissionHelper
 import com.tencent.bkrepo.ddc.service.CompressedBlobService
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_UNREAL_COMPRESSED_BUFFER
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
@@ -75,13 +75,13 @@ class CompressedBlobController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
     )
-    @ApiOperation("获取压缩后的缓存")
+    @Operation(summary = "获取压缩后的缓存")
     @GetMapping(
         "/{repoName}/{$PATH_VARIABLE_CONTENT_ID}",
         produces = [MEDIA_TYPE_UNREAL_UNREAL_COMPRESSED_BUFFER, MediaType.APPLICATION_OCTET_STREAM_VALUE]
     )
     fun get(
-        @ApiParam(value = "ddc compressed blob", required = true)
+        @Parameter(name = "ddc compressed blob", required = true)
         @ArtifactPathVariable
         artifactInfo: CompressedBlobArtifactInfo,
     ) {
@@ -106,10 +106,10 @@ class CompressedBlobController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_UPLOAD_CONTENT
     )
-    @ApiOperation("上传压缩后的缓存")
+    @Operation(summary = "上传压缩后的缓存")
     @PutMapping("/{repoName}/{$PATH_VARIABLE_CONTENT_ID}", consumes = [MEDIA_TYPE_UNREAL_UNREAL_COMPRESSED_BUFFER])
     fun put(
-        @ApiParam(value = "ddc compressed blob", required = true)
+        @Parameter(name = "ddc compressed blob", required = true)
         @ArtifactPathVariable
         artifactInfo: CompressedBlobArtifactInfo,
         artifactFile: ArtifactFile

@@ -33,34 +33,34 @@ package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("代理源用户接口")
+@Tag(name = "代理源用户接口")
 @RestController
 @RequestMapping("/api/proxy-channel")
 class UserProxyChannelController(
     private val proxyChannelService: ProxyChannelService
 ) {
-    @ApiOperation("查询代理源信息")
+    @Operation(summary = "查询代理源信息")
     @GetMapping("/{projectId}/{repoName}")
     fun getByUniqueId(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "type", required = true)
+        @Parameter(name = "type", required = true)
         @RequestParam repoType: String,
-        @ApiParam(value = "name", required = true)
+        @Parameter(name = "name", required = true)
         @RequestParam name: String
     ): Response<ProxyChannelInfo?> {
         val repoType = try {

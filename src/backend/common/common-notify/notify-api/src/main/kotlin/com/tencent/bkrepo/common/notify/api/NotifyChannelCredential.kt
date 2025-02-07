@@ -30,8 +30,8 @@ package com.tencent.bkrepo.common.notify.api
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 通知通道凭据
@@ -40,12 +40,12 @@ import io.swagger.annotations.ApiModelProperty
 @JsonSubTypes(
     JsonSubTypes.Type(value = WeworkBotChannelCredential::class, name = WeworkBotChannelCredential.type),
 )
-@ApiModel("消息通知渠道")
+@Schema(title = "消息通知渠道")
 open class NotifyChannelCredential(
-    @ApiModelProperty("通知通道名")
+    @get:Schema(title = "通知通道名")
     open var name: String,
-    @ApiModelProperty("通知通道类型")
+    @get:Schema(title = "通知通道类型")
     var type: String,
-    @ApiModelProperty("是否为默认通知渠道，默认通知渠道可以有多个")
+    @get:Schema(title = "是否为默认通知渠道，默认通知渠道可以有多个")
     open var default: Boolean = false
 )

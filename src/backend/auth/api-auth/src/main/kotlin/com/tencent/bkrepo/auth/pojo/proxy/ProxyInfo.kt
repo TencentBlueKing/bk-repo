@@ -27,29 +27,29 @@
 
 package com.tencent.bkrepo.auth.pojo.proxy
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("Proxy信息")
+
+@Schema(title = "Proxy信息")
 data class ProxyInfo(
-    @ApiModelProperty("名称")
+    @get:Schema(title = "名称")
     val name: String,
-    @ApiModelProperty("展示名")
+    @get:Schema(title = "展示名")
     val displayName: String,
-    @ApiModelProperty("项目Id")
+    @get:Schema(title = "项目Id")
     val projectId: String,
-    @ApiModelProperty("集群名")
+    @get:Schema(title = "集群名")
     val clusterName: String,
-    @ApiModelProperty("访问域名")
+    @get:Schema(title = "访问域名")
     val domain: String,
-    @ApiModelProperty("IP")
+    @get:Schema(title = "IP")
     val ip: String,
-    @ApiModelProperty("状态")
+    @get:Schema(title = "状态")
     val status: ProxyStatus,
-    @ApiModelProperty("同步限速，单位Byte/s")
+    @get:Schema(title = "同步限速，单位Byte/s")
     val syncRateLimit: Long,
-    @ApiModelProperty("同步时间段")
+    @get:Schema(title = "同步时间段")
     val syncTimeRange: String,
-    @ApiModelProperty("缓存过期时间")
+    @get:Schema(title = "缓存过期时间")
     val cacheExpireDays: Int
 )

@@ -33,60 +33,60 @@ package com.tencent.bkrepo.npm.pojo.user
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.tencent.bkrepo.npm.pojo.module.des.ModuleDepsInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@Api("npm页面返回包装模型")
+
+@Schema(title = "npm页面返回包装模型")
 data class PackageInfo(
-    @ApiModelProperty("包名称")
+    @get:Schema(title = "包名称")
     val name: String,
-    @ApiModelProperty("包描述信息")
+    @get:Schema(title = "包描述信息")
     val description: String,
-    @ApiModelProperty("包的readme信息")
+    @get:Schema(title = "包的readme信息")
     val readme: String,
-    @ApiModelProperty("包的tag信息")
+    @get:Schema(title = "包的tag信息")
     val currentTags: List<TagsInfo>,
-    @ApiModelProperty("包的版本信息")
+    @get:Schema(title = "包的版本信息")
     val versions: List<TagsInfo>,
-    @ApiModelProperty("包的主要贡献者信息")
+    @get:Schema(title = "包的主要贡献者信息")
     val maintainers: List<MaintainerInfo>,
-    @ApiModelProperty("包的下载量信息")
+    @get:Schema(title = "包的下载量信息")
     val downloadCount: List<DownloadCount>,
-    @ApiModelProperty("包的依赖信息")
+    @get:Schema(title = "包的依赖信息")
     val dependencies: List<DependenciesInfo>,
-    @ApiModelProperty("包的开发依赖信息")
+    @get:Schema(title = "包的开发依赖信息")
     val devDependencies: List<DependenciesInfo>,
-    @ApiModelProperty("包的被依赖信息")
+    @get:Schema(title = "包的被依赖信息")
     val dependents: List<ModuleDepsInfo>
 )
 
 data class TagsInfo(
-    @ApiModelProperty("tag")
+    @get:Schema(title = "tag")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val tags: String? = null,
-    @ApiModelProperty("版本")
+    @get:Schema(title = "版本")
     val version: String,
-    @ApiModelProperty("时间")
+    @get:Schema(title = "时间")
     val time: String
 )
 
 data class MaintainerInfo(
-    @ApiModelProperty("贡献者名称")
+    @get:Schema(title = "贡献者名称")
     val name: String,
-    @ApiModelProperty("邮箱")
+    @get:Schema(title = "邮箱")
     val email: String
 )
 
 data class DependenciesInfo(
-    @ApiModelProperty("包的名称")
+    @get:Schema(title = "包的名称")
     val name: String,
-    @ApiModelProperty("版本")
+    @get:Schema(title = "版本")
     val version: String
 )
 
 data class DownloadCount(
-    @ApiModelProperty("时间段")
+    @get:Schema(title = "时间段")
     val description: String,
-    @ApiModelProperty("下载量")
+    @get:Schema(title = "下载量")
     val count: Long
 )

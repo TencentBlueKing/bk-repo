@@ -31,13 +31,13 @@
 
 package com.tencent.bkrepo.oci.pojo.response
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("oci镜像信息查询结果信息")
+
+@Schema(title = "oci镜像信息查询结果信息")
 data class OciImageResult(
-    @ApiModelProperty("totalRecords")
+    @get:Schema(title = "totalRecords")
     var totalRecords: Long,
-    @ApiModelProperty("records")
+    @get:Schema(title = "records")
     var records: List<OciImage>
 )

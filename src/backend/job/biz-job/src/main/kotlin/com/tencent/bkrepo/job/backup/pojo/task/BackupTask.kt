@@ -29,35 +29,34 @@ package com.tencent.bkrepo.job.backup.pojo.task
 
 import com.tencent.bkrepo.job.backup.model.TBackupTask
 import com.tencent.bkrepo.job.backup.pojo.setting.BackupSetting
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("数据备份任务")
+@Schema(title = "数据备份任务")
 data class BackupTask(
-    @ApiModelProperty("ID")
+    @get:Schema(title = "ID")
     val id: String? = null,
-    @ApiModelProperty("创建人")
+    @get:Schema(title = "创建人")
     val createdBy: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: LocalDateTime,
-    @ApiModelProperty("最后修改人")
+    @get:Schema(title = "最后修改人")
     val lastModifiedBy: String,
-    @ApiModelProperty("最后修改时间")
+    @get:Schema(title = "最后修改时间")
     val lastModifiedDate: LocalDateTime,
-    @ApiModelProperty("任务开始执行的时间")
+    @get:Schema(title = "任务开始执行的时间")
     val startDate: LocalDateTime? = null,
-    @ApiModelProperty("任务结束执行的时间")
+    @get:Schema(title = "任务结束执行的时间")
     val endDate: LocalDateTime? = null,
-    @ApiModelProperty("任务状态")
+    @get:Schema(title = "任务状态")
     val state: String,
-    @ApiModelProperty("任务内容")
+    @get:Schema(title = "任务内容")
     val content: BackupContent?,
-    @ApiModelProperty("存储路径")
+    @get:Schema(title = "存储路径")
     val storeLocation: String,
-    @ApiModelProperty("任务配置")
+    @get:Schema(title = "任务配置")
     val backupSetting: BackupSetting,
-    @ApiModelProperty("任务类型")
+    @get:Schema(title = "任务类型")
     val type: String,
 ) {
     companion object {
