@@ -57,13 +57,13 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.bouncycastle.crypto.CryptoException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -91,6 +91,7 @@ class UserController @Autowired constructor(
     @ApiOperation("创建用户")
     @PostMapping("/create")
     fun createUser(@RequestBody request: CreateUserRequest): Response<Boolean> {
+        preCheckUserAdmin()
         // 限制创建为admin用户
         request.admin = false
         userService.createUser(request)
@@ -126,6 +127,9 @@ class UserController @Autowired constructor(
     @ApiOperation("用户列表")
     @GetMapping("/list")
     fun listUser(@RequestBody rids: List<String>?): Response<List<UserResult>> {
+        if (rids != null && rids.isNotEmpty()) {
+            preCheckUserAdmin()
+        }
         val result = userService.listUser(rids.orEmpty()).map {
             UserResult(it.userId, it.name)
         }
@@ -133,9 +137,9 @@ class UserController @Autowired constructor(
     }
 
     @ApiOperation("删除用户")
-    @DeleteMapping("/{uid}")
+    @DeleteMapping("/delete/{uid}")
     fun deleteById(@PathVariable uid: String): Response<Boolean> {
-        preCheckContextUser(uid)
+        preCheckUserOrAssetUser(uid, userService.getRelatedUserById(SecurityUtils.getUserId()))
         userService.deleteById(uid)
         return ResponseBuilder.success(true)
     }
@@ -148,22 +152,11 @@ class UserController @Autowired constructor(
     }
 
     @ApiOperation("更新用户信息")
-    @PutMapping("/{uid}")
-    @Deprecated("更换url", ReplaceWith("updateUserInfoById"))
-    fun updateById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
-        preCheckContextUser(uid)
-        if (request.admin != null && request.admin) {
-            preCheckPlatformPermission()
-        }
-        userService.updateUserById(uid, request)
-        return ResponseBuilder.success(true)
-    }
-
-    @ApiOperation("更新用户信息")
     @PutMapping("/update/info/{uid}")
     fun updateUserInfoById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         preCheckContextUser(uid)
         if (request.admin != null && request.admin) {
+            preCheckUserAdmin()
             preCheckPlatformPermission()
         }
         userService.updateUserById(uid, request)
@@ -173,6 +166,7 @@ class UserController @Autowired constructor(
     @ApiOperation("新增用户所属角色")
     @PostMapping("/role/{uid}/{rid}")
     fun addUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
+        preCheckContextUser(uid)
         val result = userService.addUserToRole(uid, rid)
         return ResponseBuilder.success(result)
     }
@@ -180,6 +174,7 @@ class UserController @Autowired constructor(
     @ApiOperation("删除用户所属角色")
     @DeleteMapping("/role/{uid}/{rid}")
     fun removeUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
+        preCheckContextUser(uid)
         val result = userService.removeUserFromRole(uid, rid)
         return ResponseBuilder.success(result)
     }
@@ -187,6 +182,7 @@ class UserController @Autowired constructor(
     @ApiOperation("批量新增用户所属角色")
     @PatchMapping("/role/add/{rid}")
     fun addUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
+        preCheckUserAdmin()
         userService.addUserToRoleBatch(request, rid)
         return ResponseBuilder.success(true)
     }
@@ -194,6 +190,7 @@ class UserController @Autowired constructor(
     @ApiOperation("批量删除用户所属角色")
     @PatchMapping("/role/delete/{rid}")
     fun deleteUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
+        preCheckUserAdmin()
         userService.removeUserFromRoleBatch(request, rid)
         return ResponseBuilder.success(true)
     }
@@ -206,7 +203,7 @@ class UserController @Autowired constructor(
         @RequestParam expiredAt: String?,
         @RequestParam projectId: String?
     ): Response<Token?> {
-        preCheckContextUser(uid)
+        preCheckUserOrAssetUser(uid, userService.getRelatedUserById(SecurityUtils.getUserId()))
         // add user token
         val result = userService.addUserToken(uid, name, expiredAt)
         return ResponseBuilder.success(result)
@@ -230,6 +227,7 @@ class UserController @Autowired constructor(
 
     @ApiOperation("校验用户token")
     @PostMapping("/token")
+    @Deprecated("no need work")
     fun checkToken(@RequestParam uid: String, @RequestParam token: String): Response<Boolean> {
         preCheckContextUser(uid)
         userService.findUserByUserToken(uid, token) ?: return ResponseBuilder.success(false)
@@ -268,23 +266,16 @@ class UserController @Autowired constructor(
     @ApiOperation("独立部署模式下，获取用户信息")
     @GetMapping("/info")
     fun userInfo(
-        @CookieValue(value = "bkrepo_ticket") bkrepoToken: String?,
-        @RequestHeader("x-bkrepo-uid") bkUserId: String?
+        @RequestHeader("x-bkrepo-uid") bkUserId: String?,
+        @RequestHeader("x-bkrepo-display-name") displayName: String?,
+        @RequestHeader("x-bkrepo-tenant-id") tenantId: String?,
     ): Response<Map<String, Any>> {
-        try {
-            bkUserId?.let {
-                return ResponseBuilder.success(mapOf("userId" to bkUserId))
-            }
-            bkrepoToken ?: run {
-                throw IllegalArgumentException("ticket can not be null")
-            }
-            val userId = JwtUtils.validateToken(signingKey, bkrepoToken).body.subject
-            val result = mapOf("userId" to userId)
-            return ResponseBuilder.success(result)
-        } catch (ignored: Exception) {
-            logger.warn("validate user token false [$bkrepoToken]")
-            throw ErrorCodeException(AuthMessageCode.AUTH_LOGIN_TOKEN_CHECK_FAILED)
-        }
+        val result = mapOf(
+            "userId" to bkUserId.orEmpty(),
+            "displayName" to displayName.orEmpty(),
+            "tenantId" to tenantId.orEmpty()
+        )
+        return ResponseBuilder.success(result)
     }
 
     @ApiOperation("校验用户ticket")
@@ -312,6 +303,7 @@ class UserController @Autowired constructor(
         @RequestParam admin: Boolean?,
         @RequestParam locked: Boolean?
     ): Response<Page<UserInfo>> {
+        preCheckUserAdmin()
         val result = userService.userPage(pageNumber, pageSize, user, admin, locked)
         return ResponseBuilder.success(result)
     }
@@ -361,6 +353,17 @@ class UserController @Autowired constructor(
     fun validateEntityUser(@PathVariable uid: String): Response<Boolean> {
         preCheckContextUser(uid)
         return ResponseBuilder.success(userService.validateEntityUser(uid))
+    }
+
+    @ApiOperation("相关虚拟列表")
+    @GetMapping("/group")
+    fun userGroup(
+        @RequestParam userName: String? = null,
+        @RequestParam asstUser: String,
+    ): Response<List<UserInfo>> {
+        preCheckContextUser(asstUser)
+        val result = userService.getRelatedUserById(asstUser)
+        return ResponseBuilder.success(result)
     }
 
     companion object {

@@ -29,10 +29,22 @@ package com.tencent.bkrepo.analyst.dao
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 
 abstract class ScannerSimpleMongoDao<T> : SimpleMongoDao<T>() {
+
+    @Autowired
+    @Qualifier("analystMongoTemplate")
+    private lateinit var analystMongoTemplate: MongoTemplate
+
+    override fun determineMongoTemplate(): MongoTemplate {
+        return analystMongoTemplate
+    }
+
     fun page(query: Query, pageRequest: PageRequest): Page<T> {
         val count = count(query)
         val records = find(query.with(pageRequest))

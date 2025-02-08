@@ -29,9 +29,11 @@
 
 package com.tencent.bkrepo.analyst.utils
 
+import com.tencent.bkrepo.analyst.message.ScannerMessageCode
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.model.TScanPlan
+import com.tencent.bkrepo.analyst.model.ScanPlanExport
 import com.tencent.bkrepo.analyst.model.TScanTask
 import com.tencent.bkrepo.analyst.pojo.LeakType
 import com.tencent.bkrepo.analyst.pojo.ScanPlan
@@ -44,15 +46,20 @@ import com.tencent.bkrepo.analyst.pojo.request.UpdateScanPlanRequest
 import com.tencent.bkrepo.analyst.pojo.response.ArtifactPlanRelation
 import com.tencent.bkrepo.analyst.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseNature
+import com.tencent.bkrepo.common.analysis.pojo.scanner.LicenseOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.normalizedLevel
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.memberProperties
@@ -152,7 +159,12 @@ object ScanPlanConverter {
         }
     }
 
-    fun convert(scanPlan: TScanPlan, latestScanTask: TScanTask?, artifactCount: Long): ScanPlanInfo {
+    fun convert(
+        scanPlan: TScanPlan,
+        latestScanTask: TScanTask?,
+        artifactCount: Long,
+        scanning: Boolean = false
+    ): ScanPlanInfo {
         with(scanPlan) {
             val scannerType = latestScanTask?.scannerType
             val overview = scanPlan.scanResultOverview
@@ -161,7 +173,13 @@ object ScanPlanConverter {
             val high = Converter.getCveCount(scannerType, Level.HIGH.levelName, overview)
             val medium = Converter.getCveCount(scannerType, Level.MEDIUM.levelName, overview)
             val low = Converter.getCveCount(scannerType, Level.LOW.levelName, overview)
-            val status = latestScanTask?.let { convertToScanStatus(it.status).name } ?: ScanStatus.INIT.name
+            val status = if (scanning) {
+                ScanStatus.RUNNING.name
+            } else {
+                latestScanTask?.let {
+                    convertToScanStatus(it.status, isPlan = true).name
+                } ?: ScanStatus.INIT.name
+            }
 
             return ScanPlanInfo(
                 id = id!!,
@@ -193,13 +211,24 @@ object ScanPlanConverter {
     }
 
     fun convert(request: SubtaskInfoRequest): SubtaskInfoRequest {
-        request.highestLeakLevel = request.highestLeakLevel?.let { normalizedLevel(it) }
-        request.startDateTime = request.startTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
-        request.endDateTime = request.endTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
-        if (!request.status.isNullOrEmpty()) {
-            request.subScanTaskStatus = convertToSubScanTaskStatus(ScanStatus.valueOf(request.status!!)).map { it.name }
+        with(request) {
+            highestLeakLevel = highestLeakLevel?.let { normalizedLevel(it) }
+            startDateTime = startTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
+            endDateTime = endTime?.let { LocalDateTime.ofInstant(it, ZoneOffset.systemDefault()) }
+            if (!status.isNullOrEmpty()) {
+                subScanTaskStatus = convertToSubScanTaskStatus(ScanStatus.valueOf(status!!)).map { it.name }
+                qualityRedLine = when (status) {
+                    ScanStatus.QUALITY_PASS.name -> true
+                    ScanStatus.QUALITY_UNPASS.name -> false
+                    ScanStatus.UN_QUALITY.name -> {
+                        unQuality = true
+                        null
+                    }
+                    else -> null
+                }
+            }
+            return request
         }
-        return request
     }
 
     fun duration(startDateTime: LocalDateTime?, finishedDateTime: LocalDateTime?): Long {
@@ -223,7 +252,7 @@ object ScanPlanConverter {
                 projectId = projectId,
                 planType = planType,
                 name = planName,
-                status = convertToScanStatus(status).name,
+                status = convertToScanStatus(status, qualityRedLine).name,
                 recordId = id!!,
                 subTaskId = id!!
             )
@@ -265,17 +294,7 @@ object ScanPlanConverter {
         }
     }
 
-    private fun convertToSubScanTaskStatus(status: ScanStatus): List<SubScanTaskStatus> {
-        return when (status) {
-            ScanStatus.INIT -> listOf(SubScanTaskStatus.CREATED, SubScanTaskStatus.PULLED)
-            ScanStatus.RUNNING -> listOf(SubScanTaskStatus.EXECUTING)
-            ScanStatus.STOP -> listOf(SubScanTaskStatus.STOPPED)
-            ScanStatus.FAILED -> listOf(SubScanTaskStatus.FAILED)
-            ScanStatus.SUCCESS -> listOf(SubScanTaskStatus.SUCCESS)
-        }
-    }
-
-    fun convertToScanStatus(status: String?): ScanStatus {
+    fun convertToScanStatus(status: String?, qualityPass: Boolean? = null, isPlan: Boolean = false): ScanStatus {
         return when (status) {
             SubScanTaskStatus.BLOCKED.name,
             SubScanTaskStatus.CREATED.name,
@@ -292,7 +311,17 @@ object ScanPlanConverter {
             ScanTaskStatus.STOPPED.name -> ScanStatus.STOP
 
             SubScanTaskStatus.SUCCESS.name,
-            ScanTaskStatus.FINISHED.name -> ScanStatus.SUCCESS
+            ScanTaskStatus.FINISHED.name -> {
+                if (isPlan) {
+                    ScanStatus.SUCCESS
+                } else {
+                    when (qualityPass) {
+                        null -> ScanStatus.UN_QUALITY
+                        true -> ScanStatus.QUALITY_PASS
+                        else -> ScanStatus.QUALITY_UNPASS
+                    }
+                }
+            }
 
             SubScanTaskStatus.BLOCK_TIMEOUT.name,
             SubScanTaskStatus.TIMEOUT.name,
@@ -300,5 +329,85 @@ object ScanPlanConverter {
 
             else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, status.toString())
         }
+    }
+
+    /**
+     * 批量转换: 扫描子任务类 -> 扫描方案导出类
+     *
+     * @param subScanTasks 最新扫描子任务
+     *
+     * @return 扫描方案导出类列表
+     */
+    fun convertToPlanExport(subScanTasks: List<SubScanTaskDefinition>): List<ScanPlanExport> {
+        val dataList = mutableListOf<ScanPlanExport>()
+        subScanTasks.forEach { subScanTask ->
+            with(subScanTask) {
+                val statusExport = convertToScanStatusExport(status, qualityRedLine)
+                // 扫描成功时, 显示漏洞许可的具体数据; 扫描不成功时, 不显示
+                val scanPlanExport = if (status == SubScanTaskStatus.SUCCESS.name) ScanPlanExport(
+                    name = artifactName,
+                    versionOrFullPath = version ?: fullPath,
+                    repoName = repoName,
+                    status = statusExport,
+                    critical = Converter.getCveCount(Level.CRITICAL.levelName, this),
+                    high = Converter.getCveCount(Level.HIGH.levelName, this),
+                    medium = Converter.getCveCount(Level.MEDIUM.levelName, this),
+                    low = Converter.getCveCount(Level.LOW.levelName, this),
+                    total = ScanLicenseConverter.getLicenseCount(LicenseOverviewKey.TOTAL, this),
+                    unRecommend = ScanLicenseConverter.getLicenseCount(
+                        LicenseNature.UN_RECOMMEND.natureName,
+                        this
+                    ),
+                    unknown = ScanLicenseConverter.getLicenseCount(LicenseNature.UNKNOWN.natureName, this),
+                    unCompliance = ScanLicenseConverter.getLicenseCount(
+                        LicenseNature.UN_COMPLIANCE.natureName,
+                        this
+                    ),
+                    finishTime = finishedDateTime?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                        ?: StringPool.SLASH,
+                    duration = duration(startDateTime, finishedDateTime) / 1000
+                ) else ScanPlanExport(
+                    name = artifactName,
+                    versionOrFullPath = version ?: fullPath,
+                    repoName = repoName,
+                    status = statusExport,
+                    finishTime = finishedDateTime?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                        ?: StringPool.SLASH,
+                )
+                dataList.add(scanPlanExport)
+            }
+        }
+        return dataList
+    }
+
+    private fun convertToSubScanTaskStatus(status: ScanStatus): List<SubScanTaskStatus> {
+        return when (status) {
+            ScanStatus.INIT -> listOf(SubScanTaskStatus.CREATED, SubScanTaskStatus.PULLED)
+            ScanStatus.RUNNING -> listOf(SubScanTaskStatus.EXECUTING)
+            ScanStatus.STOP -> listOf(SubScanTaskStatus.STOPPED)
+            ScanStatus.FAILED -> listOf(
+                SubScanTaskStatus.FAILED,
+                SubScanTaskStatus.BLOCK_TIMEOUT,
+                SubScanTaskStatus.TIMEOUT
+            )
+            ScanStatus.SUCCESS,
+            ScanStatus.UN_QUALITY,
+            ScanStatus.QUALITY_PASS,
+            ScanStatus.QUALITY_UNPASS -> listOf(SubScanTaskStatus.SUCCESS)
+        }
+    }
+
+    private fun convertToScanStatusExport(status: String?, qualityRedLine: Boolean? = null): String {
+        val messageCode = when (convertToScanStatus(status, qualityRedLine)) {
+            ScanStatus.RUNNING -> ScannerMessageCode.EXPORT_REPORT_STATUS_RUNNING
+            ScanStatus.STOP -> ScannerMessageCode.EXPORT_REPORT_STATUS_STOP
+            ScanStatus.SUCCESS -> ScannerMessageCode.EXPORT_REPORT_STATUS_SUCCESS
+            ScanStatus.UN_QUALITY -> ScannerMessageCode.EXPORT_REPORT_STATUS_UN_QUALITY
+            ScanStatus.QUALITY_PASS -> ScannerMessageCode.EXPORT_REPORT_STATUS_QUALITY_PASS
+            ScanStatus.FAILED -> ScannerMessageCode.EXPORT_REPORT_STATUS_FAILED
+            ScanStatus.QUALITY_UNPASS -> ScannerMessageCode.EXPORT_REPORT_STATUS_QUALITY_UN_PASS
+            ScanStatus.INIT -> ScannerMessageCode.EXPORT_REPORT_STATUS_INIT
+        }
+        return LocaleMessageUtils.getLocalizedMessage(messageCode, null, Locale.SIMPLIFIED_CHINESE)
     }
 }

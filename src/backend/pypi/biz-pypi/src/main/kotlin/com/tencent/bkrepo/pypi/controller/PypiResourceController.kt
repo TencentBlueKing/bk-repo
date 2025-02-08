@@ -31,47 +31,100 @@
 
 package com.tencent.bkrepo.pypi.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.artifact.api.ArtifactFileMap
-import com.tencent.bkrepo.pypi.api.PypiResource
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
-import com.tencent.bkrepo.pypi.pojo.PypiMigrateResponse
+import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import com.tencent.bkrepo.pypi.service.PypiService
-import org.springframework.beans.factory.annotation.Autowired
+import io.swagger.annotations.Api
+import org.slf4j.LoggerFactory
+import org.springframework.http.MediaType
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
  * pypi服务接口实现类
  */
+@Api("pypi client api")
 @RestController
-class PypiResourceController : PypiResource {
+class PypiResourceController(
+    private var pypiService: PypiService
+) {
 
-    @Autowired
-    private lateinit var pypiService: PypiService
-
-    override fun upload(pypiArtifactInfo: PypiArtifactInfo, artifactFileMap: ArtifactFileMap) {
+    @AuditEntry(
+        actionId = NODE_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#pypiArtifactInfo?.getArtifactFullPath()",
+            instanceNames = "#pypiArtifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#pypiArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#pypiArtifactInfo?.repoName")
+        ],
+        scopeId = "#pypiArtifactInfo?.projectId",
+        content = ActionAuditContent.NODE_UPLOAD_CONTENT
+    )
+    @PostMapping(PypiArtifactInfo.PYPI_ROOT_POST_URI)
+    fun upload(pypiArtifactInfo: PypiArtifactInfo, artifactFileMap: ArtifactFileMap) {
+        logger.info("upload pypi package: $pypiArtifactInfo")
         pypiService.upload(pypiArtifactInfo, artifactFileMap)
     }
 
-    override fun search(pypiArtifactInfo: PypiArtifactInfo): String {
+    @PostMapping(
+        PypiArtifactInfo.PYPI_ROOT_POST_URI,
+        consumes = [MediaType.TEXT_XML_VALUE],
+        produces = [MediaType.TEXT_XML_VALUE]
+    )
+    fun search(pypiArtifactInfo: PypiArtifactInfo): String {
+        logger.info("search pypi package: $pypiArtifactInfo")
         return pypiService.search(pypiArtifactInfo)
     }
 
-    override fun simple(artifactInfo: PypiArtifactInfo): Any? {
+    @GetMapping(
+        "/{projectId}/{repoName}/simple", "/{projectId}/{repoName}/simple/{name}",
+        produces = [MediaType.TEXT_HTML_VALUE]
+    )
+    fun simple(artifactInfo: PypiSimpleArtifactInfo): Any? {
+        logger.info("simple pypi package: $artifactInfo")
         return pypiService.simple(artifactInfo)
     }
 
-    override fun packages(artifactInfo: PypiArtifactInfo) {
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
+    @GetMapping(PypiArtifactInfo.PYPI_PACKAGES_MAPPING_URI)
+    fun packages(artifactInfo: PypiArtifactInfo) {
+        logger.info("packages pypi package: $artifactInfo")
         pypiService.packages(artifactInfo)
     }
 
-    override fun migrateByUrl(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
-        return pypiService.migrate(pypiArtifactInfo)
-    }
-
-    /**
-     * 数据迁移结果查询接口
-     */
-    override fun migrateResult(pypiArtifactInfo: PypiArtifactInfo): PypiMigrateResponse<String> {
-        return pypiService.migrateResult(pypiArtifactInfo)
+    companion object {
+        private val logger = LoggerFactory.getLogger(PypiResourceController::class.java)
     }
 }

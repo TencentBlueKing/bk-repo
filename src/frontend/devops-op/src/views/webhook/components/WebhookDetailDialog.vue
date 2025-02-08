@@ -96,7 +96,6 @@ export default {
         this.webhookDetail.resourceKeyPattern
       )
       promise.then(() => {
-        this.webhook = this.webhookDetail
         this.updateResult = true
         this.resultTitle = '更新成功'
         this.resultIcon = 'success'

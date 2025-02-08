@@ -30,11 +30,15 @@ package com.tencent.bkrepo.job.batch.base
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.job.config.JobProperties
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
 import net.javacrumbs.shedlock.core.LockConfiguration
+import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
+import net.javacrumbs.shedlock.core.SimpleLock
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import java.time.Duration
 import java.time.LocalDateTime
 import kotlin.system.measureNanoTime
@@ -42,17 +46,14 @@ import kotlin.system.measureNanoTime
 /**
  * 抽象批处理作业Job
  * */
-abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobProperties) {
+abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobProperties) : FailoverJob {
     /**
      * 锁名称
      */
-    open fun getLockName(): String = getJobName()
+    open fun getLockName(): String = generateLockName()
 
     /**
      * 返回任务名称
-     *
-     * 与job在配置中心的配置前缀保持一致，前缀规则为job.[Class.getSimpleNameq]去掉最后job的后缀
-     * 例： NodeCopyJob 配置为 job.NodeCopy
      */
     fun getJobName(): String = javaClass.simpleName
 
@@ -63,6 +64,12 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
      * */
     @Volatile
     private var stop = true
+
+    /**
+     * Job是否正在运行
+     * */
+    @Volatile
+    private var inProcess = false
 
     /**
      * 是否排他执行，如果是则会加分布式锁
@@ -93,42 +100,56 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     @Autowired
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
 
+    @Autowired
+    private lateinit var lockProvider: LockProvider
+    private var lock: SimpleLock? = null
+
     var lastBeginTime: LocalDateTime? = null
     var lastEndTime: LocalDateTime? = null
     var lastExecuteTime: Long? = null
+
+    @Value("\${spring.cloud.client.ip-address}")
+    private lateinit var host: String
+
+    @Autowired
+    private lateinit var jobProperties: JobProperties
 
     open fun start(): Boolean {
         if (!shouldExecute()) {
             return false
         }
         logger.info("Start to execute async job[${getJobName()}]")
-        stop = false
         val jobContext = createJobContext()
         val wasExecuted = if (isExclusive) {
-            val task = LockingTaskExecutor.TaskWithResult { doStart(jobContext) }
-            val result = lockingTaskExecutor.executeWithLock(task, getLockConfiguration())
-            result.wasExecuted()
+            var wasExecuted = false
+            lockProvider.lock(getLockConfiguration()).ifPresent {
+                lock = it
+                it.use { doStart(jobContext) }
+                lock = null
+                wasExecuted = true
+            }
+            wasExecuted
         } else {
             doStart(jobContext)
             true
         }
-        if (stop) {
-            logger.info("Job[${getJobName()}] stop execution.Execute result: $jobContext")
-            return true
-        }
         if (!wasExecuted) {
             logger.info("Job[${getJobName()}] already execution.")
         }
-        stop = true
         return wasExecuted
     }
 
     /**
      * 启动任务的具体实现
      * */
-    private fun doStart(jobContext: C) {
+    fun doStart(jobContext: C) {
         try {
+            stop = false
+            inProcess = true
             lastBeginTime = LocalDateTime.now()
+            if (isFailover()) {
+                recover()
+            }
             val elapseNano = measureNanoTime {
                 doStart0(jobContext)
             }
@@ -139,11 +160,13 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
             val event = TaskExecutedEvent(
                 name = getJobName(),
                 context = jobContext,
-                time = Duration.ofNanos(elapseNano)
+                time = Duration.ofNanos(elapseNano),
             )
             SpringContextUtils.publishEvent(event)
         } catch (e: Exception) {
-            logger.info("Job[${getJobName()}] execution failed.", e)
+            logger.error("Job[${getJobName()}] execution failed.", e)
+        } finally {
+            inProcess = false
         }
     }
 
@@ -152,8 +175,41 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     /**
      * 停止任务
      * */
-    fun stop() {
+    fun stop(timeout: Long = DEFAULT_STOP_TIMEOUT, force: Boolean = false) {
+        if (stop && !inProcess) {
+            logger.info("Job [${getJobName()}] already stopped.")
+            return
+        }
+        logger.info("Stop job [${getJobName()}].")
+        // 尽量等待任务执行完毕
+        var waitTime = 0L
+        while (inProcess && waitTime < timeout) {
+            logger.info("Job [${getJobName()}] is still running, waiting for it to terminate.")
+            Thread.sleep(SLEEP_TIME_INTERVAL)
+            waitTime += SLEEP_TIME_INTERVAL
+        }
+        if (inProcess) {
+            logger.info("Stop job timeout [$timeout] ms.")
+        }
+        // 只有释放锁，才需要进行故障转移
+        if (inProcess && force) {
+            logger.info("Force stop job [${getJobName()}] and unlock.")
+            failover()
+            lock?.doUnlock()
+        }
         stop = true
+    }
+
+    override fun failover() {
+        // NO-OP
+    }
+
+    override fun isFailover(): Boolean {
+        return false
+    }
+
+    override fun recover() {
+        // NO-OP
     }
 
     /**
@@ -171,10 +227,17 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     }
 
     /**
-     * 任务是否在运行
+     * 任务是否应该运行
      * */
-    fun isRunning(): Boolean {
+    fun shouldRun(): Boolean {
         return !stop
+    }
+
+    /**
+     * 任务是否正在运行
+     * */
+    fun inProcess(): Boolean {
+        return inProcess
     }
 
     /**
@@ -188,10 +251,60 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
      * 判断当前节点是否执行该任务
      */
     open fun shouldExecute(): Boolean {
-        return batchJobProperties.enabled
+        // job是否允许在该节点执行
+        val isJobAffinityNode =
+            batchJobProperties.affinityNodeIps.isEmpty() || host in batchJobProperties.affinityNodeIps
+
+        // 节点是否允许执行该Job
+        val nodeAffinityJobs = jobProperties.nodeAffinityJobs[host]
+        val isNodeAffinityJob = nodeAffinityJobs.isNullOrEmpty() || getJobName() in nodeAffinityJobs
+
+        // 是否允许执行Job
+        if (!isJobAffinityNode || !isNodeAffinityJob) {
+            logger.info("job[${getJobName()}] cannot be executed on node[$host] due to affinity")
+        }
+        return batchJobProperties.enabled && isJobAffinityNode && isNodeAffinityJob
+    }
+
+    /**
+     * 使用锁,[block]运行完后，将会释放锁
+     * */
+    private fun SimpleLock.use(block: () -> Unit) {
+        try {
+            block()
+        } finally {
+            doUnlock()
+        }
+    }
+
+    /**
+     * 静默释放锁
+     * */
+    private fun SimpleLock.doUnlock() {
+        try {
+            unlock()
+        } catch (e: Exception) {
+            logger.error("Unlock failed", e)
+        }
+    }
+
+    private fun generateLockName(): String {
+        val lockName = if (batchJobProperties.lockName.isNullOrEmpty()) {
+            getJobName()
+        } else {
+            batchJobProperties.lockName!!
+        }
+
+        return if (jobProperties.lockNamePrefix.isNullOrEmpty()) {
+            lockName
+        } else {
+            jobProperties.lockNamePrefix + lockName
+        }
     }
 
     companion object {
         private val logger = LoggerHolder.jobLogger
+        private const val SLEEP_TIME_INTERVAL = 1000L
+        private const val DEFAULT_STOP_TIMEOUT = 30000L
     }
 }

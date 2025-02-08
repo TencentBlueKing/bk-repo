@@ -49,7 +49,6 @@ import java.util.concurrent.atomic.AtomicInteger
 class ArtifactMetrics(
     private val threadPoolTaskExecutor: ThreadPoolTaskExecutor,
     tagProvider: ArtifactTransferTagProvider,
-    meterRegistry: MeterRegistry,
     properties: ArtifactMetricsProperties
 ) : MeterBinder {
 
@@ -58,11 +57,14 @@ class ArtifactMetrics(
 
     init {
         Companion.tagProvider = tagProvider
-        Companion.meterRegistry = meterRegistry
-        lruMeterFilter = LruMeterFilter(METER_LIMIT_PREFIX, meterRegistry, properties.maxMeters)
-        meterRegistry.config().meterFilter(lruMeterFilter)
+        Companion.properties = properties
+
     }
+
     override fun bindTo(meterRegistry: MeterRegistry) {
+        Companion.meterRegistry = meterRegistry
+        lruMeterFilter = LruMeterFilter(METER_LIMIT_PREFIX, Companion.meterRegistry, properties.maxMeters)
+        Companion.meterRegistry.config().meterFilter(lruMeterFilter)
         Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadingCount) { it.get().toDouble() }
             .description(ARTIFACT_UPLOADING_COUNT_DESC)
             .register(meterRegistry)
@@ -94,6 +96,7 @@ class ArtifactMetrics(
         private lateinit var tagProvider: ArtifactTransferTagProvider
         private lateinit var meterRegistry: MeterRegistry
         private lateinit var lruMeterFilter: LruMeterFilter
+        private lateinit var properties: ArtifactMetricsProperties
         private const val MAX_ATIME = 30.0
         private const val BYTES = "bytes"
         private const val DAY = "day"
@@ -107,6 +110,7 @@ class ArtifactMetrics(
                 .description(ARTIFACT_UPLOADED_SIZE_DESC)
                 .baseUnit(BYTES)
                 .publishPercentileHistogram()
+                .maximumExpectedValue(properties.maxLe)
                 .register(meterRegistry)
         }
 
@@ -119,6 +123,7 @@ class ArtifactMetrics(
                 .description(ARTIFACT_DOWNLOADED_SIZE_DESC)
                 .baseUnit(BYTES)
                 .publishPercentileHistogram()
+                .maximumExpectedValue(properties.maxLe)
                 .register(meterRegistry)
         }
 

@@ -30,19 +30,21 @@ package com.tencent.bkrepo.replication.replica.base.interceptor
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
+import com.tencent.bkrepo.common.artifact.util.http.StreamRequestBody
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.replication.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.replication.constant.REPOSITORY_INFO
 import com.tencent.bkrepo.replication.constant.SHA256
+import com.tencent.bkrepo.replication.constant.SIZE
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.util.HttpUtils
-import com.tencent.bkrepo.replication.util.StreamRequestBody
 import okhttp3.Interceptor
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
 
 /**
- * 针对特定请求失败进行重试
+ * 只针对分块上传流程中的请求失败进行重试
  */
 class RetryInterceptor : Interceptor {
 
@@ -53,8 +55,9 @@ class RetryInterceptor : Interceptor {
         var response: Response? = null
         var responseOK = false
         var tryCount = 0
+        var enableRetry = true
 
-        while (!responseOK && tryCount < 3) {
+        while (!responseOK && tryCount < 3 && enableRetry) {
             try {
                 response = chain.proceed(request)
                 // 针对429返回需要做延时重试
@@ -66,12 +69,20 @@ class RetryInterceptor : Interceptor {
                 }
             } catch (e: Exception) {
                 logger.warn(
-                    "The result of request ${request.url} is failure and error is ${e.message}"
+                    "The result of request ${request.url} is failure and error is ${e.message}", e
                 )
+                // 只针对分块上传的所有请求进行重试
+                if (request.header(CHUNKED_UPLOAD) == null) {
+                    enableRetry = false
+                }
                 // 如果第2次重试还是失败，抛出失败异常
-                if (tryCount == 2) throw e
+                if (tryCount == 2 || !enableRetry) throw e
             } finally {
-                if (!responseOK && tryCount < 2) {
+                // 只针对分块上传的所有请求进行重试
+                if (request.header(CHUNKED_UPLOAD) == null) {
+                    enableRetry = false
+                }
+                if (!responseOK && tryCount < 2 && enableRetry) {
                     logger.warn(
                         "The result of request ${request.url} is failure and code is ${response?.code}" +
                             ", will retry it - $tryCount"
@@ -87,19 +98,20 @@ class RetryInterceptor : Interceptor {
 
     private fun buildRetryRequestBody(request: Request): Request {
         val (projectId, repoName) = getRepoFromHeader(request)
-        val sha256 = getSha256FromHeader(request)
-        val size = getSizeFromHeader(request)
-        val rangeStr = getContentRangeFromHeader(request)
         if (projectId.isNullOrEmpty()) return request
         if (repoName.isNullOrEmpty()) return request
+        val sha256 = getSha256FromHeader(request)
         if (sha256.isNullOrEmpty()) return request
+        val contentLength = getSizeFromHeader(request) ?: return request
+        val size = getFileLengthFromHeader(request) ?: return request
+        val rangeStr = getContentRangeFromHeader(request)
+        logger.info("range info is $rangeStr and size is $size")
         if (rangeStr.isNullOrEmpty()) return request
-        if (size == null) return request
-        val (start, end) = HttpUtils.getRangeInfo(rangeStr)
+        val (start, end) = ChunkedUploadUtils.getRangeInfo(rangeStr)
         val range = Range(start, end, size)
         val retryBody = StreamRequestBody(
             localDataManager.loadInputStreamByRange(sha256, range, projectId, repoName),
-            size
+            contentLength
         )
         return request.newBuilder().method(request.method, retryBody).build()
     }
@@ -129,10 +141,17 @@ class RetryInterceptor : Interceptor {
     }
 
     /**
-     * 从请求头中获取对于文件大小信息
+     * 从请求头中获取对于当前请求体大小信息
      */
     private fun getSizeFromHeader(request: Request): Long? {
-        return request.header(CONTENT_LENGTH)?.toLong()
+        return request.header(CONTENT_LENGTH)?.toLongOrNull()
+    }
+
+    /**
+     * 从请求头中获取对于文件大小信息
+     */
+    private fun getFileLengthFromHeader(request: Request): Long? {
+        return request.header(SIZE)?.toLongOrNull()
     }
 
     companion object {

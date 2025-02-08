@@ -27,44 +27,51 @@
 
 package com.tencent.bkrepo.analyst.dispatcher
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.analysis.executor.api.ExecutorClient
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
-import com.tencent.bkrepo.analyst.pojo.SubScanTask
-import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.ExecutionClusterService
 import com.tencent.bkrepo.analyst.service.ScannerService
-import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
-import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent.DISPATCH_FAILED
-import com.tencent.bkrepo.analyst.statemachine.subtask.context.DispatchFailedContext
 import com.tencent.bkrepo.analyst.utils.SubtaskConverter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
-import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
-import com.tencent.bkrepo.statemachine.Event
-import com.tencent.bkrepo.statemachine.StateMachine
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.util.concurrent.TimeUnit
 
+@Suppress("LongParameterList")
 open class SubtaskPoller(
-    private val dispatcher: SubtaskDispatcher,
-    private val scanService: ScanService,
+    private val dispatcherFactory: SubtaskDispatcherFactory,
+    private val executionClusterService: ExecutionClusterService,
     private val scannerService: ScannerService,
-    private val temporaryScanTokenService: TemporaryScanTokenService,
-    private val subtaskStateMachine: StateMachine,
-    private val executorClient: ObjectProvider<ExecutorClient>
+    private val executorClient: ObjectProvider<ExecutorClient>,
+    private val executor: ThreadPoolTaskExecutor,
 ) {
+
+    private val dispatcherCache: LoadingCache<String, SubtaskDispatcher> by lazy {
+        CacheBuilder
+            .newBuilder()
+            .maximumSize(MAX_EXECUTION_CLUSTER_CACHE_SIZE)
+            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .build(
+                object : CacheLoader<String, SubtaskDispatcher>() {
+                    override fun load(key: String): SubtaskDispatcher = dispatcherFactory.create(key)
+                }
+            )
+    }
+
     @Scheduled(initialDelay = POLL_INITIAL_DELAY, fixedDelay = POLL_DELAY)
     open fun dispatch() {
-        var subtask: SubScanTask?
-        // 不加锁，允许少量超过执行器的资源限制
-        for (i in 0 until dispatcher.availableCount()) {
-            subtask = scanService.pull(dispatcher.name()) ?: break
-            subtask.token = temporaryScanTokenService.createToken(subtask.taskId)
-            if (!dispatcher.dispatch(subtask)) {
-                // 分发失败，放回队列中
-                logger.warn("dispatch subtask failed, subtask[${subtask.taskId}]")
-                subtaskStateMachine.sendEvent(PULLED.name, Event(DISPATCH_FAILED.name, DispatchFailedContext(subtask)))
+        executionClusterService.list().forEach {
+            executor.execute {
+                logger.debug("cluster [${it.name}] start to dispatch subtask")
+                dispatcherCache.get(it.name).dispatch()
+                logger.debug("cluster [${it.name}] dispatch finished")
             }
         }
     }
@@ -75,7 +82,9 @@ open class SubtaskPoller(
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
     open fun clean(event: SubtaskStatusChangedEvent) {
-        if (SubScanTaskStatus.finishedStatus(event.subtask.status) && event.dispatcher == dispatcher.name()) {
+        val dispatcher = event.dispatcher?.let { dispatcherCache.get(it) }
+        val subtaskFinished = SubScanTaskStatus.finishedStatus(event.subtask.status)
+        if (subtaskFinished && dispatcher != null) {
             val scanner = scannerService.get(event.subtask.scanner)
             val result = dispatcher.clean(SubtaskConverter.convert(event.subtask, scanner), event.subtask.status)
             val subtaskId = event.subtask.latestSubScanTaskId
@@ -84,11 +93,8 @@ open class SubtaskPoller(
 
         // oldStatus为null时说明是复用扫描结果，此时不调用executor接口清理
         val reuseResult = event.oldStatus == null
-        if (
-            SubScanTaskStatus.finishedStatus(event.subtask.status) &&
-            event.dispatcher.isNullOrEmpty() &&
-            !reuseResult
-        ) {
+        if (subtaskFinished && event.dispatcher.isNullOrEmpty() && !reuseResult) {
+            // dispatcher为空时表示通过analysis-executor执行的任务，此时调用其接口进行清理
             val subtaskId = event.subtask.latestSubScanTaskId!!
             val result = executorClient.ifAvailable?.stop(subtaskId)
             logger.info("stop subtask[$subtaskId] executor result[$result]")
@@ -99,5 +105,6 @@ open class SubtaskPoller(
         private val logger = LoggerFactory.getLogger(SubtaskPoller::class.java)
         private const val POLL_INITIAL_DELAY = 30000L
         private const val POLL_DELAY = 5000L
+        private const val MAX_EXECUTION_CLUSTER_CACHE_SIZE = 10L
     }
 }

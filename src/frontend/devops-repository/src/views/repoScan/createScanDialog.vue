@@ -5,7 +5,7 @@
         width="500"
         :height-num="365"
         @cancel="cancel">
-        <bk-form class="mr10" :label-width="80" :model="scanForm" :rules="rules" ref="scanForm">
+        <bk-form class="mr10" :label-width="100" :model="scanForm" :rules="rules" ref="scanForm">
             <bk-form-item :label="$t('schemeName')" :required="true" property="name" error-display-type="normal">
                 <bk-input v-model.trim="scanForm.name" maxlength="32" show-word-limit></bk-input>
             </bk-form-item>

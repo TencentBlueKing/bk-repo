@@ -4,14 +4,17 @@ const authPrefix = 'auth/api'
 
 export default {
     // 查询用户信息
-    ajaxUserInfo ({ dispatch }) {
+    ajaxUserInfo ({ dispatch, commit }) {
         return Vue.prototype.$ajax.get(
             `${authPrefix}/user/info`
-        ).then(({ userId }) => {
-            return dispatch('getUserInfo', { userId })
+        ).then(res => {
+            commit('SET_USER_INFO', {
+                displayName: res.displayName ? res.displayName : ''
+            })
+            return dispatch('getUserInfo', res.userId)
         })
     },
-    getUserInfo ({ state, commit }, { userId }) {
+    getUserInfo ({ state, commit }, userId) {
         return Vue.prototype.$ajax.get(
             `${authPrefix}/user/userinfo/${userId}`
         ).then(res => {
@@ -46,6 +49,16 @@ export default {
             }
         )
     },
+    getUserRelatedList (_, { asstUser }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/user/group`,
+            {
+                params: {
+                    asstUser
+                }
+            }
+        )
+    },
     // 查询所有用户
     getRepoUserList ({ commit }) {
         return Vue.prototype.$ajax.get(
@@ -62,9 +75,15 @@ export default {
         })
     },
     // 项目下用户列表
-    getProjectUserList (_, { projectId }) {
+    getProjectUserList (_, { projectId, isAdmin }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/user/list/${projectId}`
+            `${authPrefix}/user/list/project`,
+            {
+                params: {
+                    projectId: projectId,
+                    isAdmin: isAdmin
+                }
+            }
         )
     },
     // 校验userId是否重复
@@ -111,7 +130,7 @@ export default {
     // 删除用户
     deleteUser (_, userId) {
         return Vue.prototype.$ajax.delete(
-            `${authPrefix}/user/${userId}`
+            `${authPrefix}/user/delete/${userId}`
         )
     },
     validateEntityUser (_, userId) {
@@ -129,7 +148,7 @@ export default {
     // 编辑角色
     editRole (_, { id, body }) {
         return Vue.prototype.$ajax.put(
-            `${authPrefix}/role/${id}`,
+            `${authPrefix}/role/update/info/${id}`,
             body
         )
     },
@@ -139,16 +158,10 @@ export default {
             `${authPrefix}/role/delete/${id}`
         )
     },
-    // 查询所有角色
-    getRoleList () {
-        return Vue.prototype.$ajax.get(
-            `${authPrefix}/role/sys/list`
-        )
-    },
     // 查询项目下角色
     getProjectRoleList (_, { projectId }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/role/sys/list/${projectId}`
+            `${authPrefix}/role/list/${projectId}`
         )
     },
     // 查询所有部门
@@ -234,6 +247,86 @@ export default {
                     operator: user
                 }
             }
+        )
+    },
+    getPermissionUrl (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/user/auth/bkiamv3/permission/url`,
+            body
+        )
+    },
+    refreshIamPermission (_, { projectId }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/user/auth/bkiamv3/project/refresh/${projectId}`
+        )
+    },
+    // 创建项目用户
+    createProjectUser (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/user/create/project`,
+            body
+        )
+    },
+    // 创建repo内权限
+    createPermissionDeployInRepo (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/permission/create`,
+            body
+        )
+    },
+    // 删除repo内权限
+    deletePermission (_, { id }) {
+        return Vue.prototype.$ajax.delete(
+            `${authPrefix}/permission/delete/${id}`
+        )
+    },
+    // 更新repo内权限
+    UpdatePermissionConfigInRepo (_, { body }) {
+        return Vue.prototype.$ajax.put(
+            `${authPrefix}/permission/update/config`,
+            body
+        )
+    },
+    // 获取repo内配置的权限
+    listPermissionDeployInRepo (_, { projectId, repoName }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/permission/list`,
+            {
+                params: {
+                    projectId: projectId,
+                    repoName: repoName,
+                    resourceType: 'NODE'
+                }
+            }
+        )
+    },
+    // 获取权限dialog是否限制
+    getPermissionDialogConfig ({ commit }) {
+        return Vue.prototype.$ajax.get(`${authPrefix}/permission/permission/available`).then(res => {
+            commit('SET_REPO_PERMISSION_LIMIT', res)
+        })
+    },
+    // 获取蓝盾传输的用户组
+    getUserGroupByExternal (_, { projectId, sourceId }) {
+        return Vue.prototype.$ajax.get(`${authPrefix}/permission/external/group/${projectId}/${sourceId}`)
+    },
+    // 获取当前repo的根目录权限
+    getRootPermission (_, { projectId, repoName }) {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/mode/repo/query`,
+            {
+                params: {
+                    projectId: projectId,
+                    repoName: repoName
+                }
+            }
+        )
+    },
+    // 创建或更新当前根目录权限
+    createOrUpdateRootPermission (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${authPrefix}/mode/repo/toggle`,
+            body
         )
     }
 }

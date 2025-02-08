@@ -32,21 +32,26 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServicePipelineClient
-import com.tencent.bkrepo.auth.service.bkauth.DevopsPipelineService
+import com.tencent.bkrepo.auth.service.bkdevops.DevopsPipelineService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class ServicePipelineController @Autowired constructor(
-    private val bkAuthPipelineService: DevopsPipelineService
-) : ServicePipelineClient {
+class ServicePipelineController : ServicePipelineClient {
+    @Autowired
+    private var bkAuthPipelineService: DevopsPipelineService? = null
+
     override fun listPermissionedPipelines(uid: String, projectId: String): Response<List<String>> {
-        return ResponseBuilder.success(bkAuthPipelineService.listPermissionPipelines(uid, projectId))
+        return bkAuthPipelineService?.let {
+            ResponseBuilder.success(bkAuthPipelineService!!.listPermissionPipelines(uid, projectId))
+        } ?: ResponseBuilder.success(emptyList())
     }
 
     override fun hasPermission(uid: String, projectId: String, pipelineId: String): Response<Boolean> {
-        return ResponseBuilder.success((bkAuthPipelineService.hasPermission(uid, projectId, pipelineId, null)))
+        return bkAuthPipelineService?.let {
+            ResponseBuilder.success((bkAuthPipelineService!!.hasPermission(uid, projectId, pipelineId, null)))
+        } ?: ResponseBuilder.success(false)
     }
 }

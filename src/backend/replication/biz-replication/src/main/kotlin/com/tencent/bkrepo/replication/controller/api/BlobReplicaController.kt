@@ -31,12 +31,15 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.cns.CnsService
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.replication.constant.BLOB_CHECK_URI
 import com.tencent.bkrepo.replication.constant.BLOB_PULL_URI
 import com.tencent.bkrepo.replication.constant.BLOB_PUSH_URI
@@ -45,6 +48,7 @@ import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_SECOND_STEP_URL
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
 import com.tencent.bkrepo.replication.service.BlobChunkedService
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -70,6 +74,9 @@ class BlobReplicaController(
     private val baseCacheHandler: BaseCacheHandler
 ) {
 
+    @Autowired(required = false)
+    private var cnsService: CnsService? = null
+
     @PostMapping(BLOB_PULL_URI)
     fun pull(@RequestBody request: BlobPullRequest): ResponseEntity<InputStreamResource> {
         with(request) {
@@ -84,6 +91,7 @@ class BlobReplicaController(
     fun push(
         @RequestPart file: MultipartFile,
         @RequestParam sha256: String,
+        @RequestParam size: String? = null,
         @RequestParam storageKey: String? = null
     ): Response<Void> {
         logger.info("The file with sha256 [$sha256] will be handled!")
@@ -91,24 +99,41 @@ class BlobReplicaController(
         if (storageService.exist(sha256, credentials)) {
             return ResponseBuilder.success()
         }
-        val artifactFile = ArtifactFileFactory.build(file, credentials)
-        if (artifactFile.getFileSha256() != sha256) {
-            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "sha256")
+        if (!size.isNullOrEmpty() && size.toLong() != file.size) {
+            throw ErrorCodeException(ArtifactMessageCode.SIZE_CHECK_FAILED, file.size)
         }
+        val artifactFile = buildArtifactFile(file, credentials)
         logger.info("The file with sha256 [$sha256] will be stored!")
         storageService.store(sha256, artifactFile, credentials)
         return ResponseBuilder.success()
     }
 
+    private fun buildArtifactFile(file: MultipartFile, credentials: StorageCredentials): ArtifactFile {
+        val fileName = file.originalFilename
+        return if (fileName.isNullOrEmpty()) {
+            ArtifactFileFactory.build(file, credentials)
+        } else {
+            val randomId = System.nanoTime()
+            // 文件名加个随机值，避免并发存储同一个文件时，
+            // 前一个文件存储完后删除临时文件，导致其他线程读取时大小为0，导致文件存储异常
+            val filepath: String = credentials.upload.location + "/" + fileName+"-$randomId"
+            ArtifactFileFactory.build(file, filepath)
+        }
+    }
+
     @GetMapping(BLOB_CHECK_URI)
     fun check(
         @RequestParam sha256: String,
-        @RequestParam storageKey: String? = null
+        @RequestParam storageKey: String? = null,
+        @RequestParam(required = false) repoType: String? = null
     ): Response<Boolean> {
+        cnsService?.let {
+            val repositoryType = repoType?.let { RepositoryType.ofValueOrDefault(repoType) }
+            return ResponseBuilder.success(it.check(storageKey, sha256, repositoryType))
+        }
         val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         return ResponseBuilder.success(storageService.exist(sha256, credentials))
     }
-
 
     /**
      * 分块上传
@@ -127,7 +152,10 @@ class BlobReplicaController(
         logger.info("The file with sha256 [$sha256] will be handled with chunked upload!")
         val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         return blobChunkedService.obtainSessionIdForUpload(
-            projectId, repoName, credentials, sha256
+            projectId,
+            repoName,
+            credentials,
+            sha256
         )
     }
 
@@ -146,10 +174,14 @@ class BlobReplicaController(
         logger.info("The file with sha256 [$sha256] will be uploaded with $uuid")
         val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         blobChunkedService.uploadChunkedFile(
-            projectId, repoName, credentials, sha256, artifactFile, uuid
+            projectId,
+            repoName,
+            credentials,
+            sha256,
+            artifactFile,
+            uuid
         )
     }
-
 
     @RequestMapping(
         method = [RequestMethod.PUT],
@@ -159,14 +191,23 @@ class BlobReplicaController(
         artifactFile: ArtifactFile,
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null,
+        @RequestParam size: Long? = null,
+        @RequestParam md5: String? = null,
         @PathVariable uuid: String,
         @PathVariable projectId: String,
         @PathVariable repoName: String,
     ) {
-        logger.info("The file with sha256 [$sha256] will be finished with $uuid")
+        logger.info("The file (sha256 [$sha256], size [$size], md5 [$md5]) will be finished with $uuid")
         val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
         blobChunkedService.finishChunkedUpload(
-            projectId, repoName, credentials, sha256, artifactFile, uuid
+            projectId = projectId,
+            repoName = repoName,
+            credentials = credentials,
+            sha256 = sha256,
+            artifactFile = artifactFile,
+            uuid = uuid,
+            size = size,
+            md5 = md5
         )
     }
 

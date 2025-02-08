@@ -28,12 +28,17 @@
 package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.fs.server.service.PermissionService
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.platformCredentials
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
+import org.slf4j.LoggerFactory
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 
@@ -41,36 +46,57 @@ import org.springframework.web.reactive.function.server.ServerResponse
  * 认证过滤器，处理服务器认证
  * */
 class AuthHandlerFilterFunction(
-    private val securityManager: SecurityManager
+    private val securityManager: SecurityManager,
+    private val permissionService: PermissionService
 ) : CoHandlerFilterFunction {
 
     override suspend fun filter(
         request: ServerRequest,
         next: suspend (ServerRequest) -> ServerResponse
     ): ServerResponse {
-        if (request.path().startsWith("/login")) {
+        if (uncheckedUrlPrefixList.any { request.path().startsWith(it) }) {
             return next(request)
         }
         var user = ANONYMOUS_USER
+
+        val platformAuthCredentials = request.platformCredentials()
+        if (platformAuthCredentials != null) {
+            request.exchange().attributes[PLATFORM_KEY] = permissionService.checkPlatformAccount(
+                accessKey = platformAuthCredentials.accessKey,
+                secretKey = platformAuthCredentials.secretKey
+            )
+            request.exchange().attributes[USER_KEY] =
+                request.headers().header(AUTH_HEADER_UID).firstOrNull() ?: ANONYMOUS_USER
+            return next(request)
+        }
+
         val token = if (request.path().startsWith("/service")) {
             request.headers().header("X-BKREPO-MS-UID").firstOrNull()?.let {
                 user = it
             }
             request.headers().header("X-BKREPO-SECURITY-TOKEN").firstOrNull()
         } else {
-            request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
+            request.bearerToken()
         } ?: throw AuthenticationException("missing token.")
 
         try {
             val jws = securityManager.validateToken(token)
             request.exchange().attributes[USER_KEY] = jws.body.subject ?: user
-            return next(request)
         } catch (exception: ExpiredJwtException) {
+            logger.info("validate token[$token] failed:", exception)
             throw AuthenticationException("Expired token")
         } catch (exception: JwtException) {
+            logger.info("validate token[$token] failed:", exception)
             throw AuthenticationException("Invalid token")
         } catch (exception: IllegalArgumentException) {
+            logger.info("validate token[$token] failed:", exception)
             throw AuthenticationException("Empty token")
         }
+        return next(request)
+    }
+
+    companion object {
+        private val uncheckedUrlPrefixList = listOf("/login", "/devx/login", "/ioa", "/client/metrics/push")
+        private val logger = LoggerFactory.getLogger(AuthHandlerFilterFunction::class.java)
     }
 }

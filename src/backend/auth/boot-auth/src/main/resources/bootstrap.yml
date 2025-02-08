@@ -1,7 +1,8 @@
 server:
   port: 25902
 
-spring.application.name: auth
+spring:
+  application.name: auth
 
 auth:
   realm: local

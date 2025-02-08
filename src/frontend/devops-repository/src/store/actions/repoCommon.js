@@ -18,8 +18,9 @@ export default {
     },
     // 删除包
     deletePackage (_, { projectId, repoType, repoName, packageKey }) {
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.delete(
-            `${repoType}/ext/package/delete/${projectId}/${repoName}`,
+            `${type}/ext/package/delete/${projectId}/${repoName}`,
             {
                 params: {
                     packageKey
@@ -39,7 +40,7 @@ export default {
         )
     },
     // 查询包版本列表
-    getVersionList (_, { projectId, repoName, packageKey, version, current = 1, limit = 10 }) {
+    getVersionList (_, { projectId, repoName, packageKey, version, current = 1, limit = 10, sortProperty = 'createdDate' }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/version/page/${projectId}/${repoName}`,
             {
@@ -47,15 +48,17 @@ export default {
                     pageNumber: current,
                     pageSize: limit,
                     packageKey,
-                    version
+                    version,
+                    sortProperty
                 }
             }
         )
     },
     // 删除包版本
     deleteVersion (_, { projectId, repoType, repoName, packageKey, version }) {
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.delete(
-            `${repoType}/ext/version/delete/${projectId}/${repoName}`,
+            `${type}/ext/version/delete/${projectId}/${repoName}`,
             {
                 params: {
                     packageKey,
@@ -66,8 +69,9 @@ export default {
     },
     // 查询包版本详情
     getVersionDetail (_, { projectId, repoType, repoName, packageKey, version }) {
+        const type = repoType === 'ohpm' ? 'npm' : repoType
         return Vue.prototype.$ajax.get(
-            `${repoType}/ext/version/detail/${projectId}/${repoName}`,
+            `${type}/ext/version/detail/${projectId}/${repoName}`,
             {
                 params: {
                     packageKey,
@@ -96,7 +100,7 @@ export default {
         )
     },
     // 跨仓库搜索
-    searchPackageList (_, { projectId, repoType, repoName, packageName, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
+    searchPackageList (_, { projectId, repoType, repoName, repoNames = [], packageName, property = 'name', direction = 'ASC', current = 1, limit = 20, extRules = [] }) {
         const isGeneric = repoType === 'generic'
         return Vue.prototype.$ajax.post(
             `${prefix}/${isGeneric ? 'node/queryWithoutCount' : 'package/search'}`,
@@ -118,7 +122,7 @@ export default {
                                 operation: 'EQ'
                             }]
                             : []),
-                        ...(repoType
+                        ...((MODE_CONFIG === 'ci' ? !isGeneric : true) && repoType
                             ? [{
                                 field: 'repoType',
                                 value: repoType.toUpperCase(),
@@ -135,8 +139,8 @@ export default {
                                 ...(MODE_CONFIG === 'ci' && isGeneric
                                     ? [{
                                         field: 'repoName',
-                                        value: ['report', 'log'],
-                                        operation: 'NIN'
+                                        value: repoNames,
+                                        operation: 'IN'
                                     }]
                                     : [])
                             ]),
@@ -167,7 +171,9 @@ export default {
         const urlMap = {
             docker: 'docker/ext/addr',
             npm: 'npm/ext/address',
-            helm: 'helm/ext/address'
+            helm: 'helm/ext/address',
+            conan: 'conan/ext/address',
+            ohpm: 'npm/ext/address'
         }
         if (!urlMap[repoType] || state.domain[repoType]) return
         Vue.prototype.$ajax.get(

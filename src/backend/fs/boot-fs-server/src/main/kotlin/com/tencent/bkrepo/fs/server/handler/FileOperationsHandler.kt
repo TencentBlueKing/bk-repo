@@ -27,21 +27,28 @@
 
 package com.tencent.bkrepo.fs.server.handler
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.bodyToArtifactFile
+import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.io.RegionInputStreamResource
 import com.tencent.bkrepo.fs.server.request.BlockRequest
 import com.tencent.bkrepo.fs.server.request.FlushRequest
 import com.tencent.bkrepo.fs.server.request.NodeRequest
+import com.tencent.bkrepo.fs.server.request.StreamRequest
 import com.tencent.bkrepo.fs.server.resolveRange
 import com.tencent.bkrepo.fs.server.service.FileOperationService
+import com.tencent.bkrepo.fs.server.service.node.RNodeService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
-import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.slf4j.LoggerFactory
 import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.core.io.buffer.DefaultDataBufferFactory
 import org.springframework.http.HttpHeaders
@@ -50,7 +57,10 @@ import org.springframework.http.ZeroCopyHttpOutputMessage
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
+import org.springframework.web.reactive.function.server.ServerResponse.temporaryRedirect
 import org.springframework.web.reactive.function.server.buildAndAwait
+import java.net.URI
+
 
 /**
  * 文件操作相关处理器
@@ -58,8 +68,8 @@ import org.springframework.web.reactive.function.server.buildAndAwait
  * 处理文件操作请求
  * */
 class FileOperationsHandler(
-    private val rRepositoryClient: RRepositoryClient,
-    private val fileOperationService: FileOperationService
+    private val fileOperationService: FileOperationService,
+    private val nodeService: RNodeService
 ) {
 
     /**
@@ -68,11 +78,20 @@ class FileOperationsHandler(
      * */
     suspend fun read(request: ServerRequest): ServerResponse {
         with(NodeRequest(request)) {
-            val node = rRepositoryClient.getNodeDetail(projectId, repoName, fullPath).awaitSingle().data
+            val repoType = ReactiveArtifactContextHolder.getRepoDetail().type
+            if (category == RepositoryCategory.REMOTE.name && repoType == RepositoryType.GENERIC) {
+                return temporaryRedirect(URI.create("/generic${request.uri().path}")).buildAndAwait()
+            }
+            val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
             if (node?.folder == true || node == null) {
                 throw NodeNotFoundException(this.toString())
             }
-            val range = request.resolveRange(node.size)
+            val range = try {
+                request.resolveRange(node.size)
+            } catch (e: IllegalArgumentException) {
+                logger.info("read file[$projectId/$repoName$fullPath] failed: ${e.message}")
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, HttpHeaders.RANGE)
+            }
             val artifactInputStream = fileOperationService.read(node, range) ?: throw ArtifactNotFoundException(
                 this.toString()
             )
@@ -84,16 +103,19 @@ class FileOperationsHandler(
             headers.contentLength = artifactInputStream.range.length
             headers.set(HttpHeaders.ACCEPT_RANGES, "bytes")
             headers.add("Content-Range", "bytes ${range.start}-${range.end}/${node.size}")
-            if (artifactInputStream is FileArtifactInputStream) {
-                (response as ZeroCopyHttpOutputMessage).writeWith(
-                    artifactInputStream.file,
-                    artifactInputStream.range.start,
-                    artifactInputStream.range.length
-                ).awaitSingleOrNull()
-            } else {
-                val source = RegionInputStreamResource(artifactInputStream, range.total)
-                val body = DataBufferUtils.read(source, DefaultDataBufferFactory.sharedInstance, DEFAULT_BUFFER_SIZE)
-                response.writeWith(body).awaitSingleOrNull()
+            artifactInputStream.use {
+                if (artifactInputStream is FileArtifactInputStream) {
+                    (response as ZeroCopyHttpOutputMessage).writeWith(
+                        artifactInputStream.file,
+                        artifactInputStream.range.start,
+                        artifactInputStream.range.length
+                    ).awaitSingleOrNull()
+                } else {
+                    val source = RegionInputStreamResource(artifactInputStream, range.total!!)
+                    val body =
+                        DataBufferUtils.read(source, DefaultDataBufferFactory.sharedInstance, DEFAULT_BUFFER_SIZE)
+                    response.writeWith(body).awaitSingleOrNull()
+                }
             }
             return ok().buildAndAwait()
         }
@@ -132,5 +154,16 @@ class FileOperationsHandler(
         val flushRequest = FlushRequest(request)
         fileOperationService.flush(flushRequest, user)
         return ReactiveResponseBuilder.success(blockNode)
+    }
+
+    suspend fun stream(request: ServerRequest): ServerResponse {
+        val user = ReactiveSecurityUtils.getUser()
+        val streamRequest = StreamRequest(request)
+        val nodeDetail = fileOperationService.stream(streamRequest, user)
+        return ReactiveResponseBuilder.success(nodeDetail)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(FileOperationsHandler::class.java)
     }
 }

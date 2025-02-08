@@ -66,5 +66,15 @@ data class TaskMetadata(
          * 指定任务使用哪个分发器分发子任务
          */
         const val TASK_METADATA_DISPATCHER = "DISPATCHER"
+
+        /**
+         * 标记任务是否为全局扫描任务
+         */
+        const val TASK_METADATA_GLOBAL = "GLOBAL"
+
+        /**
+         * 扫描的制品最后修改人
+         */
+        const val TASK_METADATA_ARTIFACT_LAST_MODIFIED_BY = "artifactLastModifiedBy"
     }
 }

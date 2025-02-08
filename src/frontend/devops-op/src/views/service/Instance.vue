@@ -1,13 +1,12 @@
 <template>
   <div class="app-container">
     <el-table
-      :data="instances"
+      :data="instances.filter(data => !search || (data.host+':'+data.port).includes(search))"
       style="width: 100%"
     >
       <el-table-column
         prop="id"
         label="ID"
-        width="180"
       />
       <el-table-column
         prop="address"
@@ -53,6 +52,12 @@
         </template>
       </el-table-column>
       <el-table-column label="操作">
+        <template slot="header" slot-scope="{}">
+          <el-input
+            v-model="search"
+            placeholder="输入关键字搜索地址"
+          />
+        </template>
         <template slot-scope="scope">
           <el-button
             :disabled="disableChangeInstanceStatusBtn(scope.row.status)"
@@ -82,7 +87,8 @@ export default {
   data() {
     return {
       loading: true,
-      instances: []
+      instances: [],
+      search: ''
     }
   },
   created() {

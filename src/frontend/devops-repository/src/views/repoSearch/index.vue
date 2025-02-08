@@ -22,10 +22,10 @@
                         v-model="property"
                         :clearable="false"
                         @change="changeSortType">
-                        <bk-option id="name" :name="$t('Order by name')"></bk-option>
-                        <bk-option id="lastModifiedDate" :name="$t('Order by last modified time')"></bk-option>
-                        <bk-option id="createdDate" :name="$t('Order by Original Creation Time')"></bk-option>
-                        <bk-option id="downloads" :name="$t('Order by downloads')"></bk-option>
+                        <bk-option id="name" :name="$t('nameSorting')"></bk-option>
+                        <bk-option id="lastModifiedDate" :name="$t('lastModifiedTimeSorting')"></bk-option>
+                        <bk-option id="createdDate" :name="$t('creatTimeSorting')"></bk-option>
+                        <bk-option id="downloads" :name="$t('downloadSorting')"></bk-option>
                     </bk-select>
                     <bk-popover :content="focusContent + ' ' + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                         <div class="ml10 sort-order flex-center" @click="changeDirection">
@@ -48,7 +48,7 @@
                     <template #icon><span></span></template>
                     <template #text="{ item: { name } }">
                         <div class="flex-1 flex-between-center">
-                            <span class="text-overflow">{{ name }}</span>
+                            <span class="text-overflow" :title="name.length > 19 ? name : ''">{{ name }}</span>
                         </div>
                     </template>
                 </repo-tree>
@@ -119,7 +119,9 @@
                 },
                 resultList: [],
                 hasNext: true,
-                focusContent: this.$t('toggle')
+                focusContent: this.$t('toggle'),
+                repoNames: [],
+                init: false
             }
         },
         computed: {
@@ -180,6 +182,7 @@
                     projectId: this.projectId,
                     repoType: this.repoType,
                     repoName: this.repoName,
+                    repoNames: this.repoNames,
                     packageName: this.packageName,
                     property: this.property,
                     direction: this.direction,
@@ -198,8 +201,7 @@
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}, scrollLoad = false) {
                 this.pagination.current = current
                 this.pagination.limit = limit
-                this.searckPackageHandler(scrollLoad)
-                !scrollLoad && this.$refs.infiniteScroll && this.$refs.infiniteScroll.scrollToTop()
+                this.changeQuery(scrollLoad)
             },
             changeSortType () {
                 this.refreshRoute()
@@ -290,6 +292,27 @@
                     permits: '',
                     time: 7
                 })
+            },
+            // ci模式下generic的查询repoName的NIN条件会和repoType的In组装条件会异常（更改为传递查询repoName，去掉repoType传递）
+            changeQuery (scrollLoad) {
+                if (this.repoType === 'generic' && MODE_CONFIG === 'ci' && !this.init) {
+                    this.searchRepoList({
+                        projectId: this.projectId,
+                        repoType: this.repoType,
+                        packageName: this.packageName || ''
+                    }).then(([item]) => {
+                        item.repos.forEach(item => {
+                            this.repoNames.push(item.repoName)
+                        })
+                        this.init = true
+                        this.searckPackageHandler(scrollLoad)
+                        !scrollLoad && this.$refs.infiniteScroll && this.$refs.infiniteScroll.scrollToTop()
+                    })
+                } else {
+                    this.init = true
+                    this.searckPackageHandler(scrollLoad)
+                    !scrollLoad && this.$refs.infiniteScroll && this.$refs.infiniteScroll.scrollToTop()
+                }
             }
         }
     }

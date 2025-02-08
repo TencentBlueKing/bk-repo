@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.search.common.CommonQueryContext
+import com.tencent.bkrepo.common.metadata.search.common.CommonQueryContext
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
 

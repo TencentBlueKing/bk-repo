@@ -34,24 +34,28 @@ package com.tencent.bkrepo.common.storage
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.storage.core.FileStorage
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
+import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexConfiguration
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.core.simple.SimpleStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.common.storage.s3.S3Storage
 import com.tencent.bkrepo.common.storage.util.PolarisUtil
+import com.tencent.bkrepo.common.storage.util.StorageUtils
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 import org.springframework.retry.annotation.EnableRetry
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.ConcurrentHashMap
@@ -62,12 +66,16 @@ import java.util.concurrent.ConcurrentHashMap
 @Configuration(proxyBeanMethods = false)
 @EnableRetry
 @EnableConfigurationProperties(StorageProperties::class)
+@Import(
+    StorageUtils::class,
+    StorageCacheIndexConfiguration::class,
+)
 class StorageAutoConfiguration {
 
     @Bean
     fun fileStorage(
         properties: StorageProperties,
-        executor: ThreadPoolTaskExecutor
+        executor: ThreadPoolTaskExecutor,
     ): FileStorage {
         val fileStorage = when (properties.type) {
             StorageType.FILESYSTEM -> FileSystemStorage()
@@ -81,12 +89,19 @@ class StorageAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     fun storageService(
         properties: StorageProperties,
-        threadPoolTaskExecutor: ThreadPoolTaskExecutor
+        threadPoolTaskExecutor: ThreadPoolTaskExecutor,
+        fileRetainResolver: FileRetainResolver?,
     ): StorageService {
+        fileRetainResolver?.let { logger.info("Use FileRetainResolver[${fileRetainResolver::class.simpleName}].") }
         val cacheEnabled = properties.defaultStorageCredentials().cache.enabled
-        val storageService = if (cacheEnabled) CacheStorageService(threadPoolTaskExecutor) else SimpleStorageService()
+        val storageService = if (cacheEnabled) {
+            CacheStorageService(threadPoolTaskExecutor, fileRetainResolver)
+        } else {
+            SimpleStorageService()
+        }
         logger.info("Initializing StorageService[${storageService::class.simpleName}].")
         return storageService
     }
@@ -98,7 +113,7 @@ class StorageAutoConfiguration {
             .defaultStorageCredentials().upload.location
         map[location] = StorageHealthMonitor(
             storageProperties,
-            location
+            location,
         )
         return StorageHealthMonitorHelper(map)
     }

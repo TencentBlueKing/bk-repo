@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
@@ -45,7 +46,6 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -58,9 +58,9 @@ import org.springframework.web.bind.annotation.RequestParam
  * 仓库服务接口
  */
 @Api("仓库服务接口")
-@Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "RepositoryClient", primary = false)
 @RequestMapping("/service/repo")
+@Deprecated("replace with RepositoryService")
 interface RepositoryClient {
 
     @ApiOperation("查询仓库信息")
@@ -128,4 +128,26 @@ interface RepositoryClient {
         @PathVariable projectId: String,
         @RequestBody option: RepoListOption
     ): Response<List<RepositoryInfo>>
+
+    @ApiOperation("查询仓库大小信息")
+    @GetMapping("/stat/{projectId}/{repoName}")
+    fun statRepo(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+    ): Response<NodeSizeInfo>
+
+    @ApiOperation("更新仓库存储")
+    @PostMapping("/update/storage/{projectId}/{repoName}")
+    fun updateStorageCredentialsKey(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam storageCredentialsKey: String?
+    ): Response<Void>
+
+    @ApiOperation("重置仓库旧存储")
+    @PostMapping("/unset/storage/{projectId}/{repoName}")
+    fun unsetOldStorageCredentialsKey(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+    ): Response<Void>
 }

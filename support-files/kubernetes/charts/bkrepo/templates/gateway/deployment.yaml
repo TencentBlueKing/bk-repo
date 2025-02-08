@@ -77,6 +77,8 @@ spec:
               value: {{ include "bkrepo.authorization" . }}
             - name: BK_REPO_DEPLOY_MODE
               value: {{ .Values.gateway.deployMode }}
+            - name: BK_REPO_RELEASE_MODE
+              value: {{ .Values.gateway.releaseMode }}
             - name: BK_REPO_AUTH_MODE
               value: {{ .Values.gateway.authMode }}
             - name: BK_CI_HOST
@@ -93,6 +95,8 @@ spec:
               value: {{ .Values.gateway.helmHost }}
             - name: BK_REPO_PAAS_FQDN
               value: {{ .Values.gateway.bkPaasUrl }}
+            - name: BK_REPO_DOCS_FQDN
+              value: {{ .Values.bkDocsCenterUrl }}
             - name: BK_REPO_PAAS_LOGIN_URL
               value: {{ .Values.gateway.bkLoginUrl }}
             - name: BK_REPO_SSM_IP0
@@ -105,6 +109,12 @@ spec:
               value: {{ .Values.gateway.ssmTokenUrl }}
             - name: BK_REPO_SSM_ENV
               value: {{ .Values.gateway.ssmEnv }}
+            - name: BK_APIGW_URL
+              value: {{ .Values.gateway.bkApigwUrl }}
+            - name: BK_REPO_ENABLE_MULTI_TENANT_MODE
+              value: {{ default "false" .Values.gateway.enableMultiTenantMode | quote }}
+            - name: BK_REPO_OP_TENANT_ID
+              value: {{ default "system" .Values.gateway.oPTenantId | quote }}
             - name: BK_REPO_APP_CODE
               value: {{ .Values.gateway.appCode }}
             - name: BK_REPO_APP_TOKEN

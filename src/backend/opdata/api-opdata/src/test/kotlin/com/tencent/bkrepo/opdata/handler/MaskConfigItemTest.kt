@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.opdata.handler
 
-import com.tencent.bkrepo.common.operate.service.util.DesensitizedUtils
+import com.tencent.bkrepo.common.metadata.util.DesensitizedUtils
 import com.tencent.bkrepo.opdata.pojo.config.ConfigItem
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

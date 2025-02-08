@@ -45,9 +45,11 @@ import com.tencent.bkrepo.analyst.statemachine.Action
 import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.TaskStateMachineConfiguration.Companion.STATE_MACHINE_ID_SUB_SCAN_TASK
 import com.tencent.bkrepo.analyst.statemachine.iterator.IteratorManager
+import com.tencent.bkrepo.analyst.statemachine.iterator.NodeFilter
 import com.tencent.bkrepo.analyst.statemachine.subtask.SubtaskEvent
 import com.tencent.bkrepo.analyst.statemachine.subtask.context.CreateSubtaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
+import com.tencent.bkrepo.analyst.statemachine.task.context.StopTaskContext
 import com.tencent.bkrepo.analyst.statemachine.task.context.SubmitTaskContext
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.NEVER_SCANNED
 import com.tencent.bkrepo.common.lock.service.LockOperation
@@ -121,8 +123,11 @@ class SubmittingAction(
             logger.info("task[${e.taskId}] has been stopped")
             return TransitResult(ScanTaskStatus.STOPPING.name)
         } catch (e: Exception) {
-            logger.error("submit task failed, taskId[${scanTask.taskId}]", e)
-            throw e
+            logger.error("submit task[${scanTask.taskId}] failed, try to stop task", e)
+            return taskStateMachine.sendEvent(
+                SCANNING_SUBMITTING.name,
+                Event(ScanTaskEvent.STOP.name, StopTaskContext(scanTaskDao.findById(scanTask.taskId)!!))
+            )
         }
         logger.info("submit $submittedSubTaskCount sub tasks, $reuseResultTaskCount sub tasks reuse result")
 
@@ -150,7 +155,13 @@ class SubmittingAction(
         var submittedSubTaskCount = 0L
         var reuseResultTaskCount = 0L
         val nodeIterator = iteratorManager.createNodeIterator(scanTask, scanner, false)
+        val nodeFilter = NodeFilter(scanner.unsupportedArtifactNameRegex.map { it.toRegex() })
         for (node in nodeIterator) {
+            if (!nodeFilter.filter(node)) {
+                // 不需要扫描的node直接跳过
+                continue
+            }
+
             // 未使用扫描方案的情况直接取node的projectId
             projectScanConfiguration = projectScanConfiguration
                 ?: projectScanConfigurationService.findProjectOrGlobalScanConfiguration(node.projectId)
@@ -174,7 +185,7 @@ class SubmittingAction(
                 reuseResultTaskCount++
             } else {
                 // 变更子任务状态为CREATED或BLOCKED
-                val event = event(scanningCount, projectScanConfiguration)
+                val event = event(scanTask, scanningCount, projectScanConfiguration)
                 subtaskStateMachine.sendEvent(NEVER_SCANNED.name, Event(event.name, context))
                 // 统计子任务数量
                 submittedSubTaskCount++
@@ -204,9 +215,14 @@ class SubmittingAction(
      *
      */
     private fun event(
+        scanTask: ScanTask,
         scanningCount: Long,
         projectConfiguration: ProjectScanConfiguration?
     ): SubtaskEvent {
+        if (scanTask.isGlobal()) {
+            // 全局任务不阻塞
+            return SubtaskEvent.CREATE
+        }
         val limitSubScanTaskCount = projectConfiguration?.subScanTaskCountLimit
             ?: scannerProperties.defaultProjectSubScanTaskCountLimit
         if (scanningCount >= limitSubScanTaskCount.toLong()) {

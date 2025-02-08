@@ -29,7 +29,6 @@ package com.tencent.bkrepo.repository.service.file.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -42,9 +41,9 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
 import com.tencent.bkrepo.repository.pojo.project.ProjectListViewItem
 import com.tencent.bkrepo.repository.pojo.repo.RepoListViewItem
 import com.tencent.bkrepo.repository.service.file.ListViewService
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
@@ -56,8 +55,7 @@ class ListViewServiceImpl(
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
-    private val viewModelService: ViewModelService,
-    private val redirectService: EdgeNodeRedirectService
+    private val viewModelService: ViewModelService
 ) : ListViewService {
 
     @Value("\${spring.application.name}")
@@ -87,18 +85,13 @@ class ListViewServiceImpl(
             viewModelService.render(currentPath, headerList, rowList)
         } else {
             val context = ArtifactDownloadContext()
-            if (redirectService.shouldRedirect(context.artifactInfo)) {
-                // 节点来自其他集群，重定向到其他节点。
-                redirectService.redirectToDefaultCluster(context)
-                return
-            }
             ArtifactContextHolder.getRepository().download(context)
         }
     }
 
     override fun listRepoView(projectId: String) {
         viewModelService.trailingSlash(applicationName)
-        val itemList = repositoryService.listRepo(projectId).map { RepoListViewItem.from(it) }
+        val itemList = repositoryService.listRepo(projectId, display = true).map { RepoListViewItem.from(it) }
         val title = "Repository[$projectId]"
         val headerList = listOf(
             HeaderItem("Name"),

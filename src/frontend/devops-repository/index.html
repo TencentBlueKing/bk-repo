@@ -9,8 +9,6 @@
     <script src="/ui/libs/vuex.min.js"></script>
     <script src="/ui/libs/vue-router.min.js"></script>
     <script src="/ui/libs/jsencrypt.min.js"></script>
-    <link rel='preload' as='script' href="/ui/libs/bk-magic-vue/bk-magic-vue-interior.min.js" />
-    <link href="/ui/libs/bk-magic-vue/bk-magic-vue-interior.min.css" rel="stylesheet">
     <link rel='preload' as='script' href="/ui/libs/bk-magic-vue/bk-magic-vue.min.js" />
     <link href="/ui/libs/bk-magic-vue/bk-magic-vue.min.css" rel="stylesheet">
     <link href="/ui/iconfont.css" rel="stylesheet">
@@ -64,8 +62,12 @@
         // 是否显示制品分析菜单
         var SHOW_ANALYST_MENU = '__BK_REPO_SHOW_ANALYST_MENU__' || 'false'
         SHOW_ANALYST_MENU = SHOW_ANALYST_MENU === 'true'
+        var ADD_FROM_LOGOUT = '__IS_FROM_LOGOUT__' || 'not'
         // 区分社区版与内部版  community -> 社区   tencent -> 内部
         var RELEASE_MODE = '__BK_REPO_RELEASE_MODE__' || 'community'
+        // 存放文档中心的url
+        var DOC_URL = '__BK_REPO_DOCS_FQDN__'|| 'https://bk.tencent.com/docs'
+
     </script>
     <script>
         const inIframe = self !== top
@@ -167,6 +169,5 @@
         }
     </script>
     <script src="/ui/libs/bk-magic-vue/bk-magic-vue.min.js"></script>
-    <script src="/ui/libs/bk-magic-vue/bk-magic-vue-interior.min.js"></script>
 </body>
 </html>

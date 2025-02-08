@@ -31,8 +31,11 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 
 interface TemporaryScanTokenService {
     fun createToken(subtaskId: String): String
+    fun setToken(subtaskId: String, token: String)
     fun createToken(subtaskIds: List<String>): Map<String, String>
+    fun createExecutionClusterToken(executionClusterName: String): String
     fun checkToken(subtaskId: String, token: String?)
     fun deleteToken(subtaskId: String)
-    fun getToolInput(subtaskId: String): ToolInput
+    fun getToolInput(subtaskId: String, token: String): ToolInput
+    fun pullToolInput(executionCluster: String, token: String): ToolInput?
 }

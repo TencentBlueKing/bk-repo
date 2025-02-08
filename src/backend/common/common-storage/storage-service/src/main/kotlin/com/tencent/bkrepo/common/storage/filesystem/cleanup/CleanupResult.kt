@@ -36,10 +36,32 @@ data class CleanupResult(
     var cleanupFile: Long = 0,
     var cleanupFolder: Long = 0,
     var cleanupSize: Long = 0,
-    var errorCount: Long = 0
+    var errorCount: Long = 0,
+    /**
+     * 根目录下除了tempPath与stagingPath子目录外被访问的文件数量
+     */
+    var rootDirNotDeletedFile: Long = 0,
+    /**
+     * 根目录下除了tempPath与stagingPath子目录外被访问的文件大小
+     */
+    var rootDirNotDeletedSize: Long = 0,
+    /**
+     * 根据保留策略保留的文件数量
+     */
+    var retainFile: Long = 0,
+    /**
+     * 根据保留策略保留的文件大小
+     */
+    var retainSize: Long = 0,
+    /**
+     * 保留的文件sha256
+     */
+    var retainSha256: MutableSet<String> = HashSet(),
 ) {
+
     override fun toString(): String {
         return "$cleanupFile/$totalFile[${HumanReadable.size(cleanupSize)}/${HumanReadable.size(totalSize)}] " +
-            "files deleted,errorCount[$errorCount], $cleanupFolder/$totalFolder dirs deleted."
+            "files deleted, errorCount[$errorCount], $cleanupFolder/$totalFolder dirs deleted, " +
+                "retainCount[$retainFile], retainSize[${HumanReadable.size(retainSize)}]"
     }
 }

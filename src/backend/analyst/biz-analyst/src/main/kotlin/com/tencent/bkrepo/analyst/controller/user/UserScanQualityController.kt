@@ -30,40 +30,41 @@ package com.tencent.bkrepo.analyst.controller.user
 import com.tencent.bkrepo.analyst.pojo.request.ScanQualityUpdateRequest
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.analyst.pojo.response.ScanQualityResponse
+import com.tencent.bkrepo.analyst.pojo.response.ScanQuality
 import com.tencent.bkrepo.analyst.service.ScanQualityService
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
+@Api("扫描方案质量规则接口")
 @RestController
 @RequestMapping("/api/scan/quality")
 class UserScanQualityController(
     private val scanQualityService: ScanQualityService
 ) {
 
+    @ApiOperation("获取扫描方案质量规则")
     @GetMapping("/{planId}")
     fun getScanQuality(
-        @PathVariable("planId") planId: String
-    ): Response<ScanQualityResponse> {
+        @ApiParam(value = "方案id")
+        @PathVariable("planId")
+        planId: String
+    ): Response<ScanQuality> {
         return ResponseBuilder.success(scanQualityService.getScanQuality(planId))
     }
 
-    @PutMapping("/{planId}")
-    fun createScanQuality(
-        @PathVariable("planId") planId: String,
-        @RequestBody request: ScanQualityUpdateRequest
-    ): Response<Boolean> {
-        return ResponseBuilder.success(scanQualityService.updateScanQuality(planId, request))
-    }
-
+    @ApiOperation("更新扫描方案质量规则")
     @PostMapping("/{planId}")
     fun updateScanQuality(
-        @PathVariable("planId") planId: String,
+        @ApiParam(value = "方案id")
+        @PathVariable("planId")
+        planId: String,
         @RequestBody request: ScanQualityUpdateRequest
     ): Response<Boolean> {
         return ResponseBuilder.success(scanQualityService.updateScanQuality(planId, request))

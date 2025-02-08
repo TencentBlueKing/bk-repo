@@ -1,7 +1,9 @@
-import Vue from 'vue'
-import { mapState, mapMutations } from 'vuex'
+
 import ConfirmDialog from '@repository/components/ConfirmDialog'
 import GlobalUploadViewport from '@repository/components/GlobalUploadViewport'
+import { routeBase } from '@repository/utils'
+import Vue from 'vue'
+import { mapMutations, mapState } from 'vuex'
 export default {
     name: 'App',
     components: { ConfirmDialog, GlobalUploadViewport },
@@ -13,7 +15,7 @@ export default {
     },
     watch: {
         '$route.fullPath' (val) { // 同步地址到蓝鲸Devops
-            this.$syncUrl?.(val.replace(/^\/[a-zA-Z0-9]+\//, '/'))
+            this.$syncUrl?.(val)
         }
     },
     created () {
@@ -40,7 +42,7 @@ export default {
         goHome (projectId) {
             const params = projectId ? { projectId } : {}
             this.$router.replace({
-                name: 'repoList',
+                name: 'repositories',
                 params
             })
         },
@@ -51,7 +53,7 @@ export default {
             script.src = src
             document.getElementsByTagName('head')[0].appendChild(script)
             script.onload = () => {
-                this.$syncUrl?.(this.$route.fullPath.replace(/^\/[a-zA-Z0-9]+\//, '/'))
+                this.$syncUrl?.(this.$route.fullPath.replace(routeBase, '/'))
                 this.$changeActiveRoutes?.(this.$route?.meta?.breadcrumb?.map(v => v.name) || [])
                 window.globalVue.$on('change::$currentProjectId', data => { // 蓝鲸Devops选择项目时切换
                     localStorage.setItem('projectId', data.currentProjectId)
@@ -61,7 +63,8 @@ export default {
                 })
 
                 window.globalVue.$on('change::$routePath', data => { // 蓝鲸Devops切换路径
-                    this.$router.push({ name: data.routePath.englishName, path: data.routePath.path.replace(/^\/[a-zA-Z]+/, '/ui') })
+                    console.log('change::$routePath', data)
+                    this.$router.push({ name: data.routePath.englishName, path: data.routePath.path.replace(/^\/[a-z]+/i, routeBase) })
                 })
 
                 window.globalVue.$on('order::backHome', data => { // 蓝鲸Devops选择项目时切换

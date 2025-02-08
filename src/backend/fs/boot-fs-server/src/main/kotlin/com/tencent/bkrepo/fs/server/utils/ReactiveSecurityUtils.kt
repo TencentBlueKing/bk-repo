@@ -28,11 +28,38 @@
 package com.tencent.bkrepo.fs.server.utils
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.PLATFORM_AUTH_PREFIX
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.security.http.platform.PlatformAuthCredentials
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import org.springframework.web.reactive.function.server.ServerRequest
 import reactor.core.publisher.Mono
+import java.util.Base64
 
 object ReactiveSecurityUtils {
+
+    fun ServerRequest.bearerToken(): String? {
+        val authHeader = headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
+        return if (authHeader?.startsWith(BEARER_AUTH_PREFIX) == true) {
+            authHeader.removePrefix(BEARER_AUTH_PREFIX)
+        } else {
+            authHeader
+        }
+    }
+
+    fun ServerRequest.platformCredentials(): PlatformAuthCredentials? {
+        val authHeader = headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
+        return if (authHeader?.startsWith(PLATFORM_AUTH_PREFIX) == true) {
+            val credentials = authHeader.removePrefix(PLATFORM_AUTH_PREFIX)
+            val (accessKey, secretKey) = String(Base64.getDecoder().decode(credentials)).split(StringPool.COLON)
+            return PlatformAuthCredentials(accessKey, secretKey)
+        } else {
+            null
+        }
+    }
 
     suspend fun getUser(): String {
         return ReactiveRequestContextHolder

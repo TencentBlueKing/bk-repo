@@ -38,12 +38,15 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.maven.artifact.repository.MavenLocalRepository
 import com.tencent.bkrepo.maven.artifact.repository.MavenRemoteRepository
 import com.tencent.bkrepo.maven.artifact.repository.MavenVirtualRepository
+import com.tencent.bkrepo.maven.config.MavenProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 
 /**
  * Maven 依赖源配置
  */
 @Component
+@EnableConfigurationProperties(MavenProperties::class)
 class MavenArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getRepositoryType() = RepositoryType.MAVEN

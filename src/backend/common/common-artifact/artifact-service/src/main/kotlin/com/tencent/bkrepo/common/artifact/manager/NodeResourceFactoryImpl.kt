@@ -27,30 +27,33 @@
 
 package com.tencent.bkrepo.common.artifact.manager
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.manager.resource.FsNodeResource
 import com.tencent.bkrepo.common.artifact.manager.resource.LocalNodeResource
 import com.tencent.bkrepo.common.artifact.manager.resource.NodeResource
 import com.tencent.bkrepo.common.artifact.manager.resource.RemoteNodeResource
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.fs.server.api.FsNodeClient
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 
 class NodeResourceFactoryImpl(
     private val clusterProperties: ClusterProperties,
     private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
-    private val fsNodeClient: FsNodeClient,
+    private val storageCredentialService: StorageCredentialService,
+    private val blockNodeService: BlockNodeService,
     private val clusterNodeClient: ClusterNodeClient,
+    private val archiveClient: ArchiveClient,
 ) : NodeResourceFactory {
 
     private val centerClusterInfo = ClusterInfo(
@@ -67,11 +70,12 @@ class NodeResourceFactoryImpl(
         storageCredentials: StorageCredentials?,
     ): NodeResource {
         val digest = nodeInfo.sha256.orEmpty()
-        if (clusterProperties.role == ClusterNodeType.EDGE) {
-            return RemoteNodeResource(digest, range, storageCredentials, centerClusterInfo, storageService)
-        }
         if (isFsFile(nodeInfo)) {
-            return FsNodeResource(nodeInfo, fsNodeClient, range, storageService, storageCredentials)
+            return FsNodeResource(nodeInfo, blockNodeService, range, storageService, storageCredentials)
+        }
+        if (clusterProperties.role == ClusterNodeType.EDGE &&
+            clusterProperties.architecture != ClusterArchitecture.COMMIT_EDGE) {
+            return RemoteNodeResource(digest, range, storageCredentials, centerClusterInfo, storageService)
         }
         val clusterName = getClusterName(nodeInfo)
         if (!inLocal(nodeInfo) && clusterName != null) {
@@ -79,7 +83,14 @@ class NodeResourceFactoryImpl(
                 ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, clusterName)
             return RemoteNodeResource(digest, range, storageCredentials, clusterInfo, storageService, false)
         }
-        return LocalNodeResource(nodeInfo, range, storageCredentials, storageService, storageCredentialsClient)
+        return LocalNodeResource(
+            nodeInfo,
+            range,
+            storageCredentials,
+            storageService,
+            storageCredentialService,
+            archiveClient,
+        )
     }
 
     private fun isFsFile(node: NodeInfo): Boolean {

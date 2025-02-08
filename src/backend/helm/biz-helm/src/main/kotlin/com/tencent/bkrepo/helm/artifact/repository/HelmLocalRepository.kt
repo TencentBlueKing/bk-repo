@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.helm.artifact.repository
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -40,7 +41,6 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.FileNameParser
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
@@ -118,8 +118,10 @@ class HelmLocalRepository(
             val projectId = repositoryDetail.projectId
             val repoName = repositoryDetail.name
             val fullPath = getStringAttribute(FULL_PATH).orEmpty()
-            helmOperationService.checkNodePermission(fullPath)
-            val isExist = nodeClient.checkExist(projectId, repoName, fullPath).data!!
+            if (fullPath != HelmUtils.getIndexCacheYamlFullPath()) {
+                helmOperationService.checkNodePermission(fullPath)
+            }
+            val isExist = nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))
             val isOverwrite = isOverwrite(fullPath, isForce)
             putAttribute(OVERWRITE, isOverwrite)
             if (isExist && !isOverwrite) {
@@ -173,7 +175,8 @@ class HelmLocalRepository(
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         val fullPath = context.getStringAttribute(FULL_PATH)!!
-        val node = ArtifactContextHolder.getNodeDetail(fullPath = fullPath)
+        context.artifactInfo.setArtifactMappingUri(fullPath)
+        val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo)
         node?.let {
             node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
             node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
@@ -213,11 +216,9 @@ class HelmLocalRepository(
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = context.getStringAttribute(FULL_PATH)!!
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         if (node == null || node.folder) return null
-        return storageService.load(
-            node.sha256!!, Range.full(node.size), context.storageCredentials
-        )
+        return storageManager.loadFullArtifactInputStream(node, context.storageCredentials)
     }
 
     /**
@@ -256,21 +257,18 @@ class HelmLocalRepository(
             val packageName = node.metadata[NAME] ?: return null
             val packageVersion = node.metadata[VERSION] ?: return null
             val packageKey = PackageKeys.ofHelm(packageName.toString())
-            return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion.toString()).data
+            return packageService.findVersionByName(projectId, repoName, packageKey, packageVersion.toString())
         }
     }
 
     private fun parseMetaData(context: ArtifactUploadContext): Map<String, Any>? {
         with(context) {
             val fullPath = getStringAttribute(FULL_PATH)
-            val forceUpdate = getBooleanAttribute(FORCE)
             val fileType = getStringAttribute(FILE_TYPE)
             var result: Map<String, Any>? = emptyMap()
-            if (!isOverwrite(fullPath!!, forceUpdate!!)) {
-                when (fileType) {
-                    CHART -> result = getAttribute(META_DETAIL)
-                    PROV -> result = FileNameParser.parseNameAndVersionWithRegex(fullPath)
-                }
+            when (fileType) {
+                CHART -> result = getAttribute(META_DETAIL)
+                PROV -> result = FileNameParser.parseNameAndVersionWithRegex(fullPath!!)
             }
             return result
         }

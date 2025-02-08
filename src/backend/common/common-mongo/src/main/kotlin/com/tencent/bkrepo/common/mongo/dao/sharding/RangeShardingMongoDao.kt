@@ -109,8 +109,16 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
         return list
     }
 
+    /**
+     * 只支持指定表删除
+     */
     override fun remove(query: Query): DeleteResult {
-        throw UnsupportedOperationException()
+        val shardingValue = determineCollectionName(query.queryObject)
+        if (shardingValue is Document && shardingValue.size > 1) {
+            throw IllegalArgumentException("Remove only works on particular table!")
+        }
+        val collectionName = determineCollectionName(query)
+        return determineMongoTemplate().remove(query, collectionName)
     }
 
     override fun count(query: Query): Long {

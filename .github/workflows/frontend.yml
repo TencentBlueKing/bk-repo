@@ -17,6 +17,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18' # 或者您需要的其他版本
+
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(yarn cache dir)"
@@ -30,7 +36,7 @@ jobs:
             ${{ runner.os }}-yarn-
       - run: yarn install && yarn start && yarn public
         working-directory: src/frontend
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v4
         with:
           name: frontend
           path: src/frontend/frontend/

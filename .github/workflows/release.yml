@@ -16,8 +16,14 @@ jobs:
           git config user.email "64278246+bkci-bot@users.noreply.github.com"
       - name: Create release branch
         run: |
-          git checkout -b release-${GITHUB_REF_NAME#v}
-          git push origin release-${GITHUB_REF_NAME#v}
+          version="${GITHUB_REF_NAME#v}"
+          branch="${version%%-rc.*}"
+          IFS='.' read -ra ADDR <<< "$branch"
+          patch=${ADDR[2]}
+          if [[ "$patch" == "0" ]]; then
+            git checkout -b release-$branch
+            git push origin release-$branch
+          fi
   frontend:
     needs: prepare-release
     name: Build frontend
@@ -41,7 +47,7 @@ jobs:
         run: yarn --prefer-offline
       - run: yarn install && yarn start && yarn public
         working-directory: src/frontend
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v4
         with:
           name: frontend
           path: src/frontend/frontend
@@ -74,7 +80,7 @@ jobs:
         run: |
           version="${GITHUB_REF_NAME#v}"
           ci_pkg_dir=/dev/shm/bkrepo ./scripts/packager-repo.sh "$version" bkrepo-slim.tar.gz
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v4
         with:
           name: bkrepo
           path: bkrepo-slim.tar.gz
@@ -112,7 +118,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           ./build.sh --version $version --app-version $version
           mv bkrepo-$version.tgz bkrepo-charts.tgz
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v4
         with:
           name: bkrepo-chart
           path: support-files/kubernetes/charts/bkrepo-charts.tgz
@@ -137,7 +143,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           ./build-images.sh --all-in-one -v $version --username ${{ secrets.DOCKER_USER }} \
           --password ${{ secrets.DOCKER_PASS }} -n ${{ secrets.DOCKER_NAMESPACE }} \
-          -r ${{ secrets.DOCKER_HOST }} --slim-package-path ../bkrepo-slim.tar.gz -p
+          -r ${{ secrets.DOCKER_HOST }} --slim-package-path ../bkrepo-slim.tar.gz -p -l
   
 
   release-all:

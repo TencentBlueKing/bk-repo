@@ -19,5 +19,9 @@ class NugetPublishArtifactInfo(
 ) : NugetArtifactInfo(projectId, repoName, StringPool.EMPTY) {
     lateinit var artifactFile: ArtifactFile
 
-    override fun getArtifactFullPath(): String = NugetUtils.getNupkgFullPath(packageName, version)
+    override fun getArtifactFullPath(): String {
+        return if(getArtifactMappingUri().isNullOrEmpty()) {
+            NugetUtils.getNupkgFullPath(packageName, version)
+        } else getArtifactMappingUri()!!
+    }
 }

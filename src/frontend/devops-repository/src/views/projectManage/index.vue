@@ -17,8 +17,8 @@
                     v-model="property"
                     :clearable="true"
                     @change="queryProjects">
-                    <bk-option id="name" :name="$t('Order by Project Name')"></bk-option>
-                    <bk-option id="createdDate" :name="$t('Order by Original Creation Time')"></bk-option>
+                    <bk-option id="name" :name="$t('projectNameSorting')"></bk-option>
+                    <bk-option id="createdDate" :name="$t('creatTimeSorting')"></bk-option>
                 </bk-select>
                 <bk-popover :content="focusContent + ' ' + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                     <div class="ml10 sort-order flex-center" @click="changeDirection">
@@ -52,6 +52,11 @@
             <bk-table-column :label="$t('createdBy')">
                 <template #default="{ row }">
                     {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
+                </template>
+            </bk-table-column>
+            <bk-table-column :label="$t('bkPermissionGeneration')" show-overflow-tooltip v-if="iamStatus">
+                <template #default="{ row }">
+                    <bk-button theme="primary" @click="createPermission(row.name)" v-if="row.rbacFlag === false">{{ $t('generate') }}</bk-button>
                 </template>
             </bk-table-column>
         </bk-table>
@@ -91,22 +96,21 @@
                 focusContent: this.$t('toggle'),
                 direction: this.$route.query.direction || 'DESC',
                 filterProjectList: [],
-                property: ''
+                property: 'createdDate',
+                iamStatus: false
             }
         },
         computed: {
             ...mapState(['projectList', 'userList'])
         },
         created () {
-            this.filterProjectList = this.projectList.filter(project => {
-                return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-            }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
-            this.pagination.total = this.projectList.length
+            this.queryProjects()
+            this.getIamPermissionStatus().then(res => {
+                this.iamStatus = res
+            })
         },
         methods: {
-            ...mapActions([
-                'queryProjectList'
-            ]),
+            ...mapActions(['refreshIamPermission', 'getIamPermissionStatus', 'queryProjectList', 'getProjectList']),
             formatDate,
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
@@ -146,14 +150,32 @@
                             project.id = project.name
                             project.name = project.displayName
                         })
-                        this.pagination.total = res.filter(project => {
-                            return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-                        }).length
-                        this.filterProjectList = res.filter(project => {
-                            return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
-                        }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
+                        this.setPageData(res)
                     }
                 )
+            },
+            setPageData (res) {
+                this.pagination.total = res.filter(project => {
+                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
+                }).length
+                this.filterProjectList = res.filter(project => {
+                    return Boolean(~project.id.indexOf(this.projectInput) || ~project.name.indexOf(this.projectInput))
+                }).slice((this.pagination.current - 1) * this.pagination.limit, this.pagination.current * this.pagination.limit)
+            },
+            createPermission (projectId) {
+                this.refreshIamPermission({ projectId: projectId }).then(res => {
+                    if (res === true) {
+                        this.$bkMessage({
+                            theme: 'success',
+                            message: this.$t('permissionsGeneratedSuccessTip')
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: this.$t('permissionsGeneratedFailTip')
+                        })
+                    }
+                })
             }
         }
     }

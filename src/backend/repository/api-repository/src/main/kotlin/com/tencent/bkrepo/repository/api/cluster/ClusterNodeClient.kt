@@ -36,7 +36,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
@@ -50,6 +50,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import java.time.LocalDateTime
 
 @Api("节点集群接口")
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterNodeClient")
@@ -95,6 +96,16 @@ interface ClusterNodeClient {
     @ApiOperation("删除节点")
     @DeleteMapping("/batch/delete")
     fun deleteNodes(@RequestBody nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
+
+    @ApiOperation("删除节点")
+    @DeleteMapping("/clean/{projectId}/{repoName}/")
+    fun deleteNodeLastModifiedBeforeDate(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam fullPath: String,
+        @RequestParam date: LocalDateTime,
+        @RequestParam operator: String
+    ): Response<NodeDeleteResult>
 
     @ApiOperation("恢复节点")
     @PostMapping("/restore")

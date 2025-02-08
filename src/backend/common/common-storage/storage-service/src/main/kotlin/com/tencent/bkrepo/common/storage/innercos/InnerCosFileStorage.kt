@@ -31,25 +31,32 @@
 
 package com.tencent.bkrepo.common.storage.innercos
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
+import com.tencent.bkrepo.common.storage.core.AbstractEncryptorFileStorage
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
 import com.tencent.bkrepo.common.storage.innercos.request.CheckObjectExistRequest
-import com.tencent.bkrepo.common.storage.innercos.request.CopyObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
+import com.tencent.bkrepo.common.storage.innercos.request.ListObjectsRequest
+import com.tencent.bkrepo.common.storage.innercos.request.MigrateObjectRequest
+import com.tencent.bkrepo.common.storage.innercos.request.RestoreObjectRequest
+import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.stream.Stream
 
 /**
  * 内部cos文件存储实现类
  */
-open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosClient>() {
+open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredentials, CosClient>() {
 
-    override fun store(path: String, name: String, file: File, client: CosClient) {
-        client.putFileObject(name, file)
+    override fun store(path: String, name: String, file: File, client: CosClient, storageClass: String?) {
+        client.putFileObject(name, file, storageClass)
     }
 
     override fun store(path: String, name: String, inputStream: InputStream, size: Long, client: CosClient) {
@@ -57,7 +64,12 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
     }
 
     override fun load(path: String, name: String, range: Range, client: CosClient): InputStream? {
-        val request = GetObjectRequest(name, range.start, range.end)
+        val request = if (range == Range.FULL_RANGE) {
+            GetObjectRequest(name)
+        } else {
+            // 确定范围可以使用并发下载
+            GetObjectRequest(name, range.start, range.end)
+        }
         return client.getObjectByChunked(request).inputStream
     }
 
@@ -74,19 +86,29 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
             return client.checkObjectExist(CheckObjectExistRequest(name))
         } catch (ignored: IOException) {
             // return false if error
+            logger.error("check file[$path/$name] exists in cos failed", ignored)
             false
         }
     }
 
     override fun copy(path: String, name: String, fromClient: CosClient, toClient: CosClient) {
-        try {
-            require(fromClient.credentials.region == toClient.credentials.region)
-            require(fromClient.credentials.secretId == toClient.credentials.secretId)
-            require(fromClient.credentials.secretKey == toClient.credentials.secretKey)
-        } catch (ignored: IllegalArgumentException) {
-            throw IllegalArgumentException("Unsupported to copy object between different cos app id")
-        }
-        toClient.copyObject(CopyObjectRequest(fromClient.credentials.bucket, name, name))
+        toClient.migrateObject(MigrateObjectRequest(fromClient, name))
+    }
+
+    override fun checkRestore(path: String, name: String, client: CosClient): Boolean {
+        val checkObjectExistRequest = CheckObjectExistRequest(name)
+        return client.checkObjectRestore(checkObjectExistRequest)
+    }
+
+    override fun restore(path: String, name: String, days: Int, tier: String, client: CosClient) {
+        val restoreRequest = RestoreObjectRequest(name, days, tier)
+        client.restoreObject(restoreRequest)
+    }
+
+    override fun listAll(path: String, client: CosClient): Stream<Path> {
+        val keyPrefix = if (path == StringPool.ROOT) null else path
+        val listObjectsRequest = ListObjectsRequest(prefix = keyPrefix)
+        return client.listObjects(listObjectsRequest).map { Paths.get(it) }
     }
 
     override fun onCreateClient(credentials: InnerCosCredentials): CosClient {
@@ -95,5 +117,9 @@ open class InnerCosFileStorage : AbstractFileStorage<InnerCosCredentials, CosCli
         require(credentials.region.isNotBlank())
         require(credentials.bucket.isNotBlank())
         return CosClient(credentials)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(InnerCosFileStorage::class.java)
     }
 }

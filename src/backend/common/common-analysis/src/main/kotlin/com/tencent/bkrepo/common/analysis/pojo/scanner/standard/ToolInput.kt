@@ -87,7 +87,8 @@ data class ToolInput(
             packageType: String,
             packageSize: Long,
             packageKey: String? = null,
-            packageVersion: String? = null
+            packageVersion: String? = null,
+            extra: Map<String, Any?>?
         ): List<Argument> {
             val args = scanner.args.toMutableList()
             args.add(Argument(STRING.name, StandardScanner.ARG_KEY_PKG_TYPE, packageType))
@@ -99,7 +100,19 @@ data class ToolInput(
             packageVersion?.let {
                 args.add(Argument(StandardScanner.ArgumentType.STRING.name, StandardScanner.ARG_KEY_PKG_VERSION, it))
             }
+            extra?.let { addExtra(args, extra) }
             return args
+        }
+
+        private fun addExtra(args: MutableList<Argument>, extra: Map<String, Any?>) {
+            extra.forEach { (key, value) ->
+                val arg = when (value) {
+                    is String -> Argument.string(key, value)
+                    is Number -> Argument.number(key, value)
+                    else -> Argument.string(key, value.toString())
+                }
+                args.add(arg)
+            }
         }
     }
 }

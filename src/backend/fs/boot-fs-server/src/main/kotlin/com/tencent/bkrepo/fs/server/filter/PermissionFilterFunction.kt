@@ -28,11 +28,14 @@
 package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
+import com.tencent.bkrepo.fs.server.service.PermissionService
+import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import org.springframework.http.HttpStatus
 import org.springframework.util.AntPathMatcher
@@ -40,19 +43,46 @@ import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
 
-class PermissionFilterFunction(private val securityManager: SecurityManager) : CoHandlerFilterFunction {
+class PermissionFilterFunction(
+    private val securityManager: SecurityManager,
+    private val permissionService: PermissionService
+) : CoHandlerFilterFunction {
     private val matcher = AntPathMatcher()
     override suspend fun filter(
         request: ServerRequest,
-        next: suspend (ServerRequest) -> ServerResponse
+        next: suspend (ServerRequest) -> ServerResponse,
     ): ServerResponse {
-        if (request.path().startsWith("/login") || request.path().startsWith("/service")) {
+        if (uncheckedUrlPrefixList.any { request.path().startsWith(it) }) {
             return next(request)
         }
+        val projectId = request.pathVariable(PROJECT_ID)
+        val repoName = request.pathVariable(REPO_NAME)
         val action = request.getAction()
-        val token = request.headers().header(HttpHeaders.AUTHORIZATION).firstOrNull()
-        return if (token == null) {
+        val platformKey = request.exchange().attributes[PLATFORM_KEY]
+        if (platformKey != null) {
+            val userId = request.exchange().attributes[USER_KEY].toString()
+            return if (permissionService.checkPermission(projectId, repoName, action, userId)) {
+                next(request)
+            } else {
+                ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
+            }
+        }
+
+        val token = request.bearerToken()
+        return if (checkToken(token, request, action)) {
+            next(request)
+        } else {
             ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
+        }
+    }
+
+    private fun checkToken(
+        token: String?,
+        request: ServerRequest,
+        action: PermissionAction,
+    ): Boolean {
+        return if (token == null) {
+            false
         } else {
             val jws = securityManager.validateToken(token)
             val repo = jws.body[JWT_CLAIMS_REPOSITORY]
@@ -60,11 +90,7 @@ class PermissionFilterFunction(private val securityManager: SecurityManager) : C
             val projectId = request.pathVariable(PROJECT_ID)
             val repoName = request.pathVariable(REPO_NAME)
             val requestRepo = "$projectId/$repoName"
-            if (requestRepo == repo && checkAction(permit, action)) {
-                next(request)
-            } else {
-                ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
-            }
+            return requestRepo == repo && checkAction(permit, action)
         }
     }
 
@@ -92,7 +118,11 @@ class PermissionFilterFunction(private val securityManager: SecurityManager) : C
             "/node/delete/**",
             "/node/mkdir/**",
             "/node/set-length/**",
-            "/block/**"
+            "/block/**",
+            "/stream/**"
+        )
+        private val uncheckedUrlPrefixList = listOf(
+            "/login", "/devx/login", "/service", "/token", "/ioa", "/client/metrics/push"
         )
     }
 }

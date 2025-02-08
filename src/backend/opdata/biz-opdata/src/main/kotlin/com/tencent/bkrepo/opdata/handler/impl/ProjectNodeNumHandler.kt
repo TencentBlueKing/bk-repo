@@ -31,11 +31,10 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
-import com.tencent.bkrepo.opdata.constant.PROJECT_NAME
+import com.tencent.bkrepo.opdata.config.OpProjectMetricsProperties
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.stereotype.Component
 
 /**
@@ -43,20 +42,14 @@ import org.springframework.stereotype.Component
  */
 @Component
 class ProjectNodeNumHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository
-) : QueryHandler {
+    private val opProjectMetricsProperties: OpProjectMetricsProperties,
+) : QueryHandler, BaseHandler() {
 
     override val metric: Metrics get() = Metrics.PROJECTNODENUM
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
-        val projects = projectMetricsRepository.findAll()
-        val tmpMap = HashMap<String, Long>()
-        projects.forEach {
-            val projectId = it.projectId
-            if (it.nodeNum != 0L && projectId != PROJECT_NAME) {
-                tmpMap[projectId] = it.nodeNum
-            }
-        }
-        return convToDisplayData(tmpMap, result)
+        val tmpMap = calculateMetricValue(target)
+        val top = getTopValue(target, opProjectMetricsProperties.top)
+        return convToDisplayData(tmpMap, result, top)
     }
 }

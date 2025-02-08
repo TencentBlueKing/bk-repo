@@ -39,7 +39,6 @@ import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.monitor.Throughput
-import java.util.concurrent.atomic.AtomicBoolean
 import org.slf4j.LoggerFactory
 import kotlin.system.measureNanoTime
 
@@ -47,13 +46,13 @@ import kotlin.system.measureNanoTime
  * 存储服务抽象实现
  */
 @Suppress("TooGenericExceptionCaught")
-abstract class AbstractStorageService : OverlaySupport() {
+abstract class AbstractStorageService : CompressSupport() {
 
     override fun store(
         digest: String,
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
-        cancel: AtomicBoolean?
+        storageClass: String?,
     ): Int {
         val path = fileLocator.locate(digest)
         val credentials = getCredentialsOrDefault(storageCredentials)
@@ -63,7 +62,9 @@ abstract class AbstractStorageService : OverlaySupport() {
                 0
             } else {
                 val size = artifactFile.getSize()
-                val nanoTime = measureNanoTime { doStore(path, digest, artifactFile, credentials, cancel) }
+                val nanoTime = measureNanoTime {
+                    doStore(path, digest, artifactFile, credentials, storageClass)
+                }
                 val throughput = Throughput(size, nanoTime)
                 logger.info("Success to store artifact file [$digest], $throughput.")
                 1
@@ -108,7 +109,11 @@ abstract class AbstractStorageService : OverlaySupport() {
         }
     }
 
-    override fun copy(digest: String, fromCredentials: StorageCredentials?, toCredentials: StorageCredentials?) {
+    override fun copy(
+        digest: String,
+        fromCredentials: StorageCredentials?,
+        toCredentials: StorageCredentials?
+    ) {
         val path = fileLocator.locate(digest)
         val from = getCredentialsOrDefault(fromCredentials)
         val to = getCredentialsOrDefault(toCredentials)
@@ -130,6 +135,28 @@ abstract class AbstractStorageService : OverlaySupport() {
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?) = SynchronizeResult()
+
+    override fun checkRestore(digest: String, storageCredentials: StorageCredentials?): Boolean {
+        val path = fileLocator.locate(digest)
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        try {
+            return doCheckRestore(path, digest, credentials)
+        } catch (exception: Exception) {
+            logger.error("Failed to check file [$digest] restore on [${credentials.key}]", exception)
+            throw StorageErrorException(StorageMessageCode.QUERY_ERROR)
+        }
+    }
+
+    override fun restore(digest: String, days: Int, tier: String, storageCredentials: StorageCredentials?) {
+        val path = fileLocator.locate(digest)
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        try {
+            doRestore(path, digest, days, tier, credentials)
+        } catch (exception: Exception) {
+            logger.error("Failed to restore file [$digest] on [${credentials.key}]", exception)
+            throw StorageErrorException(StorageMessageCode.QUERY_ERROR)
+        }
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractStorageService::class.java)

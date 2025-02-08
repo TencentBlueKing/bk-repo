@@ -39,6 +39,10 @@ const val PROJECT_MANAGE_ID = "project_manage"
 
 const val PROJECT_MANAGE_NAME = "项目管理员"
 
+const val PROJECT_VIEWER_ID = "project_view"
+
+const val PROJECT_VIEWER_NAME = "项目用户"
+
 const val REPO_MANAGE_ID = "repo_manage"
 
 const val REPO_MANAGE_NAME = "仓库管理员"
@@ -48,57 +52,32 @@ const val DEFAULT_PASSWORD = "blueking"
 const val AUTHORIZATION = "Authorization"
 
 const val AUTH_FAILED_RESPONSE = "{\"code\":401,\"message\":\"Authorization value [%s] " +
-    "is not a valid scheme.\",\"data\":null,\"traceId\":\"\"}"
+        "is not a valid scheme.\",\"data\":null,\"traceId\":\"\"}"
 
 const val BASIC_AUTH_HEADER_PREFIX = "Basic "
 
 const val PLATFORM_AUTH_HEADER_PREFIX = "Platform "
-
 const val RANDOM_KEY_LENGTH = 30
-
 const val BKREPO_TICKET = "bkrepo_ticket"
-
-const val AUTH_REPO_SUFFIX = "/create/repo"
-
-const val AUTH_PROJECT_SUFFIX = "/create/project"
 
 const val AUTH_API_PERMISSION_PREFIX = "/api/permission"
 const val AUTH_SERVICE_PERMISSION_PREFIX = "/service/permission"
 const val AUTH_CLUSTER_PERMISSION_PREFIX = "/cluster/permission"
-
 const val AUTH_API_ROLE_PREFIX = "/api/role"
 const val AUTH_SERVICE_ROLE_PREFIX = "/service/role"
-
+const val AUTH_SERVICE_BKIAMV3_PREFIX = "/service/bkiamv3"
 const val AUTH_API_USER_PREFIX = "/api/user"
 const val AUTH_SERVICE_USER_PREFIX = "/service/user"
-const val AUTH_CLUSTER_USER_PREFIX = "/cluster/permission"
-
-const val AUTH_API_DEPARTMENT_PREFIX = "/api/department"
-
-const val AUTH_SERVICE_ACCOUNT_PREFIX = "/service/account"
 const val AUTH_API_ACCOUNT_PREFIX = "/api/account"
-
-const val AUTH_API_KEY_PREFIX = "/api/key"
-
+const val AUTH_SERVICE_ACCOUNT_PREFIX = "/service/account"
 const val AUTH_API_OAUTH_PREFIX = "/api/oauth"
 const val AUTH_SERVICE_OAUTH_PREFIX = "/service/oauth"
-
-const val AUTH_API_PROJECT_ADMIN_PREFIX = "/api/user/admin"
-const val AUTH_API_USER_INFO_PREFIX = "/api/user/userinfo"
-const val AUTH_API_TOKEN_LIST_PREFIX = "api/user/list/token"
-const val AUTH_API_TOKEN_PREFIX = "api/user/token"
-const val AUTH_API_USER_LIST_PREFIX = "api/user/list"
-const val AUTH_API_INFO_PREFIX = "api/user/info"
-const val AUTH_API_ROLE_SYS_LIST_PREFIX = "api/role/sys/list"
-const val AUTH_API_PERMISSION_LIST_PREFIX = "api/permission/list/inproject"
-const val AUTH_API_PERMISSION_USER_PREFIX = "api/permission/user"
-const val AUTH_API_USER_UPDATE_PREFIX = "api/user/update/info"
-
+const val AUTH_API_AUTH_MODE_PREFIX = "/api/mode/repo"
+const val AUTH_CLUSTER_PREFIX = "/cluster"
 const val AUTH_CLUSTER_TOKEN_INFO_PREFIX = "/cluster/temporary/token/info"
 const val AUTH_CLUSTER_TOKEN_DELETE_PREFIX = "/cluster/temporary/token/delete"
 const val AUTH_CLUSTER_TOKEN_DECREMENT_PREFIX = "/cluster/temporary/token/decrement"
 const val AUTH_CLUSTER_PERMISSION_CHECK_PREFIX = "/cluster/permission/check"
-
 const val AUTH_API_EXT_PERMISSION_PREFIX = "/api/ext-permission"
 const val AUTH_SERVICE_EXT_PERMISSION_PREFIX = "/service/ext-permission"
 

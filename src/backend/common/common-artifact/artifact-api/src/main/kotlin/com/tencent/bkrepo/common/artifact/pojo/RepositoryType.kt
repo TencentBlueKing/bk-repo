@@ -34,21 +34,28 @@ package com.tencent.bkrepo.common.artifact.pojo
 /**
  * 仓库类型
  */
-enum class RepositoryType {
-    NONE,
-    GENERIC,
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    OCI,
-    CONAN;
+enum class RepositoryType(val supportPackage: Boolean) {
+    NONE(false),
+    GENERIC(false),
+    DOCKER(true),
+    MAVEN(true),
+    PYPI(true),
+    NPM(true),
+    HELM(true),
+    RDS(true),
+    COMPOSER(true),
+    RPM(true),
+    NUGET(true),
+    GIT(true),
+    OCI(true),
+    CONAN(true),
+    LFS(false),
+    DDC(false),
+    SVN(false),
+    S3(false),
+    MEDIA(false),
+    OHPM(true),
+    ;
 
     companion object {
         fun ofValueOrDefault(type: String): RepositoryType {

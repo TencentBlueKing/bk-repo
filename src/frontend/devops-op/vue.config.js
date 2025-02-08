@@ -1,5 +1,6 @@
 'use strict'
 const path = require('path')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 function resolve(dir) {
   return path.join(__dirname, dir)
@@ -55,6 +56,17 @@ module.exports = {
     //     include: 'initial'
     //   }
     // ])
+    config
+      .plugin('html')
+      .use(new HtmlWebpackPlugin({
+        filename: process.env.NODE_ENV !== 'development' ? '../ui/frontend#admin#index.html' : 'index.html',
+        templateParameters: {
+          BASE_URL: `/`
+        },
+        template: resolve('./index.html'),
+        inlineSource: '.(js|css)$',
+        inject: 'body'
+      }))
 
     // when there are many pages, it will cause too many meaningless requests
     config.plugins.delete('prefetch')

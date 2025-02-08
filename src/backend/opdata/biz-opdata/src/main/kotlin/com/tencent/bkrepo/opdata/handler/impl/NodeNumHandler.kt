@@ -38,25 +38,18 @@ import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
-import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
 import org.springframework.stereotype.Component
 
 /**
  * Node数量统计
  */
 @Component
-class NodeNumHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository
-) : QueryHandler {
+class NodeNumHandler : QueryHandler, BaseHandler() {
 
     override val metric: Metrics get() = Metrics.NODENUM
 
     override fun handle(target: Target, result: MutableList<Any>) {
-        var num = 0L
-        val projects = projectMetricsRepository.findAll()
-        projects.forEach {
-            num += it.nodeNum
-        }
+        var num = calculateMetricValue(target).values.firstOrNull() ?: 0
         val column = Columns(OPDATA_NODE_NUM, OPDATA_GRAFANA_NUMBER)
         val row = listOf(num)
         val data = QueryResult(listOf(column), listOf(row), target.type)

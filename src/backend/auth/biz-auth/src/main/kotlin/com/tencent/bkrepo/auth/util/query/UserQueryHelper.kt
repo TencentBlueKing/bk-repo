@@ -1,20 +1,20 @@
 package com.tencent.bkrepo.auth.util.query
 
 import com.tencent.bkrepo.auth.model.TUser
-import com.tencent.bkrepo.auth.util.DataDigestUtils
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Query.query
+
 
 object UserQueryHelper {
-
-    fun buildUserPasswordCheck(userId: String, pwd: String, hashPwd: String): Query {
+    fun buildUserPasswordCheck(userId: String, pwd: String, hashPwd: String, sm3HashPwd: String): Query {
         val criteria = Criteria()
         criteria.orOperator(
             Criteria.where(TUser::pwd.name).`is`(hashPwd),
             Criteria.where("tokens.id").`is`(pwd),
-            Criteria.where("tokens.id").`is`(hashPwd)
-        ).and(TUser::userId.name).`is`(userId)
-        return Query.query(criteria)
+            Criteria.where("tokens.id").`is`(sm3HashPwd)
+        ).and(TUser::userId.name).`is`(userId).and(TUser::locked.name).`is`(false)
+        return query(criteria)
     }
 
     fun filterNotLockedUser(): Query {
@@ -26,11 +26,11 @@ object UserQueryHelper {
         return query.addCriteria(Criteria.where(TUser::userId.name).`is`(userId))
     }
 
-    fun getUserByIdAndPwd(userId: String, oldPwd: String): Query {
-        return Query.query(
+    fun getUserByIdAndPwd(userId: String, hashPwd: String): Query {
+        return query(
             Criteria().andOperator(
                 Criteria.where(TUser::userId.name).`is`(userId),
-                Criteria.where(TUser::pwd.name).`is`(DataDigestUtils.md5FromStr(oldPwd))
+                Criteria.where(TUser::pwd.name).`is`(hashPwd)
             )
         )
     }
@@ -61,5 +61,12 @@ object UserQueryHelper {
         admin?.let { criteria.and(TUser::admin.name).`is`(admin) }
         locked?.let { criteria.and(TUser::locked.name).`is`(locked) }
         return Query(criteria)
+    }
+
+    fun getUserByAsstUsers(userId: String): Query {
+        val query = Query()
+        return query.addCriteria(
+            Criteria.where(TUser::asstUsers.name).`is`(userId).and(TUser::group.name).`is`(true)
+        )
     }
 }

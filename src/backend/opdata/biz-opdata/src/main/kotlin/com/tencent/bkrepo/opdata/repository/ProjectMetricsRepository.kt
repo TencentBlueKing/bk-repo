@@ -32,8 +32,25 @@
 package com.tencent.bkrepo.opdata.repository
 
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.repository.MongoRepository
 import org.springframework.stereotype.Repository
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Repository
-interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>
+interface ProjectMetricsRepository : MongoRepository<TProjectMetrics, String>{
+    fun findByProjectIdAndCreatedDateOrderByCreatedDateDesc(
+        projectId:String, createdDate: LocalDateTime, pageable: Pageable
+    ): Page<TProjectMetrics>
+    fun findByCreatedDateOrderByCreatedDateDesc(
+        createdDate: LocalDateTime, pageable: Pageable
+    ): Page<TProjectMetrics>
+    fun findAllByCreatedDate(
+        createdDate: LocalDateTime = LocalDate.now().minusDays(1).atStartOfDay()
+    ): List<TProjectMetrics>
+    fun findAllByProjectIdAndCreatedDateBetween(
+        projectId: String, start: LocalDateTime, end: LocalDateTime
+    ): List<TProjectMetrics>
+}

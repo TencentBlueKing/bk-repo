@@ -44,6 +44,7 @@ config = {
     url = "__BK_REPO_SSM_TOKEN_URL__",     -- 接口路径
     app_code = "__BK_REPO_APP_CODE__",
     app_secret = "__BK_REPO_APP_TOKEN__",
+    apigw_url = "__BK_APIGW_URL__"
   },
   bkrepo = {
     authorization = "__BK_REPO_AUTHORIZATION__",
@@ -55,7 +56,14 @@ config = {
     host = "__BK_CI_HOST__",
     port = "__BK_CI_PORT__"
   },
-  mobileSiteToken = "__BK_CI_MOBILE_SITE_TOKEN__"
+  mobileSiteToken = "__BK_CI_MOBILE_SITE_TOKEN__",
+  security_paths = {
+  },
+  service_in_container = "__BK_REPO_SERVICE_IN_CONTAINER__",
+  service_in_local = "__BK_REPO_SERVICE_IN_LOCAL__",
+  container_url = "__BK_REPO_URL_CONTAINER__",
+  enable_multi_tenant_mode = "__BK_REPO_ENABLE_MULTI_TENANT_MODE__",
+  op_tenant_id = "__BK_REPO_OP_TENANT_ID__"
 }
   
 require("init_common")

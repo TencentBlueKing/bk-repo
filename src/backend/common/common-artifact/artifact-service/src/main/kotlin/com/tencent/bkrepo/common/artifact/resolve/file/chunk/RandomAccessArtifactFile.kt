@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -23,7 +23,7 @@ import java.nio.file.NoSuchFileException
 class RandomAccessArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageCredentials: StorageCredentials,
-    storageProperties: StorageProperties
+    storageProperties: StorageProperties,
 ) : ArtifactFile {
 
     /**
@@ -43,7 +43,9 @@ class RandomAccessArtifactFile(
 
     init {
         val path = storageCredentials.upload.location.toPath()
-        receiver = ArtifactDataReceiver(storageProperties.receive, storageProperties.monitor, path)
+        receiver = ArtifactDataReceiver(
+            storageProperties.receive, storageProperties.monitor, path,
+        )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {
             receiver.unhealthy(monitor.getFallbackPath(), monitor.fallBackReason)

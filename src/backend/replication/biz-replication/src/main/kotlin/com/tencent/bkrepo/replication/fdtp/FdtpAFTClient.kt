@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.fdtp
 
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.fdtp.FdtpVersion
 import com.tencent.bkrepo.fdtp.SimpleChannelPoolMap
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpFrameStream
@@ -43,14 +44,18 @@ import io.netty.util.concurrent.GenericProgressiveFutureListener
 import io.netty.util.concurrent.Promise
 import java.io.File
 import java.io.InputStream
+import java.net.ConnectException
 import java.net.InetSocketAddress
+import org.slf4j.LoggerFactory
+import org.springframework.beans.BeansException
+import org.springframework.cloud.sleuth.Tracer
 
 /**
  * 使用fdtp协议传输artifact file
  * 底层使用fdtp的多路复用传输，即多个stream复用一个fdtp连接
  * */
 class FdtpAFTClient(
-    remoteAddress: InetSocketAddress,
+    private val remoteAddress: InetSocketAddress,
     poolMap: SimpleChannelPoolMap,
     val certificate: String?,
     val authManager: FdtpAuthManager,
@@ -62,9 +67,9 @@ class FdtpAFTClient(
     fun sendFile(
         file: File,
         headers: FdtpHeaders,
-        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null
+        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null,
     ): Promise<FullFdtpAFTResponse> {
-        val fdtStream = FdtpAFTHelper.createStream(channelPool, certificate, authManager)
+        val fdtStream = createStream()
         val streamId = fdtStream.id
         val stream = DefaultFdtpFrameStream(streamId)
         val chunkStream = FdtpChunkStream(ChunkedFile(file, properties.chunkSize), stream)
@@ -74,9 +79,9 @@ class FdtpAFTClient(
     fun sendStream(
         inputStream: InputStream,
         headers: FdtpHeaders,
-        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null
+        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null,
     ): Promise<FullFdtpAFTResponse> {
-        val fdtStream = FdtpAFTHelper.createStream(channelPool, certificate, authManager)
+        val fdtStream = createStream()
         val streamId = fdtStream.id
         val stream = DefaultFdtpFrameStream(streamId)
         val chunkStream = FdtpChunkStream(ChunkedStream(inputStream, properties.chunkSize), stream)
@@ -89,7 +94,7 @@ class FdtpAFTClient(
         headers: FdtpHeaders,
         stream: DefaultFdtpFrameStream,
         chunkStream: FdtpChunkStream,
-        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null
+        progressListener: GenericProgressiveFutureListener<ChannelProgressiveFuture>? = null,
     ): Promise<FullFdtpAFTResponse> {
         val channel = fdtStream.channel
         var progressivePromise: ChannelProgressivePromise? = null
@@ -103,6 +108,9 @@ class FdtpAFTClient(
         clientHandler.put(streamId, promise)
         headers.add(FdtpHeaderNames.FDTP_VERSION, FdtpVersion.FDTP_1_0.text())
         headers.add(FdtpHeaderNames.STREAM_ID, stream.id().toString())
+        getTranceId()?.let {
+            headers.add(TRACE_ID, it)
+        }
         val headerFrame = DefaultFdtpHeaderFrame(headers, false).stream(stream)
         channel.writeAndFlush(headerFrame)
         if (progressivePromise == null) {
@@ -111,5 +119,33 @@ class FdtpAFTClient(
             channel.writeAndFlush(chunkStream, progressivePromise)
         }
         return promise
+    }
+
+    /**
+     * 获取traceId
+     * */
+    private fun getTranceId(): String? {
+        try {
+            val tracer = SpringContextUtils.getBean<Tracer>()
+            return tracer.currentSpan()?.context()?.traceId()
+        } catch (ignore: BeansException) {
+            // ignore
+        }
+        return null
+    }
+
+    private fun createStream(): FdtpStream {
+        try {
+            return FdtpAFTHelper.createStream(channelPool, certificate, authManager)
+        } catch (e: ConnectException) {
+            val remoteHost = remoteAddress.address.hostAddress
+            val remotePort = remoteAddress.port
+            logger.error("Can't connect $remoteHost:$remotePort.")
+            throw e
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(FdtpAFTClient::class.java)
     }
 }

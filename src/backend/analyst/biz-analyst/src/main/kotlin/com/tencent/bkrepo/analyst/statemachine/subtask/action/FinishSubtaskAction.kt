@@ -103,10 +103,10 @@ class FinishSubtaskAction(
         val context = event.context
         require(context is FinishSubtaskContext)
         with(context) {
-            if (targetState != SubScanTaskStatus.SUCCESS.name) {
-                logger.error(
+            if (targetState != SubScanTaskStatus.SUCCESS.name && targetState != SubScanTaskStatus.STOPPED.name) {
+                logger.warn(
                     "task[${subtask.parentScanTaskId}], subtask[${subtask.id}], " +
-                        "scan failed: $scanExecutorResult"
+                            "scan failed: status[$targetState], reason[$reason], result[$scanExecutorResult]"
                 )
             }
 
@@ -175,11 +175,12 @@ class FinishSubtaskAction(
 
         // 质量规则检查结果
         val planId = subTask.planId
-        val qualityPass = if (planId != null && overview.isNotEmpty()) {
-            scanQualityService.checkScanQualityRedLine(planId, overview as Map<String, Number>)
-        } else {
+        val qualityPass = if (subTask.scanQuality.isNullOrEmpty() || planId == null) {
             null
+        } else {
+            overview.isEmpty() || scanQualityService.checkScanQualityRedLine(planId, overview as Map<String, Number>)
         }
+        logger.info("subTask[$subTaskId], qualityPass[$qualityPass]")
         archiveSubScanTaskDao.save(
             SubtaskConverter.convertToArchiveSubtask(
                 subTask, resultSubTaskStatus, overview, qualityPass = qualityPass, modifiedBy = modifiedBy

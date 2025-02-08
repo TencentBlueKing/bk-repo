@@ -41,11 +41,16 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCleanRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRestoreRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
@@ -58,6 +63,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -69,6 +75,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "NodeClient", primary = false)
 @RequestMapping("/service/node")
+@Deprecated("replace with NodeService")
 interface NodeClient {
 
     @ApiOperation("根据路径查看节点详情")
@@ -76,7 +83,7 @@ interface NodeClient {
     fun getNodeDetail(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestParam fullPath: String
+        @RequestParam fullPath: String,
     ): Response<NodeDetail?>
 
     @ApiOperation("根据路径查看节点是否存在")
@@ -84,7 +91,7 @@ interface NodeClient {
     fun checkExist(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestParam fullPath: String
+        @RequestParam fullPath: String,
     ): Response<Boolean>
 
     @ApiOperation("列出仓库中已存在的节点")
@@ -92,7 +99,7 @@ interface NodeClient {
     fun listExistFullPath(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestBody fullPathList: List<String>
+        @RequestBody fullPathList: List<String>,
     ): Response<List<String>>
 
     @PostMapping("/page/{projectId}/{repoName}")
@@ -100,7 +107,7 @@ interface NodeClient {
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam path: String,
-        @RequestBody option: NodeListOption = NodeListOption()
+        @RequestBody option: NodeListOption = NodeListOption(),
     ): Response<Page<NodeInfo>>
 
     @ApiOperation("创建节点")
@@ -121,11 +128,11 @@ interface NodeClient {
 
     @ApiOperation("移动节点")
     @PostMapping("/move")
-    fun moveNode(@RequestBody nodeMoveRequest: NodeMoveCopyRequest): Response<Void>
+    fun moveNode(@RequestBody nodeMoveRequest: NodeMoveCopyRequest): Response<NodeDetail>
 
     @ApiOperation("复制节点")
     @PostMapping("/copy")
-    fun copyNode(@RequestBody nodeCopyRequest: NodeMoveCopyRequest): Response<Void>
+    fun copyNode(@RequestBody nodeCopyRequest: NodeMoveCopyRequest): Response<NodeDetail>
 
     @ApiOperation("删除节点")
     @DeleteMapping("/delete")
@@ -133,7 +140,7 @@ interface NodeClient {
 
     @ApiOperation("删除节点")
     @DeleteMapping("/batch/delete")
-    fun deleteNodes(nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
+    fun deleteNodes(@RequestBody nodesDeleteRequest: NodesDeleteRequest): Response<NodeDeleteResult>
 
     @ApiOperation("恢复节点")
     @PostMapping("/restore")
@@ -143,51 +150,121 @@ interface NodeClient {
     @GetMapping("/size/{projectId}/{repoName}")
     fun computeSize(
         @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
+        @PathVariable
+        projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
+        @PathVariable
+        repoName: String,
         @ApiParam(value = "节点完整路径", required = true)
-        @RequestParam fullPath: String
+        @RequestParam
+        fullPath: String,
+        @ApiParam(value = "估计值", required = false)
+        @RequestParam
+        estimated: Boolean = false,
     ): Response<NodeSizeInfo>
 
     @ApiOperation("查询文件节点数量")
     @GetMapping("/file/{projectId}/{repoName}")
     fun countFileNode(
         @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
+        @PathVariable
+        projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
+        @PathVariable
+        repoName: String,
         @ApiParam(value = "节点完整路径", required = true)
-        @RequestParam path: String
+        @RequestParam
+        path: String,
     ): Response<Long>
 
-    @ApiOperation("自定义查询节点")
+    @ApiOperation("自定义查询节点，如不关注总记录数请使用queryWithoutCount")
     @PostMapping("/search")
     fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
+
+    @ApiOperation("自定义查询节点，不计算总记录数")
+    @PostMapping("/queryWithoutCount")
+    fun queryWithoutCount(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>>
 
     @Deprecated("replace with listNodePage")
     @ApiOperation("列表查询指定目录下所有节点")
     @GetMapping("/list/{projectId}/{repoName}")
     fun listNode(
         @ApiParam(value = "所属项目", required = true)
-        @PathVariable projectId: String,
+        @PathVariable
+        projectId: String,
         @ApiParam(value = "仓库名称", required = true)
-        @PathVariable repoName: String,
+        @PathVariable
+        repoName: String,
         @ApiParam(value = "所属目录", required = true)
-        @RequestParam path: String,
+        @RequestParam
+        path: String,
         @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
-        @RequestParam includeFolder: Boolean = true,
+        @RequestParam
+        includeFolder: Boolean = true,
         @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
-        @RequestParam deep: Boolean = false,
+        @RequestParam
+        deep: Boolean = false,
         @ApiParam(value = "是否包含元数据", required = false, defaultValue = "false")
-        @RequestParam includeMetadata: Boolean = false
+        @RequestParam
+        includeMetadata: Boolean = false,
     ): Response<List<NodeInfo>>
+
+    @ApiOperation("按sha256分页查询节点")
+    @PostMapping("/page", params = ["sha256"])
+    fun listPageNodeBySha256(
+        @RequestParam("sha256", required = true) sha256: String,
+        @RequestBody nodeListOption: NodeListOption
+    ): Response<Page<NodeInfo>>
 
     @ApiOperation("查询已删除节点")
     @GetMapping("/deleted/detail/{projectId}/{repoName}")
     fun getDeletedNodeDetail(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
-        @RequestParam fullPath: String
+        @RequestParam fullPath: String,
     ): Response<List<NodeDetail>>
+
+    @ApiOperation("通过sha256查询已删除节点")
+    @GetMapping("/deletedBySha256/detail/{projectId}/{repoName}")
+    fun getDeletedNodeDetailBySha256(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam sha256: String,
+    ): Response<NodeDetail?>
+
+    /**
+     * 归档文件成功通知
+     * */
+    @ApiOperation("归档节点")
+    @PutMapping("/archive/")
+    fun archiveNode(@RequestBody nodeArchiveRequest: NodeArchiveRequest): Response<Void>
+
+    /**
+     * 恢复文件成功通知
+     * */
+    @ApiOperation("恢复节点")
+    @PutMapping("/archive/restore/")
+    fun restoreNode(@RequestBody nodeArchiveRequest: NodeArchiveRequest): Response<Void>
+
+    /**
+     * 归档文件成功通知
+     * */
+    @ApiOperation("压缩节点")
+    @PutMapping("/compress/")
+    fun compressedNode(@RequestBody nodeCompressedRequest: NodeCompressedRequest): Response<Void>
+
+    /**
+     * 恢复文件成功通知
+     * */
+    @ApiOperation("解压节点")
+    @PutMapping("/uncompress/")
+    fun uncompressedNode(@RequestBody nodeUnCompressedRequest: NodeUnCompressedRequest): Response<Void>
+
+    @ApiOperation("清理最后访问时间早于{date}的文件节点")
+    @DeleteMapping("/clean")
+    fun cleanNodes(@RequestBody nodeCleanRequest: NodeCleanRequest): Response<NodeDeleteResult>
+
+    @ApiOperation("创建软链接")
+    @PostMapping("/link")
+    fun link(@RequestBody nodeLinkRequest: NodeLinkRequest): Response<NodeDetail>
 }

@@ -31,32 +31,43 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.model.QueryModel
+import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.dao.FileReferenceDao
-import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.dao.file.FileReferenceDao
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
-import com.tencent.bkrepo.repository.search.common.LocalDatetimeRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
-import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
-import com.tencent.bkrepo.repository.service.node.NodeSearchService
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.search.common.LocalDatetimeRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.common.RepoNameRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.common.RepoTypeRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.node.NodeQueryInterpreter
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
@@ -84,12 +95,12 @@ class NodeSearchServiceTest @Autowired constructor(
 
     @BeforeAll
     fun beforeAll() {
-        initMock()
         initRepoForUnitTest(projectService, repositoryService)
     }
 
     @BeforeEach
     fun beforeEach() {
+        initMock()
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER)
     }
 
@@ -234,6 +245,113 @@ class NodeSearchServiceTest @Autowired constructor(
         result = nodeSearchService.search(queryModel)
         Assertions.assertEquals(0, result.totalRecords)
         Assertions.assertEquals(0, result.records.size)
+    }
+
+    @Test
+    fun testNoPermissionPathSearch() {
+        val utRepoName2 = "$UT_REPO_NAME-2"
+        val utRepoName3 = "$UT_REPO_NAME-3"
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(ListPathResult(status = true, path = mapOf(OperationType.NIN to listOf("/a"))))
+        )
+        whenever(servicePermissionClient.listPermissionRepo(anyString(), anyString(), isNull())).thenReturn(
+            ResponseBuilder.success(listOf(UT_REPO_NAME, utRepoName2, utRepoName3))
+        )
+        // 创建仓库
+        val repoCreateRequest = RepoCreateRequest(
+            projectId = UT_PROJECT_ID,
+            name = utRepoName2,
+            type = RepositoryType.GENERIC,
+            category = RepositoryCategory.LOCAL,
+            public = false,
+            operator = UT_USER,
+        )
+        repositoryService.createRepo(repoCreateRequest)
+        repositoryService.createRepo(repoCreateRequest.copy(name = utRepoName3))
+
+        // 创建node
+        val createNodeRequest = createRequest("/a/a1.txt", false)
+        nodeService.createNode(createNodeRequest)
+        nodeService.createNode(createNodeRequest.copy(fullPath = "/b/b1.txt"))
+        nodeService.createNode(createNodeRequest.copy(fullPath = "/c/c1.txt"))
+
+        nodeService.createNode(createNodeRequest.copy(repoName = utRepoName2, fullPath = "/a/a2.txt"))
+        nodeService.createNode(createNodeRequest.copy(repoName = utRepoName2, fullPath = "/b/b2.txt"))
+        nodeService.createNode(createNodeRequest.copy(repoName = utRepoName2, fullPath = "/c/c2.txt"))
+
+        nodeService.createNode(createNodeRequest.copy(repoName = utRepoName3, fullPath = "/a/a3.txt"))
+        nodeService.createNode(createNodeRequest.copy(repoName = utRepoName3, fullPath = "/b/b3.txt"))
+        nodeService.createNode(createNodeRequest.copy(repoName = utRepoName3, fullPath = "/c/c3.txt"))
+
+        // 无仓库查询测试
+        var result = nodeSearchService.search(NodeQueryBuilder().projectId(UT_PROJECT_ID).build())
+        Assertions.assertEquals(18, result.totalRecords)
+
+        // 单仓库查询
+        var queryModel = createQueryBuilder().build()
+        result = nodeSearchService.search(queryModel)
+        Assertions.assertEquals(4, result.totalRecords)
+
+        // 多仓库查询IN
+        queryModel = NodeQueryBuilder()
+            .projectId(UT_PROJECT_ID)
+            .repoNames(utRepoName2, utRepoName3)
+            .build()
+        result = nodeSearchService.search(queryModel)
+        Assertions.assertEquals(8, result.totalRecords)
+
+
+        // 多仓库查询NIN
+        val rules = mutableListOf(
+            Rule.QueryRule(NodeInfo::projectId.name, UT_PROJECT_ID) as Rule,
+            Rule.QueryRule(NodeInfo::repoName.name, listOf(utRepoName2, utRepoName3), OperationType.NIN) as Rule,
+        )
+        queryModel = QueryModel(sort = null, select = null, rule = Rule.NestedRule(rules))
+        result = nodeSearchService.search(queryModel)
+        Assertions.assertEquals(4, result.totalRecords)
+    }
+
+    @Test
+    fun testHasPermissionPathSearch() {
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(status = true, path = mapOf(OperationType.IN to listOf("/a/a1.txt")))
+            )
+        )
+        whenever(servicePermissionClient.listPermissionRepo(anyString(), anyString(), isNull())).thenReturn(
+            ResponseBuilder.success(listOf(UT_REPO_NAME))
+        )
+
+        // 创建node
+        val createNodeRequest = createRequest("/a/a1.txt", false)
+        nodeService.createNode(createNodeRequest)
+        nodeService.createNode(createNodeRequest.copy(fullPath = "/b/b1.txt"))
+        nodeService.createNode(createNodeRequest.copy(fullPath = "/c/c1.txt"))
+
+        // 查询
+        val queryModel = createQueryBuilder().build()
+        val result = nodeSearchService.search(queryModel)
+        Assertions.assertEquals(2, result.totalRecords)
+
+        // 测试所有路径均无权限
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(ListPathResult(status = true, path = mapOf(OperationType.IN to emptyList())))
+        )
+        Assertions.assertEquals(0, nodeSearchService.search(queryModel).totalRecords)
+
+        // 测试同时存在NIN与IN
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(
+                    status = true,
+                    path = mapOf(
+                        OperationType.IN to listOf("/a"),
+                        OperationType.NIN to listOf("/b"),
+                    )
+                )
+            )
+        )
+        assertThrows<IllegalArgumentException> { nodeSearchService.search(queryModel) }
     }
 
     private fun testLocalDateTimeOperation(

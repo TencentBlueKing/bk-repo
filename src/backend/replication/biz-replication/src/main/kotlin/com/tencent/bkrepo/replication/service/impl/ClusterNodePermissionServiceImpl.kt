@@ -29,16 +29,20 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.service.ClusterNodePermissionService
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import feign.FeignException
 import org.springframework.stereotype.Service
 
@@ -74,6 +78,8 @@ class ClusterNodePermissionServiceImpl : ClusterNodePermissionService {
                 resourceType = ResourceType.REPO.name,
                 action = PermissionAction.WRITE.name,
             )
+            val userId = SecurityUtils.getUserId()
+            HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, SYSTEM_USER)
             val client = FeignClientFactory.create<ArtifactReplicaClient>(cluster)
             try {
                 if (client.checkRepoPermission(request).data != true) {
@@ -83,6 +89,8 @@ class ClusterNodePermissionServiceImpl : ClusterNodePermissionService {
                 }
             } catch (e: FeignException.NotFound) {
                 throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "$remoteProjectId/$remoteRepoName")
+            } finally {
+                HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, userId)
             }
         }
     }

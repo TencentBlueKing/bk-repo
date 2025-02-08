@@ -47,13 +47,13 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
-import com.tencent.bkrepo.repository.api.ProxyChannelClient
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.time.format.DateTimeFormatter
 
 /**
  * 组合仓库抽象逻辑
@@ -62,7 +62,7 @@ import org.springframework.stereotype.Service
 class CompositeRepository(
     private val localRepository: LocalRepository,
     private val remoteRepository: RemoteRepository,
-    private val proxyChannelClient: ProxyChannelClient
+    private val proxyChannelService: ProxyChannelService
 ) : AbstractArtifactRepository() {
 
     /**
@@ -135,6 +135,21 @@ class CompositeRepository(
         }.apply { add(localResult) }.flatten()
     }
 
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return if (localRepository.onDownloadRedirect(context)) {
+            true
+        } else {
+            mapFirstProxyRepo(context) {
+                require(it is ArtifactDownloadContext)
+                if (remoteRepository.onDownloadRedirect(it)) {
+                    true
+                } else {
+                    null
+                }
+            } ?: false
+        }
+    }
+
     /**
      * 遍历代理仓库列表，执行[action]操作，当遇到代理仓库[action]操作返回非`null`时，立即返回结果[R]
      */
@@ -195,12 +210,12 @@ class CompositeRepository(
         setting: ProxyChannelSetting
     ): ArtifactContext {
         // 查询公共源详情
-        val proxyChannel = proxyChannelClient.getByUniqueId(
+        val proxyChannel = proxyChannelService.queryProxyChannel(
             projectId = context.projectId,
             repoName = context.repoName,
-            repoType = context.repositoryDetail.type.name,
+            repoType = context.repositoryDetail.type,
             name = setting.name
-        ).data!!
+        )!!
         // 构造proxyConfiguration
         val remoteConfiguration = convertConfig(proxyChannel)
         val remoteRepoDetail = convert(remoteConfiguration, context.repositoryDetail)

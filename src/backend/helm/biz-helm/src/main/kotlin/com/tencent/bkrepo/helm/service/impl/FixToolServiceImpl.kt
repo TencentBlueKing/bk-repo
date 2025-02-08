@@ -39,8 +39,7 @@ import com.tencent.bkrepo.common.api.util.readYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
-import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -49,13 +48,10 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.helm.constants.CHART_PACKAGE_FILE_EXTENSION
-import com.tencent.bkrepo.helm.constants.FULL_PATH
 import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
-import com.tencent.bkrepo.helm.constants.SIZE
-import com.tencent.bkrepo.helm.constants.SLEEP_MILLIS
+import com.tencent.bkrepo.helm.constants.NODE_METADATA
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
 import com.tencent.bkrepo.helm.exception.HelmFileNotFoundException
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
@@ -70,9 +66,11 @@ import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
 import com.tencent.bkrepo.helm.utils.HelmUtils
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
@@ -81,19 +79,14 @@ import java.time.format.DateTimeFormatter
 import java.util.SortedSet
 
 @Service
-class FixToolServiceImpl(
-    private val storageService: StorageService
-) : FixToolService, AbstractChartService() {
+class FixToolServiceImpl : FixToolService, AbstractChartService() {
 
     override fun repairPackageCreatedDate(): List<DateTimeRepairResponse> {
         val repairResponse = mutableListOf<DateTimeRepairResponse>()
         val successRepoName: MutableList<RepairResponse> = mutableListOf()
         val failedRepoName: MutableList<RepairResponse> = mutableListOf()
         logger.info("starting repair package created date for historical data")
-        val repositoryList = repositoryClient.pageByType(0, 1000, "HELM").data?.records ?: run {
-            logger.warn("no helm repository found, return.")
-            emptyList<RepositoryDetail>()
-        }
+        val repositoryList = repositoryService.listRepoPageByType("HELM", 0, 1000).records
         val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
         logger.info(
             "find [${helmLocalRepositoryList.size}] HELM local " +
@@ -175,13 +168,13 @@ class FixToolServiceImpl(
 
     private fun helmIndexYamlMetadata(projectId: String, repoName: String): HelmIndexYamlMetadata {
         val nodeDetail =
-            nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()).data ?: run {
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) ?: run {
                 logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
                 throw HelmFileNotFoundException(
                     HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
                 )
             }
-        val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
+        val inputStream = storageManager.loadFullArtifactInputStream(nodeDetail, null) ?: run {
             logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
             throw HelmFileNotFoundException(
                 HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
@@ -194,10 +187,7 @@ class FixToolServiceImpl(
         val packageManagerList = mutableListOf<PackageManagerResponse>()
         // 查找所有仓库
         logger.info("starting add package manager function to historical data")
-        val repositoryList = repositoryClient.pageByType(0, 1000, "HELM").data?.records ?: run {
-            logger.warn("no helm repository found, return.")
-            return emptyList()
-        }
+        val repositoryList = repositoryService.listRepoPageByType("HELM", 0, 1000).records
         val helmLocalRepositoryList = repositoryList.filter { it.category == RepositoryCategory.LOCAL }.toList()
         logger.info(
             "find [${helmLocalRepositoryList.size}] HELM local " +
@@ -221,15 +211,16 @@ class FixToolServiceImpl(
         try {
             // 查询索引文件
             val nodeDetail =
-                nodeClient.getNodeDetail(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()).data ?: run {
-                    logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
-                    throw HelmFileNotFoundException(
-                        HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
-                    )
-                }
+                nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath()))
+                    ?: run {
+                        logger.error("query index-cache.yaml file failed in repo [$projectId/$repoName]")
+                        throw HelmFileNotFoundException(
+                            HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
+                        )
+                    }
             // sleep 0.1s
             Thread.sleep(100)
-            val inputStream = storageService.load(nodeDetail.sha256!!, Range.full(nodeDetail.size), null) ?: run {
+            val inputStream = storageManager.loadFullArtifactInputStream(nodeDetail, null) ?: run {
                 logger.error("load index-cache.yaml file stream is null in repo [$projectId/$repoName]")
                 throw HelmFileNotFoundException(
                     HelmMessageCode.HELM_FILE_NOT_FOUND, "index.yaml", "$projectId|$repoName"
@@ -320,7 +311,7 @@ class FixToolServiceImpl(
             with(it) {
                 // sleep 0.1s
                 Thread.sleep(100)
-                val helmChartMetadata = storageService.load(sha256!!, Range.full(size), null)
+                val helmChartMetadata = storageManager.loadFullArtifactInputStream(NodeDetail(it), null)
                     ?.use {
                         it.getArchivesContent(CHART_PACKAGE_FILE_EXTENSION).byteInputStream()
                             .readYamlString<HelmChartMetadata>()
@@ -372,15 +363,15 @@ class FixToolServiceImpl(
             select = mutableListOf(),
             rule = Rule.NestedRule(ruleList, Rule.NestedRule.RelationType.AND)
         )
-        return nodeClient.search(queryModel).data!!
+        return nodeSearchService.searchWithoutCount(queryModel)
     }
 
     private fun resolveNode(record: Map<String, Any?>): NodeInfo {
         return NodeInfo(
             createdBy = record["createdBy"] as String,
-            createdDate = record["createdDate"] as String,
+            createdDate = (record["createdDate"] as LocalDateTime).toString(),
             lastModifiedBy = record["lastModifiedBy"] as String,
-            lastModifiedDate = record["lastModifiedDate"] as String,
+            lastModifiedDate = (record["lastModifiedDate"] as LocalDateTime).toString(),
             folder = record["folder"] as Boolean,
             path = record["path"] as String,
             name = record["name"] as String,
@@ -397,7 +388,8 @@ class FixToolServiceImpl(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     override fun metaDataRegenerate(userId: String, artifactInfo: HelmArtifactInfo) {
         logger.info("handling meta data regenerate request: [$artifactInfo]")
-        when (getRepositoryInfo(artifactInfo).category) {
+        val repositoryDetail = getRepositoryInfo(artifactInfo)
+        when (repositoryDetail.category) {
             RepositoryCategory.REMOTE -> {
                 val message = "Unable to regenerate metadata for remote repository " +
                     "[${artifactInfo.projectId}/${artifactInfo.repoName}]"
@@ -407,44 +399,57 @@ class FixToolServiceImpl(
                     emptyList<String>()
                 )
             }
+            else -> {}
         }
         val nodeList = queryNodeList(artifactInfo, false)
         logger.info(
             "query node list for regenerating meta data in repo [${artifactInfo.getRepoIdentify()}]" +
                 ", size [${nodeList.size}] "
         )
-        val context = ArtifactQueryContext()
-        nodeList.forEach {
-            Thread.sleep(SLEEP_MILLIS)
+        for (node in nodeList) {
             try {
-                val path = it[NODE_FULL_PATH] as String
-                val chartMetadata = queryHelmChartMetadata(context, path)
+                val path = node[NODE_FULL_PATH] as String
+                    val nodeMetadata = node[NODE_METADATA] as Map<String, Any>
+                    if (nodeMetadata.size > 3) {
+                        continue
+                    }
+                val chartMetadata = getChartYaml(
+                    artifactInfo.projectId, artifactInfo.repoName, node[NODE_FULL_PATH] as String
+                )
                 val metadata = HelmMetadataUtils.convertToMetadata(chartMetadata)
-                context.putAttribute(FULL_PATH, path)
-                createVersion(
-                    userId = context.userId,
+                val packageMetadataRequest = PackageMetadataSaveRequest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
-                    chartInfo = chartMetadata,
-                    size = context.getLongAttribute(SIZE)!!,
-                    isOverwrite = true
+                    packageKey = PackageKeys.ofHelm(chartMetadata.name),
+                    version = chartMetadata.version,
+                    versionMetadata = metadata
                 )
+                packageMetadataService.saveMetadata(packageMetadataRequest)
                 val metadataSaveRequest = MetadataSaveRequest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
                     fullPath = path,
                     nodeMetadata = metadata,
-                    operator = context.userId
+                    operator = userId
                 )
-                metadataClient.saveMetadata(metadataSaveRequest)
+                metadataService.saveMetadata(metadataSaveRequest)
             } catch (e: Exception) {
-                logger.error("error occurred while updating meta data, error: ${e.message}")
+                logger.warn("error occurred while updating metadata of $node, error: ${e.message}")
             }
         }
+        repositoryDetail.configuration.settings.put(META_DATA_REFRESH_CONFIG, true)
+        val request = RepoUpdateRequest(
+            projectId = artifactInfo.projectId,
+            name = artifactInfo.repoName,
+            operator = userId,
+            configuration = repositoryDetail.configuration
+        )
+        repositoryService.updateRepo(request)
     }
 
     companion object {
         private const val pageSize = 10000
         private val logger = LoggerFactory.getLogger(FixToolServiceImpl::class.java)
+        private const val META_DATA_REFRESH_CONFIG = "metaDataRefreshStatus"
     }
 }

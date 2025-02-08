@@ -49,5 +49,11 @@ data class ProjectInfo(
     @ApiModelProperty("上次修改者")
     val lastModifiedBy: String,
     @ApiModelProperty("上次修改日期")
-    val lastModifiedDate: String
+    val lastModifiedDate: String,
+    @ApiModelProperty("是否已生成蓝鲸v3-rbac默认项目组")
+    val rbacFlag: Boolean = false,
+    @ApiModelProperty("项目元数据")
+    val metadata: List<ProjectMetadata> = emptyList(),
+    @ApiModelProperty("项目新建仓库默认使用的存储")
+    val credentialsKey: String? = null,
 )

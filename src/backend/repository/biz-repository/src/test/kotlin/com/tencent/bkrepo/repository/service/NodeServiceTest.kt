@@ -31,25 +31,27 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
+import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.FileReferenceDao
-import com.tencent.bkrepo.repository.dao.NodeDao
+import com.tencent.bkrepo.common.metadata.dao.file.FileReferenceDao
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -61,6 +63,8 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
@@ -76,7 +80,6 @@ class NodeServiceTest @Autowired constructor(
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
-    private val repositoryProperties: RepositoryProperties
 ) : ServiceBaseTest() {
 
     private val option = NodeListOption(includeFolder = false, deep = false)
@@ -86,13 +89,12 @@ class NodeServiceTest @Autowired constructor(
 
     @BeforeAll
     fun beforeAll() {
-        initMock()
         initRepoForUnitTest(projectService, repositoryService)
     }
 
     @BeforeEach
     fun beforeEach() {
-        repositoryProperties.nodeCreateTimeout = 5000
+        initMock()
         nodeService.deleteByPath(UT_PROJECT_ID, UT_REPO_NAME, ROOT, UT_USER)
     }
 
@@ -258,6 +260,83 @@ class NodeServiceTest @Autowired constructor(
     }
 
     @Test
+    @DisplayName("测试查询存在路径权限配置的目录")
+    fun testListPermissionNode() {
+        val size = 5L
+        repeat(size.toInt()) { i -> nodeService.createNode(createRequest("/a/$i/$i.txt", false)) }
+
+        val option = NodeListOption(
+            pageNumber = 0,
+            pageSize = 10,
+            includeFolder = true,
+            includeMetadata = false,
+            deep = false,
+            sort = false
+        )
+
+        // 测试查询无权限路径
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(
+                    status = true,
+                    path = mapOf(OperationType.NIN to listOf("/a/1", "/a/2"))
+                )
+            )
+        )
+        var page = nodeService.listNodePage(node("/a"), option)
+        assertEquals(3, page.totalRecords)
+        assertEquals("/a/0", page.records[0].fullPath)
+        assertEquals("/a/3", page.records[1].fullPath)
+        assertEquals("/a/4", page.records[2].fullPath)
+
+        var result = nodeService.listNode(node("/a"), option)
+        assertEquals(3, result.size)
+        assertEquals("/a/0", result[0].fullPath)
+        assertEquals("/a/3", result[1].fullPath)
+        assertEquals("/a/4", result[2].fullPath)
+
+        // 测试查询有权限路径
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(
+                    status = true,
+                    path = mapOf(OperationType.IN to listOf("/a/1/1.txt", "/a/2"))
+                )
+            )
+        )
+        page = nodeService.listNodePage(node("/a"), option)
+        assertEquals(2, page.totalRecords)
+        assertEquals("/a/1", page.records[0].fullPath)
+        assertEquals("/a/2", page.records[1].fullPath)
+
+        result = nodeService.listNode(node("/a"), option)
+        assertEquals(2, result.size)
+        assertEquals("/a/1", result[0].fullPath)
+        assertEquals("/a/2", result[1].fullPath)
+
+        // 测试所有路径均无权限
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(ListPathResult(status = true, path = mapOf(OperationType.IN to emptyList())))
+        )
+        assertEquals(0, nodeService.listNodePage(node("/a"), option).totalRecords)
+        assertEquals(0, nodeService.listNode(node("/a"), option).size)
+
+        // 测试同时包含有权限与无权限
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(
+                ListPathResult(
+                    status = true,
+                    path = mapOf(
+                        OperationType.IN to listOf("/a/1", "/a/2"),
+                        OperationType.NIN to listOf("/a/3", "/a/4"),
+                    )
+                )
+            )
+        )
+        assertThrows<IllegalArgumentException> { nodeService.listNode(node("/a"), option) }
+    }
+
+    @Test
     @DisplayName("测试删除文件")
     fun testDeleteFile() {
         nodeService.createNode(createRequest("/a/b/1.txt", false))
@@ -325,6 +404,7 @@ class NodeServiceTest @Autowired constructor(
         val pathSizeInfo = nodeService.computeSize(node("/a/b"))
 
         assertEquals(42, pathSizeInfo.subNodeCount)
+        assertEquals(40, pathSizeInfo.subNodeWithoutFolderCount)
         assertEquals(40, pathSizeInfo.size)
     }
 
@@ -348,6 +428,7 @@ class NodeServiceTest @Autowired constructor(
         val pathSizeInfo = nodeService.computeSize(node("/"))
 
         assertEquals(42, pathSizeInfo.subNodeCount)
+        assertEquals(40, pathSizeInfo.subNodeWithoutFolderCount)
         assertEquals(40, pathSizeInfo.size)
     }
 
@@ -741,55 +822,6 @@ class NodeServiceTest @Autowired constructor(
         )
         nodeService.copyNode(copyRequest)
         assertEquals("value", nodeService.getNodeDetail(node("/b"))!!.metadata["key"])
-    }
-
-    @Test
-    @DisplayName("测试创建文件超时")
-    fun testCreateFileNodeTimeout() {
-        // 新创建的文件回滚
-        repositoryProperties.nodeCreateTimeout = 0
-        val fullPath = "/1/2/3.txt"
-        assertThrows<ErrorCodeException> {
-            val request = createRequest(fullPath, folder = false, size = 100)
-            nodeService.createNode(request)
-        }
-        // 回滚创建的新文件和目录
-        assertEquals(false, nodeService.checkExist(node(fullPath)))
-        assertEquals(false, nodeService.checkExist(node("/1/2")))
-        assertEquals(false, nodeService.checkExist(node("/1")))
-
-        // 存在旧文件，使用覆盖创建的文件回滚
-        repositoryProperties.nodeCreateTimeout = 5000
-        // 创建旧文件数据
-        val request1 = createRequest(fullPath, folder = false, size = 10)
-        nodeService.createNode(request1)
-        assertEquals(true, nodeService.checkExist(node(fullPath)))
-
-        assertThrows<ErrorCodeException> {
-            repositoryProperties.nodeCreateTimeout = 0
-            // 覆盖创建
-            val request2 = createRequest(fullPath, folder = false, size = 100, override = true)
-            nodeService.createNode(request2)
-        }
-        // 旧文件还在
-        assertEquals(true, nodeService.checkExist(node(fullPath)))
-        // 恢复的旧文件
-        assertEquals(10, nodeService.getNodeDetail(node(fullPath))?.size)
-    }
-
-    @Test
-    @DisplayName("测试创建目录超时")
-    fun testCreateDirTimeout() {
-        // 新创建的目录回滚
-        repositoryProperties.nodeCreateTimeout = 0
-        val fullPath = "/1/2/3"
-        assertThrows<ErrorCodeException> {
-            val request = createRequest(fullPath, folder = true)
-            nodeService.createNode(request)
-        }
-        assertEquals(false, nodeService.checkExist(node(fullPath)))
-        assertEquals(false, nodeService.checkExist(node("/1/2")))
-        assertEquals(false, nodeService.checkExist(node("/1")))
     }
 
     private fun createRequest(

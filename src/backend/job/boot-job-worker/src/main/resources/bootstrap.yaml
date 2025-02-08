@@ -1,0 +1,10 @@
+server.port: 25821
+spring.application.name: job-worker
+
+devops:
+  schedule:
+    worker:
+      mode: DISCOVERY
+      server:
+        address: http://${service.prefix}job-schedule
+        access-token: xxx

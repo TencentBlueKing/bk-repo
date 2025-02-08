@@ -87,6 +87,16 @@ open class RedisLock(
         }
     }
 
+    inline fun <T> withLock(action: () -> T): T {
+        try {
+            // lock方法失败也可能加锁成功，因此lock方法放在try block内
+            lock()
+            return action()
+        } finally {
+            unlock()
+        }
+    }
+
     fun tryLock(): Boolean {
         // 不存在则添加 且设置过期时间（单位ms）
         // logger.info("Start to lock($lockKey) of value($lockValue) for $expiredTimeInSeconds sec")

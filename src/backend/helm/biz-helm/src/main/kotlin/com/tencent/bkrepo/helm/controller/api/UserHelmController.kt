@@ -31,18 +31,25 @@
 
 package com.tencent.bkrepo.helm.controller.api
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.CHART_PACKAGE_DELETE_URL
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.CHART_VERSION_DELETE_URL
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.HELM_VERSION_DETAIL
-import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
-import com.tencent.bkrepo.helm.service.ChartInfoService
 import com.tencent.bkrepo.helm.service.ChartManipulationService
+import com.tencent.bkrepo.helm.service.ChartRepositoryService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -59,7 +66,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/ext")
 class UserHelmController(
     private val chartManipulationService: ChartManipulationService,
-    private val chartInfoService: ChartInfoService
+    private val chartRepositoryService: ChartRepositoryService,
 ) {
 
     @ApiOperation("查询包的版本详情")
@@ -73,9 +80,26 @@ class UserHelmController(
         @ApiParam(value = "包版本", required = true)
         @RequestParam version: String
     ): Response<PackageVersionInfo> {
-        return ResponseBuilder.success(chartInfoService.detailVersion(userId, artifactInfo, packageKey, version))
+        return ResponseBuilder.success(chartRepositoryService.detailVersion(userId, artifactInfo, packageKey, version))
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#artifactInfo?.repoName",
+            instanceNames = "#artifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
+    )
     @ApiOperation("删除仓库下的包")
     @DeleteMapping(CHART_PACKAGE_DELETE_URL)
     fun deletePackage(
@@ -88,6 +112,25 @@ class UserHelmController(
         return ResponseBuilder.success()
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#artifactInfo?.repoName",
+            instanceNames = "#artifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey"),
+            AuditAttribute(name = ActionAuditContent.VERSION_TEMPLATE, value = "#version")
+
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
+    )
     @ApiOperation("删除仓库下的包版本")
     @DeleteMapping(CHART_VERSION_DELETE_URL)
     fun deleteVersion(
@@ -105,6 +148,6 @@ class UserHelmController(
     @ApiOperation("获取helm域名地址")
     @GetMapping("/address")
     fun getRegistryDomain(): Response<HelmDomainInfo> {
-        return ResponseBuilder.success(chartInfoService.getRegistryDomain())
+        return ResponseBuilder.success(chartRepositoryService.getRegistryDomain())
     }
 }

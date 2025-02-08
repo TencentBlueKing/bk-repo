@@ -44,6 +44,7 @@ open class ArtifactInputStream(
 ) : DelegateInputStream(delegate) {
 
     private val listenerList = mutableListOf<StreamReadListener>()
+    private val metadata = mutableMapOf<String, Any?>()
 
     override fun read(): Int {
         return super.read().apply {
@@ -91,10 +92,23 @@ open class ArtifactInputStream(
         listenerList.add(listener)
     }
 
+    fun putMetadata(key: String, value: Any?) {
+        metadata[key] = value
+    }
+
+    fun getMetadata(key: String): Any? = metadata[key]
+
     /**
      * 通知各个listener流关闭
      */
     private fun notifyFinish() {
         listenerList.forEach { it.finish() }
+    }
+
+    companion object {
+        /**
+         * 存储缓存是否开启
+         */
+        const val METADATA_KEY_CACHE_ENABLED = "cacheEnabled"
     }
 }

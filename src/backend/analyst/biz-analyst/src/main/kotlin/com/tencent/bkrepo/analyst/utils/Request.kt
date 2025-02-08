@@ -31,11 +31,11 @@ import com.tencent.bkrepo.analyst.pojo.Node
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.repository.api.NodeClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
 object Request {
@@ -45,7 +45,8 @@ object Request {
         NodeDetail::fullPath.name,
         NodeDetail::projectId.name,
         NodeDetail::repoName.name,
-        NodeDetail::name.name
+        NodeDetail::name.name,
+        NodeDetail::lastModifiedBy.name,
     )
 
     /**
@@ -62,22 +63,39 @@ object Request {
     /**
      * 请求node数据并解析成[Node]
      */
-    fun requestNodes(nodeClient: NodeClient, rule: Rule, page: Int, pageSize: Int): List<Node> {
+    fun requestNodes(nodeSearchService: NodeSearchService, rule: Rule, page: Int, pageSize: Int): List<Node> {
         // 通常根据projectId,repoName等字段搜索Node，此时如果结果数量较多时用_id排序会有性能问题导致查询超时
         // 使用projectId、repoName、fullPath字段有建立唯一索引，因此使用这些字段进行排序
         val sort = Sort(
             listOf(NodeDetail::projectId.name, NodeDetail::repoName.name, NodeDetail::fullPath.name),
             Sort.Direction.ASC
         )
-        val queryModel = QueryModel(PageLimit(page, pageSize), sort, nodeSelected, rule)
-        return request { nodeClient.search(queryModel) }!!.records.map {
+        val queryModel = QueryModel(
+            page = PageLimit(page, pageSize),
+            sort = sort,
+            select = nodeSelected,
+            rule = rule
+        )
+        return nodeSearchService.searchWithoutCount(queryModel).records.map {
             val projectId = it[NodeDetail::projectId.name]!! as String
             val repoName = it[NodeDetail::repoName.name]!! as String
             val sha256 = it[NodeDetail::sha256.name]!! as String
             val size = toLong(it[NodeDetail::size.name]!!)
             val fullPath = it[NodeDetail::fullPath.name]!! as String
             val name = it[NodeDetail::name.name]!! as String
-            Node(projectId, repoName, fullPath, name, null, null, sha256, size, size)
+            val lastModifiedBy = it[NodeDetail::lastModifiedBy.name]!! as String
+            Node(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                artifactName = name,
+                packageKey = null,
+                packageVersion = null,
+                sha256 = sha256,
+                size = size,
+                packageSize = size,
+                lastModifiedBy = lastModifiedBy
+            )
         }
     }
 

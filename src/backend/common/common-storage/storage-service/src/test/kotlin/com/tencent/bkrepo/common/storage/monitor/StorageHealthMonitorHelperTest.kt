@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.storage.config.UploadProperties
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -27,7 +27,9 @@ class StorageHealthMonitorHelperTest {
         Assertions.assertEquals(1, monitorHelper.all().size)
         val otherStorageCredentials = StorageCredentials(
             upload = UploadProperties(location = storageCredentials.upload.location.plus("/temp")),
-            cache = storageCredentials.cache
+            cache = storageCredentials.cache,
+            encrypt = storageCredentials.encrypt,
+            compress = storageCredentials.compress,
         )
         val m1 = monitorHelper.getMonitor(storageProperties, otherStorageCredentials)
         val m2 = monitorHelper.getMonitor(storageProperties, otherStorageCredentials)

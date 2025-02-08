@@ -36,16 +36,25 @@ import com.tencent.bkrepo.common.api.util.toJson
 import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
+import com.tencent.bkrepo.common.artifact.event.ChunkArtifactTransferEvent
+import com.tencent.bkrepo.common.artifact.hash.md5
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactCacheMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecordLog
+import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
+import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
+import com.tencent.bkrepo.common.artifact.util.TransferUserAgentUtil
+import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.event.EventListener
@@ -53,6 +62,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.NoSuchFileException
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.Instant
 import java.util.concurrent.LinkedBlockingQueue
@@ -64,7 +74,10 @@ import java.util.concurrent.LinkedBlockingQueue
 class ArtifactTransferListener(
     private val influxMetricsExporter: ObjectProvider<InfluxMetricsExporter>,
     private val artifactMetricsProperties: ArtifactMetricsProperties,
-    private val commonTagProvider: ObjectProvider<CommonTagProvider>
+    private val commonTagProvider: ObjectProvider<CommonTagProvider>,
+    private val projectUsageStatisticsService: ProjectUsageStatisticsService,
+    private val artifactCacheMetrics: ArtifactCacheMetrics,
+    private val prometheusMetricsExporter: ObjectProvider<ArtifactMetricsExporter>,
 ) {
 
     private var queue = LinkedBlockingQueue<ArtifactTransferRecord>(QUEUE_LIMIT)
@@ -76,6 +89,7 @@ class ArtifactTransferListener(
 
             val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
             val clientIp: String = HttpContextHolder.getClientAddress()
+            val projectId = repositoryDetail?.projectId ?: UNKNOWN
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RECEIVE,
@@ -84,10 +98,21 @@ class ArtifactTransferListener(
                 average = throughput.average(),
                 storage = storageCredentials?.key ?: DEFAULT_STORAGE_KEY,
                 sha256 = artifactFile.getFileSha256(),
-                project = repositoryDetail?.projectId ?: UNKNOWN,
+                project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
-                clientIp = clientIp
+                clientIp = clientIp,
+                fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN,
+                agent = TransferUserAgentUtil.getUserAgent(
+                    webPlatformId = artifactMetricsProperties.webPlatformId,
+                    host = artifactMetricsProperties.host,
+                    builderAgentList = artifactMetricsProperties.builderAgentList,
+                    clientAgentList = artifactMetricsProperties.clientAgentList
+                ).name,
+                userId = SecurityUtils.getUserId().md5()
             )
+            if (SecurityUtils.getUserId() != SYSTEM_USER) {
+                projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
+            }
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(
                     toJson(
@@ -110,6 +135,7 @@ class ArtifactTransferListener(
 
             val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
             val clientIp: String = HttpContextHolder.getClientAddress()
+            val projectId = repositoryDetail?.projectId ?: UNKNOWN
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RESPONSE,
@@ -118,12 +144,75 @@ class ArtifactTransferListener(
                 average = throughput.average(),
                 storage = storageCredentials?.key ?: DEFAULT_STORAGE_KEY,
                 sha256 = artifactResource.node?.sha256.orEmpty(),
-                project = repositoryDetail?.projectId ?: UNKNOWN,
+                project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
-                clientIp = clientIp
+                clientIp = clientIp,
+                fullPath = getFullPath(),
+                agent = TransferUserAgentUtil.getUserAgent(
+                    webPlatformId = artifactMetricsProperties.webPlatformId,
+                    host = artifactMetricsProperties.host,
+                    builderAgentList = artifactMetricsProperties.builderAgentList,
+                    clientAgentList = artifactMetricsProperties.clientAgentList
+                ).name,
+                userId = SecurityUtils.getUserId().md5()
             )
+            if (SecurityUtils.getUserId() != SYSTEM_USER) {
+                projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
+            }
             ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
             recordAccessTimeDistribution(artifactResource)
+            artifactCacheMetrics.record(artifactResource)
+            if (artifactMetricsProperties.collectByLog) {
+                logger.info(
+                    toJson(
+                        ArtifactTransferRecordLog(
+                            record = record,
+                            commonTag = commonTagProvider.ifAvailable?.provide().orEmpty()
+                        )
+                    )
+                )
+            }
+            queue.offer(record)
+        }
+    }
+
+    private fun getFullPath(): String {
+        val artifactInfo = ArtifactContextHolder.getArtifactInfo()
+        return if (artifactInfo != null) {
+            ArtifactContextHolder.getNodeDetail(artifactInfo)?.fullPath ?: UNKNOWN
+        } else {
+            UNKNOWN
+        }
+    }
+
+    @EventListener(ChunkArtifactTransferEvent::class)
+    fun listen(event: ChunkArtifactTransferEvent) {
+        with(event.chunkArtifactTransferMetrics) {
+            val recordType = if (type == ChunkArtifactTransferMetrics.UPLOAD) {
+                ArtifactTransferRecord.RECEIVE
+            } else {
+                ArtifactTransferRecord.RESPONSE
+            }
+            val record = ArtifactTransferRecord(
+                time = Instant.now(),
+                type = recordType,
+                elapsed = costTime,
+                bytes = fileSize,
+                average = average,
+                storage = storage,
+                sha256 = sha256,
+                project = projectId,
+                repoName = repoName,
+                clientIp = HttpContextHolder.getClientAddress(),
+                fullPath = fullPath,
+                agent = TransferUserAgentUtil.getUserAgent(
+                    webPlatformId = artifactMetricsProperties.webPlatformId,
+                    host = artifactMetricsProperties.host,
+                    builderAgentList = artifactMetricsProperties.builderAgentList,
+                    clientAgentList = artifactMetricsProperties.clientAgentList
+                ).name,
+                userId = SecurityUtils.getUserId().md5()
+            )
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(
                     toJson(
@@ -146,18 +235,25 @@ class ArtifactTransferListener(
         resource.artifactMap.filter { it.value is FileArtifactInputStream }
             .map { it.value as FileArtifactInputStream }
             .forEach {
-                val attr = Files.readAttributes(
-                    it.file.toPath(),
-                    BasicFileAttributes::class.java,
-                    LinkOption.NOFOLLOW_LINKS
-                )
-                // nfs不支持读取文件更新atime,所以这里用当前时间替换。
-                val intervalOfMillis = System.currentTimeMillis() - attr.lastModifiedTime().toMillis()
-                val intervalOfDays = intervalOfMillis / MILLIS_OF_DAY + 1
-                if (logger.isDebugEnabled && intervalOfDays > 30) {
-                    logger.debug("File[${it.file}] since last access more than 30d.")
+                val attr = try {
+                    Files.readAttributes(
+                        it.file.toPath(),
+                        BasicFileAttributes::class.java,
+                        LinkOption.NOFOLLOW_LINKS
+                    )
+                } catch (ignore: NoSuchFileException) {
+                    logger.warn("File[${it.file}] is not exist")
+                    null
                 }
-                accessTimeDs.record(intervalOfDays.toDouble())
+                if (attr != null) {
+                    // nfs不支持读取文件更新atime,所以这里用当前时间替换。
+                    val intervalOfMillis = System.currentTimeMillis() - attr.lastModifiedTime().toMillis()
+                    val intervalOfDays = intervalOfMillis / MILLIS_OF_DAY + 1
+                    if (logger.isDebugEnabled && intervalOfDays > 30) {
+                        logger.debug("File[${it.file}] since last access more than 30d.")
+                    }
+                    accessTimeDs.record(intervalOfDays.toDouble())
+                }
             }
     }
 
@@ -165,7 +261,11 @@ class ArtifactTransferListener(
     fun export() {
         val current = queue
         queue = LinkedBlockingQueue(QUEUE_LIMIT)
-        influxMetricsExporter.ifAvailable?.export(current)
+        if (artifactMetricsProperties.useInfluxDb) {
+            influxMetricsExporter.ifAvailable?.export(current)
+        } else {
+            prometheusMetricsExporter.ifAvailable?.export(current)
+        }
     }
 
     companion object {

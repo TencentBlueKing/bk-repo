@@ -1,13 +1,39 @@
 <template>
   <div class="app-container">
+    <el-form ref="form" :inline="true">
+      <el-form-item ref="project-form-item" label="任务名称">
+        <el-input v-model="search" size="small" />
+      </el-form-item>
+      <el-form-item ref="project-form-item" label="更多显示" style="margin-left: 50px">
+        <el-select
+          v-model="displayColumns"
+          multiple
+          collapse-tags
+          style="margin-left: 20px;"
+          placeholder="请选择"
+          :change="filterDisplayFunction(displayColumns)"
+        >
+          <el-option
+            v-for="item in options"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+    </el-form>
     <el-table
-      :data="jobs"
-      style="width: 100%"
+      ref="jobTable"
+      v-loading="loading"
+      :data="jobs.filter(data => !search || data.name.toLowerCase().includes(search.toLowerCase()))"
+      style="width: 100%; margin-top: -20px"
+      :max-height="825"
     >
       <el-table-column
         prop="name"
+        fixed
         label="任务名称"
-        width="180"
+        width="280"
       />
       <el-table-column
         label="是否启用"
@@ -42,40 +68,48 @@
       <el-table-column
         label="运行中"
         width="100"
+        :filters="[{ text: '是', value: true }, { text: '否', value: false }]"
+        :filter-method="filterFunction"
       >
-        <template v-if="scope.row.runnig === true" slot-scope="scope">
-          <label>是</label>
-        </template>
-        <template v-if="scope.row.runnig !== true" slot-scope="scope">
-          <label>否</label>
+        <template slot-scope="scope">
+          {{ scope.row.running ? "是":"否" }}
         </template>
       </el-table-column>
       <el-table-column
         prop="lastBeginTime"
         label="上一次开始时间"
-        width="200"
+        width="160"
       />
       <el-table-column
         prop="lastEndTime"
         label="上一次结束时间"
-        width="200"
+        width="160"
       />
       <el-table-column
+        v-if="hiddenColumn.nextExecuteTime"
         prop="nextExecuteTime"
         label="下一次执行时间"
-        width="200"
+        width="160"
       />
       <el-table-column
+        v-if="hiddenColumn.lastExecuteTime"
         prop="lastExecuteTime"
         label="上一次执行耗时"
-        width="120"
+        align="center"
+        width="170"
       />
-      <el-table-column label="操作" min-width="120px">
-        <template v-if="scope.row.runnig === true && scope.row.enabled === true" slot-scope="scope">
-          <el-button size="mini" type="primary" @click="changeRunning(scope.row)">停止</el-button>
-        </template>
-        <template v-if="scope.row.runnig !== true && scope.row.enabled === true" slot-scope="scope">
-          <el-button size="mini" type="primary" @click="changeRunning(scope.row)">启动</el-button>
+      <el-table-column
+        label="操作"
+        align="center"
+        fixed="right"
+      >
+        <template slot-scope="scope">
+          <template v-if="scope.row.running && scope.row.enabled">
+            <el-button size="mini" type="primary" @click="changeRunning(scope.row)">停止</el-button>
+          </template>
+          <template v-if="!scope.row.running && scope.row.enabled">
+            <el-button size="mini" type="primary" @click="changeRunning(scope.row)">启动</el-button>
+          </template>
         </template>
       </el-table-column>
     </el-table>
@@ -86,13 +120,30 @@
 
 import { jobs, update } from '@/api/job'
 import { updateConfig } from '@/api/config'
-import { formatNormalDate } from '@/utils/date'
+import { formatNormalDate, roughCalculateTime } from '@/utils/date'
 
 export default {
   name: 'Jobs',
   data() {
     return {
-      jobs: []
+      loading: false,
+      jobs: [],
+      search: '',
+      hiddenColumn: {
+        nextExecuteTime: false,
+        lastExecuteTime: false
+      },
+      displayColumns: [],
+      options: [
+        {
+          value: 'nextExecuteTime',
+          label: '下一次执行时间'
+        },
+        {
+          value: 'lastExecuteTime',
+          label: '上一次执行耗时'
+        }
+      ]
     }
   },
   computed: {
@@ -105,29 +156,35 @@ export default {
   },
   methods: {
     changeEnabled(job) {
-      update(job.name, job.enabled, job.runnig).then(() => {
-        this.query()
+      this.loading = true
+      update(job.name, job.enabled, job.running).then(() => {
+        let jobName = 'job.'
+        if (job.name.endsWith('Job')) {
+          jobName = jobName + job.name.substr(0, job.name.length - 3)
+        } else {
+          jobName = jobName + job.name
+        }
+        const key = (job.jobConfigName !== '' ? job.jobConfigName : jobName) + '.enabled'
+        const values = [{
+          'key': key,
+          'value': job.enabled
+        }]
+        updateConfig(values, 'job').finally(() => {
+          this.loading = false
+          this.query()
+        })
       })
-      let jobName
-      if (job.name.endsWith('Job')) {
-        jobName = job.name.substr(0, job.name.length - 3)
-      } else {
-        jobName = job.name
-      }
-      const key = 'job.' + jobName + '.enabled'
-      const values = [{
-        'key': key,
-        'value': job.enabled
-      }]
-      updateConfig(values, 'job')
     },
     changeRunning(job) {
-      const message = job.runnig !== true ? '启动成功' : '停止成功'
-      this.$message({
-        message: message,
-        type: 'success'
-      })
-      update(job.name, job.enabled, !job.runnig).then(() => {
+      this.loading = true
+      update(job.name, job.enabled, !job.running).then(() => {
+        const message = job.running !== true ? '启动成功' : '停止成功'
+        this.$message({
+          message: message,
+          type: 'success'
+        })
+      }).finally(() => {
+        this.loading = false
         this.query()
       })
     },
@@ -137,10 +194,31 @@ export default {
           res.data[i].lastBeginTime = formatNormalDate(res.data[i].lastBeginTime)
           res.data[i].lastEndTime = formatNormalDate(res.data[i].lastEndTime)
           res.data[i].nextExecuteTime = formatNormalDate(res.data[i].nextExecuteTime)
-          res.data[i].lastExecuteTime = res.data[i].lastExecuteTime != null ? res.data[i].lastExecuteTime + '毫秒' : null
+          res.data[i].lastExecuteTime = res.data[i].lastExecuteTime != null ? roughCalculateTime(res.data[i].lastExecuteTime) : null
         }
         this.jobs = res.data
       })
+    },
+    filterFunction(value, row) {
+      return row.running === value
+    },
+    filterDisplayFunction(value) {
+      if (value.length !== 0) {
+        for (let i = 0; i < value.length; i++) {
+          if (Object.keys(this.hiddenColumn).some(name => name === value[i])) {
+            this.hiddenColumn[value[i]] = true
+          }
+        }
+        for (let i = 0; i < Object.keys(this.hiddenColumn).length; i++) {
+          if (!value.some(name => name === Object.keys(this.hiddenColumn)[i])) {
+            this.hiddenColumn[Object.keys(this.hiddenColumn)[i]] = false
+          }
+        }
+      } else {
+        for (let i = 0; i < Object.keys(this.hiddenColumn).length; i++) {
+          this.hiddenColumn[Object.keys(this.hiddenColumn)[i]] = false
+        }
+      }
     }
   }
 }

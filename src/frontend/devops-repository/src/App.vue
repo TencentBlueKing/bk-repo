@@ -1,32 +1,49 @@
 <template>
     <div class="bkrepo-main flex-column">
-        <Header v-if="!ciMode" />
+        <notice-component v-if="!ciMode && !isSubSaas" api-url="/web/repository/api/notice" />
+        <Header ref="head" v-if="!ciMode && !isSubSaas" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
         <GlobalUploadViewport />
-        <Login v-if="!ciMode" />
+        <Login v-if="!ciMode && !isSubSaas" />
     </div>
 </template>
 
 <script>
+    import NoticeComponent from '@blueking/notice-component-vue2'
+    import { subEnv } from '@blueking/sub-saas'
+    import mixin from '@repository/AppMixin'
     import Header from '@repository/components/Header'
     import Login from '@repository/components/Login'
-    import { mapActions } from 'vuex'
     import cookies from 'js-cookie'
-    import mixin from '@repository/AppMixin'
+    import { mapActions } from 'vuex'
+    import { getTrueVersions } from '@repository/utils/versionLogs'
     export default {
-        components: { Header, Login },
+        components: { NoticeComponent, Header, Login },
         mixins: [mixin],
         data () {
             return {
                 ciMode: MODE_CONFIG === 'ci'
             }
         },
-        created () {
+        computed: {
+            isSubSaas () {
+                return subEnv
+            }
+        },
+        async created () {
             const username = cookies.get('bk_uid')
             username && this.SET_USER_INFO({ username })
-
-            if (this.ciMode) {
+            this.getPermissionDialogConfig()
+            const hasShowLog = cookies.get('hasShowLog') || ''
+            const logs = await getTrueVersions()
+            if (logs.length > 0 && !this.ciMode && !this.isSubSaas) {
+                this.$store.commit('SET_VERSION_LOGS', logs)
+                if (hasShowLog !== logs[0].version) {
+                    this.$refs.head.showVersionLogs()
+                }
+            }
+            if (!this.isSubSaas && this.ciMode) {
                 this.loadDevopsUtils('/ui/devops-utils.js')
                 // 请求管理员信息
                 this.ajaxUserInfo().then((userInfo) => {
@@ -64,7 +81,14 @@
                         }
                     } else {
                         let projectId = ''
-                        if (this.projectList.find(v => v.id === urlProjectId)) {
+                        const hasUrlProjectId = this.projectList.find(v => v.id === urlProjectId)
+                        if (!hasUrlProjectId) {
+                            this.$bkMessage({
+                                message: this.$t('projectNoPermissionTip', { 0: urlProjectId }),
+                                theme: 'error'
+                            })
+                        }
+                        if (hasUrlProjectId) {
                             projectId = urlProjectId
                         } else if (this.projectList.find(v => v.id === localProjectId)) {
                             projectId = localProjectId
@@ -90,13 +114,18 @@
                 'getProjectList',
                 'ajaxUserInfo',
                 'getRepoUserList',
-                'getClusterList'
+                'getClusterList',
+                'getPermissionDialogConfig'
             ])
         }
     }
 </script>
 <style lang="scss">
 @import '@repository/scss/index';
+@import '@blueking/notice-component-vue2/dist/style.css';
+.navigation-message-theme{
+    padding: 0 !important;
+}
 .bkrepo-main {
     height: 100%;
     background-color: var(--bgWeightColor);

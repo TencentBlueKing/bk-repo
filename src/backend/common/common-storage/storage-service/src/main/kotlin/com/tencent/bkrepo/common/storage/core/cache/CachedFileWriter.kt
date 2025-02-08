@@ -44,6 +44,7 @@ import java.nio.file.Path
  * @param cachePath 缓存路径
  * @param filename 缓存文件名称
  * @param tempPath 临时路径
+ * @param listener 缓存写入过程监听器
  *
  * 处理逻辑：
  * 1. 在[tempPath]下原子创建锁文件[filename].locked
@@ -62,6 +63,7 @@ class CachedFileWriter(
     private val cachePath: Path,
     private val filename: String,
     tempPath: Path,
+    private val listener: CacheFileWriterListener? = null,
 ) : StreamReadListener {
 
     private val taskId = StringPool.randomStringByLongValue(prefix = CACHE_PREFIX, suffix = CACHE_SUFFIX)
@@ -78,6 +80,7 @@ class CachedFileWriter(
             }
         } catch (ignore: FileAlreadyExistsException) {
             // 如果目录或者文件已存在则忽略
+            logger.info("initial temp file $tempFilePath failed: ${ignore.message}")
         } catch (exception: Exception) {
             logger.error("initial CacheFileWriter error: $exception", exception)
             close()
@@ -90,6 +93,7 @@ class CachedFileWriter(
                 it.write(i)
             } catch (ignored: Exception) {
                 // ignored
+                logger.info("write data to temp file $tempFilePath failed: ${ignored.message}")
                 close()
             }
         }
@@ -101,6 +105,7 @@ class CachedFileWriter(
                 it.write(buffer, off, length)
             } catch (ignored: Exception) {
                 // ignored
+                logger.info("write data to temp file $tempFilePath failed: ${ignored.message}")
                 close()
             }
         }
@@ -114,7 +119,6 @@ class CachedFileWriter(
                 moveToCachePath()
             } finally {
                 close()
-                Files.deleteIfExists(tempFilePath)
             }
         }
     }
@@ -170,14 +174,14 @@ class CachedFileWriter(
         try {
             if (!cacheFilePath.existReal()) {
                 Files.move(tempFilePath, cacheFilePath)
-                logger.info("Success cache file $filename")
+                listener?.onCacheFileWritten(filename, cacheFilePath)
+                logger.info("Success cache file $filename, move temp file $tempFilePath to cache file $cacheFilePath")
             }
         } catch (ignore: FileAlreadyExistsException) {
             logger.info("File[$cacheFilePath] already exists")
         } catch (exception: Exception) {
-            logger.error("Finish CacheFileWriter error: $exception", exception)
-        } finally {
-            releaseLock()
+            logger.error("Finish CacheFileWriter error, " +
+                "move temp file $tempFilePath to cache file $cacheFilePath: $exception", exception)
         }
     }
 
@@ -189,7 +193,18 @@ class CachedFileWriter(
                 logger.error("close CacheFileWriter error: $exception", exception)
             } finally {
                 outputStream = null
+                release()
             }
+        }
+    }
+
+    /**
+     * 释放资源
+     * */
+    private fun release() {
+        Files.deleteIfExists(tempFilePath)
+        if (isSelfLock()) {
+            releaseLock()
         }
     }
 

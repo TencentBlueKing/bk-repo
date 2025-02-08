@@ -49,6 +49,9 @@ enum class EventType(val msgKey: String) {
     NODE_COPIED("artifact.event.node-copied"),
     NODE_DELETED("artifact.event.node-deleted"),
     NODE_DOWNLOADED("artifact.event.node-downloaded"),
+    NODE_CLEAN("artifact.event.node-clean"),
+    NODE_UPDATE_ACCESS_DATE("artifact.event.node-update-access-date"),
+    NODE_SEPARATION_RECOVERY("artifact.event.node-separation-recovery"),
 
     // METADATA
     METADATA_DELETED("artifact.event.metadata-deleted"),
@@ -139,6 +142,12 @@ enum class EventType(val msgKey: String) {
     SCANNER_UPDATE("artifact.event.scanner-update"),
     SCANNER_DELETE("artifact.event.scanner-delete"),
     SCANNER_LIST("artifact.event.scanner-list"),
+
+    // SCAN EXECUTION CLUSTER
+    EXECUTION_CLUSTER_CREATE("artifact.event.execution-cluster-create"),
+    EXECUTION_CLUSTER_UPDATE("artifact.event.execution-cluster-update"),
+    EXECUTION_CLUSTER_DELETE("artifact.event.execution-cluster-delete"),
+    EXECUTION_CLUSTER_LIST("artifact.event.execution-cluster-list"),
 
     // SCAN CONFIG
     PROJECT_SCAN_CONFIG_CREATE("artifact.event.project-scan-config-create"),

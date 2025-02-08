@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.metrics
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.util.unit.DataSize
 
 @ConfigurationProperties("management.metrics")
 data class ArtifactMetricsProperties(
@@ -43,5 +44,41 @@ data class ArtifactMetricsProperties(
     /**
      * 是否通过日志清洗获取传输指标数据
      */
-    var collectByLog: Boolean = false
+    var collectByLog: Boolean = false,
+    /**
+     * 直方图le的最大值
+     */
+    var maxLe: Double = DataSize.ofMegabytes(100).toBytes().toDouble(),
+    /**
+     * 是否开启缓存使用情况统计
+     */
+    var enableArtifactCacheMetrics: Boolean = false,
+    /**
+     * 是否使用influxdb存储指标数据
+     */
+    var useInfluxDb: Boolean = true,
+    /**
+     * 页面host
+     */
+    var host: String = "",
+    /**
+     * 构建机agent列表
+     */
+    var builderAgentList: List<String> = emptyList(),
+    /**
+     * 客户端agent列表
+     */
+    var clientAgentList: List<String> = emptyList(),
+    /**
+     * web 平台账号id
+     */
+    var webPlatformId: String = "",
+    /**
+     * 超过该大小的文件未命中缓存时将计入大文件缓存未命中监控数据
+     */
+    var largeFileThreshold: DataSize = DataSize.ofGigabytes(3L),
+    /**
+     * 允许上报未知项目信息
+     * */
+    var allowUnknownProjectExport: Boolean = false,
 )

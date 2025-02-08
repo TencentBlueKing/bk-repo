@@ -27,17 +27,30 @@
 
 package com.tencent.bkrepo.job.config
 
-import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.job.backup.config.DataBackupConfig
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
+import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
+import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
+import com.tencent.bkrepo.job.separation.listener.SeparationRecoveryEventConsumer
 import org.springframework.boot.autoconfigure.task.TaskExecutionProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.messaging.Message
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
+import java.util.function.Consumer
 
 /**
  * Job配置
  * */
 @Configuration
+@EnableConfigurationProperties(
+    JobProperties::class,
+    MigrateRepoStorageProperties::class,
+    DataSeparationConfig::class,
+    DataBackupConfig::class
+)
 class JobConfig {
     @Bean
     fun blockThreadPoolTaskExecutorDecorator(
@@ -51,6 +64,12 @@ class JobConfig {
         )
     }
 
-    @Bean
-    fun httpAuthSecurity(): HttpAuthSecurity = HttpAuthSecurity().withPrefix("/job")
+    @Bean("separationRecovery")
+    fun separationRecoveryEventConsumer(
+        separationRecoveryEventConsumer: SeparationRecoveryEventConsumer
+    ): Consumer<Message<ArtifactEvent>> {
+        return Consumer {
+            separationRecoveryEventConsumer.accept(it)
+        }
+    }
 }

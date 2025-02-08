@@ -127,4 +127,24 @@ internal class MavenStringUtilsTest {
         )
         println("$mavenVersion")
     }
+
+    @Test
+    fun resolverName6() {
+        val jarName = "my-app-1.3.00+5b605e-20230606.062937-1.aar"
+        val mavenVersion = MavenVersion(
+            artifactId = "my-app",
+            version = "1.3.00+5b605e-SNAPSHOT",
+            packaging = "aar"
+        )
+        mavenVersion.setVersion(jarName)
+        assertAll(
+            { Assertions.assertEquals("my-app", mavenVersion.artifactId) },
+            { Assertions.assertEquals("1.3.00+5b605e-SNAPSHOT", mavenVersion.version) },
+            { Assertions.assertEquals("20230606.062937", mavenVersion.timestamp) },
+            { Assertions.assertEquals(1, mavenVersion.buildNo) },
+            { Assertions.assertEquals(null, mavenVersion.classifier) },
+            { Assertions.assertEquals("aar", mavenVersion.packaging) }
+        )
+        println("$mavenVersion")
+    }
 }

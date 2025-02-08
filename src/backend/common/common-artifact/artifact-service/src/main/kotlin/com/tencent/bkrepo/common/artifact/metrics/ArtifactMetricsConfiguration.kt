@@ -31,8 +31,10 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
+import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
@@ -44,7 +46,8 @@ import org.springframework.context.annotation.Import
 @Configuration
 @Import(
     ArtifactMetrics::class,
-    ArtifactWebMvcTagsContributor::class
+    ArtifactWebMvcTagsContributor::class,
+    ArtifactCacheMetrics::class,
 )
 @EnableConfigurationProperties(ArtifactMetricsProperties::class)
 class ArtifactMetricsConfiguration {
@@ -64,5 +67,13 @@ class ArtifactMetricsConfiguration {
         artifactMetricsProperties: ArtifactMetricsProperties
     ): ArtifactTransferTagProvider {
         return DefaultArtifactTagProvider(storageProperties, artifactMetricsProperties)
+    }
+
+    @Bean
+    fun artifactMetricsExporter(
+        customMetricsExporter: CustomMetricsExporter? = null,
+        artifactMetricsProperties: ArtifactMetricsProperties,
+    ): ArtifactMetricsExporter {
+        return ArtifactMetricsExporter(customMetricsExporter, artifactMetricsProperties.allowUnknownProjectExport)
     }
 }

@@ -6,7 +6,9 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.IpUtils
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJson
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -22,16 +24,16 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.bksync.BlockChannel
 import com.tencent.bkrepo.common.bksync.FileBlockChannel
 import com.tencent.bkrepo.common.bksync.transfer.http.BkSyncMetrics
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
-import com.tencent.bkrepo.common.storage.core.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
@@ -46,15 +48,13 @@ import com.tencent.bkrepo.generic.enum.GenericAction
 import com.tencent.bkrepo.generic.model.TSignFile
 import com.tencent.bkrepo.generic.pojo.bkbase.QueryRequest
 import com.tencent.bkrepo.generic.pojo.bkbase.QueryResponse
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.commons.text.similarity.LevenshteinDistance
 import org.apache.pulsar.shade.org.eclipse.util.UrlEncoded
 import org.slf4j.LoggerFactory
@@ -80,10 +80,9 @@ import java.util.concurrent.TimeUnit
 class DeltaSyncService(
     genericProperties: GenericProperties,
     val storageManager: StorageManager,
-    val nodeClient: NodeClient,
+    val nodeService: NodeService,
     val signFileDao: SignFileDao,
-    val repositoryClient: RepositoryClient,
-    storageProperties: StorageProperties,
+    val repositoryService: RepositoryService,
     private val redisOperation: RedisOperation,
 ) : ArtifactService() {
 
@@ -96,7 +95,7 @@ class DeltaSyncService(
     val signFileProjectId = deltaProperties.projectId
     val signFileRepoName = deltaProperties.repoName
     val signRepo: RepositoryDetail by lazy {
-        repositoryClient.getRepoDetail(signFileProjectId, signFileRepoName).data
+        repositoryService.getRepoDetail(signFileProjectId, signFileRepoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, signFileRepoName)
     }
     private val httpClient = HttpClientBuilderFactory.create().build()
@@ -128,17 +127,19 @@ class DeltaSyncService(
      * */
     fun patch(oldFilePath: String, deltaFile: ArtifactFile): SseEmitter {
         with(ArtifactContext()) {
-            val node = nodeClient.getNodeDetail(
-                projectId = projectId,
-                repoName = repoName,
-                fullPath = UrlEncoded.decodeString(oldFilePath, 0, oldFilePath.length, Charsets.UTF_8),
-            ).data
+            val node = nodeService.getNodeDetail(
+                ArtifactInfo(
+                    projectId,
+                    repoName,
+                    UrlEncoded.decodeString(oldFilePath, 0, oldFilePath.length, Charsets.UTF_8)
+                ),
+            )
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }
             val overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE)
             if (!overwrite) {
-                nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data?.let {
+                nodeService.getNodeDetail(artifactInfo)?.let {
                     throw ErrorCodeException(
                         ArtifactMessageCode.NODE_EXISTED,
                         artifactInfo.getArtifactName(),
@@ -250,14 +251,16 @@ class DeltaSyncService(
             "AND buildId != '${metrics.buildId}' " +
             "ORDER BY dtEventTimeStamp DESC LIMIT 100"
         val url = UrlFormatter.format(bkBaseProperties.domain, "/prod/v3/dataquery/query/")
-        val query = QueryRequest(
-            appCode = bkBaseProperties.appCode,
-            appSecret = bkBaseProperties.appSecret,
-            token = bkBaseProperties.token,
-            sql = sql,
-        )
-        val requestBody = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), query.toJsonString())
-        val request = Request.Builder().url(url).post(requestBody).build()
+        val query = QueryRequest(token = bkBaseProperties.token, sql = sql)
+        val authHeader = toJson(mapOf(
+            "bk_app_code" to bkBaseProperties.appCode,
+            "bk_app_secret" to bkBaseProperties.appSecret
+        ))
+        val requestBody = query.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
+        val request = Request.Builder()
+            .url(url)
+            .header("X-Bkapi-Authorization", authHeader)
+            .post(requestBody).build()
         return queryHistorySpeed(request, sql, metrics)
     }
 
@@ -327,7 +330,7 @@ class DeltaSyncService(
      * */
     private fun getMd5FromNode(context: ArtifactContext): String {
         with(context) {
-            val node = nodeClient.getNodeDetail(projectId, repoName, artifactInfo.getArtifactFullPath()).data
+            val node = nodeService.getNodeDetail(artifactInfo)
             if (node == null || node.folder) {
                 throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
             }

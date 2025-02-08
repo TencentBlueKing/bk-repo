@@ -71,6 +71,8 @@ interface UserService {
 
     fun listUserToken(userId: String): List<TokenResult>
 
+    fun listValidToken(userId: String): List<Token>
+
     fun removeToken(userId: String, name: String): Boolean
 
     fun findUserByUserToken(userId: String, pwd: String): User?
@@ -78,6 +80,8 @@ interface UserService {
     fun userPage(pageNumber: Int, pageSize: Int, userName: String?, admin: Boolean?, locked: Boolean?): Page<UserInfo>
 
     fun getUserInfoById(userId: String): UserInfo?
+
+    fun getUserPwdById(userId: String): String?
 
     fun updatePassword(userId: String, oldPwd: String, newPwd: String): Boolean
 
@@ -90,4 +94,8 @@ interface UserService {
     fun removeUserAccount(userId: String, accountId: String): Boolean
 
     fun validateEntityUser(userId: String): Boolean
+
+    fun getRelatedUserById(userId: String): List<UserInfo>
+
+    fun listAdminUsers(): List<String>
 }

@@ -34,12 +34,12 @@ package com.tencent.bkrepo.repository.service.query
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
-import com.tencent.bkrepo.repository.search.common.LocalDatetimeRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.RepoNameRuleInterceptor
-import com.tencent.bkrepo.repository.search.common.RepoTypeRuleInterceptor
-import com.tencent.bkrepo.repository.search.node.NodeQueryInterpreter
+import com.tencent.bkrepo.common.metadata.search.common.LocalDatetimeRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.common.RepoNameRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.common.RepoTypeRuleInterceptor
+import com.tencent.bkrepo.common.metadata.search.node.NodeQueryInterpreter
 import com.tencent.bkrepo.repository.service.ServiceBaseTest
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

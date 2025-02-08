@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.api.util.HumanReadable.time
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
@@ -130,6 +130,13 @@ class StorageHealthMonitor(
                         try {
                             val future = executorService.submit { checker.clean() }
                             future.get(1, TimeUnit.SECONDS)
+                        } catch (exception: ExecutionException) {
+                            val errorMsg = "Clean checker error: $exception"
+                            if (exception.cause is AccessDeniedException) {
+                                logger.error(errorMsg, exception)
+                            } else {
+                                logger.warn(errorMsg, exception)
+                            }
                         } catch (exception: Exception) {
                             logger.warn("Clean checker error: $exception", exception)
                         }

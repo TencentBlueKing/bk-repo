@@ -19,6 +19,14 @@ export const ROUTER_NAME_PROJECT_SCAN_CONFIGURATIONS = 'ProjectScanConfiguration
 export const ROUTER_NAME_FILTER_RULE = 'FilterRule'
 export const ROUTER_NAME_JOB = 'Job'
 export const ROUTER_NAME_SHED_LOCK = 'Shedlock'
+export const ROUTER_NAME_PROJECT_METRICS = 'ProjectMetrics'
+export const ROUTER_NAME_FILE_SYSTEM = 'FileSystem'
+export const ROUTER_NAME_FILE_CACHE = 'FileCache'
+export const ROUTER_NAME_FILE_SYSTEM_RECORD = 'FileSystemRecord'
+export const ROUTER_NAME_REPO_CONFIG = 'RepoConfig'
+export const ROUTER_NAME_RATE_LIMITER_CONFIG = 'RateLimiterConfig'
+export const ROUTER_NAME_PRELOAD_CONFIG = 'PreloadConfig'
+export const ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG = 'ExecutionClustersConfig'
 
 Vue.use(Router)
 
@@ -133,6 +141,18 @@ export const asyncRoutes = [
         component: () => import('@/views/node/index')
       },
       {
+        path: 'fileSystem',
+        name: ROUTER_NAME_FILE_SYSTEM,
+        meta: { title: '客户端管理', icon: 'file' },
+        component: () => import('@/views/node/FileSystem')
+      },
+      {
+        path: 'fileSystemRecord',
+        name: ROUTER_NAME_FILE_SYSTEM_RECORD,
+        meta: { title: '客户端统计', icon: 'file' },
+        component: () => import('@/views/node/FileSystemRecord')
+      },
+      {
         path: 'emptyFolder',
         name: ROUTER_NAME_EMPTY_FOLDER,
         meta: { title: '清理空目录', icon: 'file' },
@@ -143,6 +163,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_FIRST_LEVEL_FOLDER,
         meta: { title: '一级目录统计', icon: 'file' },
         component: () => import('@/views/node/FirstLevelFolder')
+      },
+      {
+        path: 'projectMetrics',
+        name: ROUTER_NAME_PROJECT_METRICS,
+        meta: { title: '仓库大小统计', icon: 'file' },
+        component: () => import('@/views/node/ProjectMetrics')
       }
     ]
   },
@@ -230,6 +256,12 @@ export const asyncRoutes = [
         name: ROUTER_NAME_PROJECT_SCAN_CONFIGURATIONS,
         component: () => import('@/views/scan/ProjectScanConfiguration'),
         meta: { title: '项目配置', icon: 'setting' }
+      },
+      {
+        path: 'executionClustersConfig',
+        name: ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG,
+        meta: { title: '扫描执行集群配置', icon: 'service-config' },
+        component: () => import('@/views/execution-clusters/index')
       }
     ]
   },
@@ -269,6 +301,50 @@ export const asyncRoutes = [
         name: ROUTER_NAME_JOB,
         meta: { title: '任务管理', icon: 'cc-process' },
         component: () => import('@/views/job/index')
+      }
+    ]
+  },
+  {
+    path: '/repo-config',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_REPO_CONFIG,
+        meta: { title: 'REPO配置管理', icon: 'permission' },
+        component: () => import('@/views/repoConfig/index')
+      }
+    ]
+  },
+  {
+    path: '/rateLimiter',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_RATE_LIMITER_CONFIG,
+        meta: { title: '限流管理', icon: 'permission' },
+        component: () => import('@/views/rateLimitConfg/RateLimiter')
+      }
+    ]
+  },
+  {
+    path: '/fileCache',
+    component: Layout,
+    meta: { title: '文件缓存', icon: 'file' },
+    redirect: '/fileCache/fileCacheManage',
+    children: [
+      {
+        path: 'fileCacheManage',
+        name: ROUTER_NAME_FILE_CACHE,
+        meta: { title: '缓存管理', icon: 'file' },
+        component: () => import('@/views/node/FileCache')
+      },
+      {
+        path: 'preloadConfig',
+        name: ROUTER_NAME_PRELOAD_CONFIG,
+        meta: { title: '制品预加载配置', icon: 'service-config' },
+        component: () => import('@/views/preload/index')
       }
     ]
   },

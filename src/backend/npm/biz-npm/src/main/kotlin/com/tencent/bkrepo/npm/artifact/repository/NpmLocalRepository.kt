@@ -30,9 +30,12 @@ package com.tencent.bkrepo.npm.artifact.repository
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -44,14 +47,16 @@ import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.migration.PackageMigrateDetail
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.npm.constants.ATTRIBUTE_OCTET_STREAM_SHA1
+import com.tencent.bkrepo.npm.constants.HAR_FILE_EXT
+import com.tencent.bkrepo.npm.constants.HSP_FILE_EXT
 import com.tencent.bkrepo.npm.constants.METADATA
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_PACKAGE_TGZ_FILE
+import com.tencent.bkrepo.npm.constants.OHPM_CHANGELOG_FILE_NAME
+import com.tencent.bkrepo.npm.constants.OHPM_README_FILE_NAME
+import com.tencent.bkrepo.npm.constants.RESOLVED_HSP
 import com.tencent.bkrepo.npm.constants.SEARCH_REQUEST
 import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.handler.NpmDependentHandler
@@ -135,9 +140,9 @@ class NpmLocalRepository(
         val projectId = repositoryDetail.projectId
         val repoName = repositoryDetail.name
         val fullPath = context.getStringAttribute(NPM_FILE_FULL_PATH)!!
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         if (node == null || node.folder) return null
-        return storageService.load(node.sha256!!, Range.full(node.size), context.storageCredentials)
+        return storageManager.loadFullArtifactInputStream(node, context.storageCredentials)
             .also {
                 logger.info("search artifact [$fullPath] success in repo [${context.artifactInfo.getRepoIdentify()}]")
             }
@@ -148,9 +153,14 @@ class NpmLocalRepository(
         artifactResource: ArtifactResource
     ): PackageDownloadRecord? {
         with(context) {
+            if (artifactInfo.getArtifactFullPath().endsWith(HSP_FILE_EXT)) {
+                // 拉取package一次会同时下载har与hsp包，此处仅统计har，避免重复
+                return null
+            }
             val packageInfo = NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
             with(packageInfo) {
-                return PackageDownloadRecord(projectId, repoName, PackageKeys.ofNpm(first), second)
+                val packageKey = NpmUtils.packageKeyByRepoType(first, repositoryDetail.type)
+                return PackageDownloadRecord(projectId, repoName, packageKey, second)
             }
         }
     }
@@ -171,10 +181,7 @@ class NpmLocalRepository(
             .metadata("version", searchRequest.text, OperationType.MATCH)
             .metadata("keywords", searchRequest.text, OperationType.MATCH)
             .build()
-        val data = nodeClient.search(queryModel).data ?: run {
-            logger.warn("failed to find npm package in repo [${context.projectId}/${context.repoName}]")
-            return emptyList()
-        }
+        val data = nodeSearchService.searchWithoutCount(queryModel)
         return transferRecords(data.records)
     }
 
@@ -191,7 +198,7 @@ class NpmLocalRepository(
                         metadata["description"] as? String,
                         metadata["maintainers"] as? List<Map<String, Any>> ?: emptyList(),
                         metadata["version"] as? String,
-                        it["lastModifiedDate"] as String,
+                        (it["lastModifiedDate"] as LocalDateTime).toString(),
                         metadata["keywords"] as? List<String> ?: emptyList(),
                         metadata["author"] as? Map<String, Any> ?: emptyMap()
                     )
@@ -208,7 +215,7 @@ class NpmLocalRepository(
         val fullPath = context.getAttribute<List<*>>(NPM_FILE_FULL_PATH)
         val userId = context.userId
         fullPath?.forEach {
-            nodeClient.deleteNode(NodeDeleteRequest(projectId, repoName, it.toString(), userId))
+            nodeService.deleteNode(NodeDeleteRequest(projectId, repoName, it.toString(), userId))
             logger.info("delete artifact $it success in repo [${context.artifactInfo.getRepoIdentify()}].")
         }
     }
@@ -217,8 +224,8 @@ class NpmLocalRepository(
         with(context) {
             val (packageName, packageVersion) =
                 NpmUtils.parseNameAndVersionFromFullPath(artifactInfo.getArtifactFullPath())
-            val packageKey = PackageKeys.ofNpm(packageName)
-            return packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion).data
+            val packageKey = NpmUtils.packageKeyByRepoType(packageName, context.repositoryDetail.type)
+            return packageService.findVersionByName(projectId, repoName, packageKey, packageVersion)
         }
     }
 
@@ -280,6 +287,7 @@ class NpmLocalRepository(
         var count = 0
         val totalSize = packageMetaData.versions.map.size
         val iterator = packageMetaData.versions.map.entries.iterator()
+        val ohpm = context.repositoryDetail.type == RepositoryType.OHPM
         while (iterator.hasNext()) {
             val entry = iterator.next()
             val version = entry.key
@@ -288,7 +296,11 @@ class NpmLocalRepository(
                 measureTimeMillis {
                     val tarball = versionMetadata.dist?.tarball!!
                     storeVersionMetadata(context, versionMetadata)
-                    val size = storeTgzArtifact(context, tarball, name, version)
+                    var size = storeTgzArtifact(context, tarball, name, version, NpmUtils.getContentFileExt(ohpm))
+                    versionMetadata.dist?.any()?.get(RESOLVED_HSP)?.let {
+                        // ohpm包存储hsp文件
+                        size += storeTgzArtifact(context, it as String, name, version, HSP_FILE_EXT)
+                    }
                     versionSizeMap[version] = size
                 }.apply {
                     logger.info(
@@ -320,6 +332,7 @@ class NpmLocalRepository(
     ) {
         val name = packageMetaData.name!!
         val fullPath = NpmUtils.getPackageMetadataPath(name)
+        val ohpm = context.repositoryDetail.type == RepositoryType.OHPM
         try {
             with(context) {
                 val originalPackageMetadata = npmPackageMetaData(fullPath)
@@ -332,6 +345,9 @@ class NpmLocalRepository(
                 } ?: return
                 // 调整tarball地址
                 adjustTarball(newPackageMetaData, name, packageMetaData)
+                if (ohpm) {
+                    newPackageMetaData.rev = newPackageMetaData.versions.map.size.toString()
+                }
                 // 存储package.json文件
                 context.putAttribute(NPM_FILE_FULL_PATH, NpmUtils.getPackageMetadataPath(name))
                 val artifactFile = JsonUtils.objectMapper.writeValueAsBytes(newPackageMetaData).inputStream()
@@ -340,7 +356,7 @@ class NpmLocalRepository(
                 storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
                 // 添加依赖
                 npmDependentHandler.updatePackageDependents(
-                    context.userId, context.artifactInfo, newPackageMetaData, NpmOperationAction.MIGRATION
+                    context.userId, context.artifactInfo, newPackageMetaData, NpmOperationAction.MIGRATION, ohpm
                 )
                 artifactFile.delete()
             }
@@ -365,9 +381,9 @@ class NpmLocalRepository(
     }
 
     private fun ArtifactMigrateContext.npmPackageMetaData(fullPath: String): NpmPackageMetaData? {
-        val node = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
+        val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         return node?.let {
-            val inputStream = storageService.load(it.sha256!!, Range.full(it.size), storageCredentials)
+            val inputStream = storageManager.loadFullArtifactInputStream(it, storageCredentials)
             JsonUtils.objectMapper.readValue(inputStream, NpmPackageMetaData::class.java)
         }
     }
@@ -491,6 +507,10 @@ class NpmLocalRepository(
     private fun adjustTarball(versionMetaData: NpmVersionMetadata) {
         with(versionMetaData) {
             versionMetaData.dist!!.tarball = NpmUtils.formatTarballWithDash(name!!, version!!, dist?.tarball!!)
+            versionMetaData.dist!!.any()[RESOLVED_HSP]?.let {
+                val resolvedHsp = NpmUtils.formatTarballWithDash(name!!, version!!, it as String)
+                versionMetaData.dist!!.set(RESOLVED_HSP, resolvedHsp)
+            }
         }
     }
 
@@ -514,7 +534,7 @@ class NpmLocalRepository(
             val artifactFile = inputStream.use { ArtifactFileFactory.build(it) }
             val fullPath = NpmUtils.getVersionPackageMetadataPath(name, version)
             context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
-            if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
+            if (nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))) {
                 logger.info(
                     "package [$name] with version metadata [$name-$version.json] " +
                         "is already exists in repository [$projectId/$repoName], skip migration."
@@ -532,16 +552,16 @@ class NpmLocalRepository(
         context: ArtifactMigrateContext,
         tarball: String,
         name: String,
-        version: String
+        version: String,
+        ext: String,
     ): Long {
         // 包的大小信息
         with(context) {
             var size = 0L
             var response: Response? = null
-            val fullPath = NpmUtils.getTgzPath(name, version)
-            context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
+            val fullPath = NpmUtils.getTgzPath(name, version, true, ext)
             // hit cache continue
-            if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
+            if (nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))) {
                 logger.info(
                     "package [$name] with tgz file [$fullPath] is " +
                         "already exists in repository [$projectId/$repoName], skip migration."
@@ -553,6 +573,12 @@ class NpmLocalRepository(
                     response = okHttpUtil.doGet(tarball)
                     if (checkResponse(response!!)) {
                         val artifactFile = ArtifactFileFactory.build(response?.body!!.byteStream())
+                        if (fullPath.endsWith(HAR_FILE_EXT)) {
+                            // 保存readme,changelog文件
+                            val readmeDir = NpmUtils.getReadmeDirFromTarballPath(fullPath)
+                            artifactFile.getInputStream().use { storeReadmeAndChangelog(context, it, readmeDir) }
+                        }
+                        context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
                         val nodeCreateRequest = buildMigrationNodeCreateRequest(context, artifactFile)
                         storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, storageCredentials)
                         size = artifactFile.getSize()
@@ -571,6 +597,26 @@ class NpmLocalRepository(
             }
             return size
         }
+    }
+
+    private fun storeReadmeAndChangelog(context: ArtifactMigrateContext, inputStream: InputStream, readmeDir: String) {
+        try {
+            val (readme, changelog) = NpmUtils.getReadmeAndChangeLog(inputStream)
+            readme?.let { storeReadmeOrChangeLog(context, it, "$readmeDir/$OHPM_README_FILE_NAME") }
+            changelog?.let { storeReadmeOrChangeLog(context, it, "$readmeDir/$OHPM_CHANGELOG_FILE_NAME") }
+        }  catch (exception: IOException) {
+            logger.error(
+                "Failed deploying npm readme [$readmeDir] due to : $exception"
+            )
+        }
+    }
+
+    private fun storeReadmeOrChangeLog(context: ArtifactMigrateContext, data: ByteArray, fullPath: String) {
+        context.putAttribute(NPM_FILE_FULL_PATH, fullPath)
+        val artifactFile = data.inputStream().use { ArtifactFileFactory.build(it) }
+        val nodeCreateRequest = buildMigrationNodeCreateRequest(context, artifactFile)
+        storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, context.storageCredentials)
+        artifactFile.delete()
     }
 
     private fun buildMigrationNodeCreateRequest(
@@ -596,9 +642,9 @@ class NpmLocalRepository(
     private fun deleteVersionMetadata(context: ArtifactMigrateContext, name: String, version: String) {
         val fullPath = NpmUtils.getVersionPackageMetadataPath(name, version)
         with(context) {
-            if (nodeClient.checkExist(projectId, repoName, fullPath).data!!) {
+            if (nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))) {
                 val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, fullPath, userId)
-                nodeClient.deleteNode(nodeDeleteRequest)
+                nodeService.deleteNode(nodeDeleteRequest)
                 logger.info(
                     "migrate package [$name] with version [$version] failed, " +
                         "delete package version metadata [$fullPath] success."

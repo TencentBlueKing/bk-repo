@@ -28,23 +28,26 @@
 package com.tencent.bkrepo.oci.listener.base
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.oci.listener.pool.EventHandlerThreadPoolExecutor
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
 import com.tencent.bkrepo.oci.service.OciOperationService
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 
-open class EventExecutor(
-    open val nodeClient: NodeClient,
-    open val repositoryClient: RepositoryClient,
+@Component
+class EventExecutor(
+    open val nodeService: NodeService,
+    open val repositoryService: RepositoryService,
     open val ociOperationService: OciOperationService
 ) {
     private val threadPoolExecutor: ThreadPoolExecutor = EventHandlerThreadPoolExecutor.instance
@@ -57,12 +60,22 @@ open class EventExecutor(
     ): Future<Boolean> {
         return threadPoolExecutor.submit<Boolean> {
             try {
-                replicationEventHandler(event)
+                eventHandler(event)
                 true
             } catch (exception: Throwable) {
                 logger.warn("Error occurred while executing the oci event: $exception")
                 false
             }
+        }
+    }
+
+    private fun eventHandler(event: ArtifactEvent) {
+        when (event.type) {
+            EventType.REPLICATION_THIRD_PARTY -> replicationEventHandler(event)
+            EventType.REPO_CREATED, EventType.REPO_REFRESHED, EventType.REPO_UPDATED -> {
+                ociOperationService.getPackagesFromThirdPartyRepo(event.projectId, event.repoName)
+            }
+            else -> throw UnsupportedOperationException()
         }
     }
 
@@ -74,12 +87,12 @@ open class EventExecutor(
             val ociArtifactInfo = OciManifestArtifactInfo(
                 projectId, repoName, packageName, "", version, false
             )
-            val nodeInfo = nodeClient.getNodeDetail(projectId, repoName, ociArtifactInfo.getArtifactFullPath()).data
+            val nodeInfo = nodeService.getNodeDetail(ociArtifactInfo)
                 ?: throw NodeNotFoundException(
                     "${ociArtifactInfo.getArtifactFullPath()} not found in repo in $projectId|$repoName"
                 )
             val ociDigest = OciDigest.fromSha256(sha256)
-            val repositoryDetail = repositoryClient.getRepoDetail(projectId, repoName).data
+            val repositoryDetail = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw RepoNotFoundException("$projectId|$repoName")
             ociOperationService.updateOciInfo(
                 ociArtifactInfo = ociArtifactInfo,

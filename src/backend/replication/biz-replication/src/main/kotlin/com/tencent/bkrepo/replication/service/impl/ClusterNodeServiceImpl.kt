@@ -28,20 +28,20 @@
 package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.hash.sha256
-import com.tencent.bkrepo.common.artifact.util.http.UrlFormatter
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaders
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.constant.SHA256
@@ -175,7 +175,7 @@ class ClusterNodeServiceImpl(
                 appId = request.appId
                 accessKey = request.accessKey
                 secretKey = request.secretKey
-                udpPort = udpPort
+                udpPort = request.udpPort
                 lastModifiedBy = SecurityUtils.getUserId()
                 lastModifiedDate = LocalDateTime.now()
             }
@@ -226,8 +226,7 @@ class ClusterNodeServiceImpl(
 
     override fun updateClusterNodeStatus(request: ClusterNodeStatusUpdateRequest) {
         with(request) {
-            val tClusterNode = clusterNodeDao.findByName(name)
-                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
+            val tClusterNode = clusterNodeDao.findByName(name) ?: return
             val clusterNode = tClusterNode.copy(
                 status = status,
                 errorReason = errorReason,

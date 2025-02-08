@@ -34,19 +34,23 @@ package com.tencent.bkrepo.common.storage.filesystem
 import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.bound
-import com.tencent.bkrepo.common.storage.core.AbstractFileStorage
+import com.tencent.bkrepo.common.storage.core.AbstractEncryptorFileStorage
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import java.io.File
 import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.StandardCopyOption
+import java.util.stream.Stream
 
 /**
  * 文件系统存储
  */
-open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSystemClient>() {
+open class FileSystemStorage : AbstractEncryptorFileStorage<FileSystemCredentials, FileSystemClient>() {
 
-    override fun store(path: String, name: String, file: File, client: FileSystemClient) {
+    override fun store(path: String, name: String, file: File, client: FileSystemClient, storageClass: String?) {
         file.inputStream().use {
             client.store(path, name, it, file.length())
         }
@@ -75,5 +79,22 @@ open class FileSystemStorage : AbstractFileStorage<FileSystemCredentials, FileSy
     override fun getTempPath(storageCredentials: StorageCredentials): String {
         require(storageCredentials is FileSystemCredentials)
         return Paths.get(storageCredentials.path, TEMP).toString()
+    }
+
+    override fun move(
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
+        fromClient: FileSystemClient,
+        toClient: FileSystemClient,
+    ) {
+        val fromFullPath = Paths.get(fromClient.root, fromPath, fromName)
+        val toFullPath = Paths.get(toClient.root, toPath, toName)
+        Files.move(fromFullPath, toFullPath, StandardCopyOption.REPLACE_EXISTING)
+    }
+
+    override fun listAll(path: String, client: FileSystemClient): Stream<Path> {
+        return client.walk(path).filter { Files.isRegularFile(it) }
     }
 }

@@ -34,19 +34,22 @@ package com.tencent.bkrepo.npm.service.impl
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
+import com.tencent.bkrepo.npm.constants.INTEGRITY_HSP
 import com.tencent.bkrepo.npm.constants.NPM_FILE_FULL_PATH
 import com.tencent.bkrepo.npm.constants.NPM_TGZ_TARBALL_PREFIX
+import com.tencent.bkrepo.npm.constants.RESOLVED_HSP
 import com.tencent.bkrepo.npm.exception.NpmArtifactNotFoundException
 import com.tencent.bkrepo.npm.exception.NpmRepoNotFoundException
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.properties.NpmProperties
 import com.tencent.bkrepo.npm.utils.NpmUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -58,13 +61,16 @@ import java.io.InputStream
 open class AbstractNpmService {
 
 	@Autowired
-	lateinit var nodeClient: NodeClient
+	lateinit var nodeService: NodeService
 
 	@Autowired
-	lateinit var repositoryClient: RepositoryClient
+	lateinit var nodeSearchService: NodeSearchService
 
 	@Autowired
-	lateinit var packageClient: PackageClient
+	lateinit var repositoryService: RepositoryService
+
+	@Autowired
+	lateinit var packageService: PackageService
 
 	@Autowired
 	lateinit var npmProperties: NpmProperties
@@ -73,7 +79,7 @@ open class AbstractNpmService {
 	 * 查询仓库是否存在
 	 */
 	fun checkRepositoryExist(projectId: String, repoName: String): RepositoryDetail {
-		return repositoryClient.getRepoDetail(projectId, repoName, "NPM").data ?: run {
+		return ArtifactContextHolder.getRepoDetailOrNull() ?: run {
 			logger.error("check repository [$repoName] in projectId [$projectId] failed!")
 			throw NpmRepoNotFoundException("repository [$repoName] in projectId [$projectId] not existed.")
 		}
@@ -83,21 +89,21 @@ open class AbstractNpmService {
 	 * check package exists
 	 */
 	fun packageExist(projectId: String, repoName: String, key: String): Boolean {
-		return packageClient.findPackageByKey(projectId, repoName, key).data?.let { true } ?: false
+		return packageService.findPackageByKey(projectId, repoName, key)?.let { true } ?: false
 	}
 
 	/**
 	 * check package version exists
 	 */
 	fun packageVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
-		return packageClient.findVersionByName(projectId, repoName, key, version).data?.let { true } ?: false
+		return packageService.findVersionByName(projectId, repoName, key, version)?.let { true } ?: false
 	}
 
 	/**
 	 * check package history version exists
 	 */
 	fun packageHistoryVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
-		val packageSummary = packageClient.findPackageByKey(projectId, repoName, key).data ?: return false
+		val packageSummary = packageService.findPackageByKey(projectId, repoName, key) ?: return false
 		return packageSummary.historyVersion.contains(version)
 	}
 
@@ -140,10 +146,24 @@ open class AbstractNpmService {
 		versionMetadata: NpmVersionMetadata
 	) {
 		val oldTarball = versionMetadata.dist?.tarball!!
-		versionMetadata.dist?.tarball =
-			NpmUtils.buildPackageTgzTarball(
-				oldTarball, npmProperties.domain, npmProperties.tarball.prefix, name, artifactInfo
-			)
+        versionMetadata.dist?.tarball = NpmUtils.buildPackageTgzTarball(
+            oldTarball,
+            npmProperties.domain,
+            npmProperties.tarball.prefix,
+            npmProperties.returnRepoId,
+            name,
+            artifactInfo
+        )
+		resolveOhpmHsp(versionMetadata)
+	}
+
+	protected fun resolveOhpmHsp(versionMetadata: NpmVersionMetadata) {
+		if (versionMetadata.dist?.any()?.get(INTEGRITY_HSP) == null) {
+			return
+		}
+		// OHPM HSP包
+		val hspTarball = NpmUtils.harPathToHspPath(versionMetadata.dist?.tarball!!)
+		versionMetadata.dist!!.set(RESOLVED_HSP, hspTarball)
 	}
 
 	companion object {

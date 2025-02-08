@@ -56,11 +56,14 @@ class OperateResourceImpl @Autowired constructor(
         userId: String,
         artifactInfo: ArtifactInfo,
         includeFolder: Boolean,
-        deep: Boolean
+        deep: Boolean,
+        includeMetadata: Boolean,
     ): Response<List<FileInfo>> {
         return artifactInfo.run {
             val path = getArtifactFullPath()
-            val fileInfoList = operateService.listFile(userId, projectId, repoName, path, includeFolder, deep)
+            val fileInfoList = operateService.listFile(
+                userId, projectId, repoName, path, includeFolder, deep, includeMetadata
+            )
             ResponseBuilder.success(fileInfoList)
         }
     }

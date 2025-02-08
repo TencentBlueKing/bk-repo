@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import java.io.File
 import java.io.InputStream
+import java.nio.file.Path
+import java.util.stream.Stream
 
 /**
  * 文件存储接口
@@ -47,7 +49,13 @@ interface FileStorage {
      * @param file 文件
      * @param storageCredentials 存储凭证
      */
-    fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials)
+    fun store(
+        path: String,
+        name: String,
+        file: File,
+        storageCredentials: StorageCredentials,
+        storageClass: String? = null,
+    )
 
     /**
      * 保存数据流
@@ -57,7 +65,13 @@ interface FileStorage {
      * @param size 流长度，通过inputStream取得的长度不准确，可以出现int溢出
      * @param storageCredentials 存储凭证
      */
-    fun store(path: String, name: String, inputStream: InputStream, size: Long, storageCredentials: StorageCredentials)
+    fun store(
+        path: String,
+        name: String,
+        inputStream: InputStream,
+        size: Long,
+        storageCredentials: StorageCredentials,
+    )
 
     /**
      * 加载数据流
@@ -93,11 +107,51 @@ interface FileStorage {
      * @param fromCredentials 源存储凭证
      * @param toCredentials 目的存储凭证
      */
-    fun copy(path: String, name: String, fromCredentials: StorageCredentials, toCredentials: StorageCredentials)
+    fun copy(
+        path: String,
+        name: String,
+        fromCredentials: StorageCredentials,
+        toCredentials: StorageCredentials,
+    )
+
+    /**
+     * 在不同存储实例之间移动文件
+     * @param fromPath 文件源路径
+     * @param fromName 文件源名称
+     * @param toPath 文件目标路径
+     * @param toName 文件目标名称
+     * @param fromCredentials 源存储凭证
+     * @param toCredentials 目的存储凭证
+     */
+    fun move(
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
+        fromCredentials: StorageCredentials,
+        toCredentials: StorageCredentials,
+    )
+
+    /**
+     * 检查文件是否恢复
+     * */
+    fun checkRestore(path: String, name: String, storageCredentials: StorageCredentials): Boolean
+
+    /**
+     * 恢复文件
+     * */
+    fun restore(path: String, name: String, days: Int, tier: String, storageCredentials: StorageCredentials)
 
     /**
      * 获取存储的临时目录，默认实现返回`java.io.tmpdir`目录
      * @param storageCredentials 存储凭证
      */
     fun getTempPath(storageCredentials: StorageCredentials): String = System.getProperty("java.io.tmpdir")
+
+    /**
+     * 列出指定目录下的所有文件
+     * @param path 目录路径
+     * @param storageCredentials 存储实例
+     * */
+    fun listAll(path: String, storageCredentials: StorageCredentials): Stream<Path>
 }

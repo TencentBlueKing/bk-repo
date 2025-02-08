@@ -40,6 +40,8 @@ class GitContentArtifactInfo(
 ) : GitRepositoryArtifactInfo(projectId, repoName, artifactUri) {
 
     override fun getArtifactFullPath(): String {
-        return String.format("objects/%s/%s", commitId, path)
+        return if(getArtifactMappingUri().isNullOrEmpty()) {
+            String.format("objects/%s/%s", commitId, path)
+        } else getArtifactMappingUri()!!
     }
 }

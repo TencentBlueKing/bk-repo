@@ -39,7 +39,7 @@ import okhttp3.Response
 
 class CopyObjectResponseHandler : HttpResponseHandler<CopyObjectResponse>() {
     override fun handle(response: Response): CopyObjectResponse {
-        val result = readXmlValue(response)
+        val result = readXmlToMap(response)
         val eTag = (result[ETAG].toString()).trim('"')
         val lastModified = result[RESPONSE_LAST_MODIFIED].toString()
         return CopyObjectResponse(eTag, lastModified)

@@ -42,7 +42,8 @@ import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
+import com.tencent.bkrepo.common.metadata.annotation.LogOperate
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
@@ -68,6 +69,7 @@ class AccountController @Autowired constructor(
     @LogOperate(type = "ACCOUNT_LIST")
     fun listAccount(): Response<List<Account>> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         val accountList = accountService.listAccount()
         return ResponseBuilder.success(accountList)
     }
@@ -75,21 +77,26 @@ class AccountController @Autowired constructor(
     @ApiOperation("查询拥有的账号")
     @GetMapping("/own/list")
     fun listOwnAccount(): Response<List<Account>> {
-        return ResponseBuilder.success(accountService.listOwnAccount())
+        preCheckPlatformPermission()
+        val userId = SecurityUtils.getUserId()
+        return ResponseBuilder.success(accountService.listOwnAccount(userId))
     }
 
     @ApiOperation("查询已授权账号")
     @GetMapping("/authorized/list")
     @PutMapping("/update")
     fun listAuthorizedAccount(): Response<List<Account>> {
-        return ResponseBuilder.success(accountService.listAuthorizedAccount())
+        preCheckPlatformPermission()
+        val userId = SecurityUtils.getUserId()
+        return ResponseBuilder.success(accountService.listAuthorizedAccount(userId))
     }
 
     @ApiOperation("根据appId查询账号")
     @GetMapping("/detail/{appId}")
     fun getAccountDetail(@PathVariable appId: String): Response<Account> {
         preCheckPlatformPermission()
-        return ResponseBuilder.success(accountService.findAccountByAppId(appId))
+        val userId = SecurityUtils.getUserId()
+        return ResponseBuilder.success(accountService.findAccountByAppId(appId, userId))
     }
 
     @ApiOperation("创建账号")
@@ -97,7 +104,9 @@ class AccountController @Autowired constructor(
     @LogOperate(type = "ACCOUNT_CREATE")
     fun createAccount(@RequestBody request: CreateAccountRequest): Response<Account> {
         preCheckPlatformPermission()
-        return ResponseBuilder.success(accountService.createAccount(request))
+        preCheckGrantTypes(request.authorizationGrantTypes)
+        val owner = SecurityUtils.getUserId()
+        return ResponseBuilder.success(accountService.createAccount(request, owner))
     }
 
     @ApiOperation("更新账号")
@@ -105,7 +114,9 @@ class AccountController @Autowired constructor(
     @LogOperate(type = "ACCOUNT_UPDATE")
     fun updateAccount(@RequestBody request: UpdateAccountRequest): Response<Boolean> {
         preCheckPlatformPermission()
-        accountService.updateAccount(request)
+        preCheckGrantTypes(request.authorizationGrantTypes)
+        val owner = SecurityUtils.getUserId()
+        accountService.updateAccount(request, owner)
         return ResponseBuilder.success(true)
     }
 
@@ -114,7 +125,8 @@ class AccountController @Autowired constructor(
     @LogOperate(type = "ACCOUNT_DELETE")
     fun deleteAccount(@PathVariable appId: String): Response<Boolean> {
         preCheckPlatformPermission()
-        accountService.deleteAccount(appId)
+        val userId = SecurityUtils.getUserId()
+        accountService.deleteAccount(appId, userId)
         return ResponseBuilder.success(true)
     }
 
@@ -122,7 +134,8 @@ class AccountController @Autowired constructor(
     @DeleteMapping("/uninstall/{appId}")
     fun uninstallAccount(@PathVariable appId: String): Response<Boolean> {
         preCheckPlatformPermission()
-        accountService.uninstallAccount(appId)
+        val userId = SecurityUtils.getUserId()
+        accountService.uninstallAccount(appId, userId)
         return ResponseBuilder.success(true)
     }
 
@@ -130,7 +143,8 @@ class AccountController @Autowired constructor(
     @GetMapping("/credential/list/{appId}")
     fun getCredential(@PathVariable appId: String): Response<List<CredentialSet>> {
         preCheckPlatformPermission()
-        val credential = accountService.listCredentials(appId)
+        val userId = SecurityUtils.getUserId()
+        val credential = accountService.listCredentials(appId, userId)
         return ResponseBuilder.success(credential)
     }
 
@@ -142,7 +156,8 @@ class AccountController @Autowired constructor(
         @RequestParam type: AuthorizationGrantType?
     ): Response<CredentialSet> {
         preCheckPlatformPermission()
-        val result = accountService.createCredential(appId, type ?: AuthorizationGrantType.PLATFORM)
+        val userId = SecurityUtils.getUserId()
+        val result = accountService.createCredential(appId, type ?: AuthorizationGrantType.PLATFORM, userId)
         return ResponseBuilder.success(result)
     }
 
@@ -151,7 +166,8 @@ class AccountController @Autowired constructor(
     @LogOperate(type = "KEYS_DELETE")
     fun deleteCredential(@PathVariable appId: String, @PathVariable accesskey: String): Response<Boolean> {
         preCheckPlatformPermission()
-        val result = accountService.deleteCredential(appId, accesskey)
+        val userId = SecurityUtils.getUserId()
+        val result = accountService.deleteCredential(appId, accesskey, userId)
         return ResponseBuilder.success(result)
     }
 
@@ -164,6 +180,7 @@ class AccountController @Autowired constructor(
         @PathVariable status: CredentialStatus
     ): Response<Boolean> {
         preCheckPlatformPermission()
+        preCheckUserAdmin()
         accountService.updateCredentialStatus(appId, accesskey, status)
         return ResponseBuilder.success(true)
     }
@@ -171,6 +188,8 @@ class AccountController @Autowired constructor(
     @ApiOperation("校验ak/sk")
     @GetMapping("/credential/{accesskey}/{secretkey}")
     fun checkCredential(@PathVariable accesskey: String, @PathVariable secretkey: String): Response<String?> {
+        preCheckPlatformPermission()
+        preCheckUserAdmin()
         val result = accountService.checkCredential(accesskey, secretkey)
         return ResponseBuilder.success(result)
     }

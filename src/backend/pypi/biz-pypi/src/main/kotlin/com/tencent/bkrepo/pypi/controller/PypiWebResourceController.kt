@@ -31,36 +31,113 @@
 
 package com.tencent.bkrepo.pypi.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.pypi.api.PypiWebResource
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.service.PypiWebService
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiOperation
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
+@Api("pypi产品接口")
 @RestController
+@RequestMapping("/ext")
 class PypiWebResourceController(
     private val pypiWebService: PypiWebService
-) : PypiWebResource {
-    override fun deletePackage(pypiArtifactInfo: PypiArtifactInfo, packageKey: String): Response<Void> {
+) {
+
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#pypiArtifactInfo?.repoName",
+            instanceNames = "#pypiArtifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#pypiArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey")
+        ],
+        scopeId = "#pypiArtifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
+    )
+    @ApiOperation("pypi包删除接口")
+    @DeleteMapping(PypiArtifactInfo.PYPI_EXT_PACKAGE_DELETE)
+    fun deletePackage(pypiArtifactInfo: PypiArtifactInfo, packageKey: String): Response<Void> {
         pypiWebService.deletePackage(pypiArtifactInfo, packageKey)
         return ResponseBuilder.success()
     }
 
-    override fun deleteVersion(
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#pypiArtifactInfo?.repoName",
+            instanceNames = "#pypiArtifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#pypiArtifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey"),
+            AuditAttribute(name = ActionAuditContent.VERSION_TEMPLATE, value = "#version")
+
+        ],
+        scopeId = "#pypiArtifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
+    )
+    @ApiOperation("pypi版本删除接口")
+    @DeleteMapping(PypiArtifactInfo.PYPI_EXT_VERSION_DELETE)
+    fun deleteVersion(
         pypiArtifactInfo: PypiArtifactInfo,
         packageKey: String,
-        version: String?
+        version: String?,
+        contentPath: String?
     ): Response<Void> {
-        pypiWebService.delete(pypiArtifactInfo, packageKey, version)
+        pypiWebService.delete(pypiArtifactInfo, packageKey, version, contentPath)
         return ResponseBuilder.success()
     }
 
-    override fun artifactDetail(
+    @ApiOperation("pypi版本详情接口")
+    @GetMapping(PypiArtifactInfo.PYPI_EXT_DETAIL)
+    fun artifactDetail(
         pypiArtifactInfo: PypiArtifactInfo,
         packageKey: String,
         version: String?
     ): Response<Any?> {
         return ResponseBuilder.success(pypiWebService.artifactDetail(pypiArtifactInfo, packageKey, version))
+    }
+
+    @ApiOperation("pypi包版本列表接口")
+    @GetMapping(PypiArtifactInfo.PYPI_EXT_PACKAGE_LIST)
+    fun versionListPage(
+        pypiArtifactInfo: PypiArtifactInfo,
+        packageKey: String,
+        pageNumber: Int,
+        pageSize: Int
+    ): Response<Page<PackageVersion>> {
+        return ResponseBuilder.success(
+            pypiWebService.versionListPage(
+                pypiArtifactInfo,
+                packageKey,
+                pageNumber,
+                pageSize
+            )
+        )
     }
 }

@@ -42,7 +42,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchConte
 import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -76,6 +76,18 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
         }
     }
 
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return mapFirstRepo(context) { sub, repository ->
+            require(sub is ArtifactDownloadContext)
+            require(repository is AbstractArtifactRepository)
+            if (repository.onDownloadRedirect(sub)) {
+                true
+            } else {
+                null
+            }
+        } ?: false
+    }
+
     @Suppress("UNCHECKED_CAST")
     protected fun getTraversedList(context: ArtifactContext): MutableList<RepositoryIdentify> {
         return context.getAttribute(TRAVERSED_LIST) as? MutableList<RepositoryIdentify> ?: let {
@@ -100,7 +112,7 @@ abstract class VirtualRepository : AbstractArtifactRepository() {
             traversedList.add(repoIdentify)
             try {
                 permissionManager.checkRepoPermission(PermissionAction.READ, repoIdentify.projectId, repoIdentify.name)
-                val subRepoDetail = repositoryClient.getRepoDetail(repoIdentify.projectId, repoIdentify.name).data!!
+                val subRepoDetail = repositoryService.getRepoDetail(repoIdentify.projectId, repoIdentify.name)!!
                 val repository = ArtifactContextHolder.getRepository(subRepoDetail.category)
                 val subContext = context.copy(subRepoDetail)
                 action(subContext, repository)?.let { return it }

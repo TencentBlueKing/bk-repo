@@ -29,17 +29,26 @@ package com.tencent.bkrepo.common.storage.filesystem.cleanup
 
 import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.common.api.constant.JOB_LOGGER_NAME
+import com.tencent.bkrepo.common.artifact.constant.SHA256_STR_LENGTH
 import com.tencent.bkrepo.common.storage.core.FileStorage
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileDeletedEvent
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileEventData
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileRetainedEvent
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileDeletedEvent
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.event.FileSurvivedEvent
+import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import java.io.IOException
+import java.nio.file.DirectoryNotEmptyException
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
-import java.time.Duration
 
 /**
  * 文件清理visitor
@@ -48,28 +57,52 @@ import java.time.Duration
 class CleanupFileVisitor(
     private val rootPath: Path,
     private val tempPath: Path,
-    private val stagingPath: Path,
+    private val stagingPath: Path? = null,
     private val fileStorage: FileStorage,
     private val fileLocator: FileLocator,
     private val credentials: StorageCredentials,
+    private val fileExpireResolver: FileExpireResolver,
+    private val publisher: ApplicationEventPublisher,
+    private val fileRetainResolver: FileRetainResolver? = null,
 ) : ArtifactFileVisitor() {
 
     val result = CleanupResult()
-    private val expireDays = credentials.cache.expireDays
+    private val expireDuration = credentials.cache.expireDuration
     private val rateLimiter = RateLimiter.create(permitsPerSecond)
 
     @Throws(IOException::class)
     override fun visitFile(filePath: Path, attributes: BasicFileAttributes): FileVisitResult {
         val size = attributes.size()
+        val isTempFile = isTempFile(filePath)
+        var deleted = false
         try {
-            if (isExpired(attributes, expireDays) && !isNFSTempFile(filePath)) {
-                if (isTempFile(filePath) || existInStorage(filePath)) {
-                    rateLimiter.acquire()
-                    Files.delete(filePath)
-                    result.cleanupFile += 1
-                    result.cleanupSize += size
-                    logger.info("Clean up file[$filePath], size[$size], summary: $result")
+            val file = filePath.toFile()
+            val expired = fileExpireResolver.isExpired(file)
+            val retain = fileRetainResolver?.retain(file.name) ?: false
+
+            var shouldDelete = expired && !isNFSTempFile(filePath)
+            if (shouldDelete && !isTempFile) {
+                val existInStorage = existInStorage(filePath)
+                if (!existInStorage) {
+                    logger.info("cache file[${filePath}] not exists in storage[${credentials.key}]")
                 }
+                shouldDelete = existInStorage
+            }
+
+            if (shouldDelete && !retain) {
+                rateLimiter.acquire()
+                Files.delete(filePath)
+                result.cleanupFile += 1
+                result.cleanupSize += size
+                deleted = true
+                onFileCleaned(filePath, size)
+                logger.info("Clean up file[$filePath], size[$size], summary: $result")
+            }
+            if (shouldDelete && retain) {
+                result.retainFile += 1
+                result.retainSize += size
+                result.retainSha256.add(file.name)
+                onFileRetained(filePath, size)
             }
         } catch (ignored: Exception) {
             logger.error("Clean file[${filePath.fileName}] error.", ignored)
@@ -77,6 +110,14 @@ class CleanupFileVisitor(
         } finally {
             result.totalFile += 1
             result.totalSize += size
+            if (!isTempFile && !deleted) {
+                // 仅统计非temp目录下未被清理的文件
+                result.rootDirNotDeletedFile += 1
+                result.rootDirNotDeletedSize += size
+            }
+            if (!deleted) {
+                onFileSurvived(filePath)
+            }
         }
         return FileVisitResult.CONTINUE
     }
@@ -94,30 +135,46 @@ class CleanupFileVisitor(
         if (dirPath == rootPath || dirPath == tempPath || dirPath == stagingPath) {
             return FileVisitResult.CONTINUE
         }
-        Files.newDirectoryStream(dirPath).use {
-            if (!it.iterator().hasNext()) {
-                Files.delete(dirPath)
-                logger.info("Clean up folder[$dirPath].")
-                result.cleanupFolder += 1
-            }
+        // 由于支持删除上传路径，所以这里即使是空目录，也需要判断过期时间。
+        if (fileExpireResolver.isExpired(dirPath.toFile())) {
+            deleteEmptyFolder(dirPath)
         }
         result.totalFolder += 1
         return FileVisitResult.CONTINUE
     }
 
-    override fun needWalk(): Boolean {
-        return expireDays > 0
+    private fun deleteEmptyFolder(dirPath: Path) {
+        Files.newDirectoryStream(dirPath).use {
+            if (!it.iterator().hasNext()) {
+                try {
+                    Files.delete(dirPath)
+                    logger.info("Clean up folder[$dirPath].")
+                    result.cleanupFolder += 1
+                } catch (ignore: DirectoryNotEmptyException) {
+                    logger.warn("Directory [$dirPath] is not empty!")
+                }
+            }
+        }
     }
 
-    /**
-     * 判断文件是否过期
-     * 根据上次访问时间和上次修改时间判断
-     */
-    private fun isExpired(attributes: BasicFileAttributes, expireDays: Int): Boolean {
-        val lastAccessTime = attributes.lastAccessTime().toMillis()
-        val lastModifiedTime = attributes.lastModifiedTime().toMillis()
-        val expiredTime = System.currentTimeMillis() - Duration.ofDays(expireDays.toLong()).toMillis()
-        return lastAccessTime < expiredTime && lastModifiedTime < expiredTime
+    override fun needWalk(): Boolean {
+        return expireDuration.seconds > 0
+    }
+
+    override fun visitFileFailed(file: Path, exc: IOException?): FileVisitResult {
+        if (exc is NoSuchFileException) {
+            // 目录或者文件已经由其他进程删除。
+            logger.info("File [$file] already delete.")
+        } else {
+            logger.error("Clean up file [$file] error.", exc)
+            result.errorCount++
+            if (Files.isRegularFile(file)) {
+                result.totalFile++
+            } else {
+                result.totalFolder++
+            }
+        }
+        return FileVisitResult.CONTINUE
     }
 
     /**
@@ -143,6 +200,45 @@ class CleanupFileVisitor(
      * */
     private fun isNFSTempFile(filePath: Path): Boolean {
         return filePath.fileName.toString().startsWith(NFS_TEMP_FILE_PREFIX)
+    }
+
+    private fun onFileCleaned(filePath: Path, size: Long) {
+        val event = FileDeletedEvent(
+            credentials = credentials,
+            rootPath = rootPath.toString(),
+            fullPath = filePath.toString(),
+        )
+        if (isCacheFile(filePath)) {
+            val data = buildCacheFileEventData(filePath, size)
+            publisher.publishEvent(CacheFileDeletedEvent(data))
+        }
+
+        publisher.publishEvent(event)
+    }
+
+    private fun onFileRetained(filePath: Path, size: Long) {
+        if (isCacheFile(filePath)) {
+            val data = buildCacheFileEventData(filePath, size)
+            publisher.publishEvent(CacheFileRetainedEvent(data))
+        }
+    }
+
+    private fun onFileSurvived(filePath: Path) {
+        val event = FileSurvivedEvent(
+            credentials = credentials,
+            rootPath = rootPath.toString(),
+            fullPath = filePath.toString(),
+        )
+        publisher.publishEvent(event)
+    }
+
+    private fun buildCacheFileEventData(filePath: Path, size: Long): CacheFileEventData {
+        val fileName = filePath.fileName.toString()
+        return CacheFileEventData(credentials, fileName, filePath.toString(), size)
+    }
+
+    private fun isCacheFile(filePath: Path): Boolean {
+        return rootPath == credentials.cache.path.toPath() && filePath.fileName.toString().length == SHA256_STR_LENGTH
     }
 
     companion object {

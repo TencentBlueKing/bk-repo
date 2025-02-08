@@ -1,31 +1,29 @@
 <template>
-    <div class="bkrepo-user-container flex-align-center">
-        <div class="mr5 user-info-avatar">
-            <div :class="[
-                'avatar-letter',
-                `avatar-letter-${['green', 'yellow', 'red', 'blue'][(userInfo.name || userInfo.username).length % 4]}`
-            ]">
-                {{ (userInfo.name || userInfo.username)[0] }}
-            </div>
+    <bk-popover
+        theme="light navigation-message"
+        placement="bottom"
+        :arrow="false"
+        trigger="click"
+        ref="popoverRef"
+    >
+        <div class="user-entry">
+            {{ userInfo.displayName || userInfo.name || userInfo.username }}
+            <i class="devops-icon icon-down-shape ml5" />
         </div>
-        <span class="flex-1 text-overflow" :title="userInfo.name || userInfo.username">{{ userInfo.name || userInfo.username }}</span>
-        <i class="ml5 bk-icon icon-angle-down"></i>
-        <ul class="user-menu">
-            <li class="flex-align-center" v-for="name in menuList" :key="name" @click="changeRoute(name)">
+        <template slot="content">
+            <li class="bkci-dropdown-item" v-for="name in menuList" :key="name" @click="changeRoute(name)">
                 <router-link
                     class="flex-align-center"
                     :to="{ name }"
                     @click.stop.prevent="() => {}">
-                    <Icon :name="name" size="14" />
-                    <span class="ml8 text-overflow">{{ $t(name) }}</span>
+                    <span class="user-menu-item">{{ $t(name) }}</span>
                 </router-link>
             </li>
-            <li class="hover-btn flex-align-center" @click="logout">
-                <Icon name="repoLogout" size="14" />
-                <span class="ml8 text-overflow">{{ $t('logout') }}</span>
+            <li class="bkci-dropdown-item" @click="logout" style="padding: 0px">
+                <span class="user-menu-item">{{ $t('logout') }}</span>
             </li>
-        </ul>
-    </div>
+        </template>
+    </bk-popover>
 </template>
 <script>
     import { mapState, mapActions } from 'vuex'
@@ -52,54 +50,61 @@
     }
 </script>
 <style lang="scss" scoped>
+.user-entry {
+    display: flex;
+    height: 32px;
+    line-height: 32px;
+    padding: 0 12px;
+    align-items: center;
+    color: #7b7d8a;
+    &:hover{
+        cursor: pointer;
+        color: #f1ffff;
+    }
+}
+.flex-align-center {
+    width: 100%;
+    text-align: center;
+}
+.bkci-dropdown-item {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    line-height: 33px;
+    padding: 0;
+    width: 90px;
+    color: #63656e;
+    font-size: 12px;
+    text-decoration: none;
+    white-space: nowrap;
+    background-color: #fff;
+    cursor: pointer;
+    &.disabled {
+        color: #dcdee5;
+        cursor: not-allowed;
+    }
+    &.active {
+        background-color: #f5f7fb;
+    }
+}
+.user-menu-item {
+    color: #737987;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    &:hover {
+        background-color: #EAF3FF;
+    }
+}
 .bkrepo-user-container {
     justify-content: flex-end;
     position: relative;
-    width: 130px;
     height: 100%;
     padding: 0 10px;
     cursor: pointer;
     .icon-angle-down {
         transition: all .3s;
         font-size: 22px;
-    }
-    .user-info-avatar {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        font-size: 0;
-        overflow: hidden;
-        box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.1);
-        .avatar-letter {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            padding-bottom: 4px;
-            font-size: 16px;
-            color: white;
-            &-green {
-                background-color: #30D878;
-            }
-            &-yellow {
-                background-color: #FFB400;
-            }
-            &-red {
-                background-color: #FF5656;
-            }
-            &-blue {
-                background-color: #3a84ff;
-            }
-        }
-    }
-    &:hover {
-        .icon-angle-down {
-            transform-origin: center;
-            transform: rotate(-180deg);
-        }
-        .user-menu {
-            display: initial;
-        }
     }
     .user-menu {
         display: none;

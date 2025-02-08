@@ -48,6 +48,11 @@ interface FileBlockOperation {
     fun createAppendId(storageCredentials: StorageCredentials?): String
 
     /**
+     * 查询追加文件长度
+     */
+    fun findLengthOfAppendFile(appendId: String, storageCredentials: StorageCredentials?): Long
+
+    /**
      * 追加文件，返回当前文件长度
      * appendId: 文件追加Id
      */
@@ -57,7 +62,7 @@ interface FileBlockOperation {
      * 结束追加，存储并返回完整文件
      * appendId: 文件追加Id
      */
-    fun finishAppend(appendId: String, storageCredentials: StorageCredentials?): FileInfo
+    fun finishAppend(appendId: String, storageCredentials: StorageCredentials?, fileInfo: FileInfo? = null): FileInfo
 
     /**
      * 创建分块存储目录，返回分块存储Id
@@ -84,7 +89,7 @@ interface FileBlockOperation {
      * 列出分块文件
      * blockId: 分块存储id
      */
-    fun listBlock(blockId: String, storageCredentials: StorageCredentials?): List<Pair<Long, String>>
+    fun listBlock(blockId: String, storageCredentials: StorageCredentials?): List<Triple<Long, String, Int>>
 
     /**
      * 存储分块文件
@@ -101,8 +106,27 @@ interface FileBlockOperation {
     )
 
     /**
+     * 将分块文件追加到指定位置
+     * blockId: 分块存储id
+     * sequence: 序列id，从1开始
+     */
+    fun storeBlockWithRandomPosition(
+        blockId: String,
+        sequence: Int,
+        digest: String,
+        artifactFile: ArtifactFile,
+        overwrite: Boolean,
+        storageCredentials: StorageCredentials?,
+        startPosition: Long,
+        totalLength: Long
+    )
+
+    /**
      * 合并分块文件
      * blockId: 分块存储id
      */
-    fun mergeBlock(blockId: String, storageCredentials: StorageCredentials?): FileInfo
+    fun mergeBlock(
+        blockId: String, storageCredentials: StorageCredentials?,
+        fileInfo: FileInfo? = null, mergeFileFlag: Boolean = true
+    ): FileInfo
 }

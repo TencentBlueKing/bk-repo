@@ -54,6 +54,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import org.springframework.stereotype.Component
+import java.util.Locale
 
 @Component("${StandardScanner.TYPE}Converter")
 class StandardConverter(private val licenseService: SpdxLicenseService) : ScannerConverter {
@@ -61,10 +62,10 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
     override fun convertLicenseResult(result: Any): Page<FileLicensesResultDetail> {
         result as Page<LicenseResult>
         val licenseIds = result.records.map { it.licenseName }.distinct()
-        val licenses = licenseService.listLicenseByIds(licenseIds).mapKeys { it.key.toLowerCase() }
+        val licenses = licenseService.listLicenseByIds(licenseIds).mapKeys { it.key.lowercase(Locale.getDefault()) }
 
         val reports = result.records.map {
-            val detail = licenses[it.licenseName.toLowerCase()]
+            val detail = licenses[it.licenseName.lowercase(Locale.getDefault())]
             FileLicensesResultDetail(
                 licenseId = it.licenseName,
                 fullName = detail?.name ?: "",
@@ -99,7 +100,8 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
                 description = it.des,
                 officialSolution = it.solution ?: "",
                 reference = it.references,
-                path = it.path
+                path = it.path,
+                versionsPaths = it.versionsPaths
             )
         }.toList()
         return Pages.ofResponse(pageRequest, result.totalRecords, reports)
@@ -139,7 +141,7 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
 
         // security统计
         securityResults?.forEach { securityResult ->
-            val severityLevel = Level.valueOf(securityResult.severity.toUpperCase()).level
+            val severityLevel = Level.valueOf(securityResult.severity.uppercase(Locale.getDefault())).level
             val shouldIgnore = filterRule?.shouldIgnore(
                 securityResult.vulId,
                 securityResult.cveId,
@@ -163,8 +165,8 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
             return overview
         }
 
-        val licenseIds = licenseResults.map { it.licenseName.toLowerCase() }.distinct()
-        val licensesInfo = licenseService.listLicenseByIds(licenseIds).mapKeys { it.key.toLowerCase() }
+        val licenseIds = licenseResults.map { it.licenseName.lowercase(Locale.getDefault()) }.distinct()
+        val licensesInfo = licenseService.listLicenseByIds(licenseIds).mapKeys { it.key.lowercase(Locale.getDefault()) }
 
         overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = licenseResults.size.toLong()
         for (licenseResult in licenseResults) {
@@ -174,7 +176,7 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
                 continue
             }
 
-            val detail = licensesInfo[licenseResult.licenseName.toLowerCase()]
+            val detail = licensesInfo[licenseResult.licenseName.lowercase(Locale.getDefault())]
             if (detail == null) {
                 incLicenseOverview(overview, LicenseNature.UNKNOWN.natureName)
                 continue

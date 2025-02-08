@@ -31,25 +31,30 @@
 
 package com.tencent.bkrepo.repository.service.file.impl
 
+import com.tencent.bk.audit.context.ActionAuditContext
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.AUDITED_UID
+import com.tencent.bkrepo.common.api.constant.AUDIT_REQUEST_URI
+import com.tencent.bkrepo.common.api.constant.AUDIT_SHARE_USER_ID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.service.cluster.DefaultCondition
+import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.model.TShareRecord
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.file.ShareService
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -61,7 +66,6 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.UUID
 
 /**
  * 文件分享服务实现类
@@ -72,7 +76,7 @@ class ShareServiceImpl(
     private val repositoryService: RepositoryService,
     private val nodeService: NodeService,
     private val mongoTemplate: MongoTemplate,
-    private val redirectService: EdgeNodeRedirectService,
+    private val temporaryTokenClient: ServiceTemporaryTokenClient,
 ) : ShareService {
 
     override fun create(
@@ -81,10 +85,19 @@ class ShareServiceImpl(
         request: ShareRecordCreateRequest,
     ): ShareRecordInfo {
         with(artifactInfo) {
-            val node = nodeService.getNodeDetail(artifactInfo)
-            if (node == null || node.folder) {
-                throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
-            }
+            checkNode(artifactInfo)
+            // 兼容性代码，把token的创建统一迁移到temporary_token 表
+            val tmpToken = TemporaryTokenCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPathSet = setOf(getArtifactFullPath()),
+                authorizedUserSet = request.authorizedUserList.toSet(),
+                authorizedIpSet = request.authorizedIpList.toSet(),
+                createdBy = userId,
+                type = TokenType.DOWNLOAD,
+                expireSeconds = request.expireSeconds,
+            )
+            val token = temporaryTokenClient.createToken(tmpToken).data!!.first().token
             val shareRecord = TShareRecord(
                 projectId = projectId,
                 repoName = repoName,
@@ -92,7 +105,7 @@ class ShareServiceImpl(
                 expireDate = computeExpireDate(request.expireSeconds),
                 authorizedUserList = request.authorizedUserList,
                 authorizedIpList = request.authorizedIpList,
-                token = generateToken(),
+                token = token,
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
@@ -114,7 +127,7 @@ class ShareServiceImpl(
                     .and(TShareRecord::token).isEqualTo(token),
             )
             val shareRecord = mongoTemplate.findOne(query, TShareRecord::class.java)
-                ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID)
+                ?: throw ErrorCodeException(ArtifactMessageCode.TEMPORARY_TOKEN_INVALID, token)
             if (shareRecord.authorizedUserList.isNotEmpty() && userId !in shareRecord.authorizedUserList) {
                 throw PermissionException("unauthorized")
             }
@@ -128,17 +141,18 @@ class ShareServiceImpl(
     override fun download(userId: String, token: String, artifactInfo: ArtifactInfo) {
         logger.info("artifact[$artifactInfo] download user: $userId")
         val shareRecord = checkToken(userId, token, artifactInfo)
+        checkAlphaApkDownloadUser(userId, artifactInfo, shareRecord.createdBy)
         with(artifactInfo) {
             val downloadUser = if (userId == ANONYMOUS_USER) shareRecord.createdBy else userId
             val repo = repositoryService.getRepoDetail(projectId, repoName)
                 ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, repoName)
             val context = ArtifactDownloadContext(repo = repo, userId = userId)
             HttpContextHolder.getRequest().setAttribute(USER_KEY, downloadUser)
-            if (redirectService.shouldRedirect(context.artifactInfo)) {
-                // 节点来自其他集群，重定向到其他节点。
-                redirectService.redirectToDefaultCluster(context)
-                return
-            }
+            ActionAuditContext.current().addExtendData(AUDITED_UID, downloadUser)
+            ActionAuditContext.current().addExtendData(
+                AUDIT_REQUEST_URI, "{${HttpContextHolder.getRequestOrNull()?.requestURI}}"
+            )
+            ActionAuditContext.current().addExtendData(AUDIT_SHARE_USER_ID, shareRecord.createdBy)
             context.shareUserId = shareRecord.createdBy
             val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
             repository.download(context)
@@ -154,12 +168,31 @@ class ShareServiceImpl(
         return mongoTemplate.find(query, TShareRecord::class.java).map { convert(it) }
     }
 
+    fun checkNode(artifactInfo: ArtifactInfo) {
+        val node = nodeService.getNodeDetail(artifactInfo)
+        if (node == null || node.folder) {
+            throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        }
+    }
+
+    /**
+     * 加固签名的apk包，匿名下载时，使用分享人身份下载
+     */
+    private fun checkAlphaApkDownloadUser(userId: String, artifactInfo: ArtifactInfo, shareUserId: String) {
+        val nodeDetail = ArtifactContextHolder.getNodeDetail(artifactInfo)
+            ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
+        val appStageKey = nodeDetail.metadata.keys.find { it.equals(BK_CI_APP_STAGE_KEY, true) }
+            ?: return
+        val alphaApk = nodeDetail.metadata[appStageKey]?.toString().equals(ALPHA, true)
+        if (alphaApk && userId == ANONYMOUS_USER) {
+            HttpContextHolder.getRequest().setAttribute(USER_KEY, shareUserId)
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ShareServiceImpl::class.java)
-
-        private fun generateToken(): String {
-            return UUID.randomUUID().toString().replace(StringPool.DASH, StringPool.EMPTY).toLowerCase()
-        }
+        private const val BK_CI_APP_STAGE_KEY = "BK-CI-APP-STAGE"
+        private const val ALPHA = "Alpha"
 
         private fun generateShareUrl(shareRecord: TShareRecord): String {
             with(shareRecord) {

@@ -40,6 +40,9 @@ bkDomainScheme: http
 ## 是否强制跳转https配置
 forceHttps: false
 
+## 蓝鲸文档中心地址
+bkDocsCenterUrl:
+
 ## 日志采集配置
 bkLogConfig:
   enabled: false
@@ -49,6 +52,13 @@ bkLogConfig:
     dataId: 1
   gatewayError:
     dataId: 1
+
+## bkNotice 配置
+bkNotice:
+  enabled: false
+  apiBaseUrl:
+  appCode:
+  appSecret:
 
 ## ingress配置
 ingress:
@@ -154,6 +164,14 @@ init:
   entrance:
     enabled: false
     bkCiProjectInnerUrl:
+  iam:
+    enabled: true
+    image:
+      registry: registry.hub.docker.com
+      repository: bkrepo/bkrepo-init-rbac
+      tag: 1.1.0
+      pullPolicy: IfNotPresent
+      pullSecrets: [ ]
   ## bcs repo配置
   bcs:
     enabled: false
@@ -212,6 +230,7 @@ common:
       # 是否启用nfs挂载
       nfs:
         enabled: false
+        capacity: 100Ti
         path: /
         server:
 
@@ -242,6 +261,8 @@ gateway:
   secretKey: ""
   ## 部署模式，standalone: 独立模式，ci: 与ci搭配模式 , saas模式: 蓝鲸saas部署模式
   deployMode: standalone
+  ## 发行模式，社区版不用填写
+  releaseMode:
   ## 网关认证模式，ticket, 校验bk_ticket token ，校验bk_token
   authMode: token
   ## bkci 域名
@@ -252,6 +273,10 @@ gateway:
   bkPaasUrl: paas.example.com
   ## ci模式必填，登录地址
   bkLoginUrl: http://paas.example.com/login/
+  ## 是否开启多租户
+  enableMultiTenantMode: false
+  ## 运营租户默认
+  oPTenantId: system
   ## ci模式必填，ssm ip
   ssmIP0:
   ## ci模式必填，ssm host
@@ -262,6 +287,8 @@ gateway:
   ssmTokenUrl:
   ## ci模式必填，ssm env
   ssmEnv:
+  ## 蓝鲸apigw地址
+  bkApigwUrl:
   ## ci模式必填，app code
   appCode:
   ## ci模式必填，app token
@@ -373,6 +400,15 @@ auth:
     allowDefaultPwd: true
     ## 指定realm类型，支持local/devops
     realm: local
+    ## realm 指定为devops或者bkiamv3配置
+    ## 权限v3-rbac相关配置
+    iam: 
+      callbackUser: bk_iam
+      systemId: 
+      apigwBaseUrl:  
+      appCode:  
+      appSecret: 
+      applyJoinUserGroupUrl: 
     ## realm 指定为devops配置
     devops:
       # bkci accountId in bkrepo
@@ -432,11 +468,135 @@ auth:
 ## generic服务配置
 generic:
   enabled: true
-  config: {}
+  config:
+    proxy:
+      projectId:
+      repoName:
+      fullPath:
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-generic
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
+## s3服务配置
+s3:
+  enabled: true
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: registry.hub.docker.com
+    repository: bkrepo/bkrepo-s3
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
+## preview服务配置
+preview:
+  enabled: false
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: registry.hub.docker.com
+    repository: bkrepo/bkrepo-preview
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
+## maven registry服务配置
+maven:
+  enabled: true
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: registry.hub.docker.com
+    repository: bkrepo/bkrepo-maven
     tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []
@@ -477,6 +637,46 @@ fsserver:
   image:
     registry: registry.hub.docker.com
     repository: bkrepo/bkrepo-fs-server
+    tag: 1.1.0
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  replicaCount: 1
+  hostAliases: []
+  resources:
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+    limits:
+      cpu: 500m
+      memory: 1500Mi
+  containerSecurityContext:
+    enabled: false
+    runAsUser: 1001
+    runAsNonRoot: true
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+  podAffinityPreset: ""
+  podAntiAffinityPreset: ""
+  nodeAffinityPreset:
+    type: ""
+    key: ""
+    values: []
+  affinity: {}
+  nodeSelector: {}
+  tolerations: []
+  podLabels: {}
+  podAnnotations: {}
+  priorityClassName: ""
+
+## router-controller服务配置
+routercontroller:
+  enabled: true
+  config: {}
+  ## Kubernetes 通用配置
+  image:
+    registry: registry.hub.docker.com
+    repository: bkrepo/bkrepo-router-controller
     tag: 1.1.0
     pullPolicy: IfNotPresent
     pullSecrets: []

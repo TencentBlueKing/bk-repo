@@ -1,6 +1,6 @@
+import { routeBase } from '@repository/utils'
 import axios from 'axios'
 import Vue from 'vue'
-
 const request = axios.create({
     baseURL: `${location.origin}/web`,
     validateStatus: status => {
@@ -32,6 +32,10 @@ request.interceptors.response.use(response => {
         } else {
             window.repositoryVue.$store.commit('SHOW_LOGIN_DIALOG')
         }
+    } else if (status === 440) {
+        const projectId = localStorage.getItem('projectId')
+        const path = routeBase + projectId + '/440/' + message
+        window.repositoryVue.$router.push({ path: path, replace: true })
     }
     return Promise.reject({ status, message }) // eslint-disable-line
 }, errorHandler)

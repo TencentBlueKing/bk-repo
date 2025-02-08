@@ -79,11 +79,25 @@ data class ReplicationProperties(
      * */
     var pushType: String = WayOfPushArtifact.PUSH_WITH_DEFAULT.value,
     /**
-     * 追加上传灰度项目
+     * 使用追加上传项目
      * */
     var chunkedRepos: List<String> = emptyList(),
     /**
-     * 使用fdtp上传灰度项目
+     * 使用fdtp上传项目
      * */
-    var fdtpRepos: List<String> = emptyList()
+    var fdtpRepos: List<String> = emptyList(),
+    /**
+     * 使用http上传项目
+     * */
+    var httpRepos: List<String> = emptyList(),
+    /**
+     * 分发任务调度服务器所需账户密码
+     */
+    var dispatchUser: String? = null,
+    var dispatchPwd: String? = null,
+    /**
+     * 针对部分 client_max_body_size 大小限制，
+     * 导致超过该请求的文件无法使用普通上传
+     */
+    var clientMaxBodySize: Long = 10 * 1024 * 1024 * 1024L
     )

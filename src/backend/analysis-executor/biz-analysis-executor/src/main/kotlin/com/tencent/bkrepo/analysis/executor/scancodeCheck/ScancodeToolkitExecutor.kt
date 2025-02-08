@@ -89,7 +89,9 @@ class ScancodeToolkitExecutor @Autowired constructor(
             binds = Binds(Bind(taskWorkDir.absolutePath, Volume(containerConfig.workDir))),
             args = containerCmd,
             scannerInputFile = scannerInputFile,
-            task = task
+            task = task,
+            userName = containerConfig.dockerRegistryUsername,
+            password = containerConfig.dockerRegistryPassword
         )
         if (!result) {
             return scanStatus(task, taskWorkDir, SubScanTaskStatus.TIMEOUT)

@@ -12,7 +12,7 @@
                 </div> -->
             </div>
             <div class="flex-end-center flex-1">
-                <bk-button class="ml10 flex-align-center" text theme="primary" @click="showGuide = true">
+                <bk-button class="ml10 flex-align-center" @click="onClickShowGuide">
                     <span class="flex-align-center">
                         <Icon class="mr5" name="hand-guide" size="16" />
                         {{$t('guide')}}
@@ -38,9 +38,9 @@
                         v-model="property"
                         :clearable="false"
                         @change="handlerPaginationChange()">
-                        <bk-option id="name" :name="$t('Order by name')"></bk-option>
-                        <bk-option id="lastModifiedDate" :name="$t('Order by last modified time')"></bk-option>
-                        <bk-option id="downloads" :name="$t('Order by downloads')"></bk-option>
+                        <bk-option id="name" :name="$t('nameSorting')"></bk-option>
+                        <bk-option id="lastModifiedDate" :name="$t('lastModifiedTimeSorting')"></bk-option>
+                        <bk-option id="downloads" :name="$t('downloadSorting')"></bk-option>
                     </bk-select>
                     <bk-popover :content="$t('toggle') + `${direction === 'ASC' ? $t('desc') : $t('asc')}`" placement="top">
                         <div class="ml10 sort-order flex-center" @click="changeDirection">
@@ -79,27 +79,22 @@
         <template v-else>
             <empty-guide class="empty-guide" :article="articleGuide"></empty-guide>
         </template>
-
-        <bk-sideslider :is-show.sync="showGuide" :quick-close="true" :width="600">
-            <template #header>
-                <div class="flex-align-center"><icon class="mr5" :name="repoType" size="32"></icon>{{ replaceRepoName(repoName) + $t('guide') }}</div>
-            </template>
-            <template #content>
-                <repo-guide class="pt20 pb20 pl10 pr10" :article="articleGuide"></repo-guide>
-            </template>
-        </bk-sideslider>
+        <!-- 使用指引 -->
+        <useGuide ref="useGuideRef"></useGuide>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </div>
 </template>
 <script>
     import InfiniteScroll from '@repository/components/InfiniteScroll'
     import packageCard from '@repository/components/PackageCard'
-    import repoGuide from '@repository/views/repoCommon/repoGuide'
     import emptyGuide from '@repository/views/repoCommon/emptyGuide'
+    import useGuide from '@repository/views/repoCommon/useGuide'
     import repoGuideMixin from '@repository/views/repoCommon/repoGuideMixin'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'commonPackageList',
-        components: { InfiniteScroll, packageCard, repoGuide, emptyGuide },
+        components: { InfiniteScroll, packageCard, emptyGuide, useGuide, iamDenyDialog },
         mixins: [repoGuideMixin],
         data () {
             return {
@@ -114,11 +109,12 @@
                     count: 0,
                     limitList: [10, 20, 40]
                 },
-                showGuide: false
+                showIamDenyDialog: false,
+                showData: {}
             }
         },
         computed: {
-            ...mapState(['repoListAll', 'permission']),
+            ...mapState(['repoListAll', 'permission', 'userInfo']),
             currentRepo () {
                 return this.repoListAll.find(repo => repo.name === this.repoName) || {}
             }
@@ -131,7 +127,8 @@
             ...mapActions([
                 'getRepoListAll',
                 'searchPackageList',
-                'deletePackage'
+                'deletePackage',
+                'getPermissionUrl'
             ]),
             changeDirection () {
                 this.direction = this.direction === 'ASC' ? 'DESC' : 'ASC'
@@ -168,26 +165,72 @@
                 }).then(({ records, totalRecords }) => {
                     load ? this.packageList.push(...records) : (this.packageList = records)
                     this.pagination.count = totalRecords
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'REPO',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: this.repoName,
+                                    action: 'READ',
+                                    url: res
+                                }
+                            }
+                        })
+                    }
                 }).finally(() => {
                     this.isLoading = false
                 })
             },
-            deletePackageHandler ({ key }) {
+            deletePackageHandler (pkg) {
                 this.$confirm({
                     theme: 'danger',
-                    message: this.$t('deletePackageTitle', { name: key }),
+                    message: this.$t('deletePackageTitle', { name: '' }),
+                    subMessage: pkg.key,
                     confirmFn: () => {
                         return this.deletePackage({
                             projectId: this.projectId,
                             repoType: this.repoType,
                             repoName: this.repoName,
-                            packageKey: key
+                            packageKey: pkg.key
                         }).then(() => {
                             this.handlerPaginationChange()
                             this.$bkMessage({
                                 theme: 'success',
-                                message: this.$t('delete') + this.$t('success')
+                                message: this.$t('delete') + this.$t('space') + this.$t('success')
                             })
+                        }).catch(e => {
+                            if (e.status === 403) {
+                                this.getPermissionUrl({
+                                    body: {
+                                        projectId: this.projectId,
+                                        action: 'DELETE',
+                                        resourceType: 'REPO',
+                                        uid: this.userInfo.name,
+                                        repoName: this.repoName
+                                    }
+                                }).then(res => {
+                                    if (res !== '') {
+                                        this.showIamDenyDialog = true
+                                        this.showData = {
+                                            projectId: this.projectId,
+                                            repoName: this.repoName,
+                                            action: 'DELETE',
+                                            packageName: pkg.name,
+                                            url: res
+                                        }
+                                    }
+                                })
+                            }
                         })
                     }
                 })
@@ -196,9 +239,21 @@
                 this.$router.push({
                     name: 'commonPackage',
                     query: {
+                        // 需要保留之前制品列表页的筛选项和页码相关参数
+                        ...this.$route.query,
                         repoName: this.repoName,
-                        packageKey: pkg.key
+                        packageKey: pkg.key,
+                        // 此时需要将version清除掉，否则在进入仓库详情页后再返回包列表页，然后选择其他的包进入版本详情页，
+                        // 会导致出现无效请求，且packageKey为最新版本的，但是版本号是之前版本的，进而导致请求出错
+                        // 因为在版本详情页存在一个version的watch，只有version有值的时候才会请求版本详情
+                        version: undefined
                     }
+                })
+            },
+            onClickShowGuide () {
+                this.$refs.useGuideRef.setData({
+                    show: true,
+                    loading: false
                 })
             }
         }
@@ -248,7 +303,7 @@
         }
     }
     .common-package-list {
-        height: calc(100% - 150px);
+        height: calc(100% - 120px);
         padding: 0 20px;
         background-color: white;
         .list-count {
@@ -257,7 +312,7 @@
         }
     }
     .empty-guide {
-        height: calc(100% - 100px);
+        height: calc(100% - 70px);
         background-color: white;
         overflow-y: auto;
     }

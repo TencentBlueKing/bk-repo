@@ -81,7 +81,6 @@ export default {
         this.pluginDetail.gitUrl
       )
       promise.then(() => {
-        this.plugin = this.pluginDetail
         this.updateResult = true
         this.resultTitle = '更新成功'
         this.resultIcon = 'success'

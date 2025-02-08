@@ -27,12 +27,17 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.OperateLogService
-import com.tencent.bkrepo.common.operate.api.pojo.OpLogListOption
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLog
-import com.tencent.bkrepo.common.operate.api.pojo.OperateLogResponse
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.pojo.log.OpLogListOption
+import com.tencent.bkrepo.common.metadata.pojo.log.OperateLog
+import com.tencent.bkrepo.common.metadata.pojo.log.OperateLogResponse
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
+import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
@@ -48,13 +53,15 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/log")
 class UserOperateLogController(
-    private val operateLogService: OperateLogService
+    private val operateLogService: OperateLogService,
+    private val permissionManager: PermissionManager
 ) {
 
     @PostMapping("/list")
     fun list(
         @RequestBody option: OpLogListOption
     ): Response<Page<OperateLog>> {
+        checkPermission(option.projectId)
         return ResponseBuilder.success(operateLogService.listPage(option))
     }
 
@@ -78,10 +85,20 @@ class UserOperateLogController(
         @ApiParam("每页数量", required = false, defaultValue = "20")
         @RequestParam pageSize: Int?
     ): Response<Page<OperateLogResponse?>> {
+        checkPermission(projectId)
         val page = operateLogService.page(
             type, projectId, repoName,
             operator, startTime, endTime, pageNumber ?: 1, pageSize ?: 20
         )
         return ResponseBuilder.success(page)
+    }
+
+    private fun checkPermission(projectId: String?) {
+        try {
+            permissionManager.checkPrincipal(SecurityUtils.getUserId(), PrincipalType.ADMIN)
+        } catch (e: PermissionException) {
+            projectId?.let { permissionManager.checkProjectPermission(PermissionAction.MANAGE, it) }
+                ?: throw e
+        }
     }
 }

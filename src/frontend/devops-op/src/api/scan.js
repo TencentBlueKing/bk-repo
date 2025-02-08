@@ -2,6 +2,7 @@ import request from '@/utils/request'
 
 const PREFIX_SCAN = '/analyst/api/scan'
 const PREFIX_SCANNER = '/analyst/api/scanners'
+const PREFIX_EXECUTION_CLUSTER = '/analyst/api/execution/clusters'
 const PREFIX_FILTER_RULE = '/analyst/api/filter/rules'
 const PREFIX_PROJECT_SCAN_CONFIGURATION = `${PREFIX_SCAN}/configurations`
 
@@ -22,8 +23,6 @@ export const scanTypes = [
   SCAN_TYPE_LICENSE,
   SCAN_TYPE_SENSITIVE
 ]
-
-export const dispatchers = [SCANNER_DISPATCHER_K8S, SCANNER_DISPATCHER_DOCKER]
 
 export const RULE_TYPE_IGNORE = 0
 export const RULE_TYPE_INCLUDE = 1
@@ -172,5 +171,12 @@ export function getFilterRules(pageNumber, pageSize) {
       pageNumber,
       pageSize
     }
+  })
+}
+
+export function listDispatchers() {
+  return request({
+    url: `${PREFIX_EXECUTION_CLUSTER}`,
+    method: 'get'
   })
 }

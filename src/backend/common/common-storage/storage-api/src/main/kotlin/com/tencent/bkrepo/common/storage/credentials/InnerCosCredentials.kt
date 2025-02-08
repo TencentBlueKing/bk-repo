@@ -31,9 +31,11 @@
 
 package com.tencent.bkrepo.common.storage.credentials
 
-import com.tencent.bkrepo.common.operate.api.annotation.Sensitive
-import com.tencent.bkrepo.common.operate.api.handler.MaskPartString
+import com.tencent.bkrepo.common.metadata.annotation.Sensitive
+import com.tencent.bkrepo.common.metadata.handler.MaskPartString
 import com.tencent.bkrepo.common.storage.config.CacheProperties
+import com.tencent.bkrepo.common.storage.config.CompressProperties
+import com.tencent.bkrepo.common.storage.config.EncryptProperties
 import com.tencent.bkrepo.common.storage.config.UploadProperties
 
 /**
@@ -49,13 +51,16 @@ data class InnerCosCredentials(
     var cmdId: Int? = null,
     var timeout: Float = 0.5F,
     var public: Boolean = false,
+    var inner: Boolean = false,
     var slowLogSpeed: Int = MB,
     var slowLogTimeInMillis: Long = 30_000,
     var download: DownloadProperties = DownloadProperties(),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
-    override var upload: UploadProperties = UploadProperties()
-) : StorageCredentials(key, cache, upload) {
+    override var upload: UploadProperties = UploadProperties(),
+    override var encrypt: EncryptProperties = EncryptProperties(),
+    override var compress: CompressProperties = CompressProperties(),
+) : StorageCredentials(key, cache, upload, encrypt, compress) {
 
     companion object {
         const val type = "innercos"
@@ -67,6 +72,9 @@ data class InnerCosCredentials(
         var downloadTimeHighWaterMark: Long = 8_000,
         var downloadTimeLowWaterMark: Long = 3_000,
         var taskInterval: Long = 10,
-        var timeout: Long = 10_000
+        var timeout: Long = 10_000,
+        var minimumPartSize: Long = 10,
+        var maxDownloadParts: Int = 10000,
+        var qps: Int = 10,
     )
 }

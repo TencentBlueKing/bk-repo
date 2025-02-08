@@ -30,70 +30,79 @@ package com.tencent.bkrepo.common.storage.core.cache
 import com.tencent.bkrepo.common.api.constant.StringPool.TEMP
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileEventPublisher
+import com.tencent.bkrepo.common.storage.core.cache.event.CacheFileLoadedEventPublisher
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.filesystem.check.FileSynchronizeVisitor
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.BasedAtimeAndMTimeFileExpireResolver
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupFileVisitor
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.CleanupResult
+import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
+import java.io.FileNotFoundException
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 支持缓存的存储服务
  */
 class CacheStorageService(
-    private val threadPoolTaskExecutor: ThreadPoolTaskExecutor
+    private val threadPoolTaskExecutor: ThreadPoolTaskExecutor,
+    private val fileRetainResolver: FileRetainResolver? = null,
 ) : AbstractStorageService() {
+
+    private val cacheFileEventPublisher by lazy { CacheFileEventPublisher(publisher) }
 
     override fun doStore(
         path: String,
         filename: String,
         artifactFile: ArtifactFile,
         credentials: StorageCredentials,
-        cancel: AtomicBoolean?
+        storageClass: String?,
     ) {
         when {
             artifactFile.isInMemory() -> {
-                fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
+                fileStorage.store(
+                    path,
+                    filename,
+                    artifactFile.getInputStream(),
+                    artifactFile.getSize(),
+                    credentials,
+                )
             }
+
             artifactFile.isFallback() || artifactFile.isInLocalDisk() -> {
-                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
+                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials, storageClass)
             }
+
             else -> {
                 val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
-                async2Store(cancel, filename, credentials, path, cacheFile)
+                cacheFileEventPublisher.publishCacheFileLoadedEvent(credentials, cacheFile)
+                async2Store(filename, credentials, path, cacheFile, storageClass)
             }
         }
     }
 
     private fun async2Store(
-        cancel: AtomicBoolean?,
         filename: String,
         credentials: StorageCredentials,
         path: String,
-        cacheFile: File
+        cacheFile: File,
+        storageClass: String?,
     ) {
         threadPoolTaskExecutor.execute {
             try {
-                if (cancel?.get() == true) {
-                    logger.info("Cancel store fle [$filename] on [${credentials.key}]")
-                    return@execute
-                }
-                fileStorage.store(path, filename, cacheFile, credentials)
+                fileStorage.store(path, filename, cacheFile, credentials, storageClass)
             } catch (ignored: Exception) {
-                if (cancel?.get() == true) {
-                    logger.info("Cancel store fle [$filename] on [${credentials.key}]")
-                    return@execute
-                }
                 // 此处为异步上传，失败后异常不会被外层捕获，所以单独捕获打印error日志
                 logger.error("Failed to async store file [$filename] on [${credentials.key}]", ignored)
                 // 失败时把文件放入暂存区，后台任务会进行补偿。
@@ -106,47 +115,77 @@ class CacheStorageService(
         path: String,
         filename: String,
         range: Range,
-        credentials: StorageCredentials
+        credentials: StorageCredentials,
     ): ArtifactInputStream? {
         val cacheClient = getCacheClient(credentials)
         val loadCacheFirst = isLoadCacheFirst(range, credentials)
         if (loadCacheFirst) {
-            loadArtifactStreamFromCache(cacheClient, path, filename, range)?.let { return it }
+            loadArtifactStreamFromCache(cacheClient, path, filename, range)?.let {
+                cacheFileEventPublisher.publishCacheFileAccessEvent(path, filename, range.total!!, credentials)
+                return it.apply { putMetadata(METADATA_KEY_CACHE_ENABLED, true) }
+            }
         }
         val artifactInputStream = fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
         if (artifactInputStream != null && loadCacheFirst && range.isFullContent()) {
             val cachePath = Paths.get(credentials.cache.path, path)
             val tempPath = Paths.get(credentials.cache.path, TEMP)
-            val readListener = CachedFileWriter(cachePath, filename, tempPath)
+            val cacheFileLoadedEventPublisher = CacheFileLoadedEventPublisher(publisher, credentials)
+            val readListener = CachedFileWriter(cachePath, filename, tempPath, cacheFileLoadedEventPublisher)
             artifactInputStream.addListener(readListener)
         }
+
         return if (artifactInputStream == null && !loadCacheFirst) {
             cacheClient.load(path, filename)?.artifactStream(range)
         } else {
             artifactInputStream
-        }
+        }?.apply { putMetadata(METADATA_KEY_CACHE_ENABLED, loadCacheFirst) }
     }
 
     override fun doDelete(path: String, filename: String, credentials: StorageCredentials) {
+        val cacheFilePath = "${credentials.cache.path}$path$filename"
+        val size = File(cacheFilePath).length()
         fileStorage.delete(path, filename, credentials)
         getCacheClient(credentials).delete(path, filename)
+        cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, size, credentials)
     }
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
         return fileStorage.exist(path, filename, credentials)
     }
 
+    override fun doCheckRestore(path: String, filename: String, credentials: StorageCredentials): Boolean {
+        return fileStorage.checkRestore(path, filename, credentials)
+    }
+
+    override fun doRestore(path: String, filename: String, days: Int, tier: String, credentials: StorageCredentials) {
+        fileStorage.restore(path, filename, days, tier, credentials)
+    }
+
     /**
      * 覆盖父类cleanUp逻辑，还包括清理缓存的文件内容
      */
-    override fun cleanUp(storageCredentials: StorageCredentials?): CleanupResult {
+    override fun cleanUp(storageCredentials: StorageCredentials?): Map<Path, CleanupResult> {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val rootPath = Paths.get(credentials.cache.path)
         val tempPath = getTempPath(credentials)
         val stagingPath = getStagingPath(credentials)
-        val visitor = CleanupFileVisitor(rootPath, tempPath, stagingPath, fileStorage, fileLocator, credentials)
+        val resolver = BasedAtimeAndMTimeFileExpireResolver(credentials.cache.expireDuration)
+        val visitor = CleanupFileVisitor(
+            rootPath,
+            tempPath,
+            stagingPath,
+            fileStorage,
+            fileLocator,
+            credentials,
+            resolver,
+            publisher,
+            fileRetainResolver
+        )
         getCacheClient(credentials).walk(visitor)
-        return visitor.result
+        val result = mutableMapOf<Path, CleanupResult>()
+        result[rootPath] = visitor.result
+        result.putAll(cleanUploadPath(credentials))
+        return result
     }
 
     override fun synchronizeFile(storageCredentials: StorageCredentials?): SynchronizeResult {
@@ -163,6 +202,62 @@ class CacheStorageService(
             throw IllegalStateException("Cache storage is unhealthy: ${monitor.fallBackReason}")
         }
         super.doCheckHealth(credentials)
+    }
+
+    override fun copy(
+        digest: String,
+        fromCredentials: StorageCredentials?,
+        toCredentials: StorageCredentials?
+    ) {
+        val path = fileLocator.locate(digest)
+        val from = getCredentialsOrDefault(fromCredentials)
+        val to = getCredentialsOrDefault(toCredentials)
+        if (doExist(path, digest, from)) {
+            super.copy(digest, from, to)
+        } else {
+            val cacheFile = getCacheClient(from).load(path, digest)
+                ?: throw FileNotFoundException(Paths.get(from.cache.path, path, digest).toString())
+            fileStorage.store(path, digest, cacheFile, to)
+        }
+    }
+
+    /**
+     * 删除缓存文件，需要检查文件是否已经在最终存储中存在，避免将未上传成功的制品删除导致数据丢失
+     */
+    fun deleteCacheFile(
+        path: String,
+        filename: String,
+        credentials: StorageCredentials,
+    ): Boolean {
+        val cacheFilePath = "${credentials.cache.path}$path$filename"
+        return if (doExist(path, filename, credentials)) {
+            val size = File(cacheFilePath).length()
+            getCacheClient(credentials).delete(path, filename)
+            cacheFileEventPublisher.publishCacheFileDeletedEvent(path, filename, size, credentials)
+            logger.info("Cache [$cacheFilePath] was deleted")
+            true
+        } else {
+            logger.info("Cache file[$cacheFilePath] was not in storage")
+            false
+        }
+    }
+
+    /**
+     * 判断缓存文件是否存在
+     */
+    fun cacheExists(
+        path: String,
+        filename: String,
+        credentials: StorageCredentials,
+    ): Boolean {
+        return getCacheClient(credentials).exist(path, filename)
+    }
+
+    /**
+     * 获取存储的缓存目录健康状态
+     */
+    fun cacheHealthy(credentials: StorageCredentials?): Boolean {
+        return getMonitor(getCredentialsOrDefault(credentials)).healthy.get()
     }
 
     /**
@@ -183,7 +278,7 @@ class CacheStorageService(
         cacheClient: FileSystemClient,
         path: String,
         filename: String,
-        range: Range
+        range: Range,
     ): ArtifactInputStream? {
         try {
             return cacheClient.load(path, filename)?.artifactStream(range)
@@ -199,7 +294,8 @@ class CacheStorageService(
      * 当cacheFirst开启，并且cache磁盘健康，并且当前文件未超过内存阈值大小
      */
     private fun isLoadCacheFirst(range: Range, credentials: StorageCredentials): Boolean {
-        val isExceedThreshold = range.total > storageProperties.receive.fileSizeThreshold.toBytes()
+        val total = range.total ?: return false
+        val isExceedThreshold = total > storageProperties.receive.fileSizeThreshold.toBytes()
         val isHealth = getMonitor(credentials).healthy.get()
         val cacheFirst = credentials.cache.loadCacheFirst
         return cacheFirst && isHealth && isExceedThreshold

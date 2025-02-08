@@ -31,11 +31,13 @@
 
 package com.tencent.bkrepo.npm.service
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.pojo.NpmSearchResponse
 import com.tencent.bkrepo.npm.pojo.NpmSuccessResponse
+import com.tencent.bkrepo.npm.pojo.OhpmResponse
 import com.tencent.bkrepo.npm.pojo.metadata.MetadataSearchRequest
 import com.tencent.bkrepo.npm.pojo.metadata.disttags.DistTags
 
@@ -44,6 +46,16 @@ interface NpmClientService {
      * npm publish or update package
      */
     fun publishOrUpdatePackage(userId: String, artifactInfo: NpmArtifactInfo, name: String): NpmSuccessResponse
+
+    /**
+     * ohpm 流式上传
+     */
+    fun ohpmStreamPublishOrUpdatePackage(
+        userId: String,
+        artifactInfo: NpmArtifactInfo,
+        npmPackageMetaData: NpmPackageMetaData,
+        artifactFile: ArtifactFile
+    ): OhpmResponse
 
     /**
      * 查询npm包的package.json元数据信息
@@ -88,10 +100,25 @@ interface NpmClientService {
     /**
      * delete package version
      */
-    fun deleteVersion(artifactInfo: NpmArtifactInfo, name: String, version: String, tgzPath: String)
+    fun deleteVersion(artifactInfo: NpmArtifactInfo, name: String, version: String, tarballPath: String)
 
     /**
      * delete package
      */
     fun deletePackage(userId: String, artifactInfo: NpmArtifactInfo, name: String)
+
+    /**
+     * 目标制品为OHPM类型且被依赖时，将标记指定版本为废弃并抛出异常，否则什么都不处理
+     *
+     * @param userId 用户
+     * @param artifactInfo 制品信息
+     * @param packageMetaData OHPM包的package.json数据
+     * @param version 指定版本，为null时将所有版本都标记为废弃
+     */
+    fun checkOhpmDependentsAndDeprecate(
+        userId: String,
+        artifactInfo: NpmArtifactInfo,
+        packageMetaData: NpmPackageMetaData,
+        version: String?
+    )
 }

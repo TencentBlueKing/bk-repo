@@ -33,15 +33,20 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
+import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
+import com.tencent.bkrepo.replication.replica.replicator.commitedge.EdgeReplicaContextHolder
+import com.tencent.bkrepo.replication.service.EdgeReplicaTaskRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.context.request.async.DeferredResult
 
 @RestController
 @Principal(PrincipalType.ADMIN)
 class ClusterReplicaTaskController(
-    private val replicaTaskService: ReplicaTaskService
+    private val replicaTaskService: ReplicaTaskService,
+    private val edgeReplicaTaskRecordService: EdgeReplicaTaskRecordService
 ) : ClusterReplicaTaskClient {
     override fun info(taskId: String): Response<ReplicaTaskInfo?> {
         return ResponseBuilder.success(replicaTaskService.getByTaskId(taskId))
@@ -57,5 +62,23 @@ class ClusterReplicaTaskController(
 
     override fun listObject(taskKey: String): Response<List<ReplicaObjectInfo>> {
         return ResponseBuilder.success(replicaTaskService.listTaskObject(taskKey))
+    }
+
+    override fun getEdgeReplicaTask(
+        clusterName: String,
+        replicatingNum: Int
+    ): DeferredResult<Response<EdgeReplicaTaskRecord>> {
+        val deferredResult = DeferredResult<Response<EdgeReplicaTaskRecord>>(30000L)
+        EdgeReplicaContextHolder.addDeferredResult(clusterName, replicatingNum, deferredResult)
+        return deferredResult
+    }
+
+    override fun reportEdgeReplicaTaskResult(edgeReplicaTaskRecord: EdgeReplicaTaskRecord): Response<Void> {
+        edgeReplicaTaskRecordService.updateStatus(
+            id = edgeReplicaTaskRecord.id!!,
+            status = edgeReplicaTaskRecord.status,
+            errorReason = edgeReplicaTaskRecord.errorReason
+        )
+        return ResponseBuilder.success()
     }
 }

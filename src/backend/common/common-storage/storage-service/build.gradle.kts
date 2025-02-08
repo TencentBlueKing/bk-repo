@@ -46,4 +46,12 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
     implementation("com.tencent.polaris:polaris-discovery-factory")
+    implementation("com.tencent.bk.sdk:crypto-java-sdk")
+    compileOnly("io.micrometer:micrometer-core")
+    compileOnly("org.springframework.boot:spring-boot-starter-data-redis")
+    testImplementation(project(":common:common-redis"))
+    testImplementation("it.ozimov:embedded-redis:${Versions.EmbeddedRedis}") {
+        exclude("org.slf4j", "slf4j-simple")
+    }
+    testImplementation("org.mockito.kotlin:mockito-kotlin")
 }

@@ -57,6 +57,6 @@ data class UploadPartRequest(
 
     override fun buildRequestBody(): RequestBody {
         val inputStream = BoundedInputStream(file.inputStream().apply { skip(fileOffset) }, partSize)
-        return InputStreamRequestBody(inputStream)
+        return InputStreamRequestBody(inputStream, partSize)
     }
 }

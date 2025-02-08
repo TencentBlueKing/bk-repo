@@ -35,6 +35,7 @@ import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.listener.FileStoreRetryListener
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
@@ -47,6 +48,8 @@ import org.springframework.retry.support.RetryTemplate
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import java.nio.file.Path
+import java.util.stream.Stream
 
 /**
  * 文件存储抽象模板类
@@ -86,13 +89,19 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         retryTemplate.registerListener(FileStoreRetryListener())
     }
 
-    override fun store(path: String, name: String, file: File, storageCredentials: StorageCredentials) {
+    override fun store(
+        path: String,
+        name: String,
+        file: File,
+        storageCredentials: StorageCredentials,
+        storageClass: String?,
+    ) {
         retryTemplate.execute<Unit, Exception> {
             it.setAttribute(RetryContext.NAME, RETRY_NAME_STORE_FILE)
             val client = getClient(storageCredentials)
             val size = file.length()
             val throughput = measureThroughput(size) {
-                store(path, name, file, client)
+                store(path, name, file, client, storageClass)
             }
             logger.info("Success to persist file [$name], $throughput.")
         }
@@ -103,7 +112,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         name: String,
         inputStream: InputStream,
         size: Long,
-        storageCredentials: StorageCredentials
+        storageCredentials: StorageCredentials,
     ) {
         val client = getClient(storageCredentials)
         retryTemplate.execute<Unit, RuntimeException> {
@@ -124,7 +133,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         path: String,
         name: String,
         range: Range,
-        storageCredentials: StorageCredentials
+        storageCredentials: StorageCredentials,
     ): InputStream? {
         val client = getClient(storageCredentials)
         return try {
@@ -152,11 +161,43 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         path: String,
         name: String,
         fromCredentials: StorageCredentials,
-        toCredentials: StorageCredentials
+        toCredentials: StorageCredentials,
     ) {
         val fromClient = getClient(fromCredentials)
         val toClient = getClient(toCredentials)
         copy(path, name, fromClient, toClient)
+    }
+
+    override fun move(
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
+        fromCredentials: StorageCredentials,
+        toCredentials: StorageCredentials,
+    ) {
+        val fromClient = getClient(fromCredentials)
+        val toClient = getClient(toCredentials)
+        move(fromPath, fromName, toPath, toName, fromClient, toClient)
+    }
+
+    override fun checkRestore(
+        path: String,
+        name: String,
+        storageCredentials: StorageCredentials,
+    ): Boolean {
+        val client = getClient(storageCredentials)
+        return checkRestore(path, name, client)
+    }
+
+    override fun restore(path: String, name: String, days: Int, tier: String, storageCredentials: StorageCredentials) {
+        val client = getClient(storageCredentials)
+        restore(path, name, days, tier, client)
+    }
+
+    override fun listAll(path: String, storageCredentials: StorageCredentials): Stream<Path> {
+        val client = getClient(storageCredentials)
+        return listAll(path, client)
     }
 
     private fun getClient(storageCredentials: StorageCredentials): Client {
@@ -168,13 +209,36 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     }
 
     protected abstract fun onCreateClient(credentials: Credentials): Client
-    abstract fun store(path: String, name: String, file: File, client: Client)
+    abstract fun store(path: String, name: String, file: File, client: Client, storageClass: String?)
     abstract fun store(path: String, name: String, inputStream: InputStream, size: Long, client: Client)
     abstract fun load(path: String, name: String, range: Range, client: Client): InputStream?
     abstract fun delete(path: String, name: String, client: Client)
     abstract fun exist(path: String, name: String, client: Client): Boolean
     open fun copy(path: String, name: String, fromClient: Client, toClient: Client) {
         throw UnsupportedOperationException("Copy operation unsupported")
+    }
+
+    open fun move(
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
+        fromClient: Client,
+        toClient: Client,
+    ) {
+        throw UnsupportedOperationException("Move operation unsupported")
+    }
+
+    open fun checkRestore(path: String, name: String, client: Client): Boolean {
+        throw UnsupportedOperationException("CheckRestore operation unsupported")
+    }
+
+    open fun restore(path: String, name: String, days: Int, tier: String, client: Client) {
+        throw UnsupportedOperationException("Restore operation unsupported")
+    }
+
+    open fun listAll(path: String, client: Client): Stream<Path> {
+        throw UnsupportedOperationException("ListAll operation unsupported")
     }
 
     companion object {

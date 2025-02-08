@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.auth.service.local
 
+import com.tencent.bkrepo.auth.dao.AccountDao
+import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TAccount
 import com.tencent.bkrepo.auth.pojo.account.Account
@@ -39,31 +41,28 @@ import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.token.CredentialSet
-import com.tencent.bkrepo.auth.repository.AccountRepository
-import com.tencent.bkrepo.auth.repository.OauthTokenRepository
+import com.tencent.bkrepo.auth.dao.repository.OauthTokenRepository
 import com.tencent.bkrepo.auth.service.AccountService
-import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.OauthUtils
 import com.tencent.bkrepo.auth.util.query.AccountQueryHelper
+import com.tencent.bkrepo.common.api.constant.ADMIN_USER
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
-import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import java.time.LocalDateTime
 
 class AccountServiceImpl constructor(
-    private val accountRepository: AccountRepository,
+    private val accountDao: AccountDao,
     private val oauthTokenRepository: OauthTokenRepository,
-    private val userService: UserService,
-    private val mongoTemplate: MongoTemplate
+    private val userDao: UserDao
 ) : AccountService {
 
-    override fun createAccount(request: CreateAccountRequest): Account {
+    override fun createAccount(request: CreateAccountRequest, owner: String): Account {
         logger.info("create  account  request : [$request]")
         if (request.authorizationGrantTypes.contains(AuthorizationGrantType.AUTHORIZATION_CODE)) {
             Preconditions.checkArgument(!request.homepageUrl.isNullOrBlank(), CreateAccountRequest::homepageUrl.name)
@@ -71,7 +70,7 @@ class AccountServiceImpl constructor(
             Preconditions.checkArgument(!request.scope.isNullOrEmpty(), CreateAccountRequest::scope.name)
         }
 
-        val account = accountRepository.findOneByAppId(request.appId)
+        val account = accountDao.findOneByAppId(request.appId)
         account?.let {
             logger.warn("create account [${request.appId}] is exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_DUP_APPID)
@@ -90,12 +89,12 @@ class AccountServiceImpl constructor(
             )
         }
 
-        val result = accountRepository.insert(
+        val result = accountDao.insert(
             TAccount(
                 appId = request.appId,
                 locked = request.locked,
                 credentials = credentials,
-                owner = SecurityUtils.getUserId(),
+                owner = owner,
                 authorizationGrantTypes = request.authorizationGrantTypes,
                 homepageUrl = request.homepageUrl,
                 redirectUri = request.redirectUri,
@@ -111,54 +110,40 @@ class AccountServiceImpl constructor(
     }
 
     override fun listAccount(): List<Account> {
-        val userId = SecurityUtils.getUserId()
-        val admin = userService.getUserInfoById(userId)?.admin ?: false
-        if (!admin) {
-            return emptyList()
-        }
-        return accountRepository.findAllBy().map { transferAccount(it) }
+        return accountDao.findAllBy().map { transferAccount(it) }
     }
 
-    override fun listOwnAccount(): List<Account> {
-        val userId = SecurityUtils.getUserId()
-        return accountRepository.findByOwner(userId).map { transferAccount(it) }
+    override fun listOwnAccount(userId: String): List<Account> {
+        return accountDao.findByOwner(userId).map { transferAccount(it) }
     }
 
-    override fun listAuthorizedAccount(): List<Account> {
-        val userId = SecurityUtils.getUserId()
+    override fun listAuthorizedAccount(userId: String): List<Account> {
         val accountIds = oauthTokenRepository.findByUserId(userId).map { it.accountId }
-        return accountRepository.findByIdIn(accountIds).map { transferAccount(it) }
+        return accountDao.findByIdIn(accountIds).map { transferAccount(it) }
     }
 
-    override fun findAccountByAppId(appId: String): Account {
-        val userId = SecurityUtils.getUserId()
+    override fun findAccountByAppId(appId: String, userId: String): Account {
         val account = findAccountAndCheckOwner(appId, userId)
-
         return transferAccount(account)
     }
 
-    override fun deleteAccount(appId: String): Boolean {
+    override fun deleteAccount(appId: String, userId: String): Boolean {
         logger.info("delete account appId [$appId]")
-        val userId = SecurityUtils.getUserId()
         val account = findAccountAndCheckOwner(appId, userId)
-
         oauthTokenRepository.deleteByAccountId(account.id!!)
-        accountRepository.delete(account)
+        accountDao.removeById(account.id)
         return true
     }
 
-    override fun uninstallAccount(appId: String) {
-        val userId = SecurityUtils.getUserId()
+    override fun uninstallAccount(appId: String, userId: String) {
         logger.info("uninstall account, user: $userId, appId: $appId")
-        val account = accountRepository.findOneByAppId(appId)
-            ?: throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
-        userService.removeUserAccount(userId, account.id!!)
+        val account = findAccountAndCheckOwner(appId, userId)
+        userDao.removeUserAccount(userId, account.id!!)
         oauthTokenRepository.deleteByAccountIdAndUserId(account.id, userId)
     }
 
-    override fun updateAccount(request: UpdateAccountRequest): Boolean {
+    override fun updateAccount(request: UpdateAccountRequest, userId: String): Boolean {
         logger.info("upload account request : [$request]")
-        val userId = SecurityUtils.getUserId()
         with(request) {
             Preconditions.checkArgument(
                 authorizationGrantTypes.isNotEmpty(),
@@ -177,14 +162,13 @@ class AccountServiceImpl constructor(
             account.description = description ?: account.description
             account.lastModifiedDate = LocalDateTime.now()
 
-            accountRepository.save(account)
+            accountDao.save(account)
             return true
         }
     }
 
-    override fun createCredential(appId: String, type: AuthorizationGrantType): CredentialSet {
+    override fun createCredential(appId: String, type: AuthorizationGrantType, userId: String): CredentialSet {
         logger.info("create credential appId : $appId , type: $type")
-        val userId = SecurityUtils.getUserId()
         val account = findAccountAndCheckOwner(appId, userId)
         if (account.authorizationGrantTypes?.contains(type) == false) {
             throw ErrorCodeException(AuthMessageCode.AUTH_INVALID_TYPE)
@@ -200,20 +184,18 @@ class AccountServiceImpl constructor(
             authorizationGrantType = type
         )
         update.addToSet(TAccount::credentials.name, credentials)
-        mongoTemplate.upsert(query, update, TAccount::class.java)
+        accountDao.upsert(query, update)
         return credentials
     }
 
-    override fun listCredentials(appId: String): List<CredentialSet> {
+    override fun listCredentials(appId: String, userId: String): List<CredentialSet> {
         logger.debug("list  credential appId [$appId] ")
-        val userId = SecurityUtils.getUserId()
         val account = findAccountAndCheckOwner(appId, userId)
         return transferCredentials(account.credentials)
     }
 
-    override fun deleteCredential(appId: String, accessKey: String): Boolean {
+    override fun deleteCredential(appId: String, accessKey: String, userId: String): Boolean {
         logger.info("delete  credential appId : [$appId] , accessKey: [$accessKey]")
-        val userId = SecurityUtils.getUserId()
         val account = findAccountAndCheckOwner(appId, userId)
         // 每种认证授权类型至少存在一个credential
         val deleteCredential = account.credentials.find { it.accessKey == accessKey } ?: return false
@@ -226,38 +208,42 @@ class AccountServiceImpl constructor(
 
         account.credentials = account.credentials.filter { it.accessKey != accessKey }
         account.lastModifiedDate = LocalDateTime.now()
-        accountRepository.save(account)
+        accountDao.save(account)
         return true
     }
 
     override fun updateCredentialStatus(appId: String, accessKey: String, status: CredentialStatus): Boolean {
         logger.info("update  credential status appId : [$appId] , accessKey: [$accessKey],status :[$status]")
-        accountRepository.findOneByAppId(appId) ?: run {
+        accountDao.findOneByAppId(appId) ?: run {
             logger.warn("update account status  [$appId]  not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
         }
         val accountQuery = AccountQueryHelper.checkAppAccessKey(appId, accessKey)
-        val accountResult = mongoTemplate.findOne(accountQuery, TAccount::class.java)
+        val accountResult = accountDao.findOne(accountQuery)
         accountResult?.let {
             val query = AccountQueryHelper.checkAppAccessKey(appId, accessKey)
             val update = Update()
             update.set("credentials.$.status", status.toString())
-            val result = mongoTemplate.updateFirst(query, update, TAccount::class.java)
+            val result = accountDao.updateFirst(query, update)
             if (result.modifiedCount == 1L) return true
         }
         return false
     }
 
-    override fun checkCredential(accessKey: String, secretKey: String): String? {
+    override fun checkCredential(
+        accessKey: String,
+        secretKey: String,
+        authorizationGrantType: AuthorizationGrantType?
+    ): String? {
         logger.debug("check  credential  accessKey : [$accessKey] , secretKey: []")
-        val query = AccountQueryHelper.checkCredential(accessKey, secretKey)
-        val result = mongoTemplate.findOne(query, TAccount::class.java) ?: return null
+        val query = AccountQueryHelper.checkCredential(accessKey, secretKey, authorizationGrantType)
+        val result = accountDao.findOne(query) ?: return null
         return result.appId
     }
 
     override fun findSecretKey(appId: String, accessKey: String): String? {
         val query = AccountQueryHelper.checkAppAccessKey(appId, accessKey)
-        val account = mongoTemplate.findOne(query, TAccount::class.java) ?: return null
+        val account = accountDao.findOne(query, TAccount::class.java) ?: return null
         return account.credentials.first { it.accessKey == accessKey }.secretKey
     }
 
@@ -291,13 +277,22 @@ class AccountServiceImpl constructor(
     }
 
     private fun findAccountAndCheckOwner(appId: String, userId: String): TAccount {
-        val account = accountRepository.findOneByAppId(appId)
+        val account = accountDao.findOneByAppId(appId)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
-        val admin = userService.getUserInfoById(userId)?.admin ?: false
-        if (!account.owner.isNullOrBlank() && userId != account.owner && !admin) {
+        if (!account.owner.isNullOrBlank() && userId != account.owner) {
+            throw ErrorCodeException(AuthMessageCode.AUTH_OWNER_CHECK_FAILED)
+        }
+        val isUserAdmin = HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
+        if (isPlatformApp(account) && !isUserAdmin) {
             throw ErrorCodeException(AuthMessageCode.AUTH_OWNER_CHECK_FAILED)
         }
         return account
+    }
+
+    private fun isPlatformApp(account: TAccount): Boolean {
+        if (account.owner == null || account.authorizationGrantTypes == null) return true
+        if (account.authorizationGrantTypes!!.contains(AuthorizationGrantType.PLATFORM)) return true
+        return false
     }
 
     private fun setCredentials(account: TAccount, request: UpdateAccountRequest) {

@@ -27,36 +27,58 @@
 
 package com.tencent.bkrepo.conan.artifact.repository
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
-import com.tencent.bkrepo.conan.constant.EXPORT_SOURCES_TGZ_NAME
-import com.tencent.bkrepo.conan.constant.NAME
-import com.tencent.bkrepo.conan.constant.PACKAGE_TGZ_NAME
-import com.tencent.bkrepo.conan.constant.VERSION
+import com.tencent.bkrepo.conan.constant.CONAN_MANIFEST
+import com.tencent.bkrepo.conan.constant.X_CHECKSUM_SHA1
 import com.tencent.bkrepo.conan.listener.event.ConanPackageUploadEvent
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeUploadEvent
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
+import com.tencent.bkrepo.conan.pojo.metadata.ConanMetadataRequest
+import com.tencent.bkrepo.conan.service.ConanMetadataService
+import com.tencent.bkrepo.conan.utils.ConanArtifactInfoUtil.convertToConanFileReference
+import com.tencent.bkrepo.conan.utils.ConanPathUtils
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildConanFileName
+import com.tencent.bkrepo.conan.utils.ConanPathUtils.generateFullPath
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildDownloadResponse
-import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageUpdateRequest
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.buildPackageVersionCreateRequest
-import com.tencent.bkrepo.conan.utils.PathUtils.generateFullPath
+import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
+import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toMetadataList
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
 class ConanLocalRepository : LocalRepository() {
 
+    @Autowired
+    lateinit var conanMetadataService: ConanMetadataService
+
     override fun buildNodeCreateRequest(context: ArtifactUploadContext): NodeCreateRequest {
         with(context) {
-            val fullPath = generateFullPath(context.artifactInfo as ConanArtifactInfo)
+            val tempArtifactInfo = context.artifactInfo as ConanArtifactInfo
+            val fullPath = generateFullPath(tempArtifactInfo)
             logger.info("File $fullPath will be stored in $projectId|$repoName")
+            val sha1 = HttpContextHolder.getRequest().getHeader(X_CHECKSUM_SHA1)?.toString()
+            val conanFileReference = convertToConanFileReference(tempArtifactInfo)
+            val metadata = mutableListOf<MetadataModel>()
+            sha1?.let {
+                metadata.add(MetadataModel(key = X_CHECKSUM_SHA1, value = sha1, system = true))
+            }
+            metadata.addAll(conanFileReference.toMetadataList())
             return NodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -65,7 +87,9 @@ class ConanLocalRepository : LocalRepository() {
                 size = getArtifactFile().getSize(),
                 sha256 = getArtifactSha256(),
                 md5 = getArtifactMd5(),
-                operator = userId
+                operator = userId,
+                overwrite = true,
+                nodeMetadata = metadata
             )
         }
     }
@@ -76,23 +100,24 @@ class ConanLocalRepository : LocalRepository() {
     override fun onUploadSuccess(context: ArtifactUploadContext) {
         super.onUploadSuccess(context)
         val fullPath = generateFullPath(context.artifactInfo as ConanArtifactInfo)
-        if (fullPath.endsWith(EXPORT_SOURCES_TGZ_NAME)) {
-            // TODO package version size 如何计算
+        val artifactInfo = context.artifactInfo as ConanArtifactInfo
+        if (fullPath.endsWith(CONAN_MANIFEST) && artifactInfo.packageId.isNullOrEmpty()) {
+            //  package version size 为manifest文件大小
             createVersion(
-                artifactInfo = context.artifactInfo as ConanArtifactInfo,
+                artifactInfo = artifactInfo,
                 userId = context.userId,
-                size = 0
+                size = context.getArtifactFile().getSize()
             )
             publishEvent(
                 ConanRecipeUploadEvent(
-                    ObjectBuildUtil.buildConanRecipeUpload(context.artifactInfo as ConanArtifactInfo, context.userId)
+                    ObjectBuildUtil.buildConanRecipeUpload(artifactInfo, context.userId)
                 )
             )
         }
-        if (fullPath.endsWith(PACKAGE_TGZ_NAME)) {
+        if (fullPath.endsWith(CONAN_MANIFEST) && !artifactInfo.packageId.isNullOrEmpty()) {
             publishEvent(
                 ConanPackageUploadEvent(
-                    ObjectBuildUtil.buildConanPackageUpload(context.artifactInfo as ConanArtifactInfo, context.userId)
+                    ObjectBuildUtil.buildConanPackageUpload(artifactInfo, context.userId)
                 )
             )
         }
@@ -107,29 +132,36 @@ class ConanLocalRepository : LocalRepository() {
         size: Long,
         sourceType: ArtifactChannel? = null
     ) {
-        with(artifactInfo) {
-            val packageVersionCreateRequest = buildPackageVersionCreateRequest(
-                userId = userId,
-                artifactInfo = artifactInfo,
-                size = size,
-                sourceType = sourceType
-            )
-            // TODO 元数据中要加入对应username与channel，可能存在同一制品版本存在不同username与channel
-            val packageUpdateRequest = buildPackageUpdateRequest(artifactInfo)
-            packageClient.createVersion(packageVersionCreateRequest).apply {
-                logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
-            }
+        val packageVersionCreateRequest = buildPackageVersionCreateRequest(
+            userId = userId,
+            artifactInfo = artifactInfo,
+            size = size,
+            sourceType = sourceType
+        )
+        packageService.createPackageVersion(packageVersionCreateRequest).apply {
+            logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
         }
+        val request = ConanMetadataRequest(
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            name = artifactInfo.name,
+            version = artifactInfo.version,
+            user = artifactInfo.userName,
+            channel = artifactInfo.channel,
+            recipe = buildConanFileName(convertToConanFileReference(artifactInfo))
+        )
+        conanMetadataService.storeMetadata(request)
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context.artifactInfo as ConanArtifactInfo) {
             val fullPath = generateFullPath(this)
             logger.info("File $fullPath will be downloaded in repo $projectId|$repoName")
-            val node = nodeClient.getNodeDetail(context.projectId, context.repoName, fullPath).data
+            val node = nodeService.getNodeDetail(ArtifactInfo(context.projectId, context.repoName, fullPath))
             node?.let {
-                node.metadata[NAME]?.let { context.putAttribute(NAME, it) }
-                node.metadata[VERSION]?.let { context.putAttribute(VERSION, it) }
+                context.artifactInfo.setArtifactMappingUri(node.fullPath)
+                downloadIntercept(context, node)
+                packageVersion(context, node)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
             }
             val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
             buildDownloadResponse()
@@ -150,8 +182,22 @@ class ConanLocalRepository : LocalRepository() {
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
     ): PackageDownloadRecord? {
-        // TODO 需要判断只有下载包时才统计次数
-        return null
+        val conanFileReference = convertToConanFileReference(
+            context.artifactInfo as ConanArtifactInfo
+        )
+        val refStr = ConanPathUtils.buildReferenceWithoutVersion(conanFileReference)
+        return PackageDownloadRecord(
+            context.projectId, context.repoName, PackageKeys.ofConan(refStr), conanFileReference.version
+        )
+    }
+
+    private fun packageVersion(context: ArtifactDownloadContext, node: NodeDetail): PackageVersion? {
+        with(context) {
+            val conanFileReference = node.nodeMetadata.toConanFileReference() ?: return null
+            val refStr = ConanPathUtils.buildReferenceWithoutVersion(conanFileReference)
+            val packageKey = PackageKeys.ofConan(refStr)
+            return packageService.findVersionByName(projectId, repoName, packageKey, conanFileReference.version)
+        }
     }
 
     companion object {

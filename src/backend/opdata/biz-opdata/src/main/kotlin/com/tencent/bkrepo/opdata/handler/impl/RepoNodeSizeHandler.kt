@@ -31,10 +31,13 @@
 
 package com.tencent.bkrepo.opdata.handler.impl
 
+import com.tencent.bkrepo.opdata.config.OpProjectMetricsProperties
+import com.tencent.bkrepo.opdata.constant.TO_GIGABYTE
 import com.tencent.bkrepo.opdata.handler.QueryHandler
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
+import com.tencent.bkrepo.opdata.util.StatDateUtil
 import org.springframework.stereotype.Component
 
 /**
@@ -42,23 +45,26 @@ import org.springframework.stereotype.Component
  */
 @Component
 class RepoNodeSizeHandler(
-    private val projectMetricsRepository: ProjectMetricsRepository
-) : QueryHandler {
+    private val projectMetricsRepository: ProjectMetricsRepository,
+    private val opProjectMetricsProperties: OpProjectMetricsProperties,
+    ) : QueryHandler {
 
     override val metric: Metrics get() = Metrics.REPONODESIZE
 
     override fun handle(target: Target, result: MutableList<Any>): List<Any> {
-        val projects = projectMetricsRepository.findAll()
+        val projects = projectMetricsRepository.findAllByCreatedDate(StatDateUtil.getStatDate())
         val tmpMap = HashMap<String, Long>()
         projects.forEach { it ->
             val projectId = it.projectId
             it.repoMetrics.forEach {
                 val repoName = it.repoName
-                if (it.size != 0L) {
-                    tmpMap["$projectId-$repoName"] = it.size
+                val gbSize = it.size / TO_GIGABYTE
+                if (gbSize != 0L) {
+                    tmpMap["$projectId-$repoName"] = gbSize
                 }
             }
         }
-        return convToDisplayData(tmpMap, result)
+        val top = getTopValue(target, opProjectMetricsProperties.top)
+        return convToDisplayData(tmpMap, result, top)
     }
 }

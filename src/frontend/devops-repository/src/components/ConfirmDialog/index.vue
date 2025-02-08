@@ -8,9 +8,9 @@
         <div class="confirm-body">
             <div class="confirm-main">
                 <i :class="`bk-icon icon-${getIcon()}`"></i>
-                <span class="ml10">{{ message }}</span>
+                <span class="ml10 message-content">{{ message }}</span>
             </div>
-            <span class="confirm-tip">{{ subMessage }}</span>
+            <span class="confirm-tip" :title="subMessage">{{ subMessage }}</span>
         </div>
         <template #footer>
             <bk-button @click="cancel">{{$t('cancel')}}</bk-button>
@@ -94,12 +94,22 @@
             color: var(--dangerColor);
         }
     }
+    .message-content {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        word-break: break-all;
+    }
     .confirm-tip {
         font-size: 12px;
         color: var(--fontSubsidiaryColor);
         margin-left: 35px;
         display: inline-block;
         margin-top: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 90%;
     }
 }
 </style>

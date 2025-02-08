@@ -47,18 +47,19 @@ import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.ProxyChannelService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -73,6 +74,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import java.time.Duration
 
 @DisplayName("仓库服务测试")
 @DataMongoTest
@@ -93,14 +95,20 @@ class RepositoryServiceTest @Autowired constructor(
         path = "test"
         cache.enabled = true
         cache.path = "cache-test"
-        cache.expireDays = 10
+        cache.expireDuration = Duration.ofHours(10)
     }
 
     @BeforeAll
     fun beforeAll() {
         initMock()
         if (!projectService.checkExist(UT_PROJECT_ID)) {
-            val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
+            val projectCreateRequest = ProjectCreateRequest(
+                name = UT_PROJECT_ID,
+                displayName = UT_REPO_NAME,
+                description = UT_REPO_DISPLAY,
+                createPermission = true,
+                operator = UT_USER
+            )
             projectService.createProject(projectCreateRequest)
         }
         val request = StorageCredentialsCreateRequest(UT_STORAGE_CREDENTIALS_KEY, storageCredentials, UT_REGION)
@@ -228,6 +236,17 @@ class RepositoryServiceTest @Autowired constructor(
             repositoryService.getRepoDetail(UT_PROJECT_ID, "repo-default-storage-key", RepositoryType.GENERIC.name)!!
         val dbCredential = repository.storageCredentials
         assertEquals(storageCredentials, dbCredential)
+    }
+
+    @Test
+    @DisplayName("测试使用项目指定的storage key创建仓库")
+    fun `test create with project storage key`() {
+        val repoName = "repo-project-storage-key"
+        projectService.updateProject(UT_PROJECT_ID, ProjectUpdateRequest(credentialsKey = UT_STORAGE_CREDENTIALS_KEY))
+        repositoryService.createRepo(createRequest(repoName))
+        val repository = repositoryService.getRepoDetail(UT_PROJECT_ID, repoName, RepositoryType.GENERIC.name)!!
+        assertEquals(UT_STORAGE_CREDENTIALS_KEY, repository.storageCredentials!!.key!!)
+        projectService.updateProject(UT_PROJECT_ID, ProjectUpdateRequest(useDefaultCredentialsKey = true))
     }
 
     @Test
@@ -405,6 +424,37 @@ class RepositoryServiceTest @Autowired constructor(
         }
 
         assertNotNull(repositoryService.getRepoDetail(UT_PROJECT_ID, "test2"))
+    }
+
+    @Test
+    @DisplayName("测试更新仓库存储凭据")
+    fun `test update repository credentials`() {
+        // create storage key
+        val newStorageKey = "$UT_STORAGE_CREDENTIALS_KEY-2"
+        val request = StorageCredentialsCreateRequest(
+            newStorageKey, storageCredentials.copy(key = newStorageKey), UT_REGION
+        )
+        storageCredentialService.create(UT_USER, request)
+
+        // create repo
+        var repo = repositoryService.createRepo(createRequest("test-update", UT_STORAGE_CREDENTIALS_KEY))
+        repo = repositoryService.getRepoDetail(repo.projectId, repo.name)!!
+        assertEquals(UT_STORAGE_CREDENTIALS_KEY, repo.storageCredentials?.key)
+
+        // update
+        repositoryService.updateStorageCredentialsKey(repo.projectId, repo.name, newStorageKey)
+        repo = repositoryService.getRepoDetail(repo.projectId, repo.name)!!
+        assertEquals(newStorageKey, repo.storageCredentials?.key)
+        assertEquals(UT_STORAGE_CREDENTIALS_KEY, repo.oldCredentialsKey)
+
+        // unset old
+        repositoryService.unsetOldStorageCredentialsKey(repo.projectId, repo.name)
+        repo = repositoryService.getRepoDetail(repo.projectId, repo.name)!!
+        assertEquals(null, repo.oldCredentialsKey)
+
+        // clean
+        repositoryService.deleteRepo(RepoDeleteRequest(repo.projectId, repo.name, operator = UT_USER))
+        storageCredentialService.delete(newStorageKey)
     }
 
     private fun createRequest(name: String = UT_REPO_NAME, storageCredentialsKey: String? = null): RepoCreateRequest {

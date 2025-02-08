@@ -27,46 +27,55 @@
 
 package com.tencent.bkrepo.analyst.dispatcher
 
-import com.tencent.bkrepo.analyst.configuration.KubernetesDispatcherProperties
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
+import com.tencent.bkrepo.analyst.dispatcher.dsl.addContainerItem
+import com.tencent.bkrepo.analyst.dispatcher.dsl.addImagePullSecretsItemIfNeed
+import com.tencent.bkrepo.analyst.dispatcher.dsl.limits
+import com.tencent.bkrepo.analyst.dispatcher.dsl.metadata
+import com.tencent.bkrepo.analyst.dispatcher.dsl.requests
+import com.tencent.bkrepo.analyst.dispatcher.dsl.resources
+import com.tencent.bkrepo.analyst.dispatcher.dsl.spec
+import com.tencent.bkrepo.analyst.dispatcher.dsl.template
+import com.tencent.bkrepo.analyst.dispatcher.dsl.v1Job
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.pojo.execution.KubernetesJobExecutionCluster
+import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.redis.RedisOperation
+import com.tencent.bkrepo.statemachine.StateMachine
 import io.kubernetes.client.openapi.ApiException
-import io.kubernetes.client.openapi.Configuration
 import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
-import io.kubernetes.client.util.ClientBuilder
-import io.kubernetes.client.util.Config
-import io.kubernetes.client.util.credentials.AccessTokenAuthentication
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.time.Duration
-import kotlin.math.max
-import kotlin.math.min
 
 class KubernetesDispatcher(
-    private val scannerProperties: ScannerProperties,
-    private val k8sProperties: KubernetesDispatcherProperties
-) : SubtaskDispatcher {
+    executionCluster: KubernetesJobExecutionCluster,
+    scannerProperties: ScannerProperties,
+    scanService: ScanService,
+    subtaskStateMachine: StateMachine,
+    temporaryScanTokenService: TemporaryScanTokenService,
+    executor: ThreadPoolTaskExecutor,
+    redisOperation: RedisOperation,
+) : SubtaskPushDispatcher<KubernetesJobExecutionCluster>(
+    executionCluster,
+    scannerProperties,
+    redisOperation,
+    scanService,
+    subtaskStateMachine,
+    temporaryScanTokenService,
+    executor,
+) {
 
-    private val batchV1Api by lazy { BatchV1Api() }
-
-    init {
-        val client = if (k8sProperties.token != null && k8sProperties.apiServer != null) {
-            ClientBuilder()
-                .setBasePath(k8sProperties.apiServer)
-                .setAuthentication(AccessTokenAuthentication(k8sProperties.token))
-                .build()
-        } else {
-            // 可通过KUBECONFIG环境变量设置config file路径
-            Config.defaultClient()
-        }
-        Configuration.setDefaultApiClient(client)
-    }
+    private val client by lazy { createClient(executionCluster.kubernetesProperties) }
+    private val coreV1Api by lazy { CoreV1Api(client) }
+    private val batchV1Api by lazy { BatchV1Api(client) }
 
     override fun dispatch(subtask: SubScanTask): Boolean {
-        logger.info("dispatch subtask[${subtask.taskId}] with $NAME")
         var result = false
         var retry = true
         var retryTimes = MAX_RETRY_TIMES
@@ -83,15 +92,11 @@ class KubernetesDispatcher(
             }
         }
 
-        if (retryTimes == 0) {
-            logger.error("subtask[${subtask.taskId}] dispatch failed after $MAX_RETRY_TIMES times retry")
-        }
-
         return result
     }
 
     override fun clean(subtask: SubScanTask, subtaskStatus: String): Boolean {
-        val shouldClean = k8sProperties.cleanJobAfterSuccess && subtaskStatus == SubScanTaskStatus.SUCCESS.name
+        val shouldClean = executionCluster.cleanJobAfterSuccess && subtaskStatus == SubScanTaskStatus.SUCCESS.name
         if (shouldClean || subtaskStatus == SubScanTaskStatus.STOPPED.name) {
             // 只清理执行成功或手动停止的Job，失败的Job需要保留用于排查问题
             return cleanJob(jobName(subtask))
@@ -100,9 +105,9 @@ class KubernetesDispatcher(
     }
 
     override fun availableCount(): Int {
-        val api = CoreV1Api()
-        val quota = api.listNamespacedResourceQuota(
-            k8sProperties.namespace,
+        val k8sProps = executionCluster.kubernetesProperties
+        val quota = coreV1Api.listNamespacedResourceQuota(
+            k8sProps.namespace,
             null, null, null,
             null, null, null,
             null, null, null, null
@@ -115,12 +120,20 @@ class KubernetesDispatcher(
         }
         val limitCpu = hard["limits.cpu"]!!.number.toDouble()
         val limitMem = hard["limits.memory"]!!.number.toLong()
-        val usedCpu = used["limits.cpu"]!!.number.toDouble()
-        val usedMem = used["limits.memory"]!!.number.toLong()
-        val availableCpu = limitCpu - usedCpu
-        val availableMem = limitMem - usedMem
-        val requireCpuPerTask = k8sProperties.limitCpu
-        val requireMemPerTask = k8sProperties.limitMem.toBytes()
+        val jobs = batchV1Api.listNamespacedJob(
+            k8sProps.namespace,
+            null, null, null,
+            null, null, null,
+            null, null, null, null
+        )
+        val executingJobCount = jobs.items.filter {
+            (it.status?.failed ?: 0) == 0 && (it.status?.succeeded ?: 0) == 0
+        }.size
+        val requireCpuPerTask = k8sProps.limitCpu
+        val requireMemPerTask = k8sProps.limitMem
+        val availableCpu = limitCpu - executingJobCount * requireCpuPerTask
+        val availableMem = limitMem - executingJobCount * requireMemPerTask
+
         return if (availableCpu < requireCpuPerTask || availableMem < requireMemPerTask) {
             0
         } else {
@@ -129,7 +142,7 @@ class KubernetesDispatcher(
     }
 
     override fun name(): String {
-        return NAME
+        return executionCluster.name
     }
 
     private fun createJob(subtask: SubScanTask): Boolean {
@@ -137,34 +150,46 @@ class KubernetesDispatcher(
         require(scanner is StandardScanner)
         val jobName = jobName(subtask)
         val containerImage = scanner.image
-        val cmd = buildCmd(subtask)
-        val requestStorageSize = maxStorageSize(subtask.packageSize)
+        val cmd = buildCommand(
+            cmd = scanner.cmd,
+            baseUrl = scannerProperties.baseUrl,
+            subtaskId = subtask.taskId,
+            token = subtask.token!!,
+            heartbeatTimeout = scannerProperties.heartbeatTimeout,
+            username = scannerProperties.username,
+            password = scannerProperties.password,
+        )
+        val k8sProps = executionCluster.kubernetesProperties
+        val resReq = ResourceRequirements.calculate(scanner, k8sProps)
         val jobActiveDeadlineSeconds = subtask.scanner.maxScanDuration(subtask.packageSize)
         val body = v1Job {
+            apiVersion = "batch/v1"
+            kind = "Job"
             metadata {
-                namespace = k8sProperties.namespace
+                namespace = k8sProps.namespace
                 name = jobName
             }
             spec {
                 backoffLimit = 0
                 activeDeadlineSeconds = jobActiveDeadlineSeconds
-                ttlSecondsAfterFinished = k8sProperties.jobTtlSecondsAfterFinished
+                ttlSecondsAfterFinished = executionCluster.jobTtlSecondsAfterFinished
                 template {
                     spec {
                         addContainerItem {
                             name = jobName
                             image = containerImage
                             command = cmd
+                            addImagePullSecretsItemIfNeed(scanner, k8sProps)
                             resources {
                                 requests(
-                                    cpu = k8sProperties.requestCpu,
-                                    memory = k8sProperties.requestMem.toBytes(),
-                                    ephemeralStorage = requestStorageSize
+                                    cpu = resReq.requestCpu,
+                                    memory = resReq.requestMem,
+                                    ephemeralStorage = resReq.requestStorage
                                 )
                                 limits(
-                                    cpu = k8sProperties.limitCpu,
-                                    memory = k8sProperties.limitMem.toBytes(),
-                                    ephemeralStorage = k8sProperties.limitStorage.toBytes()
+                                    cpu = resReq.limitCpu,
+                                    memory = resReq.limitMem,
+                                    ephemeralStorage = resReq.limitStorage
                                 )
                             }
                         }
@@ -173,8 +198,7 @@ class KubernetesDispatcher(
                 }
             }
         }
-
-        batchV1Api.createNamespacedJob(k8sProperties.namespace, body, null, null, null)
+        batchV1Api.createNamespacedJob(k8sProps.namespace, body, null, null, null)
         logger.info("dispatch subtask[${subtask.taskId}] success")
         return true
     }
@@ -190,55 +214,53 @@ class KubernetesDispatcher(
     private fun resolveCreateJobFailed(e: ApiException, subtask: SubScanTask): Boolean {
         // 处理job名称冲突的情况
         if (e.code == HttpStatus.CONFLICT.value) {
-            logger.warn("subtask[${subtask.taskId}] job already exists, try to clean")
-            val jobName = jobName(subtask)
-            val namespace = k8sProperties.namespace
-            val job = batchV1Api.readNamespacedJob(jobName, namespace, null, null, null)
-            val failed = job.status?.failed ?: 0
-            // 只清理失败的job，因为成功的job说明结果也上报成功了，不需要再次分发
-            return if (failed > 0) {
-                cleanJob(jobName)
-            } else {
-                false
-            }
+            logger.warn("${subtask.trace()} job already exists, try to clean")
+            val cleaned = cleanJob(jobName(subtask))
+            return cleaned
         }
 
-        logger.error("subtask[${subtask.taskId}] dispatch failed\n, ${e.string()}")
+        logger.error("${subtask.trace()} dispatch failed\n, ${e.string()}")
         return false
     }
 
     private fun cleanJob(jobName: String): Boolean {
         logger.info("cleaning job[$jobName]")
         return ignoreApiException {
-            val namespace = k8sProperties.namespace
-            batchV1Api.deleteNamespacedJob(
-                jobName, namespace, null, null, null, null, "Foreground", null
-            )
-            logger.info("job[$jobName] clean success")
-            true
+            val namespace = executionCluster.kubernetesProperties.namespace
+            var retryTimes = 1
+            var deleted = false
+            while (true) {
+                try {
+                    batchV1Api.deleteNamespacedJob(
+                        jobName,
+                        namespace,
+                        null,
+                        null,
+                        0,
+                        null,
+                        "Foreground",
+                        null
+                    )
+                    batchV1Api.readNamespacedJob(jobName, namespace, null, null, null)
+                } catch (e: ApiException) {
+                    deleted = (e.code == HttpStatus.NOT_FOUND.value)
+                }
+
+                // 删除失败时进行重试
+                if (!deleted && retryTimes < MAX_RETRY_TIMES) {
+                    logger.info("job[$jobName] still exists after cleaning, retry times[$retryTimes]")
+                    Thread.sleep(retryTimes * 1000L)
+                    retryTimes++
+                } else {
+                    break
+                }
+            }
+            logger.info("job[$jobName] clean result[$deleted]")
+            deleted
         }
     }
 
     private fun jobName(subtask: SubScanTask) = "bkrepo-analyst-${subtask.scanner.name}-${subtask.taskId}"
-
-    private fun buildCmd(subtask: SubScanTask): List<String> {
-        val scanner = subtask.scanner
-        require(scanner is StandardScanner)
-        val cmd = ArrayList<String>()
-        cmd.addAll(scanner.cmd.split(" "))
-        cmd.add("--url")
-        cmd.add(scannerProperties.baseUrl)
-        cmd.add("--task-id")
-        cmd.add(subtask.taskId)
-        cmd.add("--token")
-        cmd.add(subtask.token!!)
-        return cmd
-    }
-
-    private fun maxStorageSize(fileSize: Long): Long {
-        val requestStorage = max(k8sProperties.requestStorage.toBytes(), fileSize * MAX_FILE_SIZE_MULTIPLIER)
-        return min(k8sProperties.limitStorage.toBytes(), requestStorage)
-    }
 
     private fun ignoreApiException(action: () -> Boolean): Boolean {
         try {
@@ -249,25 +271,12 @@ class KubernetesDispatcher(
         return false
     }
 
-    private fun ApiException.string(): String {
-        return "message: $message\n" +
-            "code: $code\n" +
-            "headers: $responseHeaders\n" +
-            "body: $responseBody"
-    }
-
     companion object {
         private val logger = LoggerFactory.getLogger(KubernetesDispatcher::class.java)
-
-        /**
-         * 最大允许的单文件大小为待扫描文件大小3倍
-         */
-        private const val MAX_FILE_SIZE_MULTIPLIER = 3L
 
         /**
          * 创建Job最大重试次数
          */
         private const val MAX_RETRY_TIMES = 3
-        const val NAME = "k8s"
     }
 }

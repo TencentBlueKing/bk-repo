@@ -29,15 +29,20 @@ package com.tencent.bkrepo.replication.service.impl
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -45,7 +50,6 @@ import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.storage.innercos.http.toMediaTypeOrNull
-import com.tencent.bkrepo.common.storage.innercos.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.replication.pojo.ext.CheckRepoDifferenceRequest
@@ -56,14 +60,11 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import com.tencent.bkrepo.replication.replica.base.OkHttpClientPool
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext.Companion.READ_TIMEOUT
-import com.tencent.bkrepo.replication.replica.base.context.ReplicaContext.Companion.WRITE_TIMEOUT
+import com.tencent.bkrepo.replication.replica.context.ReplicaContext.Companion.READ_TIMEOUT
+import com.tencent.bkrepo.replication.replica.context.ReplicaContext.Companion.WRITE_TIMEOUT
 import com.tencent.bkrepo.replication.service.RemoteNodeService
 import com.tencent.bkrepo.replication.service.ReplicaExtService
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
+import com.tencent.bkrepo.replication.util.OkHttpClientPool
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
@@ -80,9 +81,9 @@ import java.time.Duration
 
 @Service
 class ReplicaExtServiceImpl(
-    private val repositoryClient: RepositoryClient,
-    private val packageClient: PackageClient,
-    private val nodeClient: NodeClient,
+    private val repositoryService: RepositoryService,
+    private val packageService: PackageService,
+    private val nodeService: NodeService,
     private val remoteNodeService: RemoteNodeService,
     private val replicationProperties: ReplicationProperties,
     ) : ReplicaExtService {
@@ -275,7 +276,7 @@ class ReplicaExtServiceImpl(
         repoName: String,
     ): RepositoryDetail {
         return if (host.isNullOrEmpty()) {
-            repositoryClient.getRepoDetail(projectId, repoName, null).data
+            repositoryService.getRepoDetail(projectId, repoName, null)
         } else {
             queryRepoDetailFromHost(
                 host = host,
@@ -302,12 +303,10 @@ class ReplicaExtServiceImpl(
                 pageNumber = pageNumber,
                 pageSize = pageSize
             )
-            nodeClient.listNodePage(
-                projectId = projectId,
-                repoName = repoName,
-                path = PathUtils.UNIX_SEPARATOR.toString(),
+            nodeService.listNodePage(
+                ArtifactInfo(projectId, repoName, PathUtils.UNIX_SEPARATOR.toString()),
                 option = option
-            ).data?.records?.map { it.fullPath }
+            ).records.map { it.fullPath }
         } else {
             listNodesFromRemote(
                 host = host,
@@ -330,7 +329,7 @@ class ReplicaExtServiceImpl(
         packageKey: String
     ): List<PackageVersion>? {
         return if (host.isNullOrEmpty()) {
-            packageClient.listAllVersion(projectId, repoName, packageKey).data
+            packageService.listAllVersion(projectId, repoName, packageKey, VersionListOption())
         } else {
             listPackageVersionsFromRemote(
                 host = host,
@@ -348,11 +347,11 @@ class ReplicaExtServiceImpl(
     ) : List<PackageSummary> {
         with(request) {
             return if (localHost.isNullOrEmpty()) {
-                packageClient.listPackagePage(
+                packageService.listPackagePage(
                     projectId = localProjectId,
                     repoName = localRepoName,
                     option = option
-                ).data?.records ?: emptyList()
+                ).records
             } else {
                 listPackagesFromHost(
                     host = localHost!!,

@@ -40,9 +40,8 @@ class RpmMetadataFileList(
     @XStreamImplicit(itemFieldName = "package")
     override val packages: List<RpmPackageFileList>,
     @XStreamAsAttribute
+    val xmlns: String = "http://linux.duke.edu/metadata/filelists",
+    @XStreamAsAttribute
     @XStreamAlias("packages")
     override var packageNum: Long
-) : RpmXmlMetadata(packages, packageNum) {
-    @XStreamAsAttribute
-    val xmlns: String = "http://linux.duke.edu/metadata/filelists"
-}
+) : RpmXmlMetadata(packages, packageNum)

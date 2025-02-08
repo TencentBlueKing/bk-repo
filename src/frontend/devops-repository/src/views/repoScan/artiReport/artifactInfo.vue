@@ -102,12 +102,12 @@
 .base-info {
     height: 100%;
     overflow-y: auto;
-    padding: 0 20px;
-    flex-basis: 360px;
+    padding: 0 10px;
+    flex-basis: 334px;
     border: 1px solid var(--borderColor);
     background-color: var(--bgColor);
     .arti-name {
-        max-width: 200px;
+        max-width: 250px;
         font-size: 16px;
         font-weight: 600;
     }
@@ -130,7 +130,7 @@
         }
     }
     .arti-leak {
-        grid-template: auto / repeat(2, 1fr);
+        grid-template: auto / repeat(1, 1fr);
     }
 }
 </style>

@@ -51,4 +51,6 @@ interface ConfigClient {
      * @param targetProfile 要更新的profile，比如dev、prod，空字符串表示更新默认配置
      */
     fun put(values: List<ConfigItem>, appName: String = "", targetProfile: String = "")
+    
+    fun get(appName: String = "", profile: String = "", key: String):String
 }

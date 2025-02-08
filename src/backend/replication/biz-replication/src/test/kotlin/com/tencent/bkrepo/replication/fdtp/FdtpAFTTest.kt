@@ -32,31 +32,32 @@ import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactClient
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.proxy.ProxyRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
+import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
 import com.tencent.bkrepo.common.security.service.ServiceAuthProperties
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaders
 import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.replication.constant.SHA256
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.RepositoryClient
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.mockkObject
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.*
 import org.mockito.Mockito
 import org.springframework.cloud.loadbalancer.support.SimpleObjectProvider
+import org.springframework.cloud.sleuth.Tracer
+import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 import java.io.ByteArrayInputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -89,18 +90,19 @@ class FdtpAFTTest {
     private fun mockPrerequisites() {
         val artifactConfigurer = Mockito.mock(ArtifactConfigurer::class.java)
         val compositeRepository = Mockito.mock(CompositeRepository::class.java)
-        val repositoryClient = Mockito.mock(RepositoryClient::class.java)
-        val nodeClient = Mockito.mock(NodeClient::class.java)
+        val proxyRepository = Mockito.mock(ProxyRepository::class.java)
+        val artifactClient = Mockito.mock(ArtifactClient::class.java)
         val httpAuthSecurity = SimpleObjectProvider<HttpAuthSecurity>(null)
+        val limitCheckService = RequestLimitCheckService(RateLimiterProperties())
         ArtifactContextHolder(
             listOf(artifactConfigurer),
             compositeRepository,
-            repositoryClient,
-            nodeClient,
+            proxyRepository,
+            artifactClient,
             httpAuthSecurity,
         )
         val helper = StorageHealthMonitorHelper(ConcurrentHashMap())
-        ArtifactFileFactory(StorageProperties(), helper)
+        ArtifactFileFactory(StorageProperties(), helper, limitCheckService)
         mockkObject(ArtifactMetrics)
         every { ArtifactMetrics.getUploadingCounters(any()) } returns emptyList()
         every { ArtifactMetrics.getUploadingTimer(any()) } returns Timer.builder(ARTIFACT_UPLOADING_TIME)
@@ -111,6 +113,11 @@ class FdtpAFTTest {
 
     @BeforeAll
     fun startFdtpServer() {
+        val tracer = mockk<OtelTracer>()
+        mockkObject(SpringContextUtils.Companion)
+        every { SpringContextUtils.getBean<Tracer>() } returns tracer
+        every { tracer.currentSpan() } returns null
+        every { SpringContextUtils.publishEvent(any()) } returns Unit
         server.start()
     }
 

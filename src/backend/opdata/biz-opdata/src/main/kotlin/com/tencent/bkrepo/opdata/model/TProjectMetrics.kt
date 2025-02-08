@@ -32,14 +32,21 @@
 package com.tencent.bkrepo.opdata.model
 
 import com.tencent.bkrepo.opdata.pojo.RepoMetrics
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
 @Document("project_metrics")
+@CompoundIndexes(
+    CompoundIndex(name = "createdDate_idx", def = "{'createdDate':1}", background = true),
+    CompoundIndex(name = "projectId_idx", def = "{'projectId':1}", background = true)
+)
 data class TProjectMetrics(
     var projectId: String,
     var nodeNum: Long,
     var capSize: Long,
     val repoMetrics: List<RepoMetrics>,
-    val createdDate: LocalDateTime? = LocalDateTime.now()
+    val createdDate: LocalDateTime? = LocalDateTime.now(),
+    val active: Boolean = true
 )

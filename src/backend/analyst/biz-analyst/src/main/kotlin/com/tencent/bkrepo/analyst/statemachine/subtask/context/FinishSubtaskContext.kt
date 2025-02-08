@@ -40,5 +40,9 @@ data class FinishSubtaskContext(
     val subtask: TSubScanTask,
     val targetState: String,
     val scanExecutorResult: ScanExecutorResult? = null,
-    val modifiedBy: String? = null
-): SubtaskContext()
+    val modifiedBy: String? = null,
+    /**
+     * 任务结束原因，超时或被手动停止时有值
+     */
+    val reason: String? = null,
+) : SubtaskContext()

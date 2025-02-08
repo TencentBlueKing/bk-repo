@@ -27,18 +27,16 @@
 
 package com.tencent.bkrepo.analyst.utils
 
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.analyst.NODE_FULL_PATH
 import com.tencent.bkrepo.analyst.NODE_NAME
 import com.tencent.bkrepo.analyst.NODE_SHA256
 import com.tencent.bkrepo.analyst.NODE_SIZE
 import com.tencent.bkrepo.analyst.PROJECT_ID
 import com.tencent.bkrepo.analyst.REPO
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -54,19 +52,19 @@ class RequestTest {
         Assertions.assertEquals(nodes.first().sha256, NODE_SHA256)
     }
 
-    private fun mockNodeClient(): NodeClient {
+    private fun mockNodeClient(): NodeSearchService {
         val node = mapOf(
             NodeDetail::sha256.name to NODE_SHA256,
             NodeDetail::size.name to NODE_SIZE,
             NodeDetail::fullPath.name to NODE_FULL_PATH,
             NodeDetail::projectId.name to PROJECT_ID,
             NodeDetail::repoName.name to REPO,
-            NodeDetail::name.name to NODE_NAME
+            NodeDetail::name.name to NODE_NAME,
+            NodeDetail::lastModifiedBy.name to "user",
         )
-        val response = Response(CommonMessageCode.SUCCESS.getCode(), null, Pages.buildPage(listOf(node), 0, 1), null)
 
         return mock {
-            on { search(any()) }.doReturn(response)
+            on { searchWithoutCount(any()) }.doReturn(Pages.buildPage(listOf(node), 0, 1))
         }
     }
 }

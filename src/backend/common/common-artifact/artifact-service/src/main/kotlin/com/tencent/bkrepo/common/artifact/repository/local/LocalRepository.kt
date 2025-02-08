@@ -56,7 +56,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = ArtifactContextHolder.getNodeDetail()
+            val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
             node?.let { downloadIntercept(context, it) }
             val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
             val responseName = artifactInfo.getResponseName()
@@ -75,7 +75,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
             val packageKey = nodeDetail.packageName()?.let { PackageKeys.ofName(repo.type, it) }
             val version = nodeDetail.packageVersion()
             if (packageKey != null && version != null) {
-                packageClient.findVersionByName(projectId, repoName, packageKey, version).data?.let { packageVersion ->
+                packageService.findVersionByName(projectId, repoName, packageKey, version)?.let { packageVersion ->
                     downloadIntercept(context, packageVersion)
                 }
             }

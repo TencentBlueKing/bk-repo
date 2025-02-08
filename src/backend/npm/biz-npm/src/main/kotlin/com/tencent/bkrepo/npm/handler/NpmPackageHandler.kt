@@ -33,9 +33,9 @@ package com.tencent.bkrepo.npm.handler
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
-import com.tencent.bkrepo.npm.constants.NPM_PKG_TGZ_FULL_PATH
 import com.tencent.bkrepo.npm.constants.SIZE
 import com.tencent.bkrepo.npm.model.metadata.NpmPackageMetaData
 import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
@@ -44,7 +44,6 @@ import com.tencent.bkrepo.npm.pojo.fixtool.FailPackageDetail
 import com.tencent.bkrepo.npm.pojo.fixtool.FailVersionDetail
 import com.tencent.bkrepo.npm.utils.BeanUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -60,7 +59,7 @@ import java.time.LocalDateTime
 @Component
 class NpmPackageHandler {
     @Autowired
-    private lateinit var packageClient: PackageClient
+    private lateinit var packageService: PackageService
 
     /**
      * 包版本数据填充
@@ -126,7 +125,7 @@ class NpmPackageHandler {
                     description = packageMetaData.description.orEmpty(),
                     versionList = versionList
                 )
-                packageClient.populatePackage(packagePopulateRequest)
+                packageService.populatePackage(packagePopulateRequest)
             }
             return if (failPackageDetail.failedVersionSet.isEmpty()) null else failPackageDetail
         }
@@ -139,22 +138,23 @@ class NpmPackageHandler {
         userId: String,
         artifactInfo: NpmArtifactInfo,
         versionMetaData: NpmVersionMetadata,
-        size: Long
+        size: Long,
+        ohpm: Boolean
     ) {
         versionMetaData.apply {
             val name = this.name!!
             val description = this.description
             val version = this.version!!
             val manifestPath = getManifestPath(name, version)
-            val contentPath = getContentPath(name, version)
+            val contentPath = NpmUtils.getContentPath(name, version, ohpm)
             val metadata = buildProperties(this)
             with(artifactInfo) {
                 val packageVersionCreateRequest = PackageVersionCreateRequest(
                     projectId = projectId,
                     repoName = repoName,
                     packageName = name,
-                    packageKey = PackageKeys.ofNpm(name),
-                    packageType = PackageType.NPM,
+                    packageKey = NpmUtils.packageKey(name, ohpm),
+                    packageType = if (ohpm)  PackageType.OHPM else PackageType.NPM,
                     packageDescription = description,
                     versionName = version,
                     size = size,
@@ -165,18 +165,20 @@ class NpmPackageHandler {
                     overwrite = true,
                     createdBy = userId
                 )
-                packageClient.createVersion(packageVersionCreateRequest, HttpContextHolder.getClientAddress()).apply {
-                    logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
-                }
+                packageService.createPackageVersion(packageVersionCreateRequest, HttpContextHolder.getClientAddress())
+                    .apply {
+                        logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
+                    }
             }
         }
     }
 
-    private fun buildProperties(npmVersionMetadata: NpmVersionMetadata?): Map<String, String> {
+    @Suppress("UNCHECKED_CAST")
+    private fun buildProperties(npmVersionMetadata: NpmVersionMetadata?): Map<String, Any> {
         return npmVersionMetadata?.let {
             val value = JsonUtils.objectMapper.writeValueAsString(it)
             val npmProperties = JsonUtils.objectMapper.readValue(value, PackageProperties::class.java)
-            BeanUtils.beanToMap(npmProperties)
+            BeanUtils.beanToMap(npmProperties).filterValues { entryValue -> entryValue != null } as Map<String, Any>
         } ?: emptyMap()
     }
 
@@ -184,9 +186,9 @@ class NpmPackageHandler {
      * 删除包
      */
     fun deletePackage(userId: String, name: String, artifactInfo: NpmArtifactInfo) {
-        val packageKey = PackageKeys.ofNpm(name)
+        val packageKey = NpmUtils.packageKeyByRepoType(name)
         with(artifactInfo) {
-            packageClient.deletePackage(projectId, repoName, packageKey, HttpContextHolder.getClientAddress()).apply {
+            packageService.deletePackage(projectId, repoName, packageKey, HttpContextHolder.getClientAddress()).apply {
                 logger.info("user: [$userId] delete package [$name] in repo [$projectId/$repoName] success!")
             }
         }
@@ -196,9 +198,9 @@ class NpmPackageHandler {
      * 删除版本
      */
     fun deleteVersion(userId: String, name: String, version: String, artifactInfo: NpmArtifactInfo) {
-        val packageKey = PackageKeys.ofNpm(name)
+        val packageKey = NpmUtils.packageKeyByRepoType(name)
         with(artifactInfo) {
-            packageClient.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
+            packageService.deleteVersion(projectId, repoName, packageKey, version, HttpContextHolder.getClientAddress())
                 .apply {
                     logger.info(
                         "user: [$userId] delete package [$name] with version [$version] " +
@@ -210,10 +212,6 @@ class NpmPackageHandler {
 
     fun getManifestPath(name: String, version: String): String {
         return NpmUtils.getVersionPackageMetadataPath(name, version)
-    }
-
-    fun getContentPath(name: String, version: String): String {
-        return String.format(NPM_PKG_TGZ_FULL_PATH, name, name, version)
     }
 
     companion object {

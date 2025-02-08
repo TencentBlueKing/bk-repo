@@ -31,19 +31,26 @@
 
 package com.tencent.bkrepo.npm.controller
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
-import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.pojo.NpmDomainInfo
+import com.tencent.bkrepo.npm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.npm.pojo.user.request.PackageDeleteRequest
 import com.tencent.bkrepo.npm.pojo.user.request.PackageVersionDeleteRequest
-import com.tencent.bkrepo.npm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.npm.service.NpmWebService
+import com.tencent.bkrepo.npm.utils.NpmUtils
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -62,6 +69,7 @@ class UserNpmController(
     private val npmWebService: NpmWebService
 ) {
 
+
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @ApiOperation("查询包的版本详情")
     @GetMapping("/version/detail/{projectId}/{repoName}")
@@ -77,6 +85,23 @@ class UserNpmController(
         return ResponseBuilder.success(npmWebService.detailVersion(artifactInfo, packageKey, version))
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#artifactInfo?.repoName",
+            instanceNames = "#artifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
+    )
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @ApiOperation("删除仓库下的包")
     @DeleteMapping("/package/delete/{projectId}/{repoName}")
@@ -88,7 +113,7 @@ class UserNpmController(
         @RequestParam packageKey: String
     ): Response<Void> {
         with(artifactInfo) {
-            val pkgName = PackageKeys.resolveNpm(packageKey)
+            val pkgName = NpmUtils.resolveNameByRepoType(packageKey)
             val deleteRequest = PackageDeleteRequest(
                 projectId, repoName, pkgName, userId
             )
@@ -97,6 +122,25 @@ class UserNpmController(
         }
     }
 
+    @AuditEntry(
+        actionId = REPO_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = REPO_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = REPO_RESOURCE,
+            instanceIds = "#artifactInfo?.repoName",
+            instanceNames = "#artifactInfo?.repoName"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.NAME_TEMPLATE, value = "#packageKey"),
+            AuditAttribute(name = ActionAuditContent.VERSION_TEMPLATE, value = "#version")
+
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
+    )
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @ApiOperation("删除仓库下的包版本")
     @DeleteMapping("/version/delete/{projectId}/{repoName}")
@@ -110,7 +154,7 @@ class UserNpmController(
         @RequestParam version: String
     ): Response<Void> {
         with(artifactInfo) {
-            val pkgName = PackageKeys.resolveNpm(packageKey)
+            val pkgName = NpmUtils.resolveNameByRepoType(packageKey)
             val deleteRequest = PackageVersionDeleteRequest(
                 projectId, repoName, pkgName, version, userId
             )

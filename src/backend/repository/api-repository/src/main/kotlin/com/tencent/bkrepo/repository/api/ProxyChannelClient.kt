@@ -49,6 +49,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProxyChannelClient")
 @RequestMapping("/service/proxy-channel")
+@Deprecated("replace by ProxyChannelService")
 interface ProxyChannelClient {
 
     @ApiOperation("查询代理源信息")

@@ -35,12 +35,13 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
-import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptor
-import com.tencent.bkrepo.common.artifact.interceptor.DownloadInterceptorFactory
+import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptorFactory
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import kotlin.reflect.full.primaryConstructor
 
 /**
  * 构件下载context
@@ -56,6 +57,17 @@ open class ArtifactDownloadContext(
     val repo = repo ?: request.getAttribute(REPO_KEY) as RepositoryDetail
     val artifacts = artifacts
     var shareUserId: String = StringPool.EMPTY
+
+    override fun copy(
+        repositoryDetail: RepositoryDetail,
+        instantiation: ((ArtifactInfo) -> ArtifactContext)?
+    ): ArtifactContext {
+        return super.copy(repositoryDetail) { artifactInfo ->
+            this::class.primaryConstructor!!.call(
+                repositoryDetail, artifactInfo, artifacts, this.userId, useDisposition
+            )
+        }
+    }
 
     @Suppress("UNCHECKED_CAST")
     fun getInterceptors(): List<DownloadInterceptor<*, NodeDetail>> {

@@ -13,12 +13,15 @@ metadata:
 rules:
   - apiGroups: 
     - ""
+    - apps
+    - extensions
     resources: 
     - configmaps
     - services
     - secrets
     - endpoints
     - persistentvolumeclaims
+    - pods
     verbs: 
     - get
     - watch

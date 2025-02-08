@@ -63,16 +63,17 @@ export default {
         )
     },
     // 请求文件夹下的子文件夹
-    getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false }) {
+    getFolderList ({ commit }, { projectId, repoName, roadMap, fullPath = '', isPipeline = false, localRepo = true }) {
         let request
-        if (isPipeline && !fullPath) {
+        if (isPipeline && !fullPath && localRepo) {
             request = Vue.prototype.$ajax.get(
                 `${prefix}/pipeline/list/${projectId}`
             ).then(records => ({ records }))
         } else {
             request = Vue.prototype.$ajax.post(
-                `${prefix}/node/search`,
+                localRepo ? `${prefix}/node/search` : `generic/${projectId}/${repoName}/search`,
                 {
+                    select: ['name', 'fullPath', 'metadata'],
                     page: {
                         pageNumber: 1,
                         pageSize: 10000
@@ -120,29 +121,28 @@ export default {
         })
     },
     // 请求文件/文件夹详情
-    getNodeDetail (_, { projectId, repoName, fullPath = '' }) {
+    getNodeDetail (_, { projectId, repoName, fullPath = '', localNode = true }) {
         return Vue.prototype.$ajax.get(
-            `${prefix}/node/detail/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`
+            localNode
+                ? `${prefix}/node/detail/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`
+                : `generic/detail/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`
         )
     },
     // 仓库内自定义查询
-    getArtifactoryList (_, { projectId, repoName, name, fullPath, current, limit, isPipeline = false, sortType = 'lastModifiedDate' }) {
-        if (isPipeline && !fullPath && !name) {
+    getArtifactoryList (_, { projectId, repoName, name, fullPath, current, limit, isPipeline = false, sortType, searchFlag, localRepo = true }) {
+        if (isPipeline && !fullPath && !name && localRepo) {
             return Vue.prototype.$ajax.get(
                 `${prefix}/pipeline/list/${projectId}`
-            ).then(records => ({ records, totalRecords: 0 }))
+            ).then(records => ({ records, totalRecords: records.length }))
         } else {
             return Vue.prototype.$ajax.post(
-                `${prefix}/node/search`,
+                localRepo ? `${prefix}/node/search` : `generic/${projectId}/${repoName}/search`,
                 {
                     page: {
                         pageNumber: current,
                         pageSize: limit
                     },
-                    sort: {
-                        properties: ['folder', sortType],
-                        direction: 'DESC'
-                    },
+                    sort: sortType,
                     rule: {
                         rules: [
                             {
@@ -155,6 +155,11 @@ export default {
                                 value: repoName,
                                 operation: 'EQ'
                             },
+                            {
+                                field: 'path',
+                                value: `${fullPath === '/' ? '' : fullPath}/`,
+                                operation: searchFlag ? 'PREFIX' : 'EQ'
+                            },
                             ...(name
                                 ? [
                                     {
@@ -163,13 +168,7 @@ export default {
                                         operation: 'MATCH'
                                     }
                                 ]
-                                : [
-                                    {
-                                        field: 'path',
-                                        value: `${fullPath === '/' ? '' : fullPath}/`,
-                                        operation: 'EQ'
-                                    }
-                                ])
+                                : [])
                         ],
                         relation: 'AND'
                     }
@@ -217,7 +216,7 @@ export default {
                     if (xhr.status === 200) {
                         resolve(xhr.response)
                     } else {
-                        reject(xhr.response)
+                        reject(xhr)
                     }
                 }
             }
@@ -302,7 +301,8 @@ export default {
             `generic/${projectId}/${repoName}${path}?preview=true`, {
                 headers: {
                     range: 'bytes=0-52428800'
-                }
+                },
+                withCredentials: false
             }
         )
     },
@@ -314,6 +314,83 @@ export default {
     previewCompressedBasicFile (_, { projectId, repoName, path, filePath }) {
         return Vue.prototype.$ajax.get(
             `generic/compressed/preview/${projectId}/${repoName}${path}?filePath=${filePath}`
+        )
+    },
+    getProjectMetrics (_, { projectId }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/project/metrics/${projectId}`
+        )
+    },
+    // 清理创建时间早于{date}的文件节点
+    cleanNode (_, { path, date }) {
+        return Vue.prototype.$ajax.delete(
+            `${prefix}/node/clean/${path}`,
+            {
+                params: {
+                    date: date
+                }
+            }
+        )
+    },
+    // 查询repo下一级目录
+    getFirstLevelFolder (_, { projectId, repoName, fullPath = '', isPipeline = false, localRepo = true }) {
+        let request
+        if (isPipeline && !fullPath && localRepo) {
+            request = Vue.prototype.$ajax.get(
+                `${prefix}/pipeline/list/${projectId}`
+            ).then(records => ({ records }))
+        } else {
+            request = Vue.prototype.$ajax.post(
+                localRepo ? `${prefix}/node/search` : `generic/${projectId}/${repoName}/search`,
+                {
+                    select: ['name', 'fullPath', 'metadata'],
+                    page: {
+                        pageNumber: 1,
+                        pageSize: 10000
+                    },
+                    sort: {
+                        properties: ['lastModifiedDate'],
+                        direction: 'DESC'
+                    },
+                    rule: {
+                        rules: [
+                            {
+                                field: 'projectId',
+                                value: projectId,
+                                operation: 'EQ'
+                            },
+                            {
+                                field: 'repoName',
+                                value: repoName,
+                                operation: 'EQ'
+                            },
+                            {
+                                field: 'path',
+                                value: `${fullPath === '/' ? '' : fullPath}/`,
+                                operation: 'EQ'
+                            },
+                            {
+                                field: 'folder',
+                                value: true,
+                                operation: 'EQ'
+                            }
+                        ],
+                        relation: 'AND'
+                    }
+                }
+            )
+        }
+        return request
+    },
+    // 统计时间早于{date}的文件节点信息
+    getFolderSizeBefore (_, { path, date }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/node/calculate/${path}`,
+            {
+                params: {
+                    date: date
+                }
+            }
         )
     }
 }

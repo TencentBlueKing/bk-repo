@@ -62,10 +62,10 @@
         <el-input v-if="!ignoreAllVul" v-model="vulIds" placeholder="请输入漏洞ID，多个漏洞ID通过换行分隔" type="textarea" />
       </el-form-item>
       <el-form-item v-if="selectedFilterMethod === FILTER_METHOD_RISKY_COMPONENT" label="风险组件名" :required="false" prop="riskyPackageKeys">
-        <el-input :autosize="true" v-model="riskyPackageKeys" placeholder="请输入风险组件名，多个组件通过换行分隔" type="textarea" />
+        <el-input v-model="riskyPackageKeys" :autosize="true" placeholder="请输入风险组件名，多个组件通过换行分隔" type="textarea" />
       </el-form-item>
       <el-form-item v-if="selectedFilterMethod === FILTER_METHOD_RISKY_COMPONENT_VERSION" label="风险组件版本" :required="false" prop="riskyPackageVersions">
-        <el-input :autosize="true" v-model="riskyPackageVersions" placeholder="请输入风险组件版本范围，多个组件通过换行分隔，例如org.springframework:spring-messaging >=5.0,<=5.0.4;>=4.3,<=4.3.15;<=4.0.0;>=4.0,<4.3" type="textarea" />
+        <el-input v-model="riskyPackageVersions" :autosize="true" placeholder="请输入风险组件版本范围，多个组件通过换行分隔，例如org.springframework:spring-messaging >=5.0,<=5.0.4;>=4.3,<=4.3.15;<=4.0.0;>=4.0,<4.3" type="textarea" />
       </el-form-item>
     </el-form>
     <div slot="footer">
@@ -289,7 +289,7 @@ export default {
 
       if (this.ignoreRule.riskyPackageVersions) {
         const pkgVersionRange = []
-        for (const pkg in this.ignoreRule.riskyPackageVersions){
+        for (const pkg in this.ignoreRule.riskyPackageVersions) {
           pkgVersionRange.push(`${pkg} ${this.ignoreRule.riskyPackageVersions[pkg]}`)
         }
         this.riskyPackageVersions = pkgVersionRange.join('\n')

@@ -1,24 +1,32 @@
 // 仓库类型
 export const repoEnum = MODE_CONFIG === 'ci'
     ? [
-        'generic',
-        'helm',
-        // 'rds',
-        'docker',
-        'nuget'
+        { label: 'Generic', value: 'generic' },
+        { label: 'DDC', value: 'ddc' },
+        { label: 'Helm', value: 'helm' },
+        { label: 'Docker', value: 'docker' },
+        // { label: 'Rds', value: 'rds' },
+        { label: 'Nuget', value: 'nuget' },
+        { label: 'S3', value: 's3' },
+        { label: 'Conan', value: 'conan' },
+        { label: 'Ohpm', value: 'ohpm' }
     ]
     : [
-        'generic',
-        'docker',
-        'maven',
-        'pypi',
-        'npm',
-        'helm',
-        // 'rds',
-        'composer',
-        'rpm',
-        // 'git',
-        'nuget'
+        { label: 'Generic', value: 'generic' },
+        { label: 'DDC', value: 'ddc' },
+        { label: 'Docker', value: 'docker' },
+        { label: 'Maven', value: 'maven' },
+        { label: 'Pypi', value: 'pypi' },
+        { label: 'Npm', value: 'npm' },
+        { label: 'Helm', value: 'helm' },
+        // { label: 'Rds', value: 'rds' },
+        { label: 'Composer', value: 'composer' },
+        { label: 'Rpm', value: 'rpm' },
+        { label: 'Git', value: 'git' },
+        { label: 'Nuget', value: 'nuget' },
+        { label: 'S3', value: 's3' },
+        { label: 'Conan', value: 'conan' },
+        { label: 'Ohpm', value: 'ohpm' }
     ]
 
 // 文件类型
@@ -121,10 +129,10 @@ export const scanStatusEnum = {
 
 // 漏洞风险等级
 export const leakLevelEnum = {
-    CRITICAL: '危急',
-    HIGH: '高级',
-    MEDIUM: '中级',
-    LOW: '低级'
+    CRITICAL: '严重',
+    HIGH: '高危',
+    MEDIUM: '中危',
+    LOW: '低危'
 }
 
 // 匹配规则时忽略
@@ -143,3 +151,11 @@ export const FILTER_METHOD_SEVERITY = 1
 export const FILTER_METHOD_RISKY_COMPONENT = 2
 // 通过风险组件版本过滤
 export const FILTER_METHOD_RISKY_COMPONENT_VERSION = 3
+
+// 特殊的4个repo仓名称
+export const specialRepoEnum = [
+    'log',
+    'pipeline',
+    'report',
+    'custom'
+]

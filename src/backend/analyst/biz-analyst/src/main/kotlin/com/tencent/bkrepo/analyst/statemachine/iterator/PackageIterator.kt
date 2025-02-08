@@ -28,19 +28,20 @@
 package com.tencent.bkrepo.analyst.statemachine.iterator
 
 import com.tencent.bkrepo.analyst.pojo.Node
+import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
+import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact.Companion.RULE_FIELD_LATEST_VERSION
+import com.tencent.bkrepo.analyst.utils.Request
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.PackageClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
-import com.tencent.bkrepo.analyst.utils.Request
 import org.slf4j.LoggerFactory
 import kotlin.math.min
 
@@ -48,8 +49,8 @@ import kotlin.math.min
  * 依赖包迭代器
  */
 class PackageIterator(
-    private val packageClient: PackageClient,
-    private val nodeClient: NodeClient,
+    private val packageService: PackageService,
+    private val nodeSearchService: NodeSearchService,
     override val position: PackageIteratePosition
 ) : PageableIterator<Node>() {
     override fun nextPageData(page: Int, pageSize: Int): List<Node> {
@@ -94,10 +95,13 @@ class PackageIterator(
     private fun requestPackage(page: Int, pageSize: Int): List<Package> {
         // 拉取待扫描的package
         val packageQueryModel = QueryModel(
-            PageLimit(page, pageSize), null, packageSelect, packageSummaryRule(position.rule)
+            page = PageLimit(page, pageSize),
+            sort = null,
+            select = packageSelect,
+            rule = packageSummaryRule(position.rule)
         )
 
-        val records = Request.request { packageClient.searchPackage(packageQueryModel) }!!.records
+        val records = packageService.searchPackage(packageQueryModel).records
         return if (records.isEmpty()) {
             emptyList()
         } else {
@@ -108,7 +112,7 @@ class PackageIterator(
                     .ifEmpty { listOf(pkg.latestVersion) }
                     .asSequence()
                     .filter { version ->
-                        val valuesToMatch = mapOf(
+                        val valuesToMatch = mutableMapOf<String, Any>(
                             Package::projectId.name to pkg.projectId,
                             Package::repoName.name to pkg.repoName,
                             PackageSummary::type.name to pkg.type,
@@ -116,6 +120,7 @@ class PackageIterator(
                             RuleArtifact::name.name to pkg.artifactName,
                             RuleArtifact::version.name to version
                         )
+                        valuesToMatch[RULE_FIELD_LATEST_VERSION] = (version == pkg.latestVersion)
                         RuleMatcher.match(position.rule, valuesToMatch)
                     }
                     .map { version -> pkg.copy(packageVersion = version) }
@@ -147,7 +152,7 @@ class PackageIterator(
      */
     private fun packageSummaryRule(rule: Rule): Rule {
         require(rule is Rule.NestedRule && rule.relation == Rule.NestedRule.RelationType.AND)
-        return filterAndNestedRuleField(rule, listOf(RuleArtifact::version.name))
+        return filterAndNestedRuleField(rule, listOf(RuleArtifact::version.name, RULE_FIELD_LATEST_VERSION))
     }
 
     /**
@@ -213,9 +218,7 @@ class PackageIterator(
             if (logger.isDebugEnabled) {
                 logger.debug("populating package[$pkg]")
             }
-            val packageVersion = Request.request {
-                packageClient.findVersionByName(projectId, repoName, packageKey, packageVersion!!)
-            }
+            val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, packageVersion!!)
             pkg.fullPath = packageVersion?.contentPath ?: packageVersion?.manifestPath
             pkg.size = packageVersion?.size
         }
@@ -230,7 +233,7 @@ class PackageIterator(
             return emptyList()
         }
         val nodeQueryRule = nodeQueryRule(packages)
-        val nodes = Request.requestNodes(nodeClient, nodeQueryRule, DEFAULT_PAGE_NUMBER, position.pageSize)
+        val nodes = Request.requestNodes(nodeSearchService, nodeQueryRule, DEFAULT_PAGE_NUMBER, position.pageSize)
         val packageMap = packages.associateBy { it.fullPath }
         nodes.forEach {
             val pkg = packageMap[it.fullPath]!!

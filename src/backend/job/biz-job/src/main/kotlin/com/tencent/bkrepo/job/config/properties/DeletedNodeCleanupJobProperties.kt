@@ -33,5 +33,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(value = "job.deleted-node-cleanup")
 class DeletedNodeCleanupJobProperties(
     override var cron: String = "0 0 2/6 * * ?",
-    var deletedNodeReserveDays: Long = 15L
+    override var sharding: Boolean = true,
+    var deletedNodeReserveDays: Long = 15L,
+    /**
+     * 保留引用丢失的node天数
+     */
+    var keepRefLostNodeDays: Long = 16L,
 ) : MongodbJobProperties()

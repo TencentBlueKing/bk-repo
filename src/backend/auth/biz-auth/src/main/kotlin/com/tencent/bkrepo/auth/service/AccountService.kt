@@ -42,29 +42,33 @@ interface AccountService {
 
     fun listAccount(): List<Account>
 
-    fun listOwnAccount(): List<Account>
+    fun listOwnAccount(userId: String): List<Account>
 
-    fun listAuthorizedAccount(): List<Account>
+    fun listAuthorizedAccount(userId: String): List<Account>
 
-    fun findAccountByAppId(appId: String): Account
+    fun findAccountByAppId(appId: String, userId: String): Account
 
-    fun createAccount(request: CreateAccountRequest): Account
+    fun createAccount(request: CreateAccountRequest, owner: String): Account
 
-    fun deleteAccount(appId: String): Boolean
+    fun deleteAccount(appId: String, userId: String): Boolean
 
-    fun uninstallAccount(appId: String)
+    fun uninstallAccount(appId: String, userId: String)
 
-    fun updateAccount(request: UpdateAccountRequest): Boolean
+    fun updateAccount(request: UpdateAccountRequest, userId: String): Boolean
 
-    fun createCredential(appId: String, type: AuthorizationGrantType): CredentialSet
+    fun createCredential(appId: String, type: AuthorizationGrantType, userId: String): CredentialSet
 
-    fun listCredentials(appId: String): List<CredentialSet>
+    fun listCredentials(appId: String, userId: String): List<CredentialSet>
 
-    fun deleteCredential(appId: String, accessKey: String): Boolean
+    fun deleteCredential(appId: String, accessKey: String, userId: String): Boolean
 
     fun updateCredentialStatus(appId: String, accessKey: String, status: CredentialStatus): Boolean
 
-    fun checkCredential(accessKey: String, secretKey: String): String?
+    fun checkCredential(
+        accessKey: String,
+        secretKey: String,
+        authorizationGrantType: AuthorizationGrantType? = null
+    ): String?
 
     fun findSecretKey(appId: String, accessKey: String): String?
 }

@@ -29,7 +29,7 @@ package com.tencent.bkrepo.opdata.controller
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
+import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -65,7 +65,7 @@ class NodeController(
     }
 
     /**
-     * 获取当前仓库目录下的空目录列表
+     * 删除当前仓库目录下的空目录列表
      */
     @DeleteMapping("/emptyFolders/{projectId}/{repoName}")
     @LogOperate(type = "EMPTY_FOLDER_DELETE")

@@ -1,73 +1,48 @@
 <template>
     <canway-dialog
         v-model="show"
-        width="800"
+        width="900"
         height-num="603"
         :title="title"
         @cancel="cancel">
         <bk-form class="mr10 repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
             <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
                 <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
-                    <bk-radio-button v-for="repo in repoEnum" :key="repo" :value="repo">
+                    <bk-radio-button v-for="repo in repoEnum" :key="repo.label" :value="repo.value">
                         <div class="flex-column flex-center repo-type-radio">
-                            <Icon size="32" :name="repo" />
-                            <span>{{repo}}</span>
+                            <Icon size="32" :name="repo.value" />
+                            <span>{{repo.label}}</span>
                         </div>
                     </bk-radio-button>
                 </bk-radio-group>
             </bk-form-item>
             <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
-                <bk-input style="width:400px" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
+                <bk-input class="w480" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
                     :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder')">
                 </bk-input>
                 <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
             </bk-form-item>
             <bk-form-item :label="$t('accessPermission')">
                 <card-radio-group
+                    class="permission-card"
                     v-model="available"
                     :list="availableList">
                 </card-radio-group>
             </bk-form-item>
             <bk-form-item :label="$t('isDisplay')">
                 <bk-radio-group v-model="repoBaseInfo.display">
+                    <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
+                    <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
+                </bk-radio-group>
+            </bk-form-item>
+            <bk-form-item
+                :label="$t('bkPermissionCheck')"
+                v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
+                <bk-radio-group v-model="bkiamv3Check">
                     <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
                     <bk-radio :value="false">{{ $t('close') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <template v-if="repoBaseInfo.type === 'generic'">
-                <bk-form-item v-for="type in genericInterceptorsList" :key="type"
-                    :label="$t(`${type}Download`)" :property="`${type}.enable`">
-                    <bk-radio-group v-model="repoBaseInfo[type].enable">
-                        <bk-radio class="mr20" :value="true">{{ $t('open') }}</bk-radio>
-                        <bk-radio :value="false">{{ $t('close') }}</bk-radio>
-                    </bk-radio-group>
-                    <template v-if="repoBaseInfo[type].enable && ['mobile', 'web'].includes(type)">
-                        <bk-form-item :label="$t('fileName')" :label-width="60" class="mt10"
-                            :property="`${type}.filename`" required error-display-type="normal">
-                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].filename"></bk-input>
-                            <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('fileNameRule')"></i>
-                        </bk-form-item>
-                        <bk-form-item :label="$t('metadata')" :label-width="60"
-                            :property="`${type}.metadata`" required error-display-type="normal">
-                            <bk-input class="w250" v-model.trim="repoBaseInfo[type].metadata" :placeholder="$t('metadataRule')"></bk-input>
-                            <a class="f12 ml5" href="https://docs.bkci.net/services/bkrepo/meta" target="__blank">{{ $t('viewMetadataDocument') }}</a>
-                        </bk-form-item>
-                    </template>
-                    <template v-if="repoBaseInfo[type].enable && type === 'ip_segment'">
-                        <bk-form-item :label="$t('IP')" :label-width="150" class="mt10"
-                            :property="`${type}.ipSegment`" :required="!repoBaseInfo[type].officeNetwork" error-display-type="normal">
-                            <bk-input class="w250 mr10" v-model.trim="repoBaseInfo[type].ipSegment" :placeholder="$t('ipPlaceholder')" :maxlength="4096"></bk-input>
-                            <bk-checkbox v-model="repoBaseInfo[type].officeNetwork">{{ $t('office_networkDownload') }}</bk-checkbox>
-                            <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('office_networkDownloadTips')"></i>
-                        </bk-form-item>
-                        <bk-form-item :label="$t('whiteUser')" :label-width="150"
-                            :property="`${type}.whitelistUser`" error-display-type="normal">
-                            <bk-input v-if="isCommunity" class="w250" v-model.trim="repoBaseInfo[type].whitelistUser" :placeholder="$t('whiteUserPlaceholder')"></bk-input>
-                            <bk-member-selector v-else v-model="repoBaseInfo[type].whitelistUser" class="w250" :placeholder="$t('whiteUserPlaceholder')"></bk-member-selector>
-                        </bk-form-item>
-                    </template>
-                </bk-form-item>
-            </template>
             <template v-if="repoBaseInfo.type === 'rpm'">
                 <bk-form-item :label="$t('enabledFileLists')">
                     <bk-checkbox v-model="repoBaseInfo.enabledFileLists"></bk-checkbox>
@@ -106,12 +81,14 @@
             <bk-button @click="cancel">{{$t('cancel')}}</bk-button>
             <bk-button class="ml10" :loading="loading" theme="primary" @click="confirm">{{$t('confirm')}}</bk-button>
         </template>
+        <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
     </canway-dialog>
 </template>
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
-    import { repoEnum } from '@repository/store/publicEnum'
-    import { mapActions } from 'vuex'
+    import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
+    import { repoEnum, specialRepoEnum } from '@repository/store/publicEnum'
+    import { mapActions, mapState } from 'vuex'
 
     const getRepoBaseInfo = () => {
         return {
@@ -146,65 +123,27 @@
 
     export default {
         name: 'createRepo',
-        components: { CardRadioGroup },
+        components: { CardRadioGroup, iamDenyDialog },
         data () {
             return {
                 repoEnum,
+                specialRepoEnum,
                 show: false,
                 loading: false,
                 repoBaseInfo: getRepoBaseInfo(),
-                title: this.$t('createRepository')
+                showIamDenyDialog: false,
+                showData: {},
+                title: this.$t('createRepository'),
+                accessControl: 'DEFAULT',
+                bkiamv3Check: false
             }
         },
         computed: {
+            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
-            isCommunity () {
-                // 是否为社区版
-                return RELEASE_MODE === 'community'
-            },
-            genericInterceptorsList () {
-                return this.isCommunity ? ['mobile', 'web'] : ['mobile', 'web', 'ip_segment']
-            },
             rules () {
-                const filenameRule = [
-                    {
-                        required: true,
-                        message: this.$t('pleaseFileName'),
-                        trigger: 'blur'
-                    }
-                ]
-                const metadataRule = [
-                    {
-                        required: true,
-                        message: this.$t('pleaseMetadata'),
-                        trigger: 'blur'
-                    },
-                    {
-                        regex: /^[^\s]+:[^\s]+/,
-                        message: this.$t('metadataRule'),
-                        trigger: 'blur'
-                    }
-                ]
-                const ipSegmentRule = [
-                    {
-                        required: true,
-                        message: this.$t('pleaseIpSegment'),
-                        trigger: 'blur'
-                    },
-                    {
-                        validator: function (val) {
-                            const ipList = val.split(',')
-                            return ipList.every(ip => {
-                                if (!ip) return true
-                                return ipList.every(ip => /(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\b\/([0-9]|[1-2][0-9]|3[0-2])\b)/.test(ip))
-                            })
-                        },
-                        message: this.$t('ipSegmentRule'),
-                        trigger: 'blur'
-                    }
-                ]
                 return {
                     type: [
                         {
@@ -247,41 +186,58 @@
                             message: this.$t('pleaseInput') + this.$t('legit') + this.$t('groupXmlSet') + `(.xml${this.$t('type')})`,
                             trigger: 'change'
                         }
-                    ],
-                    'mobile.filename': filenameRule,
-                    'mobile.metadata': metadataRule,
-                    'web.filename': filenameRule,
-                    'web.metadata': metadataRule,
-                    'ip_segment.ipSegment': this.repoBaseInfo.ip_segment.officeNetwork ? {} : ipSegmentRule
+                    ]
                 }
             },
             available: {
                 get () {
                     if (this.repoBaseInfo.public) return 'public'
-                    if (this.repoBaseInfo.system) return 'system'
-                    return 'project'
+                    if (this.accessControl === 'DIR_CTRL') return 'folder'
+                    if (this.accessControl === 'STRICT') return 'strict'
+                    return 'default'
                 },
                 set (val) {
-                    this.repoBaseInfo.public = val === 'public'
-                    this.repoBaseInfo.system = val === 'system'
+                    if (val === 'public') {
+                        this.repoBaseInfo.public = true
+                        this.accessControl = null
+                    } else if (val === 'folder') {
+                        this.repoBaseInfo.public = false
+                        this.accessControl = 'DIR_CTRL'
+                    } else if (val === 'strict') {
+                        this.repoBaseInfo.public = false
+                        this.accessControl = 'STRICT'
+                    } else {
+                        this.repoBaseInfo.public = false
+                        this.accessControl = 'DEFAULT'
+                    }
                 }
             },
             availableList () {
-                return [
-                    { label: this.$t('openProjectLabel'), value: 'project', tip: this.$t('openProjectTip') },
-                    // { label: '系统内公开', value: 'system', tip: '系统内成员可以使用' },
-                    { label: this.$t('openPublicLabel'), value: 'public', tip: this.$t('openPublicTip') }
-                ]
+                if (this.repoBaseInfo.type === 'generic' || this.repoBaseInfo.type === 'ddc') {
+                    return [
+                        { label: this.$t('permissionTitle.default'), value: 'default', tip: this.$t('permissionTip.default') },
+                        { label: this.$t('permissionTitle.strict'), value: 'strict', tip: this.$t('permissionTip.strict') },
+                        { label: this.$t('permissionTitle.folder'), value: 'folder', tip: this.$t('permissionTip.folder') },
+                        { label: this.$t('permissionTitle.public'), value: 'public', tip: this.$t('permissionTip.public') }
+                    ]
+                } else {
+                    this.accessControl = 'DEFAULT'
+                    return [
+                        { label: this.$t('permissionTitle.default'), value: 'default', tip: this.$t('permissionTip.default') },
+                        { label: this.$t('permissionTitle.public'), value: 'public', tip: this.$t('permissionTip.public') }
+                    ]
+                }
             }
         },
         methods: {
-            ...mapActions(['createRepo', 'checkRepoName']),
+            ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'createOrUpdateRootPermission']),
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
                 this.$refs.repoBaseInfo && this.$refs.repoBaseInfo.clearError()
             },
             cancel () {
+                this.accessControl = 'DEFAULT'
                 this.show = false
             },
             asynCheckRepoName () {
@@ -296,54 +252,75 @@
             },
             async confirm () {
                 await this.$refs.repoBaseInfo.validate()
-                const interceptors = []
-                if (this.repoBaseInfo.type === 'generic') {
-                    ['mobile', 'web', 'ip_segment'].forEach(type => {
-                        const { enable, filename, metadata, ipSegment, whitelistUser, officeNetwork } = this.repoBaseInfo[type]
-                        if (['mobile', 'web'].includes(type)) {
-                            enable && interceptors.push({
-                                type: type.toUpperCase(),
-                                rules: { filename, metadata }
-                            })
-                        } else {
-                            enable && interceptors.push({
-                                type: type.toUpperCase(),
-                                rules: {
-                                    ipSegment: ipSegment.split(','),
-                                    whitelistUser: this.isCommunity ? whitelistUser.split(',') : whitelistUser,
-                                    officeNetwork
-                                }
-                            })
+                const body = {
+                    projectId: this.projectId,
+                    type: this.repoBaseInfo.type.toUpperCase(),
+                    name: this.repoBaseInfo.name,
+                    public: this.repoBaseInfo.public,
+                    display: this.repoBaseInfo.display,
+                    description: this.repoBaseInfo.description,
+                    category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
+                    configuration: {
+                        type: this.repoBaseInfo.type === 'generic' ? 'local' : 'composite',
+                        settings: {
+                            system: this.repoBaseInfo.system,
+                            interceptors: undefined,
+                            ...(
+                                this.repoBaseInfo.type === 'rpm'
+                                    ? {
+                                        enabledFileLists: this.repoBaseInfo.enabledFileLists,
+                                        repodataDepth: this.repoBaseInfo.repodataDepth,
+                                        groupXmlSet: this.repoBaseInfo.groupXmlSet
+                                    }
+                                    : {}
+                            )
                         }
-                    })
+                    }
                 }
                 this.loading = true
                 this.createRepo({
-                    body: {
-                        projectId: this.projectId,
-                        type: this.repoBaseInfo.type.toUpperCase(),
-                        name: this.repoBaseInfo.name,
-                        public: this.repoBaseInfo.public,
-                        display: this.repoBaseInfo.display,
-                        description: this.repoBaseInfo.description,
-                        category: this.repoBaseInfo.type === 'generic' ? 'LOCAL' : 'COMPOSITE',
-                        configuration: {
-                            type: 'composite',
-                            settings: {
-                                system: this.repoBaseInfo.system,
-                                interceptors: interceptors.length ? interceptors : undefined,
-                                ...(
-                                    this.repoBaseInfo.type === 'rpm'
-                                        ? {
-                                            enabledFileLists: this.repoBaseInfo.enabledFileLists,
-                                            repodataDepth: this.repoBaseInfo.repodataDepth,
-                                            groupXmlSet: this.repoBaseInfo.groupXmlSet
-                                        }
-                                        : {}
-                                )
+                    body: body
+                }).then(() => {
+                    this.saveRepoMode()
+                }).catch(err => {
+                    if (err.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'WRITE',
+                                resourceType: 'PROJECT',
+                                uid: this.userInfo.name
                             }
-                        }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
+                                    projectId: this.projectId,
+                                    repoName: '',
+                                    action: 'WRITE',
+                                    url: res
+                                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: err.message
+                                })
+                            }
+                        })
                     }
+                }).finally(() => {
+                    this.loading = false
+                })
+            },
+            saveRepoMode () {
+                const body = {
+                    projectId: this.projectId,
+                    repoName: this.repoBaseInfo.name,
+                    accessControlMode: this.accessControl,
+                    bkiamv3Check: this.bkiamv3Check
+                }
+                this.createOrUpdateRootPermission({
+                    body: body
                 }).then(() => {
                     this.$bkMessage({
                         theme: 'success',
@@ -351,8 +328,13 @@
                     })
                     this.cancel()
                     this.$emit('refresh')
-                }).finally(() => {
-                    this.loading = false
+                }).catch(() => {
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: this.$t('create') + this.$t('space') + this.$t('repository') + this.$t('space') + this.$t('abnormal')
+                    })
+                    this.cancel()
+                    this.$emit('refresh')
                 })
             }
         }
@@ -379,6 +361,33 @@
             padding: 5px;
             width: 80px;
             height: 60px;
+        }
+    }
+    .member-selector{
+        ::v-deep.bk-tag-selector .bk-tag-input {
+            height: auto;
+        }
+        width: 250px;
+    }
+    .permission-card {
+        ::v-deep .bk-form-radio-button {
+            margin-top: 10px;
+            .card-radio {
+                min-width: 180px;
+                max-width: 315px;
+                height: 90px;
+                .card-tip {
+                    word-break: break-all;
+                    white-space: normal;
+                    width: 300px;
+                }
+            }
+            .bk-radio-button-text {
+                height: auto;
+                line-height: initial;
+                padding: 0;
+                border: 0 none;
+            }
         }
     }
 }

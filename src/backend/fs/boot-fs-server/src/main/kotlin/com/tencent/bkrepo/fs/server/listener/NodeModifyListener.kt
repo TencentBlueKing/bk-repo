@@ -1,24 +1,23 @@
 package com.tencent.bkrepo.fs.server.listener
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.fs.server.api.RRepositoryClient
 import com.tencent.bkrepo.fs.server.service.FileNodeService
-import kotlinx.coroutines.reactor.awaitSingle
+import com.tencent.bkrepo.fs.server.service.node.RNodeService
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
 import java.util.concurrent.Executors
-import java.util.function.Consumer
 
-@Component("artifactEventFs")
+@Component
 class NodeModifyListener(
-    private val rRepositoryClient: RRepositoryClient,
-    private val fileNodeService: FileNodeService
-) : Consumer<Message<ArtifactEvent>> {
+    private val fileNodeService: FileNodeService,
+    private val nodeService: RNodeService
+) {
 
-    override fun accept(message: Message<ArtifactEvent>) {
+    fun accept(message: Message<ArtifactEvent>) {
         val event = message.payload
         val type = event.type
         // 覆盖创建也会先删除，再创建。所以这里只需关注删除事件即可。
@@ -31,7 +30,7 @@ class NodeModifyListener(
     private fun consumer(event: ArtifactEvent) {
         runBlocking {
             with(event) {
-                val node = rRepositoryClient.getNodeDetail(projectId, repoName, resourceKey).awaitSingle().data
+                val node = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, resourceKey))
                 if (node?.folder != true) {
                     fileNodeService.deleteNodeBlocks(projectId, repoName, resourceKey)
                 }

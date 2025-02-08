@@ -35,18 +35,23 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.operation.CleanupOperation
+import com.tencent.bkrepo.common.storage.core.operation.CompressOperation
 import com.tencent.bkrepo.common.storage.core.operation.FileBlockOperation
 import com.tencent.bkrepo.common.storage.core.operation.HealthCheckOperation
 import com.tencent.bkrepo.common.storage.core.operation.OverlayOperation
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
 import java.nio.file.Path
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 存储服务接口
  */
-interface StorageService : OverlayOperation, FileBlockOperation, HealthCheckOperation, CleanupOperation {
+interface StorageService :
+    CompressOperation,
+    OverlayOperation,
+    FileBlockOperation,
+    HealthCheckOperation,
+    CleanupOperation {
     /**
      * 在存储实例[storageCredentials]上存储摘要为[digest]的构件[artifactFile]
      * 返回文件影响数，如果文件已经存在则返回0，否则返回1
@@ -55,12 +60,15 @@ interface StorageService : OverlayOperation, FileBlockOperation, HealthCheckOper
         digest: String,
         artifactFile: ArtifactFile,
         storageCredentials: StorageCredentials?,
-        cancel: AtomicBoolean? = null
+        storageClass: String? = null,
     ): Int
 
     /**
      * 在存储实例[storageCredentials]上加载摘要为[digest]的文件
      * 当文件未找到时，会尝试去默认存储实例上查找文件
+     *
+     * 注意：该方法只会从指定存储[storageCredentials]中加载文件，如果文件正在迁移中还在旧存储或者存在于其他集群该方法会加载失败，
+     * 此时需要考虑使用[com.tencent.bkrepo.common.artifact.manager.StorageManager]中加载方法
      */
     fun load(digest: String, range: Range, storageCredentials: StorageCredentials?): ArtifactInputStream?
 
@@ -86,6 +94,16 @@ interface StorageService : OverlayOperation, FileBlockOperation, HealthCheckOper
      * 检验缓存文件一致性
      */
     fun synchronizeFile(storageCredentials: StorageCredentials? = null): SynchronizeResult
+
+    /**
+     * 检查文件是否恢复
+     * */
+    fun checkRestore(digest: String, storageCredentials: StorageCredentials?): Boolean
+
+    /**
+     * 恢复归档文件
+     * */
+    fun restore(digest: String, days: Int, tier: String, storageCredentials: StorageCredentials?)
 
     /**
      * 获取临时目录

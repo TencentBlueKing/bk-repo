@@ -35,22 +35,17 @@ import okhttp3.MediaType
 import okhttp3.RequestBody
 import okio.BufferedSink
 import okio.source
-import java.io.IOException
 import java.io.InputStream
 
 class InputStreamRequestBody(
-    private val inputStream: InputStream
+    private val inputStream: InputStream,
+    private val size: Long
 ) : RequestBody() {
 
     override fun contentType(): MediaType? = null
 
     override fun contentLength(): Long {
-        return try {
-            inputStream.available().toLong()
-        } catch (exception: IOException) {
-            // 捕获IOException，防止okhttp无限重试
-            throw IllegalStateException("Unable to get available size of input", exception)
-        }
+        return size
     }
 
     override fun writeTo(sink: BufferedSink) {

@@ -27,11 +27,14 @@
 
 package com.tencent.bkrepo.fs.server.context
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.StringPool
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.http.server.reactive.ServerHttpResponse
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
+import java.util.StringTokenizer
 
 object ReactiveRequestContextHolder {
 
@@ -53,6 +56,28 @@ object ReactiveRequestContextHolder {
         return Mono.deferContextual {
             Mono.just(it.get(REQUEST_CONTEXT_KEY))
         }.awaitSingle().exchange
+    }
+
+    suspend fun getClientAddress(): String {
+        val request = getRequest()
+        val headers = request.headers
+        var address = headers[HttpHeaders.X_FORWARDED_FOR]?.first()
+        address = if (address.isNullOrBlank()) {
+            headers[HttpHeaders.X_REAL_IP]?.first()
+        } else {
+            StringTokenizer(address, StringPool.COMMA).nextToken()
+        }
+        if (address.isNullOrBlank()) {
+            address = headers[HttpHeaders.PROXY_CLIENT_IP]?.first()
+        }
+        if (address.isNullOrBlank()) {
+            address = request.remoteAddress?.address?.hostAddress
+        }
+        if (address.isNullOrBlank()) {
+            address = StringPool.UNKNOWN
+        }
+        // 对于通过多个代理的情况，第一个IP为客户端真实IP，多个IP按照','分割
+        return address
     }
 
     fun getWebExchangeMono(): Mono<ServerWebExchange> {

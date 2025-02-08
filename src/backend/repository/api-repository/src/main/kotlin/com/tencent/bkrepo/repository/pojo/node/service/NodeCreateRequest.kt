@@ -73,5 +73,7 @@ data class NodeCreateRequest(
     override val createdBy: String? = null,
     override var createdDate: LocalDateTime? = null,
     override val lastModifiedBy: String? = null,
-    override var lastModifiedDate: LocalDateTime? = null
+    override var lastModifiedDate: LocalDateTime? = null,
+    @ApiModelProperty("是否SEPARATE_UPLOAD")
+    val separate: Boolean = false
 ) : NodeRequest, ServiceRequest, AuditableRequest

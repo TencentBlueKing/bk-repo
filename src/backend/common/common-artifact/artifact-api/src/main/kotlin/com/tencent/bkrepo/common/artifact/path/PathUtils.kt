@@ -208,6 +208,19 @@ object PathUtils {
     }
 
     /**
+     * 获取当前路径的所有上级目录列表
+     */
+    fun resolveAncestorFolder(fullPath: String): List<String> {
+        return resolveAncestor(fullPath).map {
+            if (it != ROOT) {
+                it.removeSuffix(StringPool.SLASH)
+            } else {
+                it
+            }
+        }
+    }
+
+    /**
      * 根据fullPath解析文件名称，返回格式abc.txt
      *
      * /a/b/c -> c
@@ -280,6 +293,29 @@ object PathUtils {
             }
         }
         return commonPath.ensureSuffix(StringPool.SLASH)
+    }
+
+    /**
+     * 提取多个全路径的公共父目录
+     *
+     * [/a/b/c, /a/b/d] -> /a/b/
+     * [/a/b, /c]       -> /
+     * [/a/b/c]         -> /a/b/
+     */
+    fun getCommonParentPath(fullPaths: List<String>): String {
+        require(fullPaths.isNotEmpty())
+        val parents = fullPaths.distinct().map { resolveParent(it) }
+        val splitPaths = parents.map { path -> path.split(StringPool.SLASH).filter { it.isNotBlank() } }
+        val commonSplitPath = splitPaths.reduce { common, splitPath ->
+            common.onEachIndexed { index, segment ->
+                if (index >= splitPath.size || segment != splitPath[index]) {
+                    return@reduce common.take(index)
+                }
+            }
+        }
+        return if (commonSplitPath.isEmpty()) StringPool.ROOT else {
+            commonSplitPath.joinToString(StringPool.SLASH, StringPool.SLASH, StringPool.SLASH)
+        }
     }
 
     /**

@@ -34,7 +34,7 @@ import com.tencent.bkrepo.analyst.pojo.request.CreateScanPlanRequest
 import com.tencent.bkrepo.analyst.pojo.request.PlanCountRequest
 import com.tencent.bkrepo.analyst.pojo.request.SubtaskInfoRequest
 import com.tencent.bkrepo.analyst.pojo.request.UpdateScanPlanRequest
-import com.tencent.bkrepo.analyst.pojo.response.ArtifactPlanRelation
+import com.tencent.bkrepo.analyst.pojo.response.ArtifactPlanRelations
 import com.tencent.bkrepo.analyst.pojo.response.ScanLicensePlanInfo
 import com.tencent.bkrepo.analyst.pojo.response.ScanPlanInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
@@ -43,13 +43,11 @@ import com.tencent.bkrepo.analyst.service.ScanPlanService
 import com.tencent.bkrepo.analyst.service.ScanTaskService
 import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -84,7 +82,6 @@ class UserScanPlanController(
 
     @ApiOperation("查询扫描方案基础信息")
     @GetMapping("/detail/{projectId}/{id}")
-    @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
     fun getScanPlan(
         @ApiParam(value = "projectId")
         @PathVariable
@@ -93,18 +90,19 @@ class UserScanPlanController(
         @PathVariable
         id: String
     ): Response<ScanPlan?> {
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE)
         return ResponseBuilder.success(scanPlanService.find(projectId, id))
     }
 
     @ApiOperation("删除扫描方案")
     @DeleteMapping("/delete/{projectId}/{id}")
-    @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
     fun deleteScanPlan(
         @ApiParam(value = "projectId")
         @PathVariable projectId: String,
         @ApiParam(value = "方案id")
         @PathVariable id: String
     ): Response<Boolean> {
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE)
         scanPlanService.delete(projectId, id)
         return ResponseBuilder.success(true)
     }
@@ -118,7 +116,6 @@ class UserScanPlanController(
 
     @ApiOperation("扫描方案列表-分页")
     @GetMapping("/list/{projectId}")
-    @Permission(ResourceType.PROJECT, PermissionAction.MANAGE)
     fun scanPlanList(
         @ApiParam(value = "projectId", required = true)
         @PathVariable
@@ -136,6 +133,7 @@ class UserScanPlanController(
         @RequestParam(required = false, defaultValue = DEFAULT_PAGE_SIZE.toString())
         pageSize: Int = DEFAULT_PAGE_SIZE
     ): Response<Page<ScanPlanInfo>> {
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.MANAGE)
         val page = scanPlanService.page(
             projectId = projectId, type = type, planNameContains = name, pageLimit = PageLimit(pageNumber, pageSize)
         )
@@ -144,7 +142,6 @@ class UserScanPlanController(
 
     @ApiOperation("所有扫描方案")
     @GetMapping("/all/{projectId}")
-    @Permission(ResourceType.PROJECT, PermissionAction.READ)
     fun scanPlanList(
         @ApiParam(value = "projectId", required = true)
         @PathVariable
@@ -156,6 +153,7 @@ class UserScanPlanController(
         @RequestParam(required = false)
         fileNameExt: String? = null
     ): Response<List<ScanPlan>> {
+        permissionCheckHandler.checkProjectPermission(projectId, PermissionAction.READ)
         val planList = scanPlanService.list(projectId, type, fileNameExt)
         planList.forEach { ScanPlanConverter.keepProps(it, KEEP_PROPS) }
         return ResponseBuilder.success(planList)
@@ -186,11 +184,18 @@ class UserScanPlanController(
         )
     }
 
+    @ApiOperation("扫描方案数据导出")
+    @GetMapping("/export")
+    fun planScanRecordExport(subtaskInfoRequest: SubtaskInfoRequest) {
+        permissionCheckHandler.checkProjectPermission(subtaskInfoRequest.projectId, PermissionAction.MANAGE)
+        scanTaskService.exportScanPlanRecords(ScanPlanConverter.convert(subtaskInfoRequest))
+    }
+
     @ApiOperation("文件/包关联的扫描方案列表")
     @GetMapping("/relation/artifact")
     fun artifactPlanList(
         artifactRequest: ArtifactPlanRelationRequest
-    ): Response<List<ArtifactPlanRelation>> {
+    ): Response<ArtifactPlanRelations> {
         return ResponseBuilder.success(scanPlanService.artifactPlanList(artifactRequest))
     }
 

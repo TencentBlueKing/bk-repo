@@ -1,14 +1,16 @@
 <template>
     <div class="container">
         <artifact-info :scan-types="scanTypes" :subtask-overview="subtaskOverview"></artifact-info>
-        <bk-tab type="unborder-card" style="width: 100%;height: 100%">
+        <bk-tab type="unborder-card" class="arti-tab">
             <bk-tab-panel v-for="(panel, index) in panels" v-bind="panel" :key="index" style="height: 100%">
                 <component
                     @rescan="rescan"
                     :subtask-overview="subtaskOverview"
                     :project-id="projectId"
                     :view-type="viewType"
-                    :is="panel.component" style="height: 100%"></component>
+                    :is="panel.component"
+                    style="height: 100%">
+                </component>
             </bk-tab-panel>
         </bk-tab>
     </div>
@@ -100,8 +102,8 @@
                 const { scanType, scanName } = this.$route.query
                 this.$router.push({
                     name: 'scanReport',
-                    params: { projectId: this.projectId, planId: this.planId },
-                    query: { viewType: this.viewType, scanType: scanType, scanName: scanName }
+                    params: { ...this.$route.params, projectId: this.projectId, planId: this.planId },
+                    query: { ...this.$route.query, viewType: this.viewType, scanType: scanType, scanName: scanName }
                 })
             },
             backToRepo () {
@@ -109,13 +111,14 @@
                 this.$router.push({
                     name: this.subtaskOverview.packageKey ? 'commonPackage' : 'repoGeneric',
                     params: {
+                        ...this.$route.params,
                         projectId: this.projectId,
                         repoType: this.subtaskOverview.repoType?.toLowerCase()
                     },
                     query: (
                         this.subtaskOverview.packageKey
-                            ? { repoName: this.subtaskOverview.repoName, packageKey, version }
-                            : { repoName: this.subtaskOverview.repoName, path }
+                            ? { ...this.$route.query, repoName: this.subtaskOverview.repoName, packageKey, version }
+                            : { ...this.$route.query, repoName: this.subtaskOverview.repoName, path }
                     )
                 })
             }
@@ -134,6 +137,10 @@
     ::v-deep .bk-tab-section {
         height: 100%;
         padding-right: 0;
+    }
+    .arti-tab{
+        width: calc(100% - 334px);
+        height: 100%;
     }
 }
 </style>

@@ -35,14 +35,15 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.ApplicationEventPublisher
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 抽象存储服务辅助类
@@ -61,6 +62,9 @@ abstract class AbstractStorageSupport : StorageService {
 
     @Autowired
     protected lateinit var monitorHelper: StorageHealthMonitorHelper
+
+    @Autowired
+    protected lateinit var publisher: ApplicationEventPublisher
 
     /**
      * 根据[storageCredentials]获取实际存储凭证，当storageCredentials为`null`则使用默认存储
@@ -101,7 +105,7 @@ abstract class AbstractStorageSupport : StorageService {
         filename: String,
         artifactFile: ArtifactFile,
         credentials: StorageCredentials,
-        cancel: AtomicBoolean? = null
+        storageClass: String? = null,
     )
 
     /**
@@ -111,7 +115,7 @@ abstract class AbstractStorageSupport : StorageService {
         path: String,
         filename: String,
         range: Range,
-        credentials: StorageCredentials
+        credentials: StorageCredentials,
     ): ArtifactInputStream?
 
     /**
@@ -123,4 +127,20 @@ abstract class AbstractStorageSupport : StorageService {
      * 实际判断文件存在抽象方法
      */
     protected abstract fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean
+
+    /**
+     * 实际检查文件是否恢复
+     * */
+    protected abstract fun doCheckRestore(path: String, filename: String, credentials: StorageCredentials): Boolean
+
+    /**
+     * 实际恢复文件
+     * */
+    protected abstract fun doRestore(
+        path: String,
+        filename: String,
+        days: Int,
+        tier: String,
+        credentials: StorageCredentials,
+    )
 }

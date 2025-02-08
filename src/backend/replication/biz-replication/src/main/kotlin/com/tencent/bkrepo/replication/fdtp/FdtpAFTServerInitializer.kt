@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.replication.fdtp
 
 import com.tencent.bkrepo.fdtp.codec.FdtpServerCodec
+import com.tencent.bkrepo.udt.netty.transport.UdtChannel
 import io.netty.channel.ChannelInitializer
-import io.netty.channel.udt.UdtChannel
 import io.netty.handler.ssl.SslContext
 import io.netty.handler.timeout.IdleStateHandler
 
@@ -47,6 +47,7 @@ class FdtpAFTServerInitializer(
         pipeline.addLast(IdleStateHandler(0, 0, MAX_IDLE_TIME_IN_SECONDS))
             .addLast(FdtpAFTServerAuthHandler(fdtpAuthManager))
             .addLast(FdtpServerCodec())
+            .addLast(FdtpTracingHandler())
             .addLast(FdtpAFTServerHandler(requestHandler))
     }
 

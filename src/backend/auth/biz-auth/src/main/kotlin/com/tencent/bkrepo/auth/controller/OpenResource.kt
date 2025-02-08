@@ -35,34 +35,67 @@ import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.enums.AuthPermissionType
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.service.PermissionService
+import com.tencent.bkrepo.common.api.constant.ADMIN_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.slf4j.LoggerFactory
 
 open class OpenResource(private val permissionService: PermissionService) {
 
     /**
      * the userContext should equal userId or be admin
+     * only use in user api
      */
     fun preCheckContextUser(userId: String) {
         val userContext = SecurityUtils.getUserId()
-        if (!SecurityUtils.isAdmin() && userContext.isNotEmpty() && userContext != userId) {
+        if (!isAdminFromApi() && userContext.isNotEmpty() && userContext != userId) {
             logger.warn("user not match [$userContext, $userId]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
 
     /**
+     * 是否系统管理员
+     * 限定在auth服务api请求时使用
+     */
+    private fun isAdminFromApi(): Boolean {
+        return HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
+    }
+
+    /**
+     *  userId's assetUsers contain userContext or userContext be admin
+     */
+    fun preCheckUserOrAssetUser(userId: String, users: List<UserInfo>) {
+        if (!users.any { userInfo -> userInfo.userId == userId }) {
+            preCheckContextUser(userId)
+        }
+    }
+
+    /**
      * the userContext should be admin
+     * only use in user api
      */
     fun preCheckUserAdmin() {
         val userContext = SecurityUtils.getUserId()
-        if (!SecurityUtils.isAdmin()) {
+        if (!isAdminFromApi()) {
             logger.warn("user not match admin [$userContext]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
+        }
+    }
+
+    /**
+     * the userContext should be admin
+     * only use in user api
+     */
+    fun preCheckGrantTypes(grantTypes: Set<AuthorizationGrantType>) {
+        if (grantTypes.contains(AuthorizationGrantType.PLATFORM) || grantTypes.isEmpty()) {
+            preCheckUserAdmin()
         }
     }
 
@@ -70,12 +103,18 @@ open class OpenResource(private val permissionService: PermissionService) {
      * only system scopeType account have the permission
      */
     fun preCheckPlatformPermission() {
+        val appId = SecurityUtils.getPlatformId()
+        if (appId.isNullOrEmpty()) {
+            logger.warn("appId can not be empty [$appId]")
+            throw ErrorCodeException(AuthMessageCode.AUTH_ACCOUT_FORAUTH_NOT_PERM)
+        }
         val request = CheckPermissionRequest(
             uid = SecurityUtils.getUserId(),
-            appId = SecurityUtils.getPlatformId(),
+            appId = appId,
             resourceType = ResourceType.SYSTEM.name,
             action = PermissionAction.MANAGE.name
         )
+
         if (!permissionService.checkPlatformPermission(request)) {
             logger.warn("account do not have the permission [$request]")
             throw ErrorCodeException(AuthMessageCode.AUTH_ACCOUT_FORAUTH_NOT_PERM)
@@ -88,14 +127,14 @@ open class OpenResource(private val permissionService: PermissionService) {
     fun preCheckUserInProject(type: AuthPermissionType, projectId: String, repoName: String?) {
         val checkRequest = CheckPermissionRequest(
             uid = SecurityUtils.getUserId(),
-            resourceType = ResourceType.PROJECT.toString(),
-            action = PermissionAction.WRITE.toString(),
+            resourceType = ResourceType.PROJECT.name,
+            action = PermissionAction.WRITE.name,
             projectId = projectId,
             appId = SecurityUtils.getPlatformId()
         )
         if (type == AuthPermissionType.REPO) {
             checkRequest.repoName = repoName
-            checkRequest.resourceType = ResourceType.REPO.toString()
+            checkRequest.resourceType = ResourceType.REPO.name
         }
         if (!permissionService.checkPermission(checkRequest)) {
             logger.warn("check user permission error [$checkRequest]")
@@ -110,15 +149,16 @@ open class OpenResource(private val permissionService: PermissionService) {
         val userId = SecurityUtils.getUserId()
         val checkRequest = CheckPermissionRequest(
             uid = userId,
-            resourceType = ResourceType.PROJECT.toString(),
+            resourceType = ResourceType.PROJECT.name,
             projectId = projectId,
-            action = PermissionAction.MANAGE.toString()
+            action = PermissionAction.MANAGE.name
         )
         if (!permissionService.checkPermission(checkRequest)) {
             logger.warn("user is not project admin [$checkRequest]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
+
 
     fun isContextUserProjectAdmin(projectId: String): Boolean {
         val userId = SecurityUtils.getUserId()

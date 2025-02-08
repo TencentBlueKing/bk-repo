@@ -34,8 +34,10 @@ package com.tencent.bkrepo.auth.controller.service
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -44,6 +46,31 @@ import org.springframework.web.bind.annotation.RestController
 class ServicePermissionController @Autowired constructor(
     private val permissionService: PermissionService
 ) : ServicePermissionClient, OpenResource(permissionService) {
+
+
+    /**
+     * 本接口不做权限校验，status表明是否需要做校验
+     * OperationType IN  表示有权限的路径列表，需要做交集
+     * OperationType NIN 表示有无权限的路径列表，需要做差集
+     */
+    override fun listPermissionPath(userId: String, projectId: String, repoName: String): Response<ListPathResult> {
+        val repoAccessControl = permissionService.checkRepoAccessControl(projectId, repoName)
+        if (repoAccessControl) {
+            val permissionPath = permissionService.listPermissionPath(userId, projectId, repoName)
+            if (permissionPath == null) {
+                val result = ListPathResult(status = false, path = mapOf(OperationType.IN to emptyList()))
+                return ResponseBuilder.success(result)
+            }
+            val result = ListPathResult(status = true, path = mapOf(OperationType.IN to permissionPath))
+            return ResponseBuilder.success(result)
+        } else {
+            val permissionPath = permissionService.listNoPermissionPath(userId, projectId, repoName)
+            val status = permissionPath.isNotEmpty()
+            val result = ListPathResult(status = status, path = mapOf(OperationType.NIN to permissionPath))
+            return ResponseBuilder.success(result)
+        }
+    }
+
 
     override fun checkPermission(request: CheckPermissionRequest): Response<Boolean> {
         checkRequest(request)

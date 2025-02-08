@@ -67,10 +67,12 @@ class OciBlobArtifactInfo(
     }
 
     override fun getArtifactFullPath(): String {
-        return if (digest.isNullOrBlank()) {
-            ""
-        } else {
-            OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest)
-        }
+        return if(getArtifactMappingUri().isNullOrEmpty()) {
+            if (digest.isNullOrBlank()) {
+                ""
+            } else {
+                OciLocationUtils.buildDigestBlobsPath(packageName, ociDigest)
+            }
+        } else getArtifactMappingUri()!!
     }
 }

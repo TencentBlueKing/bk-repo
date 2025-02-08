@@ -57,6 +57,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageClient")
 @RequestMapping("/service")
+@Deprecated("replace with PackageService")
 interface PackageClient {
 
     @ApiOperation("查询包信息")
@@ -116,7 +117,8 @@ interface PackageClient {
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
         @RequestParam version: String,
-        @RequestParam realIpAddress: String? = null
+        @RequestParam realIpAddress: String? = null,
+        @RequestParam contentPath: String? = null,
     ): Response<Void>
 
     @ApiOperation("更新包")

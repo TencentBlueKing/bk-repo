@@ -8,6 +8,7 @@ import permission from './permission'
 import nodeManage from './nodeManage'
 import project from './project'
 import scan from './scan'
+import oauth from './oauth'
 
 const prefix = 'repository/api'
 
@@ -19,6 +20,7 @@ export default {
     ...nodeManage,
     ...project,
     ...scan,
+    ...oauth,
     /*
         创建仓库
         body: {
@@ -119,7 +121,12 @@ export default {
             window.postMessage({
                 action: 'toggleLoginDialog'
             }, '*')
-            location.href = window.getLoginUrl()
+            // eslint-disable-next-line no-undef
+            if (window.ADD_FROM_LOGOUT === 'not') {
+                location.href = window.getLoginUrl()
+            } else {
+                location.href = window.getLoginUrl() + '&is_from_logout=1'
+            }
         } else {
             cookie.remove('bkrepo_ticket')
             commit('SHOW_LOGIN_DIALOG', true)

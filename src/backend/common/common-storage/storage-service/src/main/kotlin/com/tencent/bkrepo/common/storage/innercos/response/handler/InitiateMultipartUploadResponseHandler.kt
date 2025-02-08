@@ -37,6 +37,6 @@ import okhttp3.Response
 
 class InitiateMultipartUploadResponseHandler : HttpResponseHandler<String>() {
     override fun handle(response: Response): String {
-        return readXmlValue(response)[RESPONSE_UPLOAD_ID].toString()
+        return readXmlToMap(response)[RESPONSE_UPLOAD_ID].toString()
     }
 }

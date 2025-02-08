@@ -29,7 +29,7 @@ package com.tencent.bkrepo.helm.listener.consumer
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import java.util.function.Consumer
+import com.tencent.bkrepo.helm.listener.base.RemoteEventJobExecutor
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
@@ -38,10 +38,10 @@ import org.springframework.stereotype.Component
  * 构件事件消费者，用于实时同步
  * 对应destination为对应ArtifactEvent.topic
  */
-@Component("remoteRepo")
+@Component
 class RemoteRepoEventConsumer(
     private val remoteEventJobExecutor: RemoteEventJobExecutor
-) : Consumer<Message<ArtifactEvent>> {
+) {
 
     /**
      * 允许接收的事件类型
@@ -52,7 +52,7 @@ class RemoteRepoEventConsumer(
         EventType.REPO_REFRESHED
     )
 
-    override fun accept(message: Message<ArtifactEvent>) {
+    fun accept(message: Message<ArtifactEvent>) {
         if (!acceptTypes.contains(message.payload.type)) {
             return
         }

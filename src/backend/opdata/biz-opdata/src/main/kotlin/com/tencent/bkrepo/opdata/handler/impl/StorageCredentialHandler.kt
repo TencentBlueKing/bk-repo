@@ -51,7 +51,11 @@ class StorageCredentialHandler(
 
     @Suppress("UNCHECKED_CAST")
     override fun handle(target: Target, result: MutableList<Any>) {
-        val reqData = if (target.data.toString().isBlank()) null else target.data as Map<String, Any>
+        val reqData = if (target.data is Map<*, *>) {
+            target.data as Map<String, Any>
+        } else {
+            null
+        }
         val metric = StatMetrics.valueOf(reqData?.get(STAT_METRICS) as? String ?: StatMetrics.NUM.name)
         val resultMap = storageCredentialsModel.getStorageCredentialsStat(metric)
         resultMap.forEach {

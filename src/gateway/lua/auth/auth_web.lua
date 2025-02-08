@@ -19,7 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 --- 蓝鲸平台登录对接
 --- 获取Cookie中bk_token 和 bk_ticket
-local token, username
+local token, username, display_name, tenant_id
 
 --- standalone模式下校验bkrepo_ticket
 if config.mode == "standalone" or config.mode == "" or config.mode == nil then
@@ -42,21 +42,43 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
         ngx.exit(401)
         return
     end
-    username = oauthUtil:verify_ticket(bk_token, "token")
+    if config.enable_multi_tenant_mode ~= nil and config.enable_multi_tenant_mode == "true" then
+        username, display_name, tenant_id = oauthUtil:verify_bk_token_muti_tenant(config.oauth.apigw_url, bk_token)
+        -- 设置多租户相关信息 --
+        ngx.header["x-bkrepo-display-name"] = display_name
+        ngx.header["x-bkrepo-tenant-id"] = tenant_id
+    else
+        username = oauthUtil:verify_bk_token(config.oauth.apigw_url, bk_token)
+    end
     token = bk_token
 elseif config.auth_mode == "ticket" then
     local bk_ticket = cookieUtil:get_cookie("bk_ticket")
-    if not bk_ticket then
-        local mobile_user = oauthUtil:verify_mobile_gateway()
-        if mobile_user == nil then
+    if bk_ticket == nil then
+        bk_ticket = ngx.var.http_x_devops_bk_ticket
+        if bk_ticket == nil then
+            bk_ticket = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-ticket"]
+        end
+        if bk_ticket == nil then
             ngx.exit(401)
             return
         end
-        username = mobile_user
-    else
-        username = oauthUtil:verify_ticket(bk_ticket, "ticket")
-        token = bk_ticket
     end
+    username = oauthUtil:verify_ticket(bk_ticket, "ticket")
+    token = bk_ticket
+elseif config.auth_mode == "odc" then
+    local bk_token = cookieUtil:get_cookie("bk_token")
+    if bk_token == nil then
+        bk_token = ngx.var.http_x_devops_bk_token
+        if bk_token == nil then
+            bk_token = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-token"]
+        end
+        if bk_token == nil then
+            ngx.exit(401)
+            return
+        end
+    end
+    username = oauthUtil:verify_tai_token(bk_token)
+    token = bk_token
 elseif config.auth_mode == "ci" then
     local ci_login_token = cookieUtil:get_cookie("X-DEVOPS-CI-LOGIN-TOKEN")
     if not ci_login_token then

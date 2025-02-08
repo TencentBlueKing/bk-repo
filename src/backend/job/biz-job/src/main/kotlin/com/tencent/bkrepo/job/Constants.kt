@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.job
 
+import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
+import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
+
 /**
  * 分表数量
  */
@@ -36,6 +39,11 @@ const val SHARDING_COUNT = 256
  * 一次处理数据量
  */
 const val BATCH_SIZE = 1000
+
+/**
+ * 最大并发线程限制数
+ */
+const val CONCURRENT_THREAD_LIMIT = 1024
 
 /**
  * 数据库字段
@@ -50,7 +58,25 @@ const val TYPE = "type"
 const val CATEGORY = "category"
 const val CREATED_DATE = "createdDate"
 const val LAST_MODIFIED_DATE = "lastModifiedDate"
+const val LAST_ACCESS_DATE = "lastAccessDate"
 const val DELETED_DATE = "deleted"
+const val FULL_PATH = "fullPath"
+const val PATH = "path"
+const val LAST_MODIFIED_BY = "lastModifiedBy"
+const val KEY = "key"
+const val RECORD_RESERVE_DAYS = "recordReserveDays"
+const val REPLICA_TYPE = "replicaType"
+const val NAME = "name"
+const val SIZE = "size"
+const val NODE_NUM = "nodeNum"
+const val PACKAGE_ID = "packageId"
+
+
+/**
+ * 缓存类型
+ */
+const val REDIS_CACHE_TYPE = "redis"
+const val MEMORY_CACHE_TYPE = "memory"
 
 /**
  * metrics
@@ -70,3 +96,29 @@ const val JOB_TASK_COUNT = "job.task.count"
 const val JOB_TASK_COUNT_DESC = "任务执行统计"
 const val JOB_TIME_CONSUME = "job.task.time"
 const val JOB_TIME_CONSUME_DESC = "任务执行时长统计"
+
+const val JOB_TASK_RUNNING_STATUS = "job.running.status"
+const val JOB_TASK_RUNNING_STATUS_DESC = "任务执行状态"
+
+val IGNORE_PROJECT_PREFIX_LIST = listOf(CODE_PROJECT_PREFIX, CLOSED_SOURCE_PREFIX)
+
+
+/**
+ * 数据降冷
+ */
+const val RESTORE = "RESTORE"
+const val SEPARATE = "SEPARATE"
+
+const val PACKAGE_COLLECTION_NAME = "package"
+const val PACKAGE_VERSION_COLLECTION_NAME = "package_version"
+const val PACKAGE_DOWNLOADS_COLLECTION_NAME = "package_downloads"
+const val SEPARATION_TASK_COLLECTION_NAME = "separation_task"
+
+const val PACKAGE_VERSION = "version"
+const val PACKAGE_DOWNLOAD_DATE = "date"
+
+/**
+ * 记录备份
+ */
+const val DATA_RECORDS_BACKUP = "DATA_BACKUP"
+const val DATA_RECORDS_RESTORE = "DATA_RESTORE"

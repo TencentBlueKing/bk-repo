@@ -34,22 +34,23 @@ package com.tencent.bkrepo.repository.service
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
+import com.tencent.bkrepo.common.metadata.dao.repo.StorageCredentialsDao
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.UT_REGION
 import com.tencent.bkrepo.repository.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.dao.FileReferenceDao
-import com.tencent.bkrepo.repository.dao.NodeDao
-import com.tencent.bkrepo.repository.dao.repository.StorageCredentialsRepository
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
-import com.tencent.bkrepo.repository.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -57,20 +58,22 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
+import org.springframework.data.mongodb.core.query.Query
+import java.time.Duration
 
-@Import(NodeDao::class, FileReferenceDao::class)
+@Import(NodeDao::class)
 @DisplayName("存储身份凭证服务测试")
 @DataMongoTest
 internal class StorageCredentialServiceTest @Autowired constructor(
     private val storageCredentialService: StorageCredentialService,
-    private val storageCredentialsRepository: StorageCredentialsRepository,
+    private val storageCredentialsDao: StorageCredentialsDao,
     private val projectService: ProjectService,
-    private val repositoryService: RepositoryService
+    private val repositoryService: RepositoryService,
 ) : ServiceBaseTest() {
 
     @BeforeEach
     fun beforeEach() {
-        storageCredentialsRepository.deleteAll()
+        storageCredentialsDao.remove(Query())
     }
 
     @Test
@@ -83,7 +86,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         assertEquals(credential.path, dbCredentials.path)
         assertEquals(credential.cache.enabled, dbCredentials.cache.enabled)
         assertEquals(credential.cache.path, dbCredentials.cache.path)
-        assertEquals(credential.cache.expireDays, dbCredentials.cache.expireDays)
+        assertEquals(credential.cache.expireDuration, dbCredentials.cache.expireDuration)
 
         assertThrows<ErrorCodeException> {
             createCredential()
@@ -108,29 +111,29 @@ internal class StorageCredentialServiceTest @Autowired constructor(
     fun testUpdateCredential() {
         val storageCredentials = createCredential()
         assertEquals(true, storageCredentials.cache.loadCacheFirst)
-        assertEquals(10, storageCredentials.cache.expireDays)
+        assertEquals(Duration.ofHours(10), storageCredentials.cache.expireDuration)
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, storageCredentials.key)
 
         var updateCredentialsPayload = storageCredentials.apply {
-            cache = cache.copy(loadCacheFirst = false, expireDays = -1)
+            cache = cache.copy(loadCacheFirst = false, expireDuration = Duration.ZERO)
         }
         var updateReq = StorageCredentialsUpdateRequest(updateCredentialsPayload, UT_STORAGE_CREDENTIALS_KEY)
         var updatedStorageCredentials = storageCredentialService.update(UT_USER, updateReq)
         assertEquals(false, updatedStorageCredentials.cache.loadCacheFirst)
-        assertEquals(-1, updatedStorageCredentials.cache.expireDays)
+        assertEquals(Duration.ZERO, updatedStorageCredentials.cache.expireDuration)
         assertEquals(storageCredentials.upload.localPath, updatedStorageCredentials.upload.localPath)
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, updatedStorageCredentials.key)
 
         val localPath = "/test"
         updateCredentialsPayload = storageCredentials.apply {
-            cache = cache.copy(loadCacheFirst = true, expireDays = 10)
+            cache = cache.copy(loadCacheFirst = true, expireDuration = Duration.ofHours(10))
             upload = upload.copy(localPath = localPath)
         }
         updateReq = StorageCredentialsUpdateRequest(updateCredentialsPayload, UT_STORAGE_CREDENTIALS_KEY)
         updatedStorageCredentials = storageCredentialService.update(UT_USER, updateReq)
         assertEquals(localPath, updatedStorageCredentials.upload.localPath)
         assertEquals(true, updatedStorageCredentials.cache.loadCacheFirst)
-        assertEquals(10, updatedStorageCredentials.cache.expireDays)
+        assertEquals(Duration.ofHours(10), updatedStorageCredentials.cache.expireDuration)
         assertEquals(localPath, updatedStorageCredentials.upload.localPath)
         assertEquals(UT_STORAGE_CREDENTIALS_KEY, updatedStorageCredentials.key)
     }
@@ -194,15 +197,33 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         assertEquals(1, list.size)
     }
 
+    @Test
+    fun testGetStorageKeyMapping() {
+        val key1 = "key1"
+        val key2 = "key2"
+        val key3 = "key3"
+        createCredential(key1)
+        createCredential(key2, filePath = "test2")
+        createCredential(key3)
+
+        val mapping = storageCredentialService.getStorageKeyMapping()
+        assertEquals(4, mapping.size)
+        assertTrue(mapping[key1]!!.size == 1 && mapping[key1]!!.contains(key3))
+        assertTrue(mapping[key2]!!.isEmpty())
+        assertTrue(mapping[key3]!!.size == 1 && mapping[key3]!!.contains(key1))
+        assertTrue(mapping[DEFAULT_STORAGE_KEY]!!.isEmpty())
+    }
+
     private fun createCredential(
         key: String = UT_STORAGE_CREDENTIALS_KEY,
         region: String = UT_REGION,
-        type: String = FileSystemCredentials.type
+        type: String = FileSystemCredentials.type,
+        filePath: String = "test"
     ): StorageCredentials {
         val credential = when (type) {
             FileSystemCredentials.type -> {
                 FileSystemCredentials().apply {
-                    path = "test"
+                    path = filePath
                 }
             }
             else -> throw RuntimeException("Unknown credential type: $type")
@@ -216,7 +237,7 @@ internal class StorageCredentialServiceTest @Autowired constructor(
         credential.apply {
             cache.enabled = true
             cache.path = "cache-test"
-            cache.expireDays = 10
+            cache.expireDuration = Duration.ofHours(10)
             cache.loadCacheFirst = true
         }
     }

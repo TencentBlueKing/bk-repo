@@ -34,6 +34,9 @@ package com.tencent.bkrepo.common.artifact.api
 import com.tencent.bkrepo.common.api.constant.CharPool.AT
 import com.tencent.bkrepo.common.api.constant.CharPool.SLASH
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import org.apache.commons.lang3.reflect.FieldUtils
+import java.lang.reflect.Modifier
+import kotlin.reflect.full.primaryConstructor
 
 /**
  * 构件信息
@@ -58,6 +61,23 @@ open class ArtifactInfo(
     private val normalizedUri = PathUtils.normalizeFullPath(artifactUri)
 
     /**
+     * 构件实际映射路径, 默认情况为空
+     * 存在着特殊场景下传入构件url与实际存储路径需要进行转换的场景
+     * 如构建路径为/archive/file/tmp.data 实际映射路径可能为/archive/file/tmp/tmp.data
+     */
+    private var artifactMappingUri: String? = null
+
+
+    /**
+     * 设置构件实际映射路径
+     */
+    open fun setArtifactMappingUri(artifactMappingUri: String) {
+        this.artifactMappingUri = PathUtils.normalizeFullPath(artifactMappingUri)
+    }
+
+    fun getArtifactMappingUri(): String? = artifactMappingUri
+
+    /**
      * 构件名称，不同依赖源解析规则不一样，可以override
      *
      * 默认使用传入的artifactUri作为名称
@@ -75,7 +95,11 @@ open class ArtifactInfo(
      *
      * 默认使用传入的artifactUri作为名称
      */
-    open fun getArtifactFullPath(): String = normalizedUri
+    open fun getArtifactFullPath(): String = if (artifactMappingUri.isNullOrEmpty()) {
+        normalizedUri
+    } else {
+        artifactMappingUri!!
+    }
 
     /**
      * 构件下载显示名称，不同依赖源解析规则不一样，可以override
@@ -109,5 +133,28 @@ open class ArtifactInfo(
         builder.append(artifactName)
         getArtifactVersion()?.let { builder.append(AT).append(it) }
         return builder.toString()
+    }
+
+    /**
+     * 根据当前对象的属性值以及传入的[projectId]和[repoName]构造新的实例
+     */
+    fun copy(projectId: String? = null, repoName: String? = null): ArtifactInfo {
+        val constructor = this::class.primaryConstructor!!
+        val paramMap = constructor.parameters.associateWith { param ->
+            when (param.name) {
+                ArtifactInfo::projectId.name -> projectId ?: this.projectId
+                ArtifactInfo::repoName.name -> repoName ?: this.repoName
+                else -> FieldUtils.readField(this, param.name, true)
+            }
+        }
+        val newInstance = constructor.callBy(paramMap)
+        val fields = FieldUtils.getAllFieldsList(this::class.java)
+        fields.forEach {
+            if (it.name != this::projectId.name && it.name != this::repoName.name && !Modifier.isStatic(it.modifiers)) {
+                val value = FieldUtils.readField(it, this, true)
+                FieldUtils.writeField(it, newInstance, value, true)
+            }
+        }
+        return newInstance
     }
 }

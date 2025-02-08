@@ -54,7 +54,11 @@ class FileExtensionHandler(
 
     @Suppress("UNCHECKED_CAST")
     override fun handle(target: Target, result: MutableList<Any>) {
-        val reqData = if (target.data.toString().isBlank()) null else target.data as Map<String, Any>
+        val reqData = if (target.data is Map<*, *>) {
+            target.data as Map<String, Any>
+        } else {
+            null
+        }
         val projectId = reqData?.get(OPDATA_PROJECT_ID) as String?
         val repoName = reqData?.get(OPDATA_REPO_NAME) as String?
         val metric = StatMetrics.valueOf(reqData?.get(STAT_METRICS) as? String ?: StatMetrics.NUM.name)

@@ -86,8 +86,13 @@ const val ANALYSIS_EXECUTOR_SERVICE_NAME = "\${service.prefix:}analysis-executor
 const val HELM_SERVICE_NAME = "\${service.prefix:}helm\${service.suffix:}"
 const val OCI_SERVICE_NAME = "\${service.prefix:}docker\${service.suffix:}"
 const val JOB_SERVICE_NAME = "\${service.prefix:}job\${service.suffix:}"
+const val SCHEDULE_SERVICE_NAME = "\${service.prefix:}job-schedule\${service.suffix:}"
 const val FS_SERVER_SERVICE_NAME = "\${service.prefix:}fs-server\${service.suffix:}"
 const val MAVEN_SERVICE_NAME = "\${service.prefix:}maven\${service.suffix:}"
+const val ARCHIVE_SERVICE_NAME = "\${service.prefix:}archive\${service.suffix:}"
+const val OPDATA_SERVICE_NAME = "\${service.prefix:}opdata\${service.suffix:}"
+const val GENERIC_SERVICE_NAME = "\${service.prefix:}generic\${service.suffix:}"
+const val ROUTER_CONTROLLER_SERVICE_NAME = "\${service.prefix:}router-controller\${service.suffix:}"
 
 /**
  * 认证相关
@@ -106,3 +111,65 @@ const val TEMPORARY_TOKEN_AUTH_PREFIX = "Temporary "
 const val MS_AUTH_HEADER_UID = "X-BKREPO-MS-UID"
 
 const val MS_REQUEST_SRC_CLUSTER = "X-BKREPO-MS-CLUSTER"
+
+const val PROXY_HEADER_NAME = "X-BKREPO-PROXY-NAME"
+
+const val COMMIT_EDGE_HEADER = "X-BKREPO-COMMIT-EDGE"
+
+/**
+ * 验证是否允许下载时，写入request attributes的key
+ */
+const val CLIENT_ADDRESS = "clientAddress"
+const val DOWNLOAD_SOURCE = "downloadSource"
+
+/**
+ * 用于标记访问来源，web或api
+ */
+const val HEADER_ACCESS_FROM = "X-BKREPO-ACCESS-FROM"
+
+/**
+ * 来源于API调用
+ */
+const val ACCESS_FROM_API = "api"
+
+/**
+ * 来源于浏览器访问
+ */
+const val ACCESS_FROM_WEB = "web"
+
+/**
+ * 用于标记devx访问来源, office or others
+ */
+const val HEADER_DEVX_ACCESS_FROM = "X-BKREPO-DEVX-ACCESS-FROM"
+
+/**
+ * devx 访问来源, office
+ */
+const val DEVX_ACCESS_FROM_OFFICE = "devx_office"
+
+/**
+ * devx 访问来源, others
+ */
+const val DEVX_ACCESS_FROM_OTHERS = "others"
+
+/**
+ * b3 trace header
+ */
+const val B3_TRACE = "b3"
+
+/**
+ * bkrepo trace header
+ */
+const val BKREPO_TRACE = "X-BKREPO-RID"
+
+/**
+ * codecc 业务前缀
+ */
+const val CODE_PROJECT_PREFIX = "CODE_"
+const val CLOSED_SOURCE_PREFIX = "CLOSED_SOURCE_"
+
+
+const val AUDITED_UID = "audited_uid"
+const val AUDIT_REQUEST_URI = "audit_request_uri"
+const val AUDIT_REQUEST_KEY = "http_request"
+const val AUDIT_SHARE_USER_ID = "audit_share_user_id"

@@ -1,2 +1,4 @@
 server:
   port: __BK_REPO_MAVEN_PORT__
+maven: 
+  domain: http://__BK_REPO_HOST__/maven

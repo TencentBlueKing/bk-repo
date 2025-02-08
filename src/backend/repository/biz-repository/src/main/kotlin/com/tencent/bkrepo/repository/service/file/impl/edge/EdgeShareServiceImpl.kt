@@ -27,17 +27,19 @@
 
 package com.tencent.bkrepo.repository.service.file.impl.edge
 
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.cluster.EdgeNodeRedirectService
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.NodeShareClient
+import com.tencent.bkrepo.repository.api.cluster.ClusterNodeShareClient
+import com.tencent.bkrepo.repository.pojo.share.ClusterShareRecordCreateRequest
+import com.tencent.bkrepo.repository.pojo.share.ClusterShareTokenCheckRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.file.impl.ShareServiceImpl
-import com.tencent.bkrepo.repository.service.node.NodeService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Service
@@ -49,15 +51,15 @@ class EdgeShareServiceImpl(
     nodeService: NodeService,
     mongoTemplate: MongoTemplate,
     clusterProperties: ClusterProperties,
-    redirectService: EdgeNodeRedirectService
+    temporaryTokenClient: ServiceTemporaryTokenClient,
 ) : ShareServiceImpl(
     repositoryService,
     nodeService,
     mongoTemplate,
-    redirectService
+    temporaryTokenClient
 ) {
 
-    private val centerShareClient: NodeShareClient by lazy {
+    private val centerShareClient: ClusterNodeShareClient by lazy {
         FeignClientFactory.create(clusterProperties.center, "repository", clusterProperties.self.name)
     }
 
@@ -66,10 +68,26 @@ class EdgeShareServiceImpl(
         artifactInfo: ArtifactInfo,
         request: ShareRecordCreateRequest
     ): ShareRecordInfo {
-        return centerShareClient.create(userId, artifactInfo, request).data!!
+        return centerShareClient.create(
+            ClusterShareRecordCreateRequest(
+                userId = userId,
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fullPath = artifactInfo.getArtifactFullPath(),
+                createRequest = request
+            )
+        ).data!!
     }
 
     override fun checkToken(userId: String, token: String, artifactInfo: ArtifactInfo): ShareRecordInfo {
-        return centerShareClient.checkToken(userId, token, artifactInfo).data!!
+        return centerShareClient.checkToken(
+            ClusterShareTokenCheckRequest(
+                userId = userId,
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fullPath = artifactInfo.getArtifactFullPath(),
+                token = token
+            )
+        ).data!!
     }
 }

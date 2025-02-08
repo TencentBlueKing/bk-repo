@@ -29,15 +29,17 @@ package com.tencent.bkrepo.opdata.controller
 
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.operate.api.annotation.LogOperate
+import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.opdata.config.client.ConfigClient
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode
+import com.tencent.bkrepo.opdata.pojo.config.GetConfigRequest
 import com.tencent.bkrepo.opdata.pojo.config.UpdateConfigRequest
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -65,5 +67,18 @@ class ConfigController @Autowired constructor(
             configClient.put(updateConfigRequest.values, appName, profile)
         }
         return ResponseBuilder.success()
+    }
+
+    @GetMapping
+    fun getConfig(getConfigRequest: GetConfigRequest):Response<String> {
+        val configClient = configClientProvider.firstOrNull()
+            ?: throw SystemErrorException(OpDataMessageCode.CONFIG_CLIENT_NOT_FOUND)
+        return ResponseBuilder.success(
+            configClient.get(
+                getConfigRequest.appName,
+                getConfigRequest.profile,
+                getConfigRequest.key
+            )
+        )
     }
 }

@@ -34,6 +34,9 @@ import com.tencent.bkrepo.common.mongo.dao.util.sharding.ShardingUtils
 import org.springframework.data.mongodb.core.index.IndexDefinition
 import java.util.concurrent.TimeUnit
 
+/**
+ * 注意：按月分表的索引只有在insert/save的情况下才会创建
+ */
 abstract class MonthRangeShardingMongoDao<E> : RangeShardingMongoDao<E>() {
 
     private val indexCache = CacheBuilder.newBuilder()

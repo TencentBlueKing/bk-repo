@@ -38,7 +38,7 @@ import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.FileStorage
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
@@ -48,18 +48,18 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import org.springframework.util.StreamUtils
 import java.io.File
 import java.nio.charset.Charset
 import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
+import kotlin.random.Random
 
 @ExtendWith(SpringExtension::class)
 @ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
@@ -225,13 +225,150 @@ internal class CacheStorageServiceTest {
     }
 
     @Test
-    fun cancelStoreTest() {
-        val size = 1024L
-        val artifactFile = createTempArtifactFile(size)
-        val sha256 = artifactFile.getFileSha256()
-        val cancel = AtomicBoolean(false)
-        cancel.set(true)
-        assertDoesNotThrow { storageService.store(sha256, artifactFile, null, cancel) }
+    fun deltaStoreTest() {
+        val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
+        val data2 = data1.copyOfRange(Random.nextInt(1, 10), data1.size)
+        val artifactFile1 = createTempArtifactFile(data1)
+        val artifactFile2 = createTempArtifactFile(data2)
+        val originFileSize = artifactFile1.getSize()
+        try {
+            val digest1 = artifactFile1.getFileSha256()
+            val digest2 = artifactFile2.getFileSha256()
+            println(artifactFile1.getFileMd5())
+            storageService.store(digest1, artifactFile1, null)
+            storageService.store(digest2, artifactFile2, null)
+
+            // 增量存储
+            val compressedSize = storageService.compress(
+                digest1,
+                data1.size.toLong(),
+                digest2,
+                data2.size.toLong(),
+                null,
+            )
+            // 压缩后，源文件已经不在
+            Assertions.assertNull(storageService.load(digest1, Range.full(originFileSize), null))
+
+            // 确定压缩后，实际存储变小
+            val compressFileName = digest1.plus(".bd")
+            val compressFilepath = fileLocator.locate(compressFileName)
+            fileStorage.load(
+                compressFilepath,
+                compressFileName,
+                Range.FULL_RANGE,
+                storageProperties.defaultStorageCredentials(),
+            ).use {
+                val compressedFileSize = StreamUtils.drain(it!!).toLong()
+                Assertions.assertEquals(compressedSize, compressedFileSize)
+                Assertions.assertTrue(compressedFileSize < originFileSize)
+            }
+
+            // 恢复文件
+            val restored = storageService.uncompress(
+                digest1,
+                compressedSize,
+                digest2,
+                data2.size.toLong(),
+                null,
+            )
+            Assertions.assertEquals(1, restored)
+            // 恢复后，数据不变
+            val newLoad = storageService.load(digest1, Range.full(originFileSize), null)
+                ?.use { it.readBytes() }
+            Assertions.assertArrayEquals(data1, newLoad)
+        } finally {
+            artifactFile1.delete()
+            artifactFile2.delete()
+        }
+    }
+
+    @Test
+    fun cascadeDeltaStore() {
+        val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
+        val data2 = data1.copyOfRange(Random.nextInt(1, 10), data1.size)
+        val data3 = data1.copyOfRange(Random.nextInt(11, 100), Random.nextInt(data1.size - 10))
+        val artifactFile1 = createTempArtifactFile(data1)
+        val artifactFile2 = createTempArtifactFile(data2)
+        val artifactFile3 = createTempArtifactFile(data3)
+        val file1Len = artifactFile1.getSize()
+        val file2Len = artifactFile2.getSize()
+        val file3Len = artifactFile3.getSize()
+        try {
+            val digest1 = artifactFile1.getFileSha256()
+            val digest2 = artifactFile2.getFileSha256()
+            val digest3 = artifactFile3.getFileSha256()
+            storageService.store(digest1, artifactFile1, null)
+            storageService.store(digest2, artifactFile2, null)
+            storageService.store(digest3, artifactFile3, null)
+            val digest1CompressedSize = storageService.compress(
+                digest1,
+                file1Len,
+                digest2,
+                file2Len,
+                null,
+            )
+            val digest2CompressedSize = storageService.compress(
+                digest2,
+                file2Len,
+                digest3,
+                file3Len,
+                null,
+            )
+            // 压缩后，源文件已经不在
+            // 压缩后，源文件已经不在
+            Assertions.assertNull(storageService.load(digest1, Range.full(file1Len), null))
+            Assertions.assertNull(storageService.load(digest2, Range.full(file2Len), null))
+            // 级联恢复
+            storageService.uncompress(
+                digest2,
+                digest2CompressedSize,
+                digest3,
+                file3Len,
+                null,
+            )
+            val restored = storageService.uncompress(
+                digest1,
+                digest1CompressedSize,
+                digest2,
+                file2Len,
+                null,
+            )
+            Assertions.assertEquals(1, restored)
+            // 恢复后，数据不变
+            val file1Data = storageService.load(digest1, Range.full(file1Len), null)
+                ?.use { it.readBytes() }
+            Assertions.assertArrayEquals(data1, file1Data)
+            val file2Data = storageService.load(digest2, Range.full(file1Len), null)
+                ?.use { it.readBytes() }
+            Assertions.assertArrayEquals(data2, file2Data)
+        } finally {
+            artifactFile1.delete()
+            artifactFile2.delete()
+            artifactFile3.delete()
+        }
+    }
+
+    @Test
+    fun concurrentCompressTest() {
+        val data1 = Random.nextBytes(Random.nextInt(1024, 1 shl 20))
+        val artifactFile1 = createTempArtifactFile(data1)
+        val digest = artifactFile1.getFileSha256()
+        storageService.store(digest, artifactFile1, null)
+        val cyclicBarrier = CyclicBarrier(10)
+        repeat(10) {
+            val data = data1.copyOfRange(it + 1, data1.size)
+            val artifactFile = createTempArtifactFile(data)
+            val sha256 = artifactFile.getFileSha256()
+            storageService.store(sha256, artifactFile, null)
+            thread {
+                // 等待异步存储完成
+                Thread.sleep(1000)
+                cyclicBarrier.await()
+                storageService.compress(sha256, data.size.toLong(), digest, data1.size.toLong(), null)
+            }
+        }
+        // 等待执行
+        Thread.sleep(2000)
     }
 
     private fun createTempArtifactFile(size: Long): ArtifactFile {
@@ -242,6 +379,12 @@ internal class CacheStorageServiceTest {
                 input.copyTo(output)
             }
         }
+        return FileSystemArtifactFile(tempFile)
+    }
+
+    private fun createTempArtifactFile(data: ByteArray): ArtifactFile {
+        val tempFile = createTempFile()
+        tempFile.writeBytes(data)
         return FileSystemArtifactFile(tempFile)
     }
 }

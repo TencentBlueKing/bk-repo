@@ -60,7 +60,10 @@ open class OciArtifactInfo(
         const val BOLBS_UPLOAD_SECOND_STEP_URL = "/v2/{projectId}/{repoName}/**/blobs/uploads/{uuid}"
 
         // tags get
-        const val TAGS_URL = "/v2/{projectId}/{repoName}/**/tags/list"
+        const val TAGS_LIST_SUFFIX = "/tags/list"
+        const val TAGS_LIST_URL = "/v2/{projectId}/{repoName}/**/tags/list"
+        // Retrieve a sorted, json list of repositories available in the registry.
+        const val DOCKER_CATALOG_SUFFIX = "/v2/_catalog"
 
         // version详情获取
         const val OCI_VERSION_DETAIL = "/version/detail/{projectId}/{repoName}"
@@ -72,6 +75,7 @@ open class OciArtifactInfo(
         const val OCI_USER_LAYER_SUFFIX = "/layer/{projectId}/{repoName}/**/{id}"
         const val OCI_USER_REPO_SUFFIX = "/repo/{projectId}/{repoName}"
         const val OCI_USER_TAG_SUFFIX = "/tag/{projectId}/{repoName}/**"
-        const val DOCKER_CATALOG_SUFFIX = "_catalog"
+
+        const val OCI_BLOB_NODE_FULLPATH_REFRESH = "/blob/node/refresh"
     }
 }

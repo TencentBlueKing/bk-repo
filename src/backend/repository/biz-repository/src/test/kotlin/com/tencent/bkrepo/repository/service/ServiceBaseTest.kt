@@ -31,19 +31,36 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
+import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
+import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.ResourcePermissionListener
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.ResourceClearService
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper
+import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper
 import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
-import com.tencent.bkrepo.common.security.manager.PermissionManager
-import com.tencent.bkrepo.common.service.cluster.ClusterProperties
+import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
@@ -51,16 +68,11 @@ import com.tencent.bkrepo.repository.UT_REPO_DESC
 import com.tencent.bkrepo.repository.UT_REPO_DISPLAY
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.repository.config.RepositoryProperties
-import com.tencent.bkrepo.repository.dao.ProjectDao
-import com.tencent.bkrepo.repository.dao.ProxyChannelDao
-import com.tencent.bkrepo.repository.dao.RepositoryDao
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.repository.service.repo.ProjectService
-import com.tencent.bkrepo.repository.service.repo.RepositoryService
+import com.tencent.bkrepo.router.api.RouterControllerClient
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -83,11 +95,13 @@ import org.springframework.test.context.TestPropertySource
     RepositoryProperties::class,
     ProjectDao::class,
     RepositoryDao::class,
-    ProxyChannelDao::class,
     HttpAuthProperties::class,
-    SpringContextUtils::class
+    SpringContextUtils::class,
+    NodeDao::class,
+    RouterControllerProperties::class,
+    RepositoryProperties::class
 )
-@ComponentScan("com.tencent.bkrepo.repository.service")
+@ComponentScan(value = ["com.tencent.bkrepo.repository.service", "com.tencent.bkrepo.common.metadata"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
 open class ServiceBaseTest {
 
@@ -104,13 +118,40 @@ open class ServiceBaseTest {
     lateinit var servicePermissionClient: ServicePermissionClient
 
     @MockBean
+    lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
+
+    @MockBean
     lateinit var permissionManager: PermissionManager
+
+    @MockBean
+    lateinit var ciPermissionManager: CIPermissionManager
 
     @MockBean
     lateinit var messageSupplier: MessageSupplier
 
+    @MockBean
+    lateinit var resourcePermissionListener: ResourcePermissionListener
+
+    @MockBean
+    lateinit var routerControllerClient: RouterControllerClient
+
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
+
+    @MockBean
+    lateinit var archiveClient: ArchiveClient
+
+    @Autowired
+    lateinit var storageCredentialHelper: StorageCredentialHelper
+
+    @MockBean
+    lateinit var resourceClearService: ResourceClearService
+
+    @Autowired
+    lateinit var repositoryServiceHelper: RepositoryServiceHelper
+
+    @MockBean
+    lateinit var operateLogService: OperateLogService
 
     fun initMock() {
         val tracer = mockk<OtelTracer>()
@@ -140,9 +181,12 @@ open class ServiceBaseTest {
         whenever(servicePermissionClient.listPermissionRepo(anyString(), anyString(), anyString())).thenReturn(
             ResponseBuilder.success()
         )
-
+        whenever(servicePermissionClient.listPermissionPath(anyString(), anyString(), anyString())).thenReturn(
+            ResponseBuilder.success(ListPathResult(status = false, path = emptyMap()))
+        )
         whenever(messageSupplier.delegateToSupplier(any<ArtifactEvent>(), anyOrNull(), anyString(), anyOrNull(), any()))
             .then {}
+        whenever(resourcePermissionListener.handle(any<ProjectCreatedEvent>())).then {}
     }
 
     fun initRepoForUnitTest(
@@ -151,7 +195,13 @@ open class ServiceBaseTest {
         credentialsKey: String? = null
     ) {
         if (!projectService.checkExist(UT_PROJECT_ID)) {
-            val projectCreateRequest = ProjectCreateRequest(UT_PROJECT_ID, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
+            val projectCreateRequest = ProjectCreateRequest(
+                name = UT_PROJECT_ID,
+                displayName = UT_REPO_NAME,
+                description = UT_REPO_DISPLAY,
+                createPermission = true,
+                operator = UT_USER
+            )
             projectService.createProject(projectCreateRequest)
         }
         if (!repositoryService.checkExist(UT_PROJECT_ID, UT_REPO_NAME)) {
@@ -174,7 +224,7 @@ open class ServiceBaseTest {
         projectService: ProjectService,
         projectId: String = UT_PROJECT_ID
     ): ProjectInfo {
-        val projectCreateRequest = ProjectCreateRequest(projectId, UT_REPO_NAME, UT_REPO_DISPLAY, UT_USER)
+        val projectCreateRequest = ProjectCreateRequest(projectId, UT_REPO_NAME, UT_REPO_DISPLAY, true, UT_USER)
         return projectService.createProject(projectCreateRequest)
     }
 

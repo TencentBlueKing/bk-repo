@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.configuration
 
 import com.tencent.bkrepo.analyst.distribution.DistributedCountFactory.Companion.DISTRIBUTED_COUNT_REDIS
 import org.springframework.boot.context.properties.ConfigurationProperties
+import java.time.Duration
 
 @ConfigurationProperties("scanner")
 data class ScannerProperties(
@@ -45,6 +46,14 @@ data class ScannerProperties(
      */
     var baseUrl: String = "http://localhost",
     /**
+     * 后端服务认证用户名，后端服务使用mirrors认证方式时必填，仅需要一个非匿名的用户身份，无需任何权限
+     */
+    var username: String? = null,
+    /**
+     * 后端服务认证密码
+     */
+    var password: String? = null,
+    /**
      * 前端baseUrl
      */
     var frontEndBaseUrl: String = "http://localhost/ui",
@@ -59,9 +68,43 @@ data class ScannerProperties(
     /**
      * 结果报告数据导出配置
      */
-    var reportExport: ReportExportProperties? = null
+    var reportExport: ReportExportProperties? = null,
+
+    /**
+     * 阻塞超时时间，项目提交的分析任务数量超过配额后继续提交的任务会进入阻塞状态，阻塞超过这个时间将会阻塞超时导致任务失败
+     * 为0时表示任务将不会因为阻塞而超时
+     */
+    var blockTimeout: Duration = Duration.ofSeconds(DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS),
+    /**
+     * 任务心跳超时时间，当任务超过这个时间未上报状态时将会触发超时, 0表示不检查任务心跳
+     */
+    var heartbeatTimeout: Duration = Duration.ofMinutes(0),
+    /**
+     * 任务最长执行时间，超过后将不再重试而是直接转为超时状态
+     */
+    var maxTaskDuration: Duration = Duration.ofSeconds(EXPIRED_SECONDS),
+    /**
+     * 生成的制品临时下载链接超时时间
+     */
+    var tempDownloadUrlExpireDuration: Duration = Duration.ofSeconds(30),
+    /**
+     * 生成的制品临时下载链接超时时间允许下载的次数
+     */
+    var tempDownloadUrlPermits: Int? = null,
+    /**
+     * 最大全局扫描任务数量
+     */
+    var maxGlobalTaskCount: Int = 1,
 ) {
     companion object {
+        /**
+         * 默认任务最长执行时间，超过后会触发重试
+         */
+        const val DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS = 1200L
+        /**
+         * 任务过期时间
+         */
+        const val EXPIRED_SECONDS = 24 * 60 * 60L
         const val DEFAULT_PROJECT_SCAN_PRIORITY = 0
         const val DEFAULT_SCAN_TASK_COUNT_LIMIT = 1
         const val DEFAULT_SUB_SCAN_TASK_COUNT_LIMIT = 20

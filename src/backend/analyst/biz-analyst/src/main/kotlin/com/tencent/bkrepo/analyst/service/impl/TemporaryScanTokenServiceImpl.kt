@@ -28,17 +28,20 @@
 package com.tencent.bkrepo.analyst.service.impl
 
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties.Companion.EXPIRED_SECONDS
+import com.tencent.bkrepo.analyst.exception.ArtifactDeletedException
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.FileUrl
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.common.api.constant.USER_KEY
@@ -47,15 +50,16 @@ import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.RESOURCE_NOT_FOUND
 import com.tencent.bkrepo.common.api.message.CommonMessageCode.SYSTEM_ERROR
 import com.tencent.bkrepo.common.api.util.StreamUtils.readText
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.oci.util.OciUtils
-import com.tencent.bkrepo.repository.api.NodeClient
-import com.tencent.bkrepo.repository.api.StorageCredentialsClient
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
@@ -63,7 +67,7 @@ import org.springframework.data.redis.connection.RedisStringCommands.SetOption.U
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.types.Expiration
 import org.springframework.stereotype.Service
-import java.time.Duration
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -72,9 +76,10 @@ class TemporaryScanTokenServiceImpl(
     private val temporaryTokenClient: ServiceTemporaryTokenClient,
     private val redisTemplate: RedisTemplate<String, String>,
     private val scannerProperties: ScannerProperties,
-    private val storageService: StorageService,
-    private val storageCredentialsClient: StorageCredentialsClient,
-    private val nodeClient: NodeClient
+    private val storageManager: StorageManager,
+    private val storageCredentialService: StorageCredentialService,
+    private val nodeService: NodeService,
+    private val nodeSearchService: NodeSearchService
 ) : TemporaryScanTokenService {
     private val baseUrl
         get() = scannerProperties.baseUrl.removeSuffix(SLASH)
@@ -83,6 +88,21 @@ class TemporaryScanTokenServiceImpl(
         val token = uniqueId()
         redisTemplate.opsForValue().set(tokenKey(subtaskId), token, EXPIRED_SECONDS, TimeUnit.SECONDS)
         return token
+    }
+
+    override fun setToken(subtaskId: String, token: String) {
+        redisTemplate.opsForValue().set(tokenKey(subtaskId), token, EXPIRED_SECONDS, TimeUnit.SECONDS)
+    }
+
+    override fun createExecutionClusterToken(executionClusterName: String): String {
+        val token = uniqueId()
+        val tokenKey = tokenKey(executionClusterName)
+        val ops = redisTemplate.opsForValue()
+        return if (ops.setIfAbsent(tokenKey, token) == true) {
+            token
+        } else {
+            ops.get(tokenKey)!!
+        }
     }
 
     override fun createToken(subtaskIds: List<String>): Map<String, String> {
@@ -109,9 +129,32 @@ class TemporaryScanTokenServiceImpl(
         redisTemplate.delete(tokenKey(subtaskId))
     }
 
-    override fun getToolInput(subtaskId: String): ToolInput {
-        val subtask = scanService.get(subtaskId)
+    override fun getToolInput(subtaskId: String, token: String): ToolInput {
+        try {
+            return getToolInput(scanService.get(subtaskId).apply { this.token = token })
+        } catch (e: ArtifactDeletedException) {
+            logger.warn("artifact [${e.sha256}] was deleted, set subtask[$subtaskId] to failed")
+            scanService.reportResult(ReportResultRequest(subtaskId, SubScanTaskStatus.FAILED.name))
+            throw e
+        }
+    }
 
+    override fun pullToolInput(executionCluster: String, token: String): ToolInput? {
+        val subtask = scanService.pull(executionCluster)
+        return subtask?.let {
+            logger.info("executionCluster[$executionCluster] pull subtask[${it.taskId}]")
+            subtask.token = token
+            try {
+                getToolInput(it)
+            } catch (e: ArtifactDeletedException) {
+                logger.warn("artifact [${e.sha256}] was deleted, set subtask[${it.taskId}] to failed")
+                scanService.reportResult(ReportResultRequest(it.taskId, SubScanTaskStatus.FAILED.name))
+                null
+            }
+        }
+    }
+
+    private fun getToolInput(subtask: SubScanTask): ToolInput {
         // 设置后续操作使用的用户的身份为任务触发者
         HttpContextHolder.getRequestOrNull()?.setAttribute(USER_KEY, subtask.createdBy)
 
@@ -123,38 +166,38 @@ class TemporaryScanTokenServiceImpl(
                 projectId = projectId,
                 repoName = repoName,
                 fullPathSet = fullPaths.keys,
-                expireSeconds = Duration.ofMinutes(30L).seconds,
-                permits = 1,
+                expireSeconds = scannerProperties.tempDownloadUrlExpireDuration.seconds,
+                permits = scannerProperties.tempDownloadUrlPermits,
                 type = TokenType.DOWNLOAD
             )
             val tokens = temporaryTokenClient.createToken(req)
             if (tokens.isNotOk()) {
                 throw SystemErrorException(SYSTEM_ERROR, "create token failed, subtask[$subtask], res[$tokens]")
             }
-
+            val ssid = Base64.getEncoder().encodeToString("$taskId:$token".toByteArray())
             val tokenMap = tokens.data!!.associateBy { it.fullPath }
             val fileUrls = fullPaths.map { (key, value) ->
                 val url = tokenMap[key]!!.let {
                     "$baseUrl/api/generic/temporary/download" +
-                        "/${it.projectId}/${it.repoName}${it.fullPath}?token=${it.token}"
+                            "/${it.projectId}/${it.repoName}${it.fullPath}?token=${it.token}&ssid=$ssid"
                 }
                 value.copy(url = url)
             }
 
-            val args = ToolInput.generateArgs(scanner, repoType, packageSize, packageKey, version)
+            val args = ToolInput.generateArgs(scanner, repoType, packageSize, packageKey, version, extra)
             return ToolInput.create(taskId, fileUrls, args)
         }
     }
 
     private fun getFullPaths(subtask: SubScanTask): Map<String, FileUrl> = with(subtask) {
         return if (repoType == RepositoryType.DOCKER.name) {
-            val storageCredentials = credentialsKey?.let { storageCredentialsClient.findByKey(it).data!! }
-            val manifestContent = storageService.load(sha256, Range.full(size), storageCredentials)?.readText()
-                ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "file [$projectId:$repoName:$fullPath] not found")
+            val manifestContent = readManifest(projectId, repoName, sha256, credentialsKey)
             val schemeVersion = OciUtils.schemeVersion(manifestContent)
             val fullPaths = LinkedHashMap<String, FileUrl>()
             // 将manifest下载链接加入fullPaths列表，需要保证map第一项是manifest文件
-            fullPaths[fullPath] = convert(subtask)
+            fullPaths[fullPath] = FileUrl(
+                "", subtask.fullPath.substringAfterLast(SLASH), subtask.sha256, subtask.size
+            )
             // 获取layer对应的nodes
             val nodes = if (schemeVersion.schemaVersion == 1) {
                 val manifest = OciUtils.stringToManifestV1(manifestContent)
@@ -175,46 +218,53 @@ class TemporaryScanTokenServiceImpl(
             }
             fullPaths
         } else {
-            mapOf(subtask.fullPath to convert(subtask))
+            mapOf(subtask.fullPath to FileUrl("", subtask.fileName(), subtask.sha256, subtask.size))
         }
     }
 
+    private fun readManifest(projectId: String, repoName: String, sha256: String, credentialsKey: String?): String {
+        val storageCredentials = credentialsKey?.let { storageCredentialService.findByKey(it)!! }
+        val nodes = nodeSearchService.searchWithoutCount(
+            NodeQueryBuilder()
+                .projectId(projectId)
+                .repoName(repoName)
+                .sha256(sha256)
+                .select(NodeDetail::fullPath.name)
+                .page(1, 1)
+                .build()
+        )
+        if (nodes.records.isEmpty()) {
+            throw ErrorCodeException(RESOURCE_NOT_FOUND, "file[$sha256] of [$projectId:$repoName] not found")
+        }
+        val fullPath = nodes.records[0][NodeDetail::fullPath.name].toString()
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))?.let { node ->
+            storageManager.loadFullArtifactInputStream(node, storageCredentials)?.readText()
+        } ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "file [$projectId:$repoName:$fullPath] not found")
+    }
+
     private fun tokenKey(subtaskId: String) = "scanner:token:$subtaskId"
-    private fun convert(subtask: SubScanTask, url: String = "") =
-        FileUrl(url, subtask.fullPath.substringAfterLast(SLASH), subtask.sha256, subtask.size)
 
     private fun getNodes(projectId: String, repoName: String, sha256: List<String>): List<Map<String, Any?>> {
-        val distinctNodes = HashMap<String, Map<String, Any?>>()
-
-        var pageNumber = DEFAULT_PAGE_NUMBER
-        val pageSize = DEFAULT_PAGE_SIZE
-        while (true) {
-            val res = nodeClient.search(
+        return sha256.toSet().map {
+            val res = nodeSearchService.searchWithoutCount(
                 NodeQueryBuilder()
                     .projectId(projectId)
                     .repoName(repoName)
-                    .rule(NodeDetail::sha256.name, sha256, OperationType.IN)
+                    .rule(NodeDetail::sha256.name, it, OperationType.EQ)
                     .select(NodeDetail::fullPath.name, NodeDetail::size.name, NodeDetail::sha256.name)
-                    .page(pageNumber++, pageSize)
+                    .page(DEFAULT_PAGE_NUMBER, 1)
                     .build()
             )
 
-            if (res.isNotOk()) {
-                logger.error("get image nodes failed, msg[${res.message}], sha256[$sha256]")
-                throw ErrorCodeException(SYSTEM_ERROR)
+            if (res.records.isEmpty()) {
+                throw ArtifactDeletedException(it)
             }
 
-            // 同一个sha256可能会查询到多个node，需要去重
-            res.data!!.records.forEach { distinctNodes[it[NodeDetail::sha256.name]!!.toString()] = it }
-            if (res.data!!.records.size < pageSize || res.data!!.totalRecords.toInt() == res.data!!.records.size) {
-                break
-            }
+            res.records.first()
         }
-        return distinctNodes.values.toList()
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(TemporaryScanTokenServiceImpl::class.java)
-        private const val EXPIRED_SECONDS = 24 * 60 * 60L
     }
 }

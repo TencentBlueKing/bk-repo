@@ -32,8 +32,10 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.PACKAGE_INDEX
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.PACKAGE_LATEST_V2
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.PACKAGE_REVISIONS_V2
+import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.RECIPE_INDEX
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.RECIPE_LATEST_V2
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.RECIPE_REVISIONS_V2
 import com.tencent.bkrepo.conan.service.ConanService
@@ -53,7 +55,7 @@ class ConanRevisionsController(
      * V2
      * 获取指定recipe的revisions信息
      */
-    @GetMapping(RECIPE_REVISIONS_V2)
+    @GetMapping(RECIPE_REVISIONS_V2, RECIPE_INDEX)
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun getRecipeRevisions(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
@@ -79,6 +81,20 @@ class ConanRevisionsController(
 
     /**
      * V2
+     * 获取package index.json
+     */
+    @GetMapping(PACKAGE_INDEX)
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    fun getPackageIndexJson(
+        @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
+    ): ResponseEntity<Any> {
+        return ConanCommonController.buildResponse(
+            conanService.getPackageRevisions(conanArtifactInfo)
+        )
+    }
+
+    /**
+     * V2
      * 获取指定的package目录下的revisions信息
      */
     @GetMapping(PACKAGE_REVISIONS_V2)
@@ -87,7 +103,7 @@ class ConanRevisionsController(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
     ): ResponseEntity<Any> {
         return ConanCommonController.buildResponse(
-            conanService.getRecipeLatestRevision(conanArtifactInfo)
+            conanService.getPackageRevisions(conanArtifactInfo)
         )
     }
 
@@ -101,7 +117,7 @@ class ConanRevisionsController(
         @ArtifactPathVariable conanArtifactInfo: ConanArtifactInfo
     ): ResponseEntity<Any> {
         return ConanCommonController.buildResponse(
-            conanService.getRecipeLatestRevision(conanArtifactInfo)
+            conanService.getPackageLatestRevision(conanArtifactInfo)
         )
     }
 }

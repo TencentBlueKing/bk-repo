@@ -27,42 +27,31 @@
 
 package com.tencent.bkrepo.helm.listener
 
-import com.tencent.bkrepo.helm.config.HelmProperties
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
-import com.tencent.bkrepo.helm.listener.operation.ChartDeleteOperation
-import com.tencent.bkrepo.helm.listener.operation.ChartPackageDeleteOperation
-import com.tencent.bkrepo.helm.listener.operation.ChartUploadOperation
-import com.tencent.bkrepo.helm.pojo.chart.ChartUploadRequest
+import com.tencent.bkrepo.helm.listener.operation.IndexRefreshTask
+import com.tencent.bkrepo.helm.pojo.chart.ChartOperationRequest
 import com.tencent.bkrepo.helm.service.impl.AbstractChartService
-import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
-import com.tencent.bkrepo.helm.utils.HelmUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
+import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 @Component
-class ChartEventListener(
-    private val helmProperties: HelmProperties
-) : AbstractChartService() {
+class ChartEventListener : AbstractChartService() {
+
 
     /**
      * 删除chart版本，更新index.yaml文件
      */
     @EventListener(ChartVersionDeleteEvent::class)
     fun handle(event: ChartVersionDeleteEvent) {
-        // 如果index.yaml文件不存在，说明还没有初始化该文件，return
-        // 如果index.yaml文件存在，则进行更新
         with(event.request) {
             logger.info("handling chart version delete event for [$name@$version] in repo [$projectId/$repoName]")
-            if (!exist(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) {
-                logger.warn("Index yaml file is not initialized in repo [$projectId/$repoName], return.")
-                return
-            }
-            val task = ChartDeleteOperation(event.request, this@ChartEventListener)
-            threadPoolExecutor.submit(task)
+            handleEvent(event.request)
         }
     }
 
@@ -73,14 +62,7 @@ class ChartEventListener(
     fun handle(event: ChartDeleteEvent) {
         with(event.requestPackage) {
             logger.info("Handling package delete event for [$name] in repo [$projectId/$repoName]")
-            if (!exist(projectId, repoName, HelmUtils.getIndexCacheYamlFullPath())) {
-                logger.info(
-                    "Index yaml file is not initialized in repo [$projectId/$repoName], refresh index.yaml interrupted."
-                )
-                return
-            }
-            val task = ChartPackageDeleteOperation(event.requestPackage, this@ChartEventListener)
-            threadPoolExecutor.submit(task)
+            handleEvent(event.requestPackage)
         }
     }
 
@@ -89,34 +71,58 @@ class ChartEventListener(
      */
     @EventListener(ChartUploadEvent::class)
     fun handle(event: ChartUploadEvent) {
-        handleChartUploadEvent(event.uploadRequest)
-    }
-
-    /**
-     * 当chart新上传成功后，更新index.yaml
-     */
-    private fun handleChartUploadEvent(uploadRequest: ChartUploadRequest) {
-        with(uploadRequest) {
+        with(event.uploadRequest) {
             logger.info("Handling package upload event for [$name] in repo [$projectId/$repoName]")
             metadataMap?.let {
-                val helmChartMetadata = HelmMetadataUtils.convertToObject(metadataMap!!)
-                val nodeDetail = nodeClient.getNodeDetail(projectId, repoName, fullPath).data
-                nodeDetail?.let {
-                    logger.info("Creating upload event request....")
-                    val task = ChartUploadOperation(
-                        uploadRequest,
-                        helmChartMetadata,
-                        helmProperties.domain,
-                        nodeDetail,
-                        this@ChartEventListener
-                    )
-                    threadPoolExecutor.submit(task)
-                }
+                handleEvent(event.uploadRequest)
             }
         }
     }
 
+    private fun handleEvent(request: ChartOperationRequest) {
+        with(request) {
+            helmChartEventRecordDao.updateEventTimeByProjectIdAndRepoName(
+                projectId, repoName, LocalDateTime.now()
+            )
+        }
+
+    }
+
+    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INIT_DELAY)
+    fun refreshIndex() {
+        val records = helmChartEventRecordDao.findAllRecordsNeedToRefresh()
+        for (record in records) {
+                val lock = getLock(record.projectId, record.repoName) ?: continue
+                try {
+                    val exist = helmChartEventRecordDao.checkIndexExpiredStatus(
+                        record.projectId, record.repoName
+                    )
+                    if (!exist) {
+                        logger.info(
+                            "Index.yaml is already the latest in repo [${record.projectId}/${record.repoName}]!"
+                        )
+                        unlock(record.projectId, record.repoName, lock)
+                        continue
+                    }
+                    val task = IndexRefreshTask(
+                        projectId = record.projectId,
+                        repoName = record.repoName,
+                        chartService = this,
+                        lock = lock
+                    )
+                    threadPoolExecutor.submit(task)
+                } catch (e: Exception) {
+                    logger.warn("Failed to create refresh task " +
+                                     "for repo [${record.projectId}/${record.repoName}], error is $e")
+                }
+        }
+    }
+
+
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(ChartEventListener::class.java)
+        private const val FIXED_DELAY = 10000L
+        private const val INIT_DELAY = 60000L
+
     }
 }

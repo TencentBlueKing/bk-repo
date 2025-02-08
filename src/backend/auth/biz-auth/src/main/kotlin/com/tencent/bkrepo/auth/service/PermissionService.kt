@@ -34,15 +34,13 @@ package com.tencent.bkrepo.auth.service
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.Permission
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionActionRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDepartmentRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionPathRequest
+import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionDeployInRepoRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRepoRequest
-import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionRoleRequest
 import com.tencent.bkrepo.auth.pojo.permission.UpdatePermissionUserRequest
+import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
+import com.tencent.bkrepo.auth.pojo.role.RoleSource
 
 interface PermissionService {
-
     /**
      * 校验平台账号权限
      */
@@ -59,32 +57,49 @@ interface PermissionService {
     fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String>
 
     /**
+     * 获取权限详情
+     */
+    fun getPermission(permissionId: String): Permission?
+
+    /**
      * 获取有权限的项目列表
      */
     fun listPermissionProject(userId: String): List<String>
 
+    /**
+     * 获取无权限路径列表
+     */
+    fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String>
+
+    /**
+     * 获取有权限路径列表
+     */
+    fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>?
+
+    /**
+     * 查询是否开启仓库访问限制
+     */
+    fun checkRepoAccessControl(projectId: String, repoName: String): Boolean
+
     fun createPermission(request: CreatePermissionRequest): Boolean
 
-    fun listPermission(projectId: String, repoName: String?): List<Permission>
+    fun listPermission(projectId: String, repoName: String?, resourceType: String): List<Permission>
 
     fun listBuiltinPermission(projectId: String, repoName: String): List<Permission>
 
     fun deletePermission(id: String): Boolean
 
-    fun updateIncludePath(request: UpdatePermissionPathRequest): Boolean
-
-    fun updateExcludePath(request: UpdatePermissionPathRequest): Boolean
-
     fun updateRepoPermission(request: UpdatePermissionRepoRequest): Boolean
 
     fun updatePermissionUser(request: UpdatePermissionUserRequest): Boolean
 
-    fun updatePermissionRole(request: UpdatePermissionRoleRequest): Boolean
-
-    fun updatePermissionDepartment(request: UpdatePermissionDepartmentRequest): Boolean
-
-    fun updatePermissionAction(request: UpdatePermissionActionRequest): Boolean
-
     fun listProjectBuiltinPermission(projectId: String): List<Permission>
 
+    fun updatePermissionDeployInRepo(request: UpdatePermissionDeployInRepoRequest): Boolean
+
+    fun getPathCheckConfig(): Boolean
+
+    fun getOrCreatePersonalPath(projectId: String, repoName: String, userId: String): String
+
+    fun listExternalRoleByProject(projectId: String, source: RoleSource): List<ExternalRoleResult>
 }

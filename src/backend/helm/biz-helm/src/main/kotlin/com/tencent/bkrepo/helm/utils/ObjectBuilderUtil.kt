@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.util.toYamlString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
+import com.tencent.bkrepo.common.artifact.event.packages.VersionUpdatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoRefreshedEvent
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -90,6 +91,29 @@ object ObjectBuilderUtil {
             projectId = projectId,
             repoName = repoName,
             userId = userId
+        )
+    }
+
+    /**
+     * 仓库有package replication事件
+     */
+    fun buildPackageReplicationRequest(
+        projectId: String,
+        repoName: String,
+        userId: String,
+        packageKey: String,
+        packageName: String,
+        packageVersion: String
+    ): VersionUpdatedEvent {
+        return VersionUpdatedEvent(
+            projectId = projectId,
+            repoName = repoName,
+            userId = userId,
+            packageType = PackageType.HELM.name,
+            packageKey = packageKey,
+            packageName = packageName,
+            packageVersion = packageVersion,
+            realIpAddress = null
         )
     }
 
@@ -184,6 +208,7 @@ object ObjectBuilderUtil {
             return PackageDownloadRecord(projectId, repoName, PackageKeys.ofHelm(name), version)
         }
     }
+
     fun buildIndexYamlRequest(): ArtifactInfo {
         val artifactInfo = HttpContextHolder.getRequest().getAttribute(ARTIFACT_INFO_KEY) as ArtifactInfo
         return buildIndexYamlRequest(artifactInfo)

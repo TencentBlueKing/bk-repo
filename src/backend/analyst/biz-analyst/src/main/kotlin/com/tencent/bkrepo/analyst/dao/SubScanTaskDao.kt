@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.dao
 
 import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
@@ -41,10 +42,13 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.elemMatch
+import org.springframework.data.mongodb.core.query.exists
+import org.springframework.data.mongodb.core.query.gte
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.lt
@@ -54,7 +58,8 @@ import java.time.LocalDateTime
 @Repository
 class SubScanTaskDao(
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
-    private val archiveSubScanTaskDao: ArchiveSubScanTaskDao
+    private val archiveSubScanTaskDao: ArchiveSubScanTaskDao,
+    private val scannerProperties: ScannerProperties,
 ) : AbsSubScanTaskDao<TSubScanTask>() {
 
     fun findByCredentialsKeyAndSha256List(credentialsKeyFiles: List<CredentialsKeyFiles>): List<TSubScanTask> {
@@ -117,18 +122,22 @@ class SubScanTaskDao(
             .set(TSubScanTask::lastModifiedDate.name, now)
             .set(TSubScanTask::status.name, status.name)
         if (status == EXECUTING) {
-            update.set(TSubScanTask::timeoutDateTime.name, timeoutDateTime)
             update.set(TSubScanTask::startDateTime.name, now)
+        } else if (status == PULLED) {
+            update.set(TSubScanTask::heartbeatDateTime.name, now)
+            update.set(TSubScanTask::timeoutDateTime.name, timeoutDateTime)
             update.inc(TSubScanTask::executedTimes.name, 1)
-        } else {
+        }
+        if (status != PULLED && status != EXECUTING) {
             update.unset(TSubScanTask::timeoutDateTime.name)
+            update.unset(TSubScanTask::heartbeatDateTime.name)
         }
 
         val updateResult = updateFirst(query, update)
         if (updateResult.modifiedCount == 1L) {
             logger.debug(
                 "update status success, subTaskId[$subTaskId], newStatus[$status]," +
-                    " oldStatus[$oldStatus], lastModifiedDate[$lastModifiedDate], newModifiedDate[$now]"
+                        " oldStatus[$oldStatus], lastModifiedDate[$lastModifiedDate], newModifiedDate[$now]"
             )
             planArtifactLatestSubScanTaskDao.updateStatus(subTaskId, status.name, now = now)
         }
@@ -136,11 +145,9 @@ class SubScanTaskDao(
         return updateResult
     }
 
-    fun incExecutedTimes(subTaskId: String): UpdateResult {
-        val criteria = Criteria.where(ID).isEqualTo(subTaskId)
-        val update = Update()
-            .set(TSubScanTask::lastModifiedDate.name, LocalDateTime.now())
-            .inc(TSubScanTask::executedTimes.name, 1)
+    fun heartbeat(subtaskId: String): UpdateResult {
+        val criteria = Criteria.where(ID).isEqualTo(subtaskId).and(TSubScanTask::status.name).`in`(PULLED, EXECUTING)
+        val update = Update.update(TSubScanTask::heartbeatDateTime.name, LocalDateTime.now())
         return updateFirst(Query(criteria), update)
     }
 
@@ -159,7 +166,10 @@ class SubScanTaskDao(
         val criteria = Criteria
             .where(TSubScanTask::projectId.name).isEqualTo(projectId)
             .and(TSubScanTask::status.name).isEqualTo(SubScanTaskStatus.BLOCKED.name)
-        val subtaskIds = find(Query(criteria).limit(count)).map { it.id!! }
+        val query = Query(criteria)
+            .with(Sort.by(TSubScanTask::createdDate.name))
+            .limit(count)
+        val subtaskIds = find(query).map { it.id!! }
 
         if (subtaskIds.isEmpty()) {
             return null
@@ -177,11 +187,24 @@ class SubScanTaskDao(
     /**
      * 获取项目[projectId]扫描中的任务数量
      */
-    fun scanningCount(projectId: String): Long {
+    fun scanningCount(projectId: String, includeGlobal: Boolean = false): Long {
         val criteria = Criteria
             .where(TSubScanTask::projectId.name).isEqualTo(projectId)
             .and(TSubScanTask::status.name).inValues(SubScanTaskStatus.RUNNING_STATUS)
+        if (!includeGlobal) {
+            criteria.and("${TSubScanTask::metadata.name}.key").ne(TaskMetadata.TASK_METADATA_GLOBAL)
+        }
         return count(Query(criteria))
+    }
+
+    /**
+     * 获取项目[projectId]扫描中的任务
+     */
+    fun findScanning(projectId: String): List<TSubScanTask> {
+        val criteria = Criteria
+            .where(TSubScanTask::projectId.name).isEqualTo(projectId)
+            .and(TSubScanTask::status.name).inValues(SubScanTaskStatus.RUNNING_STATUS)
+        return find(Query(criteria))
     }
 
     fun updateStatus(
@@ -198,8 +221,8 @@ class SubScanTaskDao(
         return updateResult
     }
 
-    fun firstTaskByStatusIn(status: List<String>, dispatcher: String?): TSubScanTask? {
-        val query = buildStatusAndDispatcherQuery(status, dispatcher)
+    fun firstTaskByStatusIn(status: List<String>?, dispatcher: String?): TSubScanTask? {
+        val query = buildStatusAndDispatcherQuery(status, dispatcher).with(Sort.by(TSubScanTask::createdDate.name))
         return findOne(query)
     }
 
@@ -211,7 +234,7 @@ class SubScanTaskDao(
      *
      * @return 任务数量
      */
-    fun countTaskByStatusIn(status: List<String>, dispatcher: String?): Long {
+    fun countTaskByStatusIn(status: List<String>?, dispatcher: String?): Long {
         val query = buildStatusAndDispatcherQuery(status, dispatcher)
         return count(query)
     }
@@ -219,27 +242,22 @@ class SubScanTaskDao(
     /**
      * 获取一个执行超时的任务
      *
-     * @param timeoutSeconds 允许执行的最长时间
+     * @param dispatcher 指定分发器的超时任务，为null时表示默认执行器
+     * @param allDispatcher 为true时查找所有分发器的超时任务
+     *
+     * @return 第一个超时任务
      */
-    fun firstTimeoutTask(timeoutSeconds: Long, dispatcher: String?): TSubScanTask? {
-        val now = LocalDateTime.now()
-
-        val lastModifiedCriteria = Criteria
-            .where(TSubScanTask::lastModifiedDate.name).lt(now.minusSeconds(timeoutSeconds))
-            .and(TSubScanTask::timeoutDateTime.name).exists(false)
-
-        val timeoutCriteria = Criteria().orOperator(
-            TSubScanTask::timeoutDateTime.lt(now),
-            lastModifiedCriteria
-        )
-
-        val criteria = Criteria().andOperator(
-            timeoutCriteria,
+    fun timeoutTasks(dispatcher: String? = null, allDispatcher: Boolean = true): Page<TSubScanTask> {
+        val criteriaList = mutableListOf(
+            buildTimeoutCriteria(),
             TSubScanTask::status.inValues(PULLED.name, EXECUTING.name),
-            dispatcherCriteria(dispatcher)
         )
+        if (!allDispatcher) {
+            criteriaList.add(dispatcherCriteria(dispatcher))
+        }
+        val criteria = Criteria().andOperator(criteriaList)
 
-        return findOne(Query(criteria))
+        return page(Query(criteria), Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE))
     }
 
     /**
@@ -253,13 +271,66 @@ class SubScanTaskDao(
         return page(Query(criteria), Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE))
     }
 
-    private fun buildStatusAndDispatcherQuery(status: List<String>, dispatcher: String?): Query {
-        return Query(
-            Criteria().andOperator(
-                TSubScanTask::status.inValues(status),
-                dispatcherCriteria(dispatcher)
+    private fun buildTimeoutCriteria(): Criteria {
+        val heartbeatTimeoutSeconds = scannerProperties.heartbeatTimeout.seconds
+        val maxTaskTimeoutSeconds = scannerProperties.maxTaskDuration.seconds
+        val now = LocalDateTime.now()
+        val timeoutCriteria = ArrayList<Criteria>()
+        timeoutCriteria.add(TSubScanTask::timeoutDateTime.lt(now))
+        if (heartbeatTimeoutSeconds > 0) {
+            val heartbeatTimeoutCriteria = Criteria
+                .where(TSubScanTask::heartbeatDateTime.name).lt(now.minusSeconds(heartbeatTimeoutSeconds))
+            timeoutCriteria.add(heartbeatTimeoutCriteria)
+        }
+
+        if (maxTaskTimeoutSeconds > 0) {
+            val maxTaskTimeoutCriteria =
+                Criteria.where(TSubScanTask::createdDate.name).lt(now.minusSeconds(maxTaskTimeoutSeconds))
+            timeoutCriteria.add(maxTaskTimeoutCriteria)
+        }
+        return Criteria().orOperator(timeoutCriteria)
+    }
+
+    private fun buildNotTimeoutCriteria(): List<Criteria> {
+        val heartbeatTimeoutSeconds = scannerProperties.heartbeatTimeout.seconds
+        val maxTaskTimeoutSeconds = scannerProperties.maxTaskDuration.seconds
+        val now = LocalDateTime.now()
+        val timeoutCriteria = ArrayList<Criteria>()
+
+        // timeoutDateTime
+        timeoutCriteria.add(
+            Criteria().orOperator(
+                TSubScanTask::timeoutDateTime.gte(now),
+                TSubScanTask::timeoutDateTime.exists(false)
             )
         )
+
+        // heartbeatDateTime
+        if (heartbeatTimeoutSeconds > 0) {
+            val heartbeatTimeoutCriteria = Criteria().orOperator(
+                TSubScanTask::heartbeatDateTime.gte(now.minusSeconds(heartbeatTimeoutSeconds)),
+                TSubScanTask::heartbeatDateTime.exists(false)
+            )
+            timeoutCriteria.add(heartbeatTimeoutCriteria)
+        }
+
+        // maxTaskTimeout
+        if (maxTaskTimeoutSeconds > 0) {
+            val maxTaskTimeoutCriteria =
+                Criteria.where(TSubScanTask::createdDate.name).gte(now.minusSeconds(maxTaskTimeoutSeconds))
+            timeoutCriteria.add(maxTaskTimeoutCriteria)
+        }
+        return timeoutCriteria
+    }
+
+    private fun buildStatusAndDispatcherQuery(status: List<String>?, dispatcher: String?): Query {
+        val criteria = ArrayList<Criteria>(2)
+        criteria.add(dispatcherCriteria(dispatcher))
+        if (!status.isNullOrEmpty()) {
+            criteria.add(TSubScanTask::status.inValues(status))
+        }
+        criteria.addAll(buildNotTimeoutCriteria())
+        return Query(Criteria().andOperator(criteria))
     }
 
     private fun dispatcherCriteria(dispatcher: String?): Criteria {

@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.message.StorageMessageCode
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
@@ -63,6 +64,17 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
+    override fun findLengthOfAppendFile(appendId: String, storageCredentials: StorageCredentials?): Long {
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        val tempClient = getTempClient(credentials)
+        try {
+            return tempClient.length(CURRENT_PATH, appendId)
+        } catch (exception: Exception) {
+            logger.error("Failed to read length of id [$appendId] on [${credentials.key}]", exception)
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
+        }
+    }
+
     override fun append(appendId: String, artifactFile: ArtifactFile, storageCredentials: StorageCredentials?): Long {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
@@ -78,11 +90,15 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
-    override fun finishAppend(appendId: String, storageCredentials: StorageCredentials?): FileInfo {
+    override fun finishAppend(
+        appendId: String,
+        storageCredentials: StorageCredentials?,
+        fileInfo: FileInfo?
+    ): FileInfo {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
         try {
-            val fileInfo = tempClient.load(CURRENT_PATH, appendId)?.let { storeMergedFile(it, credentials) }
+            val fileInfo = tempClient.load(CURRENT_PATH, appendId)?.let { storeMergedFile(it, credentials, fileInfo) }
                 ?: throw IllegalArgumentException("Append file does not exist.")
             tempClient.delete(CURRENT_PATH, appendId)
             logger.info("Success to finish append file [$appendId], file info [$fileInfo]")
@@ -124,7 +140,7 @@ abstract class FileBlockSupport : CleanupSupport() {
         digest: String,
         artifactFile: ArtifactFile,
         overwrite: Boolean,
-        storageCredentials: StorageCredentials?
+        storageCredentials: StorageCredentials?,
     ) {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
@@ -142,27 +158,64 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
-    override fun mergeBlock(blockId: String, storageCredentials: StorageCredentials?): FileInfo {
+    override fun storeBlockWithRandomPosition(
+        blockId: String,
+        sequence: Int,
+        digest: String,
+        artifactFile: ArtifactFile,
+        overwrite: Boolean,
+        storageCredentials: StorageCredentials?,
+        startPosition: Long,
+        totalLength: Long,
+    ) {
+        val credentials = getCredentialsOrDefault(storageCredentials)
+        val tempClient = getTempClient(credentials)
+        val blockInputStream = artifactFile.getInputStream()
+        val blockFileSize = artifactFile.getSize()
+        try {
+            tempClient.store(
+                blockId, "$sequence$SHA256_SUFFIX",
+                digest.byteInputStream(), digest.length.toLong(), overwrite
+            )
+            tempClient.store(
+                blockId, "$sequence$BLOCK_APPEND_SUFFIX",
+                digest.byteInputStream(), digest.length.toLong(), overwrite
+            )
+            tempClient.appendAt(
+                blockId, MERGED_FILENAME, blockInputStream,
+                blockFileSize, startPosition, totalLength
+            )
+            logger.info("Success to append block [$blockId/$sequence] at position $startPosition")
+        } catch (exception: Exception) {
+            logger.error("Failed to store block [$blockId/$sequence] on [${credentials.key}]", exception)
+            tempClient.delete(blockId, "$sequence$BLOCK_APPEND_SUFFIX")
+            tempClient.delete(blockId, "$sequence$SHA256_SUFFIX")
+            throw StorageErrorException(StorageMessageCode.STORE_ERROR)
+        }
+    }
+
+    override fun mergeBlock(
+        blockId: String,
+        storageCredentials: StorageCredentials?,
+        fileInfo: FileInfo?,
+        mergeFileFlag: Boolean
+    ): FileInfo {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
         try {
-            val blockFileList = tempClient.listFiles(blockId, BLOCK_SUFFIX).sortedBy {
-                it.name.removeSuffix(BLOCK_SUFFIX).toInt()
-            }
-            blockFileList.takeIf { it.isNotEmpty() } ?: throw StorageErrorException(StorageMessageCode.BLOCK_EMPTY)
-            for (index in blockFileList.indices) {
-                val sequence = index + 1
-                if (blockFileList[index].name.removeSuffix(BLOCK_SUFFIX).toInt() != sequence) {
-                    throw StorageErrorException(StorageMessageCode.BLOCK_MISSING, sequence.toString())
-                }
-            }
-            val mergedFile = tempClient.mergeFiles(
-                blockFileList, tempClient.touch(
-                    blockId,
-                    MERGED_FILENAME
-                )
+            var mergedFile = tempClient.touch(
+                blockId,
+                MERGED_FILENAME
             )
-            val fileInfo = storeMergedFile(mergedFile, credentials)
+            if (mergeFileFlag) {
+                val blockFileList = getBlockList(tempClient, blockId, BLOCK_SUFFIX)
+                mergedFile = tempClient.mergeFiles(
+                    blockFileList, mergedFile, mergeFileFlag
+                )
+            } else {
+                getBlockList(tempClient, blockId, BLOCK_APPEND_SUFFIX)
+            }
+            val fileInfo = storeMergedFile(mergedFile, credentials, fileInfo)
             tempClient.deleteDirectory(CURRENT_PATH, blockId)
             logger.info("Success to merge block [$blockId]")
             return fileInfo
@@ -187,7 +240,7 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
-    override fun listBlock(blockId: String, storageCredentials: StorageCredentials?): List<Pair<Long, String>> {
+    override fun listBlock(blockId: String, storageCredentials: StorageCredentials?): List<Triple<Long, String, Int>> {
         val credentials = getCredentialsOrDefault(storageCredentials)
         val tempClient = getTempClient(credentials)
         try {
@@ -198,7 +251,8 @@ abstract class FileBlockSupport : CleanupSupport() {
                 val size = it.length()
                 val name = it.name.replace(BLOCK_SUFFIX, SHA256_SUFFIX)
                 val sha256 = tempClient.load(blockId, name)?.readText().orEmpty()
-                Pair(size, sha256)
+                val sequence = it.name.removeSuffix(BLOCK_SUFFIX).toInt()
+                Triple(size, sha256, sequence)
             }
         } catch (exception: Exception) {
             logger.error("Failed to list block [$blockId] on [${credentials.key}]", exception)
@@ -206,18 +260,42 @@ abstract class FileBlockSupport : CleanupSupport() {
         }
     }
 
-    private fun storeMergedFile(file: File, credentials: StorageCredentials): FileInfo {
-        val sha256 = file.sha256()
-        val md5 = file.md5()
+    /**
+     * 合并文件并返回对应FileInfo(sha256、md5、size)
+     * 当 fileInfo不为空时：避免当文件过大时生成 sha256 或者 md5 需要过长时间，信任传递进来的 sha256 和md5 值
+     * 当 fileInfo为空时，生成对应的 sha256 或者 md5
+     */
+    private fun storeMergedFile(file: File, credentials: StorageCredentials, fileInfo: FileInfo? = null): FileInfo {
         val size = file.length()
-        val fileInfo = FileInfo(sha256, md5, size)
-        val path = fileLocator.locate(sha256)
-        if (!doExist(path, sha256, credentials)) {
-            doStore(path, sha256, file.toArtifactFile(), credentials)
+        val realFileInfo = if (fileInfo == null) {
+            FileInfo(file.sha256(), file.md5(), size)
         } else {
-            logger.info("File [$sha256] exist, skip store.")
+            if (fileInfo.size != size)
+                throw IllegalArgumentException("Merged file is broken!")
+            FileInfo(fileInfo.sha256, fileInfo.md5, size)
         }
-        return fileInfo
+        val path = fileLocator.locate(realFileInfo.sha256)
+        if (!doExist(path, realFileInfo.sha256, credentials)) {
+            doStore(path, realFileInfo.sha256, file.toArtifactFile(), credentials)
+        } else {
+            logger.info("File [${realFileInfo.sha256}] exist, skip store.")
+        }
+        return realFileInfo
+    }
+
+
+    private fun getBlockList(tempClient: FileSystemClient, blockId: String, suffixString: String): List<File> {
+        val blockFileList = tempClient.listFiles(blockId, suffixString).sortedBy {
+            it.name.removeSuffix(suffixString).toInt()
+        }
+        blockFileList.takeIf { it.isNotEmpty() } ?: throw StorageErrorException(StorageMessageCode.BLOCK_EMPTY)
+        for (index in blockFileList.indices) {
+            val sequence = index + 1
+            if (blockFileList[index].name.removeSuffix(suffixString).toInt() != sequence) {
+                throw StorageErrorException(StorageMessageCode.BLOCK_MISSING, sequence.toString())
+            }
+        }
+        return blockFileList
     }
 
     companion object {
@@ -225,6 +303,7 @@ abstract class FileBlockSupport : CleanupSupport() {
         private const val CURRENT_PATH = StringPool.EMPTY
         private const val BLOCK_SUFFIX = ".block"
         private const val SHA256_SUFFIX = ".sha256"
+        private const val BLOCK_APPEND_SUFFIX = ".blockAppend"
         private const val MERGED_FILENAME = "merged.data"
     }
 }

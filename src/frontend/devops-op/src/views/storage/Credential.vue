@@ -23,11 +23,24 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="缓存天数"
+        label="缓存天数(已废弃)"
         width="180"
       >
         <template v-if="scope.row.cache.enabled" slot-scope="scope">
           <span>{{ expireDays(scope.row.cache.expireDays) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="缓存时间"
+        width="180"
+      >
+        <template v-if="scope.row.cache.enabled" slot-scope="scope">
+          <span>{{ formatSeconds(scope.row.cache.expireDuration) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="最大缓存大小" width="180">
+        <template v-if="scope.row.cache.enabled" slot-scope="scope">
+          <span>{{ maxSize(scope.row.cache.maxSize) }}</span>
         </template>
       </el-table-column>
       <el-table-column
@@ -74,6 +87,7 @@
 <script>
 import { credentials, defaultCredential, deleteCredential } from '@/api/storage'
 import CreateOrUpdateCredentialDialog from '@/views/storage/components/CreateOrUpdateCredentialDialog'
+import { convertFileSize } from '@/utils/file'
 
 export default {
   name: 'Credential',
@@ -142,6 +156,19 @@ export default {
     },
     expireDays(expireDays) {
       return parseInt(expireDays) <= 0 ? '永久' : expireDays
+    },
+    maxSize(maxSize) {
+      return maxSize <= 0 ? '无限制' : convertFileSize(maxSize)
+    },
+    formatSeconds(seconds) {
+      if (seconds <= 0) {
+        return '永久'
+      }
+      const hours = Math.floor(seconds / 3600)
+      const minutes = Math.floor((seconds % 3600) / 60)
+      const remainingSeconds = seconds % 60
+
+      return `${hours}小时 ${minutes}分钟 ${remainingSeconds}秒`
     }
   }
 }

@@ -42,12 +42,14 @@
             </template>
             <bk-table-column :label="$t('account')" prop="userId"></bk-table-column>
             <bk-table-column :label="$t('chineseName')" prop="name"></bk-table-column>
-            <bk-table-column :label="$t('email')" prop="email"></bk-table-column>
+            <bk-table-column :label="$t('email')" prop="email">
+                <template #default="{ row }">{{ transEmail(row.email) }}</template>
+            </bk-table-column>
             <bk-table-column :label="$t('telephone')" prop="phone">
-                <template #default="{ row }">{{row.phone || '/'}}</template>
+                <template #default="{ row }">{{ transPhone(row.phone) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('createdDate')">
-                <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
+                <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('administrator')">
                 <template #default="{ row }">
@@ -65,6 +67,7 @@
                         :list="[
                             { label: $t('edit'), clickEvent: () => showEditUser(row) },
                             { label: $t('resetPassword'), clickEvent: () => resetUserPwd(row) },
+                            { label: $t('createAccessToken'), clickEvent: () => createAccessToken(row) },
                             { label: $t('delete'), clickEvent: () => deleteUserHandler(row) }
                         ]"></operation-list>
                 </template>
@@ -126,15 +129,18 @@
                 <bk-button class="ml10" :loading="editUserDialog.loading" theme="primary" @click="confirm">{{$t('confirm')}}</bk-button>
             </template>
         </canway-dialog>
+        <create-token-dialog ref="createToken"></create-token-dialog>
     </div>
 </template>
 <script>
     import OperationList from '@repository/components/OperationList'
+    import createTokenDialog from '@repository/views/repoToken/createTokenDialog'
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
+    import { transformEmail, transformPhone } from '@repository/utils/privacy'
     export default {
         name: 'user',
-        components: { OperationList },
+        components: { OperationList, createTokenDialog },
         data () {
             return {
                 isLoading: false,
@@ -166,7 +172,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^[a-zA-Z][a-zA-Z0-9_-]{1,31}$/,
+                            regex: /^[a-zA-Z][a-zA-Z0-9_-|@]{1,31}$/,
                             message: this.$t('account') + this.$t('space') + this.$t('include') + this.$t('space') + this.$t('userIdPlaceHolder'),
                             trigger: 'blur'
                         },
@@ -457,6 +463,18 @@
                 if (!res) {
                     this.editUserDialog.asstUsers.splice(this.editUserDialog.asstUsers.indexOf(tag), 1)
                 }
+            },
+            transEmail (email) {
+                if (email === null) return email
+                return transformEmail(email)
+            },
+            transPhone (phone) {
+                if (phone === null || phone === '') return '/'
+                return transformPhone(phone)
+            },
+            createAccessToken (row) {
+                this.$refs.createToken.userName = row.userId
+                this.$refs.createToken.showDialogHandler()
             }
         }
     }

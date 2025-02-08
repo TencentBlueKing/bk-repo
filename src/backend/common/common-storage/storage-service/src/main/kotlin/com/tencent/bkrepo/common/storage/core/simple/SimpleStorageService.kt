@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.storage.core.AbstractStorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 存储服务简单实现
@@ -49,17 +48,19 @@ class SimpleStorageService : AbstractStorageService() {
         filename: String,
         artifactFile: ArtifactFile,
         credentials: StorageCredentials,
-        cancel: AtomicBoolean?
+        storageClass: String?,
     ) {
         when {
             artifactFile.isInMemory() -> {
                 fileStorage.store(path, filename, artifactFile.getInputStream(), artifactFile.getSize(), credentials)
             }
+
             artifactFile.isFallback() -> {
-                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
+                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials, storageClass)
             }
+
             else -> {
-                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials)
+                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials, storageClass)
             }
         }
     }
@@ -68,7 +69,7 @@ class SimpleStorageService : AbstractStorageService() {
         path: String,
         filename: String,
         range: Range,
-        credentials: StorageCredentials
+        credentials: StorageCredentials,
     ): ArtifactInputStream? {
         return fileStorage.load(path, filename, range, credentials)?.artifactStream(range)
     }
@@ -79,5 +80,13 @@ class SimpleStorageService : AbstractStorageService() {
 
     override fun doExist(path: String, filename: String, credentials: StorageCredentials): Boolean {
         return fileStorage.exist(path, filename, credentials)
+    }
+
+    override fun doCheckRestore(path: String, filename: String, credentials: StorageCredentials): Boolean {
+        return fileStorage.checkRestore(path, filename, credentials)
+    }
+
+    override fun doRestore(path: String, filename: String, days: Int, tier: String, credentials: StorageCredentials) {
+        return fileStorage.restore(path, filename, days, tier, credentials)
     }
 }

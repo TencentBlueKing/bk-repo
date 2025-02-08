@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.api.util
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer
@@ -44,6 +45,8 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
+import com.tencent.bkrepo.common.api.serializer.DataSizeSerializer
+import org.springframework.util.unit.DataSize
 import java.io.InputStream
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -68,7 +71,9 @@ object JsonUtils {
         registerModule(javaTimeModule)
         registerModule(ParameterNamesModule())
         registerModule(Jdk8Module())
-
+        var dateSizeModule = SimpleModule()
+        dateSizeModule.addSerializer(DataSize::class.java, DataSizeSerializer())
+        registerModule(dateSizeModule)
         enable(SerializationFeature.INDENT_OUTPUT)
         disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
@@ -80,10 +85,10 @@ object JsonUtils {
  */
 fun Any.toJsonString() = JsonUtils.objectMapper.writeValueAsString(this).orEmpty()
 
-
 fun toJson(any: Any): String {
     return any.toJsonString().replace(System.lineSeparator(), "")
 }
+
 /**
  * 将json字符串反序列化为对象
  */
@@ -93,3 +98,5 @@ inline fun <reified T> String.readJsonString(): T = JsonUtils.objectMapper.readV
  * 将json字符串流反序列化为对象
  */
 inline fun <reified T> InputStream.readJsonString(): T = JsonUtils.objectMapper.readValue(this, jacksonTypeRef<T>())
+
+fun String.jsonCompress() = this.replace("\\s|\\t|\\r|\\n".toRegex(), "")

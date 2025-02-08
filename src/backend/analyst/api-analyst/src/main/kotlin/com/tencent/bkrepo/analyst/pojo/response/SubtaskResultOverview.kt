@@ -59,7 +59,7 @@ data class SubtaskResultOverview(
 
     @ApiModelProperty("最高漏洞等级")
     val highestLeakLevel: String? = null,
-    @ApiModelProperty("危急漏洞数")
+    @ApiModelProperty("严重漏洞数")
     val critical: Long = 0,
     @ApiModelProperty("高危漏洞数")
     val high: Long = 0,
@@ -77,5 +77,7 @@ data class SubtaskResultOverview(
     @ApiModelProperty("扫描时方案的质量规则")
     val scanQuality: Map<String, Any>? = null,
     @ApiModelProperty("扫描时长")
-    val duration: Long
+    val duration: Long,
+    @ApiModelProperty("扫描状态")
+    val scanStatus: String
 )

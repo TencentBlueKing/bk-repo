@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.replication
 
-import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler
-import com.tencent.bkrepo.replication.replica.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
+import com.tencent.bkrepo.replication.replica.type.schedule.ReplicaTaskScheduler
+import com.tencent.bkrepo.replication.replica.type.schedule.ReplicaTaskScheduler.Companion.REPLICA_JOB_GROUP
 import org.junit.jupiter.api.Test
 import org.quartz.InterruptableJob
 import org.quartz.JobBuilder

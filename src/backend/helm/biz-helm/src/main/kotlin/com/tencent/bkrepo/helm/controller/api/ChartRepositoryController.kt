@@ -31,14 +31,23 @@
 
 package com.tencent.bkrepo.helm.controller.api
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditAttribute
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.HELM_INDEX_YAML_URL
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.HELM_INSTALL_URL
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.HELM_PROV_INSTALL_URL
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -48,8 +57,17 @@ import java.time.LocalDateTime
 @Suppress("MVCPathVariableInspection")
 @RestController
 class ChartRepositoryController(
-    private val chartRepositoryService: ChartRepositoryService
+    private val chartRepositoryService: ChartRepositoryService,
 ) {
+    @GetMapping(HelmArtifactInfo.CHARTS_LIST, produces = [MediaType.APPLICATION_JSON_VALUE])
+    fun allChartsList(
+        @ArtifactPathVariable
+        artifactInfo: HelmArtifactInfo,
+        @RequestParam startTime: LocalDateTime?
+    ): ResponseEntity<Any> {
+        return chartRepositoryService.allChartsList(artifactInfo, startTime)
+    }
+
     /**
      * query index.yaml
      */
@@ -61,6 +79,23 @@ class ChartRepositoryController(
     /**
      * retrieved when you run helm install chartmuseum/mychart
      */
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @GetMapping(HELM_INSTALL_URL)
     fun installTgz(@ArtifactPathVariable artifactInfo: HelmArtifactInfo) {
         chartRepositoryService.installTgz(artifactInfo)
@@ -69,6 +104,23 @@ class ChartRepositoryController(
     /**
      * retrieved when you run helm install with the --verify flag
      */
+    @AuditEntry(
+        actionId = NODE_DOWNLOAD_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_DOWNLOAD_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName")
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
+    )
     @GetMapping(HELM_PROV_INSTALL_URL)
     fun installProv(@ArtifactPathVariable artifactInfo: HelmArtifactInfo) {
         chartRepositoryService.installProv(artifactInfo)
@@ -79,7 +131,16 @@ class ChartRepositoryController(
      */
     @PostMapping("/{projectId}/{repoName}/regenerate")
     fun regenerateIndexYaml(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void> {
-        chartRepositoryService.regenerateIndexYaml(artifactInfo)
+        chartRepositoryService.regenerateIndexYaml(artifactInfo, true)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * regenerate index.yaml
+     */
+    @PostMapping("/{projectId}/{repoName}/regenerate/v2")
+    fun regenerateIndexYamlV2(@ArtifactPathVariable artifactInfo: HelmArtifactInfo): Response<Void> {
+        chartRepositoryService.regenerateIndexYaml(artifactInfo, false)
         return ResponseBuilder.success()
     }
 

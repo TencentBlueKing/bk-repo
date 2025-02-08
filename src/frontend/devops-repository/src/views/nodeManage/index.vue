@@ -35,7 +35,7 @@
             </template>
             <bk-table-column :label="$t('status')" width="100">
                 <template #default="{ row }">
-                    <div class="status-sign" :class="row.status" :data-name="row.status === 'HEALTHY' ? $t('normal') : $t('normal')"></div>
+                    <div class="status-sign" :class="row.status" :data-name="row.status === 'HEALTHY' ? $t('normal') : $t('abnormal')"></div>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('nodeName')" prop="name" width="250" show-overflow-tooltip></bk-table-column>
@@ -98,6 +98,9 @@
                 <bk-form-item :label="$t('Certificate')" property="certificate" error-display-type="normal">
                     <bk-input type="textarea" v-model.trim="editNodeDialog.certificate"></bk-input>
                 </bk-form-item>
+                <bk-form-item :label="$t('udpPort')" property="udpPort" error-display-type="normal" v-if="editNodeDialog.type !== 'REMOTE'">
+                    <bk-input type="number" :max="65535" :min="1" v-model.trim="editNodeDialog.udpPort"></bk-input>
+                </bk-form-item>
                 <bk-form-item :label="$t('verificationMethod')">
                     <bk-radio-group v-model="createType" :change="changeValidateType()">
                         <bk-radio class="mr20" value="user">{{ $t('username') + '/' + $t('password') }}</bk-radio>
@@ -157,7 +160,8 @@
                     appId: null,
                     accessKey: null,
                     secretKey: null,
-                    certificate: null
+                    certificate: null,
+                    udpPort: null
                 },
                 rules: {
                     name: [
@@ -169,6 +173,13 @@
                         {
                             validator: this.asynCheckNodeName,
                             message: this.$t('nodeName') + this.$t('space') + this.$t('exist'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    udpPort: [
+                        {
+                            validator: this.asynCheckUdpPort,
+                            message: this.$t('portTip'),
                             trigger: 'blur'
                         }
                     ],
@@ -258,6 +269,9 @@
                     return true
                 }
             },
+            asynCheckUdpPort () {
+                return !isNaN(this.editNodeDialog.udpPort)
+            },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current
                 this.pagination.limit = limit
@@ -282,7 +296,8 @@
                     appId: null,
                     accessKey: null,
                     secretKey: null,
-                    certificate: null
+                    certificate: null,
+                    udpPort: null
                 }
             },
             showEditNode (row) {
@@ -307,7 +322,13 @@
                     this.editNodeDialog.username = null
                     this.editNodeDialog.password = null
                 }
-                const { type, name, url, username, password, appId, accessKey, secretKey, certificate } = this.editNodeDialog
+                if (this.editNodeDialog.certificate === '') {
+                    this.editNodeDialog.certificate = null
+                }
+                if (this.editNodeDialog.udpPort === '') {
+                    this.editNodeDialog.udpPort = null
+                }
+                const { type, name, url, username, password, appId, accessKey, secretKey, certificate, udpPort } = this.editNodeDialog
                 if (this.editNodeDialog.add) {
                     this.createCluster({
                         body: {
@@ -319,7 +340,8 @@
                             appId,
                             accessKey,
                             secretKey,
-                            certificate
+                            certificate,
+                            udpPort
                         }
                     }).then(() => {
                         this.$bkMessage({
@@ -343,7 +365,8 @@
                             appId,
                             accessKey,
                             secretKey,
-                            certificate
+                            certificate,
+                            udpPort
                         }
                     }).then(() => {
                         this.$bkMessage({

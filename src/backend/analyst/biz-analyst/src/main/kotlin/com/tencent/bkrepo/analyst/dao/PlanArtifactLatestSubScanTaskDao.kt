@@ -32,6 +32,7 @@ import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.request.PlanCountRequest
+import com.tencent.bkrepo.analyst.pojo.request.SubtaskInfoRequest
 import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
@@ -91,6 +92,40 @@ class PlanArtifactLatestSubScanTaskDao(
                 .and(SubScanTaskDefinition::planId.name).isEqualTo(id)
                 .and(SubScanTaskDefinition::createdDate.name).gte(startDateTime!!).lte(endDateTime!!)
             return find(Query(criteria))
+        }
+    }
+
+    /**
+     * 获取指定扫描方案的制品最新扫描记录
+     *
+     * @param request 获取制品最新扫描记录请求
+     *
+     * @return 扫描方案最新的制品扫描结果
+     */
+    fun planLatestRecords(request: SubtaskInfoRequest): List<TPlanArtifactLatestSubScanTask> {
+        with(request) {
+            val criteria = Criteria.where(TPlanArtifactLatestSubScanTask::projectId.name).isEqualTo(projectId)
+            id?.let { criteria.and(TPlanArtifactLatestSubScanTask::planId.name).isEqualTo(id) }
+            subScanTaskStatus?.let { criteria.and(TPlanArtifactLatestSubScanTask::status.name).inValues(it) }
+            if (startDateTime != null && endDateTime != null) {
+                criteria.and(TPlanArtifactLatestSubScanTask::createdDate.name).gte(startDateTime!!).lte(endDateTime!!)
+            }
+            qualityRedLine?.let {
+                criteria.and(TPlanArtifactLatestSubScanTask::qualityRedLine.name).isEqualTo(qualityRedLine)
+            }
+            unQuality?.let {
+                criteria.and(TPlanArtifactLatestSubScanTask::qualityRedLine.name).nin(listOf(true, false))
+            }
+
+            val query = Query(criteria).with(
+                Sort.by(
+                    Sort.Direction.DESC,
+                    TPlanArtifactLatestSubScanTask::lastModifiedDate.name,
+                    TPlanArtifactLatestSubScanTask::repoName.name,
+                    TPlanArtifactLatestSubScanTask::fullPath.name
+                )
+            )
+            return find(query)
         }
     }
 

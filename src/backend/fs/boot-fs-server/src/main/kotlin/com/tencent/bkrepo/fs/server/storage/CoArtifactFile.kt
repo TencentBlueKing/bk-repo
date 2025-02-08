@@ -29,7 +29,7 @@ package com.tencent.bkrepo.fs.server.storage
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha1
-import com.tencent.bkrepo.common.storage.core.StorageProperties
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
@@ -66,6 +66,7 @@ class CoArtifactFile(
         val path = storageCredentials.upload.location.toPath()
         receiver = CoArtifactDataReceiver(
             storageProperties.receive,
+            storageProperties.monitor,
             path
         )
         monitor.add(receiver)
@@ -80,7 +81,6 @@ class CoArtifactFile(
     }
 
     override fun getSize(): Long {
-        require(initialized)
         return receiver.getSize()
     }
 
@@ -109,7 +109,8 @@ class CoArtifactFile(
     }
 
     override fun isFallback(): Boolean {
-        return false
+        runBlocking { finish() }
+        return receiver.fallback
     }
 
     override fun isInLocalDisk(): Boolean {

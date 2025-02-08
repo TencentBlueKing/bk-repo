@@ -28,20 +28,31 @@
 package com.tencent.bkrepo.replication.controller.api
 
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.replication.pojo.dispatch.ReplicaNodeDispatchConfigInfo
+import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigCreateRequest
+import com.tencent.bkrepo.replication.pojo.dispatch.request.ReplicaNodeDispatchConfigUpdateRequest
 import com.tencent.bkrepo.replication.pojo.ext.CheckRepoDifferenceRequest
 import com.tencent.bkrepo.replication.service.ReplicaExtService
+import com.tencent.bkrepo.replication.service.ReplicaNodeDispatchService
 import io.swagger.annotations.Api
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @Api("同步ext接口")
+@Principal(type = PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/ext/")
 class UserReplicationController(
-    private val replicaExtService: ReplicaExtService
+    private val replicaExtService: ReplicaExtService,
+    private val replicaNodeDispatchService: ReplicaNodeDispatchService
 ) {
 
 
@@ -63,5 +74,47 @@ class UserReplicationController(
         @RequestBody request: CheckRepoDifferenceRequest
     ): Response<Any> {
         return ResponseBuilder.success(replicaExtService.syncRepoDifference(request))
+    }
+
+
+    /**
+     * 新增分发任务执行服务器对应调度配置
+     */
+    @PostMapping("/dispatch/config/create")
+    fun create(
+        @RequestBody request: ReplicaNodeDispatchConfigCreateRequest
+    ): Response<Void> {
+        replicaNodeDispatchService.createReplicaNodeDispatchConfig(request)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * 更新分发任务执行服务器对应调度配置
+     */
+    @PostMapping("/dispatch/config/update")
+    fun update(
+        @RequestBody request: ReplicaNodeDispatchConfigUpdateRequest
+    ): Response<Void> {
+        replicaNodeDispatchService.updateReplicaNodeDispatchConfig(request)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * 删除分发任务执行服务器对应调度配置
+     */
+    @DeleteMapping("/dispatch/config/delete/{id}")
+    fun delete(
+        @PathVariable id: String
+    ): Response<Void> {
+        replicaNodeDispatchService.deleteReplicaNodeDispatchConfig(id)
+        return ResponseBuilder.success()
+    }
+
+    /**
+     * 获取所有分发任务执行服务器对应调度配置
+     */
+    @GetMapping("/dispatch/config/list")
+    fun list(): Response<List<ReplicaNodeDispatchConfigInfo>> {
+        return ResponseBuilder.success(replicaNodeDispatchService.listAllReplicaNodeDispatchConfig())
     }
 }

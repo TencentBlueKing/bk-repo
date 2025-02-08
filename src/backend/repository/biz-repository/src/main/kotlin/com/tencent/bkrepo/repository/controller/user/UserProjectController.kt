@@ -27,20 +27,30 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bk.audit.annotations.ActionAuditRecord
+import com.tencent.bk.audit.annotations.AuditEntry
+import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bk.audit.annotations.AuditRequestBody
+import com.tencent.bk.audit.context.ActionAuditContext
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_EDIT_ACTION
+import com.tencent.bkrepo.common.artifact.audit.PROJECT_RESOURCE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.manager.PermissionManager
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
 import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
 import com.tencent.bkrepo.repository.pojo.project.UserProjectCreateRequest
-import com.tencent.bkrepo.repository.service.repo.ProjectService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -61,11 +71,25 @@ class UserProjectController(
     private val permissionManager: PermissionManager,
     private val projectService: ProjectService
 ) {
+    @AuditEntry(
+        actionId = PROJECT_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#userProjectRequest?.name",
+            instanceNames = "#userProjectRequest?.displayName"
+        ),
+        scopeId = "#userProjectRequest?.name",
+        content = ActionAuditContent.PROJECT_CREATE_CONTENT
+    )
     @ApiOperation("创建项目")
     @Principal(PrincipalType.GENERAL)
     @PostMapping("/create")
     fun createProject(
         @RequestAttribute userId: String,
+        @AuditRequestBody
         @RequestBody userProjectRequest: UserProjectCreateRequest
     ): Response<Void> {
         val createRequest = with(userProjectRequest) {
@@ -73,9 +97,12 @@ class UserProjectController(
                 name = name,
                 displayName = displayName,
                 description = description,
-                operator = userId
+                operator = userId,
+                createPermission = createPermission,
+                metadata = metadata
             )
         }
+        ActionAuditContext.current().setInstance(createRequest)
         projectService.createProject(createRequest)
         return ResponseBuilder.success()
     }
@@ -94,23 +121,40 @@ class UserProjectController(
     @ApiOperation("校验项目参数是否存在")
     @GetMapping("/exist")
     fun checkProjectExist(
-            @RequestAttribute userId: String,
-            @ApiParam(value = "项目ID", required = false)
-            @RequestParam name: String?,
-            @ApiParam(value = "项目ID", required = false)
-            @RequestParam displayName: String?
+        @RequestAttribute userId: String,
+        @ApiParam(value = "项目ID", required = false)
+        @RequestParam name: String?,
+        @ApiParam(value = "项目ID", required = false)
+        @RequestParam displayName: String?
     ): Response<Boolean> {
         return ResponseBuilder.success(projectService.checkProjectExist(name, displayName))
     }
 
+
+    @AuditEntry(
+        actionId = PROJECT_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#name",
+            instanceNames = "#name"
+        ),
+        scopeId = "#name",
+        content = ActionAuditContent.PROJECT_EDIT_CONTENT
+    )
     @ApiOperation("编辑项目")
     @PutMapping("/{name}")
     fun updateProject(
-            @RequestAttribute userId: String,
-            @ApiParam(value = "项目ID", required = true)
-            @PathVariable name: String,
-            @RequestBody projectUpdateRequest: ProjectUpdateRequest
+        @RequestAttribute userId: String,
+        @ApiParam(value = "项目ID", required = true)
+        @PathVariable name: String,
+        @AuditRequestBody
+        @RequestBody projectUpdateRequest: ProjectUpdateRequest
     ): Response<Boolean> {
+        ActionAuditContext.current().setInstance(projectUpdateRequest)
+        permissionManager.checkProjectPermission(PermissionAction.UPDATE, name)
         return ResponseBuilder.success(projectService.updateProject(name, projectUpdateRequest))
     }
 
@@ -130,6 +174,19 @@ class UserProjectController(
         return ResponseBuilder.success(projectService.listPermissionProject(userId, option))
     }
 
+    @AuditEntry(
+        actionId = PROJECT_CREATE_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = PROJECT_CREATE_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = PROJECT_RESOURCE,
+            instanceIds = "#userProjectRequest?.name",
+            instanceNames = "#userProjectRequest?.displayName"
+        ),
+        scopeId = "#userProjectRequest?.name",
+        content = ActionAuditContent.PROJECT_CREATE_CONTENT
+    )
     @Deprecated("waiting kb-ci", replaceWith = ReplaceWith("createProject"))
     @ApiOperation("创建项目")
     @Principal(PrincipalType.PLATFORM)
@@ -139,5 +196,24 @@ class UserProjectController(
         @RequestBody userProjectRequest: UserProjectCreateRequest
     ): Response<Void> {
         return this.createProject(userId, userProjectRequest)
+    }
+
+    @ApiOperation("项目仓库统计信息列表")
+    @GetMapping("/metrics/{projectId}")
+    fun projectMetricsList(
+        @ApiParam(value = "项目ID", required = true)
+        @PathVariable projectId: String
+    ): Response<ProjectMetricsInfo?> {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
+        return ResponseBuilder.success(projectService.getProjectMetricsInfo(projectId))
+    }
+
+    @ApiOperation("获取项目启用/禁用状态")
+    @GetMapping("/enabled/{projectId}")
+    fun isProjectEnabled(
+        @ApiParam(value = "项目ID", required = true)
+        @PathVariable projectId: String
+    ): Response<Boolean> {
+        return ResponseBuilder.success(projectService.isProjectEnabled(projectId))
     }
 }

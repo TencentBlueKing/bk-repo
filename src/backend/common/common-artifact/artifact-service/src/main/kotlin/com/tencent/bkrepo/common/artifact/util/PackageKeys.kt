@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.artifact.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import java.util.Locale
 
 /**
  * 包唯一id工具类
@@ -41,8 +42,8 @@ object PackageKeys {
 
     private const val DOCKER = "docker"
     private const val NPM = "npm"
+    private const val OHPM = "ohpm"
     private const val HELM = "helm"
-    private const val RDS = "rds"
     private const val RPM = "rpm"
     private const val PYPI = "pypi"
     private const val COMPOSER = "composer"
@@ -65,13 +66,10 @@ object PackageKeys {
     /**
      * 生成conan格式key
      *
-     * 例子: conan://username:name
+     * 例子: conan://name
      */
-    fun ofConan(name: String, userName: String): String {
-        return StringBuilder(CONAN).append(SEPARATOR).append(userName)
-            .append(StringPool.COLON)
-            .append(name)
-            .toString()
+    fun ofConan(name: String): String {
+        return ofName(CONAN, name)
     }
 
     /**
@@ -102,6 +100,15 @@ object PackageKeys {
     }
 
     /**
+     * 生成ohpm格式key
+     *
+     * 例子: ohpm://test
+     */
+    fun ofOhpm(name: String): String {
+        return ofName(OHPM, name)
+    }
+
+    /**
      * 生成helm格式key
      *
      * 例子: helm://test
@@ -110,14 +117,6 @@ object PackageKeys {
         return ofName(HELM, name)
     }
 
-    /**
-     * 生成rds格式key
-     *
-     * 例子: rds://test
-     */
-    fun ofRds(name: String): String {
-        return ofName(RDS, name)
-    }
 
     /**
      * 生成rpm格式key
@@ -151,6 +150,7 @@ object PackageKeys {
     fun ofComposer(name: String): String {
         return ofName(COMPOSER, name)
     }
+
     /**
      * 生成nuget格式key
      * 例子: nuget://test
@@ -176,21 +176,21 @@ object PackageKeys {
     }
 
     /**
+     * 解析ohpm格式的key
+     *
+     * 例子: ohpm://test  ->  test
+     */
+    fun resolveOhpm(ohpmKey: String): String {
+        return resolveName(OHPM, ohpmKey)
+    }
+
+    /**
      * 解析helm格式的key
      *
      * 例子: helm://test  ->  test
      */
     fun resolveHelm(helmKey: String): String {
         return resolveName(HELM, helmKey)
-    }
-
-    /**
-     * 解析rds格式的key
-     *
-     * 例子: rds://test  ->  test
-     */
-    fun resolveRds(rdsKey: String): String {
-        return resolveName(RDS, rdsKey)
     }
 
     /**
@@ -266,9 +266,9 @@ object PackageKeys {
      * @return package key
      */
     fun ofName(repositoryType: RepositoryType, name: String): String {
-        val schema = when(repositoryType) {
+        val schema = when (repositoryType) {
             RepositoryType.MAVEN -> MAVEN
-            else -> repositoryType.name.toLowerCase()
+            else -> repositoryType.name.lowercase(Locale.getDefault())
         }
         return ofName(schema, name)
     }

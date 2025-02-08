@@ -129,6 +129,12 @@ body {
             margin: 0;
             font-size: 20px;
         }
+        .bk-breadcrumb-item-inner{
+            max-width: 200px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
         &:last-child .bk-breadcrumb-item-inner.is-link {
             cursor: initial;
         }

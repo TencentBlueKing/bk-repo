@@ -31,13 +31,19 @@
 
 package com.tencent.bkrepo.repository.config
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.util.FileNameParser
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.repository.constant.NAME
+import com.tencent.bkrepo.repository.constant.PROXY_DOWNLOAD_URL
+import com.tencent.bkrepo.repository.constant.VERSION
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.service.packages.PackageService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -48,9 +54,7 @@ import java.net.URL
  * 公共远程仓库
  */
 @Component
-class CommonRemoteRepository(
-    private val packageService: PackageService
-) : RemoteRepository() {
+class CommonRemoteRepository : RemoteRepository() {
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
         logger.info("Will prepare to create remote download url...")
         val type = context.repositoryDetail.type
@@ -58,8 +62,7 @@ class CommonRemoteRepository(
         return if (RepositoryType.HELM != type) {
             super.createRemoteDownloadUrl(context)
         } else {
-            val remoteConfiguration = context.getRemoteConfiguration()
-            CHART_REQUEST_URL.format(remoteConfiguration.url, context.artifactInfo.getArtifactFullPath())
+            buildChartDownloadUrl(context)
         }
     }
 
@@ -87,6 +90,40 @@ class CommonRemoteRepository(
                 overwrite = true
             )
         }
+    }
+
+    override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
+        return redirectManager.redirect(context)
+    }
+
+    private fun buildChartDownloadUrl(context: ArtifactContext): String {
+        val remoteConfiguration = context.getRemoteConfiguration()
+        val remoteDomain = remoteConfiguration.url.trimEnd('/')
+        val map = FileNameParser.parseNameAndVersionWithRegex(context.artifactInfo.getArtifactFullPath())
+        val name = map[NAME].toString()
+        val version = map[VERSION].toString()
+        val packageVersion = packageService.findVersionByName(
+            projectId = context.projectId,
+            repoName = context.repoName,
+            packageKey = PackageKeys.ofHelm(name),
+            versionName = version
+        )
+        var downloadUrl = CHART_REQUEST_URL.format(
+            remoteConfiguration.url,
+            context.artifactInfo.getArtifactFullPath()
+        )
+        if (packageVersion != null) {
+            val proxyDownloadUrl = packageVersion.metadata[PROXY_DOWNLOAD_URL]?.toString()
+            if (proxyDownloadUrl != null) {
+                downloadUrl = if (!proxyDownloadUrl.contains(remoteDomain)) {
+                    remoteDomain + StringPool.SLASH + proxyDownloadUrl
+                } else {
+                    proxyDownloadUrl
+                }
+            }
+        }
+        logger.info("remote chart download url is $downloadUrl")
+        return downloadUrl
     }
 
     /**

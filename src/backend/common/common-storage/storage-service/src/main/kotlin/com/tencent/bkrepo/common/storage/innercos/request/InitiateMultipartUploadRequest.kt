@@ -33,17 +33,21 @@ package com.tencent.bkrepo.common.storage.innercos.request
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.storage.innercos.PARAMETER_UPLOADS
+import com.tencent.bkrepo.common.storage.innercos.http.Headers
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import okhttp3.RequestBody
 
 data class InitiateMultipartUploadRequest(
-    val key: String
+    val key: String,
+    val storageClass: String? = null,
 ) : CosRequest(HttpMethod.POST, key) {
 
     init {
         parameters[PARAMETER_UPLOADS] = null
+        storageClass?.let { headers[Headers.STORAGE_CLASS] = it }
     }
+
     override fun buildRequestBody(): RequestBody {
         return StringPool.EMPTY.toRequestBody()
     }

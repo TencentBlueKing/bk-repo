@@ -42,14 +42,18 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import java.net.InetAddress
 import java.util.concurrent.CountDownLatch
+import kotlin.math.ceil
+import kotlin.reflect.KClass
+import kotlin.reflect.full.declaredMemberProperties
 import kotlin.system.measureNanoTime
 
 /**
  * MongoDb抽象批处理作业Job
  * */
-abstract class MongoDbBatchJob<Entity, Context : JobContext>(
-    private val properties: MongodbJobProperties
+abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
+    private val properties: MongodbJobProperties,
 ) : CenterNodeJob<Context>(properties) {
     /**
      * 需要操作的表名列表
@@ -74,7 +78,12 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
      * */
     abstract fun mapToEntity(row: Map<String, Any?>): Entity
 
-    abstract fun entityClass(): Class<Entity>
+    abstract fun entityClass(): KClass<Entity>
+
+    /**
+     * 表执行结束回调
+     * */
+    open fun onRunCollectionFinished(collectionName: String, context: Context) {}
 
     private val batchSize: Int
         get() = properties.batchSize
@@ -85,11 +94,13 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     private val permitsPerSecond: Double
         get() = properties.permitsPerSecond
 
+    private val concurrentThreadLimit: Int get() = properties.concurrentThreadLimit
+
     @Autowired
     private lateinit var lockingTaskExecutor: LockingTaskExecutor
 
     @Autowired
-    private lateinit var mongoTemplate: MongoTemplate
+    protected lateinit var mongoTemplate: MongoTemplate
 
     /**
      * job批处理执行器
@@ -97,9 +108,14 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     @Autowired
     private lateinit var executor: BlockThreadPoolTaskExecutorDecorator
 
+    /**
+     * 是否存在异步任务
+     * */
+    private var hasAsyncTask = false
+
     override fun doStart0(jobContext: Context) {
         try {
-            val collectionNames = collectionNames()
+            val collectionNames = determineCollectionNames(jobContext.executeContext)
             if (concurrentLevel == JobConcurrentLevel.COLLECTION) {
                 // 使用闭锁来保证表异步生产任务的结束
                 val countDownLatch = CountDownLatch(collectionNames.size)
@@ -114,7 +130,7 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
                 }
             }
         } finally {
-            if (concurrentLevel != JobConcurrentLevel.SERIALIZE) {
+            if (hasAsyncTask && concurrentLevel != JobConcurrentLevel.SERIALIZE) {
                 executor.completeAndGet(taskId, WAIT_TIMEOUT)
             }
         }
@@ -124,8 +140,8 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
      * 处理单个表数据
      * */
     private fun runCollection(collectionName: String, context: Context) {
-        if (!isRunning()) {
-            logger.info("Job[${getJobName()}] already stop.")
+        if (!shouldRun()) {
+            logger.info("Job[${getJobName()}] already stopped.")
             return
         }
         logger.info("Job[${getJobName()}]: Start collection $collectionName.")
@@ -139,13 +155,13 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
                     .addCriteria(Criteria.where(ID).gt(lastId))
                     .limit(batchSize)
                     .with(Sort.by(ID).ascending())
-                entityClass().fields.forEach {
-                    val filedName = if (it.name.equals(JAVA_ID)) ID else it.name
-                    query.fields().include(filedName)
+                val fields = query.fields()
+                entityClass().declaredMemberProperties.forEach {
+                    fields.include(it.name)
                 }
                 val data = mongoTemplate.find<Map<String, Any?>>(
                     query,
-                    collectionName
+                    collectionName,
                 )
                 if (data.isEmpty()) {
                     break
@@ -159,9 +175,10 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
                 querySize = data.size
                 lastId = data.last()[ID] as ObjectId
                 report(context)
-            } while (querySize == pageSize && isRunning())
+            } while (querySize == pageSize && shouldRun())
         }.apply {
             val elapsedTime = HumanReadable.time(this)
+            onRunCollectionFinished(collectionName, context)
             logger.info("Job[${getJobName()}]: collection $collectionName run completed,sum [$sum] elapse $elapsedTime")
         }
     }
@@ -175,11 +192,12 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     private fun <T> runAsync(
         tasks: Iterable<T>,
         produce: Boolean = false,
-        block: (it: T) -> Unit
+        block: (it: T) -> Unit,
     ) {
+        hasAsyncTask = true
         tasks.forEach {
             val task = IdentityTask(taskId) { block(it) }
-            executor.executeWithId(task, produce, permitsPerSecond)
+            executor.executeWithId(task, concurrentThreadLimit, produce, permitsPerSecond)
         }
     }
 
@@ -192,7 +210,7 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
     private fun runRow(
         data: Map<String, Any?>,
         collectionName: String,
-        context: Context
+        context: Context,
     ) {
         try {
             val resultMap = data.toMutableMap()
@@ -205,6 +223,25 @@ abstract class MongoDbBatchJob<Entity, Context : JobContext>(
         } finally {
             context.total.incrementAndGet()
         }
+    }
+
+    private fun hostName(): String {
+        return InetAddress.getLocalHost().hostName
+    }
+
+    private fun determineCollectionNames(jobExecuteContext: JobExecuteContext?): List<String> {
+        val collectionNames = collectionNames()
+        if (collectionNames.size > 1 && jobExecuteContext != null && jobExecuteContext.broadcastTotal > 1) {
+            with(jobExecuteContext) {
+                // 根据job name增加随机性，避免大表任务固定在某一台机器上
+                val index = (getJobName().hashCode().and(65535) + broadcastIndex) % broadcastTotal
+                val shardingSize = ceil(collectionNames.size / broadcastTotal.toDouble()).toInt()
+                val startIndex = index * shardingSize
+                val endIndex = ((index + 1) * shardingSize).coerceAtMost(collectionNames.size)
+                return collectionNames.subList(startIndex, endIndex)
+            }
+        }
+        return collectionNames
     }
 
     companion object {

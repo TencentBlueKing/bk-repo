@@ -33,34 +33,104 @@ package com.tencent.bkrepo.pypi.service
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.util.version.SemVersion
+import com.tencent.bkrepo.common.metadata.util.version.SemVersionParser
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 @Service
-class PypiWebService {
+class PypiWebService(
+    private val nodeService: NodeService,
+    private val packageService: PackageService
+) : ArtifactService() {
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     fun deletePackage(pypiArtifactInfo: PypiArtifactInfo, packageKey: String) {
         val context = ArtifactRemoveContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
-    fun delete(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?) {
+    fun delete(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?, contentPath: String?) {
         val context = ArtifactRemoveContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         repository.remove(context)
     }
 
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun artifactDetail(pypiArtifactInfo: PypiArtifactInfo, packageKey: String, version: String?): Any? {
         val context = ArtifactQueryContext()
-        val repository = ArtifactContextHolder.getRepository(context.repositoryDetail.category)
         return repository.query(context)
+    }
+
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    fun versionListPage(
+        pypiArtifactInfo: PypiArtifactInfo,
+        packageKey: String,
+        pageNumber: Int,
+        pageSize: Int
+    ): Page<PackageVersion> {
+        val data = nodeService.listNodePage(
+            ArtifactInfo(
+                pypiArtifactInfo.projectId,
+                pypiArtifactInfo.repoName,
+                PathUtils.normalizePath(PackageKeys.resolvePypi(packageKey))
+            ),
+            option = NodeListOption(pageNumber, pageSize, includeFolder = false, deep = true)
+        )
+        val packageVersionList = data.records.map {
+            val version = parseSemVersion(it.path).toString()
+            val packageVersion = packageService.findVersionByName(it.projectId, it.repoName, packageKey, version)
+            buildPackageVersion(it, version, packageVersion)
+        }.sortedWith(compareByDescending<PackageVersion> { it.name }.thenByDescending { it.createdDate })
+        return Page(pageNumber, pageSize, data.totalRecords, packageVersionList)
+    }
+
+    /**
+     * python存在相同版本号，但是语言版本、系统不同的包
+     */
+    private fun buildPackageVersion(
+        it: NodeInfo,
+        version: String,
+        packageVersion: PackageVersion?
+    ) = PackageVersion(
+        createdBy = it.createdBy,
+        createdDate = LocalDateTime.parse(it.createdDate),
+        lastModifiedBy = it.lastModifiedBy,
+        lastModifiedDate = LocalDateTime.parse(it.lastModifiedDate),
+        name = version,
+        size = it.size,
+        downloads = packageVersion?.downloads ?: 0,
+        stageTag = packageVersion?.stageTag ?: emptyList(),
+        metadata = it.metadata ?: emptyMap(),
+        packageMetadata = it.nodeMetadata ?: emptyList(),
+        tags = packageVersion?.tags ?: emptyList(),
+        extension = packageVersion?.extension ?: emptyMap(),
+        contentPath = it.fullPath,
+        clusterNames = it.clusterNames
+    )
+
+    /**
+     * 解析版本, path格式 /packageName/packageVersion/packageFilename
+     */
+    private fun parseSemVersion(path: String) = try {
+        SemVersionParser.parse(path.split("/")[2])
+    } catch (ignore: IndexOutOfBoundsException) {
+        SemVersion(0, 0, 0)
+    } catch (ignore: IllegalArgumentException) {
+        SemVersion(0, 0, 0)
     }
 }

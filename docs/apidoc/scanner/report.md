@@ -263,7 +263,14 @@
                     "https://msrc-blog.microsoft.com/2021/12/11/microsofts-response-to-cve-2021-44228-apache-log4j2/",
                     "https://tools.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-apache-log4j-qRuKNEbd"
                 ],
-                "path": "/97eef8b72e121347074c8b3062b010170187a6fa7375555fd1ed68540adaea1f.jar"
+                "versionsPaths": [
+                  {
+                    "version": "2.14.1",
+                    "paths": [
+                      "/97eef8b72e121347074c8b3062b010170187a6fa7375555fd1ed68540adaea1f.jar"
+                    ]
+                  }
+                ]
             }
         ],
         "page": 1,
@@ -275,18 +282,18 @@
 
 data字段说明
 
-| 字段                | 类型     | 说明     | Description       |
-|-------------------|--------|--------|-------------------|
-| vulId             | string | 漏洞id   | vul id            |
-| severity          | string | 漏洞等级   | vul severity      |
-| pkgName           | string | 所属依赖   | dependency        |
-| installedVersion  | array  | 使用的版本  | installed version |
-| title             | string | 漏洞标题   | vul title         |
-| vulnerabilityName | string | 漏洞名    | vul name          |
-| description       | string | 漏洞描述   | description       |
-| officialSolution  | string | 官方解决方案 | official solution |
-| reference         | array  | 关联引用   | reference         |
-| path              | string | 漏洞文件路径 | vul path          |
+| 字段                | 类型     | 说明              | Description       |
+|-------------------|--------|-----------------|-------------------|
+| vulId             | string | 漏洞id            | vul id            |
+| severity          | string | 漏洞等级            | vul severity      |
+| pkgName           | string | 所属依赖            | dependency        |
+| installedVersion  | array  | 使用的版本           | installed version |
+| title             | string | 漏洞标题            | vul title         |
+| vulnerabilityName | string | 漏洞名             | vul name          |
+| description       | string | 漏洞描述            | description       |
+| officialSolution  | string | 官方解决方案          | official solution |
+| reference         | array  | 关联引用            | reference         |
+| versionsPaths     | array  | 存在漏洞的制品各个版本所在路径 | vul path          |
 
 响应体参考[分页接口响应格式](../common/common.md?id=统一分页接口响应格式)
 
@@ -313,23 +320,3 @@ data字段说明
 - 响应体
 
 响应体参考[获取子任务扫描报告详情](./report.md?id=获取子任务扫描报告详情)
-
-## 获取属于方案的子任务信息
-
-- API: GET /analyst/api/scan/artifact/count/{projectId}/{subScanTaskId}
-- API 名称: get_plan_subtask_report_detail
-- 功能说明：
-  - 中文：获取属于方案的扫描子任务信息
-  - English：get scan plan subtask
-- 请求体 此接口请求体为空
-
-- 请求字段说明
-
-| 字段            | 类型     | 是否必须 | 默认值 | 说明    | Description |
-|---------------|--------|------|-----|-------|-------------|
-| projectId     | string | 是    | 无   | 项目id  | project id  |
-| subScanTaskId | string | 是    | 无   | 子任务id | project id  |
-
-- 响应体
-
-响应体参考[获取扫描子任务](./scan.md?id=获取扫描子任务)

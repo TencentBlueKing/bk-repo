@@ -33,7 +33,9 @@ package com.tencent.bkrepo.common.api.message
 
 enum class CommonMessageCode(private val key: String) : MessageCode {
 
-    SUCCESS("success") { override fun getCode() = 0 },
+    SUCCESS("success") {
+        override fun getCode() = 0
+    },
 
     SYSTEM_ERROR("system.error"),
     PARAMETER_MISSING("system.parameter.missing"),
@@ -43,6 +45,8 @@ enum class CommonMessageCode(private val key: String) : MessageCode {
     RESOURCE_EXISTED("system.resource.existed"),
     RESOURCE_NOT_FOUND("system.resource.not-found"),
     RESOURCE_EXPIRED("system.resource.expired"),
+    RESOURCE_ARCHIVED("system.resource.archived"),
+    RESOURCE_COMPRESSED("system.resource.compressed"),
     METHOD_NOT_ALLOWED("system.method.not-allowed"),
     REQUEST_DENIED("system.request.denied"),
     REQUEST_UNAUTHENTICATED("system.request.unauthenticated"),
@@ -54,6 +58,12 @@ enum class CommonMessageCode(private val key: String) : MessageCode {
     REQUEST_RANGE_INVALID("system.request-range.invalid"),
     MODIFY_PASSWORD_FAILED("modify.password.failed"),
     OPERATION_CROSS_CLUSTER_NOT_ALLOWED("operation.cross-cluster.not-allowed"),
+    MEDIA_TYPE_UNACCEPTABLE("system.media-type.unacceptable"),
+    TOO_MANY_REQUESTS("too.many.requests"),
+    PIPELINE_NOT_RUNNING("pipeline.not-running"),
+    INVALID_CONFIG("system.config.invalid"),
+    ACQUIRE_LOCK_FAILED("acquire.lock.failed"),
+    RATE_LIMITER_OVERLOAD("rate.limiter.overload")
     ;
 
     override fun getBusinessCode() = ordinal + 1

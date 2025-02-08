@@ -31,38 +31,53 @@ import com.github.dockerjava.api.model.HostConfig
 import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.core.DockerClientBuilder
 import com.github.dockerjava.okhttp.OkDockerHttpClient
-import com.tencent.bkrepo.analyst.configuration.DockerDispatcherProperties
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
+import com.tencent.bkrepo.analyst.pojo.execution.DockerExecutionCluster
+import com.tencent.bkrepo.analyst.service.ScanService
+import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.createContainer
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.DockerUtils.removeContainer
+import com.tencent.bkrepo.common.redis.RedisOperation
+import com.tencent.bkrepo.statemachine.StateMachine
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.ObjectProvider
-import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.net.InetAddress
-import java.util.concurrent.TimeUnit
+import java.time.Duration
 
 class DockerDispatcher(
-    private val scannerProperties: ScannerProperties,
-    private val dockerDispatcherProperties: DockerDispatcherProperties,
+    executionCluster: DockerExecutionCluster,
+    scannerProperties: ScannerProperties,
+    scanService: ScanService,
+    subtaskStateMachine: StateMachine,
+    temporaryScanTokenService: TemporaryScanTokenService,
+    executor: ThreadPoolTaskExecutor,
+    redisOperation: RedisOperation,
     private val subScanTaskDao: SubScanTaskDao,
-    private val redisTemplate: ObjectProvider<RedisTemplate<String, String>>
-) : SubtaskDispatcher {
+) : SubtaskPushDispatcher<DockerExecutionCluster>(
+    executionCluster,
+    scannerProperties,
+    redisOperation,
+    scanService,
+    subtaskStateMachine,
+    temporaryScanTokenService,
+    executor,
+) {
 
     private val dockerClient by lazy {
         val dockerConfig = DefaultDockerClientConfig.createDefaultConfigBuilder()
-            .withDockerHost(dockerDispatcherProperties.host)
-            .withApiVersion(dockerDispatcherProperties.version)
+            .withDockerHost(executionCluster.host)
+            .withApiVersion(executionCluster.version)
             .build()
 
         val longHttpClient = OkDockerHttpClient.Builder()
             .dockerHost(dockerConfig.dockerHost)
             .sslConfig(dockerConfig.sslConfig)
-            .connectTimeout(dockerDispatcherProperties.connectTimeout)
+            .connectTimeout(executionCluster.connectTimeout)
             .readTimeout(0)
             .build()
 
@@ -74,18 +89,27 @@ class DockerDispatcher(
 
     @Suppress("TooGenericExceptionCaught")
     override fun dispatch(subtask: SubScanTask): Boolean {
-        logger.info("dispatch subtask[${subtask.taskId}] with $NAME")
         val scanner = subtask.scanner
         require(scanner is StandardScanner)
         try {
-            val command = buildCommand(scanner.cmd, scannerProperties.baseUrl, subtask.taskId, subtask.token!!)
+            val command = buildCommand(
+                cmd = scanner.cmd,
+                baseUrl = scannerProperties.baseUrl,
+                subtaskId = subtask.taskId,
+                token = subtask.token!!,
+                heartbeatTimeout = scannerProperties.heartbeatTimeout,
+                username = scannerProperties.username,
+                password = scannerProperties.password,
+            )
             val containerId = dockerClient.createContainer(
-                image = scanner.image, hostConfig = hostConfig(), cmd = command
+                image = scanner.image,
+                userName = scanner.dockerRegistryUsername,
+                password = scanner.dockerRegistryPassword,
+                hostConfig = hostConfig(),
+                cmd = command
             )
             dockerClient.startContainerCmd(containerId).exec()
-            redisTemplate.ifAvailable
-                ?.opsForValue()
-                ?.set(containerIdKey(subtask.taskId), containerId, 1, TimeUnit.DAYS)
+            redisOperation.set(containerIdKey(subtask.taskId), containerId, Duration.ofDays(1).seconds)
         } catch (e: Exception) {
             logger.error("dispatch subtask[${subtask.taskId}] failed", e)
             return false
@@ -94,20 +118,19 @@ class DockerDispatcher(
     }
 
     override fun clean(subtask: SubScanTask, subtaskStatus: String): Boolean {
-        redisTemplate.ifAvailable
-            ?.opsForValue()
-            ?.get(containerIdKey(subtask.taskId))
-            ?.let { dockerClient.removeContainer(it) }
+        redisOperation.get(containerIdKey(subtask.taskId))?.let { dockerClient.removeContainer(it) }
         return true
     }
 
     override fun availableCount(): Int {
-        val executingCount = subScanTaskDao.countTaskByStatusIn(listOf(SubScanTaskStatus.EXECUTING.name), NAME).toInt()
-        return dockerDispatcherProperties.maxTaskCount - executingCount
+        val executingCount = subScanTaskDao
+            .countTaskByStatusIn(listOf(SubScanTaskStatus.EXECUTING.name), executionCluster.name)
+            .toInt()
+        return executionCluster.maxTaskCount - executingCount
     }
 
     override fun name(): String {
-        return NAME
+        return executionCluster.name
     }
 
     private fun containerIdKey(subtaskId: String) = "scanner:dispatcher:sid:$subtaskId:cid"
@@ -124,6 +147,5 @@ class DockerDispatcher(
     companion object {
         private val logger = LoggerFactory.getLogger(DockerDispatcher::class.java)
         private const val LOCALHOST = "127.0.0.1"
-        const val NAME = "docker"
     }
 }
