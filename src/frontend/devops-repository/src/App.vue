@@ -52,9 +52,9 @@
             } else {
                 const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
                 const localProjectId = localStorage.getItem('projectId')
-                const specTarget = urlProjectId !== 'outsideFilePreview'
-                    ? location.pathname.indexOf('/outsideFilePreview/') > 0
-                    : location.pathname.indexOf('/outsideFilePreview/outsideFilePreview/') > 0
+                // 查询路由
+                const specTargetMatchs = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([a-zA-Z0-9]+)\/([a-zA-Z0-9]+)/) || [])
+                const specTargetMatch = (specTargetMatchs.length < 3) ? '' : specTargetMatchs[2]
                 Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(([userInfo]) => {
                     if (!this.ciMode && !this.projectList.length) {
                         if (userInfo.admin) {
@@ -70,8 +70,8 @@
                                 }
                             })
                         } else {
-                            // 外部预览链接需绕过去
-                            if (!specTarget) {
+                            // 预览链接需绕过去
+                            if (specTargetMatch !== 'filePreview' && specTargetMatch !== 'outsideFilePreview') {
                                 // TODO: 普通用户无项目提示页
                                 this.$bkMessage({
                                     message: this.$t('noProjectData'),
@@ -110,9 +110,7 @@
                             }
                         })
                     }
-                    if (!specTarget) {
-                        userInfo.admin && this.getClusterList()
-                    }
+                    userInfo.admin && this.getClusterList()
                 })
             }
         },
