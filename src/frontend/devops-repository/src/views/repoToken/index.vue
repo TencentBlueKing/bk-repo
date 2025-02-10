@@ -44,11 +44,6 @@
         computed: {
             ...mapState(['userInfo'])
         },
-        watch: {
-            userInfo () {
-                this.getToken()
-            }
-        },
         created () {
             this.userInfo.username && this.getToken()
         },
