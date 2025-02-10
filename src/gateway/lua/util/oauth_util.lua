@@ -252,29 +252,17 @@ function _M:verify_bk_token_muti_tenant(auth_url, token)
             return
         end
 
-        --- 判断返回码:Q!
-        if result.code ~= 0 then
-            if result.code == 1302403 then
-                ngx.log(ngx.ERR, "is_login code is 1302403 , need Authentication")
-                ngx.header["X-DEVOPS-ERROR-RETURN"] = '{"code": 440,"message": "' .. result.message .. '", "data": 1302403,"traceId":null }'
-                ngx.header["X-DEVOPS-ERROR-STATUS"] = 440
-                ngx.exit(401)
-            end
-            ngx.log(ngx.INFO, "invalid user token: ", result.message)
-            ngx.exit(401)
-            return
-        end
-
-        user_data = {
+        local cache_data = {
             ["bk_username"] = result.data.bk_username,
             ["display_name"] = result.data.display_name,
             ["tenant_id"] = result.data.tenant_id
         }
-        user_cache:set(token, json.encode(user_cache_value), 180)
+        user_cache:set(token, json.encode(cache_data), 180)
+        return result.data.bk_username, result.data.display_name, result.data.tenant_id
     else
-        user_data = json.decode(user_cache_value)
+        local user_data = json.decode(user_cache_value)
+        return user_data.bk_username, user_data.display_name, user_data.tenant_id
     end
-    return user_data.bk_username, user_data.display_name, user_data.tenant_id
 end
 
 function _M:verify_bkrepo_token(bkrepo_login_token)
