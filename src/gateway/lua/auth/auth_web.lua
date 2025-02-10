@@ -45,7 +45,7 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
     if config.enable_multi_tenant_mode ~= nil and config.enable_multi_tenant_mode == "true" then
         username, display_name, tenant_id = oauthUtil:verify_bk_token_muti_tenant(config.oauth.apigw_url, bk_token)
         -- 设置多租户相关信息 --
-        ngx.header["x-bkrepo-display-name"] = display_name
+        ngx.header["x-bkrepo-display-name"] = ngx.encode_base64(display_name)
         ngx.header["x-bkrepo-tenant-id"] = tenant_id
     else
         username = oauthUtil:verify_bk_token(config.oauth.apigw_url, bk_token)
