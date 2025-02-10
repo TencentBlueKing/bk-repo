@@ -62,7 +62,6 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.ApiOperation
 import org.bouncycastle.crypto.CryptoException
-import org.apache.commons.codec.binary.Base64
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -76,6 +75,7 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.util.Base64
 import javax.servlet.http.Cookie
 
 @RestController
@@ -271,9 +271,10 @@ class UserController @Autowired constructor(
         @RequestHeader("x-bkrepo-display-name") displayName: String?,
         @RequestHeader("x-bkrepo-tenant-id") tenantId: String?,
     ): Response<Map<String, Any>> {
+        val name = if (displayName == null) "" else String(Base64.getDecoder().decode(displayName))
         val result = mapOf(
             "userId" to bkUserId.orEmpty(),
-            "displayName" to Base64.decodeBase64(displayName.orEmpty()).toString(),
+            "displayName" to name,
             "tenantId" to tenantId.orEmpty()
         )
         return ResponseBuilder.success(result)
