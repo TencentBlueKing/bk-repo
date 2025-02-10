@@ -52,10 +52,9 @@
             } else {
                 const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
                 const localProjectId = localStorage.getItem('projectId')
-                console.log(urlProjectId)
-                // 查询路由(项目名可能带特殊符号)
-                const specTargetMatchs = (location.pathname.match(/^\/[a-zA-Z0-9]+\/(.*)\/([a-zA-Z0-9]+)/) || [])
-                const specTargetMatch = (specTargetMatchs.length < 3) ? '' : specTargetMatchs[2]
+                // 查询路由,取项目名称后半截。
+                const target = location.pathname.split(urlProjectId)[1] || ''
+                const specTargetMatch = target !== '' ? ((target.match(/\/([^\/]+)\//)) || [])[1] : ''
                 Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(([userInfo]) => {
                     if (!this.ciMode && !this.projectList.length) {
                         if (userInfo.admin) {
