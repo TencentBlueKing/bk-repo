@@ -13,4 +13,8 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
+    {{- if keys $.Values.preview.config }}
+    preview:
+      {{- toYaml .Values.preview.config | nindent 6 }}
+    {{- end}}
 {{- end }}
