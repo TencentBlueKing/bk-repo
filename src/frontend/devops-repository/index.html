@@ -9,6 +9,7 @@
     <script src="/ui/libs/vuex.min.js"></script>
     <script src="/ui/libs/vue-router.min.js"></script>
     <script src="/ui/libs/jsencrypt.min.js"></script>
+    <script src="/ui/watermark.js"></script>
     <link rel='preload' as='script' href="/ui/libs/bk-magic-vue/bk-magic-vue.min.js" />
     <link href="/ui/libs/bk-magic-vue/bk-magic-vue.min.css" rel="stylesheet">
     <link href="/ui/iconfont.css" rel="stylesheet">
@@ -166,6 +167,31 @@
                 + '</p>'
                 + '</div>'
             )
+        }
+
+        function initWaterMark (param) {
+            watermark.init({
+                watermark_txt: param.watermarkTxt,
+                watermark_x: 0,
+                watermark_y: 0,
+                watermark_rows: 0,
+                watermark_cols: 0,
+                watermark_x_space: Number(param.watermarkXSpace),
+                watermark_y_space: Number(param.watermarkYSpace),
+                watermark_font: param.watermarkFont,
+                watermark_fontsize: param.watermarkFontsize,
+                watermark_color: param.watermarkColor,
+                watermark_alpha: param.watermarkAlpha,
+                watermark_width: Number(param.watermarkWidth),
+                watermark_height: Number(param.watermarkHeight),
+                watermark_angle: Number(param.watermarkAngle)
+            })
+        }
+
+        function resetWaterMark() {
+            watermark.init({
+                watermark_txt: '  '
+            })
         }
     </script>
     <script src="/ui/libs/bk-magic-vue/bk-magic-vue.min.js"></script>
