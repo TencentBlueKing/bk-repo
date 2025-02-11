@@ -56,27 +56,27 @@ elseif config.auth_mode == "ticket" then
     if bk_ticket ~= nil then
         username = oauthUtil:verify_ticket(bk_ticket, "ticket")
         token = bk_ticket
-        return
-    end
-    -- 校验移动网关登录态
-    if config.mobileSiteToken ~= nil and config.mobileSiteToken ~= "" then
-        local mobile_user = oauthUtil:verify_mobile_gateway()
-        if mobile_user == nil then
-            ngx.exit(401)
-            return
-        end
-        username = mobile_user
     else
-        bk_ticket = ngx.var.http_x_devops_bk_ticket
-        if bk_ticket == nil then
-            bk_ticket = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-ticket"]
+        -- 校验移动网关登录态
+        if config.mobileSiteToken ~= nil and config.mobileSiteToken ~= "" then
+            local mobile_user = oauthUtil:verify_mobile_gateway()
+            if mobile_user == nil then
+                ngx.exit(401)
+                return
+            end
+            username = mobile_user
+        else
+            bk_ticket = ngx.var.http_x_devops_bk_ticket
+            if bk_ticket == nil then
+                bk_ticket = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-ticket"]
+            end
+            if bk_ticket == nil then
+                ngx.exit(401)
+                return
+            end
+            username = oauthUtil:verify_ticket(bk_ticket, "ticket")
+            token = bk_ticket
         end
-        if bk_ticket == nil then
-            ngx.exit(401)
-            return
-        end
-        username = oauthUtil:verify_ticket(bk_ticket, "ticket")
-        token = bk_ticket
     end
 elseif config.auth_mode == "odc" then
     local bk_token = cookieUtil:get_cookie("bk_token")
