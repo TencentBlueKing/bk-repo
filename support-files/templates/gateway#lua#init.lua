@@ -56,6 +56,7 @@ config = {
     host = "__BK_CI_HOST__",
     port = "__BK_CI_PORT__"
   },
+  mobileSiteToken = "__BK_CI_MOBILE_SITE_TOKEN__",
   security_paths = {
   },
   service_in_container = "__BK_REPO_SERVICE_IN_CONTAINER__",
