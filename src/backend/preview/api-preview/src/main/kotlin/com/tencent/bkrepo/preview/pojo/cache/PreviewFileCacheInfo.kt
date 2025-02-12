@@ -31,20 +31,20 @@
 
 package com.tencent.bkrepo.preview.pojo.cache
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 import java.time.LocalDateTime
 
-@ApiModel("预览缓存信息")
+@Schema(title = "预览缓存信息")
 data class PreviewFileCacheInfo(
-    @ApiModelProperty("文件md5")
+    @get:Schema(title = "文件md5")
     var md5: String,
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String,
-    @ApiModelProperty("仓库Name")
+    @get:Schema(title = "仓库Name")
     val repoName: String,
-    @ApiModelProperty("文件路径")
+    @get:Schema(title = "文件路径")
     val fullPath: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: LocalDateTime? = null,
 )

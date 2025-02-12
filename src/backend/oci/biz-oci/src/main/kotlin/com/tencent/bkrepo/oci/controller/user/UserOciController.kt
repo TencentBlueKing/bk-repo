@@ -60,9 +60,9 @@ import com.tencent.bkrepo.oci.pojo.response.OciImageResult
 import com.tencent.bkrepo.oci.pojo.response.OciTagResult
 import com.tencent.bkrepo.oci.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.oci.service.OciOperationService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -74,23 +74,23 @@ import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest
 
 @Suppress("MVCPathVariableInspection")
-@Api("oci产品接口")
+@Tag(name = "oci产品接口")
 @RestController
 @RequestMapping("/ext")
 class UserOciController(
     private val operationService: OciOperationService
 ) {
 
-    @ApiOperation("查询包的版本详情")
+    @Operation(summary = "查询包的版本详情")
     @GetMapping(OCI_VERSION_DETAIL)
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun detailVersion(
         @RequestAttribute
         userId: String,
         @ArtifactPathVariable artifactInfo: OciArtifactInfo,
-        @ApiParam(value = "包唯一Key", required = true)
+        @Parameter(name = "包唯一Key", required = true)
         @RequestParam packageKey: String,
-        @ApiParam(value = "包版本", required = true)
+        @Parameter(name = "包版本", required = true)
         @RequestParam version: String
     ): Response<PackageVersionInfo> {
         return ResponseBuilder.success(
@@ -115,13 +115,13 @@ class UserOciController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
     )
-    @ApiOperation("删除仓库下的包")
+    @Operation(summary = "删除仓库下的包")
     @DeleteMapping(OCI_PACKAGE_DELETE_URL)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deletePackage(
         @RequestAttribute userId: String,
         artifactInfo: OciDeleteArtifactInfo,
-        @ApiParam(value = "包唯一key", required = true)
+        @Parameter(name = "包唯一key", required = true)
         @RequestParam packageKey: String
     ): Response<Void> {
         operationService.deletePackage(userId, artifactInfo)
@@ -147,28 +147,28 @@ class UserOciController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
     )
-    @ApiOperation("删除仓库下的包版本")
+    @Operation(summary = "删除仓库下的包版本")
     @DeleteMapping(OCI_VERSION_DELETE_URL)
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     fun deleteVersion(
         @RequestAttribute userId: String,
         artifactInfo: OciDeleteArtifactInfo,
-        @ApiParam(value = "包唯一key", required = true)
+        @Parameter(name = "包唯一key", required = true)
         @RequestParam packageKey: String,
-        @ApiParam(value = "包版本", required = true)
+        @Parameter(name = "包版本", required = true)
         @RequestParam version: String
     ): Response<Void> {
         operationService.deleteVersion(userId, artifactInfo)
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("获取Oci域名地址")
+    @Operation(summary = "获取Oci域名地址")
     @GetMapping("/addr")
     fun getRegistryDomain(): Response<String> {
         return ResponseBuilder.success(operationService.getRegistryDomain())
     }
 
-    @ApiOperation("获取manifest文件")
+    @Operation(summary = "获取manifest文件")
     @GetMapping(OCI_USER_MANIFEST_SUFFIX)
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun getManifest(
@@ -179,25 +179,25 @@ class UserOciController(
         )
     }
 
-    @ApiOperation("获取所有image")
+    @Operation(summary = "获取所有image")
     @GetMapping(OCI_USER_REPO_SUFFIX)
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun getRepo(
         request: HttpServletRequest,
         @PathVariable
-        @ApiParam(value = OCI_PROJECT_ID, required = true)
+        @Parameter(name = OCI_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = OCI_REPO_NAME, required = true)
+        @Parameter(name = OCI_REPO_NAME, required = true)
         repoName: String,
         @RequestParam(required = true)
-        @ApiParam(value = PAGE_NUMBER, required = true)
+        @Parameter(name = PAGE_NUMBER, required = true)
         pageNumber: Int,
         @RequestParam(required = true)
-        @ApiParam(value = PAGE_SIZE, required = true)
+        @Parameter(name = PAGE_SIZE, required = true)
         pageSize: Int,
         @RequestParam(required = false)
-        @ApiParam(value = OCI_PACKAGE_NAME, required = true)
+        @Parameter(name = OCI_PACKAGE_NAME, required = true)
         name: String?
     ): Response<OciImageResult> {
         return ResponseBuilder.success(
@@ -211,24 +211,24 @@ class UserOciController(
         )
     }
 
-    @ApiOperation("获取repo所有的tag")
+    @Operation(summary = "获取repo所有的tag")
     @GetMapping(OCI_USER_TAG_SUFFIX)
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun getRepoTag(
         request: HttpServletRequest,
         @PathVariable
-        @ApiParam(value = OCI_PROJECT_ID, required = true)
+        @Parameter(name = OCI_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = OCI_REPO_NAME, required = true)
+        @Parameter(name = OCI_REPO_NAME, required = true)
         repoName: String,
-        @ApiParam(value = PAGE_NUMBER, required = true)
+        @Parameter(name = PAGE_NUMBER, required = true)
         pageNumber: Int,
         @RequestParam(required = true)
-        @ApiParam(value = PAGE_SIZE, required = true)
+        @Parameter(name = PAGE_SIZE, required = true)
         pageSize: Int,
         @RequestParam(required = false)
-        @ApiParam(value = OCI_TAG, required = true)
+        @Parameter(name = OCI_TAG, required = true)
         tag: String?
     ): Response<OciTagResult> {
         val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()

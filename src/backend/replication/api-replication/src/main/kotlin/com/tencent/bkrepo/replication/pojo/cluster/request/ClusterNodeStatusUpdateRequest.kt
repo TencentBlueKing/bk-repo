@@ -28,20 +28,20 @@
 package com.tencent.bkrepo.replication.pojo.cluster.request
 
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 更新集群节点请求
  */
-@ApiModel("更新集群节点请求")
+@Schema(title = "更新集群节点请求")
 data class ClusterNodeStatusUpdateRequest(
-    @ApiModelProperty("集群名称", required = true)
+    @get:Schema(title = "集群名称", required = true)
     val name: String,
-    @ApiModelProperty("集群状态", required = false)
+    @get:Schema(title = "集群状态", required = false)
     val status: ClusterNodeStatus = ClusterNodeStatus.HEALTHY,
-    @ApiModelProperty("状态为非健康时显示失败原因", required = false)
+    @get:Schema(title = "状态为非健康时显示失败原因", required = false)
     val errorReason: String? = null,
-    @ApiModelProperty("操作用户", required = true)
+    @get:Schema(title = "操作用户", required = true)
     val operator: String
 )

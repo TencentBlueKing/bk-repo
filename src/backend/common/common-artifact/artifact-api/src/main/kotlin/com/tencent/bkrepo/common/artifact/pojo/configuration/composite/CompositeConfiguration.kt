@@ -32,12 +32,12 @@
 package com.tencent.bkrepo.common.artifact.pojo.configuration.composite
 
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("组合类型仓库配置")
+
+@Schema(title = "组合类型仓库配置")
 data class CompositeConfiguration(
-    @ApiModelProperty("代理配置", required = false)
+    @get:Schema(title = "代理配置", required = false)
     val proxy: ProxyConfiguration = ProxyConfiguration()
 ) : LocalConfiguration() {
 

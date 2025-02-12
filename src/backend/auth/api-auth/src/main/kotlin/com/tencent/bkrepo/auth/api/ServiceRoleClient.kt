@@ -34,34 +34,34 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ROLE_PREFIX
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api(tags = ["SERVICE_ROLE"], description = "服务-角色接口")
+@Tag(name = "SERVICE_ROLE", description = "服务-角色接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceRoleResource")
 @RequestMapping(AUTH_SERVICE_ROLE_PREFIX)
 interface ServiceRoleClient {
 
-    @ApiOperation("创建项目管理员")
+    @Operation(summary = "创建项目管理员")
     @PostMapping("/create/project/manage/{projectId}")
     fun createProjectManage(
-        @ApiParam(value = "仓库名称")
+        @Parameter(name = "仓库名称")
         @PathVariable projectId: String
     ): Response<String?>
 
-    @ApiOperation("创建仓库管理员")
+    @Operation(summary = "创建仓库管理员")
     @PostMapping("/create/repo/manage/{projectId}/{repoName}")
     fun createRepoManage(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String
     ): Response<String?>
 }

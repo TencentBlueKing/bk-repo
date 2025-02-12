@@ -27,11 +27,11 @@
 
 package com.tencent.bkrepo.analyst.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("扫描报告")
+
+@Schema(title = "扫描报告")
 data class ArtifactScanReport(
-    @ApiModelProperty("扫描报告")
+    @get:Schema(title = "扫描报告")
     private val report: String
 )

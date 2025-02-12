@@ -29,42 +29,42 @@ package com.tencent.bkrepo.job.migrate.pojo
 
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 import java.time.LocalDateTime
 
-@ApiModel("数据迁移任务")
+@Schema(title = "数据迁移任务")
 data class MigrateRepoStorageTask(
-    @ApiModelProperty("ID")
+    @get:Schema(title = "ID")
     val id: String? = null,
-    @ApiModelProperty("创建人")
+    @get:Schema(title = "创建人")
     val createdBy: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: LocalDateTime,
-    @ApiModelProperty("最后修改人")
+    @get:Schema(title = "最后修改人")
     val lastModifiedBy: String,
-    @ApiModelProperty("最后修改时间")
+    @get:Schema(title = "最后修改时间")
     val lastModifiedDate: LocalDateTime,
 
-    @ApiModelProperty("任务开始执行的时间")
+    @get:Schema(title = "任务开始执行的时间")
     val startDate: LocalDateTime? = null,
-    @ApiModelProperty("需要迁移的制品总数")
+    @get:Schema(title = "需要迁移的制品总数")
     val totalCount: Long? = null,
-    @ApiModelProperty("已迁移的制品数")
+    @get:Schema(title = "已迁移的制品数")
     val migratedCount: Long = 0,
-    @ApiModelProperty("已迁移的最后一个Node ID")
+    @get:Schema(title = "已迁移的最后一个Node ID")
     val lastMigratedNodeId: String = MIN_OBJECT_ID,
-    @ApiModelProperty("迁移任务所属项目")
+    @get:Schema(title = "迁移任务所属项目")
     val projectId: String,
-    @ApiModelProperty("迁移项目所属仓库")
+    @get:Schema(title = "迁移项目所属仓库")
     val repoName: String,
-    @ApiModelProperty("源存储，为null时表示默认存储")
+    @get:Schema(title = "源存储，为null时表示默认存储")
     val srcStorageKey: String? = null,
-    @ApiModelProperty("目标存储，为null时表示默认存储")
+    @get:Schema(title = "目标存储，为null时表示默认存储")
     val dstStorageKey: String? = null,
-    @ApiModelProperty("迁移状态")
+    @get:Schema(title = "迁移状态")
     val state: String,
-    @ApiModelProperty("当前正在执行该任务的实例instanceId")
+    @get:Schema(title = "当前正在执行该任务的实例instanceId")
     val executingOn: String? = null,
 ) {
     companion object {

@@ -32,16 +32,16 @@
 package com.tencent.bkrepo.common.notify.pojo
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("蓝盾api调用结果")
+
+@Schema(title = "蓝盾api调用结果")
 data class DevopsResult<out T>(
-    @ApiModelProperty("返回码")
+    @get:Schema(title = "返回码")
     val status: Int,
-    @ApiModelProperty("错误信息")
+    @get:Schema(title = "错误信息")
     val message: String? = null,
-    @ApiModelProperty("数据")
+    @get:Schema(title = "数据")
     val data: T? = null
 ) {
     @JsonIgnore

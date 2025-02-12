@@ -28,25 +28,25 @@
 package com.tencent.bkrepo.helm.pojo.chart
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("chart包上传请求")
+
+@Schema(title = "chart包上传请求")
 data class ChartUploadRequest(
-    @ApiModelProperty("所属项目id", required = true)
+    @get:Schema(title = "所属项目id", required = true)
     override val projectId: String,
-    @ApiModelProperty("所属仓库id", required = true)
+    @get:Schema(title = "所属仓库id", required = true)
     override val repoName: String,
-    @ApiModelProperty("chart名称", required = true)
+    @get:Schema(title = "chart名称", required = true)
     val name: String,
-    @ApiModelProperty("chart版本", required = true)
+    @get:Schema(title = "chart版本", required = true)
     val version: String,
-    @ApiModelProperty("操作用户id", required = true)
+    @get:Schema(title = "操作用户id", required = true)
     override val operator: String,
-    @ApiModelProperty("chart路径", required = true)
+    @get:Schema(title = "chart路径", required = true)
     val fullPath: String,
-    @ApiModelProperty("chart元属性信息", required = false)
+    @get:Schema(title = "chart元属性信息", required = false)
     val metadataMap: Map<String, Any>?,
-    @ApiModelProperty("chart包相关信息", required = false)
+    @get:Schema(title = "chart包相关信息", required = false)
     val artifactInfo: ArtifactInfo
 ) : ChartOperationRequest

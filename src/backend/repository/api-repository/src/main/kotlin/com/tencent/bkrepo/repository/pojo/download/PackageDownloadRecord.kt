@@ -31,17 +31,17 @@
 
 package com.tencent.bkrepo.repository.pojo.download
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("包下载记录")
+
+@Schema(title = "包下载记录")
 data class PackageDownloadRecord(
-    @ApiModelProperty("所属项目", required = true)
+    @get:Schema(title = "所属项目", required = true)
     val projectId: String,
-    @ApiModelProperty("仓库名称", required = true)
+    @get:Schema(title = "仓库名称", required = true)
     val repoName: String,
-    @ApiModelProperty("包唯一key", required = true)
+    @get:Schema(title = "包唯一key", required = true)
     val packageKey: String,
-    @ApiModelProperty("包版本", required = true)
+    @get:Schema(title = "包版本", required = true)
     val packageVersion: String
 )

@@ -35,23 +35,23 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.query.model.Sort.Direction
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("版本列表选项")
+
+@Schema(title = "版本列表选项")
 data class VersionListOption(
-    @ApiModelProperty("当前页")
+    @get:Schema(title = "当前页")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("分页大小")
+    @get:Schema(title = "分页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE,
-    @ApiModelProperty("版本")
+    @get:Schema(title = "版本")
     val version: String? = null,
-    @ApiModelProperty("晋级tag, 多个tag以逗号分隔")
+    @get:Schema(title = "晋级tag, 多个tag以逗号分隔")
     val stageTag: String? = null,
-    @ApiModelProperty("元数据")
+    @get:Schema(title = "元数据")
     val metadata: List<MetadataModel>? = null,
-    @ApiModelProperty("排序字段")
+    @get:Schema(title = "排序字段")
     val sortProperty: String? = null,
-    @ApiModelProperty("排序方向")
+    @get:Schema(title = "排序方向")
     val direction: Direction? = Direction.DESC
 )

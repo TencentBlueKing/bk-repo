@@ -34,31 +34,31 @@ package com.tencent.bkrepo.repository.pojo.node
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("节点列表选项")
+
+@Schema(title = "节点列表选项")
 data class NodeListOption(
-    @ApiModelProperty("当前页")
+    @get:Schema(title = "当前页")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("分页大小")
+    @get:Schema(title = "分页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE,
-    @ApiModelProperty("是否包含目录")
+    @get:Schema(title = "是否包含目录")
     val includeFolder: Boolean = true,
-    @ApiModelProperty("是否包含元数据")
+    @get:Schema(title = "是否包含元数据")
     val includeMetadata: Boolean = false,
-    @ApiModelProperty("是否深度查询文件")
+    @get:Schema(title = "是否深度查询文件")
     val deep: Boolean = false,
-    @ApiModelProperty("是否排序，目录在前，文件在后，并按照文件名称排序")
+    @get:Schema(title = "是否排序，目录在前，文件在后，并按照文件名称排序")
     val sort: Boolean = false,
-    @ApiModelProperty("排序字段")
+    @get:Schema(title = "排序字段")
     val sortProperty: List<String> = emptyList(),
-    @ApiModelProperty("排序方向")
+    @get:Schema(title = "排序方向")
     val direction: List<String> = emptyList(),
-    @ApiModelProperty("无权限路径")
+    @get:Schema(title = "无权限路径")
     var noPermissionPath: List<String> = emptyList(),
-    @ApiModelProperty("有权限的路径")
+    @get:Schema(title = "有权限的路径")
     var hasPermissionPath: List<String>? = null,
-    @ApiModelProperty("操作用户")
+    @get:Schema(title = "操作用户")
     var operator: String = SYSTEM_USER,
 )

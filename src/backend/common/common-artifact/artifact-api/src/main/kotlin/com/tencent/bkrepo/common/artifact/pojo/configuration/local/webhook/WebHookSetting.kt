@@ -31,13 +31,13 @@
 
 package com.tencent.bkrepo.common.artifact.pojo.configuration.local.webhook
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("WebHook设置")
+
+@Schema(title = "WebHook设置")
 data class WebHookSetting(
-    @ApiModelProperty("远程地址", required = true)
+    @get:Schema(title = "远程地址", required = true)
     val url: String,
-    @ApiModelProperty("请求头", required = true)
+    @get:Schema(title = "请求头", required = true)
     val headers: Map<String, String>? = null
 )

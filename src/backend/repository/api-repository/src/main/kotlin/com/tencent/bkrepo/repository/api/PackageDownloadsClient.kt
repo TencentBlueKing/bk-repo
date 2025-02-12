@@ -38,30 +38,30 @@ import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
 import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("包下载统计服务接口")
+@Tag(name = "包下载统计服务接口")
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "PackageDownloadsClient")
 @RequestMapping("/service/package/downloads/")
 @Deprecated("replace with PackageDownloadsService")
 interface PackageDownloadsClient {
 
-    @ApiOperation("记录包下载")
+    @Operation(summary = "记录包下载")
     @PostMapping("/record")
     fun record(@RequestBody record: PackageDownloadRecord): Response<Void>
 
-    @ApiOperation("查询包下载记录明细")
+    @Operation(summary = "查询包下载记录明细")
     @PostMapping("/details")
     fun queryDetails(@RequestBody request: DetailsQueryRequest): Response<PackageDownloadsDetails>
 
-    @ApiOperation("查询包下载总览")
+    @Operation(summary = "查询包下载总览")
     @PostMapping("/summary")
     fun querySummary(@RequestBody request: SummaryQueryRequest): Response<PackageDownloadsSummary>
 }

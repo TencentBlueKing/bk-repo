@@ -27,15 +27,15 @@
 
 package com.tencent.bkrepo.common.metadata.pojo.file
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("文件引用信息")
+
+@Schema(title = "文件引用信息")
 data class FileReference(
-    @ApiModelProperty("所引用文件的sha256")
+    @get:Schema(title = "所引用文件的sha256")
     val sha256: String,
-    @ApiModelProperty("文件实际存储所在存储")
+    @get:Schema(title = "文件实际存储所在存储")
     val credentialsKey: String? = null,
-    @ApiModelProperty("当前记录文件被引用次数")
+    @get:Schema(title = "当前记录文件被引用次数")
     val count: Long
 )

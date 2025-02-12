@@ -28,15 +28,16 @@
 package com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit
 
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.query.model.PageLimit
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 class ScancodeToolkitResultArguments(
-    @ApiModelProperty("需要的许可id列表")
+    @get:Schema(title = "需要的许可id列表")
     val licenseIds: List<String> = emptyList(),
-    @ApiModelProperty("需要的许可风险等级列表")
+    @get:Schema(title = "需要的许可风险等级列表")
     val riskLevels: List<String> = emptyList(),
-    @ApiModelProperty("分页参数")
+    @get:Schema(title = "分页参数")
     val pageLimit: PageLimit = PageLimit()
 ) : LoadResultArguments(ScancodeToolkitScanner.TYPE)
