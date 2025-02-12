@@ -132,53 +132,6 @@
             }
         }
     }
-    .package-card-main-other {
-        flex: 1;
-        height: 100%;
-        justify-content: space-around;
-        overflow: hidden;
-        margin-left: 20px;
-        .card-name {
-            font-size: 14px;
-            max-width: 500px;
-            font-weight: bold;
-            &:hover {
-                color: var(--primaryColor);
-            }
-        }
-        .package-card-description {
-            font-size: 12px;
-            color: var(--fontSubsidiaryColor);
-        }
-        .package-card-data {
-            display: grid;
-            grid-template: auto / repeat(2, 1fr);
-            .card-metadata {
-                padding: 0 5px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                &:after {
-                    content: attr(title);
-                    color: var(--fontSubsidiaryColor);
-                }
-            }
-        }
-        .package-card-data-more {
-            display: grid;
-            grid-template: auto / repeat(5, 1fr);
-            .card-metadata {
-                padding: 0 5px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                &:after {
-                    content: attr(title);
-                    color: var(--fontSubsidiaryColor);
-                }
-            }
-        }
-    }
     .card-operation {
         flex-basis: 60px;
         visibility: visible;
