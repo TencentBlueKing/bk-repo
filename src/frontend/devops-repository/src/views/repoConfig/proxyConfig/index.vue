@@ -1,40 +1,49 @@
 <template>
     <div class="proxy-config-container">
         <div class="mb10 flex-between-center">
-            <bk-button icon="plus" theme="primary" @click="addProxy">{{ $t('add') }}</bk-button>
+            <div class="flex-center">
+                <bk-button icon="plus" theme="primary" @click="addProxy">{{ $t('add') }}</bk-button>
+                <span style="margin-left: 10px" class="package-card-description text-overflow">{{ $t('totalProxyCount', [proxyList.length]) }}</span>
+            </div>
             <span class="proxy-config-tips">{{$t('proxyConfigTips')}}</span>
         </div>
-        <div class="proxy-head">
-            <div class="proxy-index"></div>
-            <div class="proxy-origin">{{$t('name')}}</div>
-            <div class="proxy-type">{{$t('type')}}</div>
-            <div class="proxy-address">{{$t('address')}}</div>
-            <div class="proxy-operation">{{$t('operation')}}</div>
+        <div class="proxy-card-list">
+            <!-- 有数据 -->
+            <template v-if="proxyList.length">
+                <infinite-scroll
+                    ref="infiniteScroll"
+                    :is-loading="isLoading"
+                    :has-next="proxyList.length < pagination.count">
+                    <proxy-card
+                        class="mb10"
+                        v-for="proxy in proxyList"
+                        :key="proxy.name"
+                        :card-data="proxy"
+                        :sync-status="syncRecord"
+                        @refresh-sync-record="getProxySyncRecord"
+                        @delete-card="deleteProxy(proxy)"
+                        @update-card="editProxy(proxy)"
+                    >
+                    </proxy-card>
+                </infinite-scroll>
+            </template>
+            <!-- 无数据 -->
+            <template v-else>
+                <empty-data ex-style="margin-top:130px;" :title="$t('noProxySourceConfigTitle')" :sub-title="$t('noProxySourceConfigSubTitle')"></empty-data>
+            </template>
         </div>
-        <draggable v-if="proxyList.length" v-model="proxyList" :options="{ animation: 200 }" @update="debounceSaveProxy">
-            <div class="proxy-item" v-for="proxy in proxyList" :key="proxy.name + Math.random()">
-                <div class="proxy-index flex-center"><Icon name="drag" size="16" /></div>
-                <div class="proxy-origin">{{proxy.name}}</div>
-                <div class="proxy-type">{{proxy.public ? $t('publicProxy') : $t('privateProxy')}}</div>
-                <div class="proxy-address">{{proxy.url}}</div>
-                <div class="flex-align-center proxy-operation">
-                    <Icon class="mr10 hover-btn" size="24" name="icon-edit" @click.native.stop="editProxy(proxy)" />
-                    <Icon class="hover-btn" size="24" name="icon-delete" @click.native.stop="deleteProxy(proxy)" />
-                </div>
-            </div>
-        </draggable>
-        <empty-data v-else ex-style="margin-top:130px;" :title="$t('noProxySourceConfigTitle')" :sub-title="$t('noProxySourceConfigSubTitle')"></empty-data>
-        <proxy-origin-dialog :show="showProxyDialog" :proxy-data="proxyData" @confirm="confirmProxyData" @cancel="cancelProxy"></proxy-origin-dialog>
+        <proxy-origin-dialog :show="showProxyDialog" :name-list="nameList" :proxy-data="proxyData" @confirm="confirmProxyData" @cancel="cancelProxy"></proxy-origin-dialog>
     </div>
 </template>
 <script>
-    import draggable from 'vuedraggable'
     import proxyOriginDialog from './proxyOriginDialog'
     import { mapActions } from 'vuex'
     import { debounce } from '@repository/utils'
+    import proxyCard from '@repository/components/ProxyCard/index'
+    import InfiniteScroll from '@repository/components/InfiniteScroll/index'
     export default {
-        name: 'proxyConfig',
-        components: { draggable, proxyOriginDialog },
+        name: 'ProxyConfig',
+        components: { InfiniteScroll, proxyCard, proxyOriginDialog },
         props: {
             baseData: Object
         },
@@ -45,7 +54,16 @@
                 // 当前仓库的代理源
                 proxyList: [],
                 proxyData: {},
-                debounceSaveProxy: null
+                debounceSaveProxy: null,
+                pagination: {
+                    current: 1,
+                    limit: 10000,
+                    count: 0,
+                    limitList: [10, 20, 40]
+                },
+                isLoading: false,
+                syncRecord: undefined,
+                nameList: []
             }
         },
         computed: {
@@ -60,15 +78,23 @@
             }
         },
         watch: {
-            baseData () {
-                this.proxyList = this.baseData.configuration.proxy.channelList
+            baseData: {
+                handler (val) {
+                    this.proxyList = val.configuration && val.configuration.proxy ? val.configuration.proxy.channelList : []
+                    this.nameList = this.proxyList.length > 0 ? this.proxyList.map(v => v.name) : []
+                },
+                deep: true,
+                immediate: true
             }
         },
         created () {
+            if (this.repoType === 'helm') {
+                this.getProxySyncRecord()
+            }
             this.debounceSaveProxy = debounce(this.saveProxy)
         },
         methods: {
-            ...mapActions(['updateRepoInfo']),
+            ...mapActions(['updateRepoInfo', 'getHelmLatestSyncRecord']),
             addProxy () {
                 this.showProxyDialog = true
                 this.proxyData = {
@@ -146,10 +172,17 @@
                     this.$emit('refresh')
                     this.$bkMessage({
                         theme: 'success',
-                        message: this.$t('save') + this.$t('success')
+                        message: this.$t('save') + this.$t('space') + this.$t('success')
                     })
                 }).finally(() => {
                     this.saveLoading = false
+                })
+            },
+            getProxySyncRecord () {
+                this.getHelmLatestSyncRecord({ projectId: this.projectId, repoName: this.repoName }).then(response => {
+                    if (response.records.length > 0) {
+                        this.syncRecord = response.records[0]
+                    }
                 })
             }
         }
@@ -192,6 +225,15 @@
     }
     .proxy-item {
         cursor: move;
+    }
+    .proxy-card-list {
+        height: calc(100% - 120px);
+        padding: 0 20px;
+        background-color: white;
+        .list-count {
+            font-size: 12px;
+            color: var(--fontSubsidiaryColor);
+        }
     }
 }
 </style>

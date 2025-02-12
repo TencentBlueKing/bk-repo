@@ -31,7 +31,10 @@ import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
+import com.tencent.bkrepo.common.metadata.pojo.log.OperateLog
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
@@ -47,7 +50,8 @@ import org.springframework.stereotype.Component
 @Component
 class RemoteEventJobExecutor(
     private val helmOperationService: HelmOperationService,
-    private val packageService: PackageService
+    private val packageService: PackageService,
+    private val operateLogService: OperateLogService
 ) : AbstractEventJobExecutor() {
     /**
      * 执行同步
@@ -70,9 +74,33 @@ class RemoteEventJobExecutor(
                     else -> { {} }
                 }
                 submit(action)
+                if (type == EventType.REPO_REFRESHED) {
+                    val operateLog = OperateLog(
+                        projectId = projectId,
+                        repoName = repoName,
+                        resourceKey = resourceKey,
+                        userId = userId,
+                        clientAddress = HttpContextHolder.getClientAddress(),
+                        type = EventType.REPO_REFRESHED.name,
+                        description = mapOf("status" to "success")
+                    )
+                    operateLogService.save(operateLog)
+                }
                 logger.info("Helm Remote event ${getFullResourceKey()} completed.")
             }
         } catch (exception: Exception) {
+            if (event.type == EventType.REPO_REFRESHED) {
+                val operateLog = OperateLog(
+                    projectId = event.projectId,
+                    repoName = event.repoName,
+                    resourceKey = event.resourceKey,
+                    userId = event.userId,
+                    clientAddress = HttpContextHolder.getClientAddress(),
+                    type = EventType.REPO_REFRESHED.name,
+                    description = mapOf("status" to "failed", "error" to exception.message.orEmpty())
+                )
+                operateLogService.save(operateLog)
+            }
             logger.warn("Helm Remote event ${event.getFullResourceKey()}} failed: $exception")
         }
     }

@@ -31,19 +31,30 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
+import org.springframework.http.HttpEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.client.RestTemplate
+import java.util.Base64
+
 
 @Api("代理源用户接口")
 @RestController
@@ -51,6 +62,8 @@ import org.springframework.web.bind.annotation.RestController
 class UserProxyChannelController(
     private val proxyChannelService: ProxyChannelService
 ) {
+    private val restTemplate = RestTemplate()
+
     @ApiOperation("查询代理源信息")
     @GetMapping("/{projectId}/{repoName}")
     fun getByUniqueId(
@@ -77,4 +90,32 @@ class UserProxyChannelController(
             )
         )
     }
+
+    @PostMapping("/check")
+    fun checkProxyValid(
+        @RequestBody checkParam: CheckParam
+    ): Response<Boolean> {
+        with(checkParam) {
+            val headers = HttpHeaders()
+            userName?.let {
+                val useInfo = userName + StringPool.COLON + password
+                val authInfo = BASIC_AUTH_HEADER_PREFIX + Base64.getEncoder().encodeToString(useInfo.toByteArray())
+                headers.set(HttpHeaders.AUTHORIZATION, authInfo)
+            }
+            val httpEntity = HttpEntity<Any>(headers)
+            val response = restTemplate.exchange(
+                url + "/index.yaml", HttpMethod.GET, httpEntity, String::class.java)
+            if (response.statusCode != HttpStatus.OK) {
+                return ResponseBuilder.success(false)
+            } else {
+                return ResponseBuilder.success(true)
+            }
+        }
+    }
 }
+
+data class CheckParam(
+    val url: String,
+    val userName: String?,
+    val password: String?
+)

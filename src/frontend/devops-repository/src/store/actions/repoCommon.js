@@ -198,5 +198,11 @@ export default {
                 }
             }
         )
+    },
+    checkProxy (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/proxy-channel/check`,
+            body
+        )
     }
 }

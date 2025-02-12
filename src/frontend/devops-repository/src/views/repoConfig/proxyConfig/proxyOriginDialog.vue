@@ -3,41 +3,55 @@
         v-model="show"
         width="600"
         height-num="463"
+        @cancel="cancel"
         :title="editProxyData.type === 'add' ? $t('addProxy') : $t('editProxy')"
-        @cancel="$emit('cancel')"
-        @confirm="confirmProxyData">
-        <label class="ml20 mr20 mb10 form-label">{{ $t('baseInfo') }}</label>
-        <bk-form class="ml20 mr20" ref="proxyOrigin" :label-width="85" :model="editProxyData" :rules="rules">
-            <bk-form-item :label="$t('type')" property="proxyType">
+    >
+        <bk-form class="ml20 mr20" :label-width="100" :model="editProxyData" ref="proxyFrom" :rules="rules">
+            <bk-form-item :label="$t('proxyName')" :required="true" property="name" error-display-type="normal">
+                <bk-input v-model.trim="editProxyData.name" maxlength="32" show-word-limit :placeholder="$t('proxyNameRule')"></bk-input>
+            </bk-form-item>
+            <bk-form-item :label="$t('proxyAddress')" :required="true" property="url" error-display-type="normal">
+                <bk-input v-model.trim="editProxyData.url" :placeholder="$t('proxyUrlRule')"></bk-input>
+            </bk-form-item>
+            <bk-form-item :label="$t('publicProxy')" property="proxyType">
                 <bk-radio-group v-model="editProxyData.proxyType">
-                    <bk-radio value="publicProxy">{{ $t('publicProxy') }}</bk-radio>
-                    <bk-radio class="ml20" value="privateProxy">{{ $t('privateProxy') }}</bk-radio>
+                    <bk-radio value="publicProxy">{{ $t('yes') }}</bk-radio>
+                    <bk-radio class="ml20" value="privateProxy">{{ $t('no') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
-            <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
-                <bk-input v-model.trim="editProxyData.name" maxlength="32" show-word-limit></bk-input>
-            </bk-form-item>
-            <bk-form-item :label="$t('address')" :required="true" property="url" error-display-type="normal">
-                <bk-input v-model.trim="editProxyData.url"></bk-input>
-            </bk-form-item>
-        </bk-form>
-        <label class="ml20 mr20 mt20 mb10 form-label">{{$t('credentialInformation')}}</label>
-        <bk-form class="ml20 mr20" :label-width="85">
-            <bk-form-item :label="$t('account')" property="username">
+            <bk-form-item v-if="editProxyData.proxyType === 'privateProxy'" :label="$t('username')" property="username">
                 <bk-input v-model.trim="editProxyData.username"></bk-input>
             </bk-form-item>
-            <bk-form-item :label="$t('password')" property="password">
+            <bk-form-item v-if="editProxyData.proxyType === 'privateProxy'" :label="$t('password')" property="password">
                 <bk-input type="password" v-model.trim="editProxyData.password"></bk-input>
             </bk-form-item>
+            <bk-form-item property="connection">
+                <div class="flex-center">
+                    <bk-link theme="primary" style="margin-right: auto">{{ $t('connectionTest') }}</bk-link>
+                    <Icon v-if="loading" name="loading" size="14" class="svg-loading" />
+                    <Icon style="margin-right: 300px" v-if="condition && !loading && connected" name="right" size="14" />
+                    <Icon style="margin-right: 300px" v-if="condition && !loading && !connected" name="wrong" size="14" />
+                </div>
+            </bk-form-item>
         </bk-form>
+        <template #footer>
+            <bk-button @click="cancel">{{ $t('cancel') }}</bk-button>
+            <bk-button :disabled="!connected || !condition" class="ml10" theme="primary" @click="confirmProxyData">{{ $t('confirm') }}</bk-button>
+        </template>
     </canway-dialog>
 </template>
 <script>
+    import { mapActions } from 'vuex'
+
     export default {
-        name: 'proxyOriginDialog',
+        name: 'ProxyOriginDialog',
         props: {
             show: Boolean,
-            proxyData: Object
+            proxyData: Object,
+            nameList: {
+                type: Array,
+                default: []
+            }
         },
         data () {
             return {
@@ -49,11 +63,19 @@
                     username: '',
                     password: ''
                 },
+                condition: false,
+                loading: false,
+                connected: false,
                 rules: {
                     name: [
                         {
                             required: true,
                             message: this.$t('proxyNameRule'),
+                            trigger: 'blur'
+                        },
+                        {
+                            validator: this.checkName,
+                            message: this.$t('sameProxyExist'),
                             trigger: 'blur'
                         }
                     ],
@@ -84,12 +106,63 @@
                         ...data
                     }
                 }
+            },
+            editProxyData: {
+                handler (data) {
+                    if (data.proxyType === 'publicProxy' && data.name.trim().length > 0 && data.url.trim().length > 0) {
+                        this.condition = true
+                        this.testConnection()
+                    } else if (data.proxyType === 'privateProxy'
+                        && data.name.trim().length > 0
+                        && data.url.trim().length > 0
+                        && data.username.trim().length > 0
+                        && data.password.trim().length > 0
+                    ) {
+                        this.condition = true
+                        this.testConnection()
+                    } else {
+                        this.condition = false
+                        this.loading = false
+                    }
+                },
+                deep: true,
+                immediate: true
             }
         },
         methods: {
+            ...mapActions(['checkProxy']),
             async confirmProxyData () {
-                await this.$refs.proxyOrigin.validate()
+                await this.$refs.proxyFrom.validate()
                 this.$emit('confirm', { name: this.proxyData.name, data: this.editProxyData })
+            },
+            cancel () {
+                this.$refs.proxyFrom.clearError()
+                this.$emit('cancel')
+            },
+            testConnection () {
+                this.loading = true
+                const body = {
+                    url: this.editProxyData.url,
+                    userName: this.editProxyData.proxyType !== 'privateProxy' ? null : this.editProxyData.username,
+                    password: this.editProxyData.proxyType !== 'privateProxy' ? null : this.editProxyData.password
+                }
+                this.checkProxy({ body: body }).then(res => {
+                    if (res === true) {
+                        this.connected = true
+                    } else {
+                        this.connected = false
+                    }
+                }).catch(() => {
+                    this.connected = false
+                }).finally(
+                    this.loading = false
+                )
+            },
+            checkName () {
+                if (this.nameList.length > 0 && this.nameList.indexOf(this.editProxyData.name) > 0) {
+                    return false
+                }
+                return true
             }
         }
     }
@@ -98,5 +171,17 @@
 .form-label {
     display: block;
     font-weight: bold;
+}
+.svg-loading {
+    margin-right: 300px;
+    animation: rotate-loading 1s linear infinite;
+}
+@keyframes rotate-loading {
+    0% {
+        transform: rotateZ(0);
+    }
+    100% {
+        transform: rotateZ(360deg);
+    }
 }
 </style>
