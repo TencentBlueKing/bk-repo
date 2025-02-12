@@ -60,14 +60,22 @@ import com.tencent.bkrepo.common.api.constant.AUDITED_UID
 import com.tencent.bkrepo.common.api.constant.AUDIT_REQUEST_KEY
 import com.tencent.bkrepo.common.api.constant.AUDIT_REQUEST_URI
 import com.tencent.bkrepo.common.api.constant.AUDIT_SHARE_USER_ID
+import com.tencent.bkrepo.common.api.constant.HTTP_METHOD
 import com.tencent.bkrepo.common.api.constant.HTTP_RESPONSE_CODE
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import java.util.Locale
 
 class BkAuditPostFilter : AuditPostFilter {
     override fun map(auditEvent: AuditEvent): AuditEvent {
         auditEvent.scopeType = PROJECT_RESOURCE
         try {
             auditEvent.addExtendData(HTTP_RESPONSE_CODE, HttpContextHolder.getResponse().status)
+            auditEvent.addExtendData(HTTP_METHOD, HttpContextHolder.getRequest().method)
+            auditEvent.addExtendData(
+                CONTENT_RANGE.lowercase(Locale.getDefault()),
+                HttpContextHolder.getRequest().getHeader(CONTENT_RANGE)
+            )
         } catch (ignore: Exception) {
         }
         // 特殊处理, 使用token下载时下载用户是根据token去判断后塞入httpAttribute中, 初始化时无法获取
