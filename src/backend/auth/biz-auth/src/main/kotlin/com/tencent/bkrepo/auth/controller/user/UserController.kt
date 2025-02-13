@@ -64,7 +64,6 @@ import io.swagger.annotations.ApiOperation
 import org.bouncycastle.crypto.CryptoException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -76,6 +75,7 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.util.Base64
 import javax.servlet.http.Cookie
 
 @RestController
@@ -267,23 +267,17 @@ class UserController @Autowired constructor(
     @ApiOperation("独立部署模式下，获取用户信息")
     @GetMapping("/info")
     fun userInfo(
-        @CookieValue(value = "bkrepo_ticket") bkrepoToken: String?,
-        @RequestHeader("x-bkrepo-uid") bkUserId: String?
+        @RequestHeader("x-bkrepo-uid") bkUserId: String?,
+        @RequestHeader("x-bkrepo-display-name") displayName: String?,
+        @RequestHeader("x-bkrepo-tenant-id") tenantId: String?,
     ): Response<Map<String, Any>> {
-        try {
-            bkUserId?.let {
-                return ResponseBuilder.success(mapOf("userId" to bkUserId))
-            }
-            bkrepoToken ?: run {
-                throw IllegalArgumentException("ticket can not be null")
-            }
-            val userId = JwtUtils.validateToken(signingKey, bkrepoToken).body.subject
-            val result = mapOf("userId" to userId)
-            return ResponseBuilder.success(result)
-        } catch (ignored: Exception) {
-            logger.warn("validate user token false [$bkrepoToken]")
-            throw ErrorCodeException(AuthMessageCode.AUTH_LOGIN_TOKEN_CHECK_FAILED)
-        }
+        val name = if (displayName == null) "" else String(Base64.getDecoder().decode(displayName))
+        val result = mapOf(
+            "userId" to bkUserId.orEmpty(),
+            "displayName" to name,
+            "tenantId" to tenantId.orEmpty()
+        )
+        return ResponseBuilder.success(result)
     }
 
     @ApiOperation("校验用户ticket")

@@ -134,7 +134,9 @@
                 showIamDenyDialog: false,
                 showData: {},
                 bkiamv3Check: false,
-                authMode: undefined,
+                authMode: {
+                    bkiamv3Check: false
+                },
                 showPermissionConfig: false
             }
         },

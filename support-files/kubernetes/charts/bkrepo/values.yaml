@@ -273,6 +273,10 @@ gateway:
   bkPaasUrl: paas.example.com
   ## ci模式必填，登录地址
   bkLoginUrl: http://paas.example.com/login/
+  ## 是否开启多租户
+  enableMultiTenantMode: false
+  ## 运营租户默认
+  oPTenantId: system
   ## ci模式必填，ssm ip
   ssmIP0:
   ## ci模式必填，ssm host
@@ -548,7 +552,20 @@ s3:
 ## preview服务配置
 preview:
   enabled: false
-  config: {}
+  config:
+    # 是否开启预览缓存
+    cacheEnabled: true
+    # 外部文件预览项目id
+    projectId: bk-repo
+    # 外部文件预览仓库名称
+    repoName: convert
+    # 外部文件预览仓库是否公开
+    repoPublic: true
+    # 外部文件预览仓库配额(M),默认10G
+    repoQuota: 10240
+    # 默认水印
+    watermark:
+      txt: ""
   ## Kubernetes 通用配置
   image:
     registry: registry.hub.docker.com

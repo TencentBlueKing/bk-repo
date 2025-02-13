@@ -7,7 +7,7 @@
         ref="popoverRef"
     >
         <div class="user-entry">
-            {{ userInfo.name || userInfo.username }}
+            {{ userInfo.displayName || userInfo.name || userInfo.username }}
             <i class="devops-icon icon-down-shape ml5" />
         </div>
         <template slot="content">

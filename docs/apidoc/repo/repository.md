@@ -616,7 +616,7 @@
         }, {
           "type" : "IP_SEGMENT",
           "rules" : {
-            "ipSegment" : [ "10.0.0.0/24", "11.1.0.0/16" ],
+            "ipSegment" : [ "0.0.0.0/xx", "0.0.0.0/xx" ],
             "whitelistUser" : [ "userId" ],
             "officeNetwork" : false
           }
