@@ -27,6 +27,8 @@ export const ROUTER_NAME_REPO_CONFIG = 'RepoConfig'
 export const ROUTER_NAME_RATE_LIMITER_CONFIG = 'RateLimiterConfig'
 export const ROUTER_NAME_PRELOAD_CONFIG = 'PreloadConfig'
 export const ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG = 'ExecutionClustersConfig'
+export const ROUTER_NAME_SEPARATION_CONFIG = 'SeparationConfig'
+export const ROUTER_NAME_SEPARATION_RECORD = 'SeparationRecord'
 
 Vue.use(Router)
 
@@ -345,6 +347,26 @@ export const asyncRoutes = [
         name: ROUTER_NAME_PRELOAD_CONFIG,
         meta: { title: '制品预加载配置', icon: 'service-config' },
         component: () => import('@/views/preload/index')
+      }
+    ]
+  },
+  {
+    path: '/separation-config',
+    component: Layout,
+    meta: { title: '降冷任务配置', icon: 'separate' },
+    redirect: '/separation-config/task',
+    children: [
+      {
+        path: 'task',
+        name: ROUTER_NAME_SEPARATION_CONFIG,
+        meta: { title: '降冷任务', icon: 'separate' },
+        component: () => import('@/views/separation/index')
+      },
+      {
+        path: 'infos',
+        name: ROUTER_NAME_SEPARATION_RECORD,
+        meta: { title: '数据查询', icon: 'separate' },
+        component: () => import('@/views/separation/ShowData')
       }
     ]
   },
