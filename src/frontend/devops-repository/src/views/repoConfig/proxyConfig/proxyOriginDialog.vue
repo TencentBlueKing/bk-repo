@@ -36,7 +36,7 @@
         </bk-form>
         <template #footer>
             <bk-button @click="cancel">{{ $t('cancel') }}</bk-button>
-            <bk-button :disabled="!connected" class="ml10" theme="primary" @click="confirmProxyData">{{ $t('confirm') }}</bk-button>
+            <bk-button :disabled="!connected || !condition" class="ml10" theme="primary" @click="confirmProxyData">{{ $t('confirm') }}</bk-button>
         </template>
     </canway-dialog>
 </template>
@@ -161,8 +161,7 @@
                     fetch(this.editProxyData.url + '/index.yaml', {
                         headers: {
                             Authorization: auth
-                        },
-                        mode: 'no-cors'
+                        }
                     }).then(() => {
                         this.connected = true
                     }).catch(() => {
@@ -171,9 +170,7 @@
                         this.loading = false
                     )
                 } else {
-                    fetch(this.editProxyData.url + '/index.yaml', {
-                        mode: 'no-cors'
-                    }).then(() => {
+                    fetch(this.editProxyData.url + '/index.yaml').then(() => {
                         this.connected = true
                     }).catch(() => {
                         this.connected = false
