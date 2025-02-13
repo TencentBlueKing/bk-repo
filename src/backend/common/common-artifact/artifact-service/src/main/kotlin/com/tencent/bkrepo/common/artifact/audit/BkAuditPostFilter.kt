@@ -62,8 +62,8 @@ import com.tencent.bkrepo.common.api.constant.AUDIT_REQUEST_URI
 import com.tencent.bkrepo.common.api.constant.AUDIT_SHARE_USER_ID
 import com.tencent.bkrepo.common.api.constant.HTTP_METHOD
 import com.tencent.bkrepo.common.api.constant.HTTP_RESPONSE_CODE
-import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import org.springframework.http.HttpHeaders
 import java.util.Locale
 
 class BkAuditPostFilter : AuditPostFilter {
@@ -73,8 +73,8 @@ class BkAuditPostFilter : AuditPostFilter {
             auditEvent.addExtendData(HTTP_RESPONSE_CODE, HttpContextHolder.getResponse().status)
             auditEvent.addExtendData(HTTP_METHOD, HttpContextHolder.getRequest().method)
             auditEvent.addExtendData(
-                CONTENT_RANGE.lowercase(Locale.getDefault()),
-                HttpContextHolder.getRequest().getHeader(CONTENT_RANGE)
+                HttpHeaders.RANGE.lowercase(Locale.getDefault()),
+                HttpContextHolder.getRequest().getHeader(HttpHeaders.RANGE)
             )
         } catch (ignore: Exception) {
         }
