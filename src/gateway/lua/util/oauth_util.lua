@@ -40,7 +40,6 @@ function _M:verify_mobile_gateway()
             sha256:update(input)
             local digest = sha256:final()
             local my_signature = string.upper(resty_str.str_to_hex(digest))
-            ngx.log(ngx.ERR, "my_signature : ", my_signature)
             if ms_signature == my_signature then
                 return ms_staffname
             end
