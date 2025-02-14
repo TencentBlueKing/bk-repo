@@ -35,9 +35,9 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -51,32 +51,32 @@ import org.springframework.web.bind.annotation.RequestParam
 /**
  * 节点元数据服务接口
  */
-@Api("节点元数据服务接口")
+@Tag(name = "节点元数据服务接口")
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "MetadataClient")
 @Deprecated("replace with MetadataService")
 @RequestMapping("/service/metadata")
 interface MetadataClient {
-    @ApiOperation("查询节点所有元数据")
+    @Operation(summary = "查询节点所有元数据")
     @GetMapping("/list/{projectId}/{repoName}")
     fun listMetadata(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "节点完整路径", required = true)
+        @Parameter(name = "节点完整路径", required = true)
         @RequestParam fullPath: String
     ): Response<Map<String, Any>>
 
-    @ApiOperation("创建/更新元数据列表")
+    @Operation(summary = "创建/更新元数据列表")
     @PostMapping("/save")
     fun saveMetadata(@RequestBody request: MetadataSaveRequest): Response<Void>
 
-    @ApiOperation("删除元数据")
+    @Operation(summary = "删除元数据")
     @DeleteMapping("/delete")
     fun deleteMetadata(@RequestBody request: MetadataDeleteRequest): Response<Void>
 
-    @ApiOperation("添加禁用元数据")
+    @Operation(summary = "添加禁用元数据")
     @PostMapping("/forbid")
     fun addForbidMetadata(@RequestBody request: MetadataSaveRequest): Response<Void>
 }

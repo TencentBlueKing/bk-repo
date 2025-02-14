@@ -27,34 +27,33 @@
 
 package com.tencent.bkrepo.auth.pojo.externalPermission
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("外部权限")
+@Schema(title = "外部权限")
 data class ExternalPermission(
-    @ApiModelProperty("id")
+    @get:Schema(title = "id")
     val id: String,
-    @ApiModelProperty("外部权限回调地址")
+    @get:Schema(title = "外部权限回调地址")
     val url: String,
-    @ApiModelProperty("请求头")
+    @get:Schema(title = "请求头")
     val headers: Map<String, String>? = emptyMap(),
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String,
-    @ApiModelProperty("仓库名")
+    @get:Schema(title = "仓库名")
     val repoName: String,
-    @ApiModelProperty("生效微服务")
+    @get:Schema(title = "生效微服务")
     val scope: String,
-    @ApiModelProperty("平台账号白名单，白名单内不会校验外部权限")
+    @get:Schema(title = "平台账号白名单，白名单内不会校验外部权限")
     val platformWhiteList: List<String>? = emptyList(),
-    @ApiModelProperty("是否启用")
+    @get:Schema(title = "是否启用")
     val enabled: Boolean,
-    @ApiModelProperty("创建日期")
+    @get:Schema(title = "创建日期")
     var createdDate: LocalDateTime,
-    @ApiModelProperty("创建人")
+    @get:Schema(title = "创建人")
     var createdBy: String,
-    @ApiModelProperty("最后修改日期")
+    @get:Schema(title = "最后修改日期")
     var lastModifiedDate: LocalDateTime,
-    @ApiModelProperty("最后修改人")
+    @get:Schema(title = "最后修改人")
     var lastModifiedBy: String
 )

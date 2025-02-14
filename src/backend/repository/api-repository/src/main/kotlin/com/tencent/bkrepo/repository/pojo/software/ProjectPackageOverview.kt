@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.repository.pojo.software
 
-import io.swagger.annotations.ApiModel
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("软件源包搜索结果总览")
+@Schema(title = "软件源包搜索结果总览")
 data class ProjectPackageOverview(
     val projectId: String,
     var repos: MutableSet<RepoPackageOverview>,

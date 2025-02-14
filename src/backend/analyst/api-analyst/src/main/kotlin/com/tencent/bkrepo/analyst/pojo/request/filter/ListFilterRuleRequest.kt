@@ -29,17 +29,17 @@ package com.tencent.bkrepo.analyst.pojo.request.filter
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("分页获取忽略规则请求")
+
+@Schema(title = "分页获取忽略规则请求")
 data class ListFilterRuleRequest(
-    @ApiModelProperty("项目，空字符串表示列出系统级规则")
+    @get:Schema(title = "项目，空字符串表示列出系统级规则")
     val projectId: String,
-    @ApiModelProperty("扫描方案id")
+    @get:Schema(title = "扫描方案id")
     val planId: String? = null,
-    @ApiModelProperty("页码")
+    @get:Schema(title = "页码")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("页大小")
+    @get:Schema(title = "页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE,
 )

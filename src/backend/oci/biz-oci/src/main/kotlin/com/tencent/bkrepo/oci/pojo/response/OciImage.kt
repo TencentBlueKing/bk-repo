@@ -31,21 +31,21 @@
 
 package com.tencent.bkrepo.oci.pojo.response
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("oci镜像信息")
+
+@Schema(title = "oci镜像信息")
 data class OciImage(
-    @ApiModelProperty("name")
+    @get:Schema(title = "name")
     val name: String,
-    @ApiModelProperty("最后修改人")
+    @get:Schema(title = "最后修改人")
     val lastModifiedBy: String,
-    @ApiModelProperty("最后修改时间")
+    @get:Schema(title = "最后修改时间")
     val lastModifiedDate: String,
-    @ApiModelProperty("下载次数")
+    @get:Schema(title = "下载次数")
     val downloadCount: Long,
-    @ApiModelProperty("镜像logo地址")
+    @get:Schema(title = "镜像logo地址")
     val logoUrl: String,
-    @ApiModelProperty("镜像描述")
+    @get:Schema(title = "镜像描述")
     val description: String
 )

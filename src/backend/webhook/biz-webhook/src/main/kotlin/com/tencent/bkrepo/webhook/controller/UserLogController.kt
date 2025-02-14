@@ -34,21 +34,21 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.webhook.pojo.ListWebHookLogOption
 import com.tencent.bkrepo.webhook.pojo.WebHookLog
 import com.tencent.bkrepo.webhook.service.LogService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("WebHook日志管理接口")
+@Tag(name = "WebHook日志管理接口")
 @RestController
 @RequestMapping("/api/log")
 class UserLogController(
     private val logService: LogService
 ) {
 
-    @ApiOperation("查询WebHook日志列表")
+    @Operation(summary = "查询WebHook日志列表")
     @GetMapping("/list/{webHookId}")
     @LogOperate(type = "WEBHOOK_LOG_LIST")
     fun listWebHookLog(

@@ -31,17 +31,17 @@
 
 package com.tencent.bkrepo.repository.pojo.dependent
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("包依赖关系")
+
+@Schema(title = "包依赖关系")
 data class PackageDependentsRelation(
-    @ApiModelProperty("所属项目", required = true)
+    @get:Schema(title = "所属项目", required = true)
     val projectId: String,
-    @ApiModelProperty("仓库名称", required = true)
+    @get:Schema(title = "仓库名称", required = true)
     val repoName: String,
-    @ApiModelProperty("包唯一key", required = true)
+    @get:Schema(title = "包唯一key", required = true)
     val packageKey: String,
-    @ApiModelProperty("包依赖列表", required = true)
+    @get:Schema(title = "包依赖列表", required = true)
     val dependencies: Set<String>
 )

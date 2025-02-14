@@ -30,9 +30,9 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_BKIAMV3_PREFIX
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -42,47 +42,47 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api(tags = ["SERVICE_BKIAMV3"], description = "蓝鲸权限v3接口")
+@Tag(name = "SERVICE_BKIAMV3", description = "蓝鲸权限v3接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceBkiamV3Resource")
 @RequestMapping(AUTH_SERVICE_BKIAMV3_PREFIX)
 interface ServiceBkiamV3ResourceClient {
-    @ApiOperation("创建项目管理员")
+    @Operation(summary = "创建项目管理员")
     @PostMapping("/create/project/manage/{projectId}")
     fun createProjectManage(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @RequestParam userId: String,
-        @ApiParam(value = "项目名称")
+        @Parameter(name = "项目名称")
         @PathVariable projectId: String
     ): Response<String?>
 
-    @ApiOperation("创建2级仓库管理员")
+    @Operation(summary = "创建2级仓库管理员")
     @PostMapping("/create/repo/manage/{projectId}/{repoName}")
     fun createRepoManage(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @RequestParam userId: String,
-        @ApiParam(value = "项目名称")
+        @Parameter(name = "项目名称")
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称")
+        @Parameter(name = "仓库名称")
         @PathVariable repoName: String
     ): Response<String?>
 
-    @ApiOperation("删除仓库相关用户组")
+    @Operation(summary = "删除仓库相关用户组")
     @DeleteMapping("/delete/repo/manage/{projectId}/{repoName}")
     fun deleteRepoManageGroup(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @RequestParam userId: String,
-        @ApiParam(value = "项目名称")
+        @Parameter(name = "项目名称")
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称")
+        @Parameter(name = "仓库名称")
         @PathVariable repoName: String
     ): Response<Boolean>
 
 
-    @ApiOperation("检查项目默认的rbac项目组是否已经存在")
+    @Operation(summary = "检查项目默认的rbac项目组是否已经存在")
     @PostMapping("/rbac/group/check")
     fun getExistRbacDefaultGroupProjectIds(
-        @ApiParam(value = "项目ID列表")
+        @Parameter(name = "项目ID列表")
         @RequestBody projectIdList: List<String> = emptyList()
     ): Response<Map<String, Boolean>>
 

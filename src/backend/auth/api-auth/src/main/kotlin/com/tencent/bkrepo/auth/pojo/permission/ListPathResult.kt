@@ -31,10 +31,10 @@
 
 package com.tencent.bkrepo.auth.pojo.permission
 
-import io.swagger.annotations.ApiModel
 import com.tencent.bkrepo.common.query.enums.OperationType
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("校验权限请求")
+@Schema(title = "校验权限请求")
 data class ListPathResult(
     // when true, need to compare
     val status: Boolean,

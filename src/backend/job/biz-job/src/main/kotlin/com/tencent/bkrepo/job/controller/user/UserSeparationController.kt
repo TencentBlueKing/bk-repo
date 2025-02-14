@@ -47,7 +47,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -92,7 +92,7 @@ class UserSeparationController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("查询冷表中节点信息")
+    @Operation(summary = "查询冷表中节点信息")
     @GetMapping("/node/{projectId}/{repoName}")
     fun getNodeInfo(
         @PathVariable projectId: String,
@@ -102,7 +102,7 @@ class UserSeparationController(
         return ResponseBuilder.success(separationDataService.findNodeInfo(projectId, repoName, fullPath))
     }
 
-    @ApiOperation("查询冷表中版本信息")
+    @Operation(summary = "查询冷表中版本信息")
     @GetMapping("/version/{projectId}/{repoName}")
     fun getVersionInfo(
         @PathVariable projectId: String,
@@ -115,7 +115,7 @@ class UserSeparationController(
         )
     }
 
-    @ApiOperation("分页查询包")
+    @Operation(summary = "分页查询包")
     @GetMapping("/package/page/{projectId}/{repoName}")
     fun listPackagePage(
         @PathVariable projectId: String,
@@ -126,7 +126,7 @@ class UserSeparationController(
         return ResponseBuilder.success(pageResult)
     }
 
-    @ApiOperation("分页查询版本")
+    @Operation(summary = "分页查询版本")
     @GetMapping("/version/page/{projectId}/{repoName}")
     fun listVersionPage(
         @PathVariable projectId: String,
@@ -141,7 +141,7 @@ class UserSeparationController(
     }
 
 
-    @ApiOperation("分页查询节点")
+    @Operation(summary = "分页查询节点")
     @GetMapping("/node/page/{projectId}/{repoName}")
     fun listPageNode(
         @PathVariable projectId: String,

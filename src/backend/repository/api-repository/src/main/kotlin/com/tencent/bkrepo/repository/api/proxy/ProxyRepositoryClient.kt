@@ -31,37 +31,37 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api("仓库服务接口")
+@Tag(name = "仓库服务接口")
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProxyRepositoryClient", primary = false)
 @RequestMapping("/proxy/repo")
 interface ProxyRepositoryClient {
 
-    @ApiOperation("查询仓库详情")
+    @Operation(summary = "查询仓库详情")
     @GetMapping("/detail/{projectId}/{repoName}")
     fun getRepoDetail(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "仓库类型", required = true)
+        @Parameter(name = "仓库类型", required = true)
         @RequestParam type: String? = null
     ): Response<RepositoryDetail?>
 
-    @ApiOperation("查询仓库信息")
+    @Operation(summary = "查询仓库信息")
     @GetMapping("/info/{projectId}/{repoName}")
     fun getRepoInfo(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String
     ): Response<RepositoryInfo?>
 }

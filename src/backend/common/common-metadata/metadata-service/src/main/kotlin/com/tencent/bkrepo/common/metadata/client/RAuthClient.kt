@@ -35,7 +35,7 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Parameter
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -70,11 +70,11 @@ interface RAuthClient {
 
     @GetMapping("/permission/repo/list")
     fun listPermissionRepo(
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @RequestParam projectId: String,
-        @ApiParam(value = "用户ID")
+        @Parameter(name = "用户ID")
         @RequestParam userId: String,
-        @ApiParam(value = "应用ID")
+        @Parameter(name = "应用ID")
         @RequestParam appId: String?
     ): Mono<Response<List<String>>>
 
@@ -95,9 +95,9 @@ interface RAuthClient {
 
     @PostMapping("/user/role/{uid}/{rid}")
     fun addUserRole(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @PathVariable uid: String,
-        @ApiParam(value = "用户角色id")
+        @Parameter(name = "用户角色id")
         @PathVariable rid: String
     ): Mono<Response<User?>>
 
@@ -110,65 +110,65 @@ interface RAuthClient {
 
     @GetMapping("/permission/project/list")
     fun listPermissionProject(
-        @ApiParam(value = "用户ID")
+        @Parameter(name = "用户ID")
         @RequestParam userId: String
     ): Mono<Response<List<String>>>
 
     @GetMapping("/permission/path/list")
     fun listPermissionPath(
-        @ApiParam(value = "用户ID")
+        @Parameter(name = "用户ID")
         @RequestParam userId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @RequestParam projectId: String,
-        @ApiParam(value = "仓库名称")
+        @Parameter(name = "仓库名称")
         @RequestParam repoName: String
     ): Mono<Response<ListPathResult>>
 
     @PostMapping("/bkiamv3/rbac/group/check")
     fun getExistRbacDefaultGroupProjectIds(
-        @ApiParam(value = "项目ID列表")
+        @Parameter(name = "项目ID列表")
         @RequestBody projectIdList: List<String> = emptyList()
     ): Mono<Response<Map<String, Boolean>>>
 
     @PostMapping("/bkiamv3/create/project/manage/{projectId}")
     fun createProjectManage(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @RequestParam userId: String,
-        @ApiParam(value = "项目名称")
+        @Parameter(name = "项目名称")
         @PathVariable projectId: String
     ): Mono<Response<String?>>
 
     @PostMapping("/bkiamv3/create/repo/manage/{projectId}/{repoName}")
     fun createRepoManage(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @RequestParam userId: String,
-        @ApiParam(value = "项目名称")
+        @Parameter(name = "项目名称")
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称")
+        @Parameter(name = "仓库名称")
         @PathVariable repoName: String
     ): Mono<Response<String?>>
 
     @DeleteMapping("/bkiamv3/delete/repo/manage/{projectId}/{repoName}")
     fun deleteRepoManageGroup(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @RequestParam userId: String,
-        @ApiParam(value = "项目名称")
+        @Parameter(name = "项目名称")
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称")
+        @Parameter(name = "仓库名称")
         @PathVariable repoName: String
     ): Mono<Response<Boolean>>
 
     @PostMapping("/role/create/project/manage/{projectId}")
     fun createProjectManage(
-        @ApiParam(value = "仓库名称")
+        @Parameter(name = "仓库名称")
         @PathVariable projectId: String
     ): Mono<Response<String?>>
 
     @PostMapping("/role/create/repo/manage/{projectId}/{repoName}")
     fun createRepoManage(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String
     ): Mono<Response<String?>>
 }

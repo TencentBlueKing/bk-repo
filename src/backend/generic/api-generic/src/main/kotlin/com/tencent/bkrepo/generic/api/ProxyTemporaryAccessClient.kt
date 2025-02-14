@@ -31,7 +31,7 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.constant.GENERIC_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 
-@Api("节点服务接口")
+@Tag(name = "节点服务接口")
 @FeignClient(GENERIC_SERVICE_NAME, contextId = "ProxyTemporaryAccessClient", primary = false)
 @RequestMapping("/proxy/temporary")
 interface ProxyTemporaryAccessClient {

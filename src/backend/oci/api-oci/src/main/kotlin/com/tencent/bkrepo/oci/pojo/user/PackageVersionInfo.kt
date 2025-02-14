@@ -32,14 +32,13 @@
 package com.tencent.bkrepo.oci.pojo.user
 
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@Api("oci版本详情页返回包装模型")
+@Schema(title = "oci版本详情页返回包装模型")
 data class PackageVersionInfo(
-    @ApiModelProperty("基础信息")
+    @get:Schema(title = "基础信息")
     val basic: BasicInfo,
-    @ApiModelProperty("元数据信息")
+    @get:Schema(title = "元数据信息")
     val metadata: List<MetadataModel>
 )
 

@@ -28,35 +28,34 @@
 package com.tencent.bkrepo.common.artifact.cache.pojo
 
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadStrategy
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("预加载策略")
+@Schema(title = "预加载策略")
 data class ArtifactPreloadStrategy(
-    @ApiModelProperty("id")
+    @get:Schema(title = "id")
     val id: String? = null,
-    @ApiModelProperty("创建人")
+    @get:Schema(title = "创建人")
     val createdBy: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: LocalDateTime,
-    @ApiModelProperty("修改人")
+    @get:Schema(title = "修改人")
     val lastModifiedBy: String,
-    @ApiModelProperty("修改时间")
+    @get:Schema(title = "修改时间")
     val lastModifiedDate: LocalDateTime,
-    @ApiModelProperty("策略所属项目")
+    @get:Schema(title = "策略所属项目")
     val projectId: String,
-    @ApiModelProperty("策略所属仓库")
+    @get:Schema(title = "策略所属仓库")
     val repoName: String,
-    @ApiModelProperty("文件路径正则，匹配成功才会执行预加载")
+    @get:Schema(title = "文件路径正则，匹配成功才会执行预加载")
     val fullPathRegex: String,
-    @ApiModelProperty("仅加载大于指定大小的文件")
+    @get:Schema(title = "仅加载大于指定大小的文件")
     val minSize: Long,
-    @ApiModelProperty("限制只对最近一段时间内创建的制品执行预加载")
+    @get:Schema(title = "限制只对最近一段时间内创建的制品执行预加载")
     val recentSeconds: Long,
-    @ApiModelProperty("预加载执行时间")
+    @get:Schema(title = "预加载执行时间")
     val preloadCron: String? = null,
-    @ApiModelProperty("策略类型")
+    @get:Schema(title = "策略类型")
     val type: String,
 ) {
     fun toPo() = TArtifactPreloadStrategy(

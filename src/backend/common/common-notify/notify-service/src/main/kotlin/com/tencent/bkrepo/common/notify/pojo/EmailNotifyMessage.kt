@@ -35,9 +35,9 @@ import com.tencent.bkrepo.common.notify.pojo.enums.EnumEmailFormat
 import com.tencent.bkrepo.common.notify.pojo.enums.EnumEmailType
 import com.tencent.bkrepo.common.notify.pojo.enums.EnumNotifyPriority
 import com.tencent.bkrepo.common.notify.pojo.enums.EnumNotifySource
-import io.swagger.annotations.ApiModel
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("邮件")
+@Schema(title = "邮件")
 open class EmailNotifyMessage(
     var format: EnumEmailFormat = EnumEmailFormat.PLAIN_TEXT,
     var type: EnumEmailType = EnumEmailType.OUTER_MAIL,
