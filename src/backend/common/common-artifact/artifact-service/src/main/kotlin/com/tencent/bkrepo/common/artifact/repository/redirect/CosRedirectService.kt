@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.ClientConfig
 import com.tencent.bkrepo.common.storage.innercos.endpoint.DefaultEndpointResolver
+import com.tencent.bkrepo.common.storage.innercos.http.Headers
 import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import com.tencent.bkrepo.common.storage.innercos.request.CosRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
@@ -128,6 +129,7 @@ class CosRedirectService(
         }
         val range = resolveRange(node.size)
         val request = GetObjectRequest(node.sha256!!, range?.start, range?.end)
+        request.headers[Headers.RANGE] = HttpContextHolder.getRequest().getHeader(Headers.RANGE)
         addCosResponseHeaders(context, request, node)
         val urlencodedSign = request.sign(credentials, clientConfig).urlEncode(true)
         if (request.parameters.isEmpty()) {
