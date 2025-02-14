@@ -110,32 +110,16 @@
             editProxyData: {
                 handler (data) {
                     if (data.proxyType === 'publicProxy' && data.name.trim().length > 0 && data.url.trim().length > 0) {
-                        this.$refs.proxyFrom.validate(valid => {
-                            if (valid) {
-                                this.condition = true
-                                this.testConnection()
-                            } else {
-                                this.condition = false
-                                this.loading = false
-                                return false
-                            }
-                        })
+                        this.condition = true
+                        this.testConnection()
                     } else if (data.proxyType === 'privateProxy'
                         && data.name.trim().length > 0
                         && data.url.trim().length > 0
                         && data.username.trim().length > 0
                         && data.password.trim().length > 0
                     ) {
-                        this.$refs.proxyFrom.validate(valid => {
-                            if (valid) {
-                                this.condition = true
-                                this.testConnection()
-                            } else {
-                                this.condition = false
-                                this.loading = false
-                                return false
-                            }
-                        })
+                        this.condition = true
+                        this.testConnection()
                     } else {
                         this.condition = false
                         this.loading = false
