@@ -53,6 +53,12 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
     token = bk_token
 elseif config.auth_mode == "ticket" then
     local bk_ticket = cookieUtil:get_cookie("bk_ticket")
+    if bk_ticket == nil then
+        bk_ticket = ngx.var.http_x_devops_bk_ticket
+    end
+    if bk_ticket == nil then
+        bk_ticket = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-ticket"]
+    end
     if bk_ticket ~= nil then
         username = oauthUtil:verify_ticket(bk_ticket, "ticket")
         token = bk_ticket
@@ -66,16 +72,8 @@ elseif config.auth_mode == "ticket" then
             end
             username = mobile_user
         else
-            bk_ticket = ngx.var.http_x_devops_bk_ticket
-            if bk_ticket == nil then
-                bk_ticket = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-bk-ticket"]
-            end
-            if bk_ticket == nil then
-                ngx.exit(401)
-                return
-            end
-            username = oauthUtil:verify_ticket(bk_ticket, "ticket")
-            token = bk_ticket
+            ngx.exit(401)
+            return
         end
     end
 elseif config.auth_mode == "odc" then
