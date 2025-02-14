@@ -127,8 +127,7 @@ class CosRedirectService(
             endpointResolver = DefaultEndpointResolver()
             httpProtocol = HttpProtocol.HTTPS
         }
-        val range = resolveRange(node.size)
-        val request = GetObjectRequest(node.sha256!!, range?.start, range?.end)
+        val request = GetObjectRequest(node.sha256!!)
         request.headers[Headers.RANGE] = HttpContextHolder.getRequest().getHeader(Headers.RANGE)
         addCosResponseHeaders(context, request, node)
         val urlencodedSign = request.sign(credentials, clientConfig).urlEncode(true)
