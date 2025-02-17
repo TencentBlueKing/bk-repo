@@ -157,4 +157,9 @@ data class DevXProperties(
      */
     var personalWorkspaceUrl: String = "",
 
+    /**
+     * 查询云桌面环境成员
+     */
+    var workspaceEnvMembersUrlFormat: String = ""
+
 )

@@ -91,7 +91,9 @@ class ClipboardService(
         if (devXProperties.groupWorkspaceUrl.isEmpty() || devXProperties.personalWorkspaceUrl.isEmpty()) {
             return null
         }
-        return if (copyPDU.projectId.startsWith(StringPool.UNDERSCORE)) {
+        return if (!copyPDU.envHashId.isNullOrEmpty()) {
+            checkEnvWorkspace(copyPDU)
+        } else if (copyPDU.projectId.startsWith(StringPool.UNDERSCORE)) {
             checkWorkspace(devXProperties.personalWorkspaceUrl, copyPDU)
         } else {
             checkWorkspace(devXProperties.groupWorkspaceUrl, copyPDU)
@@ -107,6 +109,41 @@ class ClipboardService(
             name = userId,
         )
         serviceUserClient.createUser(request)
+    }
+
+    private fun checkEnvWorkspace(copyPDU: CopyPDU): String? {
+        val userId = copyPDU.userId
+        val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
+        val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
+        val url = String.format(devXProperties.workspaceEnvMembersUrlFormat, copyPDU.projectId, copyPDU.envHashId)
+        val request = Request.Builder().url(url)
+            .header("X-Bkapi-Authorization", token)
+            .header("X-Devops-Uid", userId)
+            .get()
+            .build()
+        try {
+            httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    logger.error(
+                        "request url failed: " +
+                            "${request.url}, ${response.code}, ${response.headers["X-Devops-RID"]}"
+                    )
+                    return null
+                }
+
+                val members = response.body!!.string().readJsonString<Response<List<String>>>().data
+                    ?: throw PermissionException("can't find workspace env [${copyPDU.envHashId}]")
+                if (!members.contains(userId)) {
+                    logger.info("workspace env members: $members")
+                    throw PermissionException("user[$userId] is not the member of [${copyPDU.envHashId}]")
+                }
+                createUser(userId)
+                return createToken(copyPDU.projectId, userId)
+            }
+        } catch (e: IOException) {
+            logger.error("Error while processing request: ${e.message}")
+            return null
+        }
     }
 
     private fun checkWorkspace(url: String, copyPDU: CopyPDU): String? {
