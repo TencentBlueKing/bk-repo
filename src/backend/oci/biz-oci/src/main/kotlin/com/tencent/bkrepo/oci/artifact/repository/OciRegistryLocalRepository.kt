@@ -39,6 +39,9 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -49,9 +52,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
-import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
@@ -184,17 +184,21 @@ class OciRegistryLocalRepository(
             // 发现上传时使用的是分块上传，但是不管blob文件大小多大，都是把blob文件当成1个分块
             // 此处记录对于sha256和md5, put请求时对比下sha256，如果一样则可以避免再次计算对应sha256和md5
             val artifactFile = context.getArtifactFile()
-            val key = buildRedisStr(DOCKER_REDIS_KEY_PREFIX, context.artifactInfo.getRepoIdentify(), uuid!!)
-            val chunkSha256 = artifactFile.getFileSha256()
-            val chunkMd5 = artifactFile.getFileMd5()
-            val chunkSize = artifactFile.getSize().toString()
-            val value = buildRedisStr(chunkSha256, chunkMd5, chunkSize)
             val patchLen = storageService.append(
                 appendId = uuid!!,
                 artifactFile = artifactFile,
                 storageCredentials = context.repositoryDetail.storageCredentials
             )
-            redisTemplate?.opsForValue()?.set(key, value, KEY_EXPIRED_TIME.toLong(), TimeUnit.SECONDS)
+            try {
+                val key = buildRedisStr(DOCKER_REDIS_KEY_PREFIX, context.artifactInfo.getRepoIdentify(), uuid!!)
+                val chunkSha256 = artifactFile.getFileSha256()
+                val chunkMd5 = artifactFile.getFileMd5()
+                val chunkSize = artifactFile.getSize().toString()
+                val value = buildRedisStr(chunkSha256, chunkMd5, chunkSize)
+                redisTemplate?.opsForValue()?.set(key, value, KEY_EXPIRED_TIME.toLong(), TimeUnit.SECONDS)
+            } catch (e: Exception) {
+                logger.warn("use redis to store temp data failed: ${e.message}")
+            }
             return ResponseProperty(
                 location = OciLocationUtils.blobUUIDLocation(uuid!!, this),
                 status = HttpStatus.ACCEPTED,
@@ -294,7 +298,11 @@ class OciRegistryLocalRepository(
                 context.artifactInfo.getRepoIdentify(),
                 artifactInfo.uuid!!,
             )
-            val fileInfoStr = redisTemplate?.opsForValue()?.get(key)?.toString()
+            val fileInfoStr = try {
+                redisTemplate?.opsForValue()?.get(key)?.toString()
+            } catch (e: Exception) {
+                null
+            }
             val chunkFileInfo = if (fileInfoStr.isNullOrEmpty()) {
                 null
             } else {
@@ -592,7 +600,7 @@ class OciRegistryLocalRepository(
     }
 
     private fun buildRedisStr(first: String, second: String, third: String? = null): String {
-        var result =  first + StringPool.COLON + second
+        var result = first + StringPool.COLON + second
         third?.let { result = result + StringPool.COLON + third }
         return result
     }
@@ -606,6 +614,7 @@ class OciRegistryLocalRepository(
     companion object {
         private val logger = LoggerFactory.getLogger(OciRegistryLocalRepository::class.java)
         private const val DOCKER_REDIS_KEY_PREFIX = "docker:blob_uuid"
+
         // 6小时过期
         private const val KEY_EXPIRED_TIME = 21600
     }
