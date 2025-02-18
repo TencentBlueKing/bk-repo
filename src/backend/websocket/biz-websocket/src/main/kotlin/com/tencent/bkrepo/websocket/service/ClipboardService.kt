@@ -113,11 +113,9 @@ class ClipboardService(
 
     private fun checkEnvWorkspace(copyPDU: CopyPDU): String? {
         val userId = copyPDU.userId
-        val apiAuth = ApiAuth(devXProperties.appCode, devXProperties.appSecret)
-        val token = apiAuth.toJsonString().replace(System.lineSeparator(), "")
-        val url = String.format(devXProperties.workspaceEnvMembersUrlFormat, copyPDU.projectId, copyPDU.envHashId)
+        val url = String.format(devXProperties.workspaceEnvUsePermissionUrlFormat, copyPDU.projectId, copyPDU.envHashId)
         val request = Request.Builder().url(url)
-            .header("X-Bkapi-Authorization", token)
+            .header("X-DEVOPS-BK-TOKEN", devXProperties.authToken)
             .header("X-Devops-Uid", userId)
             .get()
             .build()
@@ -131,10 +129,8 @@ class ClipboardService(
                     return null
                 }
 
-                val members = response.body!!.string().readJsonString<Response<List<String>>>().data
-                    ?: throw PermissionException("can't find workspace env [${copyPDU.envHashId}]")
-                if (!members.contains(userId)) {
-                    logger.info("workspace env members: $members")
+                val hasPermission = response.body!!.string().readJsonString<Response<Boolean>>().data!!
+                if (!hasPermission) {
                     throw PermissionException("user[$userId] is not the member of [${copyPDU.envHashId}]")
                 }
                 createUser(userId)

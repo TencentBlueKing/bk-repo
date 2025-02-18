@@ -158,8 +158,8 @@ data class DevXProperties(
     var personalWorkspaceUrl: String = "",
 
     /**
-     * 查询云桌面环境成员
+     * 查询云桌面环境使用权限
      */
-    var workspaceEnvMembersUrlFormat: String = ""
+    var workspaceEnvUsePermissionUrlFormat: String = ""
 
 )
