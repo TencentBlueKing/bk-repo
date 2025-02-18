@@ -145,23 +145,6 @@ class CosRedirectService(
         context.response.sendRedirect(request.url)
     }
 
-    private fun resolveRange(total: Long): Range? {
-        return try {
-            val request = HttpContextHolder.getRequest()
-            if (request.getHeader(HttpHeaders.RANGE).isNullOrEmpty()) {
-                null
-            } else {
-                HttpRangeUtils.resolveRange(request, total)
-            }
-        } catch (exception: IllegalArgumentException) {
-            logger.warn("Failed to resolve http range: ${exception.message}")
-            throw ErrorCodeException(
-                status = HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
-                messageCode = CommonMessageCode.REQUEST_RANGE_INVALID,
-            )
-        }
-    }
-
     private fun addCosResponseHeaders(context: ArtifactDownloadContext, request: CosRequest, node: NodeDetail) {
         val filename = context.artifactInfo.getResponseName()
         val cacheControl = node.metadata[HttpHeaders.CACHE_CONTROL]?.toString()
