@@ -27,16 +27,11 @@
 
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
-import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
-import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -60,6 +55,7 @@ import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * 当使用对象存储作为后端存储时，支持创建对象的预签名下载URL，并将用户的下载请求重定向到该URL
@@ -148,7 +144,7 @@ class CosRedirectService(
     private fun addCosResponseHeaders(context: ArtifactDownloadContext, request: CosRequest, node: NodeDetail) {
         val filename = context.artifactInfo.getResponseName()
         val cacheControl = node.metadata[HttpHeaders.CACHE_CONTROL]?.toString()
-            ?: node.metadata[HttpHeaders.CACHE_CONTROL.toLowerCase()]?.toString()
+            ?: node.metadata[HttpHeaders.CACHE_CONTROL.lowercase(Locale.getDefault())]?.toString()
             ?: StringPool.NO_CACHE
         request.parameters["response-cache-control"] = cacheControl
         val mime = determineMediaType(filename, storageProperties.response.mimeMappings)
