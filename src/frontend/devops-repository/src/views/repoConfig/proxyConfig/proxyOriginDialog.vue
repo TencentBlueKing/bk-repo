@@ -25,7 +25,7 @@
             <bk-form-item v-if="editProxyData.proxyType === 'privateProxy'" :label="$t('password')" property="password">
                 <bk-input type="password" v-model.trim="editProxyData.password"></bk-input>
             </bk-form-item>
-            <bk-form-item property="connection">
+            <bk-form-item v-if="repoType === 'helm'" property="connection">
                 <div class="flex-center">
                     <bk-link theme="primary" style="margin-right: auto">{{ $t('connectionTest') }}</bk-link>
                     <Icon v-if="loading" name="loading" size="14" class="svg-loading" />
@@ -51,6 +51,10 @@
             nameList: {
                 type: Array,
                 default: []
+            },
+            repoType: {
+                type: String,
+                default: 'npm'
             }
         },
         data () {
@@ -109,6 +113,9 @@
             },
             editProxyData: {
                 handler (data) {
+                    if (this.repoType !== 'helm') {
+                        return
+                    }
                     if (data.proxyType === 'publicProxy' && data.name.trim().length > 0 && data.url.trim().length > 0) {
                         this.condition = true
                         this.testConnection()
@@ -127,6 +134,14 @@
                 },
                 deep: true,
                 immediate: true
+            },
+            show (val) {
+                if (val) {
+                    if (this.repoType !== 'helm') {
+                        this.condition = true
+                        this.connected = true
+                    }
+                }
             }
         },
         methods: {

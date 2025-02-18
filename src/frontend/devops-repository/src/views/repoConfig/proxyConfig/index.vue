@@ -32,7 +32,14 @@
                 <empty-data ex-style="margin-top:130px;" :title="$t('noProxySourceConfigTitle')" :sub-title="$t('noProxySourceConfigSubTitle')"></empty-data>
             </template>
         </div>
-        <proxy-origin-dialog :show="showProxyDialog" :name-list="nameList" :proxy-data="proxyData" @confirm="confirmProxyData" @cancel="cancelProxy"></proxy-origin-dialog>
+        <proxy-origin-dialog
+            :show="showProxyDialog"
+            :name-list="nameList"
+            :proxy-data="proxyData"
+            :repo-type="repoType"
+            @confirm="confirmProxyData"
+            @cancel="cancelProxy"
+        ></proxy-origin-dialog>
     </div>
 </template>
 <script>

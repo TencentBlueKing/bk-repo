@@ -91,6 +91,7 @@ class UserProxyChannelController(
         )
     }
 
+    @ApiOperation("查询代理源是否有效")
     @PostMapping("/check")
     fun checkProxyValid(
         @RequestBody checkParam: CheckParam
@@ -103,6 +104,7 @@ class UserProxyChannelController(
                 headers.set(HttpHeaders.AUTHORIZATION, authInfo)
             }
             val httpEntity = HttpEntity<Any>(headers)
+            // 暂时只添加了helm类型的校验
             val response = restTemplate.exchange(
                 url + "/index.yaml", HttpMethod.GET, httpEntity, String::class.java)
             if (response.statusCode != HttpStatus.OK) {
