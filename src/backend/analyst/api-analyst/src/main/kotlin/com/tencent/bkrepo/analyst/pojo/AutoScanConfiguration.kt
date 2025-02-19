@@ -27,13 +27,13 @@
 
 package com.tencent.bkrepo.analyst.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("自动扫描配置")
+
+@Schema(title = "自动扫描配置")
 data class AutoScanConfiguration(
-    @ApiModelProperty("自动扫描的仓库")
+    @get:Schema(title = "自动扫描的仓库")
     val autoScanRepoNames: List<String> = emptyList(),
-    @ApiModelProperty("自动扫描制品匹配规则")
+    @get:Schema(title = "自动扫描制品匹配规则")
     val autoScanMatchRule: String? = null
 )

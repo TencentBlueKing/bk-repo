@@ -37,25 +37,25 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api("Maven 产品接口")
+@Tag(name = "Maven 产品接口")
 @RequestMapping("/ext")
 interface MavenWebResource {
-    @ApiOperation("maven jar 包删除接口")
+    @Operation(summary = "maven jar 包删除接口")
     @DeleteMapping(MavenArtifactInfo.MAVEN_EXT_PACKAGE_DELETE)
     fun deletePackage(
         @ArtifactPathVariable mavenArtifactInfo: MavenDeleteArtifactInfo,
         @RequestParam packageKey: String
     ): Response<Void>
 
-    @ApiOperation("maven jar 包版本删除接口")
+    @Operation(summary = "maven jar 包版本删除接口")
     @DeleteMapping(MavenArtifactInfo.MAVEN_EXT_VERSION_DELETE)
     fun deleteVersion(
         @ArtifactPathVariable mavenArtifactInfo: MavenDeleteArtifactInfo,
@@ -63,7 +63,7 @@ interface MavenWebResource {
         @RequestParam version: String?
     ): Response<Void>
 
-    @ApiOperation("maven jar 版本详情接口")
+    @Operation(summary = "maven jar 版本详情接口")
     @GetMapping(MavenArtifactInfo.MAVEN_EXT_DETAIL)
     fun artifactDetail(
         @ArtifactPathVariable mavenArtifactInfo: MavenArtifactInfo,
@@ -71,7 +71,7 @@ interface MavenWebResource {
         @RequestParam version: String?
     ): Response<Any?>
 
-    @ApiOperation("maven gavc 搜索接口")
+    @Operation(summary = "maven gavc 搜索接口")
     @GetMapping("/search/gavc/{projectId}/{pageNumber}/{pageSize}")
     fun gavc(
         @PathVariable projectId: String,

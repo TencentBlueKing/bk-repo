@@ -34,21 +34,21 @@ package com.tencent.bkrepo.repository.controller.user
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
 import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
-import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("构建下载量统计用户接口")
+@Tag(name = "构建下载量统计用户接口")
 @RestController
 @RequestMapping("/api/package/downloads/")
 class UserPackageDownloadsController(
@@ -56,7 +56,7 @@ class UserPackageDownloadsController(
     private val permissionManager: PermissionManager
 ) {
 
-    @ApiOperation("查询包下载记录明细")
+    @Operation(summary = "查询包下载记录明细")
     @PostMapping("/details")
     fun queryDetails(
         @RequestAttribute userId: String,
@@ -68,7 +68,7 @@ class UserPackageDownloadsController(
         }
     }
 
-    @ApiOperation("查询包下载总览")
+    @Operation(summary = "查询包下载总览")
     @PostMapping("/summary")
     fun querySummary(
         @RequestAttribute userId: String,

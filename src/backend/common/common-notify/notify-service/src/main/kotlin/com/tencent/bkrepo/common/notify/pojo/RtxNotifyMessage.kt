@@ -33,9 +33,9 @@ package com.tencent.bkrepo.common.notify.pojo
 
 import com.tencent.bkrepo.common.notify.pojo.enums.EnumNotifyPriority
 import com.tencent.bkrepo.common.notify.pojo.enums.EnumNotifySource
-import io.swagger.annotations.ApiModel
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("rtx消息/企业微信")
+@Schema(title = "rtx消息/企业微信")
 open class RtxNotifyMessage(
     var receivers: Set<String> = setOf(),
     var body: String = "",

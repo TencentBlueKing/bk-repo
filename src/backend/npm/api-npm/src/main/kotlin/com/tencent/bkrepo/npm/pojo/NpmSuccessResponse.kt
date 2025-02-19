@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.npm.pojo
 
-import io.swagger.annotations.Api
+import io.swagger.v3.oas.annotations.media.Schema
 
-@Api("npm success返回包装模型")
+@Schema(name = "npm success返回包装模型")
 data class NpmSuccessResponse(
     val ok: String
 ) {

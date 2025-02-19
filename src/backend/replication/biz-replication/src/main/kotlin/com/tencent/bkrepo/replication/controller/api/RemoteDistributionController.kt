@@ -46,9 +46,9 @@ import com.tencent.bkrepo.replication.pojo.remote.request.RemoteConfigUpdateRequ
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteCreateRequest
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteRunOnceTaskCreateRequest
 import com.tencent.bkrepo.replication.service.RemoteNodeService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -58,20 +58,20 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("远端分发集群用户配置接口")
+@Tag(name = "远端分发集群用户配置接口")
 @RestController
 @RequestMapping("/api/remote/distribution")
 class RemoteDistributionController(
     private val remoteNodeService: RemoteNodeService
 ) {
 
-    @ApiOperation("创建远端集群节点")
+    @Operation(summary = "创建远端集群节点")
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @PostMapping("/create/{projectId}/{repoName}")
     fun remoteClusterCreate(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @RequestBody requests: RemoteCreateRequest
     ): Response<List<ClusterNodeInfo>> {
@@ -79,13 +79,13 @@ class RemoteDistributionController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("创建远端集群节点")
+    @Operation(summary = "创建远端集群节点")
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @PostMapping("/update/{projectId}/{repoName}/{name}")
     fun remoteClusterUpdate(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @PathVariable name: String,
         @RequestBody request: RemoteConfigUpdateRequest
@@ -99,26 +99,26 @@ class RemoteDistributionController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("根据name以及关联项目仓库信息查询远端集群详情")
+    @Operation(summary = "根据name以及关联项目仓库信息查询远端集群详情")
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @GetMapping("/info/{projectId}/{repoName}/{name}", "/info/{projectId}/{repoName}")
     fun getByName(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @PathVariable(required = false) name: String? = null
     ): Response<List<RemoteInfo>> {
         return ResponseBuilder.success(remoteNodeService.getByName(projectId, repoName, name))
     }
 
-    @ApiOperation("任务启停状态切换")
+    @Operation(summary = "任务启停状态切换")
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @PostMapping("/toggle/status/{projectId}/{repoName}/{name}")
     fun toggleStatus(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @PathVariable name: String
     ): Response<Void> {
@@ -126,13 +126,13 @@ class RemoteDistributionController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("根据name以及关联项目仓库信息删除远端集群详情")
+    @Operation(summary = "根据name以及关联项目仓库信息删除远端集群详情")
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @DeleteMapping("/delete/{projectId}/{repoName}/{name}")
     fun deleteClusterNode(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @PathVariable name: String
     ): Response<Void> {
@@ -146,9 +146,9 @@ class RemoteDistributionController(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @PostMapping("/push/{projectId}/{repoName}/{name}")
     fun pushSpecialArtifact(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @RequestParam packageName: String,
         @RequestParam version: String,
@@ -182,9 +182,9 @@ class RemoteDistributionController(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @PostMapping("/create/runOnceTask/{projectId}/{repoName}")
     fun createRunOnceTask(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @RequestBody requests: RemoteRunOnceTaskCreateRequest
     ): Response<Void> {
@@ -217,9 +217,9 @@ class RemoteDistributionController(
     @Permission(ResourceType.REPO, PermissionAction.WRITE)
     @PostMapping("/execute/runOnceTask/{projectId}/{repoName}")
     fun executeRunOnceTask(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @RequestParam name: String,
     ): Response<Void> {
@@ -233,9 +233,9 @@ class RemoteDistributionController(
     @Permission(ResourceType.REPO, PermissionAction.READ)
     @GetMapping("/get/runOnceTaskStatus/{projectId}/{repoName}")
     fun getRunOnceTaskResult(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @RequestParam name: String,
     ): Response<ReplicaRecordInfo?> {
@@ -248,9 +248,9 @@ class RemoteDistributionController(
     @Permission(ResourceType.REPO, PermissionAction.DELETE)
     @DeleteMapping("/delete/runOnceTask/{projectId}/{repoName}")
     fun deleteRunOnceTaskResult(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @RequestParam name: String,
     ): Response<Void> {

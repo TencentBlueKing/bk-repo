@@ -28,28 +28,28 @@
 package com.tencent.bkrepo.auth.pojo.role
 
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("角色")
+
+@Schema(title = "角色")
 data class Role(
     val id: String? = null,
-    @ApiModelProperty("角色ID")
+    @get:Schema(title = "角色ID")
     val roleId: String,
-    @ApiModelProperty("角色类型")
+    @get:Schema(title = "角色类型")
     val type: RoleType,
-    @ApiModelProperty("角色名")
+    @get:Schema(title = "角色名")
     val name: String,
-    @ApiModelProperty("项目ID")
+    @get:Schema(title = "项目ID")
     val projectId: String,
-    @ApiModelProperty("仓库名称")
+    @get:Schema(title = "仓库名称")
     val repoName: String? = null,
-    @ApiModelProperty("管理员")
+    @get:Schema(title = "管理员")
     val admin: Boolean = false,
-    @ApiModelProperty("绑定的用户")
+    @get:Schema(title = "绑定的用户")
     val users: List<String> = listOf(),
-    @ApiModelProperty("描述信息")
+    @get:Schema(title = "描述信息")
     val description: String? = null,
-    @ApiModelProperty("角色来源")
+    @get:Schema(title = "角色来源")
     val source: RoleSource? = null
 )

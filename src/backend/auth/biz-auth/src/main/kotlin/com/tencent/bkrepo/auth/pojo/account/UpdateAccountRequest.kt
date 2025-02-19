@@ -29,25 +29,26 @@ package com.tencent.bkrepo.auth.pojo.account
 
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class UpdateAccountRequest(
-    @ApiModelProperty("系统Id")
+    @get:Schema(title = "系统Id")
     val appId: String,
-    @ApiModelProperty("是否锁定")
+    @get:Schema(title = "是否锁定")
     val locked: Boolean = false,
-    @ApiModelProperty("授权方式")
+    @get:Schema(title = "授权方式")
     val authorizationGrantTypes: Set<AuthorizationGrantType>,
-    @ApiModelProperty("应用主页")
+    @get:Schema(title = "应用主页")
     val homepageUrl: String? = null,
-    @ApiModelProperty("应用回调地址")
+    @get:Schema(title = "应用回调地址")
     val redirectUri: String? = null,
-    @ApiModelProperty("应用图标地址")
+    @get:Schema(title = "应用图标地址")
     val avatarUrl: String? = null,
-    @ApiModelProperty("权限类型")
+    @get:Schema(title = "权限类型")
     val scope: Set<ResourceType>? = null,
-    @ApiModelProperty("权限范围")
+    @get:Schema(title = "权限范围")
     val scopeDesc: List<ScopeRule>? = null,
-    @ApiModelProperty("简要描述")
+    @get:Schema(title = "简要描述")
     val description: String? = null
 )

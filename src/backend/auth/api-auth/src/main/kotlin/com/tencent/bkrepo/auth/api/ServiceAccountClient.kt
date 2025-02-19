@@ -35,9 +35,9 @@ import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ACCOUNT_PREFIX
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
@@ -46,37 +46,37 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api(tags = ["SERVICE_ACCOUNT"], description = "服务-账号接口")
+@Tag(name = "SERVICE_ACCOUNT", description = "服务-账号接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceAccountResource")
 @RequestMapping(AUTH_SERVICE_ACCOUNT_PREFIX)
 interface ServiceAccountClient {
 
-    @ApiOperation("校验ak/sk")
+    @Operation(summary = "校验ak/sk")
     @GetMapping("/credential/{accesskey}/{secretkey}")
     @Deprecated("删除get方式校验")
     fun checkCredential(
-        @ApiParam(value = "accesskey")
+        @Parameter(name = "accesskey")
         @PathVariable accesskey: String,
-        @ApiParam(value = "secretkey")
+        @Parameter(name = "secretkey")
         @PathVariable secretkey: String
     ): Response<String?>
 
-    @ApiOperation("校验ak/sk")
+    @Operation(summary = "校验ak/sk")
     @PostMapping("/credential")
     fun checkAccountCredential(
-        @ApiParam(value = "accesskey")
+        @Parameter(name = "accesskey")
         @RequestParam accesskey: String,
-        @ApiParam(value = "secretkey")
+        @Parameter(name = "secretkey")
         @RequestParam secretkey: String,
-        @ApiParam(value = "authorizationGrantType")
+        @Parameter(name = "authorizationGrantType")
         @RequestParam authorizationGrantType: AuthorizationGrantType? = null
     ): Response<String?>
 
-    @ApiOperation("查找sk")
+    @Operation(summary = "查找sk")
     @GetMapping("/credential/appId/{appId}/accessKey/{accessKey}")
     fun findSecretKey(
-        @ApiParam @PathVariable appId: String,
-        @ApiParam @PathVariable accessKey: String
+        @Parameter @PathVariable appId: String,
+        @Parameter @PathVariable accessKey: String
     ): Response<String?>
 }

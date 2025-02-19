@@ -32,18 +32,18 @@
 package com.tencent.bkrepo.repository.pojo.metadata.packages
 
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 创建/更新元数据请求
  */
-@ApiModel("创建或更新元数据请求")
+@Schema(title = "创建或更新元数据请求")
 data class UserPackageMetadataSaveRequest(
-    @ApiModelProperty("包唯一key", required = true)
+    @get:Schema(title = "包唯一key", required = true)
     val packageKey: String,
-    @ApiModelProperty("包版本", required = true)
+    @get:Schema(title = "包版本", required = true)
     val version: String,
-    @ApiModelProperty("元数据")
+    @get:Schema(title = "元数据")
     val versionMetadata: List<MetadataModel>? = null
 )

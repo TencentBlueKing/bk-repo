@@ -47,8 +47,8 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -61,7 +61,7 @@ import org.springframework.web.bind.annotation.RestController
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
-@Api("制品预加载接口")
+@Tag(name = "制品预加载接口")
 @RestController
 @RequestMapping("/api/preload")
 @ExperimentalContracts
@@ -71,7 +71,7 @@ class UserArtifactPreloadController(
     private val permissionManager: PermissionManager,
 ) {
 
-    @ApiOperation("创建预加载策略")
+    @Operation(summary = "创建预加载策略")
     @PostMapping("/strategy")
     fun createStrategy(@RequestBody request: ArtifactPreloadStrategyCreateRequest): Response<ArtifactPreloadStrategy> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
@@ -82,7 +82,7 @@ class UserArtifactPreloadController(
         return ResponseBuilder.success(strategy)
     }
 
-    @ApiOperation("更新预加载策略")
+    @Operation(summary = "更新预加载策略")
     @PutMapping("/strategy")
     fun updateStrategy(@RequestBody request: ArtifactPreloadStrategyUpdateRequest): Response<ArtifactPreloadStrategy> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
@@ -91,7 +91,7 @@ class UserArtifactPreloadController(
         return ResponseBuilder.success(strategy)
     }
 
-    @ApiOperation("删除预加载策略")
+    @Operation(summary = "删除预加载策略")
     @DeleteMapping("/strategy/{projectId}/{repoName}/{id}")
     @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
     fun deleteStrategy(
@@ -104,7 +104,7 @@ class UserArtifactPreloadController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("获取所有预加载策略")
+    @Operation(summary = "获取所有预加载策略")
     @GetMapping("/strategy/{projectId}/{repoName}")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun listStrategies(
@@ -115,7 +115,7 @@ class UserArtifactPreloadController(
         return ResponseBuilder.success(preloadStrategyService.list(projectId, repoName))
     }
 
-    @ApiOperation("创建预加载计划")
+    @Operation(summary = "创建预加载计划")
     @PostMapping("/plan")
     fun preload(@RequestBody request: ArtifactPreloadPlanCreateRequest): Response<ArtifactPreloadPlan> {
         checkPreloadEnabled(preloadPlanService, preloadStrategyService)
@@ -123,7 +123,7 @@ class UserArtifactPreloadController(
         return ResponseBuilder.success(preloadPlanService.createPlan(request))
     }
 
-    @ApiOperation("分页查询预加载计划")
+    @Operation(summary = "分页查询预加载计划")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/plan/{projectId}/{repoName}")
     fun pagePlans(
@@ -137,7 +137,7 @@ class UserArtifactPreloadController(
         return ResponseBuilder.success(page)
     }
 
-    @ApiOperation("删除预加载计划")
+    @Operation(summary = "删除预加载计划")
     @DeleteMapping("/plan/{projectId}/{repoName}/{id}")
     @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
     fun deletePlan(
@@ -150,7 +150,7 @@ class UserArtifactPreloadController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("删除仓库的所有预加载计划")
+    @Operation(summary = "删除仓库的所有预加载计划")
     @DeleteMapping("/plan/{projectId}/{repoName}")
     @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
     fun deleteAllPlans(

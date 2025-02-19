@@ -27,21 +27,21 @@
 
 package com.tencent.bkrepo.common.analysis.pojo.scanner.trivy
 
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.artifact.constant.PUBLIC_GLOBAL_PROJECT
 import com.tencent.bkrepo.common.artifact.constant.PUBLIC_VULDB_REPO
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("trivy扫描器配置")
+
+@Schema(title = "trivy扫描器配置")
 class TrivyScanner(
     override val name: String,
     override val version: String,
-    @ApiModelProperty("扫描器缓存目录，会在rootPath下创建，存放漏洞数据库文件目录，需要以.开头，否则会被定时任务清理")
+    @get:Schema(title = "扫描器缓存目录，会在rootPath下创建，存放漏洞数据库文件目录，需要以.开头，否则会被定时任务清理")
     val cacheDir: String = ".cache",
-    @ApiModelProperty("使用的容器镜像")
+    @get:Schema(title = "使用的容器镜像")
     val container: TrivyDockerImage,
-    @ApiModelProperty("漏洞库配置")
+    @get:Schema(title = "漏洞库配置")
     val vulDbConfig: VulDbConfig = VulDbConfig()
 ) : Scanner(name, TYPE, version) {
     companion object {
@@ -49,29 +49,29 @@ class TrivyScanner(
     }
 }
 
-@ApiModel("漏洞数据库配置")
+@Schema(title = "漏洞数据库配置")
 data class VulDbConfig(
-    @ApiModelProperty("从制品库下载使用的projectId，仅dbSource为[DbSource.REPO]时有有效")
+    @get:Schema(title = "从制品库下载使用的projectId，仅dbSource为[DbSource.REPO]时有有效")
     val projectId: String = PUBLIC_GLOBAL_PROJECT,
-    @ApiModelProperty("从制品库下载使用的repo，会从该repo的trivy目录中下载最新的文件，仅dbSource为[DbSource.REPO]时有有效")
+    @get:Schema(title = "从制品库下载使用的repo，会从该repo的trivy目录中下载最新的文件，仅dbSource为[DbSource.REPO]时有有效")
     val repo: String = PUBLIC_VULDB_REPO,
-    @ApiModelProperty("漏洞库来源")
+    @get:Schema(title = "漏洞库来源")
     val dbSource: Int = DbSource.REPO.code,
 )
 
-@ApiModel("Trivy容器镜像配置")
+@Schema(title = "Trivy容器镜像配置")
 data class TrivyDockerImage(
-    @ApiModelProperty("使用的镜像名和版本")
+    @get:Schema(title = "使用的镜像名和版本")
     val image: String,
-    @ApiModelProperty("docker仓库用户")
+    @get:Schema(title = "docker仓库用户")
     val dockerRegistryUsername: String?,
-    @ApiModelProperty("docker仓库密码")
+    @get:Schema(title = "docker仓库密码")
     val dockerRegistryPassword: String?,
-    @ApiModelProperty("容器内的工作目录")
+    @get:Schema(title = "容器内的工作目录")
     val workDir: String = "/data",
-    @ApiModelProperty("输入目录，相对于workDir的路径")
+    @get:Schema(title = "输入目录，相对于workDir的路径")
     val inputDir: String = "/package",
-    @ApiModelProperty("输出目录，相对于workDir的路径")
+    @get:Schema(title = "输出目录，相对于workDir的路径")
     val outputDir: String = "/output"
 )
 

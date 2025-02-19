@@ -32,30 +32,30 @@
 package com.tencent.bkrepo.repository.pojo.proxy
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 代理源更新请求
  */
-@ApiModel("代理源更新请求")
+@Schema(title = "代理源更新请求")
 data class ProxyChannelUpdateRequest(
-    @ApiModelProperty("所属项目id", required = true)
+    @get:Schema(title = "所属项目id", required = true)
     val projectId: String,
-    @ApiModelProperty("仓库名称", required = true)
+    @get:Schema(title = "仓库名称", required = true)
     val repoName: String,
-    @ApiModelProperty("是否为公有源", required = false)
+    @get:Schema(title = "是否为公有源", required = false)
     val public: Boolean = true,
-    @ApiModelProperty("代理源名称", required = true)
+    @get:Schema(title = "代理源名称", required = true)
     val name: String,
-    @ApiModelProperty("代理源url", required = true)
+    @get:Schema(title = "代理源url", required = true)
     val url: String,
-    @ApiModelProperty("代理源仓库类型", required = false)
+    @get:Schema(title = "代理源仓库类型", required = false)
     val repoType: RepositoryType,
-    @ApiModelProperty("代理源认证凭证key", required = false)
+    @get:Schema(title = "代理源认证凭证key", required = false)
     val credentialKey: String? = null,
-    @ApiModelProperty("代理源认证用户名", required = false)
+    @get:Schema(title = "代理源认证用户名", required = false)
     val username: String? = null,
-    @ApiModelProperty("代理源认证密码", required = false)
+    @get:Schema(title = "代理源认证密码", required = false)
     val password: String? = null
 )

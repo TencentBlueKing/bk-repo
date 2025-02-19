@@ -38,7 +38,7 @@ internal object StreamFileUtils {
     private val fileSync = ConcurrentHashMap<String, Any>()
 
     fun getDestinationFile(folder: String, destination: String): String {
-        val fileName = destination.toLowerCase() + ".stream"
+        val fileName = destination.lowercase() + ".stream"
         return Paths.get(folder, fileName).toString()
     }
 

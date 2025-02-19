@@ -31,36 +31,35 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.query.model.Sort
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("操作日志列表选项")
+@Schema(title = "操作日志列表选项")
 data class OpLogListOption(
-    @ApiModelProperty("分页数")
+    @get:Schema(title = "分页数")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("分页大小")
+    @get:Schema(title = "分页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE,
-    @ApiModelProperty("所属项目Id")
+    @get:Schema(title = "所属项目Id")
     val projectId: String,
-    @ApiModelProperty("所属仓库名称")
+    @get:Schema(title = "所属仓库名称")
     val repoName: String,
-    @ApiModelProperty("节点完整路径")
+    @get:Schema(title = "节点完整路径")
     val resourceKey: String,
-    @ApiModelProperty("事件类型")
+    @get:Schema(title = "事件类型")
     val eventType: EventType,
-    @ApiModelProperty("sha256校验值")
+    @get:Schema(title = "sha256校验值")
     val sha256: String?,
-    @ApiModelProperty("流水线Id")
+    @get:Schema(title = "流水线Id")
     val pipelineId: String?,
-    @ApiModelProperty("流水线构建Id")
+    @get:Schema(title = "流水线构建Id")
     val buildId: String?,
-    @ApiModelProperty("下载用户Id")
+    @get:Schema(title = "下载用户Id")
     val userId: String?,
-    @ApiModelProperty("查询起始时间")
+    @get:Schema(title = "查询起始时间")
     val startTime: LocalDateTime = LocalDateTime.now().minusMonths(3L),
-    @ApiModelProperty("查询截至时间")
+    @get:Schema(title = "查询截至时间")
     val endTime: LocalDateTime = LocalDateTime.now(),
-    @ApiModelProperty("时间排序方向")
+    @get:Schema(title = "时间排序方向")
     val direction: Sort.Direction = Sort.Direction.DESC
 )

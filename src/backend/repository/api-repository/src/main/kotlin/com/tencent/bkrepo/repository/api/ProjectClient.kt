@@ -38,9 +38,9 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
@@ -49,34 +49,34 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api(description = "服务-项目接口")
+@Tag(name = "服务-项目接口")
 @Primary
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProjectClient")
 @RequestMapping("/service/project")
 @Deprecated("replace with ProjectService")
 interface ProjectClient {
 
-    @ApiOperation("查询项目信息")
+    @Operation(summary = "查询项目信息")
     @GetMapping("/info/{name}")
-    fun getProjectInfo(@ApiParam(value = "项目名") @PathVariable name: String): Response<ProjectInfo?>
+    fun getProjectInfo(@Parameter(name = "项目名") @PathVariable name: String): Response<ProjectInfo?>
 
-    @ApiOperation("列表查询项目")
+    @Operation(summary = "列表查询项目")
     @GetMapping("/list")
     fun listProject(): Response<List<ProjectInfo>>
 
-    @ApiOperation("分页查询项目")
+    @Operation(summary = "分页查询项目")
     @PostMapping("/rangeQuery")
     fun rangeQuery(@RequestBody request: ProjectRangeQueryRequest): Response<Page<ProjectInfo?>>
 
-    @ApiOperation("创建项目")
+    @Operation(summary = "创建项目")
     @PostMapping("/create")
     fun createProject(@RequestBody request: ProjectCreateRequest): Response<ProjectInfo>
 
-    @ApiOperation("项目仓库统计信息列表")
+    @Operation(summary = "项目仓库统计信息列表")
     @PostMapping("/metrics/{name}")
-    fun getProjectMetrics(@ApiParam(value = "项目名") @PathVariable name: String): Response<ProjectMetricsInfo?>
+    fun getProjectMetrics(@Parameter(name = "项目名") @PathVariable name: String): Response<ProjectMetricsInfo?>
 
-    @ApiOperation("获取项目启用/禁用状态")
+    @Operation(summary = "获取项目启用/禁用状态")
     @PostMapping("/enabled/{name}")
-    fun isProjectEnabled(@ApiParam(value = "项目名") @PathVariable name: String): Response<Boolean>
+    fun isProjectEnabled(@Parameter(name = "项目名") @PathVariable name: String): Response<Boolean>
 }

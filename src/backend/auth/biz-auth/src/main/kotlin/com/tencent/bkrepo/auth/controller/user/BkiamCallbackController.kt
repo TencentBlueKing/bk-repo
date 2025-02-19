@@ -36,8 +36,8 @@ import com.tencent.bk.sdk.iam.dto.callback.response.CallbackBaseResponseDTO
 import com.tencent.bkrepo.auth.condition.MultipleAuthCondition
 import com.tencent.bkrepo.auth.pojo.bkiam.BkResult
 import com.tencent.bkrepo.auth.service.bkiamv3.callback.BkiamCallbackService
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Conditional
 import org.springframework.web.bind.annotation.GetMapping
@@ -52,43 +52,43 @@ import org.springframework.web.bind.annotation.RestController
 @Conditional(MultipleAuthCondition::class)
 class BkiamCallbackController @Autowired constructor(private val bkiamCallbackService: BkiamCallbackService) {
 
-    @ApiOperation("项目列表")
+    @Operation(summary = "项目列表")
     @PostMapping("/project")
     fun queryProject(
         @RequestHeader("Authorization")
-        @ApiParam("token")
+        @Parameter(name = "token")
         token: String,
-        @ApiParam("回调信息")
+        @Parameter(name = "回调信息")
         @RequestBody request: CallbackRequestDTO
     ): CallbackBaseResponseDTO? {
         return bkiamCallbackService.queryProject(token, request)
     }
 
-    @ApiOperation("仓库列表")
+    @Operation(summary = "仓库列表")
     @PostMapping("/repo")
     fun queryRepo(
         @RequestHeader("Authorization")
-        @ApiParam("token")
+        @Parameter(name = "token")
         token: String,
-        @ApiParam("回调信息")
+        @Parameter(name = "回调信息")
         @RequestBody request: CallbackRequestDTO
     ): CallbackBaseResponseDTO? {
         return bkiamCallbackService.queryRepo(token, request)
     }
 
-    @ApiOperation("节点列表")
+    @Operation(summary = "节点列表")
     @PostMapping("/node")
     fun queryNode(
         @RequestHeader("Authorization")
-        @ApiParam("token")
+        @Parameter(name = "token")
         token: String,
-        @ApiParam("回调信息")
+        @Parameter(name = "回调信息")
         @RequestBody request: CallbackRequestDTO
     ): CallbackBaseResponseDTO? {
         return bkiamCallbackService.queryNode(token, request)
     }
 
-    @ApiOperation("健康检查")
+    @Operation(summary = "健康检查")
     @GetMapping("/health")
     fun health(): BkResult<Boolean> {
         return BkResult(true)

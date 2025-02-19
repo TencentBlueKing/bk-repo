@@ -33,9 +33,9 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -44,29 +44,29 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("仓库集群接口")
+@Tag(name = "仓库集群接口")
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterRepositoryClient")
 @RequestMapping("/cluster/repo")
 interface ClusterRepositoryClient {
 
-    @ApiOperation("查询仓库信息")
+    @Operation(summary = "查询仓库信息")
     @GetMapping("/detail/{projectId}/{repoName}")
     fun getRepoDetail(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String
     ): Response<RepositoryDetail?>
 
-    @ApiOperation("创建仓库")
+    @Operation(summary = "创建仓库")
     @PostMapping("/create")
     fun createRepo(@RequestBody request: RepoCreateRequest): Response<RepositoryDetail>
 
-    @ApiOperation("修改仓库")
+    @Operation(summary = "修改仓库")
     @PostMapping("/update")
     fun updateRepo(@RequestBody request: RepoUpdateRequest): Response<Void>
 
-    @ApiOperation("删除仓库")
+    @Operation(summary = "删除仓库")
     @DeleteMapping("/delete")
     fun deleteRepo(@RequestBody request: RepoDeleteRequest): Response<Void>
 }
