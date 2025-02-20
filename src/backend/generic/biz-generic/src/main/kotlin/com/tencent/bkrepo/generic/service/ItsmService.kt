@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.generic.service
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -39,6 +40,8 @@ import com.tencent.bkrepo.generic.pojo.share.ItsmTicketCreateRequest
 import com.tencent.bkrepo.generic.pojo.share.ItsmTicketCreateResponse
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.generic.artifact.createPlatformDns
+import com.tencent.bkrepo.generic.config.GenericProperties
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -50,9 +53,12 @@ import org.springframework.stereotype.Service
 @Conditional(SyncCondition::class)
 class ItsmService(
     private val itsmProperties: ItsmProperties,
+    genericProperties: GenericProperties
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create().build()
+    private val httpClient = HttpClientBuilderFactory.create()
+        .dns(createPlatformDns(genericProperties.platforms))
+        .build()
 
     fun createTicket(
         fields: List<Map<String, Any>>,
@@ -76,35 +82,43 @@ class ItsmService(
             .post(body.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull()))
             .build()
         logger.info("createTicket|$url|$body")
-        val resp = try {
-            httpClient.newCall(request).execute().use { response ->
-                val data = response.body!!.string()
-                if (!response.isSuccessful) {
-                    logger.error("createTicket|$url|$body|${response.code}|$data")
-                    throw ErrorCodeException(
-                        CommonMessageCode.SERVICE_CALL_ERROR,
-                    )
-                }
-                logger.debug("createTicket|$url|$data")
-                val resp = data.readJsonString<ItsmTicketCreateResponse<ItsmTicket>>()
-                if (!resp.result) {
-                    logger.error("createTicket|$url|$body|${response.code}|$data")
-                    throw ErrorCodeException(
-                        CommonMessageCode.SERVICE_CALL_ERROR,
-                    )
-                }
-                resp
-            }
-        } catch (e: ErrorCodeException) {
-            throw e
-        } catch (e: Exception) {
-            logger.error("createTicket request error", e)
-            throw ErrorCodeException(
-                CommonMessageCode.SERVICE_CALL_ERROR,
-            )
+        val resp = retry(3, 3, listOf(ErrorCodeException::class.java)) {
+            request(request, url, body)
         }
 
         return resp.data
+    }
+
+    private fun request(
+        request: Request,
+        url: String,
+        body: ItsmTicketCreateRequest
+    ) = try {
+        httpClient.newCall(request).execute().use { response ->
+            val data = response.body!!.string()
+            if (!response.isSuccessful) {
+                logger.error("createTicket|$url|$body|${response.code}|$data")
+                throw ErrorCodeException(
+                    CommonMessageCode.SERVICE_CALL_ERROR,
+                )
+            }
+            logger.debug("createTicket|$url|$data")
+            val resp = data.readJsonString<ItsmTicketCreateResponse<ItsmTicket>>()
+            if (!resp.result) {
+                logger.error("createTicket|$url|$body|${response.code}|$data")
+                throw ErrorCodeException(
+                    CommonMessageCode.SERVICE_CALL_ERROR,
+                )
+            }
+            resp
+        }
+    } catch (e: ErrorCodeException) {
+        throw e
+    } catch (e: Exception) {
+        logger.error("createTicket request error", e)
+        throw ErrorCodeException(
+            CommonMessageCode.SERVICE_CALL_ERROR,
+        )
     }
 
 
