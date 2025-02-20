@@ -85,6 +85,10 @@ class DependencyResultManager @Autowired constructor(
         return Page(page.pageNumber, page.pageSize, page.totalRecords, records)
     }
 
+    override fun clean(credentialsKey: String?, sha256: String, scanner: Scanner): Long {
+        return dependencyItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
+    }
+
     private fun replace(
         credentialsKey: String?,
         sha256: String,

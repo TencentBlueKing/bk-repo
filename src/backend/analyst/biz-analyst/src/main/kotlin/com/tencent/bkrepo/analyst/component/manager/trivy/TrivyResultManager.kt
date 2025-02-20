@@ -81,6 +81,10 @@ class TrivyResultManager @Autowired constructor(
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records)
     }
 
+    override fun clean(credentialsKey: String?, sha256: String, scanner: Scanner): Long {
+        return vulnerabilityItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
+    }
+
     private fun replace(
         credentialsKey: String?,
         sha256: String,
