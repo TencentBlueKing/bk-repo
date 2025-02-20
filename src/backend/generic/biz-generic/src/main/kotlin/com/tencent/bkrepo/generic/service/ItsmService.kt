@@ -33,12 +33,12 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.security.interceptor.devx.QueryResponse
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.generic.config.ItsmProperties
 import com.tencent.bkrepo.generic.pojo.share.ItsmTicket
 import com.tencent.bkrepo.generic.pojo.share.ItsmTicketCreateRequest
-import com.tencent.bkrepo.generic.pojo.share.ItsmTicketCreateResponse
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -61,7 +61,7 @@ class ItsmService(
         approvalUsers: List<String>
     ): ItsmTicket {
         val userId = SecurityUtils.getUserId()
-        val url = "${itsmProperties.url}/v2/itsm/create_ticket"
+        val url = itsmProperties.url
         val body = ItsmTicketCreateRequest(
             serviceId = serviceId,
             creator = userId,
@@ -73,38 +73,44 @@ class ItsmService(
         val request = Request.Builder()
             .url(url)
             .addHeader("x-bkapi-authorization", headerStr())
+            .addHeader("x-devops-uid", userId)
             .post(body.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull()))
             .build()
         logger.info("createTicket|$url|$body")
-        val resp = try {
-            httpClient.newCall(request).execute().use { response ->
-                val data = response.body!!.string()
-                if (!response.isSuccessful) {
-                    logger.error("createTicket|$url|$body|${response.code}|$data")
-                    throw ErrorCodeException(
-                        CommonMessageCode.SERVICE_CALL_ERROR,
-                    )
-                }
-                logger.debug("createTicket|$url|$data")
-                val resp = data.readJsonString<ItsmTicketCreateResponse<ItsmTicket>>()
-                if (!resp.result) {
-                    logger.error("createTicket|$url|$body|${response.code}|$data")
-                    throw ErrorCodeException(
-                        CommonMessageCode.SERVICE_CALL_ERROR,
-                    )
-                }
-                resp
-            }
-        } catch (e: ErrorCodeException) {
-            throw e
-        } catch (e: Exception) {
-            logger.error("createTicket request error", e)
-            throw ErrorCodeException(
-                CommonMessageCode.SERVICE_CALL_ERROR,
-            )
-        }
+        val resp = request(request, url, body)
+        return resp.data!!
+    }
 
-        return resp.data
+    private fun request(
+        request: Request,
+        url: String,
+        body: ItsmTicketCreateRequest
+    ) = try {
+        httpClient.newCall(request).execute().use { response ->
+            val data = response.body!!.string()
+            if (!response.isSuccessful) {
+                logger.error("createTicket|$url|$body|${response.code}|$data")
+                throw ErrorCodeException(
+                    CommonMessageCode.SERVICE_CALL_ERROR,
+                )
+            }
+            logger.debug("createTicket|$url|$data")
+            val resp = data.readJsonString<QueryResponse<ItsmTicket>>()
+            if (resp.status != 0) {
+                logger.error("createTicket|$url|$body|${response.code}|$data")
+                throw ErrorCodeException(
+                    CommonMessageCode.SERVICE_CALL_ERROR,
+                )
+            }
+            resp
+        }
+    } catch (e: ErrorCodeException) {
+        throw e
+    } catch (e: Exception) {
+        logger.error("createTicket request error", e)
+        throw ErrorCodeException(
+            CommonMessageCode.SERVICE_CALL_ERROR,
+        )
     }
 
 
