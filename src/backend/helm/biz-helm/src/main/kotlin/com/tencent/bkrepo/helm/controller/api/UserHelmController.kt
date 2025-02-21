@@ -35,12 +35,18 @@ import com.tencent.bk.audit.annotations.ActionAuditRecord
 import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
 import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.metadata.pojo.log.OpLogListOption
+import com.tencent.bkrepo.common.metadata.pojo.log.OperateLog
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.helm.api.HelmClient
 import com.tencent.bkrepo.helm.pojo.HelmDomainInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.CHART_PACKAGE_DELETE_URL
@@ -55,10 +61,12 @@ import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
 
 @Suppress("MVCPathVariableInspection")
 @Api("helm产品接口")
@@ -67,6 +75,8 @@ import org.springframework.web.bind.annotation.RestController
 class UserHelmController(
     private val chartManipulationService: ChartManipulationService,
     private val chartRepositoryService: ChartRepositoryService,
+    private val helmClient: HelmClient,
+    private val operateLogService: OperateLogService
 ) {
 
     @ApiOperation("查询包的版本详情")
@@ -149,5 +159,33 @@ class UserHelmController(
     @GetMapping("/address")
     fun getRegistryDomain(): Response<HelmDomainInfo> {
         return ResponseBuilder.success(chartRepositoryService.getRegistryDomain())
+    }
+
+    @ApiOperation("刷新对应代理仓库的index文件以及package信息")
+    @GetMapping("/refresh/{projectId}/{repoName}")
+    fun refreshIndexAndPackage(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String
+    ): Response<Void> {
+        helmClient.refreshIndexYamlAndPackage(projectId, repoName)
+        return ResponseBuilder.success()
+    }
+
+    @ApiOperation("获取最近一次的同步时间和状态")
+    @GetMapping("/getLatestSyncStatus/{projectId}/{repoName}")
+    fun getLatestSyncStatus(
+        @PathVariable projectId: String, @PathVariable repoName: String)
+    : Response<Page<OperateLog>> {
+        val option = OpLogListOption(
+            projectId = projectId,
+            repoName = repoName,
+            resourceKey = repoName,
+            pageNumber = 1,
+            pageSize = 1,
+            eventType = EventType.REPO_REFRESHED,
+            startTime = LocalDateTime.now().minusYears(1),
+            endTime = LocalDateTime.now()
+        )
+        return ResponseBuilder.success(operateLogService.listPage(option))
     }
 }
