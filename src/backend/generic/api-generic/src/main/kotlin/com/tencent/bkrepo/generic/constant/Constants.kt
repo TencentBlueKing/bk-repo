@@ -67,3 +67,9 @@ const val HEADER_BLOCK_APPEND = BKREPO_PREFIX + "BLOCK-APPEND"
  * 分块上传版本后缀
  */
 const val SEPARATE_UPLOAD = "SEPARATE-UPLOAD"
+
+/**
+ * 审计中心action定义
+ */
+const val USER_SHARE_CREATE_ACTION = "user_share_create"
+const val USER_SHARE_DOWNLOAD_URL_CREATE_ACTION = "user_share_download_url_create"

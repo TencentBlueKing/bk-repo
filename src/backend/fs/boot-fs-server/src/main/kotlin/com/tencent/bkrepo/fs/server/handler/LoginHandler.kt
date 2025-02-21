@@ -36,9 +36,9 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
+import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
-import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
@@ -53,6 +53,7 @@ import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.slf4j.LoggerFactory
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.bodyValueAndAwait
@@ -88,22 +89,49 @@ class LoginHandler(
     }
 
     suspend fun devxLogin(request: ServerRequest): ServerResponse {
-        val devxToken = request.bodyToMono(DevxLoginRequest::class.java).awaitSingleOrNull()?.token
+        val devxLoginRequest = request.bodyToMono(DevxLoginRequest::class.java).awaitSingleOrNull()
+        val devIdToken = devxLoginRequest?.token
+        val accessToken = devxLoginRequest?.accessToken
         val repoName = request.pathVariable(REPO_NAME)
-        val response = if (devxToken.isNullOrEmpty()) {
-            val workspace = DevxWorkspaceUtils.getWorkspace().awaitSingleOrNull() ?: throw AuthenticationException()
-            val userId = createUser(workspace)
-            val token = createToken(workspace.projectId, repoName, userId)
-            DevxLoginResponse(workspace.projectId, token, StringPool.EMPTY)
-        } else {
-            val devxTokenInfo = DevxWorkspaceUtils.validateToken(devxToken).awaitSingle()
-            createUser(devxTokenInfo.userId)
-            val token = createToken(devxTokenInfo.projectId, repoName, devxTokenInfo.userId)
-            DevxLoginResponse(devxTokenInfo.projectId, token, devxTokenInfo.workspaceName)
+        val response = when {
+            !devIdToken.isNullOrEmpty() -> devIdTokenLogin(devIdToken, repoName)
+            !accessToken.isNullOrEmpty() -> accessTokenLogin(accessToken, repoName)
+            else -> ipLogin(repoName)
         }
-
         return ReactiveResponseBuilder.success(response)
     }
+
+    private suspend fun ipLogin(repoName: String): DevxLoginResponse {
+        val workspace = DevxWorkspaceUtils.getWorkspace().awaitSingleOrNull() ?: throw AuthenticationException()
+        val userId = createUser(workspace)
+        val token = createToken(workspace.projectId, repoName, userId)
+        return DevxLoginResponse(workspace.projectId, token, StringPool.EMPTY)
+    }
+
+    private suspend fun accessTokenLogin(
+        accessToken: String,
+        repoName: String
+    ): DevxLoginResponse {
+        val workspace = DevxWorkspaceUtils.validateAccessToken(accessToken).awaitSingle()
+        if (workspace.currentLoginUsers.isNullOrEmpty()) {
+            throw AuthenticationException("no login user")
+        }
+        val userId = workspace.currentLoginUsers!!.first()
+        createUser(userId)
+        val token = createToken(workspace.projectId, repoName, userId)
+        return DevxLoginResponse(workspace.projectId, token, workspace.workspaceName)
+    }
+
+    private suspend fun devIdTokenLogin(
+        devIdToken: String,
+        repoName: String
+    ): DevxLoginResponse {
+        val devxTokenInfo = DevxWorkspaceUtils.validateToken(devIdToken).awaitSingle()
+        createUser(devxTokenInfo.userId)
+        val token = createToken(devxTokenInfo.projectId, repoName, devxTokenInfo.userId)
+        return DevxLoginResponse(devxTokenInfo.projectId, token, devxTokenInfo.workspaceName)
+    }
+
 
     suspend fun ioaLogin(request: ServerRequest): ServerResponse {
         val projectId = request.pathVariable("projectId")
@@ -173,5 +201,9 @@ class LoginHandler(
         val repoName = parts[1]
         val newToken = createToken(projectId, repoName, username)
         return ReactiveResponseBuilder.success(newToken)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(LoginHandler::class.java)
     }
 }

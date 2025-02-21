@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,27 +25,15 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.interceptor.devx
+package com.tencent.bkrepo.generic.pojo.share
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class DevXWorkSpace(
-    @JsonProperty("workspace_name")
-    val workspaceName: String,
-    @JsonProperty("project_id")
-    val projectId: String,
-    @JsonProperty("creator")
+data class ItsmTicketCreateRequest(
+    @JsonProperty("service_id")
+    val serviceId: Int,
     val creator: String,
-    @JsonProperty("owner")
-    val owner: String,
-    @JsonProperty("region_id")
-    val regionId: String,
-    @JsonProperty("inner_ip")
-    val innerIp: String? = null,
-    @JsonProperty("real_owner")
-    val realOwner: String,
-    @JsonProperty("viewers")
-    val viewers: List<String>,
-    @JsonProperty("currentLoginUsers")
-    val currentLoginUsers: List<String>? = null,
+    // [{"key": "title", "value": "d" }]
+    val fields: List<Map<String, Any>>,
+    val meta: Map<String, Any>,
 )

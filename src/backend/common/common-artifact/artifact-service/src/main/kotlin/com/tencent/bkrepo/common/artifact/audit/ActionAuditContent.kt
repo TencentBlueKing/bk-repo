@@ -36,6 +36,7 @@ object ActionAuditContent {
     private const val CONTENT_TEMPLATE = "[{{$INSTANCE_NAME}}]({{$INSTANCE_ID}})"
     private const val PROJECT_CODE_CONTENT_TEMPLATE = "[{{@PROJECT_CODE}}]"
     private const val REPO_NAME_CONTENT_TEMPLATE = "[{{@REPO_NAME}}]"
+    private const val WORKSPACE_CONTENT_TEMPLATE = "[{{@WORKSPACE_NAME}}]"
     const val PROJECT_CODE_TEMPLATE = "@PROJECT_CODE"
     const val REPO_NAME_TEMPLATE = "@REPO_NAME"
     const val TOKEN_TEMPLATE = "@TOKEN"
@@ -45,6 +46,7 @@ object ActionAuditContent {
     const val NEW_PROJECT_CODE_CONTENT_TEMPLATE = "@NEW_PROJECT_CODE"
     const val NEW_REPO_NAME_CONTENT_TEMPLATE = "@NEW_REPO_NAME"
     const val VERSION_TEMPLATE = "@VERSION"
+    const val WORKSPACE_NAME_TEMPLATE = "@WORKSPACE_NAME"
 
     // 项目
     const val PROJECT_CREATE_CONTENT = "create project $CONTENT_TEMPLATE"
@@ -88,4 +90,6 @@ object ActionAuditContent {
     const val NODE_UPLOAD_CONTENT = "upload node $CONTENT_TEMPLATE in repo $PROJECT_CODE_CONTENT_TEMPLATE|$REPO_NAME_CONTENT_TEMPLATE"
     const val NODE_DOWNLOAD_CONTENT = "download node $CONTENT_TEMPLATE in repo $PROJECT_CODE_CONTENT_TEMPLATE|$REPO_NAME_CONTENT_TEMPLATE"
 
+    const val NODE_USER_SHARE_CREATE_CONTENT = "create user share for node info $CONTENT_TEMPLATE in repo $PROJECT_CODE_CONTENT_TEMPLATE|$REPO_NAME_CONTENT_TEMPLATE from workspace[$WORKSPACE_CONTENT_TEMPLATE]"
+    const val NODE_USER_SHARE_DOWNLOAD_URL_CREATE_CONTENT = "create user share download url for node info $CONTENT_TEMPLATE in repo $PROJECT_CODE_CONTENT_TEMPLATE|$REPO_NAME_CONTENT_TEMPLATE"
 }

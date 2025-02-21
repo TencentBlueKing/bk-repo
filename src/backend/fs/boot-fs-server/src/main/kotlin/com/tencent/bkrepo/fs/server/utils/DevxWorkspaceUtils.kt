@@ -209,6 +209,16 @@ class DevxWorkspaceUtils(
                 }
         }
 
+        fun validateAccessToken(accessToken: String): Mono<DevXWorkSpace> {
+            val type = object : ParameterizedTypeReference<QueryResponse<DevXWorkSpace>>() {}
+            return httpClient.get().uri(devXProperties.validateAccessTokenUrl)
+                .header("X-CDI-OAUTH2-AUTHORIZATION", accessToken)
+                .header("X-DEVOPS-STORE-CODE", devXProperties.devopsStoreCode)
+                .exchangeToMono {
+                    mono { parseResponse(it, type)?.data }
+                }
+        }
+
         private suspend fun parseDevxTokenInfo(response: ClientResponse): DevxTokenInfo {
             return if (response.statusCode() != HttpStatus.OK) {
                 val errorMsg = response.awaitBody<String>()

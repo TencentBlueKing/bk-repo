@@ -51,7 +51,12 @@ enum class GenericMessageCode(private val businessCode: Int, private val key: St
     CHUNKED_ARTIFACT_BROKEN(12, "generic.chunked.artifact.broken"),
     BLOCK_UPLOADID_ERROR(13, "generic.block.uploadId.error"),
     BLOCK_HEAD_NOT_FOUND(14, "generic.block.node.head.not-found"),
-    BLOCK_UPDATE_LIST_IS_NULL(15, "generic.block.update.list.is.null")
+    BLOCK_UPDATE_LIST_IS_NULL(15, "generic.block.update.list.is.null"),
+    USER_SHARE_CONFIG_NOT_FOUND(16, "generic.user.share.config.notfound"),
+    APPROVAL_NOT_FOUND(17, "generic.approval.notfound"),
+    USER_SHARE_NOT_FOUND(18, "generic.user.share.notfound"),
+    USER_SHARE_NO_PERMITS(19, "generic.user.share.no-permits"),
+    USER_SHARE_EXPIRED(20, "generic.user.share.expired"),
     ;
 
     override fun getBusinessCode() = businessCode
