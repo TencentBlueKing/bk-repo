@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -58,6 +59,10 @@ import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
+/**
+ * 制品分析任务及其报告清理任务
+ * 由于制品分析服务可能使用独立数据库，因此不将此任务放到Job模块下
+ */
 @Component
 class ScanTaskCleanupJob(
     private val scannerProperties: ScannerProperties,
@@ -88,7 +93,7 @@ class ScanTaskCleanupJob(
         }
     }
 
-    private fun doClean(context: CleanContext) {
+    fun doClean(context: CleanContext) {
         if (!executing.compareAndSet(false, true)) {
             return
         }
@@ -103,7 +108,7 @@ class ScanTaskCleanupJob(
 
     private fun cleanTasks(context: CleanContext) {
         val pageSize = DEFAULT_BATCH_SIZE
-        var lastId = MIN_OBJECT_ID
+        var lastId = ObjectId(MIN_OBJECT_ID)
         val now = LocalDateTime.now()
         while (true) {
             val criteria = Criteria.where(ID).gt(lastId)
@@ -115,6 +120,7 @@ class ScanTaskCleanupJob(
             for (task in tasks) {
                 if (Duration.between(task.lastModifiedDate, now) < scannerProperties.reportKeepDuration) {
                     noExpiredTask = true
+                    // 当碰到未过期任务时表示后续大部份任务是未过期的，不再继续遍历清理，减少任务执行耗时
                     break
                 }
                 cleanTask(context, task)
@@ -127,7 +133,7 @@ class ScanTaskCleanupJob(
             if (tasks.size < pageSize || noExpiredTask) {
                 break
             }
-            lastId = tasks.last().id!!
+            lastId = ObjectId(tasks.last().id!!)
         }
     }
 
@@ -157,7 +163,7 @@ class ScanTaskCleanupJob(
             // 执行清理
             cleanPlanSubtask(context, subtasks)
             subtasks.forEach { cleanFileOverviewResults(context, it) }
-            val deletedResult = archiveSubScanTaskDao.deleteByParentTaskId(task.id!!)
+            val deletedResult = archiveSubScanTaskDao.deleteByIds(subtasks.map { it.id!! })
             context.archivedSubtaskCount.addAndGet(deletedResult.deletedCount)
 
             // 判断是否需要继续清理下一页
@@ -211,7 +217,7 @@ class ScanTaskCleanupJob(
         context.reportResultCount.addAndGet(cleanedCount)
     }
 
-    private data class CleanContext(
+    data class CleanContext(
         val taskCount: AtomicLong = AtomicLong(0L),
         val archivedSubtaskCount: AtomicLong = AtomicLong(0L),
         val planArtifactTaskCount: AtomicLong = AtomicLong(0L),

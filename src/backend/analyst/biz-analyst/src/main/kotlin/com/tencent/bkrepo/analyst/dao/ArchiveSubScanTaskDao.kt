@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -62,5 +63,9 @@ class ArchiveSubScanTaskDao : AbsSubScanTaskDao<TArchiveSubScanTask>() {
         val criteria = TArchiveSubScanTask::parentScanTaskId.isEqualTo(parentTaskId)
         val query = Query(criteria).with(Sort.by(Sort.Direction.ASC, TArchiveSubScanTask::parentScanTaskId.name))
         return page(query, pageRequest)
+    }
+
+    fun deleteByIds(ids: List<String>): DeleteResult {
+        return remove(Query(Criteria.where(ID).inValues(ids)))
     }
 }
