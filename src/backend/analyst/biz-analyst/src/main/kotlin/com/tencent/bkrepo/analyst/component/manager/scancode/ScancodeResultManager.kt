@@ -73,4 +73,8 @@ class ScancodeResultManager @Autowired constructor(
         val page = scancodeItemDao.pageBy(credentialsKey, sha256, scanner.name, arguments.pageLimit, arguments)
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
     }
+
+    override fun clean(credentialsKey: String?, sha256: String, scanner: Scanner): Long {
+        return scancodeItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
+    }
 }

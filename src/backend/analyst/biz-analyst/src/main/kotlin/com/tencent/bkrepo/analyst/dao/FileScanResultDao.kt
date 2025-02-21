@@ -28,10 +28,10 @@
 package com.tencent.bkrepo.analyst.dao
 
 import com.mongodb.client.result.UpdateResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.analyst.model.TFileScanResult
 import com.tencent.bkrepo.analyst.model.TScanResult
 import com.tencent.bkrepo.analyst.pojo.request.CredentialsKeyFiles
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -68,6 +68,13 @@ class FileScanResultDao : ScannerSimpleMongoDao<TFileScanResult>() {
         return find(query)
     }
 
+    fun find(credentialsKey: String?, sha256: String): TFileScanResult? {
+        val criteria = Criteria
+            .where(TFileScanResult::credentialsKey.name).isEqualTo(credentialsKey)
+            .and(TFileScanResult::sha256.name).isEqualTo(sha256)
+        return findOne(Query(criteria))
+    }
+
     /**
      * 判断文件使用指定版本扫描器的扫描结果是否存在
      */
@@ -79,6 +86,21 @@ class FileScanResultDao : ScannerSimpleMongoDao<TFileScanResult>() {
             .and(scannerResultKey).exists(true)
             .and("$scannerResultKey.${TScanResult::scannerVersion.name}").isEqualTo(scannerVersion)
         return findOne(Query(criteria))
+    }
+
+    /**
+     * 更新扫描结果预览数据为[scanResult]
+     */
+    fun updateScanResult(
+        id: String,
+        lastModifiedDate: LocalDateTime,
+        scanResult: Map<String, TScanResult>
+    ): UpdateResult {
+        val criteria = Criteria
+            .where(ID).isEqualTo(id)
+            .and(TFileScanResult::lastModifiedDate.name).isEqualTo(lastModifiedDate)
+        val update = buildUpdate().set(TFileScanResult::scanResult.name, scanResult)
+        return updateFirst(Query(criteria), update)
     }
 
     /**

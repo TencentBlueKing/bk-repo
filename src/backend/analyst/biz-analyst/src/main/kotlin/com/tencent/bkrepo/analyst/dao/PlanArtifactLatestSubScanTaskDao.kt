@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
@@ -249,6 +250,10 @@ class PlanArtifactLatestSubScanTaskDao(
         return planArtifactCountMap
     }
 
+    fun deleteByLatestSubtasks(latestSubScanTaskIds: List<String>): DeleteResult {
+        return remove(Query(TPlanArtifactLatestSubScanTask::latestSubScanTaskId.inValues(latestSubScanTaskIds)))
+    }
+
     /**
      * 更新扫描方案预览结果
      */
@@ -272,24 +277,8 @@ class PlanArtifactLatestSubScanTaskDao(
             return
         }
 
-        // 统计每个扫描方案需要更新的结果预览值
-        val planOverviewMap = HashMap<String, MutableMap<String, Long>>()
-        oldSubtasks.forEach {
-            val planOverview = planOverviewMap.getOrPut(it.planId!!) { HashMap() }
-            updateOverview(planOverview, it.scanResultOverview)
-        }
-        scanPlanDao.decrementScanResultOverview(planOverviewMap)
-    }
-
-    private fun updateOverview(planOverview: MutableMap<String, Long>, artifactOverview: Map<String, Number>?) {
-        if (artifactOverview == null) {
-            return
-        }
-
-        for (entry in artifactOverview) {
-            val planOverviewValue = planOverview.getOrDefault(entry.key, 0L)
-            planOverview[entry.key] = planOverviewValue + entry.value.toLong()
-        }
+        // 减少旧子任务对应的扫描方案预览值
+        scanPlanDao.decrementScanResultOverview(oldSubtasks)
     }
 
     private fun buildCriteria(projectId: String, repoName: String, fullPath: String, planId: String?): Criteria {

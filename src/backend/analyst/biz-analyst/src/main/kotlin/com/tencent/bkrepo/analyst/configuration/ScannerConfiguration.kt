@@ -117,7 +117,7 @@ class ScannerConfiguration {
         converter: MappingMongoConverter?
     ): MongoTemplate {
         // 没有设置独立数据库时，使用统一的数据库
-        return if (analystMongoProperties.uri == MongoProperties.DEFAULT_URI) {
+        return if (analystMongoProperties.determineUri() == MongoProperties.DEFAULT_URI) {
             mongoTemplate
         } else {
             val connectionString = ConnectionString(analystMongoProperties.determineUri())

@@ -27,18 +27,6 @@
 
 package com.tencent.bkrepo.analyst.component.manager.arrowhead
 
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.query.model.PageLimit
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CheckSecItem
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
-import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.SensitiveItem
 import com.tencent.bkrepo.analyst.component.manager.AbstractScanExecutorResultManager
 import com.tencent.bkrepo.analyst.component.manager.arrowhead.dao.ApplicationItemDao
 import com.tencent.bkrepo.analyst.component.manager.arrowhead.dao.CheckSecItemDao
@@ -55,6 +43,18 @@ import com.tencent.bkrepo.analyst.message.ScannerMessageCode
 import com.tencent.bkrepo.analyst.pojo.request.ArrowheadLoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.SaveResultArguments
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ApplicationItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CheckSecItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.CveSecItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.SensitiveItem
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.query.model.PageLimit
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -119,6 +119,15 @@ class ArrowheadResultManager @Autowired constructor(
         }.run { pageBy(credentialsKey, sha256, scanner.name, pageLimit, arguments) }
 
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
+    }
+
+    override fun clean(credentialsKey: String?, sha256: String, scanner: Scanner): Long {
+        var deletedCount = 0L
+        deletedCount += applicationItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
+        deletedCount += checkSecItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
+        deletedCount += cveSecItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
+        deletedCount += sensitiveItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
+        return deletedCount
     }
 
     private fun loadApplicationItems(
