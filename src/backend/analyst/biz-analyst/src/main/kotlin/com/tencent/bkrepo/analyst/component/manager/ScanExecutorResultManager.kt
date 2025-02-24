@@ -76,13 +76,13 @@ interface ScanExecutorResultManager {
      *
      * @param credentialsKey 被扫描文件所在存储， 为null时表示在默认存储
      * @param sha256 被扫描文件sha256
-     * @param scanner 使用的扫描器
+     * @param scannerName 使用的扫描器
      *
      * @return 清理的结果数量
      */
     fun clean(
         credentialsKey: String?,
         sha256: String,
-        scanner: Scanner,
+        scannerName: String,
     ): Long
 }

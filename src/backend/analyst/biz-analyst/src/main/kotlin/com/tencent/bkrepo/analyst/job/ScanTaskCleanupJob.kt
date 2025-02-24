@@ -208,15 +208,21 @@ class ScanTaskCleanupJob(
 
     private fun cleanReports(context: CleanContext, subtask: TArchiveSubScanTask) {
         val scanner = scannerService.find(subtask.scanner)
-        val resultManager = scanner?.let { resultManagers[it.type] }
-        if (scanner == null || resultManager == null) {
+        val matchedResultManagers = if (scanner == null) {
+            resultManagers.values
+        } else {
+            resultManagers[scanner.type]?.let { listOf(it) }
+        }
+        if (matchedResultManagers.isNullOrEmpty()) {
             logger.error(
-                "clean reports of task[${subtask.parentScanTaskId}] failed, scanner[${subtask.scanner}] not found"
+                "clean reports of task[${subtask.parentScanTaskId}] failed, resultManager[${subtask.scanner}] not found"
             )
             return
         }
-        val cleanedCount = resultManager.clean(subtask.credentialsKey, subtask.sha256, scanner)
-        context.reportResultCount.addAndGet(cleanedCount)
+        matchedResultManagers.forEach {
+            val cleanedCount = it.clean(subtask.credentialsKey, subtask.sha256, subtask.scanner)
+            context.reportResultCount.addAndGet(cleanedCount)
+        }
     }
 
     data class CleanContext(

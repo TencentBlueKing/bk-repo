@@ -27,17 +27,17 @@
 
 package com.tencent.bkrepo.analyst.component.manager.scancode
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScanCodeToolkitScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
 import com.tencent.bkrepo.analyst.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.analyst.component.manager.scancode.dao.ScancodeItemDao
 import com.tencent.bkrepo.analyst.component.manager.scancode.model.TScancodeItem
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ScancodeToolkitResultArguments
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result.ScanCodeToolkitScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
+import com.tencent.bkrepo.common.api.pojo.Page
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -74,7 +74,7 @@ class ScancodeResultManager @Autowired constructor(
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
     }
 
-    override fun clean(credentialsKey: String?, sha256: String, scanner: Scanner): Long {
-        return scancodeItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
+    override fun clean(credentialsKey: String?, sha256: String, scannerName: String): Long {
+        return scancodeItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
     }
 }

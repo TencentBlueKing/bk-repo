@@ -121,12 +121,12 @@ class ArrowheadResultManager @Autowired constructor(
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
     }
 
-    override fun clean(credentialsKey: String?, sha256: String, scanner: Scanner): Long {
+    override fun clean(credentialsKey: String?, sha256: String, scannerName: String): Long {
         var deletedCount = 0L
-        deletedCount += applicationItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
-        deletedCount += checkSecItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
-        deletedCount += cveSecItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
-        deletedCount += sensitiveItemDao.deleteBy(credentialsKey, sha256, scanner.name).deletedCount
+        deletedCount += applicationItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
+        deletedCount += checkSecItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
+        deletedCount += cveSecItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
+        deletedCount += sensitiveItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
         return deletedCount
     }
 
