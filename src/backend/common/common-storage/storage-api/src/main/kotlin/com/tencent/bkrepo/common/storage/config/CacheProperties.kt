@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.storage.config
 
+import org.springframework.util.unit.DataSize
 import java.time.Duration
 
 /**
@@ -61,5 +62,15 @@ data class CacheProperties(
     /**
      * 最大允许缓存的制品总大小，为0时表示无限制
      */
-    var maxSize: Long = 0
+    var maxSize: Long = 0,
+
+    /**
+     * 是否开启大文件下载优化
+     * */
+    var largeFileOptimization: Boolean = false,
+
+    /**
+     * 大文件阈值
+     * */
+    var largeFileSizeThreshold: DataSize = DataSize.ofMegabytes(8),
 )
