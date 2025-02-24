@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.analyst.dao
 
 import com.mongodb.client.result.UpdateResult
+import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TScanPlan
 import com.tencent.bkrepo.analyst.pojo.ScanPlan
 import com.tencent.bkrepo.common.api.exception.NotFoundException
@@ -164,6 +165,19 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         return updateFirst(query, update)
     }
 
+    fun decrementScanResultOverview(subtasks: List<SubScanTaskDefinition>) {
+        // 统计每个扫描方案需要更新的结果预览值
+        val planOverviewMap = HashMap<String, MutableMap<String, Long>>()
+        for (subtask in subtasks) {
+            if (subtask.planId.isNullOrEmpty() || subtask.scanResultOverview.isNullOrEmpty()) {
+                continue
+            }
+            val planOverview = planOverviewMap.getOrPut(subtask.planId) { HashMap() }
+            updateOverview(planOverview, subtask.scanResultOverview)
+        }
+        decrementScanResultOverview(planOverviewMap)
+    }
+
     /**
      * 批量更新扫描方案扫描结果预览信息
      *
@@ -218,6 +232,17 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
         val query = Query(Criteria.where(ID).isEqualTo(planId))
         val update = Update.update(TScanPlan::scanQuality.name, quality)
         return updateFirst(query, update)
+    }
+
+    private fun updateOverview(planOverview: MutableMap<String, Long>, artifactOverview: Map<String, Number>?) {
+        if (artifactOverview == null) {
+            return
+        }
+
+        for (entry in artifactOverview) {
+            val planOverviewValue = planOverview.getOrDefault(entry.key, 0L)
+            planOverview[entry.key] = planOverviewValue + entry.value.toLong()
+        }
     }
 
     private fun buildOverviewUpdate(overview: Map<String, Any?>, dec: Boolean = false): Update? {

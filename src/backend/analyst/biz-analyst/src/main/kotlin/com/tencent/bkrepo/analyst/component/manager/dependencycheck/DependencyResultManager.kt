@@ -27,13 +27,6 @@
 
 package com.tencent.bkrepo.analyst.component.manager.dependencycheck
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.result.DependencyItem
-import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.analyst.component.manager.AbstractScanExecutorResultManager
 import com.tencent.bkrepo.analyst.component.manager.dependencycheck.dao.DependencyItemDao
 import com.tencent.bkrepo.analyst.component.manager.dependencycheck.model.TDependencyItem
@@ -42,6 +35,13 @@ import com.tencent.bkrepo.analyst.component.manager.knowledgebase.TCve
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.dependencecheck.DependencyLoadResultArguments
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.result.DependencyItem
+import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.result.DependencyScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.toJsonString
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -83,6 +83,10 @@ class DependencyResultManager @Autowired constructor(
         val cveMap = knowledgeBase.findByPocId(pocIds).associateBy { it.pocId }
         val records = page.records.map { Converter.convert(it, cveMap[Converter.pocIdOf(it.data.cveId)]!!) }
         return Page(page.pageNumber, page.pageSize, page.totalRecords, records)
+    }
+
+    override fun clean(credentialsKey: String?, sha256: String, scannerName: String): Long {
+        return dependencyItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
     }
 
     private fun replace(
