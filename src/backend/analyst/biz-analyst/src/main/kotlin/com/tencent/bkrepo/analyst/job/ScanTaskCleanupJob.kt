@@ -100,7 +100,7 @@ class ScanTaskCleanupJob(
         try {
             logger.info("start clean scan task")
             cleanTasks(context)
-        } catch (e: Exception){
+        } catch (e: Exception) {
             logger.error("clean scan task failed", e)
         } finally {
             val result = executing.compareAndSet(true, false)
