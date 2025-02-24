@@ -102,7 +102,7 @@ class ScanTaskCleanupJob(
             cleanTasks(context)
         } finally {
             val result = executing.compareAndSet(true, false)
-            logger.info("finish clean scan task, set executing to false successfully: $result")
+            logger.info("finish clean scan task[$context], set executing to false successfully: [$result]")
         }
     }
 
