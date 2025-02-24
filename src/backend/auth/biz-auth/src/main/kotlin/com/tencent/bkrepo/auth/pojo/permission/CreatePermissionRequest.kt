@@ -33,33 +33,33 @@ package com.tencent.bkrepo.auth.pojo.permission
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("创建权限请求")
+
+@Schema(title = "创建权限请求")
 data class CreatePermissionRequest(
-    @ApiModelProperty("资源类型")
+    @get:Schema(title = "资源类型")
     val resourceType: ResourceType = ResourceType.REPO,
-    @ApiModelProperty("项目ID")
+    @get:Schema(title = "项目ID")
     val projectId: String? = null,
-    @ApiModelProperty("权限名")
+    @get:Schema(title = "权限名")
     val permName: String,
-    @ApiModelProperty("关联仓库名")
+    @get:Schema(title = "关联仓库名")
     val repos: List<String> = emptyList(),
-    @ApiModelProperty("匹配路径")
+    @get:Schema(title = "匹配路径")
     val includePattern: List<String> = emptyList(),
-    @ApiModelProperty("不匹配路径")
+    @get:Schema(title = "不匹配路径")
     val excludePattern: List<String> = emptyList(),
-    @ApiModelProperty("绑定用户")
+    @get:Schema(title = "绑定用户")
     val users: List<String> = emptyList(),
-    @ApiModelProperty("绑定角色")
+    @get:Schema(title = "绑定角色")
     val roles: List<String> = emptyList(),
-    @ApiModelProperty("绑定部门")
+    @get:Schema(title = "绑定部门")
     val departments: List<String> = emptyList(),
-    @ApiModelProperty("权限动作")
+    @get:Schema(title = "权限动作")
     val actions: List<PermissionAction> = emptyList(),
-    @ApiModelProperty("创建人")
+    @get:Schema(title = "创建人")
     val createBy: String,
-    @ApiModelProperty("修改人")
+    @get:Schema(title = "修改人")
     val updatedBy: String
 )

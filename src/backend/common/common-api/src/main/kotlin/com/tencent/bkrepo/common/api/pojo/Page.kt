@@ -31,21 +31,21 @@
 
 package com.tencent.bkrepo.common.api.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 import kotlin.math.ceil
 
-@ApiModel("分页数据包装模型")
+@Schema(title = "分页数据包装模型")
 data class Page<out T>(
-    @ApiModelProperty("页码(从1页开始)")
+    @get:Schema(title = "页码(从1页开始)")
     val pageNumber: Int,
-    @ApiModelProperty("每页多少条")
+    @get:Schema(title = "每页多少条")
     val pageSize: Int,
-    @ApiModelProperty("总记录条数")
+    @get:Schema(title = "总记录条数")
     val totalRecords: Long,
-    @ApiModelProperty("总页数")
+    @get:Schema(title = "总页数")
     val totalPages: Long,
-    @ApiModelProperty("数据列表")
+    @get:Schema(title = "数据列表")
     val records: List<T>
 ) {
     constructor(pageNumber: Int, pageSize: Int, totalRecords: Long, records: List<T>) : this(

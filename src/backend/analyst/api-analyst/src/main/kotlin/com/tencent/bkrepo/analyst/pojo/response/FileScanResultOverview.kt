@@ -27,17 +27,17 @@
 
 package com.tencent.bkrepo.analyst.pojo.response
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("文件扫描结果预览")
+
+@Schema(title = "文件扫描结果预览")
 data class FileScanResultOverview(
-    @ApiModelProperty("当前扫描状态")
+    @get:Schema(title = "当前扫描状态")
     val status: String,
-    @ApiModelProperty("文件sha256")
+    @get:Schema(title = "文件sha256")
     val sha256: String,
-    @ApiModelProperty("扫描日期")
+    @get:Schema(title = "扫描日期")
     val scanDate: String?,
-    @ApiModelProperty("扫描结果预览")
+    @get:Schema(title = "扫描结果预览")
     val overview: Map<String, Any?>
 )

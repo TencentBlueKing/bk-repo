@@ -28,30 +28,30 @@
 package com.tencent.bkrepo.analyst.pojo
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@ApiModel("项目扫描配置")
+@Schema(title = "项目扫描配置")
 data class ProjectScanConfiguration(
-    @ApiModelProperty("项目ID")
+    @get:Schema(title = "项目ID")
     val projectId: String,
-    @ApiModelProperty("项目优先级，值越小优先级越低")
+    @get:Schema(title = "项目优先级，值越小优先级越低")
     val priority: Int? = null,
-    @ApiModelProperty("项目限制的扫描任务数量")
+    @get:Schema(title = "项目限制的扫描任务数量")
     val scanTaskCountLimit: Int? = null,
-    @ApiModelProperty("项目扫描子任务数量限制")
+    @get:Schema(title = "项目扫描子任务数量限制")
     val subScanTaskCountLimit: Int? = null,
-    @ApiModelProperty("自动扫描配置")
+    @get:Schema(title = "自动扫描配置")
     val autoScanConfiguration: Map<String, AutoScanConfiguration>? = null,
-    @ApiModelProperty("子任务分发器")
+    @get:Schema(title = "子任务分发器")
     val dispatcherConfiguration: List<DispatcherConfiguration>? = null
 )
 
-@ApiModel("分发器配置")
+@Schema(title = "分发器配置")
 data class DispatcherConfiguration(
-    @ApiModelProperty("使用的分发器")
+    @get:Schema(title = "使用的分发器")
     val dispatcher: String,
-    @ApiModelProperty("扫描器")
+    @get:Schema(title = "扫描器")
     val scanner: String
 )

@@ -28,19 +28,19 @@
 package com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("arrowhead扫描器扫描结果")
+
+@Schema(title = "arrowhead扫描器扫描结果")
 data class ArrowheadScanExecutorResult(
     override val scanStatus: String,
-    @ApiModelProperty("安全审计结果")
+    @get:Schema(title = "安全审计结果")
     val checkSecItems: List<CheckSecItem>,
-    @ApiModelProperty("License审计结果")
+    @get:Schema(title = "License审计结果")
     val applicationItems: List<ApplicationItem>,
-    @ApiModelProperty("敏感信息审计结果")
+    @get:Schema(title = "敏感信息审计结果")
     val sensitiveItems: List<SensitiveItem>,
-    @ApiModelProperty("cve审计结果")
+    @get:Schema(title = "cve审计结果")
     val cveSecItems: List<CveSecItem>
 ) : ScanExecutorResult(scanStatus, ArrowheadScanner.TYPE) {
     companion object {

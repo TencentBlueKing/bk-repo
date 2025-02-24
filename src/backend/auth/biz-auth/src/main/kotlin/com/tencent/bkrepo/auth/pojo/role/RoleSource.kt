@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.auth.pojo.role
 
-import io.swagger.annotations.ApiModel
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("角色来源")
+@Schema(title = "角色来源")
 enum class RoleSource {
     DEVOPS,
     TAI

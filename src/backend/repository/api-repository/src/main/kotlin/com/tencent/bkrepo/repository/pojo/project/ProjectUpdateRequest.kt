@@ -31,19 +31,19 @@
 
 package com.tencent.bkrepo.repository.pojo.project
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("编辑项目请求")
+
+@Schema(title = "编辑项目请求")
 data class ProjectUpdateRequest(
-    @ApiModelProperty("显示名", required = false)
+    @get:Schema(title = "显示名", required = false)
     val displayName: String? = null,
-    @ApiModelProperty("描述", required = false)
+    @get:Schema(title = "描述", required = false)
     val description: String? = null,
-    @ApiModelProperty("项目元数据", required = false)
+    @get:Schema(title = "项目元数据", required = false)
     val metadata: List<ProjectMetadata> = emptyList(),
-    @ApiModelProperty("项目新建仓库默认使用的存储", required = false)
+    @get:Schema(title = "项目新建仓库默认使用的存储", required = false)
     val credentialsKey: String? = null,
-    @ApiModelProperty("设置项目新建仓库默认使用默认存储", required = false)
+    @get:Schema(title = "设置项目新建仓库默认使用默认存储", required = false)
     val useDefaultCredentialsKey: Boolean? = false,
 )

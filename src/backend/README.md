@@ -30,7 +30,7 @@
 
 ### swagger地址
 
-${base-path}/v2/api-docs
+${base-path}/v3/api-docs
 
 配合chrome浏览器插件`Swagger UI Console`使用
 

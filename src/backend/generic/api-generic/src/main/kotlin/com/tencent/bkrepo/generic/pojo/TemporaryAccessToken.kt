@@ -31,27 +31,27 @@
 
 package com.tencent.bkrepo.generic.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("临时访问token")
+
+@Schema(title = "临时访问token")
 data class TemporaryAccessToken(
-    @ApiModelProperty("项目")
+    @get:Schema(title = "项目")
     val projectId: String,
-    @ApiModelProperty("仓库")
+    @get:Schema(title = "仓库")
     val repoName: String,
-    @ApiModelProperty("授权路径")
+    @get:Schema(title = "授权路径")
     val fullPath: String,
-    @ApiModelProperty("token")
+    @get:Schema(title = "token")
     val token: String,
-    @ApiModelProperty("授权用户")
+    @get:Schema(title = "授权用户")
     val authorizedUserList: Set<String>,
-    @ApiModelProperty("授权IP")
+    @get:Schema(title = "授权IP")
     val authorizedIpList: Set<String>,
-    @ApiModelProperty("过期时间")
+    @get:Schema(title = "过期时间")
     val expireDate: String?,
-    @ApiModelProperty("允许下载次数")
+    @get:Schema(title = "允许下载次数")
     var permits: Int?,
-    @ApiModelProperty("token类型")
+    @get:Schema(title = "token类型")
     val type: String
 )

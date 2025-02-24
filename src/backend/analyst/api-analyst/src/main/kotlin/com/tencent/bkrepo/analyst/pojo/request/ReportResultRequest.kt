@@ -28,17 +28,17 @@
 package com.tencent.bkrepo.analyst.pojo.request
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("扫描结果上报请求")
+
+@Schema(title = "扫描结果上报请求")
 data class ReportResultRequest(
-    @ApiModelProperty("任务id")
+    @get:Schema(title = "任务id")
     val subTaskId: String,
-    @ApiModelProperty("扫描执行状态")
+    @get:Schema(title = "扫描执行状态")
     val scanStatus: String,
-    @ApiModelProperty("扫描执行器扫描结果")
+    @get:Schema(title = "扫描执行器扫描结果")
     val scanExecutorResult: ScanExecutorResult? = null,
-    @ApiModelProperty("临时凭据，用于接口鉴权")
+    @get:Schema(title = "临时凭据，用于接口鉴权")
     val token: String? = null
 )

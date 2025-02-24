@@ -30,102 +30,102 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead
 import com.fasterxml.jackson.annotation.JsonAlias
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.removeRootDirPath
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("CVE信息")
+
+@Schema(title = "CVE信息")
 data class CveSecItem(
-    @ApiModelProperty("文件路径")
+    @get:Schema(title = "文件路径")
     @JsonAlias("path")
     val path: String,
 
-    @ApiModelProperty("组件名")
+    @get:Schema(title = "组件名")
     @JsonAlias("lib_name")
     var component: String,
 
-    @ApiModelProperty("库版本")
+    @get:Schema(title = "库版本")
     @JsonAlias("version")
     val version: String,
 
-    @ApiModelProperty("库版本列表")
+    @get:Schema(title = "库版本列表")
     val versions: MutableSet<String> = HashSet(),
 
-    @ApiModelProperty("漏洞影响版本")
+    @get:Schema(title = "漏洞影响版本")
     @JsonAlias("version_effected")
     val versionEffected: String,
 
-    @ApiModelProperty("漏洞修复版本")
+    @get:Schema(title = "漏洞修复版本")
     @JsonAlias("version_fixed")
     val versionFixed: String,
 
-    @ApiModelProperty("漏洞名")
+    @get:Schema(title = "漏洞名")
     @JsonAlias("name")
     val name: String,
 
-    @ApiModelProperty("漏洞利用类型")
+    @get:Schema(title = "漏洞利用类型")
     @JsonAlias("category")
     val category: String,
 
-    @ApiModelProperty("漏洞类型")
+    @get:Schema(title = "漏洞类型")
     @JsonAlias("category_type")
     val categoryType: String,
 
-    @ApiModelProperty("漏洞描述")
+    @get:Schema(title = "漏洞描述")
     @JsonAlias("description")
     val description: String,
 
-    @ApiModelProperty("官方解决方案")
+    @get:Schema(title = "官方解决方案")
     @JsonAlias("official_solution")
     val officialSolution: String,
 
-    @ApiModelProperty("解决方案")
+    @get:Schema(title = "解决方案")
     @JsonAlias("defense_solution")
     val defenseSolution: String,
 
-    @ApiModelProperty("相关链接")
+    @get:Schema(title = "相关链接")
     @JsonAlias("reference")
     val references: List<String>,
 
-    @ApiModelProperty("漏洞年份")
+    @get:Schema(title = "漏洞年份")
     @JsonAlias("cve_year")
     val cveYear: String,
 
-    @ApiModelProperty("poc id")
+    @get:Schema(title = "poc id")
     @JsonAlias("poc_id")
     val pocId: String,
 
-    @ApiModelProperty("cve id")
+    @get:Schema(title = "cve id")
     @JsonAlias("cve_id")
     val cveId: String,
 
-    @ApiModelProperty("cnvd id")
+    @get:Schema(title = "cnvd id")
     @JsonAlias("cnvd_id")
     val cnvdId: String,
 
-    @ApiModelProperty("cnnvd id")
+    @get:Schema(title = "cnnvd id")
     @JsonAlias("cnnvd_id")
     val cnnvdId: String,
 
-    @ApiModelProperty("cwe id")
+    @get:Schema(title = "cwe id")
     @JsonAlias("cwe_id")
     val cweId: String,
 
     /**
      * CRITICAL,HIGH,MEDIUM,LOW
      */
-    @ApiModelProperty("cvss等级")
+    @get:Schema(title = "cvss等级")
     @JsonAlias("cvss_rank")
     val cvssRank: String,
 
-    @ApiModelProperty("cvss 评分")
+    @get:Schema(title = "cvss 评分")
     @JsonAlias("cvss")
     val cvss: Double,
 
-    @ApiModelProperty("cvss V3 漏洞影响评价")
+    @get:Schema(title = "cvss V3 漏洞影响评价")
     @JsonAlias("cvss_v3")
     val cvssV3: CvssV3?,
 
-    @ApiModelProperty("cvss V2 漏洞影响评价")
+    @get:Schema(title = "cvss V2 漏洞影响评价")
     @JsonAlias("cvss_v2")
     val cvssV2: CvssV2?
 ) {

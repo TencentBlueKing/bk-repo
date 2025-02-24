@@ -33,15 +33,15 @@ package com.tencent.bkrepo.repository.pojo.packages
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("包列表选项")
+
+@Schema(title = "包列表选项")
 data class PackageListOption(
-    @ApiModelProperty("当前页")
+    @get:Schema(title = "当前页")
     var pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("分页大小")
+    @get:Schema(title = "分页大小")
     var pageSize: Int = DEFAULT_PAGE_SIZE,
-    @ApiModelProperty("包名称, 根据该字段模糊搜索")
+    @get:Schema(title = "包名称, 根据该字段模糊搜索")
     var packageName: String? = null
 )

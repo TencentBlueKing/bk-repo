@@ -27,13 +27,13 @@
 
 package com.tencent.bkrepo.analyst.pojo.response
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("制品关联的扫描方案信息列表")
+
+@Schema(title = "制品关联的扫描方案信息列表")
 data class ArtifactPlanRelations(
-    @ApiModelProperty("制品扫描状态")
+    @get:Schema(title = "制品扫描状态")
     val scanStatus: String?,
-    @ApiModelProperty("方案信息列表")
+    @get:Schema(title = "方案信息列表")
     val scanPlans: List<ArtifactPlanRelation>
 )

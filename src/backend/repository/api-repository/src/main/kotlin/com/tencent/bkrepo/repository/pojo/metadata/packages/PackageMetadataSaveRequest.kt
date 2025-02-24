@@ -35,24 +35,24 @@ import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersionRequest
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 包创建/更新元数据请求
  */
-@ApiModel("依赖源包创建或更新元数据请求")
+@Schema(title = "依赖源包创建或更新元数据请求")
 data class PackageMetadataSaveRequest(
-    @ApiModelProperty("项目id", required = true)
+    @get:Schema(title = "项目id", required = true)
     override val projectId: String,
-    @ApiModelProperty("仓库名称", required = true)
+    @get:Schema(title = "仓库名称", required = true)
     override val repoName: String,
-    @ApiModelProperty("包唯一key", required = true)
+    @get:Schema(title = "包唯一key", required = true)
     override val packageKey: String,
-    @ApiModelProperty("包版本", required = true)
+    @get:Schema(title = "包版本", required = true)
     override val version: String,
-    @ApiModelProperty("需要创建或更新的元数据", required = true)
+    @get:Schema(title = "需要创建或更新的元数据", required = true)
     val versionMetadata: List<MetadataModel>? = null,
-    @ApiModelProperty("操作用户")
+    @get:Schema(title = "操作用户")
     override val operator: String = SYSTEM_USER
 ) : PackageVersionRequest, ServiceRequest

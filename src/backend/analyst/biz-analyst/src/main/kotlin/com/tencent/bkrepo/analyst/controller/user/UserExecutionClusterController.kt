@@ -9,8 +9,8 @@ import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -20,12 +20,12 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("扫描执行集群配置接口")
+@Tag(name = "扫描执行集群配置接口")
 @RestController
 @RequestMapping("/api/execution/clusters")
 @Principal(PrincipalType.ADMIN)
 class UserExecutionClusterController(private val executionClusterService: ExecutionClusterService) {
-    @ApiOperation("创建集群")
+    @Operation(summary = "创建集群")
     @PostMapping
     @LogOperate(type = "EXECUTION_CLUSTER_CREATE", desensitize = true)
     fun create(
@@ -34,14 +34,14 @@ class UserExecutionClusterController(private val executionClusterService: Execut
         return ResponseBuilder.success(executionClusterService.create(executionCluster))
     }
 
-    @ApiOperation("获取执行集群列表")
+    @Operation(summary = "获取执行集群列表")
     @GetMapping
     @LogOperate(type = "EXECUTION_CLUSTER_LIST")
     fun list(): Response<List<ExecutionCluster>> {
         return ResponseBuilder.success(executionClusterService.list())
     }
 
-    @ApiOperation("删除执行集群")
+    @Operation(summary = "删除执行集群")
     @DeleteMapping("/{name}")
     @LogOperate(type = "EXECUTION_CLUSTER_DELETE")
     fun delete(@PathVariable("name") name: String): Response<Void> {
@@ -49,7 +49,7 @@ class UserExecutionClusterController(private val executionClusterService: Execut
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("更新执行集群")
+    @Operation(summary = "更新执行集群")
     @PutMapping("/{name}")
     @LogOperate(type = "EXECUTION_CLUSTER_UPDATE", desensitize = true)
     fun update(

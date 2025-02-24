@@ -29,15 +29,15 @@ package com.tencent.bkrepo.analyst.controller.user
 
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.request.ProjectScanConfigurationPageRequest
+import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
-import com.tencent.bkrepo.common.metadata.annotation.LogOperate
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -47,7 +47,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("项目扫描配置接口")
+@Tag(name = "项目扫描配置接口")
 @RestController
 @RequestMapping("/api/scan/configurations")
 @Principal(PrincipalType.ADMIN)
@@ -55,7 +55,7 @@ class UserProjectScanConfigurationController(
     private val projectScanConfigurationService: ProjectScanConfigurationService
 ) {
 
-    @ApiOperation("创建项目扫描配置")
+    @Operation(summary = "创建项目扫描配置")
     @PostMapping
     @LogOperate(type = "PROJECT_SCAN_CONFIG_CREATE")
     fun create(@RequestBody request: ProjectScanConfiguration): Response<ProjectScanConfiguration> {
@@ -63,7 +63,7 @@ class UserProjectScanConfigurationController(
         return ResponseBuilder.success(configuration)
     }
 
-    @ApiOperation("删除项目扫描配置")
+    @Operation(summary = "删除项目扫描配置")
     @DeleteMapping("/{projectId}")
     @LogOperate(type = "PROJECT_SCAN_CONFIG_DELETE")
     fun delete(@PathVariable projectId: String): Response<Void> {
@@ -71,7 +71,7 @@ class UserProjectScanConfigurationController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("更新项目扫描配置")
+    @Operation(summary = "更新项目扫描配置")
     @PutMapping
     @LogOperate(type = "PROJECT_SCAN_CONFIG_UPDATE")
     fun update(@RequestBody request: ProjectScanConfiguration): Response<ProjectScanConfiguration> {
@@ -79,7 +79,7 @@ class UserProjectScanConfigurationController(
         return ResponseBuilder.success(configuration)
     }
 
-    @ApiOperation("分页获取项目扫描配置")
+    @Operation(summary = "分页获取项目扫描配置")
     @GetMapping
     @LogOperate(type = "PROJECT_SCAN_CONFIG_LIST")
     fun page(request: ProjectScanConfigurationPageRequest): Response<Page<ProjectScanConfiguration>> {
@@ -87,7 +87,7 @@ class UserProjectScanConfigurationController(
         return ResponseBuilder.success(page)
     }
 
-    @ApiOperation("获取项目扫描配置")
+    @Operation(summary = "获取项目扫描配置")
     @GetMapping("/{projectId}")
     fun get(@PathVariable projectId: String): Response<ProjectScanConfiguration> {
         return ResponseBuilder.success(projectScanConfigurationService.get(projectId))

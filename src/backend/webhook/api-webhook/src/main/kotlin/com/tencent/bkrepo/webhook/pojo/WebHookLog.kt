@@ -29,32 +29,31 @@ package com.tencent.bkrepo.webhook.pojo
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.webhook.constant.WebHookRequestStatus
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("WebHook日志信息")
+@Schema(title = "WebHook日志信息")
 data class WebHookLog(
-    @ApiModelProperty("id")
+    @get:Schema(title = "id")
     val id: String,
-    @ApiModelProperty("WebHook回调地址")
+    @get:Schema(title = "WebHook回调地址")
     val webHookUrl: String,
-    @ApiModelProperty("触发事件")
+    @get:Schema(title = "触发事件")
     val triggeredEvent: EventType,
-    @ApiModelProperty("请求头")
+    @get:Schema(title = "请求头")
     val requestHeaders: Map<String, String>,
-    @ApiModelProperty("请求载荷")
+    @get:Schema(title = "请求载荷")
     val requestPayload: String,
-    @ApiModelProperty("请求状态")
+    @get:Schema(title = "请求状态")
     val status: WebHookRequestStatus,
-    @ApiModelProperty("响应头")
+    @get:Schema(title = "响应头")
     val responseHeaders: Map<String, String>? = null,
-    @ApiModelProperty("响应体")
+    @get:Schema(title = "响应体")
     val responseBody: String? = null,
-    @ApiModelProperty("请求耗时")
+    @get:Schema(title = "请求耗时")
     val requestDuration: Long,
-    @ApiModelProperty("请求时间")
+    @get:Schema(title = "请求时间")
     val requestTime: LocalDateTime,
-    @ApiModelProperty("错误信息")
+    @get:Schema(title = "错误信息")
     val errorMsg: String? = null
 )
