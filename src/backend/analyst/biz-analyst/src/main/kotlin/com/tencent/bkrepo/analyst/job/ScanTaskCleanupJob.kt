@@ -100,6 +100,8 @@ class ScanTaskCleanupJob(
         try {
             logger.info("start clean scan task")
             cleanTasks(context)
+        } catch (e: Exception){
+            logger.error("clean scan task failed", e)
         } finally {
             val result = executing.compareAndSet(true, false)
             logger.info("finish clean scan task[$context], set executing to false successfully: [$result]")
