@@ -55,5 +55,9 @@ data class Report(
     /**
      * 存在漏洞的组件列表
      */
-    val components: List<Component>
+    val components: List<Component>,
+    /**
+     * 敏感信息结果
+     */
+    val sensitiveContents: List<SensitiveContent> = emptyList(),
 )

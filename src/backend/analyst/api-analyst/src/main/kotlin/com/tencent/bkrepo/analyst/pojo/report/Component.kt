@@ -15,5 +15,9 @@ data class Component(
     /**
      * 漏洞列表
      */
-    val vulnerabilities: MutableSet<Vulnerability> = HashSet()
+    val vulnerabilities: MutableSet<Vulnerability> = HashSet(),
+    /**
+     * 许可证信息
+     */
+    val licenseName: String? = null,
 )
