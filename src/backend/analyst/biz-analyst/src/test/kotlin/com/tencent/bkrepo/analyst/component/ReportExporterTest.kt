@@ -35,10 +35,8 @@ import com.tencent.bkrepo.analyst.utils.buildSubScanTask
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -64,8 +62,8 @@ class ReportExporterTest {
     @Test
     fun testExport() {
         // 准备数据
-        val reportSlot = slot<Report>()
-        every { messageSupplier.delegateToSupplier(capture(reportSlot), any(), any(), any(), any()) }.returns(Unit)
+        val reportSlots = mutableListOf<Report>()
+        every { messageSupplier.delegateToSupplier(capture(reportSlots), any(), any(), any(), any()) }.returns(Unit)
         val result = buildScanExecutorResult()
         val securityResult = result.output!!.result!!.securityResults!![0]
         val newSecurityResults = (0..2000).map { securityResult.copy(pkgName = securityResult.pkgName + "$it") }
@@ -86,20 +84,15 @@ class ReportExporterTest {
             // license与sensitive各上报1次，security上报3次
             messageSupplier.delegateToSupplier<Report>(any(), any(), any(), any(), any())
         }
-        with(reportSlot.captured) {
-            // 验证基本信息
-            assertEquals("subTaskId", taskId)
-            assertEquals(NODE_SHA256, sha256)
-
-            // 验证组件数量不超过分块大小
-            assertTrue(components.size <= 1000)
-
-            // 验证组件内容
-            components.forEachIndexed { index, component ->
-                assertEquals(securityResult.pkgName + index, component.name)
-                assertEquals(1, component.vulnerabilities.size)
-            }
-        }
-
+        assertEquals(5, reportSlots.size)
+        // security
+        assertEquals(1000, reportSlots[0].components.size)
+        assertEquals(1000, reportSlots[1].components.size)
+        assertEquals(1, reportSlots[2].components.size)
+        assertEquals(0, reportSlots[3].components.size)
+        // license
+        assertEquals(1, reportSlots[3].componentLicenses.size)
+        // sensitive
+        assertEquals(2, reportSlots[4].sensitiveContents.size)
     }
 }

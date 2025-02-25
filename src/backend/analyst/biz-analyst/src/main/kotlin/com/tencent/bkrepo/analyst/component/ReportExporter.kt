@@ -3,6 +3,7 @@ package com.tencent.bkrepo.analyst.component
 import com.tencent.bkrepo.analyst.configuration.ReportExportProperties
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.report.Component
+import com.tencent.bkrepo.analyst.pojo.report.ComponentLicense
 import com.tencent.bkrepo.analyst.pojo.report.Report
 import com.tencent.bkrepo.analyst.pojo.report.SensitiveContent
 import com.tencent.bkrepo.analyst.pojo.report.Vulnerability
@@ -111,24 +112,23 @@ class ReportExporter(
                 Vulnerability(result.vulId, result.cveId, result.cvss)
             )
         }
-        return components.values.chunked(CHUNKED_SIZE).map { baseReport.copy(components = components.values.toList()) }
+        return components.values.chunked(CHUNKED_SIZE).map { baseReport.copy(components = it) }
     }
 
     private fun buildLicenseReports(baseReport: Report, results: List<LicenseResult>): List<Report> {
-        val components = HashMap<String, Component>()
+        val components = HashMap<String, ComponentLicense>()
         for (result in results) {
             val componentName = result.pkgName ?: continue
-            val component = components.getOrPut(componentName) {
-                Component(componentName, licenseName = result.licenseName)
-            }
-            component.versions.addAll(result.pkgVersions)
+            components.getOrPut(componentName) { ComponentLicense(componentName, licenseName = result.licenseName) }
         }
-        return components.values.chunked(CHUNKED_SIZE).map { baseReport.copy(components = components.values.toList()) }
+        return components.values.chunked(CHUNKED_SIZE).map {
+            baseReport.copy(componentLicenses = it)
+        }
     }
 
     private fun buildSensitiveReports(baseReport: Report, results: List<SensitiveResult>): List<Report> {
         val sensitiveContents = results.map { SensitiveContent(type = it.type, content = it.content) }
-        return sensitiveContents.chunked(CHUNKED_SIZE).map { baseReport.copy(sensitiveContents = sensitiveContents) }
+        return sensitiveContents.chunked(CHUNKED_SIZE).map { baseReport.copy(sensitiveContents = it) }
     }
 
     companion object {
