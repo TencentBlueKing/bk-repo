@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.metadata.interceptor.impl.PackageMetadataInterc
 import com.tencent.bkrepo.common.metadata.interceptor.impl.WebInterceptor
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
@@ -80,13 +81,16 @@ class DownloadInterceptorFactory(
                     interceptor?.let { interceptorList.add(interceptor) }
                 }
                 interceptorList.add(buildInterceptor(DownloadInterceptorType.NODE_FORBID)!!)
+                val customInterceptors = SpringContextUtils.getBeansWithType(DownloadInterceptor::class.java)
+                    .map { it as DownloadInterceptor<*, NodeDetail> }
+                interceptorList.addAll(customInterceptors)
             } catch (e: Exception) {
                 logger.warn("fail to get download interceptor by settings[$settings]: $e")
             }
             return interceptorList
         }
 
-        fun buildInterceptor(
+        private fun buildInterceptor(
             type: DownloadInterceptorType,
             rules: Map<String, Any> = emptyMap()
         ): DownloadInterceptor<*, NodeDetail>? {

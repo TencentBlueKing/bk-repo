@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,27 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.security.interceptor.devx
+package com.tencent.bkrepo.generic.dao
 
-import com.fasterxml.jackson.annotation.JsonProperty
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.generic.model.TUserShareRecord
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
-data class DevXWorkSpace(
-    @JsonProperty("workspace_name")
-    val workspaceName: String,
-    @JsonProperty("project_id")
-    val projectId: String,
-    @JsonProperty("creator")
-    val creator: String,
-    @JsonProperty("owner")
-    val owner: String,
-    @JsonProperty("region_id")
-    val regionId: String,
-    @JsonProperty("inner_ip")
-    val innerIp: String? = null,
-    @JsonProperty("real_owner")
-    val realOwner: String,
-    @JsonProperty("viewers")
-    val viewers: List<String>,
-    @JsonProperty("currentLoginUsers")
-    val currentLoginUsers: List<String>? = null,
-)
+@Repository
+class UserShareRecordDao: SimpleMongoDao<TUserShareRecord>() {
+
+    fun decrementPermit(id: String) {
+        val query = Query(Criteria.where(ID).isEqualTo(id))
+        val update = Update().inc(TUserShareRecord::permits.name, -1)
+            .set(TUserShareRecord::lastModifiedDate.name, LocalDateTime.now())
+        this.updateFirst(query, update)
+    }
+}
