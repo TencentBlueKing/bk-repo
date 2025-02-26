@@ -53,5 +53,7 @@ data class GenericProperties(
      */
     var chunkedUploadClients: List<String> = listOf("bk-repo"),
     @NestedConfigurationProperty
-    var proxy: ProxyProperties = ProxyProperties()
+    var proxy: ProxyProperties = ProxyProperties(),
+    @NestedConfigurationProperty
+    var userShareInterceptor: UserShareInterceptorProperties = UserShareInterceptorProperties(),
 )

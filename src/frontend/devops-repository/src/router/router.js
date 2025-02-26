@@ -37,6 +37,8 @@ const userGroup = () => import('@repository/views/userGroup')
 const filePreview = () => import('@repository/components/FilePreview/filePreview')
 const outsideFilePreview = () => import('@repository/components/FilePreview/outsideFilePreview')
 
+const share = () => import('@repository/views/share')
+
 const routes = [
     {
         path: '/:projectId/preview',
@@ -51,6 +53,10 @@ const routes = [
     {
         path: '/:projectId/oauth/authorize',
         component: oauth
+    },
+    {
+        path: '/:projectId/share/:shareId',
+        component: share
     },
     {
         path: '/:projectId',
