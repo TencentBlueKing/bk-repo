@@ -46,23 +46,21 @@ import org.junit.jupiter.api.TestInstance
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ReportExporterTest {
 
-    private lateinit var reportExporter: ReportExporter
-
-    private lateinit var messageSupplier: MessageSupplier
+    private lateinit var properties: ReportExportProperties
 
     @BeforeAll
     fun beforeAll() {
-        val properties = ReportExportProperties()
+        properties = ReportExportProperties()
         properties.enabled = true
         properties.topic = "test-topic"
-        messageSupplier = mockk()
-        reportExporter = ReportExporter(properties, messageSupplier)
     }
 
     @Test
     fun testExport() {
         // 准备数据
         val reportSlots = mutableListOf<Report>()
+        val messageSupplier = mockk<MessageSupplier>()
+        val reportExporter = ReportExporter(properties, messageSupplier)
         every { messageSupplier.delegateToSupplier(capture(reportSlots), any(), any(), any(), any()) }.returns(Unit)
         val result = buildScanExecutorResult()
         val securityResult = result.output!!.result!!.securityResults!![0]
@@ -94,5 +92,23 @@ class ReportExporterTest {
         assertEquals(1, reportSlots[3].componentLicenses.size)
         // sensitive
         assertEquals(2, reportSlots[4].sensitiveContents.size)
+    }
+
+    @Test
+    fun testExportFailed() {
+        // 准备数据
+        val messageSupplier = mockk<MessageSupplier>()
+        val reportExporter = ReportExporter(properties, messageSupplier)
+        every {
+            messageSupplier.delegateToSupplier<Report>(any(), any(), any(), any(), any())
+        }.throws(RuntimeException())
+        val result = buildScanExecutorResult()
+        reportExporter.export(buildSubScanTask("taskId", NODE_SHA256), result)
+
+        // 验证
+        // 应该尝试发送3次消息（1次security结果，1次license结果，1次sensitive结果）
+        verify(exactly = 3) {
+            messageSupplier.delegateToSupplier<Report>(any(), any(), any(), any(), any())
+        }
     }
 }

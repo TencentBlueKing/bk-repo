@@ -33,16 +33,17 @@ class ReportExporter(
         }
         check(result is StandardScanExecutorResult)
         val reports = buildReports(subtask, result)
-        logger.info(
-            "export ${reports.size} report of subtask[${subtask.id}] to " +
-                "[${reportProperties.binderType}:${reportProperties.topic}]"
-        )
-        reports.forEach {
-            messageSupplier.delegateToSupplier(
-                data = it,
-                topic = reportProperties.topic!!,
-                binderType = BinderType.valueOf(reportProperties.binderType!!)
-            )
+        reports.forEachIndexed { index, report ->
+            try {
+                messageSupplier.delegateToSupplier(
+                    data = report,
+                    topic = reportProperties.topic!!,
+                    binderType = BinderType.valueOf(reportProperties.binderType!!)
+                )
+                logger.error("export ${index + 1}/${reports.size} report of subtask[${subtask.id}] success")
+            } catch (e: Exception) {
+                logger.error("export ${index + 1}/${reports.size} report of subtask[${subtask.id}] failed", e)
+            }
         }
     }
 
