@@ -40,7 +40,7 @@ class ReportExporter(
                     topic = reportProperties.topic!!,
                     binderType = BinderType.valueOf(reportProperties.binderType!!)
                 )
-                logger.error("export ${index + 1}/${reports.size} report of subtask[${subtask.id}] success")
+                logger.info("export ${index + 1}/${reports.size} report of subtask[${subtask.id}] success")
             } catch (e: Exception) {
                 logger.error("export ${index + 1}/${reports.size} report of subtask[${subtask.id}] failed", e)
             }
