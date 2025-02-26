@@ -49,11 +49,11 @@ class UserShareInterceptor(
 ) : DownloadInterceptor<Unit, NodeDetail>(emptyMap())  {
 
     override fun matcher(artifact: NodeDetail, rule: Unit): Boolean {
-        if (isProjectAdmin(artifact.projectId)) return true
         val properties = genericProperties.userShareInterceptor
         if (!properties.enabled) return true
         if (properties.repoName != artifact.repoName) return true
         if (!artifact.fullPath.matches(Regex(properties.pathRegex))) return true
+        if (isProjectAdmin(artifact.projectId)) return true
         val referer = HttpContextHolder.getRequestOrNull()?.getHeader("referer") ?: run {
             logger.info("not found request header referer")
             return false
