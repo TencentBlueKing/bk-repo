@@ -86,6 +86,8 @@
                             }
                         }
                     } else {
+                        // 预览链接需绕过去
+                        if (specTargetMatch === 'filePreview' || specTargetMatch === 'outsideFilePreview') return
                         let projectId = ''
                         const hasUrlProjectId = this.projectList.find(v => v.id === urlProjectId)
                         if (!hasUrlProjectId) {
