@@ -50,13 +50,13 @@ data class OpLogListOption(
     @ApiModelProperty("事件类型")
     val eventType: EventType,
     @ApiModelProperty("sha256校验值")
-    val sha256: String? = null,
+    val sha256: String?,
     @ApiModelProperty("流水线Id")
-    val pipelineId: String? = null,
+    val pipelineId: String?,
     @ApiModelProperty("流水线构建Id")
-    val buildId: String? = null,
+    val buildId: String?,
     @ApiModelProperty("下载用户Id")
-    val userId: String? = null,
+    val userId: String?,
     @ApiModelProperty("查询起始时间")
     val startTime: LocalDateTime = LocalDateTime.now().minusMonths(3L),
     @ApiModelProperty("查询截至时间")

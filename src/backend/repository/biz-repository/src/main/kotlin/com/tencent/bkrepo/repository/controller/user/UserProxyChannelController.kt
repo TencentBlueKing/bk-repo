@@ -105,12 +105,16 @@ class UserProxyChannelController(
             }
             val httpEntity = HttpEntity<Any>(headers)
             // 暂时只添加了helm类型的校验
-            val response = restTemplate.exchange(
-                url + "/index.yaml", HttpMethod.GET, httpEntity, String::class.java)
-            if (response.statusCode != HttpStatus.OK) {
+            try {
+                val response = restTemplate.exchange(
+                    url + "/index.yaml", HttpMethod.HEAD, httpEntity, String::class.java)
+                if (response.statusCode != HttpStatus.OK) {
+                    return ResponseBuilder.success(false)
+                } else {
+                    return ResponseBuilder.success(true)
+                }
+            } catch (e: Exception) {
                 return ResponseBuilder.success(false)
-            } else {
-                return ResponseBuilder.success(true)
             }
         }
     }
