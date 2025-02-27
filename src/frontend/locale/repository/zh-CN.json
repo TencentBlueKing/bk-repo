@@ -912,6 +912,7 @@
     "ohpmPushPlaceHolder": "请输入待发布的har或tgz文件完整路径",
     "ohpmPushGuideSubTitle1": "在设置仓库地址之后就可以使用如下命令去推送制品",
     "ohpmPushGuideSubTitle2": "也可以通过指定publish_registry的方式去推送制品，如下命令",
+    "fileLoadingTip": "文件加载中，请稍后",
     "itsmTip": "该操作需要审批，申请单已提交，请审批通过后刷新页面",
     "viewApproval": "查看审批",
     "shareUser": "分享人",
