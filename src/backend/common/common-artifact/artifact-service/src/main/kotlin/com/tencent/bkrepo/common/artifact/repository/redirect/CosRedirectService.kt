@@ -108,7 +108,7 @@ class CosRedirectService(
             storageProperties.redirect.redirectAllDownload
 
         // 文件存在于COS上时才会被重定向
-        return needToRedirect && isSystemOrAdmin() && guessFileExists(node, storageCredentials)
+        return needToRedirect && guessFileExists(node, storageCredentials)
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
