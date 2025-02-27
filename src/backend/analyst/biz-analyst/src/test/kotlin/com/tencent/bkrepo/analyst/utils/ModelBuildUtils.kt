@@ -40,11 +40,20 @@ import com.tencent.bkrepo.analyst.model.TFileScanResult
 import com.tencent.bkrepo.analyst.model.TScanPlan
 import com.tencent.bkrepo.analyst.model.TScanResult
 import com.tencent.bkrepo.analyst.model.TScanTask
+import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.LicenseResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.Result
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SecurityResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.SensitiveResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolOutput
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.VersionPaths
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import java.time.LocalDateTime
@@ -128,6 +137,86 @@ fun buildArchiveSubScanTask(
         CveOverviewKey.CVE_HIGH_COUNT.key to 2,
     ),
 )
+
+fun buildSubScanTask(taskId: String, sha256: String, now: LocalDateTime = LocalDateTime.now()) = TSubScanTask(
+    id = "subTaskId",
+    createdBy = UT_USER,
+    createdDate = now,
+    lastModifiedBy = UT_USER,
+    lastModifiedDate = now,
+    startDateTime = now,
+    triggerType = ScanTriggerType.MANUAL.name,
+    parentScanTaskId = taskId,
+    planId = UT_PLAN_ID,
+    projectId = PROJECT_ID,
+    repoName = REPO,
+    repoType = RepositoryType.GENERIC.name,
+    fullPath = fileLocator.locate(sha256),
+    artifactName = "demo-1.0.0.jar",
+    status = SubScanTaskStatus.SUCCESS.name,
+    executedTimes = 1,
+    scanner = UT_SCANNER,
+    scannerType = StandardScanner.TYPE,
+    sha256 = sha256,
+    size = 1024L,
+    packageSize = 1024L,
+    credentialsKey = UT_CREDENTIALS_KEY,
+)
+
+fun buildScanExecutorResult(): StandardScanExecutorResult {
+    val securityResults = listOf(
+        SecurityResult(
+            vulId = "CVE-123",
+            versionsPaths = mutableSetOf(
+                VersionPaths("1.1", mutableSetOf("/a/b/c.x", "/b/c/d.x")),
+                VersionPaths("1.2", mutableSetOf("/a/b/c.x", "/b/c/d.x"))
+            ),
+            cvss = 1.1,
+            pkgName = "test-pkg",
+            pkgVersions = mutableSetOf("1.1", "1.2"),
+            severity = Level.CRITICAL.name,
+        ),
+        SecurityResult(
+            vulId = "CVE-123",
+            versionsPaths = mutableSetOf(
+                VersionPaths("1.1", mutableSetOf("/a/b/c.x", "/b/c/d.x")),
+                VersionPaths("1.2", mutableSetOf("/a/b/c.x", "/b/c/d.x"))
+            ),
+            cvss = 1.1,
+            pkgName = "test-pkg2",
+            pkgVersions = mutableSetOf("1.1", "1.2"),
+            severity = Level.CRITICAL.name,
+        ),
+    )
+
+    val licenseResults = listOf(
+        LicenseResult(
+            pkgName = "test-pkg",
+            pkgVersions = mutableSetOf("1.1", "1.2"),
+            licenseName = "MIT",
+            versionsPaths = mutableSetOf(
+                VersionPaths("1.1", mutableSetOf("/a/b/c.x", "/b/c/d.x")),
+                VersionPaths("1.2", mutableSetOf("/a/b/c.x", "/b/c/d.x"))
+            ),
+        )
+    )
+
+    val sensitiveResults = listOf(
+        SensitiveResult("/a/b/c", "AWS", "xxx****xxxx"),
+        SensitiveResult("/a/b/e", "EMAIL", "xxx****xxxx")
+    )
+
+    return StandardScanExecutorResult(
+        ToolOutput(
+            status = SubScanTaskStatus.SUCCESS.name,
+            result = Result(
+                securityResults = securityResults,
+                licenseResults = licenseResults,
+                sensitiveResults = sensitiveResults,
+            )
+        )
+    )
+}
 
 fun buildFileResult(now: LocalDateTime, sha256: String, taskId: String) = TFileScanResult(
     id = null,
