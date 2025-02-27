@@ -27,13 +27,6 @@
 
 package com.tencent.bkrepo.analyst.component.manager.trivy
 
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanExecutorResult
-import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
-import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.VulnerabilityItem
 import com.tencent.bkrepo.analyst.component.manager.AbstractScanExecutorResultManager
 import com.tencent.bkrepo.analyst.component.manager.knowledgebase.KnowledgeBase
 import com.tencent.bkrepo.analyst.component.manager.knowledgebase.TCve
@@ -42,6 +35,13 @@ import com.tencent.bkrepo.analyst.component.manager.trivy.model.TVulnerabilityIt
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.SaveResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.trivy.TrivyLoadResultArguments
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanExecutorResult
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
+import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.VulnerabilityItem
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.toJsonString
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -79,6 +79,10 @@ class TrivyResultManager @Autowired constructor(
         arguments as TrivyLoadResultArguments
         val page = vulnerabilityItemDao.pageBy(credentialsKey, sha256, scanner.name, arguments.pageLimit, arguments)
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records)
+    }
+
+    override fun clean(credentialsKey: String?, sha256: String, scannerName: String): Long {
+        return vulnerabilityItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
     }
 
     private fun replace(

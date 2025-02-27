@@ -911,5 +911,16 @@
     "ohpmCreditGuideSubTitle5":"3、复制编码后的token，替换<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>,将下列配置添加到项目的 oh-package.json5 文件同一级目录下的 .ohpmrc 文件中，如没有 .ohpmrc 文件，请新建",
     "ohpmPushPlaceHolder": "请输入待发布的har或tgz文件完整路径",
     "ohpmPushGuideSubTitle1": "在设置仓库地址之后就可以使用如下命令去推送制品",
-    "ohpmPushGuideSubTitle2": "也可以通过指定publish_registry的方式去推送制品，如下命令"
+    "ohpmPushGuideSubTitle2": "也可以通过指定publish_registry的方式去推送制品，如下命令",
+    "fileLoadingTip": "文件加载中，请稍后",
+    "itsmTip": "该操作需要审批，申请单已提交，请审批通过后刷新页面",
+    "viewApproval": "查看审批",
+    "shareUser": "分享人",
+    "applyDownload": "申请下载",
+    "getApprovalStatusFailed": "获取审批状态失败",
+    "createApprovalFailed": "创建申请单据失败",
+    "getShareConfigFailed": "获取仓库分享配置失败",
+    "shareFileDeleted": "分享文件已删除",
+    "getShareFileFailed": "获取分享文件失败",
+    "getDownloadUrlFailed": "获取下载链接失败"
 }

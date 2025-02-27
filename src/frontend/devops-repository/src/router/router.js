@@ -35,6 +35,9 @@ const oauth = () => import('@repository/views/oauth')
 const userGroup = () => import('@repository/views/userGroup')
 
 const filePreview = () => import('@repository/components/FilePreview/filePreview')
+const outsideFilePreview = () => import('@repository/components/FilePreview/outsideFilePreview')
+
+const share = () => import('@repository/views/share')
 
 const routes = [
     {
@@ -52,6 +55,10 @@ const routes = [
         component: oauth
     },
     {
+        path: '/:projectId/share/:shareId',
+        component: share
+    },
+    {
         path: '/:projectId',
         component: repoHome,
         redirect: { name: 'repositories' },
@@ -67,10 +74,20 @@ const routes = [
                 }
             },
             {
-                path: 'filePreview/:repoName/*',
+                path: 'outsideFilePreview/:extraParam',
+                name: 'outsideFilePreview',
+                component: outsideFilePreview,
+                props: route => ({
+                    extraParam: route.params.extraParam
+                })
+            },
+            {
+                path: 'filePreview/:repoType/:extraParam/:repoName/*',
                 name: 'filePreview',
                 component: filePreview,
                 props: route => ({
+                    repoType: route.params.repoType,
+                    extraParam: route.params.extraParam,
                     repoName: route.params.repoName,
                     filePath: route.params.pathMatch // 这里将捕获所有后续的路径
                 })

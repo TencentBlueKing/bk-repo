@@ -95,6 +95,14 @@ class SpringContextUtils : ApplicationContextAware {
         }
 
         /**
+         * 根据类型获取对象列表
+         */
+        @Throws(BeansException::class)
+        fun <T> getBeansWithType(clazz: Class<T>): List<T> {
+            return applicationContext.getBeansOfType(clazz).values.toList()
+        }
+
+        /**
          * 发送事件
          * @param event – the event to publish
          */

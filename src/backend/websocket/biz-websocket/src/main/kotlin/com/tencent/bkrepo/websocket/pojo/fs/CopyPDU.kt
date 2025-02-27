@@ -38,5 +38,6 @@ data class CopyPDU(
     val timestamp: Long,
     val dstPath: String? = null,
     val strategy: ConflictStrategy = ConflictStrategy.OVERWRITE,
-    var token: String? = null
+    var token: String? = null,
+    var envHashId: String? = null,
 )

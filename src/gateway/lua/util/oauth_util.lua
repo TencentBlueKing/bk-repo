@@ -18,6 +18,35 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ]]
 
 _M = {}
+function _M:verify_mobile_gateway()
+    --- 移动网关登录对接(下面ms表示mobile site的意思)
+    local ms_timestamp = ngx.var.http_timestamp
+    local ms_signature = ngx.var.http_signature
+    local ms_staffid = ngx.var.http_staffid
+    local ms_staffname = ngx.var.http_staffname
+    local ms_x_ext_data = ngx.var.http_x_ext_data
+    local ms_x_rio_seq = ngx.var.http_x_rio_seq
+    if ms_timestamp ~= nil and ms_signature ~= nil and ms_staffid ~= nil and ms_staffname ~= nil
+            and ms_x_ext_data ~= nil and ms_x_rio_seq ~= nil then
+        local timestamp = ngx.time()
+        local absTime = math.abs(tonumber(ms_timestamp) - timestamp)
+        if absTime < 180 then
+            local token = config.mobileSiteToken
+            local input = ms_timestamp .. token .. ms_x_rio_seq .. "," .. ms_staffid .. "," .. ms_staffname .. "," ..
+                    ms_x_ext_data .. ms_timestamp
+            local resty_sha256 = require "resty.sha256"
+            local resty_str = require "resty.string"
+            local sha256 = resty_sha256:new()
+            sha256:update(input)
+            local digest = sha256:final()
+            local my_signature = string.upper(resty_str.str_to_hex(digest))
+            if ms_signature == my_signature then
+                return ms_staffname
+            end
+        end
+    end
+    return nil
+end
 
 function _M:verify_ticket(bk_ticket, input_type)
     local user_cache = ngx.shared.user_info_store
@@ -178,6 +207,61 @@ function _M:verify_bk_token(auth_url, token)
         user_cache:set(token, user_cache_value, 180)
     end
     return user_cache_value
+end
+
+function _M:verify_bk_token_muti_tenant(auth_url, token)
+    local user_cache = ngx.shared.user_info_store
+    local user_cache_value = user_cache:get(token)
+    if user_cache_value == nil then
+        local http_cli = http.new()
+        local oauth = config.oauth
+        local query = "bk_token=" .. token
+        local addr = "http://" .. auth_url .. "/api/bk-login/prod/login/api/v3/open/bk-tokens/userinfo/?" .. query
+        local auth_content = '{"bk_app_code":"' .. oauth.app_code .. '","bk_app_secret":"' .. oauth.app_secret .. '","bk_token":"' .. token .. '"}'
+        --- 开始连接
+        http_cli:set_timeout(3000)
+        http_cli:connect(addr)
+        --- 发送请求
+        local res, err = http_cli:request_uri(addr, {
+            method = "GET",
+            ssl_verify = false,
+            headers = {
+                ["X-Bkapi-Authorization"] = auth_content,
+                ["X-Bk-Tenant-Id"] = config.op_tenant_id
+            }
+        })
+        --- 判断是否出错了
+        if not res then
+            ngx.log(ngx.ERR, "failed to request apigw: error", err)
+            ngx.exit(401)
+            return
+        end
+        --- 判断返回的状态码是否是200
+        if res.status ~= 200 then
+            ngx.log(ngx.STDERR, "failed to request apigw, status: ", res.status)
+            ngx.exit(401)
+            return
+        end
+        --- 转换JSON的返回数据为TABLE
+        local result = json.decode(res.body)
+        --- 判断JSON转换是否成功
+        if result == nil then
+            ngx.log(ngx.ERR, "failed to parse apigw  response：", res.body)
+            ngx.exit(401)
+            return
+        end
+
+        local cache_data = {
+            ["bk_username"] = result.data.bk_username,
+            ["display_name"] = result.data.display_name,
+            ["tenant_id"] = result.data.tenant_id
+        }
+        user_cache:set(token, json.encode(cache_data), 180)
+        return result.data.bk_username, result.data.display_name, result.data.tenant_id
+    else
+        local user_data = json.decode(user_cache_value)
+        return user_data.bk_username, user_data.display_name, user_data.tenant_id
+    end
 end
 
 function _M:verify_bkrepo_token(bkrepo_login_token)
