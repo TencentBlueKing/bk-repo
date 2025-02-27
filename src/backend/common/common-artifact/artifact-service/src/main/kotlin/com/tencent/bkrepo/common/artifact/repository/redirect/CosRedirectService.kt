@@ -172,11 +172,6 @@ class CosRedirectService(
         return storageService.exist(node.sha256!!, storageCredentials)
     }
 
-    private fun isSystemOrAdmin(): Boolean {
-        val userId = SecurityUtils.getUserId()
-        return userId == SYSTEM_USER || permissionManager.isAdminUser(SecurityUtils.getUserId())
-    }
-
     companion object {
         private val logger = LoggerFactory.getLogger(CosRedirectService::class.java)
     }
