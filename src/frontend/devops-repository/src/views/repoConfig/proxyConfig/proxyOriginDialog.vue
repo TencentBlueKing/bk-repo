@@ -81,12 +81,28 @@
                             validator: this.checkName,
                             message: this.$t('sameProxyExist'),
                             trigger: 'blur'
+                        },
+                        {
+                            validator: this.checkValid,
+                            trigger: 'blur'
                         }
                     ],
                     url: [
                         {
                             required: true,
                             message: this.$t('proxyUrlRule'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    username: [
+                        {
+                            validator: this.checkValid,
+                            trigger: 'blur'
+                        }
+                    ],
+                    password: [
+                        {
+                            validator: this.checkValid,
                             trigger: 'blur'
                         }
                     ]
@@ -109,31 +125,8 @@
                         ...this.editProxyData,
                         ...data
                     }
+                    this.editProxyData.proxyType = data.public ? 'publicProxy' : 'privateProxy'
                 }
-            },
-            editProxyData: {
-                handler (data) {
-                    if (this.repoType !== 'helm') {
-                        return
-                    }
-                    if (data.proxyType === 'publicProxy' && data.name.trim().length > 0 && data.url.trim().length > 0) {
-                        this.condition = true
-                        this.testConnection()
-                    } else if (data.proxyType === 'privateProxy'
-                        && data.name.trim().length > 0
-                        && data.url.trim().length > 0
-                        && data.username.trim().length > 0
-                        && data.password.trim().length > 0
-                    ) {
-                        this.condition = true
-                        this.testConnection()
-                    } else {
-                        this.condition = false
-                        this.loading = false
-                    }
-                },
-                deep: true,
-                immediate: true
             },
             show (val) {
                 if (val) {
@@ -150,8 +143,33 @@
                 await this.$refs.proxyFrom.validate()
                 this.$emit('confirm', { name: this.proxyData.name, data: this.editProxyData })
             },
+            checkValid () {
+                if (this.repoType !== 'helm') {
+                    return true
+                }
+                if (this.editProxyData.proxyType === 'publicProxy' && this.editProxyData.name.trim().length > 0 && this.editProxyData.url.trim().length > 0) {
+                    this.condition = true
+                    this.testConnection()
+                    return true
+                } else if (this.editProxyData.proxyType === 'privateProxy'
+                    && this.editProxyData.name.trim().length > 0
+                    && this.editProxyData.url.trim().length > 0
+                    && this.editProxyData.username.trim().length > 0
+                    && this.editProxyData.password.trim().length > 0
+                ) {
+                    this.condition = true
+                    this.testConnection()
+                    return true
+                } else {
+                    this.condition = false
+                    this.loading = false
+                    return true
+                }
+            },
             cancel () {
                 this.$refs.proxyFrom.clearError()
+                this.condition = false
+                this.connected = false
                 this.$emit('cancel')
             },
             testConnection () {
@@ -174,7 +192,11 @@
                 )
             },
             checkName () {
-                if (this.nameList.length > 0 && this.nameList.indexOf(this.editProxyData.name) > 0) {
+                if (this.editProxyData.type === 'add' && this.nameList.indexOf(this.editProxyData.name) > -1) {
+                    return false
+                }
+                if (this.editProxyData.type === 'edit' && this.nameList.indexOf(this.editProxyData.name) > -1
+                    && this.nameList.indexOf(this.editProxyData.name) !== this.nameList.indexOf(this.proxyData.name)) {
                     return false
                 }
                 return true

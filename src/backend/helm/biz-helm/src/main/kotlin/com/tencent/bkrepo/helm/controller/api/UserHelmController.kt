@@ -53,9 +53,11 @@ import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.CHART_PA
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.CHART_VERSION_DELETE_URL
 import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo.Companion.HELM_VERSION_DETAIL
 import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
+import com.tencent.bkrepo.helm.pojo.record.THelmRefreshLog
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.helm.service.ChartManipulationService
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
+import com.tencent.bkrepo.helm.service.HelmRefreshRecordService
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
@@ -75,8 +77,7 @@ import java.time.LocalDateTime
 class UserHelmController(
     private val chartManipulationService: ChartManipulationService,
     private val chartRepositoryService: ChartRepositoryService,
-    private val helmClient: HelmClient,
-    private val operateLogService: OperateLogService
+    private val helmRefreshRecordService: HelmRefreshRecordService
 ) {
 
     @ApiOperation("查询包的版本详情")
@@ -161,31 +162,21 @@ class UserHelmController(
         return ResponseBuilder.success(chartRepositoryService.getRegistryDomain())
     }
 
-    @ApiOperation("刷新对应代理仓库的index文件以及package信息")
-    @GetMapping("/refresh/{projectId}/{repoName}")
-    fun refreshIndexAndPackage(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String
-    ): Response<Void> {
-        helmClient.refreshIndexYamlAndPackage(projectId, repoName)
-        return ResponseBuilder.success()
-    }
-
     @ApiOperation("获取最近一次的同步时间和状态")
     @GetMapping("/getLatestSyncStatus/{projectId}/{repoName}")
     fun getLatestSyncStatus(
         @PathVariable projectId: String, @PathVariable repoName: String)
-    : Response<Page<OperateLog>> {
-        val option = OpLogListOption(
-            projectId = projectId,
-            repoName = repoName,
-            resourceKey = repoName,
-            pageNumber = 1,
-            pageSize = 1,
-            eventType = EventType.REPO_REFRESHED,
-            startTime = LocalDateTime.now().minusYears(1),
-            endTime = LocalDateTime.now()
-        )
-        return ResponseBuilder.success(operateLogService.listPage(option))
+    : Response<List<THelmRefreshLog>> {
+        val list = helmRefreshRecordService.getByProjectIdAndRepoName(projectId, repoName)
+        return ResponseBuilder.success(list)
+    }
+
+    @ApiOperation("记录表同步配置，删除记录表中的过时数据")
+    @GetMapping("/syncFreshRecord/{projectId}/{repoName}")
+    fun syncConfigAndRecord(
+        @PathVariable projectId: String, @PathVariable repoName: String)
+            : Response<Void> {
+        helmRefreshRecordService.syncRecord(projectId, repoName)
+        return ResponseBuilder.success()
     }
 }

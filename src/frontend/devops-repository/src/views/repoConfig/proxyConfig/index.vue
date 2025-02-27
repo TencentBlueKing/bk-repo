@@ -20,7 +20,7 @@
                         :key="proxy.name"
                         :card-data="proxy"
                         :sync-status="syncRecord"
-                        @refresh-sync-record="getProxySyncRecord"
+                        @refresh-sync-record="refreshSyncRecord"
                         @delete-card="deleteProxy(proxy)"
                         @update-card="editProxy(proxy)"
                     >
@@ -95,18 +95,16 @@
             }
         },
         created () {
-            if (this.repoType === 'helm') {
-                this.getProxySyncRecord()
-            }
             this.debounceSaveProxy = debounce(this.saveProxy)
         },
         methods: {
-            ...mapActions(['updateRepoInfo', 'getHelmLatestSyncRecord']),
+            ...mapActions(['updateRepoInfo', 'getHelmLatestSyncRecord', 'syncRecordWithConfig']),
             addProxy () {
                 this.showProxyDialog = true
                 this.proxyData = {
                     type: 'add'
                 }
+                this.syncRecordWithConfig({ projectId: this.projectId, repoName: this.repoName })
             },
             editProxy (row) {
                 this.showProxyDialog = true
@@ -114,6 +112,7 @@
                     type: 'edit',
                     ...row
                 }
+                this.syncRecordWithConfig({ projectId: this.projectId, repoName: this.repoName })
             },
             deleteProxy (row) {
                 this.proxyList.splice(this.proxyList.findIndex(v => v.name === row.name), 1)
@@ -186,11 +185,16 @@
                 })
             },
             getProxySyncRecord () {
-                this.getHelmLatestSyncRecord({ projectId: this.projectId, repoName: this.repoName }).then(response => {
-                    if (response.records.length > 0) {
-                        this.syncRecord = response.records[0]
-                    }
+                this.getHelmLatestSyncRecord({ projectId: this.projectId, repoName: this.repoName }).then(res => {
+                    this.syncRecord = res
                 })
+            },
+            refreshSyncRecord () {
+                this.$bkMessage({
+                    theme: 'success',
+                    message: this.$t('syncRepo') + this.$t('space') + this.$t('success')
+                })
+                this.getProxySyncRecord()
             }
         }
     }

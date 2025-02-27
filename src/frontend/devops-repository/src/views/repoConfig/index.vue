@@ -65,7 +65,7 @@
                 </bk-form>
             </bk-tab-panel>
             <bk-tab-panel v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
-                <proxy-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></proxy-config>
+                <proxy-config ref="proxyTab" :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></proxy-config>
             </bk-tab-panel>
             <bk-tab-panel v-if="showCleanConfigTab" name="cleanConfig" :label="$t('cleanConfig')">
                 <clean-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></clean-config>
@@ -202,6 +202,14 @@
             repoType: {
                 handler (type) {
                     type && this.getDomain(type)
+                },
+                immediate: true
+            },
+            tabName: {
+                handler (type) {
+                    if (type === 'proxyConfig' && this.repoType === 'helm') {
+                        this.$refs.proxyTab.getProxySyncRecord()
+                    }
                 },
                 immediate: true
             }

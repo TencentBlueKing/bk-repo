@@ -7,12 +7,12 @@
             <span class="package-card-description text-overflow" :title="cardData.address">{{ $t('address') + ' : ' + cardData.url }}</span>
             <span v-if="cardData.username" class="package-card-description text-overflow" :title="cardData.username">{{ $t('username') + ' : ' + cardData.username }}</span>
         </div>
-        <bk-divider direction="vertical" />
+        <bk-divider v-if="repoType === 'helm'" direction="vertical" />
         <div v-if="repoType === 'helm'" class="mr20 package-card-main flex-column">
             <div class="flex-align-center">
-                <span class="package-card-description text-overflow">{{ formatRecordDate() }}</span>
-                <Icon v-if="syncStatus.description && syncStatus.description.status && syncStatus.description.status === 'success'" style="margin-left: 10px" name="right" size="14" />
-                <Icon v-if="syncStatus.description && syncStatus.description.status && syncStatus.description.status === 'failed'" style="margin-left: 10px" name="wrong" size="14" />
+                <span class="package-card-description text-overflow">{{formatRecordDate()}}</span>
+                <Icon v-if="status !== undefined && status" style="margin-left: 10px" name="right" size="14" />
+                <Icon v-if="status !== undefined && !status" style="margin-left: 10px" name="wrong" size="14" />
             </div>
         </div>
         <div class="card-operation flex-center">
@@ -42,6 +42,12 @@
                 default: {}
             }
         },
+        data () {
+            return {
+                last: '',
+                status: undefined
+            }
+        },
         computed: {
             projectId () {
                 return this.$route.params.projectId
@@ -51,6 +57,15 @@
             },
             repoType () {
                 return this.$route.params.repoType
+            }
+        },
+        watch: {
+            syncStatus (val) {
+                const has = val.find(proxy => proxy.proxyChannelName === this.cardData.name)
+                if (has) {
+                    this.last = has.createdAt
+                    this.status = has.status
+                }
             }
         },
         methods: {
@@ -69,11 +84,11 @@
                 })
             },
             formatRecordDate () {
-                let data = ''
-                if (this.syncStatus.createdDate) {
-                    data = this.formatDate(this.syncStatus.createdDate)
+                let param = null
+                if (this.last) {
+                    param = this.formatDate(this.last)
                 }
-                return this.$t('latestSyncData', { 0: data })
+                return this.$t('latestSyncData', { 0: param })
             }
         }
     }
