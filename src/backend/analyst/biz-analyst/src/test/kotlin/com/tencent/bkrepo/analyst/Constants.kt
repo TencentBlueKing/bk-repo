@@ -35,3 +35,7 @@ const val NODE_SHA256 = "da87281c9f9ab6cef8f9362935f4fc864db94606d52212614894f12
 const val NODE_SIZE = 123
 const val PACKAGE_KEY = "gav://com.test:test"
 const val PACKAGE_VERSION = "1.2.3"
+const val UT_USER = "user"
+const val UT_SCANNER = "default"
+const val UT_CREDENTIALS_KEY = "storage-1"
+const val UT_PLAN_ID = "123456789000000000000000"

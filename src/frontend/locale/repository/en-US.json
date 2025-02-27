@@ -917,5 +917,15 @@
     "totalProxyCount": "Total {0} agents",
     "connectionTest": "Connecting",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "itsmTip": "This operation requires approval and the apply has been submitted. Please refresh the page after approved",
+    "viewApproval": "View Approval",
+    "shareUser": "Share User",
+    "applyDownload": "Apply Download",
+    "getApprovalStatusFailed": "Get approval status failed",
+    "createApprovalFailed": "Create approval failed",
+    "getShareConfigFailed": "Get share config failed",
+    "shareFileDeleted": "The share file has been deleted",
+    "getShareFileFailed": "Get share file failed",
+    "getDownloadUrlFailed": "Get download url failed"
 }

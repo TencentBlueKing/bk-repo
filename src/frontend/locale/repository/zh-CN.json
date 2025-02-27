@@ -920,5 +920,15 @@
     "totalProxyCount": "共计{0}个代理",
     "connectionTest": "连通性测试",
     "yes": "是",
-    "no": "否"
+    "no": "否",
+    "itsmTip": "该操作需要审批，申请单已提交，请审批通过后刷新页面",
+    "viewApproval": "查看审批",
+    "shareUser": "分享人",
+    "applyDownload": "申请下载",
+    "getApprovalStatusFailed": "获取审批状态失败",
+    "createApprovalFailed": "创建申请单据失败",
+    "getShareConfigFailed": "获取仓库分享配置失败",
+    "shareFileDeleted": "分享文件已删除",
+    "getShareFileFailed": "获取分享文件失败",
+    "getDownloadUrlFailed": "获取下载链接失败"
 }

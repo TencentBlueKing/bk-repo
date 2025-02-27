@@ -18,6 +18,35 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ]]
 
 _M = {}
+function _M:verify_mobile_gateway()
+    --- 移动网关登录对接(下面ms表示mobile site的意思)
+    local ms_timestamp = ngx.var.http_timestamp
+    local ms_signature = ngx.var.http_signature
+    local ms_staffid = ngx.var.http_staffid
+    local ms_staffname = ngx.var.http_staffname
+    local ms_x_ext_data = ngx.var.http_x_ext_data
+    local ms_x_rio_seq = ngx.var.http_x_rio_seq
+    if ms_timestamp ~= nil and ms_signature ~= nil and ms_staffid ~= nil and ms_staffname ~= nil
+            and ms_x_ext_data ~= nil and ms_x_rio_seq ~= nil then
+        local timestamp = ngx.time()
+        local absTime = math.abs(tonumber(ms_timestamp) - timestamp)
+        if absTime < 180 then
+            local token = config.mobileSiteToken
+            local input = ms_timestamp .. token .. ms_x_rio_seq .. "," .. ms_staffid .. "," .. ms_staffname .. "," ..
+                    ms_x_ext_data .. ms_timestamp
+            local resty_sha256 = require "resty.sha256"
+            local resty_str = require "resty.string"
+            local sha256 = resty_sha256:new()
+            sha256:update(input)
+            local digest = sha256:final()
+            local my_signature = string.upper(resty_str.str_to_hex(digest))
+            if ms_signature == my_signature then
+                return ms_staffname
+            end
+        end
+    end
+    return nil
+end
 
 function _M:verify_ticket(bk_ticket, input_type)
     local user_cache = ngx.shared.user_info_store

@@ -109,6 +109,14 @@ class StandardResultManager(
         }
     }
 
+    override fun clean(credentialsKey: String?, sha256: String, scannerName: String): Long {
+        var deletedCount = 0L
+        deletedCount += securityResultDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
+        deletedCount += licenseResultDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
+        deletedCount += sensitiveResultDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
+        return deletedCount
+    }
+
     private fun loadLicenseResults(
         credentialsKey: String?,
         sha256: String,

@@ -91,7 +91,9 @@ class ClipboardService(
         if (devXProperties.groupWorkspaceUrl.isEmpty() || devXProperties.personalWorkspaceUrl.isEmpty()) {
             return null
         }
-        return if (copyPDU.projectId.startsWith(StringPool.UNDERSCORE)) {
+        return if (!copyPDU.envHashId.isNullOrEmpty()) {
+            checkEnvWorkspace(copyPDU)
+        } else if (copyPDU.projectId.startsWith(StringPool.UNDERSCORE)) {
             checkWorkspace(devXProperties.personalWorkspaceUrl, copyPDU)
         } else {
             checkWorkspace(devXProperties.groupWorkspaceUrl, copyPDU)
@@ -107,6 +109,37 @@ class ClipboardService(
             name = userId,
         )
         serviceUserClient.createUser(request)
+    }
+
+    private fun checkEnvWorkspace(copyPDU: CopyPDU): String? {
+        val userId = copyPDU.userId
+        val url = String.format(devXProperties.workspaceEnvUsePermissionUrlFormat, copyPDU.projectId, copyPDU.envHashId)
+        val request = Request.Builder().url(url)
+            .header("X-DEVOPS-BK-TOKEN", devXProperties.authToken)
+            .header("X-Devops-Uid", userId)
+            .get()
+            .build()
+        try {
+            httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    logger.error(
+                        "request url failed: " +
+                            "${request.url}, ${response.code}, ${response.headers["X-Devops-RID"]}"
+                    )
+                    return null
+                }
+
+                val hasPermission = response.body!!.string().readJsonString<Response<Boolean>>().data!!
+                if (!hasPermission) {
+                    throw PermissionException("user[$userId] is not the member of [${copyPDU.envHashId}]")
+                }
+                createUser(userId)
+                return createToken(copyPDU.projectId, userId)
+            }
+        } catch (e: IOException) {
+            logger.error("Error while processing request: ${e.message}")
+            return null
+        }
     }
 
     private fun checkWorkspace(url: String, copyPDU: CopyPDU): String? {
