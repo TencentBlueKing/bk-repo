@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.task.usage
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
 import com.tencent.bkrepo.job.BATCH_SIZE
@@ -130,7 +131,8 @@ class ProjectMonthMetricReportJob(
         logger.info("report project month usage with size ${projectMonthUsage.size}")
         val bkMonthUsage = BkMonthUsage(
             dataSourceName = properties.reportServiceName,
-            bills = projectMonthUsage
+            bills = projectMonthUsage,
+            month = projectMonthUsage.first().costDate
         )
         val bkMonthUsageSummary = BkMonthUsageSummary(bkMonthUsage)
         reportUsageData(bkMonthUsageSummary)
@@ -143,7 +145,9 @@ class ProjectMonthMetricReportJob(
         try {
             val request = Request.Builder().url(url).header(PLATFORM_KEY_HEADER, properties.reportPlatformKey)
                 .post(requestBody).build()
-            doRequest(okHttpClient, request)
+            retry(RETRY_COUNT, 1) {
+                doRequest(okHttpClient, request)
+            }
         } catch (exception: Exception) {
             logger.warn("report usage data error:", exception)
         }
@@ -231,5 +235,6 @@ class ProjectMonthMetricReportJob(
         private val logger = LoggerFactory.getLogger(ProjectMonthMetricReportJob::class.java)
         private const val COLLECTION_NAME_PROJECT_METRICS_DAILY_AVG_RECORD = "project_metrics_daily_avg_record"
         private const val PLATFORM_KEY_HEADER = "Platform-Key"
+        private const val RETRY_COUNT = 3
     }
 }

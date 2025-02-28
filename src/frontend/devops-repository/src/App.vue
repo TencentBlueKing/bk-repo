@@ -52,6 +52,9 @@
             } else {
                 const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
                 const localProjectId = localStorage.getItem('projectId')
+                // 查询路由,取项目名称后半截。
+                const target = location.pathname.split(urlProjectId)[1] || ''
+                const specTargetMatch = target !== '' ? ((target.match(/\/([^\/]+)\//)) || [])[1] : ''
                 Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(([userInfo]) => {
                     if (!this.ciMode && !this.projectList.length) {
                         if (userInfo.admin) {
@@ -67,21 +70,33 @@
                                 }
                             })
                         } else {
-                            // TODO: 普通用户无项目提示页
-                            this.$bkMessage({
-                                message: this.$t('noProjectData'),
-                                theme: 'error'
-                            })
-                            this.$router.replace({
-                                name: 'repoToken',
-                                params: {
-                                    projectId: urlProjectId || localProjectId || 'default'
-                                }
-                            })
+                            // 预览链接需绕过去
+                            if (specTargetMatch !== 'filePreview' && specTargetMatch !== 'outsideFilePreview') {
+                                // TODO: 普通用户无项目提示页
+                                this.$bkMessage({
+                                    message: this.$t('noProjectData'),
+                                    theme: 'error'
+                                })
+                                this.$router.replace({
+                                    name: 'repoToken',
+                                    params: {
+                                        projectId: urlProjectId || localProjectId || 'default'
+                                    }
+                                })
+                            }
                         }
                     } else {
+                        // 预览链接需绕过去
+                        if (specTargetMatch === 'filePreview' || specTargetMatch === 'outsideFilePreview') return
                         let projectId = ''
-                        if (this.projectList.find(v => v.id === urlProjectId)) {
+                        const hasUrlProjectId = this.projectList.find(v => v.id === urlProjectId)
+                        if (!hasUrlProjectId) {
+                            this.$bkMessage({
+                                message: this.$t('projectNoPermissionTip', { 0: urlProjectId }),
+                                theme: 'error'
+                            })
+                        }
+                        if (hasUrlProjectId) {
                             projectId = urlProjectId
                         } else if (this.projectList.find(v => v.id === localProjectId)) {
                             projectId = localProjectId
@@ -97,7 +112,6 @@
                             }
                         })
                     }
-
                     userInfo.admin && this.getClusterList()
                 })
             }

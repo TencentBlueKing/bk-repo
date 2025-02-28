@@ -30,13 +30,16 @@ package com.tencent.bkrepo.common.metadata.service.node.impl
 import com.tencent.bkrepo.auth.api.ServicePipelineClient
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
+import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
 @Service
+@Conditional(SyncCondition::class)
 class PipelineNodeServiceImpl(
     private val nodeService: NodeService,
     private val servicePipelineClient: ServicePipelineClient

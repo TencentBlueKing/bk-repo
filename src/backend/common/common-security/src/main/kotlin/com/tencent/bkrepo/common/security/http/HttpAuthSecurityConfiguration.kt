@@ -110,7 +110,7 @@ class HttpAuthSecurityConfiguration(
             )
         }
         if (httpAuthSecurity.oauthEnabled) {
-            httpAuthSecurity.addHttpAuthHandler(OauthAuthHandler(authenticationManager))
+            httpAuthSecurity.addHttpAuthHandler(OauthAuthHandler(authenticationManager, cryptoProperties))
         }
         if (httpAuthSecurity.temporaryTokenEnabled) {
             httpAuthSecurity.addHttpAuthHandler(TemporaryTokenAuthHandler(authenticationManager))

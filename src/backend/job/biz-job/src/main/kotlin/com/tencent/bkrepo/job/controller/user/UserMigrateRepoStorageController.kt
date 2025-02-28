@@ -106,4 +106,15 @@ class UserMigrateRepoStorageController(
             throw BadRequestException(CommonMessageCode.PARAMETER_INVALID, "miss projectId or repoName")
         }
     }
+
+    /**
+     * 校正整块存储迁移结束后引用计数错误
+     */
+    @PostMapping("/failed/ref/correct")
+    fun correctMigratedStorageFileReference(
+        @RequestParam(required = false) srcCredentialKey: String? = null,
+        @RequestParam(required = false) dstCredentialKey: String? = null,
+    ) {
+        migrateFailedNodeService.correctMigratedStorageFileReference(srcCredentialKey, dstCredentialKey)
+    }
 }

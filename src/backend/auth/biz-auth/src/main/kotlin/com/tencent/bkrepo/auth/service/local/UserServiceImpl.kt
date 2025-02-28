@@ -399,6 +399,10 @@ class UserServiceImpl constructor(
         return userDao.getUserByAsstUser(userId).map { UserRequestUtil.convToUserInfo(it) }
     }
 
+    override fun listAdminUsers(): List<String> {
+        return userDao.findAllAdminUsers().map { it.userId }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(UserServiceImpl::class.java)
     }

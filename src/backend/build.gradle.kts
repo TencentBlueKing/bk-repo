@@ -52,8 +52,6 @@ allprojects {
         }
         dependencies {
             dependency("com.github.zafarkhaja:java-semver:${Versions.JavaSemver}")
-            dependency("org.apache.skywalking:apm-toolkit-logback-1.x:${Versions.SkyWalkingApmToolkit}")
-            dependency("org.apache.skywalking:apm-toolkit-trace:${Versions.SkyWalkingApmToolkit}")
             dependency("net.javacrumbs.shedlock:shedlock-spring:${Versions.Shedlock}")
             dependency("net.javacrumbs.shedlock:shedlock-provider-mongo:${Versions.Shedlock}")
             dependency("com.google.code.gson:gson:${Versions.Gson}")
@@ -89,6 +87,7 @@ allprojects {
         exclude(group = "log4j", module = "log4j")
         exclude(group = "org.slf4j", module = "slf4j-log4j12")
         exclude(group = "commons-logging", module = "commons-logging")
+        exclude(group = "org.springframework.boot", module = "spring-boot-starter-tomcat")
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {

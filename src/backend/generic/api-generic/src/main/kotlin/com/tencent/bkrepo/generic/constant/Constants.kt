@@ -40,6 +40,8 @@ const val HEADER_EXPIRES = BKREPO_PREFIX + "EXPIRES"
 const val HEADER_SIZE = BKREPO_PREFIX + "SIZE"
 const val HEADER_UPLOAD_ID = BKREPO_PREFIX + "UPLOAD-ID"
 const val HEADER_SEQUENCE = BKREPO_PREFIX + "SEQUENCE"
+const val HEADER_OFFSET = BKREPO_PREFIX + "OFFSET"
+const val HEADER_FILE_SIZE = BKREPO_PREFIX + "SIZE"
 const val HEADER_OLD_FILE_PATH = BKREPO_PREFIX + "OLD-FILE-PATH"
 
 const val BKREPO_META_PREFIX = "X-BKREPO-META-"
@@ -60,3 +62,14 @@ const val CHUNKED_UPLOAD_CLIENT = "CHUNKED-UPLOAD-CLIENT"
 
 // block上传时直接写入文件指定位置
 const val HEADER_BLOCK_APPEND = BKREPO_PREFIX + "BLOCK-APPEND"
+
+/**
+ * 分块上传版本后缀
+ */
+const val SEPARATE_UPLOAD = "SEPARATE-UPLOAD"
+
+/**
+ * 审计中心action定义
+ */
+const val USER_SHARE_CREATE_ACTION = "user_share_create"
+const val USER_SHARE_DOWNLOAD_URL_CREATE_ACTION = "user_share_download_url_create"

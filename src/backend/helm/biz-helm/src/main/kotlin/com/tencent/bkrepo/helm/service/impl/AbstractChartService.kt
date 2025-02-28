@@ -115,7 +115,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.cloud.client.circuitbreaker.NoFallbackAvailableException
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.SortedSet
 import java.util.concurrent.ThreadPoolExecutor
 
@@ -361,7 +360,7 @@ open class AbstractChartService : ArtifactService() {
                 "/${chartMetadata.name}-${chartMetadata.version}.tgz"
             )
         )
-        chartMetadata.created = convertDateTime(nodeMap[NODE_CREATE_DATE] as String)
+        chartMetadata.created = TimeFormatUtil.convertToUtcTime(nodeMap[NODE_CREATE_DATE] as LocalDateTime)
         chartMetadata.digest = nodeMap[NODE_SHA256] as String
         return chartMetadata
     }
@@ -603,10 +602,14 @@ open class AbstractChartService : ArtifactService() {
         domain: String,
         projectId: String,
         repoName: String,
-        helmIndexYamlMetadata: HelmIndexYamlMetadata
+        helmIndexYamlMetadata: HelmIndexYamlMetadata,
+        initProxyUrls: Boolean = true
     ) {
         helmIndexYamlMetadata.entries.values.forEach {
             it.forEach { chart ->
+                if (initProxyUrls) {
+                    chart.proxyDownloadUrl = chart.urls.firstOrNull()
+                }
                 chart.urls = listOf(
                     UrlFormatter.format(
                         domain, "$projectId/$repoName/charts/${chart.name}-${chart.version}.tgz"
@@ -711,10 +714,5 @@ open class AbstractChartService : ArtifactService() {
         const val PAGE_NUMBER = 0
         const val PAGE_SIZE = 200000
         const val V2_PAGE_SIZE = 20000
-
-        fun convertDateTime(timeStr: String): String {
-            val localDateTime = LocalDateTime.parse(timeStr, DateTimeFormatter.ISO_DATE_TIME)
-            return TimeFormatUtil.convertToUtcTime(localDateTime)
-        }
     }
 }

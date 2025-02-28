@@ -902,5 +902,22 @@
     "conanCreditGuideSubTitle1":"1. Execute the following command on the command line to configure remote artifact repository",
     "conanCreditGuideSubTitle2":"2、Execute the following command on the command line to configure artifact repository credentials(conan1.x)",
     "conanRecipePlaceholder":"The format of RECIPE is <NAME>/VERSION>@<USER>/CHANNEL>",
-    "conanPullGuideSubTitle":"Please execute the following command on the command line to pull(conan1.x)："
+    "conanPullGuideSubTitle":"Please execute the following command on the command line to pull(conan1.x)：",
+    "projectNoPermissionTip": "Request project {0} has no permission and has been switched",
+    "ohpmCreditGuideSubTitle4":"2.After copying {0}:<PERSONAL_ACCESS_TOKEN> to the command line window, press the Enter key.",
+    "ohpmCreditGuideSubTitle5":"3.Copy the encoded token and replace <BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>. Add the following configuration to the .ohpmrc file in the same directory as the oh-package.json5 file of the project. If there is no .ohpmrc file, create a new one.",
+    "ohpmPushPlaceHolder": "Please enter the full path of the har or tgz file to be released",
+    "ohpmPushGuideSubTitle1": "After setting the warehouse address, you can use the following command to push the product",
+    "ohpmPushGuideSubTitle2": "You can also push products by specifying publish_registry, as follows",
+    "fileLoadingTip": "File loading,Please wait",
+    "itsmTip": "This operation requires approval and the apply has been submitted. Please refresh the page after approved",
+    "viewApproval": "View Approval",
+    "shareUser": "Share User",
+    "applyDownload": "Apply Download",
+    "getApprovalStatusFailed": "Get approval status failed",
+    "createApprovalFailed": "Create approval failed",
+    "getShareConfigFailed": "Get share config failed",
+    "shareFileDeleted": "The share file has been deleted",
+    "getShareFileFailed": "Get share file failed",
+    "getDownloadUrlFailed": "Get download url failed"
 }

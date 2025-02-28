@@ -85,13 +85,37 @@ class ExpiredDdcRefCleanupJob(
             )
         }
 
-        // 从blob ref列表中移除ref
-        val refKey = "ref/${row.bucket}/${row.key}"
-        val criteria = Criteria
+        removeBlobRef(row)
+    }
+
+    private fun removeBlobRef(row: Ref) {
+        // 移除blob与ref关联关系
+        val refKey = buildRef(row.bucket, row.key)
+        var criteria = Criteria
+            .where(BlobRef::projectId.name).isEqualTo(row.projectId)
+            .and(BlobRef::repoName.name).isEqualTo(row.repoName)
+            .and(BlobRef::ref.name).isEqualTo(refKey)
+        val blobIds = HashSet<String>()
+        mongoTemplate.findAllAndRemove(
+            Query(criteria),
+            BlobRef::class.java,
+            COLLECTION_NAME_BLOB_REF
+        ).mapTo(blobIds) { it.blobId }
+
+        // 减少blob引用计数
+        criteria = Criteria
+            .where(DdcBlobCleanupJob.Blob::projectId.name).isEqualTo(row.projectId)
+            .and(DdcBlobCleanupJob.Blob::repoName.name).isEqualTo(row.repoName)
+            .and(DdcBlobCleanupJob.Blob::blobId.name).inValues(blobIds)
+        var update = Update().inc(DdcBlobCleanupJob.Blob::refCount.name, -1L)
+        mongoTemplate.updateMulti(Query(criteria), update, DdcBlobCleanupJob.COLLECTION_NAME)
+
+        // 兼容旧逻辑，从blob ref列表中移除ref，所有blob的reference字段都清空后可移除该代码
+        criteria = Criteria
             .where(DdcBlobCleanupJob.Blob::projectId.name).isEqualTo(row.projectId)
             .and(DdcBlobCleanupJob.Blob::repoName.name).isEqualTo(row.repoName)
             .and(DdcBlobCleanupJob.Blob::references.name).inValues(refKey)
-        val update = Update().pull(DdcBlobCleanupJob.Blob::references.name, refKey)
+        update = Update().pull(DdcBlobCleanupJob.Blob::references.name, refKey)
         mongoTemplate.updateMulti(Query(criteria), update, DdcBlobCleanupJob.COLLECTION_NAME)
     }
 
@@ -104,8 +128,21 @@ class ExpiredDdcRefCleanupJob(
         val inlineBlob: Binary? = null
     )
 
+    data class BlobRef(
+        val id: String,
+        val projectId: String,
+        val repoName: String,
+        val blobId: String,
+        val ref: String,
+    )
+
     companion object {
         const val COLLECTION_NAME = "ddc_ref"
         const val COLLECTION_NAME_LEGACY = "ddc_legacy_ref"
+        const val COLLECTION_NAME_BLOB_REF = "ddc_blob_ref"
+
+        fun buildRef(bucket: String, key: String): String {
+            return "ref/$bucket/$key"
+        }
     }
 }

@@ -53,6 +53,7 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.core.publisher.toMono
 import reactor.netty.http.client.HttpClient
@@ -62,6 +63,7 @@ import reactor.util.retry.RetryBackoffSpec
 import java.net.URLDecoder
 import java.time.Duration
 import java.util.concurrent.Executors
+import java.util.stream.Collectors
 
 class DevxWorkspaceUtils(
     devXProperties: DevXProperties
@@ -136,8 +138,12 @@ class DevxWorkspaceUtils(
         }
 
         private fun listIp(projectId: String): Mono<Set<String>> {
-            return Mono.zip(listIpFromProject(projectId), listIpFromProps(projectId), listCvmIpFromProject(projectId))
-                .map { it.t1 + it.t2 + it.t3 }
+            return Mono.zip(
+                listIpFromProject(projectId),
+                listIpFromProps(projectId),
+                listCvmIpFromProject(projectId),
+                listIpFromProjects(projectId))
+                .map { it.t1 + it.t2 + it.t3 + it.t4}
         }
 
         private fun listIpFromProject(projectId: String): Mono<Set<String>> {
@@ -177,6 +183,19 @@ class DevxWorkspaceUtils(
                 }
         }
 
+        private fun listIpFromProjects(projectId: String): Mono<Set<String>> {
+            val projectIdList = devXProperties.projectWhiteList[projectId] ?: emptySet()
+            return Flux.fromIterable(projectIdList)
+                .flatMap { id ->
+                    Flux.merge(
+                        listIpFromProject(id),
+                        listCvmIpFromProject(id)
+                    )
+                }
+                .flatMapIterable { it }
+                .collect(Collectors.toSet())
+        }
+
         suspend fun validateToken(devxToken: String): Mono<DevxTokenInfo> {
             val token = withContext(Dispatchers.IO) {
                 URLDecoder.decode(devxToken, Charsets.UTF_8.name())
@@ -187,6 +206,16 @@ class DevxWorkspaceUtils(
                 .header("X-DEVOPS-BK-TOKEN", devXProperties.authToken)
                 .exchangeToMono {
                     mono { parseDevxTokenInfo(it) }
+                }
+        }
+
+        fun validateAccessToken(accessToken: String): Mono<DevXWorkSpace> {
+            val type = object : ParameterizedTypeReference<QueryResponse<DevXWorkSpace>>() {}
+            return httpClient.get().uri(devXProperties.validateAccessTokenUrl)
+                .header("X-CDI-OAUTH2-AUTHORIZATION", accessToken)
+                .header("X-DEVOPS-STORE-CODE", devXProperties.devopsStoreCode)
+                .exchangeToMono {
+                    mono { parseResponse(it, type)?.data }
                 }
         }
 

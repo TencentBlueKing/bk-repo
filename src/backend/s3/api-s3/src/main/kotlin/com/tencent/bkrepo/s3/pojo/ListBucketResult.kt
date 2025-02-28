@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @JacksonXmlRootElement(localName = "ListBucketResult", namespace = "http://s3.amazonaws.com/doc/2006-03-01/")
 data class ListBucketResult(
@@ -80,7 +82,7 @@ data class ListBucketResult(
     )
 
     companion object {
-
+        private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
         private val emptyMD5 = StringPool.EMPTY.md5()
         private fun convertToContents(
             nodeDetailList: List<Map<String, Any?>>,
@@ -102,7 +104,9 @@ data class ListBucketResult(
                 }
                 Content(
                     key = key,
-                    lastModified = it[NodeDetail::lastModifiedDate.name].toString(),
+                    lastModified = LocalDateTime.parse(
+                        it[NodeDetail::lastModifiedDate.name].toString()
+                    ).format(formatter),
                     eTag = if (folder) {
                         "\"$emptyMD5\""
                     } else {

@@ -106,10 +106,10 @@ class PackageController(
         repoName: String,
         packageKey: String,
         version: String,
+        realIpAddress: String?,
         contentPath: String?,
-        realIpAddress: String?
     ): Response<Void> {
-        packageService.deleteVersion(projectId, repoName, packageKey, version, contentPath, realIpAddress)
+        packageService.deleteVersion(projectId, repoName, packageKey, version, realIpAddress, contentPath)
         return ResponseBuilder.success()
     }
 

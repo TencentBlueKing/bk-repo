@@ -21,7 +21,7 @@ local _M = {}
 
 --[[获取微服务真实地址]]
 function _M:get_addr(service_name)
-    
+
     local service_prefix = config.service_prefix
 
     if service_prefix == nil then
@@ -32,9 +32,9 @@ function _M:get_addr(service_name)
     if ngx.var.name_space ~= "" then
         return service_prefix .. service_name .. "." .. ngx.var.name_space .. ".svc.cluster.local"
     end
-    
+
     -- boot assembly部署
-    if config.service_name ~= nil and config.service_name ~= ""  then
+    if config.service_name ~= nil and config.service_name ~= "" then
         local domains = stringUtil:split(config.bkrepo.domain, ";")
         return domains[math.random(1, #domains)]
     end
@@ -49,8 +49,17 @@ function _M:get_addr(service_name)
 
     local router_srv_cache = ngx.shared.router_srv_store
     local router_srv_value = router_srv_cache:get(query_subdomain)
+    local service_in_local = config.service_in_local
 
     if router_srv_value == nil then
+        -- 是否取用本地配置, 取用本地配置时需要获取所有ip,使用tcp协议，并增加缓存时间
+        local cache_time = 2
+        local use_udp = true
+        if service_in_local ~= nil and service_in_local ~= "" then
+            cache_time = 3
+            use_udp = false
+        end
+
         if not ns_config.ip then
             ngx.log(ngx.ERR, "DNS ip not exist!")
             ngx.exit(503)
@@ -77,9 +86,11 @@ function _M:get_addr(service_name)
             ngx.exit(503)
             return
         end
-
-        local records, err = dns:query(query_subdomain, { qtype = dns.TYPE_SRV, additional_section = true })
-
+        if use_udp then
+            records, err = dns:query(query_subdomain, { qtype = dns.TYPE_SRV, additional_section = true })
+        else
+            records, err = dns:tcp_query(query_subdomain, { qtype = dns.TYPE_SRV, additional_section = true })
+        end
         if not records then
             ngx.log(ngx.ERR, "failed to query the DNS server: ", err)
             ngx.exit(503)
@@ -114,7 +125,7 @@ function _M:get_addr(service_name)
             ngx.exit(503)
             return
         end
-        router_srv_cache:set(query_subdomain, table.concat(ips, ",") .. ":" .. port, 2)
+        router_srv_cache:set(query_subdomain, table.concat(ips, ",") .. ":" .. port, cache_time)
     else
         local func_itor = string.gmatch(router_srv_value, "([^:]+)")
         local ips_str = func_itor()
@@ -122,6 +133,13 @@ function _M:get_addr(service_name)
 
         for ip in string.gmatch(ips_str, "([^,]+)") do
             table.insert(ips, ip)
+        end
+    end
+    -- return with local service
+    if internal_ip ~= nil and service_in_local ~= nil and string.find(service_in_local, service_name) ~= nil then
+        local service_ip = string.gsub(internal_ip, "\n", "")
+        if arrayUtil:isInArray(service_ip, ips) then
+            return "127.0.0.1:" .. port
         end
     end
 

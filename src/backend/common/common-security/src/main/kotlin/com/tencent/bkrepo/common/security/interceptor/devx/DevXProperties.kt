@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.security.interceptor.devx
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.core.Ordered
+import org.springframework.util.unit.DataSize
 import java.time.Duration
 
 /**
@@ -77,6 +78,11 @@ data class DevXProperties(
      * key 为项目ip， value为CVM配置
      */
     var projectCvmWhiteList: Map<String, Set<String>> = emptyMap(),
+    /**
+     * 配置可以被访问的项目
+     * key 为项目id， value为可被访问的项目id
+     */
+    var projectWhiteList: Map<String, Set<String>> = emptyMap(),
     /**
      * 可以从任意来源访问的用户
      */
@@ -142,5 +148,39 @@ data class DevXProperties(
      */
     var authToken: String = "",
 
+    /**
+     * 查询团队云桌面接口url
+     */
+    var groupWorkspaceUrl: String = "",
+
+    /**
+     * 查询个人云桌面接口url
+     */
+    var personalWorkspaceUrl: String = "",
+
+    /**
+     * 查询云桌面环境使用权限
+     */
+    var workspaceEnvUsePermissionUrlFormat: String = "",
+
+    /**
+     * 校验devx access token接口url
+     */
+    var validateAccessTokenUrl: String = "",
+
+    /**
+     * 蓝盾应用商店应用code
+     */
+    var devopsStoreCode: String = "",
+
+    /**
+     * 获取云研发项目管理员
+     */
+    var projectManagerUrl: String = "",
+
+    /**
+     * 分享文件大小限制
+     */
+    var shareFileSizeLimit: DataSize = DataSize.ofMegabytes(50),
 
 )

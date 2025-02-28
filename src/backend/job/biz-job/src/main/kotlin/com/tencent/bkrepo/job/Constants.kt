@@ -41,6 +41,11 @@ const val SHARDING_COUNT = 256
 const val BATCH_SIZE = 1000
 
 /**
+ * 最大并发线程限制数
+ */
+const val CONCURRENT_THREAD_LIMIT = 1024
+
+/**
  * 数据库字段
  */
 const val SHA256 = "sha256"
@@ -64,6 +69,7 @@ const val REPLICA_TYPE = "replicaType"
 const val NAME = "name"
 const val SIZE = "size"
 const val NODE_NUM = "nodeNum"
+const val PACKAGE_ID = "packageId"
 
 
 /**
@@ -110,3 +116,9 @@ const val SEPARATION_TASK_COLLECTION_NAME = "separation_task"
 
 const val PACKAGE_VERSION = "version"
 const val PACKAGE_DOWNLOAD_DATE = "date"
+
+/**
+ * 记录备份
+ */
+const val DATA_RECORDS_BACKUP = "DATA_BACKUP"
+const val DATA_RECORDS_RESTORE = "DATA_RESTORE"

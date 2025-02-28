@@ -93,4 +93,8 @@ class ServiceUserController @Autowired constructor(
     override fun userTokenById(uid: String): Response<List<String>> {
         return ResponseBuilder.success(userService.listValidToken(uid).map { it.id })
     }
+
+    override fun listAdminUsers(): Response<List<String>> {
+        return ResponseBuilder.success(userService.listAdminUsers())
+    }
 }

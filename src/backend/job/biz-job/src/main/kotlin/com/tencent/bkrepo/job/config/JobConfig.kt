@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.config
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.job.backup.config.DataBackupConfig
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
@@ -48,6 +49,7 @@ import java.util.function.Consumer
     JobProperties::class,
     MigrateRepoStorageProperties::class,
     DataSeparationConfig::class,
+    DataBackupConfig::class
 )
 class JobConfig {
     @Bean

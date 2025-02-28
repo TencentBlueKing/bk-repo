@@ -134,7 +134,9 @@
                 showIamDenyDialog: false,
                 showData: {},
                 bkiamv3Check: false,
-                authMode: undefined,
+                authMode: {
+                    bkiamv3Check: false
+                },
                 showPermissionConfig: false
             }
         },
@@ -156,7 +158,7 @@
                 return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage)
             },
             showControlConfigTab () {
-                return (this.userInfo.admin || this.userInfo.manage) && !this.authMode.bkiamv3Check
+                return (this.userInfo.admin || this.userInfo.manage) && (this.authMode && !this.authMode.bkiamv3Check)
             },
             repoAddress () {
                 const { repoType, name } = this.repoBaseInfo

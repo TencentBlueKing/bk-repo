@@ -167,3 +167,11 @@ const val BKREPO_TRACE = "X-BKREPO-RID"
  */
 const val CODE_PROJECT_PREFIX = "CODE_"
 const val CLOSED_SOURCE_PREFIX = "CLOSED_SOURCE_"
+
+
+const val AUDITED_UID = "audited_uid"
+const val AUDIT_REQUEST_URI = "audit_request_uri"
+const val AUDIT_REQUEST_KEY = "http_request"
+const val AUDIT_SHARE_USER_ID = "audit_share_user_id"
+const val HTTP_RESPONSE_CODE = "http_response_code"
+const val HTTP_METHOD = "http_method"

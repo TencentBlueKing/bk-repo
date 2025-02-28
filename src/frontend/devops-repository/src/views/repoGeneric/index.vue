@@ -8,9 +8,11 @@
                 </div>
             </div>
         </header>
-        <div class="repo-generic-main flex-align-center"
+        <div
+            class="repo-generic-main flex-align-center"
             :style="{ 'margin-left': `${searchFileName ? -(sideBarWidth + moveBarWidth) : 0}px` }">
-            <div class="repo-generic-side"
+            <div
+                class="repo-generic-side"
                 :style="{ 'flex-basis': `${sideBarWidth}px` }"
                 v-bkloading="{ isLoading: treeLoading }">
                 <div class="repo-generic-side-info">
@@ -57,9 +59,10 @@
                             @click="handlerMultiDelete()">
                             {{ $t('batchDeletion') }}
                         </bk-button>
-                        <bk-button class="ml10" v-if="repoName !== 'pipeline' && (userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
-                            key.folder === true
-                        ))" @click="clean">
+                        <bk-button
+                            class="ml10" v-if="repoName !== 'pipeline' && (userInfo.admin || userInfo.manage) && multiSelect.length && multiSelect.some(key => (
+                                key.folder === true
+                            ))" @click="clean">
                             {{ $t('clean') }}
                         </bk-button>
                         <bk-input
@@ -71,7 +74,8 @@
                             @enter="inFolderSearchFile"
                             @clear="inFolderSearchFile">
                         </bk-input>
-                        <bk-button class="ml10"
+                        <bk-button
+                            class="ml10"
                             @click="getArtifactories">
                             {{ $t('refresh') }}
                         </bk-button>
@@ -117,7 +121,8 @@
                                 >{{row.name}}</span>
                                 <!-- 文件夹支持: 鼠标悬浮时显示小手样式 -->
                                 <span v-else :class="{ 'hover-btn': row.folder }">{{ row.name }}</span>
-                                <scan-tag class="mr5 table-svg"
+                                <scan-tag
+                                    class="mr5 table-svg"
                                     v-if="showRepoScan(row)"
                                     :status="row.metadata.scanStatus"
                                     repo-type="generic"
@@ -190,14 +195,16 @@
                         </template>
                     </bk-table-column>
                 </bk-table>
-                <bk-button v-if="!localRepo"
+                <bk-button
+                    v-if="!localRepo"
                     :disabled="artifactoryList.length === 0 || artifactoryList.length < pagination.limit"
                     size="small"
                     icon="icon-angle-right"
                     @click="changePage(1)"
                     class="mt10 mr10 fr">
                 </bk-button>
-                <bk-button v-if="!localRepo"
+                <bk-button
+                    v-if="!localRepo"
                     :disabled="pagination.current === 1"
                     size="small"
                     icon="icon-angle-left"
@@ -253,9 +260,11 @@
     import compressedFileTable from './compressedFileTable'
     import previewBasicFileDialog from './previewBasicFileDialog'
     import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
+    import { Base64 } from 'js-base64'
+    import { isOutDisplayType, isPic, isText } from '@repository/utils/file'
 
     export default {
-        name: 'repoGeneric',
+        name: 'RepoGeneric',
         components: {
             Loading,
             OperationList,
@@ -806,24 +815,35 @@
             },
             // 单击table打开文件夹
             previewFile (row) {
-                if (row.fullPath.endsWith('txt')
-                    || row.fullPath.endsWith('sh')
-                    || row.fullPath.endsWith('bat')
-                    || row.fullPath.endsWith('json')
-                    || row.fullPath.endsWith('yaml')
-                    || row.fullPath.endsWith('yml')
-                    || row.fullPath.endsWith('xml')
-                    || row.fullPath.endsWith('log')
-                    || row.fullPath.endsWith('ini')
-                    || row.fullPath.endsWith('log')
-                    || row.fullPath.endsWith('properties')
-                    || row.fullPath.endsWith('toml')
-                    || row.fullPath.endsWith('docx')
-                    || row.fullPath.endsWith('xlsx')
-                    || row.fullPath.endsWith('xls')
-                    || row.fullPath.endsWith('pdf')) {
-                    const url = routeBase + '/' + this.projectId + '/filePreview/' + this.repoName + row.fullPath
+                if (isOutDisplayType(row.fullPath)) {
+                    const isLocal = this.localRepo
+                    const typeParam = isLocal ? 'local/' : 'remote/'
+                    let extraParam = 0
+                    if (!isLocal) {
+                        const res = this.splitBkRepoRemoteUrl(this.currentRepo.configuration.url)
+                        const remotePath = res.baseUrl + '/generic/' + res.projectId + '/' + res.repoName + row.fullPath
+                        const object = {
+                            url: remotePath
+                        }
+                        const json = JSON.stringify(object)
+                        extraParam = Base64.encodeURL(json)
+                    }
+                    const url = routeBase + '/' + this.projectId + '/filePreview/' + typeParam + extraParam + '/' + this.repoName + row.fullPath
                     window.open(url, '_blank')
+                }
+            },
+            splitBkRepoRemoteUrl (url) {
+                const trimmedUrl = url.trim().replace(/\/+$/, '')
+                const httpUrl = new URL(trimmedUrl)
+                const pathSegments = httpUrl.pathname.split('/').filter(segment => segment.length > 0)
+                if (pathSegments.length < 2) {
+                    return null
+                }
+                const baseUrl = `${httpUrl.protocol}//${httpUrl.host}`
+                return {
+                    baseUrl: baseUrl,
+                    projectId: pathSegments[pathSegments.length - 2],
+                    repoName: pathSegments[pathSegments.length - 1]
                 }
             },
             // 双击table打开文件夹
@@ -1273,67 +1293,91 @@
                 })
             },
             async handlerPreviewBasicsFile (row) {
-                if (row.fullPath.endsWith('docx')
-                    || row.fullPath.endsWith('xlsx')
-                    || row.fullPath.endsWith('xls')
-                    || row.fullPath.endsWith('pdf')
-                ) {
+                const isLocal = this.localRepo
+                let extraParam = 0
+                if (!isLocal) {
+                    const res = this.splitBkRepoRemoteUrl(this.currentRepo.configuration.url)
+                    const remotePath = res.baseUrl + '/generic/' + res.projectId + '/' + res.repoName + row.fullPath
+                    const object = {
+                        url: remotePath
+                    }
+                    const json = JSON.stringify(object)
+                    extraParam = Base64.encode(json)
+                }
+                if (!isText(row.fullPath) && !isPic(row.fullPath)) {
                     this.$refs.previewOfficeFileDialog.repoName = row.repoName
                     this.$refs.previewOfficeFileDialog.projectId = row.projectId
                     this.$refs.previewOfficeFileDialog.filePath = row.fullPath
+                    this.$refs.previewOfficeFileDialog.repoType = isLocal ? 'local' : 'remote'
+                    this.$refs.previewOfficeFileDialog.extraParam = isLocal ? '' : extraParam
                     this.$refs.previewOfficeFileDialog.setDialogData({
                         show: true,
                         title: row.name,
                         isLoading: true
                     })
                     this.$refs.previewOfficeFileDialog.setData()
-                    return
-                }
-                this.$refs.previewBasicFileDialog.setDialogData({
-                    show: true,
-                    title: row.name,
-                    isLoading: true
-                })
-                const res = await this.previewBasicFile({
-                    projectId: this.projectId,
-                    repoName: this.repoName,
-                    path: row.fullPath
-                }).catch(e => {
-                    if (e.status === 403) {
-                        this.getPermissionUrl({
-                            body: {
-                                projectId: this.projectId,
-                                action: 'READ',
-                                resourceType: 'NODE',
-                                uid: this.userInfo.name,
-                                repoName: this.repoName,
-                                path: row.fullPath
-                            }
-                        }).then(res => {
-                            if (res !== '' && res !== null) {
-                                this.showIamDenyDialog = true
-                                this.showData = {
+                } else if (isPic(row.fullPath)) {
+                    this.$refs.previewBasicFileDialog.setDialogData({
+                        show: true,
+                        title: row.name,
+                        isLoading: true,
+                        repoName: row.repoName,
+                        repoType: isLocal ? 'local' : 'remote',
+                        extraParam: extraParam,
+                        filePath: row.fullPath
+                    })
+                    this.$refs.previewBasicFileDialog.setPic()
+                } else {
+                    this.$refs.previewBasicFileDialog.setDialogData({
+                        show: true,
+                        title: row.name,
+                        isLoading: true,
+                        repoName: row.repoName,
+                        repoType: isLocal ? 'local' : 'remote',
+                        extraParam: extraParam,
+                        filePath: row.fullPath
+                    })
+                    const res = await this.previewBasicFile({
+                        projectId: this.projectId,
+                        repoName: this.repoName,
+                        path: row.fullPath
+                    }).catch(e => {
+                        if (e.status === 403) {
+                            this.getPermissionUrl({
+                                body: {
                                     projectId: this.projectId,
-                                    repoName: this.repoName,
                                     action: 'READ',
-                                    path: row.fullPath,
-                                    url: res
+                                    resourceType: 'NODE',
+                                    uid: this.userInfo.name,
+                                    repoName: this.repoName,
+                                    path: row.fullPath
                                 }
-                            } else {
-                                this.$bkMessage({
-                                    theme: 'error',
-                                    message: e.message
-                                })
-                            }
-                        })
-                    } else {
-                        this.$bkMessage({
-                            theme: 'error',
-                            message: e.message
-                        })
-                    }
-                })
-                this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
+                            }).then(res => {
+                                if (res !== '' && res !== null) {
+                                    this.showIamDenyDialog = true
+                                    this.showData = {
+                                        projectId: this.projectId,
+                                        repoName: this.repoName,
+                                        action: 'READ',
+                                        path: row.fullPath,
+                                        url: res
+                                    }
+                                } else {
+                                    this.$bkMessage({
+                                        theme: 'error',
+                                        message: e.message
+                                    })
+                                }
+                            })
+                        } else {
+                            this.$bkMessage({
+                                theme: 'error',
+                                message: e.message
+                            })
+                        }
+                    })
+                    this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
+                }
             },
             async handlerPreviewCompressedFile (row) {
                 if (row.size > 1073741824) {
@@ -1420,22 +1464,7 @@
             },
 
             getBtnDisabled (name) {
-                return name.endsWith('txt')
-                    || name.endsWith('sh')
-                    || name.endsWith('bat')
-                    || name.endsWith('json')
-                    || name.endsWith('yaml')
-                    || name.endsWith('yml')
-                    || name.endsWith('xml')
-                    || name.endsWith('log')
-                    || name.endsWith('ini')
-                    || name.endsWith('log')
-                    || name.endsWith('properties')
-                    || name.endsWith('toml')
-                    || name.endsWith('docx')
-                    || name.endsWith('xlsx')
-                    || name.endsWith('xls')
-                    || name.endsWith('pdf')
+                return isOutDisplayType(name)
             },
             // 文件夹内部的搜索，根据文件名或文件夹名搜索
             inFolderSearchFile () {

@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
@@ -70,6 +71,7 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.stream.constant.BinderType
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
+import com.tencent.bkrepo.fs.server.constant.UPLOADID_KEY
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -160,6 +162,16 @@ abstract class NodeBaseService(
         )
     }
 
+    override fun listNodeBySha256(
+        sha256: String,
+        limit: Int,
+        includeMetadata: Boolean,
+        includeDeleted: Boolean,
+        tillLimit: Boolean
+    ): List<NodeInfo> {
+        return nodeDao.listBySha256(sha256, limit, includeMetadata, includeDeleted, tillLimit).map { convert(it)!! }
+    }
+
     override fun checkExist(artifact: ArtifactInfo): Boolean {
         return nodeDao.exists(artifact.projectId, artifact.repoName, artifact.getArtifactFullPath())
     }
@@ -185,7 +197,7 @@ abstract class NodeBaseService(
             mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
             val node = buildTNode(this)
-            doCreate(node)
+            doCreate(node, separate = separate)
             afterCreate(repo, node)
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
             return convertToDetail(node)!!
@@ -345,7 +357,7 @@ abstract class NodeBaseService(
         }
     }
 
-    open fun doCreate(node: TNode, repository: TRepository? = null): TNode {
+    open fun doCreate(node: TNode, repository: TRepository? = null, separate: Boolean = false): TNode {
         try {
             nodeDao.insert(node)
             if (!node.folder) {
@@ -356,6 +368,10 @@ abstract class NodeBaseService(
                 quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
             }
         } catch (exception: DuplicateKeyException) {
+            if (separate){
+                logger.warn("Insert block base node[$node] error: [${exception.message}]")
+                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, node.fullPath)
+            }
             logger.warn("Insert node[$node] error: [${exception.message}]")
         }
 
@@ -402,21 +418,57 @@ abstract class NodeBaseService(
     open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
         with(createRequest) {
             val existNode = nodeDao.findNode(projectId, repoName, fullPath)
-            if (existNode != null) {
-                if (!overwrite) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
-                } else if (existNode.folder || this.folder) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
-                } else {
-                    val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
-                    quotaService.checkRepoQuota(projectId, repoName, changeSize)
-                    deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
-                    quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
-                }
-            } else {
+
+            // 如果节点不存在，进行配额检查后直接返回
+            if (existNode == null) {
                 quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
+                return
             }
+
+            // 如果不允许覆盖，抛出节点已存在异常
+            if (!overwrite) {
+                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+            }
+
+            // 如果存在文件夹冲突，抛出节点冲突异常
+            if (existNode.folder || this.folder) {
+                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
+            }
+
+            // 子类的附加检查方法
+            additionalCheck(existNode)
+
+            // 计算变更大小，并检查仓库配额
+            val changeSize = this.size?.minus(existNode.size) ?: -existNode.size
+            quotaService.checkRepoQuota(projectId, repoName, changeSize)
+
+            if (separate) {
+                // 删除旧节点，并检查旧节点是否被删除，防止并发删除
+                val currentVersion = metadata!![UPLOADID_KEY].toString()
+                val oldNodeId = currentVersion.substringAfter("/")
+
+                if (oldNodeId == FAKE_SEPARATE) {
+                    return
+                }
+
+                val deleteRes = deleteNodeById(projectId, repoName, fullPath, operator, oldNodeId)
+                if (deleteRes.deletedNumber == 0L) {
+                    logger.warn("Delete block base node[$fullPath] by [$operator] error: node was deleted")
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+                }
+                logger.info("Delete block base node[$fullPath] by [$operator] success: $oldNodeId.")
+
+            } else {
+                deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
+            }
+
+            // 更新配额使用量
+            quotaService.decreaseUsedVolume(projectId, repoName, existNode.size)
         }
+    }
+
+    open fun additionalCheck(existNode: TNode) {
+        // 默认不做任何操作
     }
 
     private fun incrementFileReference(node: TNode, repository: TRepository?): Boolean {

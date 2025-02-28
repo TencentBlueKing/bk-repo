@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.search.packages
 
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -41,11 +42,13 @@ import com.tencent.bkrepo.common.metadata.search.common.ModelValidateInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.SelectFieldInterceptor
+import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import javax.annotation.PostConstruct
 
 @Component
+@Conditional(SyncCondition::class)
 class PackageSearchInterpreter(
     private val permissionManager: PermissionManager,
     private val repoNameRuleInterceptor: RepoNameRuleInterceptor,

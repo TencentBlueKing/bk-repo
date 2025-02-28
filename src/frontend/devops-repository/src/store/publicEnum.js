@@ -8,7 +8,8 @@ export const repoEnum = MODE_CONFIG === 'ci'
         // { label: 'Rds', value: 'rds' },
         { label: 'Nuget', value: 'nuget' },
         { label: 'S3', value: 's3' },
-        { label: 'Conan', value: 'conan' }
+        { label: 'Conan', value: 'conan' },
+        { label: 'Ohpm', value: 'ohpm' }
     ]
     : [
         { label: 'Generic', value: 'generic' },
@@ -24,7 +25,8 @@ export const repoEnum = MODE_CONFIG === 'ci'
         { label: 'Git', value: 'git' },
         { label: 'Nuget', value: 'nuget' },
         { label: 'S3', value: 's3' },
-        { label: 'Conan', value: 'conan' }
+        { label: 'Conan', value: 'conan' },
+        { label: 'Ohpm', value: 'ohpm' }
     ]
 
 // 文件类型

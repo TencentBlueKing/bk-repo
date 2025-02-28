@@ -8,7 +8,6 @@ import com.tencent.bkrepo.media.service.TranscodeService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import org.slf4j.LoggerFactory
 import java.io.File
 
 /**
@@ -19,6 +18,7 @@ class MediaArtifactFileConsumer(
     private val transcodeService: TranscodeService,
     private val repo: RepositoryDetail,
     private val userId: String,
+    private val author: String,
     private val path: String,
     private val transcodeConfig: TranscodeConfig? = null,
 ) : FileConsumer {
@@ -35,11 +35,10 @@ class MediaArtifactFileConsumer(
     override fun accept(file: ArtifactFile, name: String) {
         val filePath = "$path/$name"
         val artifactInfo = ArtifactInfo(repo.projectId, repo.name, filePath)
-        val nodeCreateRequest = buildNodeCreateRequest(artifactInfo, file, userId)
+        val nodeCreateRequest = buildNodeCreateRequest(artifactInfo, file, userId, author)
         storageManager.storeArtifactFile(nodeCreateRequest, file, repo.storageCredentials)
         if (transcodeConfig != null) {
             transcodeService.transcode(artifactInfo, transcodeConfig, userId)
-            logger.info("Add transcode task for artifact[$artifactInfo]")
         }
     }
 
@@ -47,6 +46,7 @@ class MediaArtifactFileConsumer(
         artifactInfo: ArtifactInfo,
         file: ArtifactFile,
         userId: String,
+        author: String,
     ): NodeCreateRequest {
         with(artifactInfo) {
             val endTime = System.currentTimeMillis()
@@ -62,14 +62,15 @@ class MediaArtifactFileConsumer(
                 nodeMetadata = listOf(
                     MetadataModel(key = METADATA_KEY_MEDIA_START_TIME, value = startTime, system = true),
                     MetadataModel(key = METADATA_KEY_MEDIA_STOP_TIME, value = endTime, system = true),
+                    MetadataModel(key = METADATA_KEY_MEDIA_AUTHOR, value = author, system = true),
                 ),
             )
         }
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(MediaArtifactFileConsumer::class.java)
         private const val METADATA_KEY_MEDIA_START_TIME = "media.startTime"
         private const val METADATA_KEY_MEDIA_STOP_TIME = "media.stopTime"
+        private const val METADATA_KEY_MEDIA_AUTHOR = "media.author"
     }
 }

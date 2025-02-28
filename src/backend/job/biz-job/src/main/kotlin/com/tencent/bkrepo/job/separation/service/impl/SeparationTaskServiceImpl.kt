@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.job.RESTORE
 import com.tencent.bkrepo.job.SEPARATE
-import com.tencent.bkrepo.job.SEPARATION_TASK_COLLECTION_NAME
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
@@ -100,16 +99,22 @@ class SeparationTaskServiceImpl(
         projectId?.apply { criteria.and(TSeparationTask::projectId.name).isEqualTo(projectId) }
         repoName?.apply { criteria.and(TSeparationTask::repoName.name).isEqualTo(repoName) }
         val query = Query(criteria)
-        val dateRecords = mongoTemplate.findDistinct(
-            query, TSeparationTask::separationDate.name, SEPARATION_TASK_COLLECTION_NAME, LocalDateTime::class.java
-        )
-        result.addAll(dateRecords)
+        val dateRecords = mongoTemplate.find(query, TSeparationTask::class.java)
+        dateRecords.forEach {
+            result.add(it.separationDate)
+        }
         return result
     }
 
-    override fun findTasks(state: String?, pageRequest: PageRequest): Page<SeparationTask> {
-        val count = separationTaskDao.count(state)
-        val records = separationTaskDao.find(state, pageRequest).map { it.toDto() }
+    override fun findTasks(
+        state: String?,
+        projectId: String?,
+        repoName: String?,
+        taskType: String?,
+        pageRequest: PageRequest
+    ): Page<SeparationTask> {
+        val count = separationTaskDao.count(state, projectId, repoName, taskType)
+        val records = separationTaskDao.find(state, projectId, repoName, taskType, pageRequest).map { it.toDto() }
         return Pages.ofResponse(pageRequest, count, records)
     }
 

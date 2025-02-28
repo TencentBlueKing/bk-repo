@@ -135,7 +135,7 @@ class DeletedNodeCleanupJob(
 
     override fun run(row: Node, collectionName: String, context: JobContext) {
         require(context is DeletedNodeCleanupJobContext)
-        // 仓库正在迁移时删除node会导致迁移任务分页查询数据重复或缺失，需要等迁移完后再执行清理
+        // 仓库正在迁移时删除node会导致迁移任务分页查询数据重复或缺失，且无法确认修改哪个存储的引用数，需要等迁移完后再执行清理
         if (migrateProperties.enabled && migrateRepoStorageService.migrating(row.projectId, row.repoName)) {
             logger.info("repo[${row.projectId}/${row.repoName}] storage was migrating, skip clean node[${row.sha256}]")
             return

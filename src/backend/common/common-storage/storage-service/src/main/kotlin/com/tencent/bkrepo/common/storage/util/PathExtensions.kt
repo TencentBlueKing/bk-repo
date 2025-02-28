@@ -36,6 +36,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.OutputStream
 import java.nio.file.DirectoryIteratorException
+import java.nio.file.DirectoryNotEmptyException
 import java.nio.file.FileSystemException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -94,6 +95,9 @@ fun Path.delete(): Boolean {
         } else {
             throw e
         }
+    } catch (e: DirectoryNotEmptyException) {
+        logger.info("delete dir[$this] failed: ${e.message}")
+        return false
     }
     // 目录还存在内容
     return false
