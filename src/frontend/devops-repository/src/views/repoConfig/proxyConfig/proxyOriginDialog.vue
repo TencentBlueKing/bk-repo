@@ -92,6 +92,10 @@
                             required: true,
                             message: this.$t('proxyUrlRule'),
                             trigger: 'blur'
+                        },
+                        {
+                            validator: this.checkValid,
+                            trigger: 'blur'
                         }
                     ],
                     username: [
@@ -135,6 +139,9 @@
                         this.connected = true
                     }
                 }
+            },
+            'editProxyData.proxyType' () {
+                this.checkValid()
             }
         },
         methods: {
