@@ -108,7 +108,7 @@ class CosRedirectService(
             storageProperties.redirect.redirectAllDownload
 
         // 文件存在于COS上时才会被重定向
-        return needToRedirect && guessFileExists(node, storageCredentials)
+        return needToRedirect && isBlackProject(context.projectId) && guessFileExists(node, storageCredentials)
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
@@ -170,6 +170,11 @@ class CosRedirectService(
         // 判断文件是否已经上传到COS
         logger.info("Checking node[${node.sha256}] exist in cos, createdDateTime[${node.createdDate}]")
         return storageService.exist(node.sha256!!, storageCredentials)
+    }
+
+    private fun isBlackProject(projectId: String ): Boolean {
+        val blackProjectList = storageProperties.redirect.projectBlackList
+        return !blackProjectList.contains(projectId)
     }
 
     companion object {
