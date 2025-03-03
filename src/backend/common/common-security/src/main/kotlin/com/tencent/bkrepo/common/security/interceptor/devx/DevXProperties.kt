@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.security.interceptor.devx
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.core.Ordered
+import org.springframework.util.unit.DataSize
 import java.time.Duration
 
 /**
@@ -158,8 +159,28 @@ data class DevXProperties(
     var personalWorkspaceUrl: String = "",
 
     /**
-     * 查询云桌面环境成员
+     * 查询云桌面环境使用权限
      */
-    var workspaceEnvMembersUrlFormat: String = ""
+    var workspaceEnvUsePermissionUrlFormat: String = "",
+
+    /**
+     * 校验devx access token接口url
+     */
+    var validateAccessTokenUrl: String = "",
+
+    /**
+     * 蓝盾应用商店应用code
+     */
+    var devopsStoreCode: String = "",
+
+    /**
+     * 获取云研发项目管理员
+     */
+    var projectManagerUrl: String = "",
+
+    /**
+     * 分享文件大小限制
+     */
+    var shareFileSizeLimit: DataSize = DataSize.ofMegabytes(50),
 
 )

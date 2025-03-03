@@ -95,6 +95,10 @@ data class ScannerProperties(
      * 最大全局扫描任务数量
      */
     var maxGlobalTaskCount: Int = 1,
+    /**
+     * 扫描结果报告保留时间
+     */
+    var reportKeepDuration: Duration = Duration.ofDays(365L),
 ) {
     companion object {
         /**

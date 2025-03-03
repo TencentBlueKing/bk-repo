@@ -28,5 +28,6 @@
 package com.tencent.bkrepo.fs.server.request
 
 data class DevxLoginRequest(
-    val token: String?
+    val token: String?,
+    val accessToken: String?,
 )

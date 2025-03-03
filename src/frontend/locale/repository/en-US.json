@@ -912,5 +912,16 @@
     "ohpmPushGuideSubTitle1": "After setting the warehouse address, you can use the following command to push the product",
     "ohpmPushGuideSubTitle2": "You can also push products by specifying publish_registry, as follows",
     "isAllowShowFolder": "Directory View Access",
-    "isAllowShowFolderHelp": "Only effective when used as a static file repository"
+    "isAllowShowFolderHelp": "Only effective when used as a static file repository",
+    "fileLoadingTip": "File loading,Please wait",
+    "itsmTip": "This operation requires approval and the apply has been submitted. Please refresh the page after approved",
+    "viewApproval": "View Approval",
+    "shareUser": "Share User",
+    "applyDownload": "Apply Download",
+    "getApprovalStatusFailed": "Get approval status failed",
+    "createApprovalFailed": "Create approval failed",
+    "getShareConfigFailed": "Get share config failed",
+    "shareFileDeleted": "The share file has been deleted",
+    "getShareFileFailed": "Get share file failed",
+    "getDownloadUrlFailed": "Get download url failed"
 }
