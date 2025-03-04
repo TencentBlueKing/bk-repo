@@ -53,7 +53,8 @@ const storeObject = {
         dependInputValue1: '', // 依赖源仓库的使用指引中用户的第一个输入框的值
         dependInputValue2: '', // 依赖源仓库的使用指引中用户的第二个输入框的值
         dependInputValue3: '', // 依赖源仓库的使用指引中用户的第三个输入框的值
-        versionLogs: []
+        versionLogs: [],
+        creating: false
     },
     getters: {
         masterNode (state) {
@@ -149,6 +150,9 @@ const storeObject = {
         },
         SET_VERSION_LOGS (state, data) {
             state.versionLogs = data
+        },
+        SET_CREATING (state, data) {
+            state.creating = data
         }
     },
     actions
