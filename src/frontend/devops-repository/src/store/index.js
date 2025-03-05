@@ -40,7 +40,8 @@ const storeObject = {
             phone: '',
             admin: false,
             manage: false,
-            displayName: ''
+            displayName: '',
+            tenantId: ''
         },
         domain: {
             docker: '',
@@ -62,6 +63,9 @@ const storeObject = {
         isEnterprise () {
             // 独立部署目前不区分版本
             return true
+        },
+        userInfo (state) {
+            return state.userInfo
         }
     },
     mutations: {

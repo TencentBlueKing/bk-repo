@@ -1,6 +1,8 @@
 import { routeBase } from '@repository/utils'
 import axios from 'axios'
 import Vue from 'vue'
+import store from '../store'
+
 const request = axios.create({
     baseURL: `${location.origin}/web`,
     validateStatus: status => {
@@ -12,6 +14,13 @@ const request = axios.create({
     withCredentials: true,
     xsrfCookieName: (MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') ? 'bk_token' : 'bkrepo_ticket', // 注入csrfToken
     xsrfHeaderName: 'X-CSRFToken' // 注入csrfToken
+})
+
+request.interceptors.request.use(config => {
+    if (MULTI_TENANT && store.getters.userInfo.tenantId !== '') {
+        config.headers['X-Bk-Tenant-Id'] = store.getters.userInfo.tenantId
+    }
+    return config
 })
 
 function errorHandler (error) {
