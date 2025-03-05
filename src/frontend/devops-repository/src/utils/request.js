@@ -17,7 +17,7 @@ const request = axios.create({
 })
 
 request.interceptors.request.use(config => {
-    if (MULTI_TENANT && store.getters.userInfo.tenantId !== '') {
+    if (MULTI_TENANT === 'true' && store.getters.userInfo.tenantId !== '') {
         config.headers['X-Bk-Tenant-Id'] = store.getters.userInfo.tenantId
     }
     return config
