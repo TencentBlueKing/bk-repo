@@ -28,7 +28,7 @@ jobs:
 
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: ping -c 4 https://mirrors.tencent.com/npm/
+        run: ping -c 4 mirrors.tencent.com
 
       - uses: actions/cache@v3
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
