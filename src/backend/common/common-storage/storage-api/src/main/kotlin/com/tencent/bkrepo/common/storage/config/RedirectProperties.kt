@@ -64,5 +64,10 @@ data class RedirectProperties(
      * key为存储Key
      * value为域名，例如http://bkrepo.example.com
      */
-    var storageHosts: Map<String, String> = emptyMap()
+    var storageHosts: Map<String, String> = emptyMap(),
+
+    /**
+     * 重定向项目黑名单
+     */
+    var projectBlackList: Set<String> = emptySet()
 )
