@@ -23,6 +23,9 @@ jobs:
         with:
           node-version: '18' # 或者您需要的其他版本
 
+      - name: Set npm registry
+        run: npm config set registry https://mirrors.tencent.com/npm/
+
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
         run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
