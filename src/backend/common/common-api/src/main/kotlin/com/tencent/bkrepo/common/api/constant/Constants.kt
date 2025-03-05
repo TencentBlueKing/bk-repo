@@ -105,6 +105,8 @@ const val AUTH_HEADER_UID = "X-BKREPO-UID"
 const val OAUTH_AUTH_PREFIX = "Oauth "
 const val TEMPORARY_TOKEN_AUTH_PREFIX = "Temporary "
 
+
+
 /**
  * micro service header user id key
  */
@@ -175,3 +177,9 @@ const val AUDIT_REQUEST_KEY = "http_request"
 const val AUDIT_SHARE_USER_ID = "audit_share_user_id"
 const val HTTP_RESPONSE_CODE = "http_response_code"
 const val HTTP_METHOD = "http_method"
+
+
+/**
+ * 多租户相关
+ */
+const val TENANT_ID = "X-Bk-Tenant-Id"

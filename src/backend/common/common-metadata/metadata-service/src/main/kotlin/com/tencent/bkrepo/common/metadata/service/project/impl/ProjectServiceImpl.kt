@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
@@ -86,6 +87,7 @@ class ProjectServiceImpl(
     private val serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient,
     private val storageCredentialService: StorageCredentialService,
     private val repositoryProperties: RepositoryProperties,
+    private val enableMultiTenant: EnableMultiTenantProperties
 ) : ProjectService {
 
     @Autowired
@@ -115,6 +117,10 @@ class ProjectServiceImpl(
     }
 
     override fun listPermissionProject(userId: String, option: ProjectListOption?): List<ProjectInfo> {
+        // 校验租户信息
+        if (enableMultiTenant.enabled) {
+            validateTenantId()
+        }
         var names = servicePermissionClient.listPermissionProject(userId).data.orEmpty()
         option?.names?.let { names = names.intersect(option.names!!).toList() }
         val query = buildListQuery(names, option)
@@ -158,10 +164,15 @@ class ProjectServiceImpl(
     override fun createProject(request: ProjectCreateRequest): ProjectInfo {
         val name = request.name
         validateParameter(request)
+
         if (checkExist(name)) {
             throw ErrorCodeException(ArtifactMessageCode.PROJECT_EXISTED, name)
         }
-        val project = request.buildProject()
+        // 校验租户信息
+        if (enableMultiTenant.enabled) {
+            validateTenantId()
+        }
+        val project = request.buildProject(ProjectServiceHelper.getTenantId())
         return try {
             projectDao.insert(project)
             resourcePermissionListener.handle(buildCreatedEvent(request))
@@ -219,6 +230,12 @@ class ProjectServiceImpl(
         with(request) {
             validate()
             credentialsKey?.let { checkCredentialsKey(it) }
+        }
+    }
+
+    private fun validateTenantId() {
+        if (ProjectServiceHelper.getTenantId().isNullOrEmpty()) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "tenantId")
         }
     }
 

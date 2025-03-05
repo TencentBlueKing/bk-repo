@@ -29,12 +29,14 @@ package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
 import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
+import com.tencent.bkrepo.common.api.constant.TENANT_ID
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.metadata.model.TProject
 import com.tencent.bkrepo.common.metadata.model.TProjectMetrics
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
@@ -96,17 +98,35 @@ object ProjectServiceHelper {
         }
     }
 
-    fun ProjectCreateRequest.buildProject() = TProject(
-        name = name,
-        displayName = displayName,
-        description = description.orEmpty(),
-        createdBy = operator,
-        createdDate = LocalDateTime.now(),
-        lastModifiedBy = operator,
-        lastModifiedDate = LocalDateTime.now(),
-        metadata = metadata,
-        credentialsKey = credentialsKey,
-    )
+    fun ProjectCreateRequest.buildProject(tenantId: String?): TProject {
+        if (tenantId != null) {
+            return TProject(
+                name = "$tenantId-$name",
+                displayName = displayName,
+                description = description.orEmpty(),
+                createdBy = operator,
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = operator,
+                lastModifiedDate = LocalDateTime.now(),
+                metadata = metadata,
+                credentialsKey = credentialsKey,
+                projectCode = name,
+                tenantId = tenantId
+            )
+        } else {
+            return TProject(
+                name = name,
+                displayName = displayName,
+                description = description.orEmpty(),
+                createdBy = operator,
+                createdDate = LocalDateTime.now(),
+                lastModifiedBy = operator,
+                lastModifiedDate = LocalDateTime.now(),
+                metadata = metadata,
+                credentialsKey = credentialsKey,
+            )
+        }
+    }
 
     fun checkPropertyAndDirection(option: ProjectListOption) {
         Preconditions.checkArgument(
@@ -124,6 +144,10 @@ object ProjectServiceHelper {
             it.key == ProjectMetadata.KEY_ENABLED
         }?.value as? Boolean ?: true
         return enabled
+    }
+
+    fun getTenantId(): String? {
+        return HttpContextHolder.getRequest().getHeader(TENANT_ID)
     }
 
     fun buildListQuery(): Query {
@@ -147,9 +171,11 @@ object ProjectServiceHelper {
         names: List<String>,
         option: ProjectListOption?
     ): Query {
+        val tenantId = getTenantId()
         val query = Query.query(
             where(TProject::name).`in`(names)
                 .apply { option?.displayNames?.let { and(TProject::displayName).`in`(option.displayNames!!) } }
+                .apply { tenantId?.let { and(TProject::tenantId).`is`(tenantId) } }
         )
         if (option?.sortProperty?.isNotEmpty() == true) {
             checkPropertyAndDirection(option)
