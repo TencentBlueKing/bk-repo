@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter
 
 @Service
 @Conditional(DefaultCondition::class)
-open class MavenMetadataService(
+class MavenMetadataService(
     private val mavenMetadataDao: MavenMetadataDao
 ) {
 
@@ -195,6 +195,17 @@ open class MavenMetadataService(
         } else {
             criteria.and(TMavenMetadataRecord::classifier.name).`is`(mavenMetadataSearchPojo.classifier)
         }
+        val query = Query(criteria)
+        return mavenMetadataDao.find(query, TMavenMetadataRecord::class.java)
+    }
+
+    fun search(artifactId: String, version: String, extension: String): List<TMavenMetadataRecord> {
+        logger.info(
+            "search metadata artifactId[${artifactId}], version[${version}]"
+        )
+        val criteria = Criteria.where(TMavenMetadataRecord::artifactId.name).`is`(artifactId)
+            .and(TMavenMetadataRecord::version.name).`is`(version)
+            .and(TMavenMetadataRecord::extension.name).`is`(extension)
         val query = Query(criteria)
         return mavenMetadataDao.find(query, TMavenMetadataRecord::class.java)
     }

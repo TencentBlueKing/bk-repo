@@ -29,7 +29,11 @@ package com.tencent.bkrepo.maven.service.impl
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -40,17 +44,28 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.view.ViewModelService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.tencent.bkrepo.maven.config.MavenProperties
+import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.exception.MavenBadRequestException
+import com.tencent.bkrepo.maven.model.TMavenMetadataRecord
+import com.tencent.bkrepo.maven.pojo.MavenVersion
+import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
+import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
+import com.tencent.bkrepo.maven.service.MavenMetadataService
 import com.tencent.bkrepo.maven.service.MavenService
+import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
+import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -60,7 +75,9 @@ import java.util.regex.PatternSyntaxException
 @Service
 class MavenServiceImpl(
     private val nodeService: NodeService,
-    private val viewModelService: ViewModelService
+    private val viewModelService: ViewModelService,
+    private val mavenMetadataService: MavenMetadataService,
+    private val mavenProperties: MavenProperties,
 ) : ArtifactService(), MavenService {
 
     @Value("\${spring.application.name}")
@@ -151,6 +168,81 @@ class MavenServiceImpl(
         val context = ArtifactQueryContext()
         return ArtifactContextHolder.getRepository().query(context)
     }
+
+    @Principal(PrincipalType.ADMIN)
+    override fun searchJar(request: MavenJarSearchRequest): MavenJarInfoResponse {
+        with(request) {
+            if (fileList.size > mavenProperties.maxLength) {
+                throw BadRequestException(CommonMessageCode.REQUEST_CONTENT_INVALID)
+            }
+            val jarMap = mutableMapOf<String, List<MavenJarInfoResponse.JarInfo>>()
+            for (fileName in fileList) {
+                val jarList = mutableListOf<MavenJarInfoResponse.JarInfo>()
+                val mavenVersion = parseMavenFileName(fileName) ?: continue
+                val metadataList = mavenMetadataService.search(
+                    mavenVersion.artifactId, mavenVersion.version, mavenVersion.packaging
+                )
+                for (metadata in metadataList) {
+                    val fullPath = buildFullPath(metadata)
+                    val node = nodeService.getNodeDetail((ArtifactInfo(metadata.projectId, metadata.repoName, fullPath)))
+                        ?: continue
+                    jarList.add(MavenJarInfoResponse.JarInfo(
+                        projectId = node.projectId,
+                        repoName = node.repoName,
+                        fullPath = node.fullPath,
+                        groupId = metadata.groupId,
+                        artifactId = metadata.artifactId,
+                        version = metadata.version,
+                        createdDate = node.createdDate,
+                        lastModifiedDate = node.lastModifiedDate,
+                        md5 = node.md5,
+                        sha256 = node.sha256
+                    ))
+                }
+                jarMap[fileName] = jarList
+            }
+            return MavenJarInfoResponse(jarMap)
+        }
+    }
+
+
+    /**
+     * 根据filename解析出对应MavenVersion信息
+     */
+    private fun parseMavenFileName(fileName: String): MavenVersion? {
+        val regex = Regex("^(.*?)-([0-9]+(?:\\.[0-9]+)*)(?:-([0-9]{8}\\.[0-9]{6}-[0-9]+))?(?:-(.*?))?\\.(.*?)$")
+        val matchResult = regex.find(fileName)
+        return if (matchResult != null) {
+            MavenVersion(
+                artifactId = matchResult.groupValues[1],
+                version = matchResult.groupValues[2],
+                classifier = matchResult.groupValues[4].takeIf { it.isNotEmpty() },
+                packaging = matchResult.groupValues[5]
+            )
+        } else {
+            null
+        }
+    }
+
+    /**
+     * 根据MavenMetadata拼接出文件fullpath
+     */
+    private fun buildFullPath(mavenMetadata: TMavenMetadataRecord): String {
+        with(mavenMetadata) {
+            val groupId = groupId.formatSeparator(StringPool.DOT, StringPool.SLASH)
+            val list = if (timestamp.isNullOrEmpty()) {
+                mutableListOf(artifactId, version)
+            } else {
+                mutableListOf(artifactId, version.removeSuffix(SNAPSHOT_SUFFIX), timestamp, buildNo.toString())
+            }
+            if (!classifier.isNullOrEmpty()) {
+                list.add(classifier)
+            }
+            val fileName = "${StringUtils.join(list, '-')}.$extension"
+            return groupId + StringPool.SLASH + fileName
+        }
+    }
+
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MavenServiceImpl::class.java)

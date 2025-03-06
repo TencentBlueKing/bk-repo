@@ -24,6 +24,11 @@ import org.springframework.data.mongodb.core.mapping.Document
             "'version':1, 'classifier':1, 'extension':1 }",
         background = true,
         unique = true
+    ),
+    CompoundIndex(
+        name = "ave_index",
+        def = "{'artifactId':1, 'version':1, 'extension':1 }",
+        background = true
     )
 )
 data class TMavenMetadataRecord(

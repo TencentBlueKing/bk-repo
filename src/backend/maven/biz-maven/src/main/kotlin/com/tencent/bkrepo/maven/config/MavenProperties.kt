@@ -34,5 +34,7 @@ data class MavenProperties(
     // 是否从冷表中进行恢复
     var autoRecovery: Boolean = false,
     // 处理节点恢复事件topic
-    var recoveryTopic: String? = null
+    var recoveryTopic: String? = null,
+    // 单词查询文件数上限
+    var maxLength: Int = 50
 )
