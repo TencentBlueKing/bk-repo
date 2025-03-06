@@ -8,7 +8,7 @@
                     :list="availableList">
                 </card-radio-group>
             </bk-form-item>
-            <template v-if="(repoType === 'generic' || repoType === 'ddc') && repoName !== 'pipeline'">
+            <template v-if="(repoType === 'generic') && repoName !== 'pipeline'">
                 <bk-form-item
                     v-for="type in genericInterceptorsList" :key="type"
                     :label="$t(`${type}Download`)" :property="`${type}.enable`">
@@ -208,7 +208,7 @@
                 }
             },
             availableList () {
-                if (this.baseData.repoType === 'generic' || this.baseData.repoType === 'ddc') {
+                if (this.baseData.repoType === 'generic') {
                     if (this.baseData.name === 'pipeline') {
                         return [
                             { label: this.$t('permissionTitle.pipeline'), value: 'pipeline', tip: this.$t('permissionTip.pipeline') }
