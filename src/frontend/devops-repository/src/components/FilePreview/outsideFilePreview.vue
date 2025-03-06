@@ -141,8 +141,6 @@
                                 document.getElementById('basicFileText').value = Base64.decode(event.target.result)
                             }
                             reader.readAsText(fileDate.data)
-                            this.showFrame = true
-                            this.pageUrl = obj.url
                         } else if (isPic(res.data.data.suffix)) {
                             this.imgShow = true
                             this.imgUrl = URL.createObjectURL(fileDate.data)
