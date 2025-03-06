@@ -170,6 +170,7 @@ class ProjectServiceImpl(
         }
         // 校验租户信息
         if (enableMultiTenant.enabled) {
+            logger.info("check tenant")
             validateTenantId()
         }
         val project = request.buildProject(ProjectServiceHelper.getTenantId())
