@@ -14,10 +14,6 @@
                 :id="'pdfCanvas' + page"
             ></canvas>
         </div>
-        <div v-if="previewBasic" class="flex-column flex-center">
-            <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
-            <textarea v-model="basicFileText" class="textarea" readonly></textarea>
-        </div>
         <img v-if="imgShow" :src="imgUrl" />
         <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
@@ -78,8 +74,6 @@
                     } // 将获取到的excel数据进行处理之后且渲染到页面之前，可通过transformData对即将渲染的数据及样式进行修改，此时每个单元格的text值就是即将渲染到页面上的内容
                 },
                 previewExcel: false,
-                previewBasic: false,
-                basicFileText: '',
                 hasError: false,
                 pageUrl: '',
                 showFrame: false,
@@ -87,7 +81,12 @@
                 imgShow: false,
                 imgUrl: '',
                 csvShow: false,
-                pdfShow: false
+                pdfShow: false,
+                pdfPages: [], // 页数
+                pdfWidth: '', // 宽度
+                pdfSrc: '', // 地址
+                pdfDoc: '', // 文档内容
+                pdfScale: 1.5 // 放大倍数
             }
         },
         computed: {
@@ -129,16 +128,8 @@
                             this.showFrame = true
                             this.pageUrl = url
                         } else if (isText(res.data.data.suffix)) {
-                            this.loading = false
-                            this.previewBasic = true
-                            const reader = new FileReader()
-                            let text = ''
-                            reader.onload = function (event) {
-                                // 读取的文本内容
-                                text = event.target.result
-                            }
-                            reader.readAsText(fileDate.data)
-                            this.basicFileText = text
+                            this.showFrame = true
+                            this.pageUrl = obj.url
                         } else if (isPic(res.data.data.suffix)) {
                             this.imgShow = true
                             this.imgUrl = URL.createObjectURL(fileDate.data)
@@ -172,7 +163,6 @@
             cancel () {
                 this.dataSource = ''
                 this.previewExcel = false
-                this.previewBasic = false
                 this.showFrame = false
                 this.pageUrl = ''
                 this.imgShow = false
