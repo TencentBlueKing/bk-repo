@@ -45,6 +45,7 @@ data:
     router.controller.enabled: true
     router.controller.supportServices: generic
     {{- end }}
+    multitenant.enable: {{ .Values.gateway.enableMultiTenantMode }}
     cluster:
       region: {{ .Values.common.region }}
       architecture: {{ .Values.cluster.architecture }}
