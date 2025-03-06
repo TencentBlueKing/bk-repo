@@ -96,7 +96,7 @@ abstract class AbstractArtifactResourceHandler(
      * 当仓库配置下载限速小于等于最低限速时则直接将请求断开, 避免占用过多连接
      */
     protected fun downloadRateLimitCheck(resource: ArtifactResource) {
-        val applyPermits = resource.getSingleStream().range.length
+        val applyPermits = resource.getTotalSize()
         requestLimitCheckService.postLimitCheck(applyPermits)
     }
 

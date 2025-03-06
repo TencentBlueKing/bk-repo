@@ -18,6 +18,15 @@
                             <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                         </bk-radio-group>
                     </bk-form-item>
+                    <bk-form-item :label="$t('isAllowShowFolder')">
+                        <div style="display: flex;margin-top: 5px">
+                            <bk-radio-group ref="isAllowShowFolderRadio" v-model="repoBaseInfo.autoIndex" style="width: 120px">
+                                <bk-radio class="mr20" :value="true">{{ $t('yes') }}</bk-radio>
+                                <bk-radio :value="false">{{ $t('no') }}</bk-radio>
+                            </bk-radio-group>
+                            <Icon name="repoHelp" size="14" style="margin-top: 4px" v-bk-tooltips="isAllowShowFolderHelp" />
+                        </div>
+                    </bk-form-item>
                     <bk-form-item
                         :label="$t('bkPermissionCheck')"
                         v-if="!specialRepoEnum.includes(repoBaseInfo.name)">
@@ -51,7 +60,8 @@
                         </bk-form-item>
                     </template>
                     <bk-form-item :label="$t('description')">
-                        <bk-input type="textarea"
+                        <bk-input
+                            type="textarea"
                             class="w480"
                             maxlength="200"
                             :rows="6"
@@ -89,8 +99,9 @@
     import controlConfig from '@repository/views/repoConfig/controlConfig'
     import { mapState, mapActions } from 'vuex'
     import { specialRepoEnum } from '@repository/store/publicEnum'
+    import cookies from 'js-cookie'
     export default {
-        name: 'repoConfig',
+        name: 'RepoConfig',
         components: {
             proxyConfig,
             iamDenyDialog,
@@ -110,6 +121,7 @@
                     system: false,
                     repoType: '',
                     display: true,
+                    autoIndex: true,
                     enabledFileLists: false,
                     repodataDepth: 0,
                     groupXmlSet: [],
@@ -137,7 +149,12 @@
                 authMode: {
                     bkiamv3Check: false
                 },
-                showPermissionConfig: false
+                showPermissionConfig: false,
+                isAllowShowFolderHelp: {
+                    width: 240,
+                    placement: 'right-start',
+                    content: this.$t('isAllowShowFolderHelp')
+                }
             }
         },
         computed: {
@@ -215,6 +232,14 @@
             }
         },
         created () {
+            this.language = cookies.get('blueking_language') || 'zh-cn'
+            this.$nextTick(() => {
+                if (this.language !== 'zh-cn') {
+                    this.$refs.isAllowShowFolderRadio.$el.style.width = '140px'
+                } else {
+                    this.$refs.isAllowShowFolderRadio.$el.style.width = '120px'
+                }
+            })
             if (!this.repoName || !this.repoType) this.toRepoList()
             this.getRepoInfoHandler()
             this.getAuthModeFunc()
@@ -248,7 +273,11 @@
                         ...res.configuration.settings,
                         repoType: res.type.toLowerCase()
                     }
-
+                    if (res.configuration.settings.autoIndex && res.configuration.settings.autoIndex.enabled !== undefined) {
+                        this.repoBaseInfo.autoIndex = res.configuration.settings.autoIndex.enabled
+                    } else {
+                        this.repoBaseInfo.autoIndex = true
+                    }
                     const { interceptors } = res.configuration.settings
                     if (interceptors instanceof Array) {
                         interceptors.forEach(i => {
@@ -326,6 +355,9 @@
                     configuration: {
                         ...this.repoBaseInfo.configuration,
                         settings: {
+                            autoIndex: {
+                                enabled: this.repoBaseInfo.autoIndex
+                            },
                             system: this.repoBaseInfo.system,
                             interceptors: interceptors.length ? interceptors : undefined,
                             ...(
