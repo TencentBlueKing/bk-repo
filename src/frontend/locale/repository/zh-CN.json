@@ -921,5 +921,7 @@
     "getShareConfigFailed": "获取仓库分享配置失败",
     "shareFileDeleted": "分享文件已删除",
     "getShareFileFailed": "获取分享文件失败",
-    "getDownloadUrlFailed": "获取下载链接失败"
+    "getDownloadUrlFailed": "下载失败",
+    "pendingApproval": "审批中",
+    "waitUpload": "等待上传中"
 }
