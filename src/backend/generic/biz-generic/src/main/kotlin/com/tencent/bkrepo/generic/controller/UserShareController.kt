@@ -43,7 +43,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.constant.USER_SHARE_CREATE_ACTION
 import com.tencent.bkrepo.generic.constant.USER_SHARE_DOWNLOAD_URL_CREATE_ACTION
-import com.tencent.bkrepo.generic.pojo.share.ItsmTicket
+import com.tencent.bkrepo.generic.pojo.share.UserShareApprovalInfo
 import com.tencent.bkrepo.generic.pojo.share.UserShareConfigInfo
 import com.tencent.bkrepo.generic.pojo.share.UserShareGenUrlRequest
 import com.tencent.bkrepo.generic.pojo.share.UserShareRecordCreateRequest
@@ -106,16 +106,16 @@ class UserShareController(
     @PostMapping("/approval/create/{shareId}")
     fun createApproval(
         @PathVariable shareId: String
-    ): Response<ItsmTicket> {
+    ): Response<UserShareApprovalInfo> {
         return ResponseBuilder.success(userShareApprovalService.createApproval(shareId))
     }
 
-    @GetMapping("/approval/status")
-    fun getApprovalStatus(
+    @GetMapping("/approval")
+    fun getApproval(
         @RequestParam approvalId: String?,
         @RequestParam shareId: String?,
-    ): Response<Boolean> {
-        return ResponseBuilder.success(userShareApprovalService.getApprovalStatus(approvalId, shareId))
+    ): Response<UserShareApprovalInfo> {
+        return ResponseBuilder.success(userShareApprovalService.getApprovalInfo(approvalId, shareId))
     }
 
     @PostMapping("/approval/callback/{approvalId}")

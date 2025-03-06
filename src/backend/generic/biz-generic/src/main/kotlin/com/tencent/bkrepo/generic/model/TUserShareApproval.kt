@@ -38,7 +38,7 @@ import java.time.LocalDateTime
 
 @Document("user_share_approval")
 @CompoundIndexes(
-    CompoundIndex(name = SHARE_ID_IDX, def = SHARE_ID_IDX_DEF, background = true),
+    CompoundIndex(name = SHARE_ID_IDX, def = SHARE_ID_IDX_DEF, unique = true, background = true),
     CompoundIndex(name = APPROVAL_ID_IDX, def = APPROVAL_ID_IDX_DEF, background = true),
 )
 data class TUserShareApproval(
@@ -46,6 +46,7 @@ data class TUserShareApproval(
     val shareId: String,
     val downloadUserId: String,
     val approvalId: String,
+    val approvalTicketUrl: String,
     val createDate: LocalDateTime,
     val approved: Boolean,
     val approveUserId: String? = null,

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.generic.model
 
+import com.tencent.bkrepo.generic.pojo.share.WorkspaceFile
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -39,6 +40,7 @@ data class TUserShareRecord(
     val expiredDate: LocalDateTime? = null,
     val permits: Int? = null,
     val workspaceName: String? = null,
+    val workspaceFiles: List<WorkspaceFile>? = null,
 
     val createBy: String,
     val createDate: LocalDateTime,

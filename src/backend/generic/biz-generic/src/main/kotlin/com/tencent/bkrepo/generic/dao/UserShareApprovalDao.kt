@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.generic.dao
 
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.generic.model.TUserShareApproval
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.generic.model.TUserShareApproval
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -51,12 +51,12 @@ class UserShareApprovalDao : SimpleMongoDao<TUserShareApproval>() {
         return findOne(query)
     }
 
-    fun findByShareId(shareId: String, downloadUser: String): List<TUserShareApproval> {
+    fun findByShareId(shareId: String, downloadUser: String): TUserShareApproval? {
         val query = Query(
             where(TUserShareApproval::shareId).isEqualTo(shareId).and(TUserShareApproval::downloadUserId)
                 .isEqualTo(downloadUser)
         )
-        return find(query)
+        return findOne(query)
     }
 
     fun approve(approvalId: String, approveUserId: String): Boolean {
