@@ -78,8 +78,6 @@
                     } // 将获取到的excel数据进行处理之后且渲染到页面之前，可通过transformData对即将渲染的数据及样式进行修改，此时每个单元格的text值就是即将渲染到页面上的内容
                 },
                 previewExcel: false,
-                previewBasic: false,
-                basicFileText: '',
                 hasError: false,
                 pageUrl: '',
                 showFrame: false,
@@ -141,6 +139,8 @@
                                 document.getElementById('basicFileText').value = Base64.decode(event.target.result)
                             }
                             reader.readAsText(fileDate.data)
+                            this.showFrame = true
+                            this.pageUrl = obj.url
                         } else if (isPic(res.data.data.suffix)) {
                             this.imgShow = true
                             this.imgUrl = URL.createObjectURL(fileDate.data)
@@ -174,7 +174,6 @@
             cancel () {
                 this.dataSource = ''
                 this.previewExcel = false
-                this.previewBasic = false
                 this.showFrame = false
                 this.pageUrl = ''
                 this.imgShow = false

@@ -1,3 +1,30 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package com.tencent.bkrepo.analyst.job
 
 import com.tencent.bkrepo.analyst.AnalystBaseTest
@@ -69,7 +96,7 @@ class ScanTaskCleanupJobTest @Autowired constructor(
     }
 
     @Test
-    fun testClean() {
+    fun `test clean`() {
         mockData(LocalDateTime.now().minusDays(7))
         scannerProperties.reportKeepDuration = Duration.ofDays(1L)
         val context = ScanTaskCleanupJob.CleanContext()
@@ -90,6 +117,20 @@ class ScanTaskCleanupJobTest @Autowired constructor(
         // 清理到未过期任务后即使还存在过期任务也会停止清理，因此会剩下两个任务未清理
         assertEquals(2, scanTaskDao.count(Query()))
         assertEquals(1, context.taskCount.get())
+    }
+
+    @Test
+    fun `test dot clean when keep duration is zero`() {
+        assertEquals(0, scanTaskDao.count(Query()))
+        scanTaskDao.insert(buildScanTask(LocalDateTime.now().minusDays(7L)))
+
+        scannerProperties.reportKeepDuration = Duration.ofDays(0L)
+        val context = ScanTaskCleanupJob.CleanContext()
+        scanTaskCleanupJob.doClean(context)
+
+        // 清理到未过期任务后即使还存在过期任务也会停止清理，因此会剩下两个任务未清理
+        assertEquals(1, scanTaskDao.count(Query()))
+        assertEquals(0, context.taskCount.get())
     }
 
     private fun mockData(now: LocalDateTime) {
