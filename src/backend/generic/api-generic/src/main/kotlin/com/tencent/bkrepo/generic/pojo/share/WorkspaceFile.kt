@@ -27,12 +27,9 @@
 
 package com.tencent.bkrepo.generic.pojo.share
 
-data class UserShareRecordCreateRequest(
-    val projectId: String,
-    val repoName: String,
-    val path: String,
-    val expireSeconds: Long?,
-    val permits: Int?,
-    val workspaceName: String?,
-    val workspaceFiles: List<WorkspaceFile>?
+data class WorkspaceFile(
+    var name: String? = null,
+    val fullPath: String,
+    val size: Long,
+    val md5: String
 )
