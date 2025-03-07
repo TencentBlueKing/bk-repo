@@ -95,6 +95,7 @@ import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.metadata.HelmChartMetadata
 import com.tencent.bkrepo.helm.pojo.metadata.HelmIndexYamlMetadata
 import com.tencent.bkrepo.helm.pool.HelmThreadPoolExecutor
+import com.tencent.bkrepo.helm.service.HelmRefreshRecordService
 import com.tencent.bkrepo.helm.utils.ChartParserUtil
 import com.tencent.bkrepo.helm.utils.DecompressUtil.getArchivesContent
 import com.tencent.bkrepo.helm.utils.HelmMetadataUtils
@@ -157,6 +158,9 @@ open class AbstractChartService : ArtifactService() {
 
     @Autowired
     lateinit var helmChartEventRecordDao: HelmChartEventRecordDao
+
+    @Autowired
+    lateinit var helmRefreshRecordService: HelmRefreshRecordService
 
 
     val threadPoolExecutor: ThreadPoolExecutor = HelmThreadPoolExecutor.instance
@@ -674,8 +678,10 @@ open class AbstractChartService : ArtifactService() {
                     newEntries = newIndex.entries
                 )
                 mergeMap(oldIndex.entries, addedSet)
+                helmRefreshRecordService.add(repositoryDetail, proxyChannel.name, true)
             } catch (ignored: Exception) {
                 logger.warn("Failed to execute action with channel ${proxyChannel.name}", ignored)
+                helmRefreshRecordService.add(repositoryDetail, proxyChannel.name, false, ignored.message)
             }
         }
         return oldIndex
