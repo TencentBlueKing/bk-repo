@@ -30,6 +30,7 @@ package com.tencent.bkrepo.generic.service
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -43,13 +44,16 @@ import com.tencent.bkrepo.generic.dao.UserShareRecordDao
 import com.tencent.bkrepo.generic.exception.ApprovalNotFoundException
 import com.tencent.bkrepo.generic.exception.UserShareNotFoundException
 import com.tencent.bkrepo.generic.model.TUserShareApproval
+import com.tencent.bkrepo.generic.model.TUserShareRecord
 import com.tencent.bkrepo.generic.pojo.share.DevxManagerResponse
-import com.tencent.bkrepo.generic.pojo.share.ItsmTicket
+import com.tencent.bkrepo.generic.pojo.share.UserShareApprovalInfo
+import com.tencent.bkrepo.generic.pojo.share.WorkspaceFile
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.devops.api.pojo.Response
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -65,21 +69,52 @@ class UserShareApprovalService(
 
     private val httpClient = OkHttpClient.Builder().build()
 
-    fun createApproval(shareId: String): ItsmTicket {
+    fun createApproval(shareId: String): UserShareApprovalInfo {
         val userId = SecurityUtils.getUserId()
+        userShareApprovalDao.findByShareId(shareId, userId)?.let {
+            return it.convert()
+        }
         val shareRecord = userShareRecordDao.findById(shareId)
             ?: throw UserShareNotFoundException(shareId)
+        val ticket = itsmService.createTicket(
+            fields = buildTicketFields(shareRecord, userId),
+            serviceId = itsmProperties.shareFileServiceId,
+            approvalStateId = itsmProperties.shareFileApprovalStateId,
+            approvalUsers = getRemoteDevManager(shareRecord.projectId)
+        )
+        val approval = TUserShareApproval(
+            shareId = shareId,
+            approvalId = ticket.sn,
+            approvalTicketUrl = ticket.ticketUrl,
+            downloadUserId = userId,
+            approved = false,
+            createDate = LocalDateTime.now(),
+        )
+        return try {
+            userShareApprovalDao.save(approval).convert()
+        } catch (_: DuplicateKeyException) {
+            logger.info("user[$userId] create duplicated approval for share[$shareId]")
+            userShareApprovalDao.findByShareId(shareId, userId)!!.convert()
+        }
+    }
+
+    private fun buildTicketFields(
+        shareRecord: TUserShareRecord,
+        userId: String
+    ): List<Map<String, Any>> {
         val nodes = nodeService.listNode(
             artifact = ArtifactInfo(shareRecord.projectId, shareRecord.repoName, shareRecord.path),
             option = NodeListOption()
         )
-        if (nodes.isEmpty()) {
+        if (nodes.isEmpty() && shareRecord.workspaceFiles.isNullOrEmpty()) {
             throw NodeNotFoundException(shareRecord.path)
         }
-        val downloadFiles = if (nodes.size == 1) {
-            nodes.first().name
+
+        // TODO 暂时只允许分享一个文件
+        val file = if (shareRecord.workspaceFiles.isNullOrEmpty()) {
+            WorkspaceFile(null, nodes.first().fullPath, nodes.first().size, nodes.first().md5 ?: StringPool.UNKNOWN)
         } else {
-            nodes.joinToString(StringPool.COMMA) { it.name }
+            shareRecord.workspaceFiles.first()
         }
         val fields = listOf(
             mapOf(
@@ -88,7 +123,7 @@ class UserShareApprovalService(
             ),
             mapOf(
                 "key" to "shareUser",
-                "value" to nodes.first().createdBy,
+                "value" to shareRecord.createBy,
             ),
             mapOf(
                 "key" to "workspaceName",
@@ -99,25 +134,19 @@ class UserShareApprovalService(
                 "value" to userId,
             ),
             mapOf(
-                "key" to "downloadFiles",
-                "value" to downloadFiles
+                "key" to "downloadFilePath",
+                "value" to file.fullPath
+            ),
+            mapOf(
+                "key" to "downloadFileSize",
+                "value" to HumanReadable.size(file.size)
+            ),
+            mapOf(
+                "key" to "downloadFileMd5",
+                "value" to file.md5
             )
         )
-        val ticket = itsmService.createTicket(
-            fields = fields,
-            serviceId = itsmProperties.shareFileServiceId,
-            approvalStateId = itsmProperties.shareFileApprovalStateId,
-            approvalUsers = getRemoteDevManager(shareRecord.projectId)
-        )
-        val approval = TUserShareApproval(
-            shareId = shareId,
-            approvalId = ticket.sn,
-            downloadUserId = SecurityUtils.getUserId(),
-            approved = false,
-            createDate = LocalDateTime.now(),
-        )
-        userShareApprovalDao.save(approval)
-        return ticket
+        return fields
     }
 
     private fun getApproval(approvalId: String?, shareId: String?): TUserShareApproval {
@@ -126,19 +155,15 @@ class UserShareApprovalService(
             userShareApprovalDao.findByApprovalId(approvalId, userId)
                 ?: throw ApprovalNotFoundException(approvalId)
         } else if (!shareId.isNullOrEmpty()) {
-            val approvals = userShareApprovalDao.findByShareId(shareId, userId)
-            if (approvals.isEmpty()) {
-                throw ApprovalNotFoundException(shareId)
-            }
-            val createDescApprovals = approvals.sortedByDescending { it.createDate }
-            createDescApprovals.firstOrNull { it.approved } ?: createDescApprovals.first()
+            userShareApprovalDao.findByShareId(shareId, userId)
+                ?: throw ApprovalNotFoundException(shareId)
         } else {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_EMPTY, "approvalId or shareId")
         }
     }
 
-    fun getApprovalStatus(approvalId: String?, shareId: String?): Boolean {
-        return getApproval(approvalId, shareId).approved
+    fun getApprovalInfo(approvalId: String?, shareId: String?): UserShareApprovalInfo {
+        return getApproval(approvalId, shareId).convert()
     }
 
     fun checkApprovalStatus(shareId: String): TUserShareApproval {
@@ -150,7 +175,9 @@ class UserShareApprovalService(
     }
 
     fun callback(approvalId: String, approveUserId: String) {
-        userShareApprovalDao.approve(approvalId, approveUserId)
+        if (!userShareApprovalDao.approve(approvalId, approveUserId)) {
+            throw ApprovalNotFoundException(approvalId)
+        }
     }
 
     private fun getRemoteDevManager(projectId: String): List<String> {
@@ -168,7 +195,7 @@ class UserShareApprovalService(
                 val devxManagerResponse = body.readJsonString<Response<List<DevxManagerResponse>>>().data!!.first()
                 return devxManagerResponse.remotedevManager.split(";")
             }
-        } catch (e : Exception) {
+        } catch (e: Exception) {
             logger.error("request $url failed: ${e.message}")
             throw throw ErrorCodeException(CommonMessageCode.SERVICE_CALL_ERROR)
         }
@@ -180,6 +207,19 @@ class UserShareApprovalService(
             "bk_app_secret" to devXProperties.appSecret,
             "bk_username" to SecurityUtils.getUserId()
         ).toJsonString().replace("\\s".toRegex(), "")
+    }
+
+    private fun TUserShareApproval.convert(): UserShareApprovalInfo {
+        return UserShareApprovalInfo(
+            shareId = shareId,
+            downloadUserId = downloadUserId,
+            approvalId = approvalId,
+            approvalTicketUrl = approvalTicketUrl,
+            createDate = createDate,
+            approved = approved,
+            approveUserId = approveUserId,
+            approveDate = approveDate
+        )
     }
 
     companion object {
