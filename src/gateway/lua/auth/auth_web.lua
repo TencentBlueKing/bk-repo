@@ -61,6 +61,7 @@ elseif config.auth_mode == "ticket" then
     end
     if bk_ticket ~= nil then
         username = oauthUtil:verify_ticket(bk_ticket, "ticket")
+        ngx.header["x-bk-tenant-id"] = "system"
         token = bk_ticket
     else
         -- 校验移动网关登录态
