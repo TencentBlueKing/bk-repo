@@ -22,7 +22,7 @@
     </div>
 </template>
 <script>
-    import { ciDisableRepoEnum } from '@/store/publicEnum'
+    import { ciDisableRepoEnum } from '@repository/store/publicEnum'
 
     export default {
         name: 'TypeSelect',
