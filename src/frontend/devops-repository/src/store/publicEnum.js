@@ -1,33 +1,31 @@
 // 仓库类型
-export const repoEnum = MODE_CONFIG === 'ci'
-    ? [
-        { label: 'Generic', value: 'generic' },
-        { label: 'DDC', value: 'ddc' },
-        { label: 'Helm', value: 'helm' },
-        { label: 'Docker', value: 'docker' },
-        // { label: 'Rds', value: 'rds' },
-        { label: 'Nuget', value: 'nuget' },
-        { label: 'S3', value: 's3' },
-        { label: 'Conan', value: 'conan' },
-        { label: 'Ohpm', value: 'ohpm' }
-    ]
-    : [
-        { label: 'Generic', value: 'generic' },
-        { label: 'DDC', value: 'ddc' },
-        { label: 'Docker', value: 'docker' },
-        { label: 'Maven', value: 'maven' },
-        { label: 'Pypi', value: 'pypi' },
-        { label: 'Npm', value: 'npm' },
-        { label: 'Helm', value: 'helm' },
-        // { label: 'Rds', value: 'rds' },
-        { label: 'Composer', value: 'composer' },
-        { label: 'Rpm', value: 'rpm' },
-        { label: 'Git', value: 'git' },
-        { label: 'Nuget', value: 'nuget' },
-        { label: 'S3', value: 's3' },
-        { label: 'Conan', value: 'conan' },
-        { label: 'Ohpm', value: 'ohpm' }
-    ]
+export const repoEnum = [
+    { label: 'Generic', value: 'generic' },
+    { label: 'DDC', value: 'ddc' },
+    { label: 'Docker', value: 'docker' },
+    { label: 'Maven', value: 'maven' },
+    { label: 'Pypi', value: 'pypi' },
+    { label: 'Npm', value: 'npm' },
+    { label: 'Helm', value: 'helm' },
+    // { label: 'Rds', value: 'rds' },
+    { label: 'Composer', value: 'composer' },
+    { label: 'Rpm', value: 'rpm' },
+    { label: 'Git', value: 'git' },
+    { label: 'Nuget', value: 'nuget' },
+    { label: 'S3', value: 's3' },
+    { label: 'Conan', value: 'conan' },
+    { label: 'Ohpm', value: 'ohpm' }
+]
+
+export const ciDisableRepoEnum = [
+    'maven',
+    'pypi',
+    'npm',
+    'composer',
+    'rpm',
+    'git',
+    'nuget'
+]
 
 // 文件类型
 export const fileType = [
