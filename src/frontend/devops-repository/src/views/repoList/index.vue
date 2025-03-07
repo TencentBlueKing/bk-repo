@@ -244,7 +244,7 @@
             },
             toPackageList ({ projectId, repoType, name, category }) {
                 this.$router.push({
-                    name: (repoType === 'generic' || repoType === 'ddc') ? 'repoGeneric' : 'commonList',
+                    name: (repoType === 'generic') ? 'repoGeneric' : 'commonList',
                     params: {
                         projectId,
                         repoType

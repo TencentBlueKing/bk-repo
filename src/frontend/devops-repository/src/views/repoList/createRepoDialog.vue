@@ -231,7 +231,7 @@
                 }
             },
             availableList () {
-                if (this.repoBaseInfo.type === 'generic' || this.repoBaseInfo.type === 'ddc') {
+                if (this.repoBaseInfo.type === 'generic') {
                     return [
                         { label: this.$t('permissionTitle.default'), value: 'default', tip: this.$t('permissionTip.default') },
                         { label: this.$t('permissionTitle.strict'), value: 'strict', tip: this.$t('permissionTip.strict') },

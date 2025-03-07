@@ -2,7 +2,7 @@
 export const repoEnum = MODE_CONFIG === 'ci'
     ? [
         { label: 'Generic', value: 'generic' },
-        { label: 'DDC', value: 'ddc' },
+        // { label: 'DDC', value: 'ddc' },
         { label: 'Helm', value: 'helm' },
         { label: 'Docker', value: 'docker' },
         // { label: 'Rds', value: 'rds' },
@@ -13,7 +13,7 @@ export const repoEnum = MODE_CONFIG === 'ci'
     ]
     : [
         { label: 'Generic', value: 'generic' },
-        { label: 'DDC', value: 'ddc' },
+        // { label: 'DDC', value: 'ddc' },
         { label: 'Docker', value: 'docker' },
         { label: 'Maven', value: 'maven' },
         { label: 'Pypi', value: 'pypi' },
