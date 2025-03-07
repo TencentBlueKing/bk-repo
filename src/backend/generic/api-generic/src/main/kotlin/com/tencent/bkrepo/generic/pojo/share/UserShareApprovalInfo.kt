@@ -27,12 +27,15 @@
 
 package com.tencent.bkrepo.generic.pojo.share
 
-data class UserShareRecordCreateRequest(
-    val projectId: String,
-    val repoName: String,
-    val path: String,
-    val expireSeconds: Long?,
-    val permits: Int?,
-    val workspaceName: String?,
-    val workspaceFiles: List<WorkspaceFile>?
+import java.time.LocalDateTime
+
+data class UserShareApprovalInfo(
+    val shareId: String,
+    val downloadUserId: String,
+    val approvalId: String,
+    val approvalTicketUrl: String,
+    val createDate: LocalDateTime,
+    val approved: Boolean,
+    val approveUserId: String? = null,
+    val approveDate: LocalDateTime? = null,
 )
