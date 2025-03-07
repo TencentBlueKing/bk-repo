@@ -33,8 +33,8 @@ import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolInput
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.tags.Tag
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -44,7 +44,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("使用临时token访问扫描接口")
+@Tag(name = "使用临时token访问扫描接口")
 @RestController
 @RequestMapping("/api/temporary")
 class UserTemporaryScanController(
@@ -52,7 +52,7 @@ class UserTemporaryScanController(
     private val scanService: ScanService
 ) {
 
-    @ApiOperation("获取扫描子任务信息")
+    @Operation(summary = "获取扫描子任务信息")
     @GetMapping("/scan/subtask/{subtaskId}/input")
     fun getSubtask(
         @PathVariable subtaskId: String,
@@ -62,7 +62,7 @@ class UserTemporaryScanController(
         return ResponseBuilder.success(temporaryScanTokenService.getToolInput(subtaskId, token))
     }
 
-    @ApiOperation("拉取扫描子任务")
+    @Operation(summary = "拉取扫描子任务")
     @GetMapping("/scan/subtask/input")
     fun pullSubtask(
         @RequestParam executionCluster: String,
@@ -74,7 +74,7 @@ class UserTemporaryScanController(
         return ResponseBuilder.success(toolInput)
     }
 
-    @ApiOperation("扫描结果上报")
+    @Operation(summary = "扫描结果上报")
     @PostMapping("/scan/report")
     fun report(@RequestBody reportResultRequest: ReportResultRequest): Response<Void> {
         temporaryScanTokenService.checkToken(reportResultRequest.subTaskId, reportResultRequest.token)
@@ -84,7 +84,7 @@ class UserTemporaryScanController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("扫描任务状态更新")
+    @Operation(summary = "扫描任务状态更新")
     @PutMapping("/scan/subtask/{subtaskId}/status")
     fun updateSubScanTaskStatus(
         @PathVariable subtaskId: String,
@@ -95,7 +95,7 @@ class UserTemporaryScanController(
         return ResponseBuilder.success(scanService.updateSubScanTaskStatus(subtaskId, status))
     }
 
-    @ApiOperation("维持任务心跳")
+    @Operation(summary = "维持任务心跳")
     @PostMapping("/scan/subtask/{subtaskId}/heartbeat")
     fun heartbeat(
         @PathVariable subtaskId: String,

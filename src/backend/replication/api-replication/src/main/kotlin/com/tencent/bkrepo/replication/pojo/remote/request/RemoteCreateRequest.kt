@@ -27,14 +27,14 @@
 
 package com.tencent.bkrepo.replication.pojo.remote.request
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 添加远端集群请求
  */
-@ApiModel("添加远端集群请求")
+@Schema(title = "添加远端集群请求")
 data class RemoteCreateRequest(
-    @ApiModelProperty("配置列表", required = true)
+    @get:Schema(title = "配置列表", required = true)
     val configs: List<RemoteConfigCreateRequest>
 )

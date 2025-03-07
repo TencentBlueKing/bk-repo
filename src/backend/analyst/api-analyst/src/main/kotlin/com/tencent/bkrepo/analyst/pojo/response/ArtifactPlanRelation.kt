@@ -27,27 +27,27 @@
 
 package com.tencent.bkrepo.analyst.pojo.response
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("制品关联的扫描方案信息")
+
+@Schema(title = "制品关联的扫描方案信息")
 data class ArtifactPlanRelation(
-    @ApiModelProperty("扫描方案id")
+    @get:Schema(title = "扫描方案id")
     @Deprecated("仅用于兼容旧接口", ReplaceWith("planId"))
     val id: String,
-    @ApiModelProperty("扫描方案id")
+    @get:Schema(title = "扫描方案id")
     val planId: String,
-    @ApiModelProperty("扫描方案所属项目id")
+    @get:Schema(title = "扫描方案所属项目id")
     val projectId: String,
-    @ApiModelProperty("扫描方案类型")
+    @get:Schema(title = "扫描方案类型")
     val planType: String,
-    @ApiModelProperty("扫描方案名")
+    @get:Schema(title = "扫描方案名")
     val name: String,
-    @ApiModelProperty("制品当前扫描状态")
+    @get:Schema(title = "制品当前扫描状态")
     val status: String,
-    @ApiModelProperty("制品最新一次子扫描任务id")
+    @get:Schema(title = "制品最新一次子扫描任务id")
     @Deprecated("仅用于兼容旧接口", ReplaceWith("subTaskId"))
     val recordId: String,
-    @ApiModelProperty("制品最新一次子扫描任务id")
+    @get:Schema(title = "制品最新一次子扫描任务id")
     val subTaskId: String
 )

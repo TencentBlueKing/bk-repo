@@ -31,23 +31,23 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.task.TaskSortType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("任务分页查参数")
+
+@Schema(title = "任务分页查参数")
 data class TaskPageParam(
-    @ApiModelProperty("当前页")
+    @get:Schema(title = "当前页")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("分页大小")
+    @get:Schema(title = "分页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE,
-    @ApiModelProperty("计划名称，前缀匹配")
+    @get:Schema(title = "计划名称，前缀匹配")
     val name: String? = null,
-    @ApiModelProperty("上次执行状态")
+    @get:Schema(title = "上次执行状态")
     val lastExecutionStatus: ExecutionStatus? = null,
-    @ApiModelProperty("计划是否开启")
+    @get:Schema(title = "计划是否开启")
     val enabled: Boolean? = null,
-    @ApiModelProperty("排序字段")
+    @get:Schema(title = "排序字段")
     val sortType: TaskSortType? = TaskSortType.CREATED_TIME,
-    @ApiModelProperty("排序方向")
+    @get:Schema(title = "排序方向")
     val sortDirection: String? = "DESC"
 )

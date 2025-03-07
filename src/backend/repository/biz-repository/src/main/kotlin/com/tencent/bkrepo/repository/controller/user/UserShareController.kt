@@ -36,9 +36,6 @@ import com.tencent.bk.audit.annotations.AuditAttribute
 import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bk.audit.context.ActionAuditContext
-import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
-import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -46,17 +43,20 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.DefaultArtifactInfo.Companion.DEFAULT_MAPPING_URI
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
-import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.share.BatchShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordCreateRequest
 import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.file.ShareService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -68,7 +68,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 用户分享接口
  */
-@Api("节点分享用户接口")
+@Tag(name = "节点分享用户接口")
 @RestController
 @RequestMapping("/api/share")
 class UserShareController(
@@ -93,7 +93,7 @@ class UserShareController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_SHARE_CREATE_CONTENT
     )
-    @ApiOperation("创建分享链接")
+    @Operation(summary = "创建分享链接")
     @Permission(type = ResourceType.NODE, action = PermissionAction.WRITE)
     @PostMapping(DEFAULT_MAPPING_URI)
     fun share(
@@ -128,7 +128,7 @@ class UserShareController(
         scopeId = "#batchShareRecordCreateRequest?.projectId",
         content = ActionAuditContent.NODE_SHARE_CREATE_CONTENT
     )
-    @ApiOperation("批量创建分享链接")
+    @Operation(summary = "批量创建分享链接")
     @PostMapping("/batch")
     fun batchShare(
         @RequestAttribute userId: String,
@@ -170,7 +170,7 @@ class UserShareController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_SHARE_DOWNLOAD_CONTENT
     )
-    @ApiOperation("下载分享文件")
+    @Operation(summary = "下载分享文件")
     @GetMapping(DEFAULT_MAPPING_URI)
     fun download(
         @RequestAttribute userId: String,

@@ -28,32 +28,31 @@
 package com.tencent.bkrepo.common.artifact.cache.pojo
 
 import com.tencent.bkrepo.common.artifact.cache.model.TArtifactPreloadPlan
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("预加载执行计划")
+@Schema(title = "预加载执行计划")
 data class ArtifactPreloadPlan(
     val id: String? = null,
     val createdDate: LocalDateTime,
     val lastModifiedDate: LocalDateTime,
-    @ApiModelProperty("所属策略ID，仅用于记录执行计划来源")
+    @get:Schema(title = "所属策略ID，仅用于记录执行计划来源")
     val strategyId: String? = null,
-    @ApiModelProperty("所属项目ID，仅用于记录执行计划来源")
+    @get:Schema(title = "所属项目ID，仅用于记录执行计划来源")
     val projectId: String? = null,
-    @ApiModelProperty("所属仓库，仅用于记录执行计划来源")
+    @get:Schema(title = "所属仓库，仅用于记录执行计划来源")
     val repoName: String? = null,
-    @ApiModelProperty("待加载制品的完整路径，仅用于记录执行计划来源")
+    @get:Schema(title = "待加载制品的完整路径，仅用于记录执行计划来源")
     val fullPath: String? = null,
-    @ApiModelProperty("待加载制品sha256")
+    @get:Schema(title = "待加载制品sha256")
     val sha256: String,
-    @ApiModelProperty("待加载制品大小")
+    @get:Schema(title = "待加载制品大小")
     val size: Long,
-    @ApiModelProperty("待加载制品所在存储，为null时表示默认存储")
+    @get:Schema(title = "待加载制品所在存储，为null时表示默认存储")
     val credentialsKey: String? = null,
-    @ApiModelProperty("预加载计划执行毫秒时间戳")
+    @get:Schema(title = "预加载计划执行毫秒时间戳")
     val executeTime: Long,
-    @ApiModelProperty("预加载计划执行状态")
+    @get:Schema(title = "预加载计划执行状态")
     val status: String = STATUS_PENDING
 ) {
     fun toPo() = TArtifactPreloadPlan(

@@ -31,29 +31,29 @@
 
 package com.tencent.bkrepo.preview.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("水印信息")
+
+@Schema(title = "水印信息")
 data class Watermark(
-    @ApiModelProperty("水印内容")
+    @get:Schema(title = "水印内容")
     var watermarkTxt: String? = null,
-    @ApiModelProperty("水印x轴间隔")
+    @get:Schema(title = "水印x轴间隔")
     var watermarkXSpace: String? = null,
-    @ApiModelProperty("水印y轴间隔")
+    @get:Schema(title = "水印y轴间隔")
     var watermarkYSpace: String? = null,
-    @ApiModelProperty("水印字体")
+    @get:Schema(title = "水印字体")
     var watermarkFont: String? = null,
-    @ApiModelProperty("水印字体大小")
+    @get:Schema(title = "水印字体大小")
     var watermarkFontsize: String? = null,
-    @ApiModelProperty("水印颜色")
+    @get:Schema(title = "水印颜色")
     var watermarkColor: String? = null,
-    @ApiModelProperty("水印透明度")
+    @get:Schema(title = "水印透明度")
     var watermarkAlpha: String? = null,
-    @ApiModelProperty("水印宽度")
+    @get:Schema(title = "水印宽度")
     var watermarkWidth: String? = null,
-    @ApiModelProperty("水印高度")
+    @get:Schema(title = "水印高度")
     var watermarkHeight: String? = null,
-    @ApiModelProperty("水印倾斜度数")
+    @get:Schema(title = "水印倾斜度数")
     var watermarkAngle: String? = null,
 )

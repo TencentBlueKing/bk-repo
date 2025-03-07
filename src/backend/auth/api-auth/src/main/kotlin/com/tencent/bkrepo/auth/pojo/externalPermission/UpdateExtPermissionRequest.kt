@@ -29,26 +29,26 @@ package com.tencent.bkrepo.auth.pojo.externalPermission
 
 import com.tencent.bkrepo.common.metadata.annotation.Sensitive
 import com.tencent.bkrepo.common.metadata.handler.MaskPartMapValue
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("更新外部权限请求")
+
+@Schema(title = "更新外部权限请求")
 data class UpdateExtPermissionRequest(
-    @ApiModelProperty("id")
+    @get:Schema(title = "id")
     val id: String,
-    @ApiModelProperty("外部权限回调地址")
+    @get:Schema(title = "外部权限回调地址")
     val url: String? = null,
-    @ApiModelProperty("请求头")
+    @get:Schema(title = "请求头")
     @Sensitive(handler = MaskPartMapValue::class)
     val headers: Map<String, String>? = null,
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String? = null,
-    @ApiModelProperty("仓库名")
+    @get:Schema(title = "仓库名")
     val repoName: String? = null,
-    @ApiModelProperty("生效微服务")
+    @get:Schema(title = "生效微服务")
     val scope: String? = null,
-    @ApiModelProperty("平台账号白名单，白名单内不会校验外部权限")
+    @get:Schema(title = "平台账号白名单，白名单内不会校验外部权限")
     val platformWhiteList: List<String>? = null,
-    @ApiModelProperty("是否启用")
+    @get:Schema(title = "是否启用")
     val enabled: Boolean? = null
 )

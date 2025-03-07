@@ -30,23 +30,23 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.metadata.annotation.Sensitive
 import com.tencent.bkrepo.common.metadata.handler.MaskPartString
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("Arrowhead扫描器配置")
+
+@Schema(title = "Arrowhead扫描器配置")
 class ArrowheadScanner(
     override val name: String,
     /**
      * 格式为ArrowheadImageVersion::KnowledgeBaseVervion::StandaloneConfigTemplateVersion
      * 或者ArrowheadImageVersion::KnowledgeBaseVervion
      */
-    @ApiModelProperty("扫描器版本")
+    @get:Schema(title = "扫描器版本")
     override val version: String,
-    @ApiModelProperty("扫描器配置文件路径，相对于工作目录")
+    @get:Schema(title = "扫描器配置文件路径，相对于工作目录")
     val configFilePath: String = DEFAULT_CONFIG_FILE_PATH,
-    @ApiModelProperty("漏洞知识库配置")
+    @get:Schema(title = "漏洞知识库配置")
     val knowledgeBase: KnowledgeBase,
-    @ApiModelProperty("使用的容器镜像")
+    @get:Schema(title = "使用的容器镜像")
     val container: ArrowheadDockerImage
 ) : Scanner(name, TYPE, version) {
     companion object {
@@ -59,32 +59,32 @@ class ArrowheadScanner(
     }
 }
 
-@ApiModel("arrowhead容器镜像配置")
+@Schema(title = "arrowhead容器镜像配置")
 data class ArrowheadDockerImage(
-    @ApiModelProperty("使用的镜像名和版本")
+    @get:Schema(title = "使用的镜像名和版本")
     val image: String,
-    @ApiModelProperty("docker仓库用户")
+    @get:Schema(title = "docker仓库用户")
     val dockerRegistryUsername: String?,
-    @ApiModelProperty("docker仓库密码")
+    @get:Schema(title = "docker仓库密码")
     val dockerRegistryPassword: String?,
-    @ApiModelProperty("容器启动参数")
+    @get:Schema(title = "容器启动参数")
     val args: String = "/data/standalone.toml",
-    @ApiModelProperty("容器内的工作目录")
+    @get:Schema(title = "容器内的工作目录")
     val workDir: String = "/data",
-    @ApiModelProperty("输入目录，相对于workDir的路径")
+    @get:Schema(title = "输入目录，相对于workDir的路径")
     val inputDir: String = "/package",
-    @ApiModelProperty("输出目录，相对于workDir的路径")
+    @get:Schema(title = "输出目录，相对于workDir的路径")
     val outputDir: String = "/output"
 )
 
-@ApiModel("v2 arrowhead漏洞知识库配置")
+@Schema(title = "v2 arrowhead漏洞知识库配置")
 data class KnowledgeBase(
-    @ApiModelProperty("漏洞知识库地址，例如http://127.0.0.1:1234")
+    @get:Schema(title = "漏洞知识库地址，例如http://127.0.0.1:1234")
     val endpoint: String,
-    @ApiModelProperty("漏洞知识库认证id")
+    @get:Schema(title = "漏洞知识库认证id")
     @Sensitive(handler = MaskPartString::class)
     val secretId: String = "",
-    @ApiModelProperty("漏洞知识库认证密钥")
+    @get:Schema(title = "漏洞知识库认证密钥")
     @Sensitive(handler = MaskPartString::class)
     val secretKey: String = ""
 )

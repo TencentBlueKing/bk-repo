@@ -42,7 +42,7 @@ import com.tencent.bkrepo.oci.constant.OCI_REPO_NAME
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
 import com.tencent.bkrepo.oci.service.OciCatalogService
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Parameter
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -62,16 +62,16 @@ class CatalogController(private val catalogService: OciCatalogService) {
     fun list(
         artifactInfo: OciTagArtifactInfo,
         @PathVariable
-        @ApiParam(value = OCI_PROJECT_ID, required = true)
+        @Parameter(name = OCI_PROJECT_ID, required = true)
         projectId: String,
         @PathVariable
-        @ApiParam(value = OCI_REPO_NAME, required = true)
+        @Parameter(name = OCI_REPO_NAME, required = true)
         repoName: String,
         @RequestParam(required = false)
-        @ApiParam(value = "n", required = false)
+        @Parameter(name = "n", required = false)
         n: Int?,
         @RequestParam(required = false)
-        @ApiParam(value = "last", required = false)
+        @Parameter(name = "last", required = false)
         last: String?
     ): ResponseEntity<Any> {
 

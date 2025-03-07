@@ -33,17 +33,18 @@ package com.tencent.bkrepo.opdata.pojo
 
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
 import com.tencent.bkrepo.opdata.pojo.enums.MetricsType
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class Target(
-    @ApiModelProperty("data")
+    @get:Schema(title = "data")
     val data: Any?,
-    @ApiModelProperty("target")
+    @get:Schema(title = "target")
     val target: Metrics,
-    @ApiModelProperty("refId")
+    @get:Schema(title = "refId")
     val refId: String,
-    @ApiModelProperty("hide")
+    @get:Schema(title = "hide")
     val hide: Boolean,
-    @ApiModelProperty("type")
+    @get:Schema(title = "type")
     val type: MetricsType
 )

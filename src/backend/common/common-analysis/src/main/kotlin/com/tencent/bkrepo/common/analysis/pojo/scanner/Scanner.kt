@@ -36,12 +36,11 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import org.slf4j.LoggerFactory
 import kotlin.math.max
 
-@ApiModel("扫描器配置")
+@Schema(title = "扫描器配置")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = ArrowheadScanner::class, name = ArrowheadScanner.TYPE),
@@ -51,44 +50,44 @@ import kotlin.math.max
     JsonSubTypes.Type(value = StandardScanner::class, name = StandardScanner.TYPE)
 )
 open class Scanner(
-    @ApiModelProperty("扫描器名")
+    @get:Schema(title = "扫描器名")
     open val name: String,
-    @ApiModelProperty("扫描器类型")
+    @get:Schema(title = "扫描器类型")
     val type: String,
-    @ApiModelProperty("扫描器版本")
+    @get:Schema(title = "扫描器版本")
     open val version: String,
-    @ApiModelProperty("扫描器描述信息")
+    @get:Schema(title = "扫描器描述信息")
     val description: String = "",
-    @ApiModelProperty("扫描器根目录")
+    @get:Schema(title = "扫描器根目录")
     val rootPath: String = type,
-    @ApiModelProperty("扫描结束后是否清理工作目录")
+    @get:Schema(title = "扫描结束后是否清理工作目录")
     val cleanWorkDir: Boolean = true,
-    @ApiModelProperty("最大允许的1MB文件扫描时间")
+    @get:Schema(title = "最大允许的1MB文件扫描时间")
     val maxScanDurationPerMb: Long = DEFAULT_MAX_SCAN_DURATION,
-    @ApiModelProperty("支持扫描的文件类型")
+    @get:Schema(title = "支持扫描的文件类型")
     val supportFileNameExt: List<String> = DEFAULT_SUPPORT_FILE_NAME_EXTENSION,
-    @ApiModelProperty("支持扫描的包类型")
+    @get:Schema(title = "支持扫描的包类型")
     val supportPackageTypes: List<String> = emptyList(),
-    @ApiModelProperty("支持扫描的类型")
+    @get:Schema(title = "支持扫描的类型")
     val supportScanTypes: List<String> = emptyList(),
-    @ApiModelProperty("支持的分发器")
+    @get:Schema(title = "支持的分发器")
     val supportDispatchers: List<String> = emptyList(),
-    @ApiModelProperty("执行扫描所需要的内存大小")
+    @get:Schema(title = "执行扫描所需要的内存大小")
     @Deprecated("使用limitMem替代")
     val memory: Long = DEFAULT_MEM,
-    @ApiModelProperty("容器limit mem")
+    @get:Schema(title = "容器limit mem")
     val limitMem: Long = 32 * GB,
-    @ApiModelProperty("容器 request mem")
+    @get:Schema(title = "容器 request mem")
     val requestMem: Long = 16 * GB,
-    @ApiModelProperty("容器request ephemeralStorage")
+    @get:Schema(title = "容器request ephemeralStorage")
     val requestStorage: Long = 16 * GB,
-    @ApiModelProperty("容器limit ephemeralStorage")
+    @get:Schema(title = "容器limit ephemeralStorage")
     val limitStorage: Long = 128 * GB,
-    @ApiModelProperty("容器request cpu")
+    @get:Schema(title = "容器request cpu")
     val requestCpu: Double = 4.0,
-    @ApiModelProperty("容器limit cpu")
+    @get:Schema(title = "容器limit cpu")
     val limitCpu: Double = 16.0,
-    @ApiModelProperty("不支持的制品名称正则列表")
+    @get:Schema(title = "不支持的制品名称正则列表")
     val unsupportedArtifactNameRegex: Set<String> = emptySet(),
 ) {
     /**

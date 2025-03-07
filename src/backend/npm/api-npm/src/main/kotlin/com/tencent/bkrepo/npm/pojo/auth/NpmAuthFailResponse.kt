@@ -31,12 +31,12 @@
 
 package com.tencent.bkrepo.npm.pojo.auth
 
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@Api("npm auth 返回包装模型")
+
+@Schema(title = "npm auth 返回包装模型")
 data class NpmAuthFailResponse(
-    @ApiModelProperty("错误信息")
+    @get:Schema(title = "错误信息")
     val errors: List<AuthFailInfo>
 )
 

@@ -31,11 +31,12 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class Columns(
-    @ApiModelProperty("columns text")
+    @get:Schema(title = "columns text")
     val text: String,
-    @ApiModelProperty("columns type")
+    @get:Schema(title = "columns type")
     val type: String
 )

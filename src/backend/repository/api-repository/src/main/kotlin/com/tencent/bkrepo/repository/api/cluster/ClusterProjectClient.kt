@@ -31,19 +31,19 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api(description = "项目集群接口")
+@Tag(name = "项目集群接口")
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ClusterProjectClient")
 @RequestMapping("/cluster/project")
 interface ClusterProjectClient {
 
-    @ApiOperation("创建项目")
+    @Operation(summary = "创建项目")
     @PostMapping("/create")
     fun createProject(@RequestBody request: ProjectCreateRequest): Response<ProjectInfo>
 }

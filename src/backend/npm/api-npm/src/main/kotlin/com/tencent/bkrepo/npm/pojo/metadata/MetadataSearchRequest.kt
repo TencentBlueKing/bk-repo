@@ -31,21 +31,21 @@
 
 package com.tencent.bkrepo.npm.pojo.metadata
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("npm search 查询条件")
+
+@Schema(title = "npm search 查询条件")
 data class MetadataSearchRequest(
-    @ApiModelProperty("查询内容", required = true)
+    @get:Schema(title = "查询内容", required = true)
     val text: String,
-    @ApiModelProperty("查询包的个数", required = false)
+    @get:Schema(title = "查询包的个数", required = false)
     val size: Int = 10,
-    @ApiModelProperty("起始页", required = false)
+    @get:Schema(title = "起始页", required = false)
     val from: Int = 0,
-    @ApiModelProperty("质量")
+    @get:Schema(title = "质量")
     val quality: Double = 0.0,
-    @ApiModelProperty("受欢迎程度")
+    @get:Schema(title = "受欢迎程度")
     val popularity: Double = 0.0,
-    @ApiModelProperty("贡献度")
+    @get:Schema(title = "贡献度")
     val maintenance: Double = 0.0
 )

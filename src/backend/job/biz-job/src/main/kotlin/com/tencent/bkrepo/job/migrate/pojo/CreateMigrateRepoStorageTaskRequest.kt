@@ -28,17 +28,17 @@
 package com.tencent.bkrepo.job.migrate.pojo
 
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("迁移仓库存储请求")
+
+@Schema(title = "迁移仓库存储请求")
 data class CreateMigrateRepoStorageTaskRequest(
-    @ApiModelProperty("待迁移项目")
+    @get:Schema(title = "待迁移项目")
     val projectId: String,
-    @ApiModelProperty("待迁移仓库")
+    @get:Schema(title = "待迁移仓库")
     val repoName: String,
-    @ApiModelProperty("目标存储key，为null时表示默认存储")
+    @get:Schema(title = "目标存储key，为null时表示默认存储")
     val dstCredentialsKey: String?,
-    @ApiModelProperty("操作用户")
+    @get:Schema(title = "操作用户")
     val operator: String = SYSTEM_USER,
 )
