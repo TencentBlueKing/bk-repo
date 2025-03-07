@@ -147,7 +147,7 @@ object ProjectServiceHelper {
     }
 
     fun getTenantId(): String? {
-        return HttpContextHolder.getRequest().getHeader(TENANT_ID)
+        return HttpContextHolder.getRequestOrNull()?.getHeader(TENANT_ID)
     }
 
     fun buildListQuery(): Query {
