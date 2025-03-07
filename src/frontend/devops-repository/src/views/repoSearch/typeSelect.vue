@@ -1,5 +1,6 @@
 <template>
-    <div class="type-select-container flex-center"
+    <div
+        class="type-select-container flex-center"
         :class="{ 'active': showDropdown }"
         @click="showDropdown = !showDropdown"
         v-bk-clickoutside="hiddenDropdown">
@@ -10,7 +11,7 @@
         <i class="ml10 devops-icon" :class="showDropdown ? 'icon-angle-up' : 'icon-angle-down'"></i>
         <div v-show="showDropdown" class="dropdown-list" @click.stop="() => {}">
             <bk-radio-group :value="repoType" class="repo-type-radio-group" @change="changeType">
-                <bk-radio-button v-for="repo in repoList" :key="repo.value" :value="repo.value">
+                <bk-radio-button v-for="repo in repoList" :key="repo.value" :value="repo.value" :disabled="disCheck(repo.value)">
                     <div class="flex-column flex-center repo-type-radio">
                         <Icon size="32" :name="repo.value" />
                         <span>{{repo.label}}</span>
@@ -21,8 +22,10 @@
     </div>
 </template>
 <script>
+    import { ciDisableRepoEnum } from '@/store/publicEnum'
+
     export default {
-        name: 'typeSelect',
+        name: 'TypeSelect',
         props: {
             repoList: {
                 type: Array,
@@ -39,6 +42,13 @@
             }
         },
         methods: {
+            disCheck (repoName) {
+                if (MODE_CONFIG !== 'ci') {
+                    return false
+                } else {
+                    return ciDisableRepoEnum.includes(repoName)
+                }
+            },
             hiddenDropdown () {
                 this.showDropdown = false
             },
@@ -60,6 +70,13 @@
     }
 </script>
 <style lang="scss" scoped>
+::v-deep .bk-form-radio-button .bk-radio-button-input:disabled+.bk-radio-button-text {
+    position: relative;
+    color: #dcdee5;
+    background: #fafbfd;
+    border-color: currentColor;
+    border-left: 1px solid;
+}
 .type-select-container {
     position: relative;
     width: 111px;
