@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.job.JobAutoConfiguration
 import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsProperties
@@ -64,6 +65,7 @@ import org.springframework.test.context.TestPropertySource
     StorageAutoConfiguration::class,
     RouterControllerProperties::class,
     ProjectUsageStatisticsProperties::class,
+    EnableMultiTenantProperties::class
 )
 @TestPropertySource(
     locations = [
