@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.model.TProxyChannel
 import com.tencent.bkrepo.common.metadata.util.ProxyChannelQueryHelper.buildSingleQuery
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
