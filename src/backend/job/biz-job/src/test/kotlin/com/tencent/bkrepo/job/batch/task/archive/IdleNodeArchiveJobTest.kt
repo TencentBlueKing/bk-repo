@@ -133,7 +133,7 @@ class IdleNodeArchiveJobTest @Autowired constructor(
 
         val query = job.buildQuery()
         // 验证查询结果
-        val found = mongoTemplate.findOne(query, IdleNodeArchiveJob.Node::class.java, "node_${HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)}")
+        val found = mongoTemplate.findOne(query, IdleNodeArchiveJob.Node::class.java, collectionName(UT_PROJECT_ID))
         assertNotNull(found)
 
         // 执行测试
