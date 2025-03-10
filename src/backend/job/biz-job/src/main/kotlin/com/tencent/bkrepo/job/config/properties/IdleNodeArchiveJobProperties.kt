@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.config.properties
 
+import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.util.unit.DataSize
@@ -36,7 +37,8 @@ class IdleNodeArchiveJobProperties(
     override var cron: String = "0 0 0 * * ?",
     var days: Int = 365,
     var fileSizeThreshold: DataSize = DataSize.ofMegabytes(10),
-    var projects: Set<String> = emptySet(),
+    var storageClass: ArchiveStorageClass = ArchiveStorageClass.DEEP_ARCHIVE,
+    var projectArchiveCredentialsKeys: Map<String, String> = emptyMap(),
     var ignoreStorageCredentialsKeys: Set<String> = emptySet(),
     var ignoreRepoType: Set<String> = setOf(RepositoryType.DOCKER.name, RepositoryType.OCI.name),
 ) : MongodbJobProperties()
