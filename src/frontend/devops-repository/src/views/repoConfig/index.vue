@@ -169,7 +169,7 @@
                 return this.$route.params.repoType
             },
             showProxyConfigTab () {
-                return ['maven', 'pypi', 'npm', 'composer', 'nuget', 'helm'].includes(this.repoType)
+                return ['maven', 'pypi', 'npm', 'composer', 'nuget', 'helm'].includes(this.repoType) && this.repoBaseInfo.category === 'COMPOSITE'
             },
             showCleanConfigTab () {
                 return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage)
@@ -225,7 +225,7 @@
             tabName: {
                 handler (type) {
                     if (type === 'proxyConfig' && this.repoType === 'helm') {
-                        this.$refs.proxyTab.getProxySyncRecord()
+                        this.$refs.proxyTab.getProxyChannelInfo()
                     }
                 },
                 immediate: true

@@ -98,13 +98,12 @@
             this.debounceSaveProxy = debounce(this.saveProxy)
         },
         methods: {
-            ...mapActions(['updateRepoInfo', 'getHelmLatestSyncRecord', 'syncRecordWithConfig']),
+            ...mapActions(['updateRepoInfo', 'listRepoProxyChannel']),
             addProxy () {
                 this.showProxyDialog = true
                 this.proxyData = {
                     type: 'add'
                 }
-                this.syncRecordWithConfig({ projectId: this.projectId, repoName: this.repoName })
             },
             editProxy (row) {
                 this.showProxyDialog = true
@@ -112,7 +111,6 @@
                     type: 'edit',
                     ...row
                 }
-                this.syncRecordWithConfig({ projectId: this.projectId, repoName: this.repoName })
             },
             deleteProxy (row) {
                 this.proxyList.splice(this.proxyList.findIndex(v => v.name === row.name), 1)
@@ -184,8 +182,8 @@
                     this.saveLoading = false
                 })
             },
-            getProxySyncRecord () {
-                this.getHelmLatestSyncRecord({ projectId: this.projectId, repoName: this.repoName }).then(res => {
+            getProxyChannelInfo () {
+                this.listRepoProxyChannel({ type: this.repoType, projectId: this.projectId, repoName: this.repoName }).then(res => {
                     this.syncRecord = res
                 })
             },
@@ -194,7 +192,7 @@
                     theme: 'success',
                     message: this.$t('syncRepo') + this.$t('space') + this.$t('success')
                 })
-                this.getProxySyncRecord()
+                this.getProxyChannelInfo()
             }
         }
     }

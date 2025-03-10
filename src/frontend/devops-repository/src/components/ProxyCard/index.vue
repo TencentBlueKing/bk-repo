@@ -61,10 +61,10 @@
         },
         watch: {
             syncStatus (val) {
-                const has = val.find(proxy => proxy.proxyChannelName === this.cardData.name)
+                const has = val.find(proxy => proxy.name === this.cardData.name)
                 if (has) {
-                    this.last = has.createdAt
-                    this.status = has.status
+                    this.last = has.lastSyncDate
+                    this.status = has.lastSyncStatus
                 }
             }
         },

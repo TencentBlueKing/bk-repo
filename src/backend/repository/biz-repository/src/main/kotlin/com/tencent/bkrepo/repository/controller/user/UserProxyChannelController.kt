@@ -118,6 +118,30 @@ class UserProxyChannelController(
             }
         }
     }
+
+    @ApiOperation("查询仓库的代理源信息")
+    @GetMapping("/{type}/{projectId}/{repoName}")
+    fun listByRepo(
+        @ApiParam(value = "所属项目", required = true)
+        @PathVariable projectId: String,
+        @ApiParam(value = "仓库名称", required = true)
+        @PathVariable repoName: String,
+        @ApiParam(value = "type", required = true)
+        @PathVariable type: String
+    ): Response<List<ProxyChannelInfo>> {
+        val repoType = try {
+            RepositoryType.ofValueOrDefault(type)
+        } catch (ignored: IllegalArgumentException) {
+            return ResponseBuilder.success(emptyList())
+        }
+        return ResponseBuilder.success(
+            proxyChannelService.listProxyChannel(
+                projectId,
+                repoName,
+                repoType
+            )
+        )
+    }
 }
 
 data class CheckParam(
