@@ -127,7 +127,11 @@ class IdleNodeArchiveJobTest @Autowired constructor(
         val queryByProject = job.buildQuery()
 
         // 验证查询结果
-        val foundByProject = mongoTemplate.findOne(queryByProject, IdleNodeArchiveJob.Node::class.java, collectionName(UT_PROJECT_ID_1))
+        val foundByProject = mongoTemplate.findOne(
+            queryByProject,
+            IdleNodeArchiveJob.Node::class.java,
+            collectionName(UT_PROJECT_ID_1)
+        )
         assertNotNull(foundByProject)
 
         // 执行测试
