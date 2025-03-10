@@ -58,6 +58,6 @@ spec:
             - name: BK_REPO_SECRETKEY
               value: {{ .Values.gateway.secretKey }}
             - name: BK_REPO_ENABLE_MULTI_TENANT_MODE
-              value: {{ .Values.gateway.enableMultiTenantMode }}
+              value: {{ default "false" .Values.gateway.enableMultiTenantMode | quote }}
       restartPolicy: OnFailure
   {{- end }}

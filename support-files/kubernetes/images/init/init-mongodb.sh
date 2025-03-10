@@ -28,7 +28,8 @@ else
   if [ "$multi_tenant" != "true" ]; then
       mongo --ipv6 $BK_REPO_MONGODB_URI init-data.js
     else
-        mongo --ipv6 $BK_REPO_MONGODB_URI init-data-tenant.js
+      echo "aaaaa"
+      mongo --ipv6 $BK_REPO_MONGODB_URI init-data-tenant.js
     fi
 fi
 
