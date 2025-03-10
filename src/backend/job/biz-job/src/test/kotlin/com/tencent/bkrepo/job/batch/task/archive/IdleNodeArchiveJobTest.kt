@@ -102,6 +102,16 @@ class IdleNodeArchiveJobTest @Autowired constructor(
 
     @Test
     fun testRunWithProjectConfig() {
+
+        insertTestNode().also { assertNotNull(it.projectId) }
+
+        val query = job.buildQuery()
+        // 验证查询结果
+        val found = mongoTemplate.findOne(query, IdleNodeArchiveJob.Node::class.java, collectionName(UT_PROJECT_ID))
+        assertNotNull(found)
+
+        // 执行测试
+        assertEquals(SHARDING_COUNT, job.collectionNames().size)
         // 模拟配置
         properties.projectArchiveCredentialsKeys =  mapOf(
             UT_PROJECT_ID_1 to "AKID_TEST",
@@ -114,33 +124,14 @@ class IdleNodeArchiveJobTest @Autowired constructor(
         insertTestNode(UT_PROJECT_ID_1).also { assertNotNull(it.projectId) }
         insertTestNode(UT_PROJECT_ID_2).also { assertNotNull(it.projectId) }
         // 准备查询条件
-        val query = job.buildQuery()
+        val queryByProject = job.buildQuery()
 
         // 验证查询结果
-        val found = mongoTemplate.findOne(query, IdleNodeArchiveJob.Node::class.java, collectionName(UT_PROJECT_ID_1))
-        assertNotNull(found)
+        val foundByProject = mongoTemplate.findOne(queryByProject, IdleNodeArchiveJob.Node::class.java, collectionName(UT_PROJECT_ID_1))
+        assertNotNull(foundByProject)
 
         // 执行测试
         assertEquals(2, job.collectionNames().size)
-
-        job.start()
-    }
-
-    @Test
-    fun testRunWithoutProjectConfig() {
-
-        // 准备测试数据
-        insertTestNode().also { assertNotNull(it.projectId) }
-
-        val query = job.buildQuery()
-        // 验证查询结果
-        val found = mongoTemplate.findOne(query, IdleNodeArchiveJob.Node::class.java, collectionName(UT_PROJECT_ID))
-        assertNotNull(found)
-
-        // 执行测试
-        assertEquals(SHARDING_COUNT, job.collectionNames().size)
-
-        job.start()
     }
 
     private fun insertTestNode(projectId: String = UT_PROJECT_ID): IdleNodeArchiveJob.Node {
