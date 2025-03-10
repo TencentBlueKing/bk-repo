@@ -31,11 +31,13 @@
 
 package com.tencent.bkrepo.common.artifact.resolve.path
 
+import com.tencent.bkrepo.common.api.constant.TENANT_ID
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import org.springframework.core.MethodParameter
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.bind.support.WebDataBinderFactory
@@ -51,10 +53,13 @@ import kotlin.reflect.KClass
  */
 @Suppress("UNCHECKED_CAST")
 class ArtifactInfoMethodArgumentResolver(
-    private val resolverMap: ResolverMap
+    private val resolverMap: ResolverMap,
+    private val enableMultiTenant: EnableMultiTenantProperties
 ) : HandlerMethodArgumentResolver {
 
     private val antPathMatcher = AntPathMatcher()
+
+
     override fun supportsParameter(parameter: MethodParameter): Boolean {
         return ArtifactInfo::class.java.isAssignableFrom(parameter.parameterType)
     }
@@ -65,9 +70,15 @@ class ArtifactInfoMethodArgumentResolver(
         nativeWebRequest: NativeWebRequest,
         factory: WebDataBinderFactory?
     ): Any {
+
         val attributes = nativeWebRequest.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, 0) as Map<*, *>
-        val projectId = attributes[PROJECT_ID].toString()
+        var projectId = attributes[PROJECT_ID].toString()
         val repoName = attributes[REPO_NAME].toString()
+        val tenantId = nativeWebRequest.getHeader(TENANT_ID)
+        if (enableMultiTenant.enabled && !tenantId.isNullOrEmpty()) {
+            projectId = "$projectId:$tenantId"
+        }
+
 
         val request = nativeWebRequest.getNativeRequest(HttpServletRequest::class.java)!!
         val artifactUri = AntPathMatcher.DEFAULT_PATH_SEPARATOR + antPathMatcher.extractPathWithinPattern(
