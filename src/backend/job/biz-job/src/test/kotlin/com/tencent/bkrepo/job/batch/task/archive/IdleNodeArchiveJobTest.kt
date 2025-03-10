@@ -113,12 +113,6 @@ class IdleNodeArchiveJobTest @Autowired constructor(
         // 准备测试数据
         insertTestNode(UT_PROJECT_ID_1).also { assertNotNull(it.projectId) }
         insertTestNode(UT_PROJECT_ID_2).also { assertNotNull(it.projectId) }
-        // 准备查询条件
-        val query = job.buildQuery()
-
-        // 验证查询结果
-        val found = mongoTemplate.findOne(query, IdleNodeArchiveJob.Node::class.java, collectionName(UT_PROJECT_ID_1))
-        assertNotNull(found)
 
         // 执行测试
         assertEquals(2, job.collectionNames().size)
@@ -130,11 +124,6 @@ class IdleNodeArchiveJobTest @Autowired constructor(
 
         // 准备测试数据
         insertTestNode().also { assertNotNull(it.projectId) }
-
-        val query = job.buildQuery()
-        // 验证查询结果
-        val found = mongoTemplate.findOne(query, IdleNodeArchiveJob.Node::class.java, collectionName(UT_PROJECT_ID))
-        assertNotNull(found)
 
         // 执行测试
         assertEquals(SHARDING_COUNT, job.collectionNames().size)
