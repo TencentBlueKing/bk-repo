@@ -23,13 +23,16 @@ bcs_secret_key=$BK_REPO_BCS_SECRETKEY
 if [ "$bcs_access_key" != "" ] && [ "$bcs_secret_key" != "" ]; then
      sed -i "s/609f9939e6944c5c8a842d88acf85edc/$bcs_access_key/g" init-data-ext.js
      sed -i "s/e041dd34cd89466648a9b196150f75/$bcs_secret_key/g" init-data-ext.js
-     mongo --ipv6 $BK_REPO_MONGODB_URI init-data.js && mongo --ipv6 $BK_REPO_MONGODB_URI init-data-ext.js
+     if [ "$multi_tenant" != "true" ]; then
+       mongo --ipv6 $BK_REPO_MONGODB_URI init-data.js && mongo --ipv6 $BK_REPO_MONGODB_URI init-data-ext.js
+     else
+       mongo --ipv6 $BK_REPO_MONGODB_URI init-data-tenant.js && mongo --ipv6 $BK_REPO_MONGODB_URI init-data-ext.js
+     fi
 else
   if [ "$multi_tenant" != "true" ]; then
       mongo --ipv6 $BK_REPO_MONGODB_URI init-data.js
-    else
-      echo "aaaaa"
+  else
       mongo --ipv6 $BK_REPO_MONGODB_URI init-data-tenant.js
-    fi
+  fi
 fi
 

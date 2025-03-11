@@ -4,5 +4,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("multitenant")
 data class EnableMultiTenantProperties(
-    var enabled: Boolean = false
+    var enabled: Boolean = false,
+    var oPTenantId: String = "system"
 )
