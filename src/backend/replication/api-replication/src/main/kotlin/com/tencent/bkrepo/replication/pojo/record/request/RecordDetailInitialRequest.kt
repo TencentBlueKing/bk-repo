@@ -31,31 +31,31 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("同步详情初始化请求")
+
+@Schema(title = "同步详情初始化请求")
 data class RecordDetailInitialRequest(
-    @ApiModelProperty("记录id")
+    @get:Schema(title = "记录id")
     val recordId: String,
-    @ApiModelProperty("远程集群名称")
+    @get:Schema(title = "远程集群名称")
     val remoteCluster: String,
-    @ApiModelProperty("本地仓库名称")
+    @get:Schema(title = "本地仓库名称")
     val localRepoName: String,
-    @ApiModelProperty("本地仓库类型")
+    @get:Schema(title = "本地仓库类型")
     val repoType: RepositoryType,
-    @ApiModelProperty("包限制")
+    @get:Schema(title = "包限制")
     var packageConstraint: PackageConstraint? = null,
-    @ApiModelProperty("路径名称")
+    @get:Schema(title = "路径名称")
     var pathConstraint: PathConstraint? = null,
-    @ApiModelProperty("制品名称")
+    @get:Schema(title = "制品名称")
     var artifactName: String? = null,
-    @ApiModelProperty("版本")
+    @get:Schema(title = "版本")
     var version: String? = null,
-    @ApiModelProperty("冲突策略")
+    @get:Schema(title = "冲突策略")
     var conflictStrategy: ConflictStrategy? = null,
-    @ApiModelProperty("制品大小")
+    @get:Schema(title = "制品大小")
     var size: Long? = null,
-    @ApiModelProperty("制品sha256值")
+    @get:Schema(title = "制品sha256值")
     var sha256: String? = null
 )

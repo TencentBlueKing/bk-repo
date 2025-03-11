@@ -30,56 +30,56 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.result
 import com.fasterxml.jackson.annotation.JsonAlias
 import com.tencent.bkrepo.common.checker.pojo.Cvssv2
 import com.tencent.bkrepo.common.checker.pojo.Cvssv3
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("DependencyCheck漏洞信息")
+
+@Schema(title = "DependencyCheck漏洞信息")
 data class DependencyItem(
     /**
      * CVE-2017-18349
      */
-    @ApiModelProperty("cve id")
+    @get:Schema(title = "cve id")
     val cveId: String,
 
     /**
      * CVE-2017-18349
      */
-    @ApiModelProperty("漏洞名/漏洞标题")
+    @get:Schema(title = "漏洞名/漏洞标题")
     val name: String,
 
-    @ApiModelProperty("所属依赖")
+    @get:Schema(title = "所属依赖")
     val dependency: String,
 
-    @ApiModelProperty("引入版本")
+    @get:Schema(title = "引入版本")
     val version: String,
 
     /**
      * CRITICAL,HIGH,MEDIUM,LOW
      */
-    @ApiModelProperty("等级")
+    @get:Schema(title = "等级")
     val severity: String,
 
-    @ApiModelProperty("漏洞描述")
+    @get:Schema(title = "漏洞描述")
     @JsonAlias("description")
     val description: String,
 
-    @ApiModelProperty("官方解决方案")
+    @get:Schema(title = "官方解决方案")
     @JsonAlias("official_solution")
     val officialSolution: String?,
 
-    @ApiModelProperty("解决方案")
+    @get:Schema(title = "解决方案")
     @JsonAlias("defense_solution")
     val defenseSolution: String?,
 
-    @ApiModelProperty("相关链接")
+    @get:Schema(title = "相关链接")
     val references: List<String>?,
 
-    @ApiModelProperty("cvss V2 漏洞影响评价")
+    @get:Schema(title = "cvss V2 漏洞影响评价")
     val cvssV2Vector: Cvssv2?,
 
-    @ApiModelProperty("cvss V3 漏洞影响评价")
+    @get:Schema(title = "cvss V3 漏洞影响评价")
     val cvssV3: Cvssv3?,
 
-    @ApiModelProperty("漏洞文件路径")
+    @get:Schema(title = "漏洞文件路径")
     val path: String? = null
 )

@@ -30,14 +30,14 @@ package com.tencent.bkrepo.replication.api
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import io.swagger.annotations.Api
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("分发服务操作接口")
+@Tag(name = "分发服务操作接口")
 @Primary
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "ServiceClusterNodeClient")
 @RequestMapping("/service/cluster")

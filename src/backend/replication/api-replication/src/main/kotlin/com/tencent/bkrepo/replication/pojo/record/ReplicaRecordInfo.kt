@@ -27,28 +27,27 @@
 
 package com.tencent.bkrepo.replication.pojo.record
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("同步任务执行记录")
+@Schema(title = "同步任务执行记录")
 data class ReplicaRecordInfo(
-    @ApiModelProperty("记录唯一id")
+    @get:Schema(title = "记录唯一id")
     val id: String,
-    @ApiModelProperty("关联任务key")
+    @get:Schema(title = "关联任务key")
     val taskKey: String,
-    @ApiModelProperty("任务状态")
+    @get:Schema(title = "任务状态")
     var status: ExecutionStatus,
-    @ApiModelProperty("开始时间")
+    @get:Schema(title = "开始时间")
     var startTime: LocalDateTime,
-    @ApiModelProperty("结束时间")
+    @get:Schema(title = "结束时间")
     var endTime: LocalDateTime? = null,
-    @ApiModelProperty("错误原因，未执行或执行成功则为null")
+    @get:Schema(title = "错误原因，未执行或执行成功则为null")
     var errorReason: String? = null,
-    @ApiModelProperty("已同步字节数")
+    @get:Schema(title = "已同步字节数")
     var replicatedBytes: Long? = 0,
-    @ApiModelProperty("总字节数")
+    @get:Schema(title = "总字节数")
     var totalBytes: Long? = 0,
-    @ApiModelProperty("执行结果总览")
+    @get:Schema(title = "执行结果总览")
     var replicaOverview: ReplicaOverview? = null
 )

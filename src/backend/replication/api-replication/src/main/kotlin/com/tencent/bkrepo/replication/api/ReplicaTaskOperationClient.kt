@@ -30,7 +30,7 @@ package com.tencent.bkrepo.replication.api
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.pojo.remote.request.RemoteRunOnceTaskCreateRequest
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Parameter
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -47,9 +47,9 @@ interface ReplicaTaskOperationClient {
      */
     @PostMapping("/create/runOnceTask/{projectId}/{repoName}")
     fun createRunOnceTask(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @RequestBody requests: RemoteRunOnceTaskCreateRequest
     ): Response<Void>
@@ -59,9 +59,9 @@ interface ReplicaTaskOperationClient {
      */
     @PostMapping("/execute/runOnceTask/{projectId}/{repoName}")
     fun executeRunOnceTask(
-        @ApiParam(value = "仓库ID")
+        @Parameter(name = "仓库ID")
         @PathVariable projectId: String,
-        @ApiParam(value = "项目ID")
+        @Parameter(name = "项目ID")
         @PathVariable repoName: String,
         @RequestParam name: String,
     ): Response<Void>

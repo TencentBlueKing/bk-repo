@@ -33,8 +33,8 @@ import com.tencent.bkrepo.router.pojo.AddRouterNodeRequest
 import com.tencent.bkrepo.router.pojo.RemoveRouterNodeRequest
 import com.tencent.bkrepo.router.pojo.RouterNode
 import com.tencent.bkrepo.router.pojo.RouterPolicy
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -44,11 +44,11 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api("路由控制器接口")
+@Tag(name = "路由控制器接口")
 @FeignClient(ROUTER_CONTROLLER_SERVICE_NAME, contextId = "RouterControllerClient", primary = false)
 @RequestMapping("/service/router")
 interface RouterControllerClient {
-    @ApiOperation("添加节点位置")
+    @Operation(summary = "添加节点位置")
     @PostMapping("/node/location/{projectId}/{repoName}")
     fun addNode(
         @PathVariable projectId: String,
@@ -57,7 +57,7 @@ interface RouterControllerClient {
         @RequestParam routerNodeId: String,
     )
 
-    @ApiOperation("删除节点位置")
+    @Operation(summary = "删除节点位置")
     @DeleteMapping("/node/location/{projectId}/{repoName}")
     fun removeNode(
         @PathVariable projectId: String,
@@ -66,7 +66,7 @@ interface RouterControllerClient {
         @RequestParam routerNodeId: String,
     )
 
-    @ApiOperation("批量删除")
+    @Operation(summary = "批量删除")
     @DeleteMapping("/nodes/location/{projectId}/{repoName}")
     fun removeNodes(
         @PathVariable projectId: String,
@@ -74,7 +74,7 @@ interface RouterControllerClient {
         @RequestParam fullPath: String,
     )
 
-    @ApiOperation("获取重定向的URL")
+    @Operation(summary = "获取重定向的URL")
     @GetMapping("/node/location/{projectId}/{repoName}")
     fun getRedirectUrl(
         @PathVariable projectId: String,
@@ -84,7 +84,7 @@ interface RouterControllerClient {
         @RequestParam serviceName: String
     ): Response<String?>
 
-    @ApiOperation("获取路由策略")
+    @Operation(summary = "获取路由策略")
     @GetMapping("/policy/list")
     fun listRouterPolicies(): Response<List<RouterPolicy>>
 

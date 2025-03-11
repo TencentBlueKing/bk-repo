@@ -33,26 +33,26 @@ package com.tencent.bkrepo.auth.pojo.user
 
 import com.tencent.bkrepo.common.metadata.annotation.Sensitive
 import com.tencent.bkrepo.common.metadata.handler.MaskString
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("创建用户到仓库管理员请求")
+
+@Schema(title = "创建用户到仓库管理员请求")
 data class CreateUserToRepoRequest(
-    @ApiModelProperty("用户id")
+    @get:Schema(title = "用户id")
     val userId: String,
-    @ApiModelProperty("用户名")
+    @get:Schema(title = "用户名")
     val name: String,
-    @ApiModelProperty("密码")
+    @get:Schema(title = "密码")
     @Sensitive(MaskString::class)
     var pwd: String? = null,
-    @ApiModelProperty("管理员")
+    @get:Schema(title = "管理员")
     var admin: Boolean = false,
-    @ApiModelProperty("关联用户")
+    @get:Schema(title = "关联用户")
     val asstUsers: List<String> = emptyList(),
-    @ApiModelProperty("群组账号")
+    @get:Schema(title = "群组账号")
     val group: Boolean = false,
-    @ApiModelProperty("项目ID")
+    @get:Schema(title = "项目ID")
     val projectId: String,
-    @ApiModelProperty("仓库名称")
+    @get:Schema(title = "仓库名称")
     val repoName: String
 )

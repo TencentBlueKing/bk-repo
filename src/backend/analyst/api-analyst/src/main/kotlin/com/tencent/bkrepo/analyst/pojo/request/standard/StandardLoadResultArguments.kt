@@ -31,26 +31,27 @@ import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.response.filter.MergedFilterRule
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.query.model.PageLimit
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 @Suppress("LongParameterList")
 data class StandardLoadResultArguments(
-    @ApiModelProperty("需要的cve列表")
+    @get:Schema(title = "需要的cve列表")
     val vulIds: List<String> = emptyList(),
-    @ApiModelProperty("需要的漏洞严重性等级列表")
+    @get:Schema(title = "需要的漏洞严重性等级列表")
     val vulnerabilityLevels: List<String> = emptyList(),
-    @ApiModelProperty("需要的许可id列表")
+    @get:Schema(title = "需要的许可id列表")
     val licenseIds: List<String> = emptyList(),
-    @ApiModelProperty("需要的许可id列表")
+    @get:Schema(title = "需要的许可id列表")
     val sensitiveContent: String? = null,
-    @ApiModelProperty("需要的许可id列表")
+    @get:Schema(title = "需要的许可id列表")
     val sensitiveType: String? = null,
-    @ApiModelProperty("扫描结果类型")
+    @get:Schema(title = "扫描结果类型")
     val reportType: String,
-    @ApiModelProperty("分页参数")
+    @get:Schema(title = "分页参数")
     val pageLimit: PageLimit = PageLimit(),
-    @ApiModelProperty("漏洞过滤规则")
+    @get:Schema(title = "漏洞过滤规则")
     val rule: MergedFilterRule? = null,
-    @ApiModelProperty("是否仅包含被忽略的结果")
+    @get:Schema(title = "是否仅包含被忽略的结果")
     val ignored: Boolean = false
 ) : LoadResultArguments(StandardScanner.TYPE)

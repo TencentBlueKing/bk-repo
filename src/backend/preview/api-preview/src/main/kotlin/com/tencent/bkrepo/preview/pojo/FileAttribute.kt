@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.preview.pojo
 
-import io.swagger.annotations.ApiModel
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("预览文件信息")
+@Schema(title = "预览文件信息")
 data class FileAttribute (
     // 存储类型：0-bkrepo文件，1-远程文件
     var storageType: Int = 0,

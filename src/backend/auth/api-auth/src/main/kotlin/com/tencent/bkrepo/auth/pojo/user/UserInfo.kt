@@ -1,27 +1,26 @@
 package com.tencent.bkrepo.auth.pojo.user
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("分页用户信息")
+@Schema(title = "分页用户信息")
 data class UserInfo(
-    @ApiModelProperty("用户ID")
+    @get:Schema(title = "用户ID")
     val userId: String,
-    @ApiModelProperty("用户名")
+    @get:Schema(title = "用户名")
     val name: String,
-    @ApiModelProperty("邮箱")
+    @get:Schema(title = "邮箱")
     val email: String?,
-    @ApiModelProperty("联系电话")
+    @get:Schema(title = "联系电话")
     val phone: String?,
-    @ApiModelProperty("用户名")
+    @get:Schema(title = "用户名")
     val createdDate: LocalDateTime?,
-    @ApiModelProperty("用户名")
+    @get:Schema(title = "用户名")
     val locked: Boolean,
-    @ApiModelProperty("是否管理员")
+    @get:Schema(title = "是否管理员")
     val admin: Boolean,
-    @ApiModelProperty("是否为虚拟用户")
+    @get:Schema(title = "是否为虚拟用户")
     val group: Boolean,
-    @ApiModelProperty("关联用户")
+    @get:Schema(title = "关联用户")
     val asstUsers: List<String> = emptyList()
 )

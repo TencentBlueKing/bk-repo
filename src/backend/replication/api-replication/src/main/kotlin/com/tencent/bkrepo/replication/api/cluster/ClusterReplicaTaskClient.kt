@@ -33,7 +33,7 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.EdgeReplicaTaskRecord
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -47,11 +47,11 @@ import org.springframework.web.context.request.async.DeferredResult
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "ClusterReplicaTaskClient")
 interface ClusterReplicaTaskClient {
 
-    @ApiOperation("查询同步任务")
+    @Operation(summary = "查询同步任务")
     @GetMapping("/info/{taskId}")
     fun info(@PathVariable taskId: String): Response<ReplicaTaskInfo?>
 
-    @ApiOperation("查询同步任务列表")
+    @Operation(summary = "查询同步任务列表")
     @GetMapping("/list/{replicaType}")
     fun list(
         @PathVariable replicaType: ReplicaType,
@@ -59,18 +59,18 @@ interface ClusterReplicaTaskClient {
         @RequestParam size: Int
     ): Response<List<ReplicaTaskInfo>>
 
-    @ApiOperation("查询同步任务对象")
+    @Operation(summary = "查询同步任务对象")
     @GetMapping("/object/list/{taskKey}")
     fun listObject(@PathVariable taskKey: String): Response<List<ReplicaObjectInfo>>
 
-    @ApiOperation("认领Edge分发任务")
+    @Operation(summary = "认领Edge分发任务")
     @GetMapping("/edge/claim")
     fun getEdgeReplicaTask(
         @RequestParam clusterName: String,
         @RequestParam replicatingNum: Int
     ): DeferredResult<Response<EdgeReplicaTaskRecord>>
 
-    @ApiOperation("上报Edge分发任务结果")
+    @Operation(summary = "上报Edge分发任务结果")
     @PostMapping("/edge/report")
     fun reportEdgeReplicaTaskResult(@RequestBody edgeReplicaTaskRecord: EdgeReplicaTaskRecord): Response<Void>
 }

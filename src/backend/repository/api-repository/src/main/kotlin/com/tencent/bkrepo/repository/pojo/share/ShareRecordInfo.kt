@@ -31,25 +31,25 @@
 
 package com.tencent.bkrepo.repository.pojo.share
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("分享记录信息")
+
+@Schema(title = "分享记录信息")
 data class ShareRecordInfo(
-    @ApiModelProperty("项目")
+    @get:Schema(title = "项目")
     val projectId: String,
-    @ApiModelProperty("仓库")
+    @get:Schema(title = "仓库")
     val repoName: String,
-    @ApiModelProperty("完整路径")
+    @get:Schema(title = "完整路径")
     val fullPath: String,
-    @ApiModelProperty("分享url")
+    @get:Schema(title = "分享url")
     val shareUrl: String,
-    @ApiModelProperty("授权用户")
+    @get:Schema(title = "授权用户")
     val authorizedUserList: List<String>,
-    @ApiModelProperty("授权IP")
+    @get:Schema(title = "授权IP")
     val authorizedIpList: List<String>,
-    @ApiModelProperty("过期时间")
+    @get:Schema(title = "过期时间")
     val expireDate: String?,
-    @ApiModelProperty("创建人")
+    @get:Schema(title = "创建人")
     val createdBy: String
 )

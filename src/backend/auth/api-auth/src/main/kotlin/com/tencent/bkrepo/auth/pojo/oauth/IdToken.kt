@@ -28,10 +28,10 @@
 package com.tencent.bkrepo.auth.pojo.oauth
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import io.swagger.annotations.ApiModel
+import io.swagger.v3.oas.annotations.media.Schema
 
 // https://openid.net/specs/openid-connect-core-1_0.html#IDToken
-@ApiModel("OpenId Connect id token")
+@Schema(title = "OpenId Connect id token")
 data class IdToken(
     val iss: String,
     val sub: String,

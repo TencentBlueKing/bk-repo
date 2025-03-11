@@ -39,7 +39,8 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
 import com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.virtual.VirtualConfiguration
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -60,7 +61,7 @@ open class RepositoryConfiguration {
      * 设置项
      * 不同类型仓库可以通过该字段进行差异化配置
      */
-    @ApiModelProperty("设置项", required = false)
+    @get:Schema(title = "设置项", required = false)
     val settings: MutableMap<String, Any> = mutableMapOf()
 
     /**

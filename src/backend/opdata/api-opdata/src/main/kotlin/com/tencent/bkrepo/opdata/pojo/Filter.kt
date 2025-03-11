@@ -31,13 +31,14 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class Filter(
-    @ApiModelProperty("key")
+    @get:Schema(title = "key")
     val key: String,
-    @ApiModelProperty("operator")
+    @get:Schema(title = "operator")
     val operator: String,
-    @ApiModelProperty("value")
+    @get:Schema(title = "value")
     val value: String
 )

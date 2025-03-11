@@ -28,14 +28,14 @@
 package com.tencent.bkrepo.opdata.pojo.registry
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("服务信息")
+
+@Schema(title = "服务信息")
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 data class ServiceInfo(
-    @ApiModelProperty("服务名")
+    @get:Schema(title = "服务名")
     val name: String,
-    @ApiModelProperty("服务实例信息")
+    @get:Schema(title = "服务实例信息")
     val instances: List<InstanceInfo>
 )

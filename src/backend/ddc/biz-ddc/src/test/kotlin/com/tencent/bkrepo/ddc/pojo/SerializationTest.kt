@@ -79,7 +79,7 @@ class SerializationTest {
         writer.writeInteger(BatchOp::opId.name, 0)
         writer.writeString(BatchOp::bucket.name, "bucket")
         writer.writeString(BatchOp::key.name, "key")
-        writer.writeString(BatchOp::op.name, Operation.GET.name)
+        writer.writeString(BatchOp::op.name, OperationType.GET.name)
         writer.writeBool(BatchOp::resolveAttachments.name, true)
         writer.endObject()
 
@@ -87,7 +87,7 @@ class SerializationTest {
         writer.writeInteger(BatchOp::opId.name, 0)
         writer.writeString(BatchOp::bucket.name, "bucket")
         writer.writeString(BatchOp::key.name, "key")
-        writer.writeString(BatchOp::op.name, Operation.HEAD.name)
+        writer.writeString(BatchOp::op.name, OperationType.HEAD.name)
         writer.endObject()
 
         val payload = CbObject.build { innerWriter -> innerWriter.writeString("test", "test value") }
@@ -95,7 +95,7 @@ class SerializationTest {
         writer.writeInteger(BatchOp::opId.name, 0)
         writer.writeString(BatchOp::bucket.name, "bucket")
         writer.writeString(BatchOp::key.name, "key")
-        writer.writeString(BatchOp::op.name, Operation.PUT.name)
+        writer.writeString(BatchOp::op.name, OperationType.PUT.name)
         writer.writerObject(BatchOp::payload.name, payload)
         writer.writeString(BatchOp::payloadHash.name, "test hash")
         writer.endObject()
@@ -135,14 +135,14 @@ class SerializationTest {
             opId = 1,
             bucket = "testbucket",
             key = "testtkeyyytesttkeyyytesttkeyyytesttkeyyy",
-            op = Operation.GET.name,
+            op = OperationType.GET.name,
             resolveAttachments = true
         )
         val headOp = BatchOp(
             opId = 2,
             bucket = "testbucket",
             key = "testtkeyyytesttkeyyytesttkeyyytesttkeyyy",
-            op = Operation.HEAD.name,
+            op = OperationType.HEAD.name,
             resolveAttachments = false
         )
         val payload = CbObject.build {
@@ -158,7 +158,7 @@ class SerializationTest {
             opId = 3,
             bucket = "testbucket",
             key = "testtkeyyytesttkeyyytesttkeyyytesttkeyyy",
-            op = Operation.PUT.name,
+            op = OperationType.PUT.name,
             payload = payload,
             payloadHash = payloadHash,
         )

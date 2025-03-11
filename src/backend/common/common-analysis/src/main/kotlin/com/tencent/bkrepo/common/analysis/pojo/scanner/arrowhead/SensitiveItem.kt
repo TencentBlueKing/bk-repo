@@ -27,41 +27,41 @@
 
 package com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonAlias
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("敏感信息数据")
+
+@Schema(title = "敏感信息数据")
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class SensitiveItem(
-    @ApiModelProperty("存在敏感信息的文件路径")
+    @get:Schema(title = "存在敏感信息的文件路径")
     @JsonAlias("Source")
     val path: String,
 
     /**
      * uri, ipv4, ipv6, email, secret
      */
-    @ApiModelProperty("敏感信息类型,")
+    @get:Schema(title = "敏感信息类型,")
     @JsonAlias("Class")
     val type: String,
 
     /**
      * uri, ipv4, ipv6, email, common_key
      */
-    @ApiModelProperty("敏感信息子类型")
+    @get:Schema(title = "敏感信息子类型")
     @JsonAlias("SubClass")
     val subtype: String,
 
-    @ApiModelProperty("敏感信息内容")
+    @get:Schema(title = "敏感信息内容")
     @JsonAlias("Content")
     val content: String,
 
-    @ApiModelProperty("敏感信息为uri或者email时生效")
+    @get:Schema(title = "敏感信息为uri或者email时生效")
     @JsonAlias("Domain")
     val domain: String,
 
-    @ApiModelProperty("敏感信息属性，存放文件类型，uri协议等信息")
+    @get:Schema(title = "敏感信息属性，存放文件类型，uri协议等信息")
     @JsonAlias("Attr")
     val attr: Map<String, String>
 ) {

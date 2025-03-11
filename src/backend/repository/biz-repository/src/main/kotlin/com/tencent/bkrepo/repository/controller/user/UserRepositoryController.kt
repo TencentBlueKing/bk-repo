@@ -33,6 +33,11 @@ import com.tencent.bk.audit.annotations.AuditEntry
 import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bk.audit.annotations.AuditRequestBody
 import com.tencent.bk.audit.context.ActionAuditContext
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.PROJECT_RESOURCE
 import com.tencent.bkrepo.common.artifact.audit.PROJECT_VIEW_ACTION
 import com.tencent.bkrepo.common.artifact.audit.REPO_CREATE_ACTION
@@ -40,12 +45,7 @@ import com.tencent.bkrepo.common.artifact.audit.REPO_DELETE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
 import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
 import com.tencent.bkrepo.common.artifact.audit.REPO_VIEW_ACTION
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
-import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -61,9 +61,9 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoUpdateRequest
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -74,7 +74,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("仓库用户接口")
+@Tag(name = "仓库用户接口")
 @RestController
 @RequestMapping("/api/repo")
 class UserRepositoryController(
@@ -100,30 +100,30 @@ class UserRepositoryController(
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_VIEW_CONTENT
     )
-    @ApiOperation("根据名称类型查询仓库")
+    @Operation(summary = "根据名称类型查询仓库")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/info/{projectId}/{repoName}", "/info/{projectId}/{repoName}/{type}")
     fun getRepoInfo(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable
         projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable
         repoName: String,
-        @ApiParam(value = "仓库类型", required = true)
+        @Parameter(name = "仓库类型", required = true)
         @PathVariable
         type: String? = null,
     ): Response<RepositoryInfo?> {
         return ResponseBuilder.success(repositoryService.getRepoInfo(projectId, repoName, type))
     }
 
-    @ApiOperation("根据名称查询仓库是否存在")
+    @Operation(summary = "根据名称查询仓库是否存在")
     @GetMapping("/exist/{projectId}/{repoName}")
     fun checkExist(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable
         projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable
         repoName: String,
     ): Response<Boolean> {
@@ -149,7 +149,7 @@ class UserRepositoryController(
         scopeId = "#userRepoCreateRequest?.projectId",
         content = ActionAuditContent.REPO_CREATE_CONTENT
     )
-    @ApiOperation("创建仓库")
+    @Operation(summary = "创建仓库")
     @PostMapping("/create")
     fun createRepo(
         @RequestAttribute userId: String,
@@ -196,11 +196,11 @@ class UserRepositoryController(
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_LIST_CONTENT
     )
-    @ApiOperation("查询有权限的仓库列表")
+    @Operation(summary = "查询有权限的仓库列表")
     @GetMapping("/list/{projectId}")
     fun listUserRepo(
         @RequestAttribute userId: String,
-        @ApiParam(value = "项目id", required = true)
+        @Parameter(name = "项目id", required = true)
         @PathVariable
         projectId: String,
         repoListOption: RepoListOption,
@@ -224,17 +224,17 @@ class UserRepositoryController(
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_LIST_CONTENT
     )
-    @ApiOperation("分页查询有权限的仓库列表")
+    @Operation(summary = "分页查询有权限的仓库列表")
     @GetMapping("/page/{projectId}/{pageNumber}/{pageSize}")
     fun listUserRepoPage(
         @RequestAttribute userId: String,
-        @ApiParam(value = "项目id", required = true)
+        @Parameter(name = "项目id", required = true)
         @PathVariable
         projectId: String,
-        @ApiParam(value = "当前页", required = true, example = "0")
+        @Parameter(name = "当前页", required = true, example = "0")
         @PathVariable
         pageNumber: Int,
-        @ApiParam(value = "分页大小", required = true, example = "20")
+        @Parameter(name = "分页大小", required = true, example = "20")
         @PathVariable
         pageSize: Int,
         repoListOption: RepoListOption,
@@ -259,14 +259,14 @@ class UserRepositoryController(
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_QUOTE_VIEW_CONTENT
     )
-    @ApiOperation("查询仓库配额")
+    @Operation(summary = "查询仓库配额")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/quota/{projectId}/{repoName}")
     fun getRepoQuota(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable
         projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable
         repoName: String,
     ): Response<RepoQuotaInfo> {
@@ -290,18 +290,18 @@ class UserRepositoryController(
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_QUOTE_EDIT_CONTENT
     )
-    @ApiOperation("修改仓库配额")
+    @Operation(summary = "修改仓库配额")
     @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
     @PostMapping("/quota/{projectId}/{repoName}")
     fun updateRepoQuota(
         @RequestAttribute userId: String,
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable
         projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable
         repoName: String,
-        @ApiParam(value = "仓库配额", required = true)
+        @Parameter(name = "仓库配额", required = true)
         @RequestParam
         quota: Long,
     ): Response<Void> {
@@ -332,18 +332,18 @@ class UserRepositoryController(
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_DELETE_CONTENT
     )
-    @ApiOperation("删除仓库")
+    @Operation(summary = "删除仓库")
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     @DeleteMapping("/delete/{projectId}/{repoName}")
     fun deleteRepo(
         @RequestAttribute userId: String,
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable
         projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable
         repoName: String,
-        @ApiParam(value = "是否强制删除", required = false)
+        @Parameter(name = "是否强制删除", required = false)
         @RequestParam
         forced: Boolean = false,
     ): Response<Void> {
@@ -367,15 +367,15 @@ class UserRepositoryController(
         scopeId = "#projectId",
         content = ActionAuditContent.REPO_EDIT_CONTENT
     )
-    @ApiOperation("更新仓库")
+    @Operation(summary = "更新仓库")
     @Permission(type = ResourceType.REPO, action = PermissionAction.MANAGE)
     @PostMapping("/update/{projectId}/{repoName}")
     fun updateRepo(
         @RequestAttribute userId: String,
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable
         projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable
         repoName: String,
         @RequestBody request: UserRepoUpdateRequest,
@@ -413,7 +413,7 @@ class UserRepositoryController(
         content = ActionAuditContent.REPO_CREATE_CONTENT
     )
     @Deprecated("waiting kb-ci and bk", replaceWith = ReplaceWith("createRepo"))
-    @ApiOperation("创建仓库")
+    @Operation(summary = "创建仓库")
     @PostMapping
     fun create(
         @RequestAttribute userId: String,
@@ -422,7 +422,7 @@ class UserRepositoryController(
         return this.createRepo(userId, userRepoCreateRequest)
     }
 
-    @ApiOperation("查询可归档文件大小")
+    @Operation(summary = "查询可归档文件大小")
     @GetMapping("/archive/available")
     fun getArchivableSize(
         @RequestParam projectId: String,
