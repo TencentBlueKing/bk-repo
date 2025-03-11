@@ -157,7 +157,7 @@ class IdleNodeArchiveJob(
             logger.info("Find it[$row] in use by cache,skip archive.")
             return
         }
-        val af = archiveClient.get(sha256, credentialsKey).data
+        val af = archiveClient.get(sha256, credentialsKey)?.data
         if (af == null) {
             val count = fileReferenceService.count(sha256, credentialsKey)
             // 归档任务不存在
@@ -183,7 +183,7 @@ class IdleNodeArchiveJob(
         days: Int,
     ) {
         with(row) {
-            val af = archiveClient.get(sha256, credentialsKey).data
+            val af = archiveClient.get(sha256, credentialsKey)?.data
             if (af == null) {
                 val inUse = nodeUseInfoCache[sha256] ?: checkUse(sha256, days, row.projectId)
                 if (inUse) {

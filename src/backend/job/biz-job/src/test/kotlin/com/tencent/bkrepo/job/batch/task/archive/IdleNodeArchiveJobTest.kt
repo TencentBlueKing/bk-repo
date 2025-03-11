@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.provider.Arguments
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
+import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
@@ -136,6 +136,11 @@ class IdleNodeArchiveJobTest @Autowired constructor(
 
         // 执行测试
         assertEquals(2, job.collectionNames().size)
+
+        job.start()
+
+        // 验证归档客户端调用（根据实际实现调整验证逻辑）
+        Mockito.verify(archiveClient, Mockito.times(2)).archive(any())
     }
 
     private fun insertTestNode(projectId: String = UT_PROJECT_ID): IdleNodeArchiveJob.Node {
@@ -177,16 +182,9 @@ class IdleNodeArchiveJobTest @Autowired constructor(
     companion object {
         const val UT_PROJECT_ID_1 = "test-project"
         const val UT_PROJECT_ID_2 = "test-project-2"
-        private const val TEST_FILE_PATH = "test/file.txt"
 
         private fun collectionName(projectId: String) =
             "node_${HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)}"
 
-        @JvmStatic
-        fun projectConfigCases() = listOf(
-            Arguments.of(mapOf("p1" to "k1"), 1),
-            Arguments.of(mapOf("p1" to "k1", "p2" to "k2"), 2),
-            Arguments.of(emptyMap<String,String>(), SHARDING_COUNT)
-        )
     }
 }
