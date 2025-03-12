@@ -65,7 +65,6 @@ import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildProxyChannelUpdateRequest
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildRangeQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildRepoConfiguration
-import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildSingleQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildTypeQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkCategory
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkConfigType
