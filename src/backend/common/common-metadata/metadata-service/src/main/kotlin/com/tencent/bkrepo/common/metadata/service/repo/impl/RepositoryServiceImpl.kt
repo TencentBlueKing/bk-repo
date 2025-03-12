@@ -57,6 +57,7 @@ import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.REPO_DESC_MAX_LENGTH
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.REPO_NAME_PATTERN
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildChangeList
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildDeletedQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildListPermissionRepoQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildListQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildProxyChannelCreateRequest
@@ -445,7 +446,7 @@ class RepositoryServiceImpl(
      * 查找是否存在已被逻辑删除的仓库，如果存在且存储凭证相同，则删除旧仓库再插入新数据；如果存在且存储凭证不同，则禁止创建仓库
      */
     private fun checkAndRemoveDeletedRepo(projectId: String, repoName: String, credentialsKey: String?) {
-        val query = buildSingleQuery(projectId, repoName)
+        val query = buildDeletedQuery(projectId, repoName)
         repositoryDao.findOne(query)?.let {
             if (credentialsKey == it.credentialsKey) {
                 repositoryDao.remove(query)
