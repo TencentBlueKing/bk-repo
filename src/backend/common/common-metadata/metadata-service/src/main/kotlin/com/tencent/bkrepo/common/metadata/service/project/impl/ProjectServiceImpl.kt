@@ -160,7 +160,6 @@ class ProjectServiceImpl(
     override fun checkExist(name: String): Boolean {
         // 校验租户信息
         if (enableMultiTenant.enabled) {
-            logger.info("check checkExist with tenant")
             validateTenantId()
             val tenantId = ProjectServiceHelper.getTenantId()
             val projectId = "$tenantId-$name"
@@ -178,7 +177,6 @@ class ProjectServiceImpl(
         }
         // 校验租户信息
         if (enableMultiTenant.enabled) {
-            logger.info("check tenant")
             validateTenantId()
         }
         val project = request.buildProject(ProjectServiceHelper.getTenantId())
@@ -245,6 +243,7 @@ class ProjectServiceImpl(
 
     private fun validateTenantId() {
         if (ProjectServiceHelper.getTenantId().isNullOrEmpty()) {
+            logger.warn("empty TenantId")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "tenantId")
         }
     }
