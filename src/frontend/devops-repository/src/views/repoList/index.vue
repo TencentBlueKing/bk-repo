@@ -17,7 +17,7 @@
                     class="ml10 w250"
                     @change="handlerPaginationChange"
                     :placeholder="$t('allTypes')">
-                    <bk-option v-for="type in repoEnum" :key="type.value" :id="type.value" :name="type.label">
+                    <bk-option v-for="type in repoEnum" :key="type.value" :id="type.value" :name="type.label" :disabled="disCheck(type.value)">
                         <div class="flex-align-center">
                             <Icon size="20" :name="type.value" />
                             <span class="ml10 flex-1 text-overflow">{{type.label}}</span>
@@ -113,7 +113,7 @@
     import createRepoDialog from '@repository/views/repoList/createRepoDialog'
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
-    import { repoEnum } from '@repository/store/publicEnum'
+    import {ciDisableRepoEnum, repoEnum} from '@repository/store/publicEnum'
     import { formatDate, convertFileSize, debounce } from '@repository/utils'
     import { cloneDeep } from 'lodash'
     import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
@@ -185,6 +185,13 @@
                 'getPermissionUrl',
                 'getProjectMetrics'
             ]),
+            disCheck (repoName) {
+                if (MODE_CONFIG !== 'ci') {
+                    return false
+                } else {
+                    return ciDisableRepoEnum.includes(repoName)
+                }
+            },
             initData () {
                 // 切换项目或者点击菜单时需要将筛选条件清空，并将页码相关参数重置，否则会导致点击菜单的时候筛选条件还在，不符合产品要求(点击菜单清空筛选条件，重新请求最新数据)
                 this.query = {

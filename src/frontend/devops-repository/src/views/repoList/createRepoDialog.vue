@@ -8,7 +8,7 @@
         <bk-form class="mr10 repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
             <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
                 <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
-                    <bk-radio-button v-for="repo in repoEnum" :key="repo.label" :value="repo.value">
+                    <bk-radio-button v-for="repo in repoEnum" :key="repo.label" :value="repo.value" :disabled="disCheck(repo.value)">
                         <div class="flex-column flex-center repo-type-radio">
                             <Icon size="32" :name="repo.value" />
                             <span>{{repo.label}}</span>
@@ -98,7 +98,7 @@
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
-    import { repoEnum, specialRepoEnum } from '@repository/store/publicEnum'
+    import { repoEnum, specialRepoEnum, ciDisableRepoEnum } from '@repository/store/publicEnum'
     import { mapActions, mapState } from 'vuex'
     import cookies from 'js-cookie'
 
@@ -263,6 +263,13 @@
         },
         methods: {
             ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'createOrUpdateRootPermission']),
+            disCheck (repoName) {
+                if (MODE_CONFIG !== 'ci') {
+                    return false
+                } else {
+                    return ciDisableRepoEnum.includes(repoName)
+                }
+            },
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
@@ -376,6 +383,13 @@
     }
 </script>
 <style lang="scss" scoped>
+::v-deep .bk-form-radio-button .bk-radio-button-input:disabled+.bk-radio-button-text {
+    position: relative;
+    color: #dcdee5;
+    background: #fafbfd;
+    border-color: currentColor;
+    border-left: 1px solid;
+}
 .repo-base-info {
     max-height: 442px;
     overflow-y: auto;
