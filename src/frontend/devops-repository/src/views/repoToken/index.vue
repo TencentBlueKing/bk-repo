@@ -42,15 +42,17 @@
             }
         },
         computed: {
-            ...mapState(['userInfo'])
+            ...mapState(['userInfo', 'creating'])
         },
         watch: {
-            userInfo () {
-                this.getToken()
+            creating (val) {
+                if (!val) {
+                    this.getToken()
+                }
             }
         },
         created () {
-            this.userInfo.username && this.getToken()
+            (this.userInfo.username && !this.creating) && this.getToken()
         },
         methods: {
             formatDate,
