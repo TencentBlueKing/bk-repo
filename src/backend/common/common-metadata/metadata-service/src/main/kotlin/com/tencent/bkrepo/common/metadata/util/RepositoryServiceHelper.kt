@@ -442,6 +442,7 @@ class RepositoryServiceHelper(
             return buildQuery(projectId, repoName, repoType, true)
         }
 
+
         fun buildQuery(projectId: String, repoName: String, repoType: String? = null, deleted: Boolean): Query {
             val criteria = where(TRepository::projectId).isEqualTo(projectId)
                 .and(TRepository::name).isEqualTo(repoName)
