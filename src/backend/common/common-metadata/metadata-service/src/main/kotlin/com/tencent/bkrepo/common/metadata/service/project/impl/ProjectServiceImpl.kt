@@ -158,6 +158,14 @@ class ProjectServiceImpl(
     }
 
     override fun checkExist(name: String): Boolean {
+        // 校验租户信息
+        if (enableMultiTenant.enabled) {
+            logger.info("check checkExist with tenant")
+            validateTenantId()
+            val tenantId = ProjectServiceHelper.getTenantId()
+            val projectId = "$tenantId-$name"
+            return projectDao.findByName(projectId) != null
+        }
         return projectDao.findByName(name) != null
     }
 
@@ -176,6 +184,7 @@ class ProjectServiceImpl(
         val project = request.buildProject(ProjectServiceHelper.getTenantId())
         return try {
             projectDao.insert(project)
+            request.name = project.name
             resourcePermissionListener.handle(buildCreatedEvent(request))
             logger.info("Create project [$name] success.")
             convert(project)!!
