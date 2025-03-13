@@ -91,7 +91,7 @@ class UserProjectController(
         @RequestAttribute userId: String,
         @AuditRequestBody
         @RequestBody userProjectRequest: UserProjectCreateRequest
-    ): Response<Void> {
+    ): Response<String> {
         val createRequest = with(userProjectRequest) {
             ProjectCreateRequest(
                 name = name,
@@ -103,8 +103,8 @@ class UserProjectController(
             )
         }
         ActionAuditContext.current().setInstance(createRequest)
-        projectService.createProject(createRequest)
-        return ResponseBuilder.success()
+        val projectInfo = projectService.createProject(createRequest)
+        return ResponseBuilder.success(projectInfo.name)
     }
 
     @ApiOperation("查询项目是否存在")
@@ -194,7 +194,7 @@ class UserProjectController(
     fun create(
         @RequestAttribute userId: String,
         @RequestBody userProjectRequest: UserProjectCreateRequest
-    ): Response<Void> {
+    ): Response<String> {
         return this.createProject(userId, userProjectRequest)
     }
 

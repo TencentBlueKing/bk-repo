@@ -63,9 +63,8 @@ class ArtifactResolverConfiguration {
 
     @Bean
     fun artifactInfoMethodArgumentResolver(
-        resolverMap: ResolverMap,
-        enableMultiTenantProperties: EnableMultiTenantProperties
-    ) = ArtifactInfoMethodArgumentResolver(resolverMap, enableMultiTenantProperties)
+        resolverMap: ResolverMap
+    ) = ArtifactInfoMethodArgumentResolver(resolverMap)
 
     @Bean
     fun artifactFileMethodArgumentResolver() = ArtifactFileMethodArgumentResolver()
