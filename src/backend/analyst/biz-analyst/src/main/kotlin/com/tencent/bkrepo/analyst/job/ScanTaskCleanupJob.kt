@@ -179,10 +179,11 @@ class ScanTaskCleanupJob(
     }
 
     private fun cleanPlanSubtask(context: CleanContext, latestSubtasks: List<TArchiveSubScanTask>) {
-        val deletedResult = planArtifactLatestSubScanTaskDao.deleteByLatestSubtasks(latestSubtasks.map { it.id!! })
-        context.planArtifactTaskCount.addAndGet(deletedResult.deletedCount)
+        val deletedPlanSubtasks =
+            planArtifactLatestSubScanTaskDao.deleteByLatestSubtasks(latestSubtasks.map { it.id!! })
+        context.planArtifactTaskCount.addAndGet(deletedPlanSubtasks.size.toLong())
         // 减少关联的扫描方案预览值
-        scanPlanDao.decrementScanResultOverview(latestSubtasks)
+        scanPlanDao.decrementScanResultOverview(deletedPlanSubtasks)
     }
 
     private fun cleanFileOverviewResults(context: CleanContext, subtask: TArchiveSubScanTask) {
@@ -200,11 +201,12 @@ class ScanTaskCleanupJob(
         if (scanResult.isEmpty()) {
             // 结果为空时直接移除
             fileScanResultDao.removeById(fileResult.id!!)
-        } else {
+            context.overviewResultCount.incrementAndGet()
+        } else if (scanResult.size != fileResult.scanResult.size) {
             // 更新文件扫描结果预览数据
             fileScanResultDao.updateScanResult(fileResult.id!!, fileResult.lastModifiedDate, scanResult)
+            context.overviewResultCount.incrementAndGet()
         }
-        context.overviewResultCount.incrementAndGet()
     }
 
     private fun cleanReports(context: CleanContext, subtask: TArchiveSubScanTask) {

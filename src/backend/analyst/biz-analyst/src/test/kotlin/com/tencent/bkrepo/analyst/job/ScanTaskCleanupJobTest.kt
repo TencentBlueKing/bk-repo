@@ -120,7 +120,7 @@ class ScanTaskCleanupJobTest @Autowired constructor(
     }
 
     @Test
-    fun `test dot clean when keep duration is zero`() {
+    fun `test do not clean when keep duration is zero`() {
         assertEquals(0, scanTaskDao.count(Query()))
         scanTaskDao.insert(buildScanTask(LocalDateTime.now().minusDays(7L)))
 
@@ -128,7 +128,6 @@ class ScanTaskCleanupJobTest @Autowired constructor(
         val context = ScanTaskCleanupJob.CleanContext()
         scanTaskCleanupJob.doClean(context)
 
-        // 清理到未过期任务后即使还存在过期任务也会停止清理，因此会剩下两个任务未清理
         assertEquals(1, scanTaskDao.count(Query()))
         assertEquals(0, context.taskCount.get())
     }
@@ -150,9 +149,12 @@ class ScanTaskCleanupJobTest @Autowired constructor(
         for (i in 0 until 40) {
             // subtask
             val archiveSubtask = archiveSubScanTaskDao.insert(buildArchiveSubScanTask(task1.id!!, randomSha256(), now))
-            planArtifactLatestSubScanTaskDao.insert(buildPlanSubScanTask(archiveSubtask))
             // file result overview
             if (i % 10 == 0) {
+                val oldId = archiveSubtask.id!!
+                archiveSubtask.id = "xxxxxx"
+                planArtifactLatestSubScanTaskDao.insert(buildPlanSubScanTask(archiveSubtask))
+                archiveSubtask.id = oldId
                 val scanResult = mapOf(
                     UT_SCANNER to buildScanResult(now, archiveSubtask.parentScanTaskId),
                     "test" to buildScanResult(now, MIN_OBJECT_ID)
@@ -165,6 +167,7 @@ class ScanTaskCleanupJobTest @Autowired constructor(
                 securityResultDao.insert(buildSecurityResult(archiveSubtask.sha256))
                 securityResultDao.insert(buildSecurityResult(archiveSubtask.sha256, "test"))
             } else {
+                planArtifactLatestSubScanTaskDao.insert(buildPlanSubScanTask(archiveSubtask))
                 fileScanResultDao.insert(buildFileResult(now, archiveSubtask.sha256, archiveSubtask.parentScanTaskId))
                 // insert reports
                 securityResultDao.insert(buildSecurityResult(archiveSubtask.sha256))
@@ -197,8 +200,8 @@ class ScanTaskCleanupJobTest @Autowired constructor(
         // subtasks
         assertEquals(10, archiveSubScanTaskDao.count(Query()))
         assertEquals(83L, context.archivedSubtaskCount.get())
-        assertEquals(10, planArtifactLatestSubScanTaskDao.count(Query()))
-        assertEquals(83L, context.planArtifactTaskCount.get())
+        assertEquals(14, planArtifactLatestSubScanTaskDao.count(Query()))
+        assertEquals(79L, context.planArtifactTaskCount.get())
 
         // file result overview
         assertEquals(14L, fileScanResultDao.count(Query()))
@@ -211,7 +214,7 @@ class ScanTaskCleanupJobTest @Autowired constructor(
 
         // plan
         val plan = scanPlanDao.findOne(Query())!!
-        assertEquals(7, plan.scanResultOverview[CveOverviewKey.CVE_LOW_COUNT.key])
-        assertEquals(14, plan.scanResultOverview[CveOverviewKey.CVE_HIGH_COUNT.key])
+        assertEquals(11, plan.scanResultOverview[CveOverviewKey.CVE_LOW_COUNT.key])
+        assertEquals(22, plan.scanResultOverview[CveOverviewKey.CVE_HIGH_COUNT.key])
     }
 }
