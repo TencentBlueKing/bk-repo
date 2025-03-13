@@ -8,4 +8,5 @@ npm:
   tarball:
     prefix:
   domain: ${cluster.self.url}/npm
+  ohpm-domain: ${cluster.self.url}/ohpm
 

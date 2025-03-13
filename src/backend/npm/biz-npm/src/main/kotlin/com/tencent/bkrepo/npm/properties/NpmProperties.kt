@@ -48,8 +48,12 @@ class NpmProperties {
 
     var domain: String = StringPool.EMPTY
 
+    var ohpmDomain: String = StringPool.EMPTY
+
     /**
      * 返回的package.json中的下载路径是否包含项目与仓库，部分场景下需要移除路径中的项目与仓库信息
      */
     var returnRepoId: Boolean = true
+
+    var ohpmReturnRepoId: Boolean = true
 }
