@@ -66,7 +66,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/ext")
 class UserHelmController(
     private val chartManipulationService: ChartManipulationService,
-    private val chartRepositoryService: ChartRepositoryService,
+    private val chartRepositoryService: ChartRepositoryService
 ) {
 
     @ApiOperation("查询包的版本详情")
@@ -150,4 +150,5 @@ class UserHelmController(
     fun getRegistryDomain(): Response<HelmDomainInfo> {
         return ResponseBuilder.success(chartRepositoryService.getRegistryDomain())
     }
+
 }
