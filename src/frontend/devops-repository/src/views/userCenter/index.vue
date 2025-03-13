@@ -97,9 +97,7 @@
                         message: this.$t('edit') + this.$t('success')
                     })
                     this.cancelEdit()
-                    this.getUserInfo({
-                        userId: originUserId
-                    })
+                    this.getUserInfo(originUserId)
                 })
             },
             cancelEdit () {
