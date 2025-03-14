@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.metadata.service.project.impl
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.reportMetadataToCenter
@@ -56,13 +57,15 @@ class EdgeProjectServiceImpl(
     projectMetricsDao: ProjectMetricsDao,
     storageCredentialService: StorageCredentialService,
     repositoryProperties: RepositoryProperties,
-    ) : ProjectServiceImpl(
+    enableMultiTenant: EnableMultiTenantProperties
+) : ProjectServiceImpl(
     projectDao,
     servicePermissionClient,
     projectMetricsDao,
     serviceBkiamV3ResourceClient,
     storageCredentialService,
-    repositoryProperties
+    repositoryProperties,
+    enableMultiTenant
 ) {
 
     private val centerProjectClient: ClusterProjectClient by lazy {

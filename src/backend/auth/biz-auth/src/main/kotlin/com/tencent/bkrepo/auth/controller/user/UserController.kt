@@ -269,7 +269,7 @@ class UserController @Autowired constructor(
     fun userInfo(
         @RequestHeader("x-bkrepo-uid") bkUserId: String?,
         @RequestHeader("x-bkrepo-display-name") displayName: String?,
-        @RequestHeader("x-bkrepo-tenant-id") tenantId: String?,
+        @RequestHeader("x-bk-tenant-id") tenantId: String?,
     ): Response<Map<String, Any>> {
         val name = if (displayName == null) "" else String(Base64.getDecoder().decode(displayName))
         val result = mapOf(
