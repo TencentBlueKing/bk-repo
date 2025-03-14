@@ -56,4 +56,9 @@ class NpmProperties {
     var returnRepoId: Boolean = true
 
     var ohpmReturnRepoId: Boolean = true
+
+    /**
+     * ohpm是否在unpublish时检查是否被依赖，开启后如果ohpm被依赖则unpublish失败只会将对应版本标记为deprecated
+     */
+    var ohpmCheckDependents: Boolean = false
 }
