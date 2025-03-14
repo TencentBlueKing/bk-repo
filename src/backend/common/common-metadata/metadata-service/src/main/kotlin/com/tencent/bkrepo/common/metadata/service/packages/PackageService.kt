@@ -37,6 +37,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -158,6 +159,14 @@ interface PackageService {
      * [realIpAddress]: 由调用方传递真实的请求来源IP, 否则记录的是微服务调用机器的IP
      */
     fun createPackageVersion(request: PackageVersionCreateRequest, realIpAddress: String? = null)
+
+    /**
+     * 创建包
+     *
+     * @param request 包创建请求
+     * @param realIpAddress: 由调用方传递真实的请求来源IP, 否则记录的是微服务调用机器的IP
+     */
+    fun createPackage(request: PackageCreateRequest, realIpAddress: String? = null)
 
     /**
      * 删除包
