@@ -115,7 +115,7 @@
         methods: {
             ...mapMutations(['SET_DEPEND_ACCESS_TOKEN_VALUE', 'SET_DEPEND_INPUT_VALUE1', 'SET_DEPEND_INPUT_VALUE2', 'SET_DEPEND_INPUT_VALUE3']),
             createToken () {
-                this.$refs.createToken.userName = this.userInfo.name
+                this.$refs.createToken.userName = this.userInfo.username
                 this.$refs.createToken.showDialogHandler()
             },
             onChangeAccessToken () {
