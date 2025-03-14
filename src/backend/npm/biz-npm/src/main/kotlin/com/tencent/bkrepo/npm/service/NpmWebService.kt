@@ -57,5 +57,5 @@ interface NpmWebService {
     /**
      * 获取npm域名信息
      */
-    fun getRegistryDomain(): NpmDomainInfo
+    fun getRegistryDomain(repositoryType: String): NpmDomainInfo
 }
