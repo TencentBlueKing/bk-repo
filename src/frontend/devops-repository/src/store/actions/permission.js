@@ -260,6 +260,12 @@ export default {
             `${authPrefix}/user/auth/bkiamv3/project/refresh/${projectId}`
         )
     },
+    // 判断蓝鲸权限是否开启
+    getIamPermissionStatus () {
+        return Vue.prototype.$ajax.get(
+            `${authPrefix}/user/auth/bkiamv3/status`
+        )
+    },
     // 创建项目用户
     createProjectUser (_, { body }) {
         return Vue.prototype.$ajax.post(
