@@ -54,6 +54,7 @@ import com.tencent.bkrepo.common.metadata.service.repo.ResourceClearService
 import com.tencent.bkrepo.common.metadata.util.RepoEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.common.metadata.util.RepoEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.RepoEventFactory.buildUpdatedEvent
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.REPO_DESC_MAX_LENGTH
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.REPO_NAME_PATTERN
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildChangeList
@@ -64,7 +65,6 @@ import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildProxyChannelUpdateRequest
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildRangeQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildRepoConfiguration
-import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildSingleQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildTRepository
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildTypeQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkCategory
@@ -446,7 +446,7 @@ class RRepositoryServiceImpl(
      * 查找是否存在已被逻辑删除的仓库，如果存在且存储凭证相同，则删除旧仓库再插入新数据；如果存在且存储凭证不同，则禁止创建仓库
      */
     private suspend fun checkAndRemoveDeletedRepo(projectId: String, repoName: String, credentialsKey: String?) {
-        val query = buildSingleQuery(projectId, repoName)
+        val query = RepositoryServiceHelper.buildDeletedQuery(projectId, repoName)
         repositoryDao.findOne(query)?.let {
             if (credentialsKey == it.credentialsKey) {
                 repositoryDao.remove(query)
