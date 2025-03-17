@@ -38,9 +38,9 @@ import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
@@ -50,67 +50,67 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api(tags = ["SERVICE_USER"], description = "服务-用户接口")
+@Tag(name = "SERVICE_USER", description = "服务-用户接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceUserResource")
 @RequestMapping(AUTH_SERVICE_USER_PREFIX)
 interface ServiceUserClient {
 
-    @ApiOperation("创建用户")
+    @Operation(summary = "创建用户")
     @PostMapping("/create")
     fun createUser(
         @RequestBody request: CreateUserRequest
     ): Response<Boolean>
 
-    @ApiOperation("创建项目用户")
+    @Operation(summary = "创建项目用户")
     @PostMapping("/create/project")
     fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean>
 
-    @ApiOperation("用户详情")
+    @Operation(summary = "用户详情")
     @GetMapping("/detail/{uid}")
     @Deprecated("仅用于兼容旧接口", ReplaceWith("userInfoById"))
     fun detail(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @PathVariable uid: String
     ): Response<User?>
 
-    @ApiOperation("新增用户所属角色")
+    @Operation(summary = "新增用户所属角色")
     @PostMapping("/role/{uid}/{rid}")
     fun addUserRole(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @PathVariable uid: String,
-        @ApiParam(value = "用户角色id")
+        @Parameter(name = "用户角色id")
         @PathVariable rid: String
     ): Response<User?>
 
-    @ApiOperation("校验用户token")
+    @Operation(summary = "校验用户token")
     @PostMapping("/token")
     fun checkToken(
-        @ApiParam(value = "用户id")
+        @Parameter(name = "用户id")
         @RequestParam uid: String,
-        @ApiParam(value = "用户token")
+        @Parameter(name = "用户token")
         @RequestParam token: String
     ): Response<Boolean>
 
-    @ApiOperation("用户info ")
+    @Operation(summary = "用户info ")
     @GetMapping("/userinfo/{uid}")
     fun userInfoById(
         @PathVariable uid: String
     ): Response<UserInfo?>
 
-    @ApiOperation("获取用户pwd ")
+    @Operation(summary = "获取用户pwd ")
     @GetMapping("/userpwd/{uid}")
     fun userPwdById(
         @PathVariable uid: String
     ): Response<String?>
 
-    @ApiOperation("获取用户token")
+    @Operation(summary = "获取用户token")
     @GetMapping("/usertoken/{uid}")
     fun userTokenById(
         @PathVariable uid: String
     ): Response<List<String>>
 
-    @ApiOperation("获取admin用户")
+    @Operation(summary = "获取admin用户")
     @GetMapping("/admin/users")
     fun listAdminUsers(): Response<List<String>>
 }

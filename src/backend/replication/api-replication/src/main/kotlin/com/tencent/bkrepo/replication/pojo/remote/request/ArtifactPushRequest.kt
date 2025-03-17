@@ -27,24 +27,24 @@
 
 package com.tencent.bkrepo.replication.pojo.remote.request
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * Artifact推送到远端仓库请求
  */
-@ApiModel("Artifact推送到远端仓库请求")
+@Schema(title = "Artifact推送到远端仓库请求")
 data class ArtifactPushRequest(
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String,
-    @ApiModelProperty("仓库名")
+    @get:Schema(title = "仓库名")
     val repoName: String,
-    @ApiModelProperty("Package key")
+    @get:Schema(title = "Package key")
     val packageKey: String,
-    @ApiModelProperty("Package版本名")
+    @get:Schema(title = "Package版本名")
     val packageVersion: String,
-    @ApiModelProperty("Package名")
+    @get:Schema(title = "Package名")
     var packageName: String,
-    @ApiModelProperty("Package类型")
+    @get:Schema(title = "Package类型")
     var packageType: String
 )

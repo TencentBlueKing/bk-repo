@@ -28,36 +28,36 @@
 package com.tencent.bkrepo.replication.pojo.cluster.request
 
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 添加集群节点请求
  */
-@ApiModel("添加集群节点请求")
+@Schema(title = "添加集群节点请求")
 class ClusterNodeCreateRequest(
-    @ApiModelProperty("添加的集群名称", required = true)
+    @get:Schema(title = "添加的集群名称", required = true)
     var name: String,
-    @ApiModelProperty("集群地址", required = true)
+    @get:Schema(title = "集群地址", required = true)
     var url: String,
-    @ApiModelProperty("集群的证书", required = false)
+    @get:Schema(title = "集群的证书", required = false)
     var certificate: String? = null,
-    @ApiModelProperty("集群认证用户名", required = false)
+    @get:Schema(title = "集群认证用户名", required = false)
     var username: String? = null,
-    @ApiModelProperty("集群认证密码", required = false)
+    @get:Schema(title = "集群认证密码", required = false)
     var password: String? = null,
-    @ApiModelProperty("集群appId", required = false)
+    @get:Schema(title = "集群appId", required = false)
     var appId: String? = null,
-    @ApiModelProperty("集群访问凭证", required = false)
+    @get:Schema(title = "集群访问凭证", required = false)
     var accessKey: String? = null,
-    @ApiModelProperty("集群密钥", required = false)
+    @get:Schema(title = "集群密钥", required = false)
     var secretKey: String? = null,
-    @ApiModelProperty("集群节点类型", required = true)
+    @get:Schema(title = "集群节点类型", required = true)
     var type: ClusterNodeType,
-    @ApiModelProperty("创建节点时是否检测连通性", required = false)
+    @get:Schema(title = "创建节点时是否检测连通性", required = false)
     var ping: Boolean = true,
-    @ApiModelProperty("连通性检测方式", required = true)
+    @get:Schema(title = "连通性检测方式", required = true)
     var detectType: DetectType = DetectType.PING,
-    @ApiModelProperty("udp port", required = false)
+    @get:Schema(title = "udp port", required = false)
     var udpPort: Int? = null,
 )

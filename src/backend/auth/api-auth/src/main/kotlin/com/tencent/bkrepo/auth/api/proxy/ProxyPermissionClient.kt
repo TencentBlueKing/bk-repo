@@ -30,19 +30,19 @@ package com.tencent.bkrepo.auth.api.proxy
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api(tags = ["PROXY_PERMISSION"], description = "Proxy权限接口")
+@Tag(name = "PROXY_PERMISSION", description = "Proxy权限接口")
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ProxyPermissionClient")
 @RequestMapping("/proxy/permission")
 interface ProxyPermissionClient {
 
-    @ApiOperation("校验权限")
+    @Operation(summary = "校验权限")
     @PostMapping("/check")
     fun checkPermission(
         @RequestBody request: CheckPermissionRequest

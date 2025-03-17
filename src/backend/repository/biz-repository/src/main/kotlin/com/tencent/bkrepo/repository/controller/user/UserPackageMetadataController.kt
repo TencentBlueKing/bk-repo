@@ -34,13 +34,13 @@ package com.tencent.bkrepo.repository.controller.user
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.packages.UserPackageMetadataSaveRequest
-import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -51,14 +51,14 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 元数据接口实现类
  */
-@Api("包元数据用户接口")
+@Tag(name = "包元数据用户接口")
 @RestController
 @RequestMapping("/api/metadata/package")
 class UserPackageMetadataController(
     private val packageMetadataService: PackageMetadataService
 ) {
 
-    @ApiOperation("创建/更新禁用元数据列表")
+    @Operation(summary = "创建/更新禁用元数据列表")
     @Permission(type = ResourceType.REPO, action = PermissionAction.UPDATE)
     @PostMapping("/forbid/{projectId}/{repoName}")
     fun forbidMetadata(
@@ -80,7 +80,7 @@ class UserPackageMetadataController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("保存元数据")
+    @Operation(summary = "保存元数据")
     @Permission(type = ResourceType.REPO, action = PermissionAction.UPDATE)
     @PostMapping("/{projectId}/{repoName}")
     fun saveMetadata(

@@ -30,7 +30,7 @@ package com.tencent.bkrepo.maven.api
 import com.tencent.bkrepo.common.api.constant.MAVEN_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.maven.pojo.metadata.MavenMetadataRequest
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -39,11 +39,11 @@ import org.springframework.web.bind.annotation.RequestMapping
 @FeignClient(MAVEN_SERVICE_NAME, contextId = "MavenMetadataClient")
 @RequestMapping("/service/metadata")
 interface MavenMetadataClient {
-    @ApiOperation("更新maven版本元数据")
+    @Operation(summary = "更新maven版本元数据")
     @PostMapping("/update")
     fun update(@RequestBody request: MavenMetadataRequest): Response<Void>
 
-    @ApiOperation("删除maven版本元数据")
+    @Operation(summary = "删除maven版本元数据")
     @PostMapping("/delete")
     fun delete(@RequestBody request: MavenMetadataRequest): Response<Void>
 }

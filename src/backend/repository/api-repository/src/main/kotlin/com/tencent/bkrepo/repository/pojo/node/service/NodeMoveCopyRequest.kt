@@ -32,34 +32,34 @@
 package com.tencent.bkrepo.repository.pojo.node.service
 
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 节点移动/复制请求
  */
-@ApiModel("节点移动/复制请求")
+@Schema(title = "节点移动/复制请求")
 data class NodeMoveCopyRequest(
-    @ApiModelProperty("源项目id", required = true)
+    @get:Schema(title = "源项目id", required = true)
     val srcProjectId: String,
-    @ApiModelProperty("源仓库名称", required = true)
+    @get:Schema(title = "源仓库名称", required = true)
     val srcRepoName: String,
-    @ApiModelProperty("源节点路径", required = true)
+    @get:Schema(title = "源节点路径", required = true)
     val srcFullPath: String,
-    @ApiModelProperty("目的项目id", required = false)
+    @get:Schema(title = "目的项目id", required = false)
     val destProjectId: String? = null,
-    @ApiModelProperty("目的仓库名称", required = false)
+    @get:Schema(title = "目的仓库名称", required = false)
     val destRepoName: String? = null,
-    @ApiModelProperty("目的路径", required = true)
+    @get:Schema(title = "目的路径", required = true)
     val destFullPath: String,
-    @ApiModelProperty("目的路径是否为目录", required = false)
+    @get:Schema(title = "目的路径是否为目录", required = false)
     var destNodeFolder: Boolean? = null, // commit-edge模式，移动edge节点到目录，center没有此目录时，需要此字段标记目的路径为目录
     @Deprecated("This property is deprecated!", ReplaceWith("destFullPath"))
-    @ApiModelProperty("目的路径", required = false)
+    @get:Schema(title = "目的路径", required = false)
     val destPath: String? = null,
-    @ApiModelProperty("同名文件是否覆盖", required = false)
+    @get:Schema(title = "同名文件是否覆盖", required = false)
     val overwrite: Boolean = false,
-    @ApiModelProperty("操作用户", required = true)
+    @get:Schema(title = "操作用户", required = true)
     val operator: String
 ) : NodeRequest {
     override val projectId: String

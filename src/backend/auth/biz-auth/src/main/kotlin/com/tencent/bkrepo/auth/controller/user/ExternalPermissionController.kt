@@ -37,8 +37,8 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -48,14 +48,14 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("用户-外部权限接口")
+@Tag(name = "用户-外部权限接口")
 @RestController
 @RequestMapping(AUTH_API_EXT_PERMISSION_PREFIX)
 class ExternalPermissionController(
     private val externalPermissionService: ExternalPermissionService
 ) {
 
-    @ApiOperation("创建外部权限")
+    @Operation(summary = "创建外部权限")
     @PostMapping
     @LogOperate(type = "EXT_PERMISSION_CREAT", desensitize = true)
     fun createExtPermission(
@@ -65,7 +65,7 @@ class ExternalPermissionController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("更新外部权限")
+    @Operation(summary = "更新外部权限")
     @PutMapping
     @LogOperate(type = "EXT_PERMISSION_UPDATE", desensitize = true)
     fun updateExtPermission(
@@ -75,7 +75,7 @@ class ExternalPermissionController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("删除外部权限")
+    @Operation(summary = "删除外部权限")
     @DeleteMapping("/{id}")
     @LogOperate(type = "EXT_PERMISSION_DELETE")
     fun deleteExtPermission(
@@ -85,7 +85,7 @@ class ExternalPermissionController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("分页查询外部权限")
+    @Operation(summary = "分页查询外部权限")
     @GetMapping
     @LogOperate(type = "EXT_PERMISSION_LIST")
     fun listExtPermissionPage(

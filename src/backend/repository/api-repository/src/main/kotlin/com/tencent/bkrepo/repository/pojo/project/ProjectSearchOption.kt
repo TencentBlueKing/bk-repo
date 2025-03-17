@@ -29,15 +29,15 @@ package com.tencent.bkrepo.repository.pojo.project
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("项目搜索选项")
+
+@Schema(title = "项目搜索选项")
 data class ProjectSearchOption(
-    @ApiModelProperty("当前页")
+    @get:Schema(title = "当前页")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("分页大小")
+    @get:Schema(title = "分页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE,
-    @ApiModelProperty("项目名前缀")
+    @get:Schema(title = "项目名前缀")
     val namePrefix: String? = null
 )

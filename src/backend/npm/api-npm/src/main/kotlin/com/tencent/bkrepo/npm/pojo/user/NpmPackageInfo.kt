@@ -31,13 +31,13 @@
 
 package com.tencent.bkrepo.npm.pojo.user
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("包的基本信息")
+
+@Schema(title = "包的基本信息")
 data class NpmPackageInfo(
-    @ApiModelProperty("包名称")
+    @get:Schema(title = "包名称")
     val name: String,
-    @ApiModelProperty("最新版本信息")
+    @get:Schema(title = "最新版本信息")
     val latest: NpmPackageLatestVersionInfo
 )

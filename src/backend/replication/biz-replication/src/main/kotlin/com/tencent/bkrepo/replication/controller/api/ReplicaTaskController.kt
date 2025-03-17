@@ -39,8 +39,8 @@ import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.TaskPageParam
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -52,32 +52,32 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 数据同步任务接口
  */
-@Api("任务接口")
+@Tag(name = "任务接口")
 @Principal(type = PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/api/task")
 class ReplicaTaskController(
     private val replicaTaskService: ReplicaTaskService
 ) {
-    @ApiOperation("创建任务")
+    @Operation(summary = "创建任务")
     @PostMapping("/create")
     fun create(@RequestBody request: ReplicaTaskCreateRequest): Response<ReplicaTaskInfo> {
         return ResponseBuilder.success(replicaTaskService.create(request))
     }
 
-    @ApiOperation("根据任务key查询任务信息")
+    @Operation(summary = "根据任务key查询任务信息")
     @GetMapping("/info/{key}")
     fun getByTaskKey(@PathVariable key: String): Response<ReplicaTaskInfo> {
         return ResponseBuilder.success(replicaTaskService.getByTaskKey(key))
     }
 
-    @ApiOperation("根据任务key查询任务详情")
+    @Operation(summary = "根据任务key查询任务详情")
     @GetMapping("/detail/{key}")
     fun getDetailByTaskKey(@PathVariable key: String): Response<ReplicaTaskDetail> {
         return ResponseBuilder.success(replicaTaskService.getDetailByTaskKey(key))
     }
 
-    @ApiOperation("分页查询任务")
+    @Operation(summary = "分页查询任务")
     @GetMapping("/page/{projectId}")
     fun listReplicationTaskInfoPage(
         @PathVariable projectId: String,
@@ -86,35 +86,35 @@ class ReplicaTaskController(
         return ResponseBuilder.success(replicaTaskService.listTasksPage(projectId, option))
     }
 
-    @ApiOperation("删除任务")
+    @Operation(summary = "删除任务")
     @DeleteMapping("/delete/{key}")
     fun delete(@PathVariable key: String): Response<Void> {
         replicaTaskService.deleteByTaskKey(key)
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("任务启停状态切换")
+    @Operation(summary = "任务启停状态切换")
     @PostMapping("/toggle/status/{key}")
     fun toggleStatus(@PathVariable key: String): Response<Void> {
         replicaTaskService.toggleStatus(key)
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("任务复制")
+    @Operation(summary = "任务复制")
     @PostMapping("/copy")
     fun copy(@RequestBody request: ReplicaTaskCopyRequest): Response<Void> {
         replicaTaskService.copy(request)
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("任务更新")
+    @Operation(summary = "任务更新")
     @PostMapping("/update")
     fun update(@RequestBody request: ReplicaTaskUpdateRequest): Response<Void> {
         replicaTaskService.update(request)
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("执行计划")
+    @Operation(summary = "执行计划")
     @PostMapping("/execute/{key}")
     fun execute(@PathVariable key: String): Response<Void> {
         replicaTaskService.execute(key)

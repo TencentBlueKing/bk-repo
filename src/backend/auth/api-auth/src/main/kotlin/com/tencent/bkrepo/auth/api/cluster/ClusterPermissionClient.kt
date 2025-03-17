@@ -31,25 +31,25 @@ import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("集群间权限服务接口")
+@Tag(name = "集群间权限服务接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterPermissionResource")
 @RequestMapping(AUTH_CLUSTER_PERMISSION_PREFIX)
 interface ClusterPermissionClient {
 
-    @ApiOperation("校验权限")
+    @Operation(summary = "校验权限")
     @PostMapping("/check")
     fun checkPermission(
-        @ApiParam(value = "校验权限信息")
+        @Parameter(name = "校验权限信息")
         @RequestBody request: CheckPermissionRequest
     ): Response<Boolean>
 }

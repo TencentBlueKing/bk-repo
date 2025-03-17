@@ -29,33 +29,33 @@ package com.tencent.bkrepo.analyst.pojo.request
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.Rule
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("流水线触发扫描请求")
+
+@Schema(title = "流水线触发扫描请求")
 data class PipelineScanRequest(
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String,
-    @ApiModelProperty("流水线id")
+    @get:Schema(title = "流水线id")
     val pid: String? = null,
-    @ApiModelProperty("构建id")
+    @get:Schema(title = "构建id")
     val bid: String? = null,
-    @ApiModelProperty("构建号")
+    @get:Schema(title = "构建号")
     val buildNo: String? = null,
-    @ApiModelProperty("流水线名")
+    @get:Schema(title = "流水线名")
     val pipelineName: String? = null,
-    @ApiModelProperty("使用的插件名")
+    @get:Schema(title = "使用的插件名")
     val pluginName: String? = null,
-    @ApiModelProperty("扫描方案id，未指定时会创建一个generic类型的默认方案")
+    @get:Schema(title = "扫描方案id，未指定时会创建一个generic类型的默认方案")
     val planId: String? = null,
-    @ApiModelProperty("未指定planId时默认创建的扫描方案类型")
+    @get:Schema(title = "未指定planId时默认创建的扫描方案类型")
     val planType: String = RepositoryType.GENERIC.name,
-    @ApiModelProperty("未指定planId时默认创建的扫描方案使用的扫描器")
+    @get:Schema(title = "未指定planId时默认创建的扫描方案使用的扫描器")
     val scanner: String? = null,
-    @ApiModelProperty("扫描文件匹配规则")
+    @get:Schema(title = "扫描文件匹配规则")
     val rule: Rule,
-    @ApiModelProperty("用于通知扫描结果的企业微信群机器人")
+    @get:Schema(title = "用于通知扫描结果的企业微信群机器人")
     val weworkBotUrl: String? = null,
-    @ApiModelProperty("用于通知扫描结果的企业微信群机器人会话，多个id用|分隔")
+    @get:Schema(title = "用于通知扫描结果的企业微信群机器人会话，多个id用|分隔")
     val chatIds: String? = null
 )
