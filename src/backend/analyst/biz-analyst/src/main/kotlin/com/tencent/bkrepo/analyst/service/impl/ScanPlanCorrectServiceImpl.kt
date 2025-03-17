@@ -47,13 +47,13 @@ class ScanPlanCorrectServiceImpl(
     @Async
     override fun correctPlanOverview(planId: String?) {
         if (planId != null) {
-            correct(planId)
+            scanPlanDao.findById(planId)?.let { correct(it) }
         } else {
             var plans: List<TScanPlan>
             var pageNumber = DEFAULT_PAGE_NUMBER
             do {
                 plans = scanPlanDao.page(PageLimit(pageNumber))
-                plans.forEach { correct(it.id!!) }
+                plans.forEach { correct(it) }
                 pageNumber++
             } while (plans.isNotEmpty())
         }
@@ -62,14 +62,15 @@ class ScanPlanCorrectServiceImpl(
     /**
      * 对扫描方案的预览数据进行矫正
      *
-     * @param planId 扫描方案id
+     * @param plan 扫描方案
      */
-    private fun correct(planId: String) {
+    private fun correct(plan: TScanPlan) {
+        val planId = plan.id!!
         logger.info("start correct plan[$planId] overview data")
 
         var pageNumber = DEFAULT_PAGE_NUMBER
         var tasks: List<TPlanArtifactLatestSubScanTask>
-        val overview = HashMap<String, Long>()
+        val overview = plan.scanResultOverview.mapValuesTo(HashMap()) { 0L }
         do {
             tasks = planArtifactLatestSubScanTaskDao.pageByPlanId(planId, PageLimit(pageNumber))
             tasks.forEach {
@@ -79,6 +80,12 @@ class ScanPlanCorrectServiceImpl(
             }
             pageNumber++
         } while (tasks.isNotEmpty())
+
+        val corrected = overview.all { it.value == plan.scanResultOverview[it.key] }
+        if (overview.size == plan.scanResultOverview.size && corrected) {
+            logger.info("plan[$planId] overview data already corrected")
+            return
+        }
 
         scanPlanDao.setScanResultOverview(planId, overview)
         logger.info("correct plan[$planId] overview data success")
