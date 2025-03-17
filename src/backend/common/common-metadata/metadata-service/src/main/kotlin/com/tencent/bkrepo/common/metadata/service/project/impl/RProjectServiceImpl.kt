@@ -160,7 +160,8 @@ class RProjectServiceImpl(
             if (checkExist(name)) {
                 throw ErrorCodeException(ArtifactMessageCode.PROJECT_EXISTED, name)
             }
-            val project = buildProject()
+            // TODO ,多租户暂时不涉及
+            val project = buildProject(null)
             return try {
                 projectDao.insert(project)
                 resourcePermissionListener.handle(buildCreatedEvent(request))
