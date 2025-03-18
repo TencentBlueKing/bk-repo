@@ -76,10 +76,12 @@ class ServerLogService(
             logger.info("node $nodeId not exist!")
             return LogData()
         }
+        val uri = target.uri
         try {
-            return sendLogDataRequest(target, LogType.valueOf(logType), startPosition, opServerLogProperties.maxSize.toBytes())
+            return sendLogDataRequest(
+                uri, LogType.valueOf(logType), startPosition, opServerLogProperties.maxSize.toBytes()
+            )
         } catch (e: Exception) {
-            e.printStackTrace()
             logger.warn(
                 "get log data for node $nodeId failed, " +
                         "logType: $logType, startPosition: $startPosition", e.message
@@ -116,30 +118,28 @@ class ServerLogService(
     }
 
     private fun sendLogDataRequest(
-        instance: ServiceInstance,
+        uri: URI,
         logType: LogType,
         startPosition: Long,
         maxSize: Long
     ): LogData {
-        with(instance) {
-            val uid = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)?.toString() ?: SYSTEM_USER
-            val target = instance.uri
-            val url = "$target/service/logs/data?logType=$logType&startPosition=$startPosition&maxSize=$maxSize"
-            try {
-                val headers = HttpHeaders()
-                headers.add(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
-                headers.add(MS_AUTH_HEADER_UID, uid)
-                val httpEntity = HttpEntity<Any>(headers)
-                val response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, Response::class.java).body
-                if (logger.isDebugEnabled) {
-                    logger.debug("Get response from $serviceId[$url]: ${response.data}.")
-                }
-                return JsonUtils.objectMapper.readValue(response.data?.toJsonString(), LogData::class.java)
-            } catch (e: Exception) {
-                logger.error("Request error,$url", e)
+        val uid = HttpContextHolder.getRequestOrNull()?.getAttribute(USER_KEY)?.toString() ?: SYSTEM_USER
+        val target = uri
+        val url = "$target/service/logs/data?logType=$logType&startPosition=$startPosition&maxSize=$maxSize"
+        try {
+            val headers = HttpHeaders()
+            headers.add(MS_AUTH_HEADER_SECURITY_TOKEN, serviceAuthManager.getSecurityToken())
+            headers.add(MS_AUTH_HEADER_UID, uid)
+            val httpEntity = HttpEntity<Any>(headers)
+            val response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, Response::class.java).body
+            if (logger.isDebugEnabled) {
+                logger.debug("Get response from $target[$url]: ${response.data}.")
             }
-            return LogData()
+            return JsonUtils.objectMapper.readValue(response.data?.toJsonString(), LogData::class.java)
+        } catch (e: Exception) {
+            logger.error("log data request error,$url", e)
         }
+        return LogData()
     }
 
 

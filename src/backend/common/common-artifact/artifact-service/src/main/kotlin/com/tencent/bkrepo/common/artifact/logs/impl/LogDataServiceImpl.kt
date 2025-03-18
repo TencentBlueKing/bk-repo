@@ -32,7 +32,12 @@ class LogDataServiceImpl : LogDataService {
             LogType.ACCESS -> "-access.log"
         }
         val log = logPath.trimEnd('/') + StringPool.SLASH + applicationName + suffix
-        return readLogsFromPosition(log, startPosition, maxSize)
+        return try {
+            readLogsFromPosition(log, startPosition, maxSize)
+        } catch (e: Exception) {
+            logger.warn("read log data error: $e")
+            LogData()
+        }
     }
 
 
