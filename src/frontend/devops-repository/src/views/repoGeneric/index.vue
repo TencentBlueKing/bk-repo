@@ -798,7 +798,7 @@
                                 repoName: this.repoName
                             }
                         }).then(res => {
-                            if (res !== '') {
+                            if (res !== '' && res !== null) {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,
@@ -986,7 +986,7 @@
                                         path: fullPath
                                     }
                                 }).then(res => {
-                                    if (res !== '') {
+                                    if (res !== '' && res !== null) {
                                         this.showIamDenyDialog = true
                                         this.showData = {
                                             projectId: this.projectId,
@@ -1067,7 +1067,7 @@
                                 path: row.fullPath
                             }
                         }).then(res => {
-                            if (res !== '') {
+                            if (res !== '' && res !== null) {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,
@@ -1167,7 +1167,7 @@
                                 repoName: this.repoName
                             }
                         }).then(res => {
-                            if (res !== '') {
+                            if (res !== '' && res !== null) {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,
@@ -1243,7 +1243,7 @@
                                 repoName: this.repoName
                             }
                         }).then(res => {
-                            if (res !== '') {
+                            if (res !== '' && res !== null) {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,
@@ -1353,7 +1353,7 @@
                                     path: row.fullPath
                                 }
                             }).then(res => {
-                                if (res !== '') {
+                                if (res !== '' && res !== null) {
                                     this.showIamDenyDialog = true
                                     this.showData = {
                                         projectId: this.projectId,
@@ -1410,7 +1410,7 @@
                                 path: row.fullPath
                             }
                         }).then(res => {
-                            if (res !== '') {
+                            if (res !== '' && res !== null) {
                                 this.showIamDenyDialog = true
                                 this.showData = {
                                     projectId: this.projectId,
