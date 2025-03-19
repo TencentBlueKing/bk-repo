@@ -206,6 +206,7 @@ class MavenMetadataService(
         val criteria = Criteria.where(TMavenMetadataRecord::artifactId.name).`is`(artifactId)
             .and(TMavenMetadataRecord::version.name).`is`(version)
             .and(TMavenMetadataRecord::extension.name).`is`(extension)
+            .and(TMavenMetadataRecord::classifier.name).isNull
         val query = Query(criteria)
         return mavenMetadataDao.find(query, TMavenMetadataRecord::class.java)
     }

@@ -179,11 +179,13 @@ class MavenServiceImpl(
             for (fileName in fileList) {
                 val jarList = mutableListOf<MavenJarInfoResponse.JarInfo>()
                 val mavenVersion = parseMavenFileName(fileName) ?: continue
+                logger.info("fileName $fileName, mavenVersion: $mavenVersion")
                 val metadataList = mavenMetadataService.search(
                     mavenVersion.artifactId, mavenVersion.version, mavenVersion.packaging
                 )
                 for (metadata in metadataList) {
                     val fullPath = buildFullPath(metadata)
+                    logger.info("mavenVersion: $mavenVersion, fullPath: $fullPath")
                     val node = nodeService.getNodeDetail((ArtifactInfo(metadata.projectId, metadata.repoName, fullPath)))
                         ?: continue
                     jarList.add(MavenJarInfoResponse.JarInfo(
@@ -229,8 +231,8 @@ class MavenServiceImpl(
      */
     private fun buildFullPath(mavenMetadata: TMavenMetadataRecord): String {
         with(mavenMetadata) {
-            val groupId = groupId.formatSeparator(StringPool.DOT, StringPool.SLASH)
-            val list = if (timestamp.isNullOrEmpty()) {
+            val groupId = StringPool.SLASH + groupId.formatSeparator(StringPool.DOT, StringPool.SLASH)
+            var list = if (timestamp.isNullOrEmpty()) {
                 mutableListOf(artifactId, version)
             } else {
                 mutableListOf(artifactId, version.removeSuffix(SNAPSHOT_SUFFIX), timestamp, buildNo.toString())
@@ -239,7 +241,8 @@ class MavenServiceImpl(
                 list.add(classifier)
             }
             val fileName = "${StringUtils.join(list, '-')}.$extension"
-            return groupId + StringPool.SLASH + fileName
+            list = mutableListOf(groupId, artifactId, version, fileName)
+            return StringUtils.join(list, '/')
         }
     }
 
