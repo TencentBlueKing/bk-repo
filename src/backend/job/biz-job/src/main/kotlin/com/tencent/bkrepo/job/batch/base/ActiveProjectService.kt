@@ -114,6 +114,7 @@ class ActiveProjectService(
         if (redisEnableCheck(buildRedisKey(ACTIVE_PROJECTS))) {
             lock = getLock()
             if (lock == null) {
+                logger.info("The other node is refreshing the active data.")
                 return
             }
         }
