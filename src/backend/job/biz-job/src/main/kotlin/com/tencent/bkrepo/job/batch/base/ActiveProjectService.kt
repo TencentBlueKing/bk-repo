@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
 import org.slf4j.LoggerFactory
@@ -45,13 +46,14 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
 
 @Component
 class ActiveProjectService(
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>,
+    private var lockOperation: LockOperation
 ) {
+
     private var activeProjects = mutableSetOf<String>()
 
     private var downloadActiveProjects = mutableSetOf<String>()
@@ -103,9 +105,50 @@ class ActiveProjectService(
     /**
      * 定时从db中读取数据更新缓存
      */
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INITIAL_DELAY, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(cron = "0 0 1 * * ?")
     fun refreshActiveProjects() {
         logger.info("start to refresh active projects and users")
+        // 当没有 redis 的场景下需要所有保存在所有机器内存中
+        // 有 redis 的场景只允许获取到锁的机器上进行刷下即可
+        var lock: Any? = null
+        if (redisEnableCheck(buildRedisKey(ACTIVE_PROJECTS))) {
+            lock = getLock()
+            if (lock == null) {
+                return
+            }
+        }
+        refreshActiveData()
+        removeLock(lock)
+        logger.info("refresh active projects and users success")
+    }
+
+    private fun redisEnableCheck(key: String): Boolean {
+        return try {
+            redisTemplate.opsForValue().get(key)
+            true
+        }catch (e: Exception) {
+            false
+        }
+    }
+
+    fun getLock(): Any? {
+        val key = ACTIVE_DATA_REFRESH_JOB
+        val lock = lockOperation.getLock(key)
+        return if (lockOperation.acquireLock(lockKey = key, lock = lock)) {
+            logger.info("Lock for key $key has been acquired.")
+            lock
+        } else {
+            null
+        }
+    }
+
+    fun removeLock(lock: Any?) {
+        lock?.let {
+            lockOperation.close(ACTIVE_DATA_REFRESH_JOB, it)
+        }
+    }
+
+    private fun refreshActiveData() {
         val criteriaList = IGNORE_PROJECT_PREFIX_LIST.mapTo(ArrayList()) { prefix ->
             TOperateLog::projectId.not().regex("^$prefix")
         }
@@ -115,7 +158,7 @@ class ActiveProjectService(
         }
         moveCopyActiveProjects = findDistinct(
             TOperateLog::projectId.name,
-        Criteria().andOperator(buildTypesCriteriaList(MOVE_COPY_EVENTS))
+            Criteria().andOperator(buildTypesCriteriaList(MOVE_COPY_EVENTS))
         )
         storeValue(MOVE_COPY_ACTIVE_PROJECTS, moveCopyActiveProjects)
 
@@ -141,8 +184,6 @@ class ActiveProjectService(
         // active users
         activeUsers = findDistinct(TOperateLog::userId.name, TOperateLog::userId.ne(""))
         storeValue(ACTIVE_USERS, activeUsers)
-
-        logger.info("refresh active projects and users success")
     }
 
     private fun buildRedisKey(key: String): String {
@@ -196,6 +237,7 @@ class ActiveProjectService(
         private const val UPLOAD_ACTIVE_PROJECTS = "uploadActiveProjects"
         private const val DOWNLOAD_ACTIVE_PROJECTS = "downloadActiveProjects"
         private const val MOVE_COPY_ACTIVE_PROJECTS = "moveCopyActiveProjects"
+        private const val ACTIVE_DATA_REFRESH_JOB = "activeDataRefreshJob"
 
     }
 }
