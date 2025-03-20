@@ -146,8 +146,12 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         }
     }
 
-    override fun getRegistryDomain(): NpmDomainInfo {
-        return NpmDomainInfo(UrlFormatter.formatHost(npmProperties.domain))
+    override fun getRegistryDomain(repositoryType: String): NpmDomainInfo {
+        return if (repositoryType == RepositoryType.NPM.name) {
+            NpmDomainInfo(UrlFormatter.formatHost(npmProperties.domain))
+        } else {
+            NpmDomainInfo(UrlFormatter.formatHost(npmProperties.ohpmDomain))
+        }
     }
 
     fun updatePackageWithDeleteVersion(

@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.dao
 
-import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
@@ -250,8 +249,9 @@ class PlanArtifactLatestSubScanTaskDao(
         return planArtifactCountMap
     }
 
-    fun deleteByLatestSubtasks(latestSubScanTaskIds: List<String>): DeleteResult {
-        return remove(Query(TPlanArtifactLatestSubScanTask::latestSubScanTaskId.inValues(latestSubScanTaskIds)))
+    fun deleteByLatestSubtasks(latestSubScanTaskIds: List<String>): List<TPlanArtifactLatestSubScanTask> {
+        val query = Query(TPlanArtifactLatestSubScanTask::latestSubScanTaskId.inValues(latestSubScanTaskIds))
+        return determineMongoTemplate().findAllAndRemove(query, TPlanArtifactLatestSubScanTask::class.java)
     }
 
     /**

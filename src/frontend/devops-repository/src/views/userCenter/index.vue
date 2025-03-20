@@ -85,9 +85,10 @@
                 }
             },
             confirmEdit () {
+                const originUserId = this.userInfo.username
                 this.editUser({
                     body: {
-                        userId: this.userInfo.username,
+                        userId: originUserId,
                         [this.editItem.key]: this.editItem.value
                     }
                 }).then(res => {
@@ -96,9 +97,7 @@
                         message: this.$t('edit') + this.$t('success')
                     })
                     this.cancelEdit()
-                    this.getUserInfo({
-                        userId: this.userInfo.username
-                    })
+                    this.getUserInfo(originUserId)
                 })
             },
             cancelEdit () {
