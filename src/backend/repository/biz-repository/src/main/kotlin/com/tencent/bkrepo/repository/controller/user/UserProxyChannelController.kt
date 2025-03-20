@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
+import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
 import io.swagger.annotations.Api
@@ -98,24 +99,36 @@ class UserProxyChannelController(
     ): Response<Boolean> {
         with(checkParam) {
             val headers = HttpHeaders()
-            userName?.let {
-                val useInfo = userName + StringPool.COLON + password
+            if (userName != null && password != null) {
+                val useInfo = userName + StringPool.COLON + RsaUtils.decrypt(password)
                 val authInfo = BASIC_AUTH_HEADER_PREFIX + Base64.getEncoder().encodeToString(useInfo.toByteArray())
                 headers.set(HttpHeaders.AUTHORIZATION, authInfo)
             }
-            val httpEntity = HttpEntity<Any>(headers)
             // 暂时只添加了helm类型的校验
-            try {
-                val response = restTemplate.exchange(
-                    url + "/index.yaml", HttpMethod.HEAD, httpEntity, String::class.java)
-                if (response.statusCode != HttpStatus.OK) {
-                    return ResponseBuilder.success(false)
-                } else {
-                    return ResponseBuilder.success(true)
+            when(type.uppercase()) {
+                RepositoryType.HELM.name -> {
+                    return ResponseBuilder.success(checkHelmValid(url, headers))
                 }
-            } catch (e: Exception) {
-                return ResponseBuilder.success(false)
+                else -> {
+                    return ResponseBuilder.success(false)
+                }
             }
+
+        }
+    }
+
+    private fun checkHelmValid(url: String , headers: HttpHeaders): Boolean {
+        val httpEntity = HttpEntity<Any>(headers)
+        try {
+            val response = restTemplate.exchange(
+                url + "/index.yaml", HttpMethod.HEAD, httpEntity, String::class.java)
+            return if (response.statusCode != HttpStatus.OK) {
+                false
+            } else {
+                true
+            }
+        } catch (e: Exception) {
+            return false
         }
     }
 
@@ -146,6 +159,7 @@ class UserProxyChannelController(
 
 data class CheckParam(
     val url: String,
+    val type: String,
     val userName: String?,
     val password: String?
 )

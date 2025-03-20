@@ -130,6 +130,7 @@
                         ...data
                     }
                     this.editProxyData.proxyType = data.public ? 'publicProxy' : 'privateProxy'
+                    this.checkValid()
                 }
             },
             show (val) {
@@ -139,13 +140,10 @@
                         this.connected = true
                     }
                 }
-            },
-            'editProxyData.proxyType' () {
-                this.checkValid()
             }
         },
         methods: {
-            ...mapActions(['checkProxy']),
+            ...mapActions(['checkProxy', 'getRSAKey']),
             async confirmProxyData () {
                 await this.$refs.proxyFrom.validate()
                 this.$emit('confirm', { name: this.proxyData.name, data: this.editProxyData })
@@ -179,12 +177,16 @@
                 this.connected = false
                 this.$emit('cancel')
             },
-            testConnection () {
+            async testConnection () {
                 this.loading = true
+                const encrypt = new window.JSEncrypt()
+                const rsaKey = await this.getRSAKey()
+                encrypt.setPublicKey(rsaKey)
                 const body = {
                     url: this.editProxyData.url,
                     userName: this.editProxyData.proxyType !== 'privateProxy' ? null : this.editProxyData.username,
-                    password: this.editProxyData.proxyType !== 'privateProxy' ? null : this.editProxyData.password
+                    password: this.editProxyData.proxyType !== 'privateProxy' ? null : encrypt.encrypt(this.editProxyData.password),
+                    type: this.repoType
                 }
                 this.checkProxy({ body: body }).then(res => {
                     if (res === true) {
