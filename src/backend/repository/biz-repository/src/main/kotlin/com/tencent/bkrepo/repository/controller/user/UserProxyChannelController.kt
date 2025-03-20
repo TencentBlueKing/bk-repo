@@ -152,7 +152,24 @@ class UserProxyChannelController(
                 projectId,
                 repoName,
                 repoType
-            )
+            ).map { proxyChannelInfo ->
+                ProxyChannelInfo(
+                    projectId = proxyChannelInfo.projectId,
+                    repoName = proxyChannelInfo.repoName,
+                    id = proxyChannelInfo.id,
+                    public = proxyChannelInfo.public,
+                    name = proxyChannelInfo.name,
+                    url = proxyChannelInfo.url,
+                    repoType = proxyChannelInfo.repoType,
+                    credentialKey= proxyChannelInfo.credentialKey,
+                    username = proxyChannelInfo.username,
+                    password = proxyChannelInfo.password?.let{
+                         RsaUtils.encrypt(proxyChannelInfo.password!!)
+                    }.orEmpty(),
+                    lastSyncStatus = proxyChannelInfo.lastSyncStatus,
+                    lastSyncDate = proxyChannelInfo.lastSyncDate
+                )
+            }
         )
     }
 }
