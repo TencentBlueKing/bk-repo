@@ -50,3 +50,6 @@ const val PACKAGE_SUFFIX_REGEX =
 const val ARTIFACT_FORMAT = "^%s-%s-?(SNAPSHOT|[0-9]{8}\\.[0-9]{6}-[0-9]+)?-?(.+)?.%s\$"
 
 const val TIMESTAMP_FORMAT = "([0-9]{8}\\.[0-9]{6})-([0-9]+)"
+
+const val FILE_NAME_REGEX = "^(.+?)-(\\d.*?)\\." +
+        "(jar|war|tar|ear|ejb|rar|msi|aar|module|kar|rpm|tar\\.bz2|tar\\.gz|tar\\.xz|tbz|zip|pom)\$"

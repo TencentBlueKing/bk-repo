@@ -54,23 +54,23 @@ import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.exception.MavenBadRequestException
 import com.tencent.bkrepo.maven.model.TMavenMetadataRecord
-import com.tencent.bkrepo.maven.pojo.MavenVersion
 import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
 import com.tencent.bkrepo.maven.service.MavenMetadataService
 import com.tencent.bkrepo.maven.service.MavenService
 import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
+import com.tencent.bkrepo.maven.util.MavenStringUtils.parseMavenFileName
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
+import java.util.regex.PatternSyntaxException
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import java.util.regex.PatternSyntaxException
 
 @Service
 class MavenServiceImpl(
@@ -94,7 +94,7 @@ class MavenServiceImpl(
         } catch (e: PatternSyntaxException) {
             logger.warn(
                 "Error [${e.message}] occurred during uploading ${mavenArtifactInfo.getArtifactFullPath()} " +
-                    "in repo ${mavenArtifactInfo.getRepoIdentify()}"
+                        "in repo ${mavenArtifactInfo.getRepoIdentify()}"
             )
             throw MavenBadRequestException(
                 MavenMessageCode.MAVEN_ARTIFACT_UPLOAD, mavenArtifactInfo.getArtifactFullPath()
@@ -186,43 +186,27 @@ class MavenServiceImpl(
                 for (metadata in metadataList) {
                     val fullPath = buildFullPath(metadata)
                     logger.info("mavenVersion: $mavenVersion, fullPath: $fullPath")
-                    val node = nodeService.getNodeDetail((ArtifactInfo(metadata.projectId, metadata.repoName, fullPath)))
-                        ?: continue
-                    jarList.add(MavenJarInfoResponse.JarInfo(
-                        projectId = node.projectId,
-                        repoName = node.repoName,
-                        fullPath = node.fullPath,
-                        groupId = metadata.groupId,
-                        artifactId = metadata.artifactId,
-                        version = metadata.version,
-                        createdDate = node.createdDate,
-                        lastModifiedDate = node.lastModifiedDate,
-                        md5 = node.md5,
-                        sha256 = node.sha256
-                    ))
+                    val node =
+                        nodeService.getNodeDetail((ArtifactInfo(metadata.projectId, metadata.repoName, fullPath)))
+                            ?: continue
+                    jarList.add(
+                        MavenJarInfoResponse.JarInfo(
+                            projectId = node.projectId,
+                            repoName = node.repoName,
+                            fullPath = node.fullPath,
+                            groupId = metadata.groupId,
+                            artifactId = metadata.artifactId,
+                            version = metadata.version,
+                            createdDate = node.createdDate,
+                            lastModifiedDate = node.lastModifiedDate,
+                            md5 = node.md5,
+                            sha256 = node.sha256
+                        )
+                    )
                 }
                 jarMap[fileName] = jarList
             }
             return MavenJarInfoResponse(jarMap)
-        }
-    }
-
-
-    /**
-     * 根据filename解析出对应MavenVersion信息
-     */
-    private fun parseMavenFileName(fileName: String): MavenVersion? {
-        val regex = Regex("^(.*?)-([0-9]+(?:\\.[0-9]+)*)(?:-([0-9]{8}\\.[0-9]{6}-[0-9]+))?(?:-(.*?))?\\.(.*?)$")
-        val matchResult = regex.find(fileName)
-        return if (matchResult != null) {
-            MavenVersion(
-                artifactId = matchResult.groupValues[1],
-                version = matchResult.groupValues[2],
-                classifier = matchResult.groupValues[4].takeIf { it.isNotEmpty() },
-                packaging = matchResult.groupValues[5]
-            )
-        } else {
-            null
         }
     }
 
@@ -245,7 +229,6 @@ class MavenServiceImpl(
             return StringUtils.join(list, '/')
         }
     }
-
 
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(MavenServiceImpl::class.java)
