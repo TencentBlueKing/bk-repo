@@ -37,6 +37,8 @@ data class UserShareRecordInfo(
     val path: String,
     val expiredDate: LocalDateTime?,
     val permits: Int?,
+    val workspaceName: String?,
+    val workspaceFiles: List<WorkspaceFile>?,
     val createDate: LocalDateTime,
     val createBy: String,
     val lastModifiedDate: LocalDateTime,

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,31 +25,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.maven.constants
+package com.tencent.bkrepo.generic.pojo.share
 
-const val CHECKSUM_POLICY = "CHECKSUM_POLICY"
-const val SNAPSHOT_BEHAVIOR = "SNAPSHOT_BEHAVIOR"
-const val MAX_UNIQUE_SNAPSHOTS = "MAX_UNIQUE_SNAPSHOTS"
-const val SNAPSHOT_SUFFIX = "-SNAPSHOT"
-const val MAVEN_METADATA_FILE_NAME = "maven-metadata.xml"
+import java.time.LocalDateTime
 
-const val X_CHECKSUM_SHA1 = "X-Checksum-Sha1"
-const val FULL_PATH = "fullPath"
-const val PACKAGE_KEY = "packageKey"
-const val VERSION = "version"
-
-const val METADATA_KEY_PACKAGING = "packaging"
-const val METADATA_KEY_GROUP_ID = "groupId"
-const val METADATA_KEY_ARTIFACT_ID = "artifactId"
-const val METADATA_KEY_VERSION = "version"
-const val METADATA_KEY_CLASSIFIER = "classifier"
-
-const val PACKAGE_SUFFIX_REGEX =
-    "(.+)\\.(jar|war|tar|ear|ejb|rar|msi|aar|module|kar|rpm|klib|tar\\.bz2|tar\\.gz|tar\\.xz|tbz|zip|pom)\$"
-
-const val ARTIFACT_FORMAT = "^%s-%s-?(SNAPSHOT|[0-9]{8}\\.[0-9]{6}-[0-9]+)?-?(.+)?.%s\$"
-
-const val TIMESTAMP_FORMAT = "([0-9]{8}\\.[0-9]{6})-([0-9]+)"
-
-const val FILE_NAME_REGEX = "^(.+?)-(\\d.*?)\\." +
-        "(jar|war|tar|ear|ejb|rar|msi|aar|module|kar|rpm|tar\\.bz2|tar\\.gz|tar\\.xz|tbz|zip|pom)\$"
+data class UserShareApprovalInfo(
+    val shareId: String,
+    val downloadUserId: String,
+    val approvalId: String,
+    val approvalTicketUrl: String,
+    val createDate: LocalDateTime,
+    val approved: Boolean,
+    val approveUserId: String? = null,
+    val approveDate: LocalDateTime? = null,
+)
