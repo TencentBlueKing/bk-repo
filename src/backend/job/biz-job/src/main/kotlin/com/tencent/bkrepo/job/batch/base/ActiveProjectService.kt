@@ -34,6 +34,8 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -44,15 +46,13 @@ import org.springframework.data.mongodb.core.query.not
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 @Component
 class ActiveProjectService(
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>,
-    private var lockOperation: LockOperation
-) {
+    private val lockOperation: LockOperation
+) : BaseService(redisTemplate, lockOperation) {
 
     private var activeProjects = mutableSetOf<String>()
 
@@ -108,46 +108,12 @@ class ActiveProjectService(
     @Scheduled(cron = "0 0 1 * * ?")
     fun refreshActiveProjects() {
         logger.info("start to refresh active projects and users")
-        // 当没有 redis 的场景下需要所有保存在所有机器内存中
-        // 有 redis 的场景只允许获取到锁的机器上进行刷下即可
-        var lock: Any? = null
-        if (redisEnableCheck(buildRedisKey(ACTIVE_PROJECTS))) {
-            lock = getLock()
-            if (lock == null) {
-                logger.info("The other node is refreshing the active data.")
-                return
-            }
+        refreshData(ACTIVE_DATA_REFRESH_JOB) {
+            refreshActiveData()
         }
-        refreshActiveData()
-        removeLock(lock)
         logger.info("refresh active projects and users success")
     }
 
-    private fun redisEnableCheck(key: String): Boolean {
-        return try {
-            redisTemplate.opsForValue().get(key)
-            true
-        }catch (e: Exception) {
-            false
-        }
-    }
-
-    fun getLock(): Any? {
-        val key = ACTIVE_DATA_REFRESH_JOB
-        val lock = lockOperation.getLock(key)
-        return if (lockOperation.acquireLock(lockKey = key, lock = lock)) {
-            logger.info("Lock for key $key has been acquired.")
-            lock
-        } else {
-            null
-        }
-    }
-
-    fun removeLock(lock: Any?) {
-        lock?.let {
-            lockOperation.close(ACTIVE_DATA_REFRESH_JOB, it)
-        }
-    }
 
     private fun refreshActiveData() {
         val criteriaList = IGNORE_PROJECT_PREFIX_LIST.mapTo(ArrayList()) { prefix ->
@@ -161,43 +127,38 @@ class ActiveProjectService(
             TOperateLog::projectId.name,
             Criteria().andOperator(buildTypesCriteriaList(MOVE_COPY_EVENTS))
         )
-        storeValue(MOVE_COPY_ACTIVE_PROJECTS, moveCopyActiveProjects)
-
         // download event
         downloadActiveProjects = findDistinct(
             TOperateLog::projectId.name,
             Criteria().andOperator(buildTypesCriteriaList(DOWNLOAD_EVENTS))
         )
-        storeValue(DOWNLOAD_ACTIVE_PROJECTS, downloadActiveProjects)
-
         // upload event
         uploadActiveProjects = findDistinct(
             TOperateLog::projectId.name,
             Criteria().andOperator(buildTypesCriteriaList(UPLOAD_EVENTS))
         )
-        storeValue(UPLOAD_ACTIVE_PROJECTS, uploadActiveProjects)
-
-
         activeProjects = downloadActiveProjects.union(uploadActiveProjects)
             .union(moveCopyActiveProjects).toMutableSet()
-        storeValue(ACTIVE_PROJECTS, activeProjects)
-
         // active users
         activeUsers = findDistinct(TOperateLog::userId.name, TOperateLog::userId.ne(""))
+        // store active data
+        storeValue(MOVE_COPY_ACTIVE_PROJECTS, moveCopyActiveProjects)
+        storeValue(DOWNLOAD_ACTIVE_PROJECTS, downloadActiveProjects)
+        storeValue(UPLOAD_ACTIVE_PROJECTS, uploadActiveProjects)
+        storeValue(ACTIVE_PROJECTS, activeProjects)
         storeValue(ACTIVE_USERS, activeUsers)
     }
 
-    private fun buildRedisKey(key: String): String {
-        return JOB_KEY_PREFIX + key
-    }
 
-    private fun storeValue(key: String, value: Set<String>) {
+    private fun storeValue(key: String, value: MutableSet<String>) {
         try {
+            val redisKey = buildRedisKey(JOB_KEY_PREFIX, key)
             if (value.isEmpty()) {
-                redisTemplate.opsForValue().set(buildRedisKey(key), StringPool.EMPTY)
+                redisTemplate.opsForValue().set(redisKey, StringPool.EMPTY)
             } else {
-                redisTemplate.opsForValue().set(buildRedisKey(key), value.toJsonString())
+                redisTemplate.opsForValue().set(redisKey, value.toJsonString())
             }
+            value.clear()
         } catch (e: Exception) {
             logger.warn("store active projects error: ${e.message}")
         }
@@ -206,7 +167,8 @@ class ActiveProjectService(
     private fun getValue(key: String, cacheValue: MutableSet<String>): MutableSet<String> {
         if (cacheValue.isNotEmpty()) return cacheValue
         try {
-            val valueStr = redisTemplate.opsForValue().get(buildRedisKey(key))
+            val redisKey = buildRedisKey(JOB_KEY_PREFIX, key)
+            val valueStr = redisTemplate.opsForValue().get(redisKey)
             if (valueStr.isNullOrEmpty()) {
                 return mutableSetOf()
             }
@@ -219,8 +181,6 @@ class ActiveProjectService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ActiveProjectService::class.java)
-        private const val INITIAL_DELAY = 2L
-        private const val FIXED_DELAY = 60L
         private const val COLLECTION_NAME_PREFIX = "artifact_oplog_"
         private const val YEAR_MONTH_FORMAT = "yyyyMM"
         private val DOWNLOAD_EVENTS = listOf(
