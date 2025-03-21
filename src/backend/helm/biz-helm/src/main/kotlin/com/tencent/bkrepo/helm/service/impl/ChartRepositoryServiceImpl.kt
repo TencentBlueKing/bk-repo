@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.api.exception.OverloadException
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -164,7 +165,7 @@ class ChartRepositoryServiceImpl(
         with(artifactInfo) {
             val name = PackageKeys.resolveHelm(packageKey)
             val fullPath = String.format("/%s-%s.tgz", name, version)
-            val nodeDetail = nodeService.getNodeDetail(artifactInfo) ?: run {
+            val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath)) ?: run {
                 logger.warn("node [$fullPath] don't found.")
                 throw HelmFileNotFoundException(HelmMessageCode.HELM_FILE_NOT_FOUND, fullPath, "$projectId|$repoName")
             }
