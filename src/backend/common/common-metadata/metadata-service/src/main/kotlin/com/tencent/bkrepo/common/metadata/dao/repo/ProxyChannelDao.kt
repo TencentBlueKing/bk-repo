@@ -37,9 +37,12 @@ import com.tencent.bkrepo.common.metadata.model.TProxyChannel
 import com.tencent.bkrepo.common.metadata.util.ProxyChannelQueryHelper.buildSingleQuery
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.context.annotation.Conditional
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 /**
  * 项目数据访问层
@@ -105,5 +108,22 @@ class ProxyChannelDao : SimpleMongoDao<TProxyChannel>() {
             name = name
         )
         this.remove(query)
+    }
+
+    fun addSyncRecord(
+        projectId: String,
+        repoName: String,
+        proxyChannelName: String,
+        status: Boolean
+    ) {
+        val query = Query()
+        query.addCriteria(
+            Criteria.where(TProxyChannel::projectId.name).`is`(projectId)
+                .and(TProxyChannel::repoName.name).`is`(repoName)
+                .and(TProxyChannel::name.name).`is`(proxyChannelName)
+        )
+        val update = Update().set(TProxyChannel::lastSyncStatus.name, status)
+            .set(TProxyChannel::lastSyncDate.name, LocalDateTime.now())
+        this.updateFirst(query, update)
     }
 }
