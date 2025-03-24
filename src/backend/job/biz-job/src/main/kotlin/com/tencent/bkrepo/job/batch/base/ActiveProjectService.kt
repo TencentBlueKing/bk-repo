@@ -158,6 +158,7 @@ class ActiveProjectService(
             } else {
                 redisTemplate.opsForValue().set(redisKey, value.toJsonString())
             }
+            // 避免内存中存储的活跃数据不是最新的
             value.clear()
         } catch (e: Exception) {
             logger.warn("store active projects error: ${e.message}")

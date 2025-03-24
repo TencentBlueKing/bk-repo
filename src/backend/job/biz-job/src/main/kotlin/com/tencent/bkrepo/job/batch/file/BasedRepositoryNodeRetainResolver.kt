@@ -96,6 +96,7 @@ class BasedRepositoryNodeRetainResolver(
                 val redisKey = buildRedisKey(JOB_RETAIN_PREFIX, sha256)
                 redisTemplate.opsForValue().set(redisKey, retainedNode.toJsonString())
             }
+            // 避免内存中存储的活跃数据不是最新的
             retainValue.clear()
         } catch (e: Exception) {
             logger.warn("store retain nodes error: ${e.message}")
