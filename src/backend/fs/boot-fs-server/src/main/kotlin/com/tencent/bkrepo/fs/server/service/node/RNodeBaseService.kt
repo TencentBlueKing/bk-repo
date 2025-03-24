@@ -264,7 +264,7 @@ abstract class RNodeBaseService(
                 .and(TNode::folder).isEqualTo(false)
             val query = Query(criteria).withHint(TNode.FULL_PATH_IDX)
             val update = Update().set(TNode::lastAccessDate.name, accessDate)
-            nodeDao.updateMulti(query, update)
+            nodeDao.updateFirst(query, update)
             logger.info("Update node access time [$this] success.")
         }
     }
