@@ -140,6 +140,9 @@
                         this.connected = true
                     }
                 }
+            },
+            'editProxyData.proxyType' () {
+                this.checkValid()
             }
         },
         methods: {
