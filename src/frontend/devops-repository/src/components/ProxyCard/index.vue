@@ -16,7 +16,7 @@
             </div>
         </div>
         <div class="card-operation flex-center">
-            <bk-link v-if="repoType === 'helm'" theme="primary" @click="syncRepo" style="margin-right: auto">{{ $t('syncRepo') }}</bk-link>
+            <bk-link v-if="repoType === 'helm'" :disabled="pending" theme="primary" @click="syncRepo" style="margin-right: auto">{{ $t('syncRepo') }}</bk-link>
             <operation-list
                 :list="[
                     { label: $t('edit'), clickEvent: () => updateCard() },
@@ -45,7 +45,8 @@
         data () {
             return {
                 last: '',
-                status: undefined
+                status: undefined,
+                pending: false
             }
         },
         computed: {
@@ -79,7 +80,9 @@
                 this.$emit('update-card', this.cardData)
             },
             syncRepo () {
+                this.pending = true
                 this.syncHelmRepo({ projectId: this.projectId, repoName: this.repoName }).then(() => {
+                    this.pending = false
                     this.$emit('refresh-sync-record')
                 })
             },
