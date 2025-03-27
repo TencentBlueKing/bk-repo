@@ -25,7 +25,7 @@ local path = string.gsub(ngx.var.request_uri, "/generic", "")
 local headers = ngx.req.get_headers()
 
 --- 开始连接
-httpc:set_timeout(9000)
+httpc:set_timeout(1000)
 httpc:connect(addr)
 --- 发送请求
 local res, err = httpc:request_uri(addr, {
@@ -38,7 +38,9 @@ if not res or res.status ~= 200 then
     ngx.log(ngx.ERR, "failed to head resource: ", err)
     ngx.header["x-bkrepo-generic-auth-status"] = 401
     ngx.exit(200)
+    httpc.close()
     return
 end
+httpc.close()
 ngx.header["x-bkrepo-generic-auth-status"] = 200
 ngx.exit(200)
