@@ -25,7 +25,7 @@ local path = string.gsub(ngx.var.request_uri, "/generic", "")
 local headers = ngx.req.get_headers()
 
 --- 开始连接
-httpc:set_timeout(9000)
+httpc:set_timeout(1000)
 httpc:connect(addr)
 --- 发送请求
 local res, err = httpc:request_uri(addr, {
