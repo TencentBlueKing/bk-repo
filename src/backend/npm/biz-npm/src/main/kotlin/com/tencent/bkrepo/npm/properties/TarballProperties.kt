@@ -34,5 +34,6 @@ package com.tencent.bkrepo.npm.properties
 import com.tencent.bkrepo.common.api.constant.StringPool
 
 data class TarballProperties(
-    var prefix: String = StringPool.EMPTY
+    var prefix: String = StringPool.EMPTY,
+    var ohpmPrefix: String = StringPool.EMPTY,
 )

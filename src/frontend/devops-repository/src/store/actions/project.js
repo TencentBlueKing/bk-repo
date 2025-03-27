@@ -25,6 +25,12 @@ export default {
         )
     },
     // 校验项目信息
+    checkProjectId (_, { id }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/project/exist/${id}`
+        )
+    },
+    // 校验项目信息
     checkProject (_, { id, name }) {
         return Vue.prototype.$ajax.get(
             `${prefix}/project/exist`,
