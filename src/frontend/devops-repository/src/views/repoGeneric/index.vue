@@ -813,8 +813,9 @@
                     this.$set(item, 'loading', false)
                 })
             },
-            // 单击table打开文件夹
+            // 单击table打开预览
             previewFile (row) {
+                if (row.folder) return
                 if (isOutDisplayType(row.fullPath)) {
                     const isLocal = this.localRepo
                     const typeParam = isLocal ? 'local/' : 'remote/'
