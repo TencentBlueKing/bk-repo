@@ -162,7 +162,7 @@ class ProjectServiceImpl(
         if (enableMultiTenant.enabled) {
             validateTenantId()
             val tenantId = ProjectServiceHelper.getTenantId()
-            val projectId = "$tenantId-$name"
+            val projectId = "$tenantId.$name"
             return projectDao.findByName(projectId) != null
         }
         return projectDao.findByName(name) != null

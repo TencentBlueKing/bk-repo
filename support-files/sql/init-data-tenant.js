@@ -52,10 +52,10 @@ db.account.updateOne(
 );
 
 db.project.updateOne(
-    {name: "system-blueking"},
+    {name: "system.blueking"},
     {
         $setOnInsert: {
-            name: "system-blueking",
+            name: "system.blueking",
             displayName: "blueking",
             description: "",
             createdBy: "admin",
@@ -71,12 +71,12 @@ db.project.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "system-blueking",
+        projectId: "system.blueking",
         name: "generic-local"
     },
     {
         $setOnInsert: {
-            projectId: "system-blueking",
+            projectId: "system.blueking",
             name: "generic-local",
             type: "GENERIC",
             category: "LOCAL",
@@ -95,12 +95,12 @@ db.repository.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "system-blueking",
+        projectId: "system.blueking",
         name: "maven-local"
     },
     {
         $setOnInsert: {
-            projectId: "system-blueking",
+            projectId: "system.blueking",
             name: "maven-local",
             type: "MAVEN",
             category: "LOCAL",
@@ -119,12 +119,12 @@ db.repository.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "system-blueking",
+        projectId: "system.blueking",
         name: "docker-local"
     },
     {
         $setOnInsert: {
-            projectId: "system-blueking",
+            projectId: "system.blueking",
             name: "docker-local",
             type: "DOCKER",
             category: "LOCAL",
@@ -143,12 +143,12 @@ db.repository.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "system-blueking",
+        projectId: "system.blueking",
         name: "npm-local"
     },
     {
         $setOnInsert: {
-            projectId: "system-blueking",
+            projectId: "system.blueking",
             name: "npm-local",
             type: "NPM",
             category: "LOCAL",
@@ -167,12 +167,12 @@ db.repository.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "system-blueking",
+        projectId: "system.blueking",
         name: "pypi-local"
     },
     {
         $setOnInsert: {
-            projectId: "system-blueking",
+            projectId: "system.blueking",
             name: "pypi-local",
             type: "PYPI",
             category: "LOCAL",
@@ -191,12 +191,12 @@ db.repository.updateOne(
 
 db.repository.updateOne(
     {
-        projectId: "system-blueking",
+        projectId: "system.blueking",
         name: "helm-local"
     },
     {
         $setOnInsert: {
-            projectId: "system-blueking",
+            projectId: "system.blueking",
             name: "helm-local",
             type: "HELM",
             category: "LOCAL",
@@ -282,13 +282,13 @@ db.scanner.updateOne(
 
 db.scan_plan.updateOne(
     {
-        projectId: "system-blueking",
+        projectId: "system.blueking",
         name: "ImageScan",
         type: "DOCKER"
     },
     {
         $setOnInsert: {
-            projectId: "system-blueking",
+            projectId: "system.blueking",
             name: "ImageScan",
             type: "DOCKER",
             repoNames: [],
@@ -312,13 +312,13 @@ db.scan_plan.updateOne(
 
 db.scan_plan.updateOne(
     {
-        projectId: "system-blueking",
+        projectId: "system.blueking",
         name: "MavenScan",
         type: "MAVEN"
     },
     {
         $setOnInsert: {
-            projectId: "system-blueking",
+            projectId: "system.blueking",
             name: "MavenScan",
             type: "MAVEN",
             repoNames: [],
@@ -342,13 +342,13 @@ db.scan_plan.updateOne(
 
 db.scan_plan.updateOne(
     {
-        projectId: "system-blueking",
+        projectId: "system.blueking",
         name: "GenericScan",
         type: "MAVEN"
     },
     {
         $setOnInsert: {
-            projectId: "system-blueking",
+            projectId: "system.blueking",
             name: "GenericScan",
             type: "GENERIC",
             repoNames: [],

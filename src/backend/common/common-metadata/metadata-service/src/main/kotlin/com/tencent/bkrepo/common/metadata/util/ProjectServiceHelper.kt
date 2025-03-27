@@ -101,7 +101,7 @@ object ProjectServiceHelper {
     fun ProjectCreateRequest.buildProject(tenantId: String?): TProject {
         if (tenantId != null) {
             return TProject(
-                name = "$tenantId-$name",
+                name = "$tenantId.$name",
                 displayName = displayName,
                 description = description.orEmpty(),
                 createdBy = operator,
