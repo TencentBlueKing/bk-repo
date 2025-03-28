@@ -260,11 +260,11 @@ abstract class RNodeBaseService(
             val criteria = where(TNode::projectId).isEqualTo(projectId)
                 .and(TNode::repoName).isEqualTo(repoName)
                 .and(TNode::deleted).isEqualTo(null)
-                .and(TNode::fullPath).regex("^${PathUtils.escapeRegex(node.fullPath)}")
+                .and(TNode::fullPath).isEqualTo(fullPath)
                 .and(TNode::folder).isEqualTo(false)
             val query = Query(criteria).withHint(TNode.FULL_PATH_IDX)
             val update = Update().set(TNode::lastAccessDate.name, accessDate)
-            nodeDao.updateMulti(query, update)
+            nodeDao.updateFirst(query, update)
             logger.info("Update node access time [$this] success.")
         }
     }
