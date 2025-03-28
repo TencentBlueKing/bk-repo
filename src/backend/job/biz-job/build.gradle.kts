@@ -36,6 +36,7 @@ dependencies {
     implementation(project(":common:common-mongo-reactive"))
     implementation(project(":common:common-artifact:artifact-service"))
     implementation(project(":common:common-artifact:artifact-cache"))
+    implementation(project(":common:common-lock"))
     implementation(project(":repository:api-repository"))
     implementation(project(":helm:api-helm"))
     implementation(project(":oci:api-oci"))

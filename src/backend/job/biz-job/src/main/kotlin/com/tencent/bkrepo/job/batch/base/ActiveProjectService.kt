@@ -31,8 +31,11 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.job.IGNORE_PROJECT_PREFIX_LIST
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -43,15 +46,14 @@ import org.springframework.data.mongodb.core.query.not
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.concurrent.TimeUnit
 
 @Component
 class ActiveProjectService(
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>,
-) {
+    private val lockOperation: LockOperation
+) : BaseService(redisTemplate, lockOperation) {
+
     private var activeProjects = mutableSetOf<String>()
 
     private var downloadActiveProjects = mutableSetOf<String>()
@@ -103,9 +105,17 @@ class ActiveProjectService(
     /**
      * 定时从db中读取数据更新缓存
      */
-    @Scheduled(fixedDelay = FIXED_DELAY, initialDelay = INITIAL_DELAY, timeUnit = TimeUnit.MINUTES)
+    @Scheduled(cron = "0 0 1 * * ?")
     fun refreshActiveProjects() {
         logger.info("start to refresh active projects and users")
+        refreshData(ACTIVE_DATA_REFRESH_JOB) {
+            refreshActiveData()
+        }
+        logger.info("refresh active projects and users success")
+    }
+
+
+    private fun refreshActiveData() {
         val criteriaList = IGNORE_PROJECT_PREFIX_LIST.mapTo(ArrayList()) { prefix ->
             TOperateLog::projectId.not().regex("^$prefix")
         }
@@ -115,47 +125,41 @@ class ActiveProjectService(
         }
         moveCopyActiveProjects = findDistinct(
             TOperateLog::projectId.name,
-        Criteria().andOperator(buildTypesCriteriaList(MOVE_COPY_EVENTS))
+            Criteria().andOperator(buildTypesCriteriaList(MOVE_COPY_EVENTS))
         )
-        storeValue(MOVE_COPY_ACTIVE_PROJECTS, moveCopyActiveProjects)
-
         // download event
         downloadActiveProjects = findDistinct(
             TOperateLog::projectId.name,
             Criteria().andOperator(buildTypesCriteriaList(DOWNLOAD_EVENTS))
         )
-        storeValue(DOWNLOAD_ACTIVE_PROJECTS, downloadActiveProjects)
-
         // upload event
         uploadActiveProjects = findDistinct(
             TOperateLog::projectId.name,
             Criteria().andOperator(buildTypesCriteriaList(UPLOAD_EVENTS))
         )
-        storeValue(UPLOAD_ACTIVE_PROJECTS, uploadActiveProjects)
-
-
         activeProjects = downloadActiveProjects.union(uploadActiveProjects)
             .union(moveCopyActiveProjects).toMutableSet()
-        storeValue(ACTIVE_PROJECTS, activeProjects)
-
         // active users
         activeUsers = findDistinct(TOperateLog::userId.name, TOperateLog::userId.ne(""))
+        // store active data
+        storeValue(MOVE_COPY_ACTIVE_PROJECTS, moveCopyActiveProjects)
+        storeValue(DOWNLOAD_ACTIVE_PROJECTS, downloadActiveProjects)
+        storeValue(UPLOAD_ACTIVE_PROJECTS, uploadActiveProjects)
+        storeValue(ACTIVE_PROJECTS, activeProjects)
         storeValue(ACTIVE_USERS, activeUsers)
-
-        logger.info("refresh active projects and users success")
     }
 
-    private fun buildRedisKey(key: String): String {
-        return JOB_KEY_PREFIX + key
-    }
 
-    private fun storeValue(key: String, value: Set<String>) {
+    private fun storeValue(key: String, value: MutableSet<String>) {
         try {
+            val redisKey = buildRedisKey(JOB_KEY_PREFIX, key)
             if (value.isEmpty()) {
-                redisTemplate.opsForValue().set(buildRedisKey(key), StringPool.EMPTY)
+                redisTemplate.opsForValue().set(redisKey, StringPool.EMPTY)
             } else {
-                redisTemplate.opsForValue().set(buildRedisKey(key), value.toJsonString())
+                redisTemplate.opsForValue().set(redisKey, value.toJsonString())
             }
+            // 避免内存中存储的活跃数据不是最新的
+            value.clear()
         } catch (e: Exception) {
             logger.warn("store active projects error: ${e.message}")
         }
@@ -164,7 +168,8 @@ class ActiveProjectService(
     private fun getValue(key: String, cacheValue: MutableSet<String>): MutableSet<String> {
         if (cacheValue.isNotEmpty()) return cacheValue
         try {
-            val valueStr = redisTemplate.opsForValue().get(buildRedisKey(key))
+            val redisKey = buildRedisKey(JOB_KEY_PREFIX, key)
+            val valueStr = redisTemplate.opsForValue().get(redisKey)
             if (valueStr.isNullOrEmpty()) {
                 return mutableSetOf()
             }
@@ -177,8 +182,6 @@ class ActiveProjectService(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ActiveProjectService::class.java)
-        private const val INITIAL_DELAY = 2L
-        private const val FIXED_DELAY = 60L
         private const val COLLECTION_NAME_PREFIX = "artifact_oplog_"
         private const val YEAR_MONTH_FORMAT = "yyyyMM"
         private val DOWNLOAD_EVENTS = listOf(
@@ -196,6 +199,7 @@ class ActiveProjectService(
         private const val UPLOAD_ACTIVE_PROJECTS = "uploadActiveProjects"
         private const val DOWNLOAD_ACTIVE_PROJECTS = "downloadActiveProjects"
         private const val MOVE_COPY_ACTIVE_PROJECTS = "moveCopyActiveProjects"
+        private const val ACTIVE_DATA_REFRESH_JOB = "activeDataRefreshJob"
 
     }
 }
