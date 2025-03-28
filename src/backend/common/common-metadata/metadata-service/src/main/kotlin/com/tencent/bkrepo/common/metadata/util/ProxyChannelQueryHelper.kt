@@ -119,7 +119,9 @@ object ProxyChannelQueryHelper {
                 username = it.username,
                 password = pw,
                 projectId = it.projectId,
-                repoName = it.repoName
+                repoName = it.repoName,
+                lastSyncStatus = it.lastSyncStatus,
+                lastSyncDate = it.lastSyncDate
             )
         }
     }

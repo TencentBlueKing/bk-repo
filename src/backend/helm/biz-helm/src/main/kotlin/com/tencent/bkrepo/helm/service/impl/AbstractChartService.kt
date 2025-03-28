@@ -674,8 +674,16 @@ open class AbstractChartService : ArtifactService() {
                     newEntries = newIndex.entries
                 )
                 mergeMap(oldIndex.entries, addedSet)
+                proxyChannelService.addSyncRecord(
+                    repositoryDetail.projectId,
+                    repositoryDetail.name,
+                    proxyChannel.name, true)
             } catch (ignored: Exception) {
                 logger.warn("Failed to execute action with channel ${proxyChannel.name}", ignored)
+                proxyChannelService.addSyncRecord(
+                    repositoryDetail.projectId,
+                    repositoryDetail.name,
+                    proxyChannel.name, false)
             }
         }
         return oldIndex
