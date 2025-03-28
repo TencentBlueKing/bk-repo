@@ -31,48 +31,21 @@ import com.tencent.bkrepo.cargo.pojo.event.CargoOperationRequest
 import com.tencent.bkrepo.cargo.pojo.event.CargoPackageYankRequest
 import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
 import com.tencent.bkrepo.cargo.service.impl.CommonService
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import java.io.ByteArrayInputStream
-import java.io.InputStream
 
 class CargoPackageYankOperation(
     private val request: CargoOperationRequest,
     private val commonService: CommonService
 ) : AbstractCargoOperation(request, commonService) {
 
-    override fun handleEvent(indexInputStream: InputStream?, storageCredentials: StorageCredentials?): ArtifactFile {
+    override fun handleEvent(versions: MutableList<CrateIndex>): MutableList<CrateIndex> {
         with(request as CargoPackageYankRequest) {
-            indexInputStream.use { return yankCrateVersion(indexInputStream, storageCredentials, name, version, yanked) }
-        }
-    }
-
-    private fun yankCrateVersion(
-        inputStream: InputStream?,
-        storageCredentials: StorageCredentials?,
-        name: String,
-        version: String,
-        yanked: Boolean
-    ): ArtifactFile {
-        try {
-            // 读取 InputStream 的内容
-            if (inputStream == null) {
-                return ArtifactFileFactory.build(
-                    StringPool.EMPTY.byteInputStream(), storageCredentials = storageCredentials
-                )
-            }
-            val lines = inputStream.bufferedReader().readLines()
-            val versions = lines.map { line -> JsonUtils.objectMapper.readValue(line, CrateIndex::class.java) }.toMutableList()
+            logger.info(
+                "Index Will be refreshed for yank $yanked version $version of crate $name in repo $projectId|$repoName"
+            )
+            // 添加新版本
             versions.find { it.name == name && it.vers == version }?.let { it.yanked = yanked }
-            val updatedLines = versions.joinToString("\n") { JsonUtils.objectMapper.writeValueAsString(it) }
-            return ArtifactFileFactory.build(ByteArrayInputStream(updatedLines.toByteArray()), storageCredentials = storageCredentials)
-        } catch (e: Exception) {
-            logger.error("Failed to yank $yanked version $version of crate $name: ${e.message}")
-            throw e
+            // 按 version 排序
+            return versions
         }
     }
-
 }

@@ -59,8 +59,10 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.constant.FULL_PATH
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -88,6 +90,7 @@ class CargoLocalRepository : LocalRepository() {
         with(context) {
             val fullPath = getStringAttribute(FULL_PATH)!!
             val artifactFile = getAttribute(CARGO_CRATE_FILE) as ArtifactFile?
+            val cargoMetadata = getAttribute(CARGO_METADATA) as CargoMetadata?
             logger.info("File $fullPath will be stored in $projectId|$repoName")
             return NodeCreateRequest(
                 projectId = projectId,
@@ -99,6 +102,7 @@ class CargoLocalRepository : LocalRepository() {
                 md5 = artifactFile.getFileMd5(),
                 operator = userId,
                 overwrite = true,
+                nodeMetadata = convertToMetadata(cargoMetadata!!)
             )
         }
     }
@@ -195,18 +199,20 @@ class CargoLocalRepository : LocalRepository() {
         }
     }
 
-//    override fun buildDownloadRecord(
-//        context: ArtifactDownloadContext,
-//        artifactResource: ArtifactResource
-//    ): PackageDownloadRecord? {
-//        val conanFileReference = convertToConanFileReference(
-//            context.artifactInfo as ConanArtifactInfo
-//        )
-//        val refStr = ConanPathUtils.buildReferenceWithoutVersion(conanFileReference)
-//        return PackageDownloadRecord(
-//            context.projectId, context.repoName, PackageKeys.ofConan(refStr), conanFileReference.version
-//        )
-//    }
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ): PackageDownloadRecord? {
+        with(context.artifactInfo as CargoArtifactInfo) {
+            if (crateName.isNullOrEmpty() || crateVersion.isNullOrEmpty()) {
+                return null
+            }
+            return PackageDownloadRecord(
+                context.projectId, context.repoName, PackageKeys.ofCargo(crateName), crateVersion
+            )
+        }
+
+    }
 
 
     /**
@@ -242,13 +248,12 @@ class CargoLocalRepository : LocalRepository() {
             }
 
         } catch (e: Exception) {
-            e.printStackTrace()
             logger.warn("parse cargo upload data error: ${e.message}")
             throw CargoBadRequestException(CargoMessageCode.CARGO_UPLOAD_DATA_BROKEN)
         }
     }
 
-    fun readLittleEndianInt(inputStream: InputStream): Int {
+    private fun readLittleEndianInt(inputStream: InputStream): Int {
         val bytes = ByteArray(4)
         inputStream.read(bytes)
         return (bytes[0].toInt() and 0xFF) or

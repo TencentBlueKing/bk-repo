@@ -45,6 +45,7 @@ import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.INDEX
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.OWNERS
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.PUBLISH
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.SEARCH
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.UNYANK
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.YANK
 import com.tencent.bkrepo.cargo.pojo.request.OwnerUserAddRequest
 import com.tencent.bkrepo.cargo.service.CargoService
@@ -120,7 +121,7 @@ class CargoWebController(
         return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body("{\"ok\": true,}")
     }
 
-    @PutMapping(YANK)
+    @PutMapping(UNYANK)
     fun unYank(@ArtifactPathVariable artifactInfo: CargoArtifactInfo): ResponseEntity<Any> {
         cargoService.unYank(artifactInfo)
         return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body("{\"ok\": true,}")

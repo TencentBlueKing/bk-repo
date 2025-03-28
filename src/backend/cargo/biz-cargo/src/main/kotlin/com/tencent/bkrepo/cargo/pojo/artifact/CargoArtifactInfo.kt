@@ -44,6 +44,7 @@ open class CargoArtifactInfo(
 
         const val PUBLISH = "/{projectId}/{repoName}/api/v1/crates/new"
         const val YANK = "/{projectId}/{repoName}/api/v1/crates/{crateName}/{version}/yank"
+        const val UNYANK = "/{projectId}/{repoName}/api/v1/crates/{crateName}/{version}/unyank"
         const val OWNERS = "/{projectId}/{repoName}/api/v1/crates/{crateName}/owners"
         const val SEARCH = "/{projectId}/{repoName}/api/v1/crates"
         const val INDEX = "{projectId}/{repoName}/index/**"

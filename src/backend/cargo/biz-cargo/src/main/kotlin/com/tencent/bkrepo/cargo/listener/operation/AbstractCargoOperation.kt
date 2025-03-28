@@ -28,11 +28,15 @@
 package com.tencent.bkrepo.cargo.listener.operation
 
 import com.tencent.bkrepo.cargo.pojo.event.CargoOperationRequest
+import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
 import com.tencent.bkrepo.cargo.service.impl.CommonService
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoIndexFullPath
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildNodeCreateRequest
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.jsonCompress
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -77,7 +81,7 @@ abstract class AbstractCargoOperation(
                     "query index.json " +
                         "in repo [$projectId/$repoName] by User [$userId] cost: ${stopWatch.totalTimeSeconds}s"
                 )
-                val artifactFile = handleEvent(indexInputStream, storageCredentials)
+                val artifactFile = buildIndexFile(indexInputStream, storageCredentials)
                 logger.info("Index of crate $name in repo [$projectId/$repoName] is ready to upload...")
                 val nodeCreateRequest = buildNodeCreateRequest(
                     projectId = projectId,
@@ -102,10 +106,42 @@ abstract class AbstractCargoOperation(
         }
     }
 
+
+    private fun buildIndexFile(
+        inputStream: InputStream?,
+        storageCredentials: StorageCredentials?,
+    ): ArtifactFile {
+        try {
+            // 读取 InputStream 的内容
+            val lines = inputStream?.bufferedReader()?.readLines() ?: emptyList()
+            // 解析为对象，并去重
+            var versions = lines.asSequence()
+                .mapNotNull { line ->
+                    try {
+                        JsonUtils.objectMapper.readValue(line, CrateIndex::class.java)
+                    } catch (e: Exception) {
+                        // 记录日志或忽略无效行
+                        null
+                    }
+                }
+                .toMutableList()
+            versions = handleEvent(versions)
+            val updatedLines = versions.joinToString("\n") { crateIndex ->
+                // 将对象序列化为紧凑的 JSON 字符串
+                JsonUtils.objectMapper.writeValueAsString(crateIndex).jsonCompress()
+            }
+            return ArtifactFileFactory.build(updatedLines.byteInputStream(), storageCredentials = storageCredentials)
+        } catch (e: Exception) {
+            logger.error("Failed to handle index update event $request: ${e.message}")
+            // TODO 如果失败了如何处理？？
+            throw e
+        }
+    }
+
     /**
      * 处理对应的事件用于更新index.json
      */
-    open fun handleEvent(indexInputStream: InputStream?, storageCredentials: StorageCredentials?): ArtifactFile {
+    open fun handleEvent(versions: MutableList<CrateIndex>): MutableList<CrateIndex> {
         throw MethodNotAllowedException()
     }
 

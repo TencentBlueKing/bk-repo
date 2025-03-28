@@ -31,52 +31,24 @@ import com.tencent.bkrepo.cargo.pojo.event.CargoOperationRequest
 import com.tencent.bkrepo.cargo.pojo.event.CargoPackageDeleteRequest
 import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
 import com.tencent.bkrepo.cargo.service.impl.CommonService
-import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import java.io.ByteArrayInputStream
-import java.io.InputStream
 
 class CargoPackageDeleteOperation(
     private val request: CargoOperationRequest,
     private val commonService: CommonService
 ) : AbstractCargoOperation(request, commonService) {
 
-    override fun handleEvent(indexInputStream: InputStream?, storageCredentials: StorageCredentials?): ArtifactFile {
+    override fun handleEvent(versions: MutableList<CrateIndex>): MutableList<CrateIndex> {
+        // TODO 删除index中的版本是否需要删除对应制品
         with(request as CargoPackageDeleteRequest) {
-            // TODO 删除index中的版本是否需要删除对应制品
-            indexInputStream.use { return removeCrateVersion(indexInputStream, storageCredentials, name, version) }
-        }
-    }
-
-    private fun removeCrateVersion(
-        inputStream: InputStream?,
-        storageCredentials: StorageCredentials?,
-        name: String,
-        version: String? = null,
-    ): ArtifactFile {
-        try {
-            // 读取 InputStream 的内容
-            if (inputStream == null) {
-                return ArtifactFileFactory.build(
-                    StringPool.EMPTY.byteInputStream(), storageCredentials = storageCredentials
-                )
-            }
-            val lines = inputStream.bufferedReader().readLines()
-            val versions = lines.map { line -> JsonUtils.objectMapper.readValue(line, CrateIndex::class.java) }.toMutableList()
+            logger.info(
+                "Index will be refreshed for removing version $version of crate $name in repo $projectId|$repoName"
+            )
             // 删除版本
-            val updatedVersions = if (versions.isNotEmpty()) {
-                versions.filter { it.vers != version }.sortedBy { it.vers }
+            return if (versions.isNotEmpty()) {
+                versions.filter { it.vers != version }.sortedBy { it.vers }.toMutableList()
             } else {
-                emptyList()
+                mutableListOf()
             }
-            val updatedLines = versions.joinToString("\n") { JsonUtils.objectMapper.writeValueAsString(it) }
-            return ArtifactFileFactory.build(ByteArrayInputStream(updatedLines.toByteArray()), storageCredentials = storageCredentials)
-        } catch (e: Exception) {
-            logger.error("Failed to remove version $version for crate $name: ${e.message}")
-            throw e
         }
     }
 

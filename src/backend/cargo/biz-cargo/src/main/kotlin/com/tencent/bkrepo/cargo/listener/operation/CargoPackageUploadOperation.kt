@@ -31,64 +31,21 @@ import com.tencent.bkrepo.cargo.pojo.event.CargoOperationRequest
 import com.tencent.bkrepo.cargo.pojo.event.CargoPackageUploadRequest
 import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
 import com.tencent.bkrepo.cargo.service.impl.CommonService
-import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.api.util.jsonCompress
-import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import org.springframework.web.multipart.MultipartFile
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.InputStream
-import java.io.OutputStream
 
 class CargoPackageUploadOperation(
     private val request: CargoOperationRequest,
-    commonService: CommonService
+    private val commonService: CommonService
 ) : AbstractCargoOperation(request, commonService) {
 
-    override fun handleEvent(indexInputStream: InputStream?, storageCredentials: StorageCredentials?): ArtifactFile {
+    override fun handleEvent(versions: MutableList<CrateIndex>): MutableList<CrateIndex> {
         with(request as CargoPackageUploadRequest) {
-            indexInputStream.use {
-                return addCrateVersion(it, crateIndex, storageCredentials)
-            }
-        }
-    }
-
-    private fun addCrateVersion(
-        inputStream: InputStream?,
-        crateIndex: CrateIndex,
-        storageCredentials: StorageCredentials?
-    ): ArtifactFile {
-        try {
-            // 读取 InputStream 的内容
-            val lines = inputStream?.bufferedReader()?.readLines() ?: emptyList()
-            // 解析为对象，并去重
-            var versions = lines.asSequence()
-                .mapNotNull { line ->
-                    try {
-                        JsonUtils.objectMapper.readValue(line, CrateIndex::class.java)
-                    } catch (e: Exception) {
-                        // 记录日志或忽略无效行
-                        null
-                    }
-                }
-                .toMutableList()
+            logger.info(
+                "Index Will be refreshed for adding version $version of crate $name in repo $projectId|$repoName"
+            )
             // 添加新版本
             versions.add(crateIndex)
             // 按 version 排序
-            versions = versions.distinct().sortedBy { it.vers }.toMutableList()
-            val updatedLines = versions.joinToString("\n") { crateIndex ->
-                // 将对象序列化为紧凑的 JSON 字符串
-                JsonUtils.objectMapper.writeValueAsString(crateIndex).jsonCompress()
-            }
-            return ArtifactFileFactory.build(updatedLines.byteInputStream(), storageCredentials = storageCredentials)
-        } catch (e: Exception) {
-            logger.error("Failed to add version ${crateIndex.vers} for crate ${crateIndex.name}: ${e.message}")
-            // TODO 如果失败了如何处理？？
-            throw  e
+            return versions.distinct().sortedBy { it.vers }.toMutableList()
         }
     }
 }
