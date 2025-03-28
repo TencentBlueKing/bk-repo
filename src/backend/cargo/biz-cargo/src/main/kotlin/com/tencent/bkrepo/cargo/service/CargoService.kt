@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.cargo.service
 
+import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 
@@ -47,4 +48,6 @@ interface CargoService {
     fun yank(cargoArtifactInfo: CargoArtifactInfo)
 
     fun unYank(cargoArtifactInfo: CargoArtifactInfo)
+
+    fun search(cargoArtifactInfo: CargoArtifactInfo, q: String, perPage: Int): CargoSearchResult
 }

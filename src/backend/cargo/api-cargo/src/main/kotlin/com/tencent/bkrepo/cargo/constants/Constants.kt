@@ -35,6 +35,9 @@ package com.tencent.bkrepo.cargo.constants
 const val NAME = "name"
 const val PACKAGE_KEY = "packageKey"
 const val VERSION = "version"
+const val DESCRIPTION = "description"
+const val LATEST = "latest"
+
 const val FILE_SIZE = "fileSize"
 const val FILE_SHA256 = "fileSha256"
 

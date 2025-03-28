@@ -34,17 +34,17 @@ package com.tencent.bkrepo.cargo.pojo
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class CargoSearchResult(
-    val crates: List<CratesDetail> = emptyList(),
-    val meta: List<SearchMeta> = emptyList(),
+    var crates: List<CratesDetail> = emptyList(),
+    var meta: SearchMeta = SearchMeta(),
 )
 
 data class CratesDetail(
     val name: String,
     @JsonProperty("max_version")
     val maxVersion: String,
-    val description: String,
+    val description: String?,
 )
 
 data class SearchMeta(
-    val total: Long
+    val total: Long = 0
 )

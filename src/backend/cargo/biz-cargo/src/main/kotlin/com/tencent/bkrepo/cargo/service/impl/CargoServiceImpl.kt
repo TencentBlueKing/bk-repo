@@ -36,7 +36,13 @@ import com.tencent.bkrepo.cargo.config.CargoProperties
 import com.tencent.bkrepo.cargo.constants.CARGO_INDEX_PREFIX
 import com.tencent.bkrepo.cargo.constants.CRATE_CONFIG
 import com.tencent.bkrepo.cargo.constants.CRATE_DOWNLOAD_URL_SUFFIX
+import com.tencent.bkrepo.cargo.constants.DESCRIPTION
+import com.tencent.bkrepo.cargo.constants.LATEST
+import com.tencent.bkrepo.cargo.constants.NAME
 import com.tencent.bkrepo.cargo.listener.event.CargoPackageYankEvent
+import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
+import com.tencent.bkrepo.cargo.pojo.CratesDetail
+import com.tencent.bkrepo.cargo.pojo.SearchMeta
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.index.IndexConfiguration
 import com.tencent.bkrepo.cargo.service.CargoService
@@ -53,14 +59,18 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
 import org.springframework.stereotype.Service
 
 @Service
 class CargoServiceImpl(
     private val cargoProperties: CargoProperties,
     private val permissionManager: PermissionManager,
+    private val packageService: PackageService,
 ) : CargoService {
 
 
@@ -105,6 +115,32 @@ class CargoServiceImpl(
 
     override fun unYank(cargoArtifactInfo: CargoArtifactInfo) {
         doYankOperation(cargoArtifactInfo, false)
+    }
+
+    override fun search(cargoArtifactInfo: CargoArtifactInfo, q: String, perPage: Int): CargoSearchResult {
+        with(cargoArtifactInfo) {
+            val queryModel = PackageQueryBuilder().select(NAME, DESCRIPTION, LATEST)
+                .projectId(projectId).repoName(repoName).sortByAsc(NAME)
+                .page(0, perPage)
+            if (q.isNotBlank()) {
+                queryModel.name("*$q*", OperationType.MATCH)
+            }
+            val queryResult = packageService.searchPackage(queryModel.build())
+            val crates: MutableList<CratesDetail> = mutableListOf()
+            queryResult.records.forEach { map ->
+                crates.add(
+                    CratesDetail(
+                        name = map[NAME] as String,
+                        description = map[DESCRIPTION] as String?,
+                        maxVersion = map[LATEST] as String,
+                    )
+                )
+            }
+            return CargoSearchResult(
+                crates = crates,
+                meta = SearchMeta(queryResult.totalRecords)
+            )
+        }
     }
 
 

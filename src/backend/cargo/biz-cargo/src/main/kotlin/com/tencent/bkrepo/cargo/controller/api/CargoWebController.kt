@@ -159,9 +159,9 @@ class CargoWebController(
     fun search(
         @ArtifactPathVariable artifactInfo: CargoArtifactInfo,
         @RequestParam q: String,
-        @RequestParam("per_page") per_page: Long = 10
+        @RequestParam("per_page") perPage: Int = 10
     ): ResponseEntity<CargoSearchResult> {
-        return ResponseEntity.ok(CargoSearchResult())
+        return ResponseEntity.ok(cargoService.search(artifactInfo, q, perPage))
     }
 
     companion object {
