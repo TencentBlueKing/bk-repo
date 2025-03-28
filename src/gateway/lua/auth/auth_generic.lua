@@ -38,9 +38,7 @@ if not res or res.status ~= 200 then
     ngx.log(ngx.ERR, "failed to head resource: ", err)
     ngx.header["x-bkrepo-generic-auth-status"] = 401
     ngx.exit(200)
-    httpc.close()
     return
 end
-httpc.close()
 ngx.header["x-bkrepo-generic-auth-status"] = 200
 ngx.exit(200)
