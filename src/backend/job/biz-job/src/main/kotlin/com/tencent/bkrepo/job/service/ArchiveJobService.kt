@@ -1,8 +1,6 @@
 package com.tencent.bkrepo.job.service
 
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
-import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
-import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
 
 /**

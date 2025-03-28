@@ -237,6 +237,7 @@ abstract class BaseTaskExecutor(
             if (!archivedFileMigrated) {
                 throw e
             }
+            logger.info("only migrate archive file[${node.sha256}], task[${node.projectId}/${node.repoName}]")
         }
     }
 

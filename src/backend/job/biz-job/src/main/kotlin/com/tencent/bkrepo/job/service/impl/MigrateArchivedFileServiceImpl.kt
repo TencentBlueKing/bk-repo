@@ -48,7 +48,19 @@ class MigrateArchivedFileServiceImpl(
         if (archiveFile.status != COMPLETED) {
             // 制品已经处于归档完成的状态才可迁移，其他状态迁移会导致迁移后的归档文件无法完成归档，或者重复恢复
             throw IllegalStateException(
-                "migrate archived file[${node.fullPath}] failed, status[${archiveFile.status}], " +
+                "migrate archived file[${node.sha256}] failed, status[${archiveFile.status}], " +
+                        "task[${context.task.projectId}/${context.task.repoName}]"
+            )
+        }
+        val newCredentialsArchivedFile = archiveFileDao.findByStorageKeyAndSha256(newCredentialsKey, sha256)
+        if (newCredentialsArchivedFile?.status == COMPLETED) {
+            return true
+        }
+
+        if (newCredentialsArchivedFile != null) {
+            throw IllegalStateException(
+                "migrate archived file[${node.sha256}] failed, " +
+                        "archive file of dst credentials status[${archiveFile.status}], " +
                         "task[${context.task.projectId}/${context.task.repoName}]"
             )
         }
@@ -62,13 +74,16 @@ class MigrateArchivedFileServiceImpl(
             size = archiveFile.size,
             compressedSize = archiveFile.compressedSize,
             storageCredentialsKey = newCredentialsKey,
-            status = archiveFile.status,
+            status = COMPLETED,
             archiver = archiveFile.archiver,
             archiveCredentialsKey = archiveFile.archiveCredentialsKey,
             storageClass = archiveFile.storageClass
         )
         archiveFileDao.insert(migratedArchiveFile)
-        logger.info("migrate archived file[$sha256] of storage[$oldCredentialsKey] success")
+        logger.info(
+            "migrate archived file[${node.sha256}] of storage[$oldCredentialsKey] success, " +
+                    "task[${context.task.projectId}/${context.task.repoName}]"
+        )
         return true
     }
 
