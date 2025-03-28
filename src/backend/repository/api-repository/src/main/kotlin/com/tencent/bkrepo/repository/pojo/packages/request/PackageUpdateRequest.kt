@@ -42,6 +42,8 @@ data class PackageUpdateRequest(
     val packageKey: String,
     @ApiModelProperty("包名称")
     val name: String? = null,
+    @ApiModelProperty("包key")
+    val key: String? = null,
     @ApiModelProperty("包简要描述")
     val description: String? = null,
     @ApiModelProperty("包版本标签")

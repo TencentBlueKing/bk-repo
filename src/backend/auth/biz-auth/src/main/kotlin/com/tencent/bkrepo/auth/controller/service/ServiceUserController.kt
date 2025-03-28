@@ -82,6 +82,10 @@ class ServiceUserController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
+    override fun userInfoByToken(token: String): Response<UserInfo?> {
+        return ResponseBuilder.success(userService.getUserInfoByToken(token))
+    }
+
     override fun userInfoById(uid: String): Response<UserInfo?> {
         return ResponseBuilder.success(userService.getUserInfoById(uid))
     }

@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.urlEncode
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.UrlFormatter
@@ -58,24 +57,13 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.buildOkHttpClient
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
-import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
-import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.common.artifact.stream.artifactStream
-import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveContentRange
-import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod.HEAD
 import com.tencent.bkrepo.common.storage.innercos.http.toRequestBody
-import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
-import com.tencent.bkrepo.generic.artifact.remote.AsyncRemoteArtifactCacheWriter
-import com.tencent.bkrepo.generic.artifact.remote.RemoteArtifactCacheLocks
-import com.tencent.bkrepo.generic.artifact.remote.RemoteArtifactCacheWriter
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -92,11 +80,6 @@ import org.springframework.stereotype.Component
 @Component
 class GenericRemoteRepository(
     private val genericProperties: GenericProperties,
-    private val storageProperties: StorageProperties,
-    private val storageHealthMonitorHelper: StorageHealthMonitorHelper,
-    private val asyncCacheWriter: AsyncRemoteArtifactCacheWriter,
-    private val cacheLocks: RemoteArtifactCacheLocks,
-    private val metadataService: MetadataService,
 ) : RemoteRepository() {
     override fun onDownloadRedirect(context: ArtifactDownloadContext): Boolean {
         return redirectManager.redirect(context)
@@ -123,9 +106,49 @@ class GenericRemoteRepository(
             // 发起请求
             val response = httpClient.newCall(request).execute()
             return if (checkResponse(response)) {
-                onDownloadResponse(context, response)
+                val preview = context.request.getParameter(PARAM_PREVIEW)?.toBoolean()
+                val download = context.request.getParameter(PARAM_DOWNLOAD)?.toBoolean()
+                onDownloadResponse(context, response, preview != true || download == true, false)
             } else null
         }
+    }
+
+    /**
+     * 查询[artifactInfo]对应的节点及其父节点
+     */
+    override fun safeSearchParents(
+        repositoryDetail: RepositoryDetail,
+        artifactInfo: ArtifactInfo
+    ): List<Any> {
+        return try {
+            val fullPath = artifactInfo.getArtifactFullPath()
+            val parents = PathUtils.resolveAncestorFolder(fullPath)
+            val rules = mutableListOf<Rule>(
+                Rule.QueryRule(NodeDetail::projectId.name, repositoryDetail.projectId),
+                Rule.QueryRule(NodeDetail::repoName.name, repositoryDetail.name),
+                Rule.QueryRule(NodeDetail::fullPath.name, parents + fullPath, OperationType.IN)
+            )
+            val queryModel = QueryModel(sort = null, select = null, rule = Rule.NestedRule(rules))
+            val searchContext = GenericArtifactSearchContext(
+                repo = repositoryDetail,
+                artifact = artifactInfo,
+                model = queryModel
+            )
+            search(searchContext)
+        } catch (ignored: Exception) {
+            logger.warn("Failed to query remote artifact[${artifactInfo}]", ignored)
+            emptyList()
+        }
+    }
+
+    /**
+     * 远程仓库是bkrepo时，okhttp response的header里面包含Node相关header，可以直接写到返回给客户端的响应中
+     */
+    override fun addHeadersOfNode(headers: Headers) {
+        super.addHeadersOfNode(headers)
+        val response = HttpContextHolder.getResponse()
+        headers[X_CHECKSUM_MD5]?.let { response.setHeader(X_CHECKSUM_MD5, it) }
+        headers[X_CHECKSUM_SHA256]?.let { response.setHeader(X_CHECKSUM_SHA256, it) }
     }
 
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {
@@ -143,44 +166,6 @@ class GenericRemoteRepository(
             val artifactName = context.artifactInfo.getResponseName()
             ArtifactResource(this, artifactName, cacheNode, ArtifactChannel.PROXY, context.useDisposition)
         }
-    }
-
-    override fun onDownloadResponse(context: ArtifactDownloadContext, response: okhttp3.Response): ArtifactResource {
-        if (response.header(HttpHeaders.TRANSFER_ENCODING) == "chunked") {
-            throw ErrorCodeException(PARAMETER_INVALID, "Transfer-Encoding: chunked was not supported")
-        }
-        val contentLength = response.header(HttpHeaders.CONTENT_LENGTH)!!.toLong()
-        val range = resolveContentRange(response.header(HttpHeaders.CONTENT_RANGE)) ?: Range.full(contentLength)
-
-        val request = HttpContextHolder.getRequestOrNull()
-        val artifactStream = if (range.isEmpty() || request?.method == HEAD.name) {
-            // 返回空文件
-            response.close()
-            ArtifactInputStream(EmptyInputStream.INSTANCE, range)
-        } else {
-            // 返回文件内容
-            response.body!!.byteStream().artifactStream(range).apply {
-                if (range.isFullContent() && context.getRemoteConfiguration().cache.enabled) {
-                    // 仅缓存完整文件，返回响应的同时写入缓存
-                    addListener(buildCacheWriter(context, contentLength))
-                } else if (context.getRemoteConfiguration().cache.enabled) {
-                    // 分片下载时异步拉取完整文件并缓存
-                    asyncCache(context, response.request)
-                }
-            }
-        }
-        // 由于此处node为null，需要手动设置sha256,md5等node相关header
-        addHeadersOfNode(response.headers)
-        // 设置Content-Disposition响应头
-        val preview = context.request.getParameter(PARAM_PREVIEW)?.toBoolean()
-        val download = context.request.getParameter(PARAM_DOWNLOAD)?.toBoolean()
-        return ArtifactResource(
-            inputStream = artifactStream,
-            artifactName = context.artifactInfo.getResponseName(),
-            node = null,
-            channel = ArtifactChannel.LOCAL,
-            useDisposition = preview != true || download == true,
-        )
     }
 
     override fun query(context: ArtifactQueryContext): Any? {
@@ -216,72 +201,11 @@ class GenericRemoteRepository(
         } ?: emptyList()
     }
 
-    /**
-     * 查询[artifactInfo]对应的节点及其父节点
-     */
-    private fun safeSearchParents(
-        repositoryDetail: RepositoryDetail,
-        artifactInfo: ArtifactInfo
-    ): List<Any> {
-        return try {
-            val fullPath = artifactInfo.getArtifactFullPath()
-            val parents = PathUtils.resolveAncestorFolder(fullPath)
-            val rules = mutableListOf<Rule>(
-                Rule.QueryRule(NodeDetail::projectId.name, repositoryDetail.projectId),
-                Rule.QueryRule(NodeDetail::repoName.name, repositoryDetail.name),
-                Rule.QueryRule(NodeDetail::fullPath.name, parents + fullPath, OperationType.IN)
-            )
-            val queryModel = QueryModel(sort = null, select = null, rule = Rule.NestedRule(rules))
-            val searchContext = GenericArtifactSearchContext(
-                repo = repositoryDetail,
-                artifact = artifactInfo,
-                model = queryModel
-            )
-            search(searchContext)
-        } catch (ignored: Exception) {
-            logger.warn("Failed to query remote artifact[${artifactInfo}]", ignored)
-            emptyList()
-        }
-    }
-
     private fun createGenericHttpClient(configuration: RemoteConfiguration): OkHttpClient {
         val platforms = genericProperties.platforms
         val builder = buildOkHttpClient(configuration, false).dns(createPlatformDns(platforms))
         createAuthenticateInterceptor(configuration, platforms)?.let { builder.addInterceptor(it) }
         return builder.build()
-    }
-
-    private fun asyncCache(context: ArtifactDownloadContext, request: Request) {
-        val repoDetail = context.repositoryDetail
-        val remoteNodes = safeSearchParents(context.repositoryDetail, context.artifactInfo)
-        val cacheTask = AsyncRemoteArtifactCacheWriter.CacheTask(
-            projectId = repoDetail.projectId,
-            repoName = repoDetail.name,
-            storageCredentials = repoDetail.storageCredentials ?: storageProperties.defaultStorageCredentials(),
-            remoteConfiguration = context.getRemoteConfiguration(),
-            fullPath = context.artifactInfo.getArtifactFullPath(),
-            userId = context.userId,
-            request = request,
-            remoteNodes = remoteNodes
-        )
-        asyncCacheWriter.cache(cacheTask)
-    }
-
-    private fun buildCacheWriter(context: ArtifactContext, contentLength: Long): RemoteArtifactCacheWriter {
-        val storageCredentials = context.repositoryDetail.storageCredentials
-            ?: storageProperties.defaultStorageCredentials()
-        val monitor = storageHealthMonitorHelper.getMonitor(storageProperties, storageCredentials)
-        val remoteNodes = safeSearchParents(context.repositoryDetail, context.artifactInfo)
-        return RemoteArtifactCacheWriter(
-            context = context,
-            storageManager = storageManager,
-            cacheLocks = cacheLocks,
-            remoteNodes = remoteNodes,
-            metadataService = metadataService,
-            monitor = monitor,
-            contentLength = contentLength,
-            storageProperties = storageProperties
-        )
     }
 
     private fun searchNodes(
@@ -304,17 +228,6 @@ class GenericRemoteRepository(
         // 执行请求
         val request = Request.Builder().url(url).post(body).build()
         return request<Response<Page<Map<String, Any?>>>>(context.getRemoteConfiguration(), request).data!!.records
-    }
-
-    /**
-     * 远程仓库是bkrepo时，okhttp response的header里面包含Node相关header，可以直接写到返回给客户端的响应中
-     * 使用此方法可以避免远程Node尚未被缓存时，返回给客户端的响应中不包含Node相关header
-     */
-    private fun addHeadersOfNode(headers: Headers) {
-        val response = HttpContextHolder.getResponse()
-        headers[HttpHeaders.ETAG]?.let { response.setHeader(HttpHeaders.ETAG, it) }
-        headers[X_CHECKSUM_MD5]?.let { response.setHeader(X_CHECKSUM_MD5, it) }
-        headers[X_CHECKSUM_SHA256]?.let { response.setHeader(X_CHECKSUM_SHA256, it) }
     }
 
     private inline fun <reified T> request(remoteConfiguration: RemoteConfiguration, request: Request): T {

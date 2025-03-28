@@ -28,13 +28,16 @@
 package com.tencent.bkrepo.generic.artifact.remote
 
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.repository.remote.AsyncCacheHttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.repository.remote.buildOkHttpClient
 import com.tencent.bkrepo.generic.artifact.createPlatformDns
 import com.tencent.bkrepo.generic.config.GenericProperties
 import okhttp3.OkHttpClient
+import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
 
 @Component
+@Primary
 class GenericAsyncCacheHttpClientBuilderFactory(
     private val genericProperties: GenericProperties
 ) : AsyncCacheHttpClientBuilderFactory {

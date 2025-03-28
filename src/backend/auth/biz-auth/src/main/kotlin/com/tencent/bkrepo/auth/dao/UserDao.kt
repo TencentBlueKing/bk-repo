@@ -3,6 +3,7 @@ package com.tencent.bkrepo.auth.dao
 import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
+import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.query.UserQueryHelper
 import com.tencent.bkrepo.auth.util.query.UserUpdateHelper
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
@@ -150,6 +151,18 @@ class UserDao : SimpleMongoDao<TUser>() {
             Criteria().andOperator(
                 Criteria.where(TUser::userId.name).`is`(userId),
                 Criteria.where(TUser::roles.name).`in`(roleIdArray)
+            )
+        )
+        return this.findOne(query)
+    }
+
+    fun findFirstByToken(token: String): TUser? {
+        val md5Id = DataDigestUtils.md5FromStr(token)
+        val sm3Id = DataDigestUtils.sm3FromStr(token)
+        val query = Query.query(
+            Criteria().orOperator(
+                Criteria.where("tokens._id").`is`(md5Id),
+                Criteria.where("tokens._id").`is`(sm3Id)
             )
         )
         return this.findOne(query)
