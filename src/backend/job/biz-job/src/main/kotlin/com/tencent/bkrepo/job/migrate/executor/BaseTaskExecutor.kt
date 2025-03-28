@@ -47,7 +47,7 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
-import com.tencent.bkrepo.job.service.ArchiveJobService
+import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import java.io.FileNotFoundException
@@ -62,7 +62,7 @@ abstract class BaseTaskExecutor(
     private val fileReferenceService: FileReferenceService,
     private val storageService: StorageService,
     private val executingTaskRecorder: ExecutingTaskRecorder,
-    private val archiveJobService: ArchiveJobService,
+    private val migrateArchivedFileService: MigrateArchivedFileService,
 ) : TaskExecutor {
 
     @Value(SERVICE_INSTANCE_ID)
@@ -222,7 +222,7 @@ abstract class BaseTaskExecutor(
      * 执行数据迁移
      */
     private fun transferData(context: MigrationContext, node: Node) {
-        val archivedFileMigrated = archiveJobService.migrateArchivedFile(context, node)
+        val archivedFileMigrated = migrateArchivedFileService.migrateArchivedFile(context, node)
 
         // 可能存在同sha256文件被归档后又重新上传的情况，所以被归档的文件也需要尝试迁移数据
         try {

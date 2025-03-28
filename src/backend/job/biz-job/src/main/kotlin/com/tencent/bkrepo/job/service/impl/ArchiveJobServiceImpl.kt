@@ -1,10 +1,7 @@
 package com.tencent.bkrepo.job.service.impl
 
-import com.tencent.bkrepo.archive.ArchiveStatus.COMPLETED
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
-import com.tencent.bkrepo.archive.model.TArchiveFile
-import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.common.api.util.EscapeUtils
@@ -18,8 +15,6 @@ import com.tencent.bkrepo.job.batch.task.archive.IdleNodeArchiveJob.Companion.CO
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
-import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
 import com.tencent.bkrepo.job.service.ArchiveJobService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -37,7 +32,6 @@ class ArchiveJobServiceImpl(
     private val archiveJob: IdleNodeArchiveJob,
     private val archiveClient: ArchiveClient,
     private val migrateRepoStorageService: MigrateRepoStorageService,
-    private val archiveFileDao: ArchiveFileDao,
 ) : ArchiveJobService {
     override fun archive(projectId: String, key: String, days: Int, storageClass: ArchiveStorageClass) {
         val now = LocalDateTime.now()
@@ -103,38 +97,6 @@ class ArchiveJobServiceImpl(
         }.subscribe {
             logger.info("Success to restore project[$projectId], $context")
         }
-    }
-
-    override fun migrateArchivedFile(context: MigrationContext, node: Node): Boolean {
-        val oldCredentialsKey = context.task.srcStorageKey
-        val newCredentialsKey = context.task.dstStorageKey
-        val sha256 = node.sha256
-        val archiveFile = archiveFileDao.findByStorageKeyAndSha256(oldCredentialsKey, sha256) ?: return false
-        if (archiveFile.status != COMPLETED) {
-            // 制品已经处于归档完成的状态才可迁移，其他状态迁移会导致迁移后的归档文件无法完成归档，或者重复恢复
-            throw IllegalStateException(
-                "migrate archived file[${node.fullPath}] failed, status[${archiveFile.status}], " +
-                        "task[${context.task.projectId}/${context.task.repoName}]"
-            )
-        }
-
-        val migratedArchiveFile = TArchiveFile(
-            createdBy = archiveFile.createdBy,
-            createdDate = archiveFile.createdDate,
-            lastModifiedBy = archiveFile.lastModifiedBy,
-            lastModifiedDate = archiveFile.lastModifiedDate,
-            sha256 = archiveFile.sha256,
-            size = archiveFile.size,
-            compressedSize = archiveFile.compressedSize,
-            storageCredentialsKey = newCredentialsKey,
-            status = archiveFile.status,
-            archiver = archiveFile.archiver,
-            archiveCredentialsKey = archiveFile.archiveCredentialsKey,
-            storageClass = archiveFile.storageClass
-        )
-        archiveFileDao.insert(migratedArchiveFile)
-        logger.info("migrate archived file[$sha256] of storage[$oldCredentialsKey] success")
-        return true
     }
 
     fun buildCriteria(request: ArchiveRestoreRequest): Criteria {

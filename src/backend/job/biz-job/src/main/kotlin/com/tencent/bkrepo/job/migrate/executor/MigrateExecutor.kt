@@ -41,7 +41,7 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadP
 import com.tencent.bkrepo.job.migrate.utils.MigratedTaskNumberPriorityQueue
 import com.tencent.bkrepo.job.migrate.utils.NodeIterator
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
-import com.tencent.bkrepo.job.service.ArchiveJobService
+import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
@@ -57,7 +57,7 @@ class MigrateExecutor(
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
-    archiveJobService: ArchiveJobService,
+    migrateArchivedFileService: MigrateArchivedFileService,
     private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
     private val repositoryService: RepositoryService,
@@ -69,7 +69,7 @@ class MigrateExecutor(
     fileReferenceService,
     storageService,
     executingTaskRecorder,
-    archiveJobService,
+    migrateArchivedFileService,
 ) {
     /**
      * 任务执行线程池，用于提交node迁移任务到[transferDataExecutor]
