@@ -29,24 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.service
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+
+interface CargoService {
+    /**
+     * get index of crate
+     */
+    fun getIndexOfCrate(cargoArtifactInfo: CargoArtifactInfo)
+
+    fun uploadFile(cargoArtifactInfo: CargoArtifactInfo, artifactFile: ArtifactFile)
+
+    fun downloadFile(cargoArtifactInfo: CargoArtifactInfo)
+
+    fun yank(cargoArtifactInfo: CargoArtifactInfo)
+
+    fun unYank(cargoArtifactInfo: CargoArtifactInfo)
 }

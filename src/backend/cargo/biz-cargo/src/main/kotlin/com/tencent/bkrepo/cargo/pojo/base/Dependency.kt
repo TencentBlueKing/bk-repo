@@ -29,24 +29,12 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.pojo.base
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
-}
+open class Dependency(
+    val name: String,
+    val features: List<String> = emptyList(),
+    val optional: Boolean,
+    val kind: String? = null,
+    val registry: String? = null
+)

@@ -29,24 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.pojo
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
-}
+import com.fasterxml.jackson.annotation.JsonProperty
+
+data class CargoSearchResult(
+    val crates: List<CratesDetail> = emptyList(),
+    val meta: List<SearchMeta> = emptyList(),
+)
+
+data class CratesDetail(
+    val name: String,
+    @JsonProperty("max_version")
+    val maxVersion: String,
+    val description: String,
+)
+
+data class SearchMeta(
+    val total: Long
+)

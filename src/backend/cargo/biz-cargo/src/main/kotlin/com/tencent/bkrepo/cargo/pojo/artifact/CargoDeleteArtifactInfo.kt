@@ -29,24 +29,26 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.pojo.artifact
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+
+class CargoDeleteArtifactInfo(
+    projectId: String,
+    repoName: String,
+    val packageName: String,
+    val version: String = StringPool.EMPTY
+) : CargoArtifactInfo(projectId, repoName, StringPool.EMPTY) {
+
+    private val name = PackageKeys.resolveCargo(packageName)
+
+    override fun getArtifactFullPath(): String {
+        return if (getArtifactMappingUri().isNullOrEmpty()) ""
+        else getArtifactMappingUri()!!
+    }
+
+    override fun getArtifactName(): String = name
+
+    override fun getArtifactVersion(): String = version
 }

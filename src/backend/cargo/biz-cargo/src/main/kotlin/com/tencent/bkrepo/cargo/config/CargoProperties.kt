@@ -29,24 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.config
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
-}
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties(prefix = "cargo")
+data class CargoProperties(
+    /**
+     * cargo服务domain地址，用于生成url
+     */
+    var domain: String = "localhost",
+    /**
+     * 是否需要鉴权
+     */
+    var authRequired: Boolean = true,
+)

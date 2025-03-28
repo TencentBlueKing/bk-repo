@@ -29,24 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
+import com.tencent.bkrepo.common.service.condition.MicroService
+import org.springframework.boot.runApplication
+
+@MicroService
+class CargoApplication
+
+fun main(args: Array<String>) {
+    runApplication<CargoApplication>(*args)
 }

@@ -29,24 +29,4 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
-}

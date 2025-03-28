@@ -29,24 +29,30 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.constants
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
-}
+
+const val NAME = "name"
+const val PACKAGE_KEY = "packageKey"
+const val VERSION = "version"
+const val FILE_SIZE = "fileSize"
+const val FILE_SHA256 = "fileSha256"
+
+const val CRATE_CONFIG = "config.json"
+const val CRATE_DOWNLOAD_URL_SUFFIX = "/api/v1/crates"
+
+const val CARGO_METADATA = "cargoMetadata"
+
+const val CARGO_CRATE_FILE = "cargoCrateFile"
+
+const val CARGO_NODE_PREFIX = "/crates/"
+
+const val CARGO_JSON_PREFIX = "/.cargo/crates/"
+
+const val CARGO_INDEX_PREFIX = "/index/"
+
+const val CARGO_NODE_SUFFIX = ".crate"
+
+const val CARGO_JSON_SUFFIX = ".json"
+
+const val CRATE_NAME = "crateName"
