@@ -28,12 +28,14 @@
 package com.tencent.bkrepo.job.migrate.strategy
 
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils.shardingSequenceFor
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.job.ARCHIVE_FILE_COLLECTION
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.task.archive.ArchivedNodeRestoreJob
 import com.tencent.bkrepo.job.batch.task.archive.NodeCompressedJob
@@ -44,6 +46,8 @@ import com.tencent.bkrepo.job.migrate.model.TArchiveMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import org.slf4j.LoggerFactory
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -51,6 +55,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
 class FileNotFoundAutoFixStrategy(
     private val mongoTemplate: MongoTemplate,
     private val storageCredentialService: StorageCredentialService,
@@ -66,7 +71,7 @@ class FileNotFoundAutoFixStrategy(
         val fullPath = failedNode.fullPath
         val sha256 = failedNode.sha256
         val oldCredentials = getOldCredentials(projectId, repoName)
-        if (storageService.exist(sha256, oldCredentials)) {
+        if (sha256 == FAKE_SHA256 || storageService.exist(sha256, oldCredentials)) {
             // 只处理源文件不存在的情况，文件存在时直接返回
             return false
         }
@@ -99,7 +104,7 @@ class FileNotFoundAutoFixStrategy(
         // 查看是否存在归档任务
         val archivedFile = mongoTemplate.findOne(
             Query.query(Criteria.where("sha256").isEqualTo(node.sha256)),
-            ArchivedNodeRestoreJob.ArchiveFile::class.java, "archive_file"
+            ArchivedNodeRestoreJob.ArchiveFile::class.java, ARCHIVE_FILE_COLLECTION
         )
         if (archivedFile != null) {
             logger.info("node[${node.fullPath}] exists archived file, task[${node.projectId}/${node.repoName}]")

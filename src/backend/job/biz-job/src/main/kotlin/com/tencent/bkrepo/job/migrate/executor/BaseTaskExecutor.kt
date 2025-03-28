@@ -47,8 +47,10 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.PENDING
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
+import com.tencent.bkrepo.job.service.ArchiveJobService
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import java.io.FileNotFoundException
 import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -60,6 +62,7 @@ abstract class BaseTaskExecutor(
     private val fileReferenceService: FileReferenceService,
     private val storageService: StorageService,
     private val executingTaskRecorder: ExecutingTaskRecorder,
+    private val archiveJobService: ArchiveJobService,
 ) : TaskExecutor {
 
     @Value(SERVICE_INSTANCE_ID)
@@ -219,12 +222,22 @@ abstract class BaseTaskExecutor(
      * 执行数据迁移
      */
     private fun transferData(context: MigrationContext, node: Node) {
-        val throughput = measureThroughput {
-            storageService.copy(node.sha256, context.srcCredentials, context.dstCredentials)
-            node.size
+        val archivedFileMigrated = archiveJobService.migrateArchivedFile(context, node)
+
+        // 可能存在同sha256文件被归档后又重新上传的情况，所以被归档的文件也需要尝试迁移数据
+        try {
+            val throughput = measureThroughput {
+                storageService.copy(node.sha256, context.srcCredentials, context.dstCredentials)
+                node.size
+            }
+            // 输出迁移速率
+            val msg = "Success to transfer file[${node.sha256}], $throughput, task[${node.projectId}/${node.repoName}]"
+            logger.info(msg)
+        } catch (e: FileNotFoundException) {
+            if (!archivedFileMigrated) {
+                throw e
+            }
         }
-        // 输出迁移速率
-        logger.info("Success to transfer file[${node.sha256}], $throughput, task[${node.projectId}/${node.repoName}]")
     }
 
     private fun checkNode(node: Node) {
@@ -232,8 +245,8 @@ abstract class BaseTaskExecutor(
             if (sha256 == FAKE_SHA256) {
                 throw IllegalArgumentException("can not migrate fake node[$fullPath], task[$projectId/$repoName]")
             }
-            if (node.archived == true || node.compressed == true) {
-                throw IllegalArgumentException("node[$fullPath] was archived or compressed, task[$projectId/$repoName]")
+            if (node.compressed == true) {
+                throw IllegalArgumentException("node[$fullPath] was compressed, task[$projectId/$repoName]")
             }
         }
     }

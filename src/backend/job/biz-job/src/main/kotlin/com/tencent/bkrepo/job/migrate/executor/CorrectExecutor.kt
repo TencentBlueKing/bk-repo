@@ -38,6 +38,7 @@ import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadPoolExecutor
 import com.tencent.bkrepo.job.migrate.utils.NodeIterator
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
+import com.tencent.bkrepo.job.service.ArchiveJobService
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
@@ -52,6 +53,7 @@ class CorrectExecutor(
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
+    archiveJobService: ArchiveJobService,
     private val migrateFailedHandler: MigrateFailedHandler,
     private val transferDataExecutor: TransferDataExecutor,
     private val mongoTemplate: MongoTemplate,
@@ -62,6 +64,7 @@ class CorrectExecutor(
     fileReferenceService,
     storageService,
     executingTaskRecorder,
+    archiveJobService,
 ) {
     /**
      * 用于执行数据矫正的线程池

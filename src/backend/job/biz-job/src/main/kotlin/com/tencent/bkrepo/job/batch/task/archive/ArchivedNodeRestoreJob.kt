@@ -31,6 +31,7 @@ import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.job.ARCHIVE_FILE_COLLECTION
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
@@ -67,7 +68,7 @@ class ArchivedNodeRestoreJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
     override fun collectionNames(): List<String> {
-        return listOf("archive_file")
+        return listOf(ARCHIVE_FILE_COLLECTION)
     }
 
     override fun buildQuery(): Query {

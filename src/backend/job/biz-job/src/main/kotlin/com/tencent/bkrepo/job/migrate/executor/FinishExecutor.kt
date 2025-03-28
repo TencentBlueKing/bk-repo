@@ -37,6 +37,7 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.FINISHING
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
+import com.tencent.bkrepo.job.service.ArchiveJobService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -48,6 +49,7 @@ class FinishExecutor(
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
+    archiveJobService: ArchiveJobService,
     private val repositoryService: RepositoryService,
 ) : BaseTaskExecutor(
     properties,
@@ -56,6 +58,7 @@ class FinishExecutor(
     fileReferenceService,
     storageService,
     executingTaskRecorder,
+    archiveJobService,
 ) {
     /**
      * 迁移任务执行结束后对相关资源进行清理
