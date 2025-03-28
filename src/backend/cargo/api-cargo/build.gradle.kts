@@ -29,24 +29,10 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
-
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
+dependencies {
+    api(project(":repository:api-repository"))
+    implementation(project(":common:common-api"))
+    implementation(project(":common:common-artifact:artifact-api"))
+    compileOnly("org.springframework:spring-web")
+    compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
 }

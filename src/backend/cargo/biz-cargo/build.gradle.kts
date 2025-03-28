@@ -29,24 +29,10 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
-
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
+dependencies {
+    api(project(":cargo:api-cargo"))
+    api(project(":common:common-job"))
+    api(project(":common:common-artifact:artifact-service"))
+    api(project(":common:common-lock"))
+    implementation("com.github.zafarkhaja:java-semver")
 }

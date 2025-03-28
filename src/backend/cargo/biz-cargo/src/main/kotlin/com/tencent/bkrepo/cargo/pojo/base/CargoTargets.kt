@@ -29,24 +29,21 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.pojo.base
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
-}
+import com.fasterxml.jackson.annotation.JsonProperty
+
+data class CargoTargets(
+    val kind: List<String>,
+    @JsonProperty("crate_types")
+    val crateTypes: List<String>,
+    val name: String,
+    @JsonProperty("src_path")
+    val src_path: String,
+    val edition: String,
+    @JsonProperty("required-features")
+    val requiredFeatures: List<String>,
+    val doc: Boolean,
+    val doctest: Boolean,
+    val test: Boolean,
+)

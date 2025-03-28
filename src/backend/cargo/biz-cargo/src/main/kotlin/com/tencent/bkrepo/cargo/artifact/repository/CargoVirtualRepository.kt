@@ -29,24 +29,10 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.artifact.repository
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
-}
+import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import org.springframework.stereotype.Component
+
+@Component
+class CargoVirtualRepository : VirtualRepository()

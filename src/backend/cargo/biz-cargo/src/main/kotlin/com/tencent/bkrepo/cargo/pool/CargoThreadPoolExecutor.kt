@@ -29,24 +29,31 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.pool
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
- * 包类型
+ * cargo线程池，用于同步索引文件
  */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
+object CargoThreadPoolExecutor {
+    /**
+     * 线程池实例
+     */
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
+
+    /**
+     * 创建线程池
+     */
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("cargo-worker-%d").build()
+        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
+        return ThreadPoolExecutor(
+            corePoolSize, corePoolSize * 2, 30, TimeUnit.SECONDS,
+            LinkedBlockingQueue(8192), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+        )
+    }
 }

@@ -29,24 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.artifact.resolver
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
+import com.tencent.bkrepo.cargo.constants.CRATE_NAME
+import com.tencent.bkrepo.cargo.constants.VERSION
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import org.springframework.stereotype.Component
+import org.springframework.web.servlet.HandlerMapping
+import javax.servlet.http.HttpServletRequest
+
+@Component
+@Resolver(CargoArtifactInfo::class)
+class CargoArtifactInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): CargoArtifactInfo {
+        val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
+        val crateName = attributes[CRATE_NAME]?.toString()
+        val version = attributes[VERSION]?.toString()
+        return CargoArtifactInfo(projectId, repoName, artifactUri, crateName, version)
+    }
 }

@@ -29,24 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.packages
+package com.tencent.bkrepo.cargo.pojo
 
-/**
- * 包类型
- */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
-}
+import io.swagger.annotations.Api
+import io.swagger.annotations.ApiModelProperty
+
+@Api("cargo error 包装返回模型")
+data class CargoErrorResponse(
+    @ApiModelProperty("错误信息")
+    val errors: List<CargoErrorDetail>?
+)
+
+data class CargoErrorDetail(
+    @ApiModelProperty("错误信息详情")
+    val detail: String?
+)
