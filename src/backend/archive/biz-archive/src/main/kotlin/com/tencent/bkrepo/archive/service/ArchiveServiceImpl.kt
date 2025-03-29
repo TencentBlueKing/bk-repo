@@ -9,6 +9,7 @@ import com.tencent.bkrepo.archive.core.archive.ArchiveManager
 import com.tencent.bkrepo.archive.core.archive.EmptyArchiver
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.pojo.ArchiveFile
+import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.archive.repository.ArchiveFileRepository
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service
 class ArchiveServiceImpl(
     private val archiveProperties: ArchiveProperties,
     private val archiveFileRepository: ArchiveFileRepository,
+    private val archiveFileDao: ArchiveFileDao,
     private val archiveManager: ArchiveManager,
     private val storageService: StorageService,
 ) : ArchiveService {
@@ -73,10 +75,15 @@ class ArchiveServiceImpl(
                 sha256,
                 storageCredentialsKey,
             ) ?: return
-            val key = archiveManager.getKey(sha256, archiveFile.archiver)
-            val credentials = archiveManager.getStorageCredentials(archiveFile.archiveCredentialsKey)
-            storageService.delete(key, credentials)
-            logger.info("Success delete $key on ${credentials.key}.")
+            // 可能不同源存储归档到同一目标存储，需要判断是否有共用同一归档存储的制品再删除
+            if (archiveFileDao.countByArchiveKeyAndSha256(archiveFile.archiveCredentialsKey, sha256) == 1L) {
+                val key = archiveManager.getKey(sha256, archiveFile.archiver)
+                val credentials = archiveManager.getStorageCredentials(archiveFile.archiveCredentialsKey)
+                storageService.delete(key, credentials)
+                logger.info("Success delete $key on ${credentials.key}.")
+            } else {
+                logger.info("archived file[$sha256] of [${archiveFile.archiveCredentialsKey}] still in use")
+            }
             archiveFileRepository.delete(archiveFile)
             logger.info("Delete archive file $sha256 in $storageCredentialsKey.")
         }

@@ -49,6 +49,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.query.Criteria
@@ -66,7 +67,12 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
 ) : ExecutorBaseTest() {
 
     @MockBean
-    private lateinit var migrateFailedNodeAutoFixStrategy: MigrateFailedNodeAutoFixStrategy
+    @Qualifier("fileNotFoundAutoFixStrategy")
+    private lateinit var fileNotFoundAutoFixStrategy: MigrateFailedNodeAutoFixStrategy
+
+    @MockBean
+    @Qualifier("archivedFileAutoFixStrategy")
+    private lateinit var archivedFileAutoFixStrategy: MigrateFailedNodeAutoFixStrategy
 
     @AfterAll
     fun afterAll() {
@@ -76,7 +82,8 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
-        whenever(migrateFailedNodeAutoFixStrategy.fix(any())).thenReturn(true)
+        whenever(fileNotFoundAutoFixStrategy.fix(any())).thenReturn(true)
+        whenever(archivedFileAutoFixStrategy.fix(any())).thenReturn(true)
         migrateRepoStorageTaskDao.remove(Query())
         migrateFailedNodeDao.remove(Query())
     }

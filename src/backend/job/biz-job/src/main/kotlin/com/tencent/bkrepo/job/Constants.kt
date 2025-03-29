@@ -122,3 +122,8 @@ const val PACKAGE_DOWNLOAD_DATE = "date"
  */
 const val DATA_RECORDS_BACKUP = "DATA_BACKUP"
 const val DATA_RECORDS_RESTORE = "DATA_RESTORE"
+
+/**
+ * 归档
+ */
+const val ARCHIVE_FILE_COLLECTION = "archive_file"

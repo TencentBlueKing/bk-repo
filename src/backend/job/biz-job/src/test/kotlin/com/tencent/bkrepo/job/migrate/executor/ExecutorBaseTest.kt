@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
@@ -48,6 +49,7 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
+import com.tencent.bkrepo.job.service.impl.MigrateArchivedFileServiceImpl
 import org.junit.jupiter.api.TestInstance
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
@@ -74,6 +76,8 @@ import java.time.LocalDateTime
     MigrateRepoStorageProperties::class,
     RepositoryCommonUtils::class,
     StorageProperties::class,
+    ArchiveFileDao::class,
+    MigrateArchivedFileServiceImpl::class
 )
 @ComponentScan(basePackages = ["com.tencent.bkrepo.job.migrate"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])

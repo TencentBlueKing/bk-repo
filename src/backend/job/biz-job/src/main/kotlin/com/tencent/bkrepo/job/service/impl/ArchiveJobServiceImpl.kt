@@ -17,6 +17,7 @@ import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
 import com.tencent.bkrepo.job.service.ArchiveJobService
+import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.slf4j.LoggerFactory
@@ -26,12 +27,14 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.function.Consumer
 
 @Service
 class ArchiveJobServiceImpl(
     private val archiveJob: IdleNodeArchiveJob,
     private val archiveClient: ArchiveClient,
     private val migrateRepoStorageService: MigrateRepoStorageService,
+    private val migrateArchivedFileService: MigrateArchivedFileService,
 ) : ArchiveJobService {
     override fun archive(projectId: String, key: String, days: Int, storageClass: ArchiveStorageClass) {
         val now = LocalDateTime.now()
@@ -65,38 +68,9 @@ class ArchiveJobServiceImpl(
         val index = HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val collectionName = COLLECTION_NAME_PREFIX.plus(index)
         val context = NodeContext()
-        NodeCommonUtils.findByCollectionAsync(query, BATCH_SIZE, collectionName) {
-            val node = archiveJob.mapToEntity(it)
-            val repoName = node.repoName
-            val fullPath = node.fullPath
-            val sha256 = node.sha256
-            try {
-                val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
-                val credentialKey = if (migrateRepoStorageService.migrating(projectId, repoName)) {
-                    repo.oldCredentialsKey
-                } else {
-                    repo.storageCredentials?.key
-                }
-                if (it["archived"].toString() == "true") {
-                    val req = ArchiveFileRequest(sha256, credentialKey, SYSTEM_USER)
-                    archiveClient.restore(req)
-                } else {
-                    val req = UncompressFileRequest(sha256, credentialKey, SYSTEM_USER)
-                    archiveClient.uncompress(req)
-                }
-                context.count.incrementAndGet()
-                context.size.addAndGet(node.size)
-                context.success.incrementAndGet()
-                logger.info("Restore node $projectId/$repoName$fullPath($sha256)")
-            } catch (e: Exception) {
-                context.failed.incrementAndGet()
-                logger.error("Restore node error $projectId/$repoName$fullPath($sha256)", e)
-            } finally {
-                context.total.incrementAndGet()
-            }
-        }.subscribe {
-            logger.info("Success to restore project[$projectId], $context")
-        }
+        NodeCommonUtils
+            .findByCollectionAsync(query, BATCH_SIZE, collectionName, RestoreConsumer(context))
+            .subscribe { logger.info("Success to restore project[$projectId], $context") }
     }
 
     fun buildCriteria(request: ArchiveRestoreRequest): Criteria {
@@ -123,6 +97,47 @@ class ArchiveJobServiceImpl(
                 val allCriteria = metadataCriteria.toMutableList()
                 allCriteria.add(criteria)
                 Criteria().andOperator(allCriteria)
+            }
+        }
+    }
+
+    private inner class RestoreConsumer(private val context: NodeContext) : Consumer<Map<String, Any?>> {
+        override fun accept(nodeMap: Map<String, Any?>) {
+            val node = archiveJob.mapToEntity(nodeMap)
+            val projectId = node.projectId
+            val repoName = node.repoName
+            val fullPath = node.fullPath
+            val sha256 = node.sha256
+            try {
+                val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
+                if (migrateRepoStorageService.migrating(projectId, repoName)) {
+                    // 仓库正在迁移时触发恢复，需要先迁移归档存储，随后将恢复到迁移的目标存储中
+                    val migrated = migrateArchivedFileService.migrateArchivedFile(
+                        repo.oldCredentialsKey, repo.storageCredentials?.key, sha256
+                    )
+                    if (!migrated) {
+                        // 不存在归档文件，无法恢复
+                        logger.info("archive file of node[$projectId/$repoName$fullPath($sha256)] not exist")
+                        return
+                    }
+                }
+                val credentialKey = repo.storageCredentials?.key
+                if (nodeMap["archived"].toString() == "true") {
+                    val req = ArchiveFileRequest(sha256, credentialKey, SYSTEM_USER)
+                    archiveClient.restore(req)
+                } else {
+                    val req = UncompressFileRequest(sha256, credentialKey, SYSTEM_USER)
+                    archiveClient.uncompress(req)
+                }
+                context.count.incrementAndGet()
+                context.size.addAndGet(node.size)
+                context.success.incrementAndGet()
+                logger.info("Restore node $projectId/$repoName$fullPath($sha256)")
+            } catch (e: Exception) {
+                context.failed.incrementAndGet()
+                logger.error("Restore node error $projectId/$repoName$fullPath($sha256)", e)
+            } finally {
+                context.total.incrementAndGet()
             }
         }
     }
