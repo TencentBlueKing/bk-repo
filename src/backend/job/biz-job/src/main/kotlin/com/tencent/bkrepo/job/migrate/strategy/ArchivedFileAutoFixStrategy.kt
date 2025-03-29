@@ -46,19 +46,19 @@ class ArchivedFileAutoFixStrategy(
             val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
             val srcArchiveFile = archiveFileDao.findByStorageKeyAndSha256(repo.oldCredentialsKey, sha256)
             if (srcArchiveFile != null && srcArchiveFile.status != ArchiveStatus.COMPLETED) {
-                logger.info("node[${sha256}] archive status[${srcArchiveFile.status}], task[${projectId}/${repoName}]")
+                logger.info("node[$sha256] archive status[${srcArchiveFile.status}], task[$projectId/$repoName]")
                 return false
             }
 
             // 目标存储已存在同sha256的归档文件，待其状态稳定后才可继续迁移
             val dstArchiveFile = archiveFileDao.findByStorageKeyAndSha256(repo.storageCredentials?.key, sha256)
             if (dstArchiveFile != null && dstArchiveFile.status != ArchiveStatus.COMPLETED) {
-                logger.info("node[${sha256}] dst archive status[${dstArchiveFile.status}], task[${projectId}/${repoName}]")
+                logger.info("node[$sha256] dst archive status[${dstArchiveFile.status}], task[$projectId/$repoName]")
                 return false
             }
 
             // 已经处于可迁移状态，继续尝试迁移
-            return true
+            return srcArchiveFile != null || dstArchiveFile != null
         }
     }
 

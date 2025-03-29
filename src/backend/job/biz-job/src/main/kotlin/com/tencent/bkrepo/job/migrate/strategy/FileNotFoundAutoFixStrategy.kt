@@ -71,9 +71,12 @@ class FileNotFoundAutoFixStrategy(
         val fullPath = failedNode.fullPath
         val sha256 = failedNode.sha256
         val oldCredentials = getOldCredentials(projectId, repoName)
-        if (sha256 == FAKE_SHA256 || storageService.exist(sha256, oldCredentials)) {
-            // 只处理源文件不存在的情况，文件存在时直接返回
+        if (sha256 == FAKE_SHA256) {
             return false
+        }
+        if (storageService.exist(sha256, oldCredentials)) {
+            // 文件存在
+            return true
         }
         val node = findNode(projectId, repoName, fullPath)
 
