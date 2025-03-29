@@ -42,4 +42,29 @@ interface MigrateArchivedFileService {
      * @throws IllegalStateException 处于不支持迁移的状态时抛出该异常
      */
     fun migrateArchivedFile(context: MigrationContext, node: Node): Boolean
+
+    /**
+     * 迁移已归档制品
+     *
+     * @param srcStorageKey 源存储
+     * @param dstStorageKey 目标存储
+     * @param sha256 待迁移制品sha256
+     *
+     * @return 是否迁移成功，返回true表示迁移成功，false表示文件未归档，抛出异常表示不支持迁移的归档状态
+     *
+     * @throws IllegalStateException 处于不支持迁移的状态时抛出该异常
+     */
+    fun migrateArchivedFile(srcStorageKey: String?, dstStorageKey: String?, sha256: String): Boolean
+
+    /**
+     * 检查归档文件是否存在，且处于COMPLETED状态
+     *
+     * @param storageKey 存储key
+     * @param sha256 制品sha256
+     *
+     * @return true表示归档文件存在且未COMPLETED状态，false表示归档文件不存在
+     *
+     * @throws IllegalStateException 归档文件存在但是处于非COMPLETED状态
+     */
+    fun archivedFileCompleted(storageKey: String?, sha256: String): Boolean
 }

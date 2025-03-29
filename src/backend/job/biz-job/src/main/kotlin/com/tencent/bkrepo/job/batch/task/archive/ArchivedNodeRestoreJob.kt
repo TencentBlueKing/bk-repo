@@ -119,7 +119,7 @@ class ArchivedNodeRestoreJob(
                 .and("archived").isEqualTo(true)
                 .and("deleted").isEqualTo(null),
         )
-        return NodeCommonUtils.findNodes(query, storageCredentialsKey)
+        return NodeCommonUtils.findNodes(query, storageCredentialsKey, false)
     }
 
     data class ArchiveFile(

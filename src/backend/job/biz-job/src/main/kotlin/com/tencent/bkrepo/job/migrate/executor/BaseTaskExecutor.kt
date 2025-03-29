@@ -166,7 +166,10 @@ abstract class BaseTaskExecutor(
         val repoName = node.repoName
         // 文件已存在于目标存储则不处理
         val dstFileReferenceExists = fileReferenceService.count(sha256, context.task.dstStorageKey) > 0
-        if (storageService.exist(sha256, context.dstCredentials)) {
+        val fileExist = storageService.exist(sha256, context.dstCredentials)
+        val archivedFileExist = node.archived == true &&
+                migrateArchivedFileService.archivedFileCompleted(context.task.dstStorageKey, sha256)
+        if (fileExist || archivedFileExist) {
             if (!dstFileReferenceExists) {
                 updateFileReference(context.task.srcStorageKey, context.task.dstStorageKey, sha256)
                 logger.info("correct reference[$sha256] success, task[$projectId/$repoName], state[${task.state}]")

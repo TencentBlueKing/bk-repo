@@ -41,49 +41,59 @@ class MigrateArchivedFileServiceImpl(
     private val archiveFileDao: ArchiveFileDao,
 ) : MigrateArchivedFileService {
     override fun migrateArchivedFile(context: MigrationContext, node: Node): Boolean {
-        val oldCredentialsKey = context.task.srcStorageKey
-        val newCredentialsKey = context.task.dstStorageKey
-        val sha256 = node.sha256
-        val archiveFile = archiveFileDao.findByStorageKeyAndSha256(oldCredentialsKey, sha256) ?: return false
-        if (archiveFile.status != COMPLETED) {
+        return migrateArchivedFile(context.task.srcStorageKey, context.task.dstStorageKey, node.sha256)
+    }
+
+    override fun migrateArchivedFile(srcStorageKey: String?, dstStorageKey: String?, sha256: String): Boolean {
+        // 检查源存储归档文件及其状态是否可迁移
+        val srcArchiveFile = archiveFileDao.findByStorageKeyAndSha256(srcStorageKey, sha256)
+        if (srcArchiveFile != null && srcArchiveFile.status != COMPLETED) {
             // 制品已经处于归档完成的状态才可迁移，其他状态迁移会导致迁移后的归档文件无法完成归档，或者重复恢复
-            throw IllegalStateException(
-                "migrate archived file[${node.sha256}] failed, status[${archiveFile.status}], " +
-                        "task[${context.task.projectId}/${context.task.repoName}]"
-            )
+            throw IllegalStateException("migrate archived file[$sha256] failed, status[${srcArchiveFile.status}]")
         }
-        val newCredentialsArchivedFile = archiveFileDao.findByStorageKeyAndSha256(newCredentialsKey, sha256)
-        if (newCredentialsArchivedFile?.status == COMPLETED) {
+
+        // 检查目标存储是否已经存在sha256对应的归档文件及其状态是否可直接被复用
+        val dstArchivedFile = archiveFileDao.findByStorageKeyAndSha256(dstStorageKey, sha256)
+        if (dstArchivedFile?.status == COMPLETED) {
             return true
         }
-
-        if (newCredentialsArchivedFile != null) {
+        if (dstArchivedFile != null) {
+            // 状态不为COMPLETED时禁止迁移
             throw IllegalStateException(
-                "migrate archived file[${node.sha256}] failed, " +
-                        "archive file of dst credentials status[${archiveFile.status}], " +
-                        "task[${context.task.projectId}/${context.task.repoName}]"
+                "migrate archived file[$sha256] failed, dst archive file status[${dstArchivedFile.status}]"
             )
         }
 
+        // 源存储与目标存储都不存在归档文件时不迁移
+        if (srcArchiveFile == null) {
+            return false
+        }
+
+        // 迁移归档文件
         val migratedArchiveFile = TArchiveFile(
-            createdBy = archiveFile.createdBy,
-            createdDate = archiveFile.createdDate,
-            lastModifiedBy = archiveFile.lastModifiedBy,
-            lastModifiedDate = archiveFile.lastModifiedDate,
-            sha256 = archiveFile.sha256,
-            size = archiveFile.size,
-            compressedSize = archiveFile.compressedSize,
-            storageCredentialsKey = newCredentialsKey,
+            createdBy = srcArchiveFile.createdBy,
+            createdDate = srcArchiveFile.createdDate,
+            lastModifiedBy = srcArchiveFile.lastModifiedBy,
+            lastModifiedDate = srcArchiveFile.lastModifiedDate,
+            sha256 = srcArchiveFile.sha256,
+            size = srcArchiveFile.size,
+            compressedSize = srcArchiveFile.compressedSize,
+            storageCredentialsKey = dstStorageKey,
             status = COMPLETED,
-            archiver = archiveFile.archiver,
-            archiveCredentialsKey = archiveFile.archiveCredentialsKey,
-            storageClass = archiveFile.storageClass
+            archiver = srcArchiveFile.archiver,
+            archiveCredentialsKey = srcArchiveFile.archiveCredentialsKey,
+            storageClass = srcArchiveFile.storageClass
         )
         archiveFileDao.insert(migratedArchiveFile)
-        logger.info(
-            "migrate archived file[${node.sha256}] of storage[$oldCredentialsKey] success, " +
-                    "task[${context.task.projectId}/${context.task.repoName}]"
-        )
+        logger.info("migrate archived file[$sha256] of storage[$srcStorageKey] success")
+        return true
+    }
+
+    override fun archivedFileCompleted(storageKey: String?, sha256: String): Boolean {
+        val archiveFile = archiveFileDao.findByStorageKeyAndSha256(storageKey, sha256) ?: return false
+        if (archiveFile.status != COMPLETED) {
+            throw IllegalStateException("archived file[$sha256] not completed, status[${archiveFile.status}]")
+        }
         return true
     }
 

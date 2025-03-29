@@ -137,7 +137,7 @@ class ArchivedNodeCompleteJob(
                 .and("archived").ne(true)
                 .and("deleted").isEqualTo(null),
         )
-        return NodeCommonUtils.findNodes(query, storageCredentialsKey)
+        return NodeCommonUtils.findNodes(query, storageCredentialsKey, false)
     }
 
     companion object {
