@@ -30,23 +30,35 @@ package com.tencent.bkrepo.job.batch.utils
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_SHA256
+import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.router.api.RouterControllerClient
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
@@ -64,31 +76,82 @@ class NodeCommonUtilsTest @Autowired constructor(
 ) : JobBaseTest() {
     @MockBean
     private lateinit var routerControllerClient: RouterControllerClient
+
     @MockBean
     lateinit var servicePermissionClient: ServicePermissionClient
+
     @MockBean
     lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
+
     @MockBean
     lateinit var messageSupplier: MessageSupplier
+
     @MockBean
     lateinit var archiveClient: ArchiveClient
+
     @MockBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
+
     @MockBean
     lateinit var separationTaskService: SeparationTaskService
+
     @MockBean
     lateinit var operateLogService: OperateLogService
+
+    private val nodeCollectionName = "node_${HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)}"
+
     @BeforeAll
     fun beforeAll() {
         NodeCommonUtils.mongoTemplate = mongoTemplate
         NodeCommonUtils.migrateRepoStorageService = migrateRepoStorageService
         NodeCommonUtils.separationTaskService = separationTaskService
+        val repositoryService = Mockito.mock(RepositoryService::class.java)
+        whenever(repositoryService.getRepoDetail(anyString(), anyString(), anyOrNull())).thenReturn(
+            RepositoryDetail(
+                projectId = UT_PROJECT_ID,
+                name = UT_REPO_NAME,
+                storageCredentials = InnerCosCredentials(key = UT_STORAGE_CREDENTIALS_KEY),
+                type = RepositoryType.GENERIC,
+                category = RepositoryCategory.LOCAL,
+                public = false,
+                description = "",
+                configuration = LocalConfiguration(),
+                createdBy = "",
+                createdDate = "",
+                lastModifiedBy = "",
+                lastModifiedDate = "",
+                oldCredentialsKey = null,
+                quota = 0,
+                used = 0,
+            )
+        )
+        RepositoryCommonUtils(Mockito.mock(StorageCredentialService::class.java), repositoryService)
+    }
+
+    @BeforeEach
+    fun beforeEach() {
+        mongoTemplate.remove(Query(), nodeCollectionName)
     }
 
     @Test
     fun `throw IllegalStateException when repo was migrating`() {
         whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
         whenever(separationTaskService.findDistinctSeparationDate()).thenReturn(emptySet())
+        mockNode()
+        assertThrows<IllegalStateException> { NodeCommonUtils.exist(Query(), null) }
+    }
+
+    @Test
+    fun `findNodes should check migrating status when checkMigrating is true`() {
+        whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
+        mockNode()
+
+        whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
+        assertEquals(0, NodeCommonUtils.findNodes(Query(), UT_STORAGE_CREDENTIALS_KEY, true).size)
+        assertEquals(1, NodeCommonUtils.findNodes(Query(), UT_STORAGE_CREDENTIALS_KEY, false).size)
+    }
+
+    private fun mockNode() {
         val node = NodeCommonUtils.Node(
             "",
             UT_PROJECT_ID,
@@ -99,8 +162,6 @@ class NodeCommonUtilsTest @Autowired constructor(
             LocalDateTime.now(),
             null
         )
-        val collectionName = "node_${HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)}"
-        mongoTemplate.insert(node, collectionName)
-        assertThrows<IllegalStateException> { NodeCommonUtils.exist(Query(), null) }
+        mongoTemplate.insert(node, nodeCollectionName)
     }
 }
