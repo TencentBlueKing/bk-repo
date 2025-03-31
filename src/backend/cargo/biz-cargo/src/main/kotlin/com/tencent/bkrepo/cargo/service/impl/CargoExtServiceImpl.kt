@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class CargoExtServiceImp(
+class CargoExtServiceImpl(
     private val cargoProperties: CargoProperties,
     private val commonService: CommonService,
 ) : CargoExtService {
@@ -109,6 +109,6 @@ class CargoExtServiceImp(
     }
 
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(CargoExtServiceImp::class.java)
+        val logger: Logger = LoggerFactory.getLogger(CargoExtServiceImpl::class.java)
     }
 }

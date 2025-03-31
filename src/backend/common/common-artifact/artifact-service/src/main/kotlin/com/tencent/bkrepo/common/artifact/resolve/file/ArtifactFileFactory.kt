@@ -133,7 +133,9 @@ class ArtifactFileFactory(
          * 通过输入流构造artifact file，服务内部输入流转换成文件使用
          * @param inputStream 输入流
          */
-        fun build(inputStream: InputStream, contentLength: Long? = null, storageCredentials: StorageCredentials? = null): ArtifactFile {
+        fun build(
+            inputStream: InputStream, contentLength: Long? = null, storageCredentials: StorageCredentials? = null
+        ): ArtifactFile {
             val realStorageCredentials = storageCredentials ?: getStorageCredentials()
             return StreamArtifactFile(
                 inputStream, getMonitor(), properties, realStorageCredentials, contentLength
