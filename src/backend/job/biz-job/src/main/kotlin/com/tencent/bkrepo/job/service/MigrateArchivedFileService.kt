@@ -37,7 +37,7 @@ interface MigrateArchivedFileService {
      * @param context 迁移上下文
      * @param node 待迁移制品
      *
-     * @return 是否迁移成功，返回true表示迁移成功，false表示文件未归档，抛出异常表示不支持迁移的归档状态
+     * @return 是否迁移成功，返回true表示已迁移或目标存储中已存在对应的归档文件，false表示文件未归档，抛出异常表示不支持迁移的归档状态
      *
      * @throws IllegalStateException 处于不支持迁移的状态时抛出该异常
      */
@@ -50,7 +50,7 @@ interface MigrateArchivedFileService {
      * @param dstStorageKey 目标存储
      * @param sha256 待迁移制品sha256
      *
-     * @return 是否迁移成功，返回true表示迁移成功，false表示文件未归档，抛出异常表示不支持迁移的归档状态
+     * @return 是否迁移成功，返回true表示已迁移或目标存储中已存在对应的归档文件，false表示文件未归档，抛出异常表示不支持迁移的归档状态
      *
      * @throws IllegalStateException 处于不支持迁移的状态时抛出该异常
      */

@@ -225,6 +225,7 @@ abstract class BaseTaskExecutor(
      * 执行数据迁移
      */
     private fun transferData(context: MigrationContext, node: Node) {
+        // 处于归档/恢复中状态时将抛出异常，待归档完成再继续迁移
         val archivedFileMigrated = migrateArchivedFileService.migrateArchivedFile(context, node)
 
         // 可能存在同sha256文件被归档后又重新上传的情况，所以被归档的文件也需要尝试迁移数据
@@ -237,7 +238,7 @@ abstract class BaseTaskExecutor(
             val msg = "Success to transfer file[${node.sha256}], $throughput, task[${node.projectId}/${node.repoName}]"
             logger.info(msg)
         } catch (e: FileNotFoundException) {
-            if (!archivedFileMigrated) {
+            if (node.archived != true || !archivedFileMigrated) {
                 throw e
             }
             logger.info("only migrate archive file[${node.sha256}], task[${node.projectId}/${node.repoName}]")

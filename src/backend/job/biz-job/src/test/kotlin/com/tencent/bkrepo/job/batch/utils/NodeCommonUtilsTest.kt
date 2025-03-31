@@ -146,7 +146,6 @@ class NodeCommonUtilsTest @Autowired constructor(
         whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
         mockNode()
 
-        whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
         assertEquals(0, NodeCommonUtils.findNodes(Query(), UT_STORAGE_CREDENTIALS_KEY, true).size)
         assertEquals(1, NodeCommonUtils.findNodes(Query(), UT_STORAGE_CREDENTIALS_KEY, false).size)
     }
