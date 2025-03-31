@@ -117,10 +117,6 @@ class ProjectServiceImpl(
     }
 
     override fun listPermissionProject(userId: String, option: ProjectListOption?): List<ProjectInfo> {
-        // 校验租户信息
-        if (enableMultiTenant.enabled) {
-            validateTenantId()
-        }
         var names = servicePermissionClient.listPermissionProject(userId).data.orEmpty()
         option?.names?.let { names = names.intersect(option.names!!).toList() }
         val query = buildListQuery(names, option)
