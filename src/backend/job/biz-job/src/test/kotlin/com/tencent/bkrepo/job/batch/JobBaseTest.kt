@@ -97,6 +97,6 @@ class JobBaseTest {
         every { SpringContextUtils.publishEvent(any()) } returns Unit
 
         val messageSupplier = mockk<MessageSupplier>()
-        every { messageSupplier.delegateToSupplier<ArtifactEvent>(any(), any(), any(), any(), any())}.returns(Unit)
+        every { messageSupplier.delegateToSupplier<ArtifactEvent>(any(), any(), any(), any(), any()) }.returns(Unit)
     }
 }

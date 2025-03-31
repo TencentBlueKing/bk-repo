@@ -139,6 +139,7 @@ open class ExecutorBaseTest {
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
         whenever(fileNotFoundAutoFixStrategy.fix(any())).thenReturn(true)
         whenever(archivedFileAutoFixStrategy.fix(any())).thenReturn(true)
+        whenever(migrateArchivedFileService.archivedFileCompleted(anyOrNull(), anyString())).thenReturn(true)
     }
 
     protected fun createTask(repoName: String = UT_REPO_NAME): MigrateRepoStorageTask {
