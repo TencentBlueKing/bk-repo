@@ -43,6 +43,7 @@ import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.base.CargoMetadata
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoFileFullPath
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoJsonFullPath
+import com.tencent.bkrepo.cargo.utils.CargoUtils.isValidPackageName
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildCrateIndexData
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildCrateJsonData
@@ -238,6 +239,7 @@ class CargoLocalRepository : LocalRepository() {
                     val crateData = ByteArray(crateLength.toInt())
                     dateInputStream.readFully(crateData)
                     val artifactFile = ArtifactFileFactory.build(crateData.inputStream())
+                    isValidPackageName(metadata.name)
                     context.putAttribute(CARGO_METADATA, metadata)
                     context.putAttribute(CARGO_CRATE_FILE, artifactFile)
                     val fullPath = getCargoFileFullPath(metadata.name, metadata.vers)

@@ -65,11 +65,11 @@ object CargoUtils {
      */
     private fun createDirectory(name: String): String {
         return when (name.length) {
+            0 -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
             1 -> "1"
             2 -> "2"
             3 -> "3/" + name.first().toString()
-            4 -> name.substring(0, 2) + StringPool.SLASH + name.substring(3, 5)
-            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
+            else -> name.substring(0, 2) + StringPool.SLASH + name.substring(2, 4)
         }
     }
 
@@ -77,4 +77,14 @@ object CargoUtils {
         return "%s-%s%s".format(name, version, suffix)
     }
 
+    fun isValidPackageName(name: String) {
+        // 规则 1: 仅允许 ASCII 字符、字母、数字、- 和 _
+        val regex = Regex("^[a-zA-Z][a-zA-Z0-9-_]*$")
+        if (!regex.matches(name)) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
+        }
+        if (name.length > 64) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, name)
+        }
+    }
 }
