@@ -84,7 +84,7 @@ class CargoExtServiceImpl(
     override fun deletePackage(userId: String, artifactInfo: CargoDeleteArtifactInfo) {
         logger.info("handling delete cargo request: [$artifactInfo]")
         with(artifactInfo) {
-            if (!commonService.packageVersionExist(projectId, repoName, packageName, version)) {
+            if (!commonService.packageExist(projectId, repoName, packageName)) {
                 throw VersionNotFoundException(version)
             }
             val context = ArtifactRemoveContext()
@@ -96,7 +96,7 @@ class CargoExtServiceImpl(
     override fun deleteVersion(userId: String, artifactInfo: CargoDeleteArtifactInfo) {
         logger.info("handling delete cargo version request: [$artifactInfo]")
         with(artifactInfo) {
-            if (!commonService.packageExist(projectId, repoName, packageName)) {
+            if (!commonService.packageVersionExist(projectId, repoName, packageName, version)) {
                 throw PackageNotFoundException(packageName)
             }
             val context = ArtifactRemoveContext()

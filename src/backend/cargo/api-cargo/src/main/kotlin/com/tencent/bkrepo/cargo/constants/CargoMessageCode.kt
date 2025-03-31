@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 enum class CargoMessageCode(private val key: String) : MessageCode {
     CARGO_UPLOAD_DATA_BROKEN("cargo.upload.data.broken"),
     CARGO_FILE_NOT_FOUND("cargo.file.not.found"),
+    CARGO_FILE_YANKED("cargo.file.yanked"),
     ;
     override fun getBusinessCode() = ordinal + 1
     override fun getKey() = key

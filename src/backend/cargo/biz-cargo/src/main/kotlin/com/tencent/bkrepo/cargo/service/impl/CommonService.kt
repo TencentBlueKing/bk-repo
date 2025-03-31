@@ -27,9 +27,11 @@
 
 package com.tencent.bkrepo.cargo.service.impl
 
+import com.tencent.bkrepo.cargo.constants.YANKED
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoFileFullPath
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoJsonFullPath
+import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildMetadataSaveRequest
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
@@ -40,9 +42,11 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -71,6 +75,8 @@ class CommonService {
     @Autowired
     lateinit var packageService: PackageService
 
+    @Autowired
+    lateinit var metadataService: MetadataService
 
     /**
      * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
@@ -186,6 +192,25 @@ class CommonService {
                 val request = NodeDeleteRequest(projectId, repoName, it, userId)
                 nodeService.deleteNode(request)
             }
+        }
+    }
+
+    fun updateNodeMetaData(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        metadata: MutableMap<String, Any>? = null
+    ) {
+        val metadataSaveRequest = buildMetadataSaveRequest(
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            metadata = metadata,
+            userId = SecurityUtils.getUserId()
+        )
+        try{
+            metadataService.saveMetadata(metadataSaveRequest)
+        } catch (ignore: Exception) {
         }
     }
 

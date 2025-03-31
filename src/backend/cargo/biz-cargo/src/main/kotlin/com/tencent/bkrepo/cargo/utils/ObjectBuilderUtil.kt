@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.cargo.utils
 
+import com.tencent.bkrepo.cargo.constants.YANKED
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.base.CargoMetadata
 import com.tencent.bkrepo.cargo.pojo.base.MetaDependency
@@ -50,6 +51,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
@@ -162,6 +164,7 @@ object ObjectBuilderUtil {
         sourceType?.let {
             mutableMap.add(MetadataModel(SOURCE_TYPE, sourceType))
         }
+        mutableMap.add(MetadataModel(YANKED, false))
         return mutableMap
     }
 
@@ -184,6 +187,23 @@ object ObjectBuilderUtil {
                 lastModifiedDate = lastModifiedDate
             )
         }
+    }
+
+    fun buildMetadataSaveRequest(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        userId: String,
+        metadata: Map<String, Any>? = null
+    ): MetadataSaveRequest {
+        val metadataModels = metadata?.map { MetadataModel(key = it.key, value = it.value, system = true) }
+        return MetadataSaveRequest(
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            nodeMetadata = metadataModels,
+            operator = userId
+        )
     }
 
     private fun convertToMap(cargoMetadata: CargoMetadata): Map<String, Any> {

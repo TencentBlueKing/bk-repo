@@ -36,7 +36,9 @@ import com.tencent.bkrepo.cargo.constants.CARGO_METADATA
 import com.tencent.bkrepo.cargo.constants.CargoMessageCode
 import com.tencent.bkrepo.cargo.constants.FILE_SHA256
 import com.tencent.bkrepo.cargo.constants.FILE_SIZE
+import com.tencent.bkrepo.cargo.constants.YANKED
 import com.tencent.bkrepo.cargo.exception.CargoBadRequestException
+import com.tencent.bkrepo.cargo.exception.CargoYankedException
 import com.tencent.bkrepo.cargo.listener.event.CargoPackageDeleteEvent
 import com.tencent.bkrepo.cargo.listener.event.CargoPackageUploadEvent
 import com.tencent.bkrepo.cargo.pojo.CargoSuccessResponse
@@ -69,6 +71,7 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.constant.FULL_PATH
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -189,6 +192,9 @@ class CargoLocalRepository(
             logger.info("File $fullPath will be downloaded in repo $projectId|$repoName")
             val node = nodeService.getNodeDetail(ArtifactInfo(context.projectId, context.repoName, fullPath))
             node?.let {
+                if (yankedStatusCheck(node)) {
+                    throw CargoYankedException(CargoMessageCode.CARGO_FILE_YANKED, node.name, "$projectId|$repoName")
+                }
                 context.artifactInfo.setArtifactMappingUri(node.fullPath)
                 downloadIntercept(context, node)
 //                packageVersion(context, node)?.let { packageVersion -> downloadIntercept(context, packageVersion) }
@@ -284,6 +290,11 @@ class CargoLocalRepository(
             ((bytes[1].toInt() and 0xFF) shl 8) or
             ((bytes[2].toInt() and 0xFF) shl 16) or
             ((bytes[3].toInt() and 0xFF) shl 24)
+    }
+
+    private fun yankedStatusCheck(nodeDetail: NodeDetail): Boolean {
+        val yanked = nodeDetail.nodeMetadata.firstOrNull { it.key == YANKED }?.value as Boolean?
+        return yanked ?: false
     }
 
     companion object {

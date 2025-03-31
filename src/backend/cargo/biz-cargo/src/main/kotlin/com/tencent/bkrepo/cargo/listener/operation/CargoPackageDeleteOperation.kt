@@ -44,10 +44,10 @@ class CargoPackageDeleteOperation(
                 "Index will be refreshed for removing version $version of crate $name in repo $projectId|$repoName"
             )
             // 删除版本
-            return if (versions.isNotEmpty()) {
-                versions.filter { it.vers != version }.sortedBy { it.vers }.toMutableList()
-            } else {
+            return if (version.isNullOrEmpty()) {
                 mutableListOf()
+            } else {
+                versions.filter { it.vers != version }.sortedBy { it.vers }.toMutableList()
             }
         }
     }

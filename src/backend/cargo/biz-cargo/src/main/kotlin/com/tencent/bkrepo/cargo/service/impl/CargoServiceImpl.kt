@@ -39,6 +39,7 @@ import com.tencent.bkrepo.cargo.constants.CRATE_DOWNLOAD_URL_SUFFIX
 import com.tencent.bkrepo.cargo.constants.DESCRIPTION
 import com.tencent.bkrepo.cargo.constants.LATEST
 import com.tencent.bkrepo.cargo.constants.NAME
+import com.tencent.bkrepo.cargo.constants.YANKED
 import com.tencent.bkrepo.cargo.listener.event.CargoPackageYankEvent
 import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
 import com.tencent.bkrepo.cargo.pojo.CratesDetail
@@ -71,6 +72,7 @@ class CargoServiceImpl(
     private val cargoProperties: CargoProperties,
     private val permissionManager: PermissionManager,
     private val packageService: PackageService,
+    private val commonService: CommonService
 ) : CargoService {
 
 
@@ -145,6 +147,11 @@ class CargoServiceImpl(
 
     private fun doYankOperation(cargoArtifactInfo: CargoArtifactInfo, yanked: Boolean) {
         validParams(cargoArtifactInfo)
+        val crateFilePath = getCargoFileFullPath(cargoArtifactInfo.crateName!!, cargoArtifactInfo.crateVersion!!)
+        val metadata = mutableMapOf<String, Any>(YANKED to yanked)
+        commonService.updateNodeMetaData(
+            cargoArtifactInfo.projectId, cargoArtifactInfo.repoName, crateFilePath, metadata
+        )
         publishEvent(
             CargoPackageYankEvent(
                 ObjectBuilderUtil.buildCargoPackageYankRequest(cargoArtifactInfo, yanked)

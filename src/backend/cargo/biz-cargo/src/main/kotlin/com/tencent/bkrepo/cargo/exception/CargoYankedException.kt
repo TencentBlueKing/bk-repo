@@ -29,35 +29,9 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.cargo.constants
+package com.tencent.bkrepo.cargo.exception
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.MessageCode
 
-const val NAME = "name"
-const val PACKAGE_KEY = "packageKey"
-const val VERSION = "version"
-const val DESCRIPTION = "description"
-const val LATEST = "latest"
-
-const val FILE_SIZE = "fileSize"
-const val FILE_SHA256 = "fileSha256"
-
-const val CRATE_CONFIG = "config.json"
-const val CRATE_DOWNLOAD_URL_SUFFIX = "/api/v1/crates"
-
-const val CARGO_METADATA = "cargoMetadata"
-
-const val CARGO_CRATE_FILE = "cargoCrateFile"
-
-const val CARGO_NODE_PREFIX = "/crates/"
-
-const val CARGO_JSON_PREFIX = "/.cargo/crates/"
-
-const val CARGO_INDEX_PREFIX = "/index/"
-
-const val CARGO_NODE_SUFFIX = ".crate"
-
-const val CARGO_JSON_SUFFIX = ".json"
-
-const val CRATE_NAME = "crateName"
-
-const val YANKED = "yanked"
+class CargoYankedException(messageCode: MessageCode, vararg params: Any) : ErrorCodeException(messageCode, params)
