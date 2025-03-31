@@ -33,14 +33,18 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
+import com.tencent.bkrepo.common.artifact.constant.LOG
 import com.tencent.bkrepo.common.artifact.constant.LSYNC
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
+import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConfiguration
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
@@ -50,8 +54,6 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.webhook.BkCiDevXEnabledPayload
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -82,6 +84,8 @@ class DevXBkciWebhookListener(
         createRemoteRepo(payload.projectCode, LSYNC)
         createRemoteRepo(payload.projectCode, "$PIPELINE$DEVX_SUFFIX")
         createRemoteRepo(payload.projectCode, "$CUSTOM$DEVX_SUFFIX")
+        createRemoteRepo(payload.projectCode, "$REPORT$DEVX_SUFFIX")
+        createRemoteRepo(payload.projectCode, LOG)
 
         // 创建本地项目及仓库
         createLocalProject(payload)
@@ -90,6 +94,8 @@ class DevXBkciWebhookListener(
         createLocalCompositeRepo(payload.projectCode, LSYNC, LSYNC)
         createLocalCompositeRepo(payload.projectCode, PIPELINE, "$PIPELINE$DEVX_SUFFIX")
         createLocalCompositeRepo(payload.projectCode, CUSTOM, "$CUSTOM$DEVX_SUFFIX")
+        createLocalCompositeRepo(payload.projectCode, REPORT, "$REPORT$DEVX_SUFFIX")
+        createLocalCompositeRepo(payload.projectCode, LOG, LOG)
     }
 
     /**
