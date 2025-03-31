@@ -100,8 +100,10 @@ class NodeCommonUtilsTest @Autowired constructor(
 
     private val nodeCollectionName = "node_${HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)}"
 
-    @BeforeAll
-    fun beforeAll() {
+    @BeforeEach
+    fun beforeEach() {
+        mongoTemplate.remove(Query(), nodeCollectionName)
+        whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
         NodeCommonUtils.mongoTemplate = mongoTemplate
         NodeCommonUtils.migrateRepoStorageService = migrateRepoStorageService
         NodeCommonUtils.separationTaskService = separationTaskService
@@ -128,14 +130,8 @@ class NodeCommonUtilsTest @Autowired constructor(
         RepositoryCommonUtils(Mockito.mock(StorageCredentialService::class.java), repositoryService)
     }
 
-    @BeforeEach
-    fun beforeEach() {
-        mongoTemplate.remove(Query(), nodeCollectionName)
-    }
-
     @Test
     fun `throw IllegalStateException when repo was migrating`() {
-        whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
         whenever(separationTaskService.findDistinctSeparationDate()).thenReturn(emptySet())
         mockNode()
         assertThrows<IllegalStateException> { NodeCommonUtils.exist(Query(), null) }
@@ -143,11 +139,9 @@ class NodeCommonUtilsTest @Autowired constructor(
 
     @Test
     fun `findNodes should check migrating status when checkMigrating is true`() {
-        whenever(migrateRepoStorageService.migrating(anyString(), anyString())).thenReturn(true)
         mockNode()
-
-        assertEquals(0, NodeCommonUtils.findNodes(Query(), UT_STORAGE_CREDENTIALS_KEY, true).size)
         assertEquals(1, NodeCommonUtils.findNodes(Query(), UT_STORAGE_CREDENTIALS_KEY, false).size)
+        assertEquals(0, NodeCommonUtils.findNodes(Query(), UT_STORAGE_CREDENTIALS_KEY, true).size)
     }
 
     private fun mockNode() {
