@@ -59,7 +59,7 @@ class CargoArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getAuthSecurityCustomizer() =
         HttpAuthSecurityCustomizer { httpAuthSecurity ->
             httpAuthSecurity
-//                .withPrefix("/cargo")
+                .withPrefix("/cargo")
                 .excludePattern("/**/index/config.json")
         }
 

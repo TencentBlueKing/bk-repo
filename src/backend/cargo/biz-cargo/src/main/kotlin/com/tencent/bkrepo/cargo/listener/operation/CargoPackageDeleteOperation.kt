@@ -38,7 +38,6 @@ class CargoPackageDeleteOperation(
 ) : AbstractCargoOperation(request, commonService) {
 
     override fun handleEvent(versions: MutableList<CrateIndex>): MutableList<CrateIndex> {
-        // TODO 删除index中的版本是否需要删除对应制品
         with(request as CargoPackageDeleteRequest) {
             logger.info(
                 "Index will be refreshed for removing version $version of crate $name in repo $projectId|$repoName"

@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.cargo.service.impl
 
-import com.tencent.bkrepo.cargo.constants.YANKED
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoFileFullPath
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoJsonFullPath
@@ -208,7 +207,7 @@ class CommonService {
             metadata = metadata,
             userId = SecurityUtils.getUserId()
         )
-        try{
+        try {
             metadataService.saveMetadata(metadataSaveRequest)
         } catch (ignore: Exception) {
         }
