@@ -47,7 +47,7 @@ open class CargoArtifactInfo(
         const val UNYANK = "/{projectId}/{repoName}/api/v1/crates/{crateName}/{version}/unyank"
         const val OWNERS = "/{projectId}/{repoName}/api/v1/crates/{crateName}/owners"
         const val SEARCH = "/{projectId}/{repoName}/api/v1/crates"
-        const val INDEX = "{projectId}/{repoName}/**"
+        const val INDEX = "{projectId}/{repoName}/index/**"
         const val DOWNLOAD = "/{projectId}/{repoName}/api/v1/crates/{crateName}/{version}/download"
 
         // cargo version detail

@@ -27,17 +27,28 @@
 
 package com.tencent.bkrepo.cargo.service.impl
 
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
+import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoFileFullPath
+import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoJsonFullPath
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
@@ -56,6 +67,10 @@ class CommonService {
 
     @Autowired
     lateinit var nodeService: NodeService
+
+    @Autowired
+    lateinit var packageService: PackageService
+
 
     /**
      * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
@@ -99,6 +114,79 @@ class CommonService {
         )
             ?: throw RepoNotFoundException("Repository[${nodeCreateRequest.repoName}] does not exist")
         storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, repository.storageCredentials)
+    }
+
+    fun getNodeDetail(projectId: String, repoName: String, fullPath: String): NodeDetail? {
+        return nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
+    }
+
+    fun findVersionByName(projectId: String, repoName: String, key: String, version: String): PackageVersion? {
+        return packageService.findVersionByName(projectId, repoName, key, version)
+    }
+
+    /**
+     * check package [key] version [version] exists
+     */
+    fun packageVersionExist(projectId: String, repoName: String, key: String, version: String): Boolean {
+        return findVersionByName(projectId, repoName, key, version)?.let { true } ?: false
+    }
+
+    /**
+     * check package [key] exists
+     */
+    fun packageExist(projectId: String, repoName: String, key: String): Boolean {
+        return packageService.findPackageByKey(projectId, repoName, key)?.let { true } ?: false
+    }
+
+    fun removeCargoRelatedNode(context: ArtifactRemoveContext) {
+        with(context.artifactInfo as CargoDeleteArtifactInfo) {
+            if (version.isNotBlank()) {
+                packageService.findVersionByName(projectId, repoName, packageName, version)?.let {
+                    removeVersion(
+                        projectId = projectId,
+                        repoName = repoName,
+                        packageKey = packageName,
+                        version = it.name,
+                        userId = context.userId
+                    )
+                } ?: throw VersionNotFoundException(version)
+            } else {
+                packageService.listAllVersion(projectId, repoName, packageName, VersionListOption()).forEach {
+                    removeVersion(
+                        projectId = projectId,
+                        repoName = repoName,
+                        packageKey = packageName,
+                        version = it.name,
+                        userId = context.userId
+                    )
+                }
+                packageService.deletePackage(projectId, repoName, packageName)
+            }
+        }
+    }
+
+    /**
+     * 删除[version] 对应的node节点也会一起删除
+     */
+    fun removeVersion(
+        projectId: String,
+        repoName: String,
+        version: String,
+        packageKey: String,
+        userId: String
+    ) {
+        packageService.deleteVersion(projectId, repoName, packageKey, version)
+        val packageName = PackageKeys.resolveCargo(packageKey)
+        val deletedNodes = listOf(
+            getCargoFileFullPath(packageName, version),
+            getCargoJsonFullPath(packageName, version)
+        )
+        deletedNodes.forEach {
+            if (it.isNotBlank()) {
+                val request = NodeDeleteRequest(projectId, repoName, it, userId)
+                nodeService.deleteNode(request)
+            }
+        }
     }
 
     private fun buildRedisKey(projectId: String, repoName: String, revPath: String): String {

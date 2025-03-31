@@ -40,6 +40,7 @@ import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
 import com.tencent.bkrepo.cargo.pojo.index.IndexDependency
 import com.tencent.bkrepo.cargo.pojo.json.CrateJsonData
 import com.tencent.bkrepo.cargo.pojo.json.JsonDataDependency
+import com.tencent.bkrepo.cargo.pojo.user.BasicInfo
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -49,8 +50,10 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 
 object ObjectBuilderUtil {
@@ -162,7 +165,28 @@ object ObjectBuilderUtil {
         return mutableMap
     }
 
-    fun convertToMap(cargoMetadata: CargoMetadata): Map<String, Any> {
+
+    fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
+        with(nodeDetail) {
+            return BasicInfo(
+                version = packageVersion.name,
+                fullPath = fullPath,
+                size = size,
+                sha256 = sha256.orEmpty(),
+                md5 = md5.orEmpty(),
+                stageTag = packageVersion.stageTag,
+                projectId = projectId,
+                repoName = repoName,
+                downloadCount = packageVersion.downloads,
+                createdBy = createdBy,
+                createdDate = createdDate,
+                lastModifiedBy = lastModifiedBy,
+                lastModifiedDate = lastModifiedDate
+            )
+        }
+    }
+
+    private fun convertToMap(cargoMetadata: CargoMetadata): Map<String, Any> {
         return cargoMetadata.toJsonString().readJsonString<Map<String, Any>>().filter { it.value != null }.minus(keys)
     }
 

@@ -37,10 +37,14 @@ import com.tencent.bkrepo.cargo.constants.CargoMessageCode
 import com.tencent.bkrepo.cargo.constants.FILE_SHA256
 import com.tencent.bkrepo.cargo.constants.FILE_SIZE
 import com.tencent.bkrepo.cargo.exception.CargoBadRequestException
+import com.tencent.bkrepo.cargo.listener.event.CargoPackageDeleteEvent
 import com.tencent.bkrepo.cargo.listener.event.CargoPackageUploadEvent
 import com.tencent.bkrepo.cargo.pojo.CargoSuccessResponse
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.base.CargoMetadata
+import com.tencent.bkrepo.cargo.pojo.event.CargoPackageDeleteRequest
+import com.tencent.bkrepo.cargo.service.impl.CommonService
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoFileFullPath
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoJsonFullPath
 import com.tencent.bkrepo.cargo.utils.CargoUtils.isValidPackageName
@@ -55,6 +59,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
@@ -72,7 +77,9 @@ import java.io.InputStream
 import java.nio.charset.StandardCharsets
 
 @Component
-class CargoLocalRepository : LocalRepository() {
+class CargoLocalRepository(
+    private val commonService: CommonService,
+) : LocalRepository() {
 
 
     override fun onUploadBefore(context: ArtifactUploadContext) {
@@ -215,6 +222,22 @@ class CargoLocalRepository : LocalRepository() {
 
     }
 
+    override fun remove(context: ArtifactRemoveContext) {
+        commonService.removeCargoRelatedNode(context)
+        with(context.artifactInfo as CargoDeleteArtifactInfo) {
+            val event = CargoPackageDeleteEvent(
+                CargoPackageDeleteRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    name = PackageKeys.resolveCargo(packageName),
+                    userId = context.userId,
+                    version = version.ifEmpty { null }
+                )
+            )
+            publishEvent(event)
+        }
+    }
+
 
     /**
      * The body of the data sent by Cargo is:
@@ -226,7 +249,6 @@ class CargoLocalRepository : LocalRepository() {
      */
     private fun parseCargoUploadData(context: ArtifactUploadContext) {
         try {
-            val size = context.getArtifactFile().getSize()
             context.getArtifactFile().getInputStream().use {
                 DataInputStream(it).use { dateInputStream ->
                     println(dateInputStream.toJsonString())

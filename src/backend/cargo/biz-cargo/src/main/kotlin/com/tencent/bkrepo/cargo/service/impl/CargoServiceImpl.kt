@@ -143,7 +143,6 @@ class CargoServiceImpl(
         }
     }
 
-
     private fun doYankOperation(cargoArtifactInfo: CargoArtifactInfo, yanked: Boolean) {
         validParams(cargoArtifactInfo)
         publishEvent(
