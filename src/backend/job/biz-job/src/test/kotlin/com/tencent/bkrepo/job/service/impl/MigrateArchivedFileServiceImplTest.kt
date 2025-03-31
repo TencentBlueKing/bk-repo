@@ -1,12 +1,11 @@
 package com.tencent.bkrepo.job.service.impl
 
 import com.tencent.bkrepo.archive.ArchiveStatus
-import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
-import com.tencent.bkrepo.job.UT_USER
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createArchiveFile
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
@@ -19,7 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
-import java.time.LocalDateTime
 
 @DisplayName("迁移归档文件测试")
 @DataMongoTest
@@ -89,21 +87,6 @@ class MigrateArchivedFileServiceImplTest @Autowired constructor(
     }
 
     private fun mockArchiveFile(storageKey: String?, archiveStorageKey: String?, status: ArchiveStatus): TArchiveFile {
-        val now = LocalDateTime.now()
-        val archiveFile = TArchiveFile(
-            id = null,
-            createdBy = UT_USER,
-            createdDate = now,
-            lastModifiedBy = UT_USER,
-            lastModifiedDate = now,
-            sha256 = UT_SHA256,
-            size = 1024L,
-            storageCredentialsKey = storageKey,
-            status = status,
-            archiver = "",
-            storageClass = ArchiveStorageClass.DEEP_ARCHIVE,
-            archiveCredentialsKey = archiveStorageKey
-        )
-        return archiveFileDao.insert(archiveFile)
+        return archiveFileDao.createArchiveFile(UT_SHA256, storageKey, archiveStorageKey, status)
     }
 }

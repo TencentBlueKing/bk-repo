@@ -31,12 +31,10 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils.shardingSequenceFor
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.ARCHIVE_FILE_COLLECTION
-import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.task.archive.ArchivedNodeRestoreJob
 import com.tencent.bkrepo.job.batch.task.archive.NodeCompressedJob
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
@@ -64,7 +62,7 @@ class FileNotFoundAutoFixStrategy(
     private val storageProperties: StorageProperties,
     private val migrateFailedNodeDao: MigrateFailedNodeDao,
     private val archiveMigrateFailedNodeDao: ArchiveMigrateFailedNodeDao,
-) : MigrateFailedNodeAutoFixStrategy {
+) : BaseAutoFixStrategy() {
     override fun fix(failedNode: TMigrateFailedNode): Boolean {
         val projectId = failedNode.projectId
         val repoName = failedNode.repoName
@@ -78,7 +76,7 @@ class FileNotFoundAutoFixStrategy(
             // 文件存在
             return true
         }
-        val node = findNode(projectId, repoName, fullPath)
+        val node = mongoTemplate.findNode(projectId, repoName, fullPath)
 
         // 检查是否被归档或压缩
         if (archivedOrCompressed(node)) {
@@ -153,15 +151,6 @@ class FileNotFoundAutoFixStrategy(
             }
         }
         return false
-    }
-
-    private fun findNode(projectId: String, repoName: String, fullPath: String): Node {
-        val collectionName = "node_${shardingSequenceFor(projectId, SHARDING_COUNT)}"
-        val criteria = Criteria
-            .where(Node::projectId.name).isEqualTo(projectId)
-            .and(Node::repoName.name).isEqualTo(repoName)
-            .and(Node::fullPath.name).isEqualTo(fullPath)
-        return mongoTemplate.findOne(Query(criteria), Node::class.java, collectionName)!!
     }
 
     private fun getOldCredentials(projectId: String, repoName: String): StorageCredentials {

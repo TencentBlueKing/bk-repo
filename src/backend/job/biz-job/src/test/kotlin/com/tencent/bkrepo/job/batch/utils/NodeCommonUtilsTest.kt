@@ -30,14 +30,8 @@ package com.tencent.bkrepo.job.batch.utils
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
-import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
-import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.UT_PROJECT_ID
@@ -46,19 +40,16 @@ import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.mockRepositoryCommonUtils
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.mockito.ArgumentMatchers.anyString
-import org.mockito.Mockito
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
@@ -107,27 +98,7 @@ class NodeCommonUtilsTest @Autowired constructor(
         NodeCommonUtils.mongoTemplate = mongoTemplate
         NodeCommonUtils.migrateRepoStorageService = migrateRepoStorageService
         NodeCommonUtils.separationTaskService = separationTaskService
-        val repositoryService = Mockito.mock(RepositoryService::class.java)
-        whenever(repositoryService.getRepoDetail(anyString(), anyString(), anyOrNull())).thenReturn(
-            RepositoryDetail(
-                projectId = UT_PROJECT_ID,
-                name = UT_REPO_NAME,
-                storageCredentials = InnerCosCredentials(key = UT_STORAGE_CREDENTIALS_KEY),
-                type = RepositoryType.GENERIC,
-                category = RepositoryCategory.LOCAL,
-                public = false,
-                description = "",
-                configuration = LocalConfiguration(),
-                createdBy = "",
-                createdDate = "",
-                lastModifiedBy = "",
-                lastModifiedDate = "",
-                oldCredentialsKey = null,
-                quota = 0,
-                used = 0,
-            )
-        )
-        RepositoryCommonUtils(Mockito.mock(StorageCredentialService::class.java), repositoryService)
+        mockRepositoryCommonUtils()
     }
 
     @Test

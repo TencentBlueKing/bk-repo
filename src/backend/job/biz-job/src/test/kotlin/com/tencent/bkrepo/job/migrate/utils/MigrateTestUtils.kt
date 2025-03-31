@@ -27,10 +27,17 @@
 
 package com.tencent.bkrepo.job.migrate.utils
 
+import com.tencent.bkrepo.archive.ArchiveStatus
+import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
+import com.tencent.bkrepo.archive.model.TArchiveFile
+import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.UT_MD5
@@ -39,12 +46,17 @@ import com.tencent.bkrepo.job.UT_REPO_NAME
 import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.job.UT_USER
+import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.model.TNode
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.whenever
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDateTime
@@ -143,5 +155,53 @@ object MigrateTestUtils {
     fun MongoTemplate.removeNodes() {
         val sequence = HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)
         remove(Query(), "node_$sequence")
+    }
+
+    fun ArchiveFileDao.createArchiveFile(
+        sha256: String,
+        storageKey: String?,
+        archiveStorageKey: String?,
+        status: ArchiveStatus
+    ): TArchiveFile {
+        val now = LocalDateTime.now()
+        val archiveFile = TArchiveFile(
+            id = null,
+            createdBy = UT_USER,
+            createdDate = now,
+            lastModifiedBy = UT_USER,
+            lastModifiedDate = now,
+            sha256 = sha256,
+            size = 1024L,
+            storageCredentialsKey = storageKey,
+            status = status,
+            archiver = "",
+            storageClass = ArchiveStorageClass.DEEP_ARCHIVE,
+            archiveCredentialsKey = archiveStorageKey
+        )
+        return insert(archiveFile)
+    }
+
+    fun mockRepositoryCommonUtils(storageKey: String? = UT_STORAGE_CREDENTIALS_KEY, oldCredentialsKey: String? = null) {
+        val repositoryService = Mockito.mock(RepositoryService::class.java)
+        whenever(repositoryService.getRepoDetail(anyString(), anyString(), anyOrNull())).thenReturn(
+            RepositoryDetail(
+                projectId = UT_PROJECT_ID,
+                name = UT_REPO_NAME,
+                storageCredentials = InnerCosCredentials(key = storageKey),
+                type = RepositoryType.GENERIC,
+                category = RepositoryCategory.LOCAL,
+                public = false,
+                description = "",
+                configuration = LocalConfiguration(),
+                createdBy = "",
+                createdDate = "",
+                lastModifiedBy = "",
+                lastModifiedDate = "",
+                oldCredentialsKey = oldCredentialsKey,
+                quota = 0,
+                used = 0,
+            )
+        )
+        RepositoryCommonUtils(Mockito.mock(StorageCredentialService::class.java), repositoryService)
     }
 }

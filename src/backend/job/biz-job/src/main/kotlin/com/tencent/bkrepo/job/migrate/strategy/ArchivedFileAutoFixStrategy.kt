@@ -34,15 +34,21 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
+import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE)
 class ArchivedFileAutoFixStrategy(
-    private val archiveFileDao: ArchiveFileDao
-) : MigrateFailedNodeAutoFixStrategy {
+    private val archiveFileDao: ArchiveFileDao,
+    private val mongoTemplate: MongoTemplate,
+) : BaseAutoFixStrategy() {
     override fun fix(failedNode: TMigrateFailedNode): Boolean {
         with(failedNode) {
+            if (mongoTemplate.findNode(projectId, repoName, fullPath).archived != true) {
+                return false
+            }
+
             val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
             val srcArchiveFile = archiveFileDao.findByStorageKeyAndSha256(repo.oldCredentialsKey, sha256)
             if (srcArchiveFile != null && srcArchiveFile.status != ArchiveStatus.COMPLETED) {
