@@ -27,9 +27,11 @@
 
 package com.tencent.bkrepo.job.service.impl
 
+import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.archive.ArchiveStatus.COMPLETED
 import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
+import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
@@ -39,7 +41,10 @@ import org.springframework.stereotype.Service
 @Service
 class MigrateArchivedFileServiceImpl(
     private val archiveFileDao: ArchiveFileDao,
+    private val migrateRepoStorageProperties: MigrateRepoStorageProperties,
 ) : MigrateArchivedFileService {
+    private val migrateRateLimiter = RateLimiter.create(migrateRepoStorageProperties.migrateArchivedFileRate)
+
     override fun migrateArchivedFile(context: MigrationContext, node: Node): Boolean {
         return migrateArchivedFile(context.task.srcStorageKey, context.task.dstStorageKey, node.sha256)
     }
@@ -84,6 +89,7 @@ class MigrateArchivedFileServiceImpl(
             archiveCredentialsKey = srcArchiveFile.archiveCredentialsKey,
             storageClass = srcArchiveFile.storageClass
         )
+        migrateRateLimiter.acquire()
         archiveFileDao.insert(migratedArchiveFile)
         logger.info("migrate archived file[$sha256] of storage[$srcStorageKey] success")
         return true

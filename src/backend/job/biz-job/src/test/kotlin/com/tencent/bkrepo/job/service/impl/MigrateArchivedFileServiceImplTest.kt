@@ -5,6 +5,7 @@ import com.tencent.bkrepo.archive.model.TArchiveFile
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.job.UT_SHA256
 import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
+import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createArchiveFile
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -22,7 +23,7 @@ import org.springframework.test.context.TestPropertySource
 @DisplayName("迁移归档文件测试")
 @DataMongoTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Import(ArchiveFileDao::class, MigrateArchivedFileServiceImpl::class)
+@Import(ArchiveFileDao::class, MigrateArchivedFileServiceImpl::class, MigrateRepoStorageProperties::class)
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class MigrateArchivedFileServiceImplTest @Autowired constructor(
     private val migrateArchivedFileService: MigrateArchivedFileServiceImpl,
