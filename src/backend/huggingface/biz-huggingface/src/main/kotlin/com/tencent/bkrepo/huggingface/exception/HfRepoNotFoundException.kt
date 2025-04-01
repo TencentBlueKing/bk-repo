@@ -29,6 +29,9 @@ package com.tencent.bkrepo.huggingface.exception
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 
-class RepoExistException(
+/**
+ * 仓库不存在异常
+ */
+class HfRepoNotFoundException(
     repoId: String,
-) : HfException(HttpStatus.BAD_REQUEST, HfErrorCode.REPO_EXIST, repoId)
+) : HfException(HttpStatus.NOT_FOUND, HfErrorCode.REPO_NOT_FOUND, repoId)

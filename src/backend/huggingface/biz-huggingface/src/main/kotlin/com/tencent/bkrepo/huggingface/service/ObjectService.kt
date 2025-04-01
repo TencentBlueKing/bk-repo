@@ -42,7 +42,7 @@ import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactInfo
 import com.tencent.bkrepo.huggingface.config.HuggingfaceProperties
-import com.tencent.bkrepo.huggingface.exception.RepoNotFoundException
+import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
 import com.tencent.bkrepo.lfs.constant.BASIC_TRANSFER
 import com.tencent.bkrepo.lfs.constant.UPLOAD_OPERATION
 import com.tencent.bkrepo.lfs.pojo.ActionDetail
@@ -125,7 +125,7 @@ class ObjectService(
 
     private fun getRepoDetail(projectId: String, repoName: String): RepositoryDetail {
         return repositoryService.getRepoDetail(projectId, repoName)
-            ?: throw RepoNotFoundException("$projectId/$repoName")
+            ?: throw HfRepoNotFoundException("$projectId/$repoName")
     }
 
     companion object {

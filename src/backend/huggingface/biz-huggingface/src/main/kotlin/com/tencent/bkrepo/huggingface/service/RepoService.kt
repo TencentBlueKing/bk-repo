@@ -35,9 +35,9 @@ import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.huggingface.config.HuggingfaceProperties
+import com.tencent.bkrepo.huggingface.exception.HfRepoExistException
+import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
 import com.tencent.bkrepo.huggingface.exception.OperationNotSupportException
-import com.tencent.bkrepo.huggingface.exception.RepoExistException
-import com.tencent.bkrepo.huggingface.exception.RepoNotFoundException
 import com.tencent.bkrepo.huggingface.pojo.RepoCreateRequest
 import com.tencent.bkrepo.huggingface.pojo.RepoDeleteRequest
 import com.tencent.bkrepo.huggingface.pojo.RepoMoveRequest
@@ -90,7 +90,7 @@ class RepoService(
             }
             val packageKey = PackageKeys.ofHuggingface(request.type!!, request.repoId!!)
             val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey)
-                ?: throw RepoNotFoundException(request.repoId!!)
+                ?: throw HfRepoNotFoundException(request.repoId!!)
             val extension = packageSummary.extension.toMutableMap()
             request.private?.let { extension[RepoUpdateRequest::private.name] = it }
             request.gated?.let { extension[RepoUpdateRequest::gated.name] = it }
@@ -129,7 +129,7 @@ class RepoService(
                 packageService.updatePackage(updateRequest)
                 nodeService.renameNode(renameRequest)
             } catch (_: DuplicateKeyException) {
-                throw RepoExistException(request.toRepo)
+                throw HfRepoExistException(request.toRepo)
             }
         }
     }
@@ -138,7 +138,7 @@ class RepoService(
         val userId = SecurityUtils.getUserId()
         val packageKey = PackageKeys.ofHuggingface(request.type, request.repoId)
         packageService.findPackageByKey(request.projectId, request.repoName, packageKey)
-            ?: throw RepoNotFoundException(request.repoId)
+            ?: throw HfRepoNotFoundException(request.repoId)
         val deleteRequest = NodeDeleteRequest(
             projectId = request.projectId,
             repoName = request.repoName,
@@ -151,7 +151,7 @@ class RepoService(
 
     private fun checkRepository(projectId: String, repoName: String): RepositoryDetail {
         return repositoryService.getRepoDetail(projectId, repoName)
-            ?: throw RepoNotFoundException("$projectId/$repoName")
+            ?: throw HfRepoNotFoundException("$projectId/$repoName")
     }
 
     private fun createPackage(request: RepoCreateRequest): RepoUrl {

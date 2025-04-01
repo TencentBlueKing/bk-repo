@@ -54,7 +54,7 @@ class HuggingfaceArtifactInfoResolver : ArtifactInfoResolver {
         val origanization = attributes[ORGANIZATION_KEY].toString()
         val name = attributes[NAME_KEY].toString()
         val revision = attributes[REVISION_KEY]?.toString()
-        val type = attributes[TYPE_KEY].toString()
+        val type = attributes[TYPE_KEY]?.toString()
         return HuggingfaceArtifactInfo(projectId, repoName, origanization, name, revision, type, artifactUri)
     }
 }

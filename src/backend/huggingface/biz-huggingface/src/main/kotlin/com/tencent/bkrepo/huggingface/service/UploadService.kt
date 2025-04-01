@@ -51,8 +51,8 @@ import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_FILE
 import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_HEADER
 import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_LFS
 import com.tencent.bkrepo.huggingface.constants.LFS_UPLOAD_MODE
+import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
 import com.tencent.bkrepo.huggingface.exception.OperationNotSupportException
-import com.tencent.bkrepo.huggingface.exception.RepoNotFoundException
 import com.tencent.bkrepo.huggingface.exception.RevisionNotFoundException
 import com.tencent.bkrepo.huggingface.pojo.CommitRequest
 import com.tencent.bkrepo.huggingface.pojo.CommitResponse
@@ -130,7 +130,7 @@ class UploadService(
     private fun checkPackage(projectId: String, repoName: String, type: String, repoId: String): PackageSummary {
         val packageKey = PackageKeys.ofHuggingface(type, repoId)
         return packageService.findPackageByKey(projectId, repoName, packageKey)
-            ?: throw RepoNotFoundException(repoId)
+            ?: throw HfRepoNotFoundException(repoId)
     }
 
     private fun CommitRequest.createPackageVersion(
@@ -159,7 +159,7 @@ class UploadService(
 
     private fun checkRepository(projectId: String, repoName: String): RepositoryDetail {
         val repository = repositoryService.getRepoDetail(projectId, repoName)
-            ?: throw RepoNotFoundException("$projectId/$repoName")
+            ?: throw HfRepoNotFoundException("$projectId/$repoName")
         if (repository.category != RepositoryCategory.LOCAL && repository.category != RepositoryCategory.COMPOSITE) {
             throw OperationNotSupportException()
         }

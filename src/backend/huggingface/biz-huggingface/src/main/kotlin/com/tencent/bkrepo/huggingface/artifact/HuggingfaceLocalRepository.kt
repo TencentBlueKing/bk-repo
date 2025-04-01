@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
-import com.tencent.bkrepo.huggingface.exception.RepoNotFoundException
+import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
 import com.tencent.bkrepo.huggingface.exception.RevisionNotFoundException
 import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
@@ -73,7 +73,7 @@ class HuggingfaceLocalRepository : LocalRepository() {
             if (artifactInfo.getRevision().isNullOrEmpty() || artifactInfo.getRevision() == "main") {
                 val packageKey = PackageKeys.ofHuggingface(type ?: REPO_TYPE_MODEL, getRepoId())
                 val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey)
-                    ?: throw RepoNotFoundException(getRepoId())
+                    ?: throw HfRepoNotFoundException(getRepoId())
                 HttpContextHolder.getRequest().setAttribute(REVISION_KEY, packageSummary.latest)
             }
         }
@@ -89,7 +89,7 @@ class HuggingfaceLocalRepository : LocalRepository() {
             val packageKey = PackageKeys.ofHuggingface(type.toString(), getRepoId())
 
             val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey)
-                ?: throw RepoNotFoundException(getRepoId())
+                ?: throw HfRepoNotFoundException(getRepoId())
             transferRevision(artifactInfo)
             val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, getRevision()!!)
                 ?: throw RevisionNotFoundException(getRevision()!!)
