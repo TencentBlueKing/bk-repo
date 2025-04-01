@@ -128,4 +128,9 @@ class AuthenticationManager {
     fun getTokenInfo(token: String): TemporaryTokenInfo? {
         return serviceTemporaryTokenClient.getTokenInfo(token).data
     }
+
+    fun findUserByToken(token: String): UserInfo {
+        return serviceUserClient.userInfoByToken(token).data
+            ?: throw AuthenticationException("Access token check failed.")
+    }
 }
