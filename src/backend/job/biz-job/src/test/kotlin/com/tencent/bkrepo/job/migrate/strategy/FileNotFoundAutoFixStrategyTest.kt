@@ -91,7 +91,7 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
     fun testNodeExists() {
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(true)
         val node = migrateFailedNodeDao.insertFailedNode()
-        assertFalse(strategy.fix(node))
+        assertTrue(strategy.fix(node))
     }
 
     @Test

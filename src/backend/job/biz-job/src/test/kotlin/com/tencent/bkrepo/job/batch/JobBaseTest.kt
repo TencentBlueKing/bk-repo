@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch
 
+import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.job.JobAutoConfiguration
@@ -37,6 +38,7 @@ import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.batch.file.ExpireFileResolverConfig
 import com.tencent.bkrepo.job.config.JobConfig
+import com.tencent.bkrepo.job.service.impl.MigrateArchivedFileServiceImpl
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -64,6 +66,8 @@ import org.springframework.test.context.TestPropertySource
     StorageAutoConfiguration::class,
     RouterControllerProperties::class,
     ProjectUsageStatisticsProperties::class,
+    ArchiveFileDao::class,
+    MigrateArchivedFileServiceImpl::class,
 )
 @TestPropertySource(
     locations = [
@@ -93,6 +97,6 @@ class JobBaseTest {
         every { SpringContextUtils.publishEvent(any()) } returns Unit
 
         val messageSupplier = mockk<MessageSupplier>()
-        every { messageSupplier.delegateToSupplier<ArtifactEvent>(any(), any(), any(), any(), any())}.returns(Unit)
+        every { messageSupplier.delegateToSupplier<ArtifactEvent>(any(), any(), any(), any(), any()) }.returns(Unit)
     }
 }

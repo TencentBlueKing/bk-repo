@@ -28,19 +28,14 @@
 package com.tencent.bkrepo.generic.artifact
 
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
-import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
 import com.tencent.bkrepo.generic.config.PlatformProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -112,54 +107,5 @@ fun createPlatformDns(platforms: List<PlatformProperties>) = object : Dns {
         return platforms.firstOrNull { it.host == hostname && it.ip.isNotEmpty() }?.let {
             listOf(Inet4Address.getByName(it.ip))
         } ?: Dns.SYSTEM.lookup(hostname)
-    }
-}
-
-/**
- * 从[remoteNodes]中找出路径为[fullPath]的节点，并获取其元数据列表
- *
- * @param remoteNodes 远程节点列表
- * @param fullPath 待查找的节点路径
- */
-fun findRemoteMetadata(remoteNodes: List<Any>, fullPath: String): List<MetadataModel>? {
-    val remoteNode = remoteNodes.firstOrNull {
-        it is Map<*, *> && it[NodeDetail::fullPath.name] == fullPath
-    } as Map<String, Any?>?
-    return (remoteNode?.get(NodeDetail::nodeMetadata.name) as List<Map<String, Any?>>?)?.map {
-        MetadataModel(
-            key = it[MetadataModel::key.name] as String,
-            value = it[MetadataModel::value.name] as String,
-            system = it[MetadataModel::system.name] as Boolean? ?: false,
-            description = it[MetadataModel::description.name]?.toString(),
-            link = it[MetadataModel::link.name]?.toString(),
-        )
-    }
-}
-
-/**
- * 从[remoteNodes]中查询出[fullPath]的父节点，将其元数据更新到[fullPath]的本地父节点
- */
-fun MetadataService.updateParentMetadata(
-    remoteNodes: List<Any>,
-    projectId: String,
-    repoName: String,
-    fullPath: String
-) {
-    val parents = PathUtils.resolveAncestorFolder(fullPath)
-    for (parentFullPath in parents) {
-        if (parentFullPath == ROOT) {
-            continue
-        }
-        val parentMetadataList = findRemoteMetadata(remoteNodes, parentFullPath)
-        if (!parentMetadataList.isNullOrEmpty()) {
-            saveMetadata(
-                MetadataSaveRequest(
-                    projectId = projectId,
-                    repoName = repoName,
-                    fullPath = parentFullPath,
-                    nodeMetadata = parentMetadataList
-                )
-            )
-        }
     }
 }

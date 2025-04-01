@@ -29,18 +29,19 @@ package com.tencent.bkrepo.common.metadata.service.packages.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.metadata.util.version.SemVersion
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.ClusterResource
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.model.TRepository
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.version.SemVersion
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
-import com.tencent.bkrepo.common.metadata.service.packages.PackageService
-import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
@@ -89,6 +90,23 @@ abstract class PackageBaseService(
                 packageDao.findByKey(projectId, repoName, key)!!
             }
         }
+    }
+
+    protected open fun buildPackage(request: PackageCreateRequest) = with(request) {
+        TPackage(
+            createdBy = createdBy,
+            createdDate = LocalDateTime.now(),
+            lastModifiedBy = createdBy,
+            lastModifiedDate = LocalDateTime.now(),
+            projectId = projectId,
+            repoName = repoName,
+            name = packageName.trim(),
+            key = packageKey.trim(),
+            type = packageType,
+            downloads = 0,
+            versions = 0,
+            description = packageDescription,
+        )
     }
 
     protected open fun buildPackage(request: PackageVersionCreateRequest) = with(request) {

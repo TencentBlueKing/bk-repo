@@ -40,6 +40,8 @@ import java.time.LocalDateTime
  */
 @ApiModel("包总览信息")
 data class PackageSummary(
+    @ApiModelProperty("id")
+    val id: String,
     @ApiModelProperty("创建者")
     val createdBy: String,
     @ApiModelProperty("创建时间")
