@@ -139,7 +139,6 @@ class IdleNodeArchiveJobTest @Autowired constructor(
 
         job.start()
 
-        // 验证归档客户端调用（根据实际实现调整验证逻辑）
         Mockito.verify(archiveClient, Mockito.times(2)).archive(any())
     }
 
@@ -175,7 +174,7 @@ class IdleNodeArchiveJobTest @Autowired constructor(
             fullPath = "/$projectId/$UT_REPO_NAME/test/file.txt",
             sha256 = UT_SHA256 + projectId,
             size = 11 * 1024 * 1024, // 11MB > 10MB阈值
-            lastAccessDate = LocalDateTime.now().minusDays(400), // 必须早于当前时间 - days（365天）
+            lastAccessDate = LocalDateTime.now().minusDays(400),
         ).apply {}
     }
 
