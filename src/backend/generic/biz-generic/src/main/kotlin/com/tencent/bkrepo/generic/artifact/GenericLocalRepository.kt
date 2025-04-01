@@ -700,7 +700,8 @@ class GenericLocalRepository(
         return if (isSearchPipelineRoot) {
             // 仅在查询流水线仓库第一页时返回用户有权限的流水线目录
             if (queryModel.page.pageNumber == DEFAULT_PAGE_NUMBER) {
-                pipelineNodeService.listPipeline(context.projectId, context.repoName).map { node ->
+                val userId = SecurityUtils.getUserId()
+                pipelineNodeService.listPipeline(userId, context.projectId, context.repoName).map { node ->
                     val nodePropMap = LinkedHashMap<String, Any?>()
                     NodeInfo::class.memberProperties
                         .filter { it.name != NodeInfo::deleted.name }

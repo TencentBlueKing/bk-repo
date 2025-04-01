@@ -435,9 +435,22 @@ class RepositoryServiceHelper(
          * 构造单个仓库查询条件
          */
         fun buildSingleQuery(projectId: String, repoName: String, repoType: String? = null): Query {
+            return buildQuery(projectId, repoName, repoType, false)
+        }
+
+        fun buildDeletedQuery(projectId: String, repoName: String, repoType: String? = null): Query {
+            return buildQuery(projectId, repoName, repoType, true)
+        }
+
+
+        fun buildQuery(projectId: String, repoName: String, repoType: String? = null, deleted: Boolean): Query {
             val criteria = where(TRepository::projectId).isEqualTo(projectId)
                 .and(TRepository::name).isEqualTo(repoName)
-                .and(TRepository::deleted).isEqualTo(null)
+            if (deleted) {
+                criteria.and(TRepository::deleted).ne(null)
+            } else {
+                criteria.and(TRepository::deleted).isEqualTo(null)
+            }
             if (repoType != null && repoType.uppercase(Locale.getDefault()) != RepositoryType.NONE.name) {
                 criteria.and(TRepository::type).isEqualTo(repoType.uppercase(Locale.getDefault()))
             }

@@ -54,8 +54,8 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.metadata.util.DesensitizedUtils
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -350,6 +350,11 @@ class UserServiceImpl constructor(
 
     override fun getUserInfoById(userId: String): UserInfo? {
         val tUser = userDao.findFirstByUserId(userId) ?: return null
+        return UserRequestUtil.convToUserInfo(tUser)
+    }
+
+    override fun getUserInfoByToken(token: String): UserInfo? {
+        val tUser = userDao.findFirstByToken(token) ?: return null
         return UserRequestUtil.convToUserInfo(tUser)
     }
 

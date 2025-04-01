@@ -37,6 +37,7 @@
             this.getPermissionDialogConfig()
             const hasShowLog = cookies.get('hasShowLog') || ''
             const logs = await getTrueVersions()
+            this.$store.commit('SET_CREATING', true)
             if (logs.length > 0 && !this.ciMode && !this.isSubSaas) {
                 this.$store.commit('SET_VERSION_LOGS', logs)
                 if (hasShowLog !== logs[0].version) {
@@ -47,6 +48,7 @@
                 this.loadDevopsUtils('/ui/devops-utils.js')
                 // 请求管理员信息
                 this.ajaxUserInfo().then((userInfo) => {
+                    this.$store.commit('SET_CREATING', false)
                     userInfo.admin && this.getClusterList()
                 })
             } else {
@@ -56,6 +58,7 @@
                 const target = location.pathname.split(urlProjectId)[1] || ''
                 const specTargetMatch = target !== '' ? ((target.match(/\/([^\/]+)\//)) || [])[1] : ''
                 Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(([userInfo]) => {
+                    this.$store.commit('SET_CREATING', false)
                     if (!this.ciMode && !this.projectList.length) {
                         if (userInfo.admin) {
                             // TODO: 管理员创建项目引导页

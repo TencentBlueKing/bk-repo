@@ -8,7 +8,7 @@
         <bk-form class="mr10 repo-base-info" :label-width="150" :model="repoBaseInfo" :rules="rules" ref="repoBaseInfo">
             <bk-form-item :label="$t('repoType')" :required="true" property="type" error-display-type="normal">
                 <bk-radio-group v-model="repoBaseInfo.type" class="repo-type-radio-group" @change="changeRepoType">
-                    <bk-radio-button v-for="repo in repoEnum" :key="repo.label" :value="repo.value">
+                    <bk-radio-button v-for="repo in repoEnum" :key="repo.label" :value="repo.value" :disabled="disCheck(repo.value)">
                         <div class="flex-column flex-center repo-type-radio">
                             <Icon size="32" :name="repo.value" />
                             <span>{{repo.label}}</span>
@@ -17,7 +17,8 @@
                 </bk-radio-group>
             </bk-form-item>
             <bk-form-item :label="$t('repoName')" :required="true" property="name" error-display-type="normal">
-                <bk-input class="w480" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
+                <bk-input
+                    class="w480" v-model.trim="repoBaseInfo.name" maxlength="32" show-word-limit
                     :placeholder="$t(repoBaseInfo.type === 'docker' ? 'repoDockerNamePlaceholder' : 'repoNamePlaceholder')">
                 </bk-input>
                 <div v-if="repoBaseInfo.type === 'docker'" class="form-tip">{{ $t('dockerRepoTip')}}</div>
@@ -34,6 +35,15 @@
                     <bk-radio class="mr20" :value="true">{{ $t('enable') }}</bk-radio>
                     <bk-radio :value="false">{{ $t('disable') }}</bk-radio>
                 </bk-radio-group>
+            </bk-form-item>
+            <bk-form-item :label="$t('isAllowShowFolder')">
+                <div style="display: flex;margin-top: 5px">
+                    <bk-radio-group ref="isAllowShowFolderRadio" v-model="repoBaseInfo.autoIndex" style="width: 120px">
+                        <bk-radio class="mr20" :value="true">{{ $t('yes') }}</bk-radio>
+                        <bk-radio :value="false">{{ $t('no') }}</bk-radio>
+                    </bk-radio-group>
+                    <Icon name="repoHelp" size="14" style="margin-top: 4px;" v-bk-tooltips="isAllowShowFolderHelp" />
+                </div>
             </bk-form-item>
             <bk-form-item
                 :label="$t('bkPermissionCheck')"
@@ -68,7 +78,8 @@
                 </bk-form-item>
             </template>
             <bk-form-item :label="$t('description')">
-                <bk-input type="textarea"
+                <bk-input
+                    type="textarea"
                     class="w480"
                     maxlength="200"
                     :rows="6"
@@ -87,8 +98,9 @@
 <script>
     import CardRadioGroup from '@repository/components/CardRadioGroup'
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
-    import { repoEnum, specialRepoEnum } from '@repository/store/publicEnum'
+    import { repoEnum, specialRepoEnum, ciDisableRepoEnum } from '@repository/store/publicEnum'
     import { mapActions, mapState } from 'vuex'
+    import cookies from 'js-cookie'
 
     const getRepoBaseInfo = () => {
         return {
@@ -102,6 +114,7 @@
             groupXmlSet: [],
             description: '',
             display: true,
+            autoIndex: true,
             mobile: {
                 enable: false,
                 filename: '',
@@ -122,7 +135,7 @@
     }
 
     export default {
-        name: 'createRepo',
+        name: 'CreateRepo',
         components: { CardRadioGroup, iamDenyDialog },
         data () {
             return {
@@ -135,7 +148,12 @@
                 showData: {},
                 title: this.$t('createRepository'),
                 accessControl: 'DEFAULT',
-                bkiamv3Check: false
+                bkiamv3Check: false,
+                isAllowShowFolderHelp: {
+                    width: 240,
+                    placement: 'right-start',
+                    content: this.$t('isAllowShowFolderHelp')
+                }
             }
         },
         computed: {
@@ -229,8 +247,29 @@
                 }
             }
         },
+        watch: {
+            show (val) {
+                if (val) {
+                    this.language = cookies.get('blueking_language') || 'zh-cn'
+                    this.$nextTick(() => {
+                        if (this.language !== 'zh-cn') {
+                            this.$refs.isAllowShowFolderRadio.$el.style.width = '140px'
+                        } else {
+                            this.$refs.isAllowShowFolderRadio.$el.style.width = '120px'
+                        }
+                    })
+                }
+            }
+        },
         methods: {
             ...mapActions(['createRepo', 'checkRepoName', 'getPermissionUrl', 'createOrUpdateRootPermission']),
+            disCheck (repoName) {
+                if (MODE_CONFIG !== 'ci') {
+                    return false
+                } else {
+                    return ciDisableRepoEnum.includes(repoName)
+                }
+            },
             showDialogHandler () {
                 this.show = true
                 this.repoBaseInfo = getRepoBaseInfo()
@@ -265,6 +304,9 @@
                         settings: {
                             system: this.repoBaseInfo.system,
                             interceptors: undefined,
+                            autoIndex: {
+                                enabled: this.repoBaseInfo.autoIndex
+                            },
                             ...(
                                 this.repoBaseInfo.type === 'rpm'
                                     ? {
@@ -341,6 +383,13 @@
     }
 </script>
 <style lang="scss" scoped>
+::v-deep .bk-form-radio-button .bk-radio-button-input:disabled+.bk-radio-button-text {
+    position: relative;
+    color: #dcdee5;
+    background: #fafbfd;
+    border-color: currentColor;
+    border-left: 1px solid;
+}
 .repo-base-info {
     max-height: 442px;
     overflow-y: auto;

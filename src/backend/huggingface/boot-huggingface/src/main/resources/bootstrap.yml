@@ -1,0 +1,2 @@
+spring.application.name: huggingface
+server.port: 25823

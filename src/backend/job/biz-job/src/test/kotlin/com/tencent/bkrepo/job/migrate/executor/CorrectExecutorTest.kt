@@ -71,6 +71,7 @@ class CorrectExecutorTest @Autowired constructor(
         // 创建待迁移node
         mongoTemplate.createNode(createDate = now.minusMinutes(1L))
         mongoTemplate.createNode(createDate = now)
+        mongoTemplate.createNode(createDate = now, archived = true)
         mongoTemplate.createNode(createDate = now.plusMinutes(1L))
         // 创建任务
         var task = createTask()
@@ -80,7 +81,7 @@ class CorrectExecutorTest @Autowired constructor(
         Thread.sleep(100L)
         assertTrue(executingTaskRecorder.executing(task.id!!))
 
-        // 等待执行结素和
+        // 等待执行结束
         Thread.sleep(1000L)
         context.waitAllTransferFinished()
         task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!

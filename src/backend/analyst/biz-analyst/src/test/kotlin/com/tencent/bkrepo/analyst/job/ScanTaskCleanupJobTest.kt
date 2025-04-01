@@ -1,3 +1,30 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package com.tencent.bkrepo.analyst.job
 
 import com.tencent.bkrepo.analyst.AnalystBaseTest
@@ -69,7 +96,7 @@ class ScanTaskCleanupJobTest @Autowired constructor(
     }
 
     @Test
-    fun testClean() {
+    fun `test clean`() {
         mockData(LocalDateTime.now().minusDays(7))
         scannerProperties.reportKeepDuration = Duration.ofDays(1L)
         val context = ScanTaskCleanupJob.CleanContext()
@@ -92,6 +119,19 @@ class ScanTaskCleanupJobTest @Autowired constructor(
         assertEquals(1, context.taskCount.get())
     }
 
+    @Test
+    fun `test do not clean when keep duration is zero`() {
+        assertEquals(0, scanTaskDao.count(Query()))
+        scanTaskDao.insert(buildScanTask(LocalDateTime.now().minusDays(7L)))
+
+        scannerProperties.reportKeepDuration = Duration.ofDays(0L)
+        val context = ScanTaskCleanupJob.CleanContext()
+        scanTaskCleanupJob.doClean(context)
+
+        assertEquals(1, scanTaskDao.count(Query()))
+        assertEquals(0, context.taskCount.get())
+    }
+
     private fun mockData(now: LocalDateTime) {
         // plan
         val overview = mapOf(
@@ -109,9 +149,12 @@ class ScanTaskCleanupJobTest @Autowired constructor(
         for (i in 0 until 40) {
             // subtask
             val archiveSubtask = archiveSubScanTaskDao.insert(buildArchiveSubScanTask(task1.id!!, randomSha256(), now))
-            planArtifactLatestSubScanTaskDao.insert(buildPlanSubScanTask(archiveSubtask))
             // file result overview
             if (i % 10 == 0) {
+                val oldId = archiveSubtask.id!!
+                archiveSubtask.id = "xxxxxx"
+                planArtifactLatestSubScanTaskDao.insert(buildPlanSubScanTask(archiveSubtask))
+                archiveSubtask.id = oldId
                 val scanResult = mapOf(
                     UT_SCANNER to buildScanResult(now, archiveSubtask.parentScanTaskId),
                     "test" to buildScanResult(now, MIN_OBJECT_ID)
@@ -124,6 +167,7 @@ class ScanTaskCleanupJobTest @Autowired constructor(
                 securityResultDao.insert(buildSecurityResult(archiveSubtask.sha256))
                 securityResultDao.insert(buildSecurityResult(archiveSubtask.sha256, "test"))
             } else {
+                planArtifactLatestSubScanTaskDao.insert(buildPlanSubScanTask(archiveSubtask))
                 fileScanResultDao.insert(buildFileResult(now, archiveSubtask.sha256, archiveSubtask.parentScanTaskId))
                 // insert reports
                 securityResultDao.insert(buildSecurityResult(archiveSubtask.sha256))
@@ -156,8 +200,8 @@ class ScanTaskCleanupJobTest @Autowired constructor(
         // subtasks
         assertEquals(10, archiveSubScanTaskDao.count(Query()))
         assertEquals(83L, context.archivedSubtaskCount.get())
-        assertEquals(10, planArtifactLatestSubScanTaskDao.count(Query()))
-        assertEquals(83L, context.planArtifactTaskCount.get())
+        assertEquals(14, planArtifactLatestSubScanTaskDao.count(Query()))
+        assertEquals(79L, context.planArtifactTaskCount.get())
 
         // file result overview
         assertEquals(14L, fileScanResultDao.count(Query()))
@@ -170,7 +214,7 @@ class ScanTaskCleanupJobTest @Autowired constructor(
 
         // plan
         val plan = scanPlanDao.findOne(Query())!!
-        assertEquals(7, plan.scanResultOverview[CveOverviewKey.CVE_LOW_COUNT.key])
-        assertEquals(14, plan.scanResultOverview[CveOverviewKey.CVE_HIGH_COUNT.key])
+        assertEquals(11, plan.scanResultOverview[CveOverviewKey.CVE_LOW_COUNT.key])
+        assertEquals(22, plan.scanResultOverview[CveOverviewKey.CVE_HIGH_COUNT.key])
     }
 }

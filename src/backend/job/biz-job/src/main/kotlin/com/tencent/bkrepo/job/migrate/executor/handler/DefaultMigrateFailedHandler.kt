@@ -44,7 +44,7 @@ class DefaultMigrateFailedHandler(
     override fun handle(task: MigrateRepoStorageTask, node: Node, e: Exception) {
         saveMigrateFailedNode(task.id!!, node)
         val msg = "${task.state} node[${node.fullPath}] failed, task[${task.projectId}/${task.repoName}]"
-        if (e is FileNotFoundException) {
+        if (e is FileNotFoundException || e is IllegalStateException) {
             logger.warn(msg, e)
         } else {
             logger.error(msg, e)

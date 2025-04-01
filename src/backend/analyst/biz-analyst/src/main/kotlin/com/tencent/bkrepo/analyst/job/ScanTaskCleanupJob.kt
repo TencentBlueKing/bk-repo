@@ -94,7 +94,7 @@ class ScanTaskCleanupJob(
     }
 
     fun doClean(context: CleanContext) {
-        if (!executing.compareAndSet(false, true)) {
+        if (scannerProperties.reportKeepDuration.isZero || !executing.compareAndSet(false, true)) {
             return
         }
         try {
@@ -109,6 +109,7 @@ class ScanTaskCleanupJob(
     }
 
     private fun cleanTasks(context: CleanContext) {
+        val keepDuration = scannerProperties.reportKeepDuration
         val pageSize = DEFAULT_BATCH_SIZE
         var lastId = ObjectId(MIN_OBJECT_ID)
         val now = LocalDateTime.now()
@@ -120,7 +121,7 @@ class ScanTaskCleanupJob(
             var noExpiredTask = false
             // 执行清理
             for (task in tasks) {
-                if (Duration.between(task.lastModifiedDate, now) < scannerProperties.reportKeepDuration) {
+                if (keepDuration.isZero || Duration.between(task.lastModifiedDate, now) < keepDuration) {
                     noExpiredTask = true
                     // 当碰到未过期任务时表示后续大部份任务是未过期的，不再继续遍历清理，减少任务执行耗时
                     break
@@ -178,10 +179,11 @@ class ScanTaskCleanupJob(
     }
 
     private fun cleanPlanSubtask(context: CleanContext, latestSubtasks: List<TArchiveSubScanTask>) {
-        val deletedResult = planArtifactLatestSubScanTaskDao.deleteByLatestSubtasks(latestSubtasks.map { it.id!! })
-        context.planArtifactTaskCount.addAndGet(deletedResult.deletedCount)
+        val deletedPlanSubtasks =
+            planArtifactLatestSubScanTaskDao.deleteByLatestSubtasks(latestSubtasks.map { it.id!! })
+        context.planArtifactTaskCount.addAndGet(deletedPlanSubtasks.size.toLong())
         // 减少关联的扫描方案预览值
-        scanPlanDao.decrementScanResultOverview(latestSubtasks)
+        scanPlanDao.decrementScanResultOverview(deletedPlanSubtasks)
     }
 
     private fun cleanFileOverviewResults(context: CleanContext, subtask: TArchiveSubScanTask) {
@@ -199,11 +201,12 @@ class ScanTaskCleanupJob(
         if (scanResult.isEmpty()) {
             // 结果为空时直接移除
             fileScanResultDao.removeById(fileResult.id!!)
-        } else {
+            context.overviewResultCount.incrementAndGet()
+        } else if (scanResult.size != fileResult.scanResult.size) {
             // 更新文件扫描结果预览数据
             fileScanResultDao.updateScanResult(fileResult.id!!, fileResult.lastModifiedDate, scanResult)
+            context.overviewResultCount.incrementAndGet()
         }
-        context.overviewResultCount.incrementAndGet()
     }
 
     private fun cleanReports(context: CleanContext, subtask: TArchiveSubScanTask) {

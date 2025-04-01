@@ -16,7 +16,7 @@
         </div>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
-            <textarea v-model="basicFileText" class="textarea" readonly></textarea>
+            <textarea id="basicFileText" v-model="basicFileText" class="textarea" readonly></textarea>
         </div>
         <img v-if="imgShow" :src="imgUrl" />
         <div v-if="csvShow" id="csvTable"></div>
@@ -87,7 +87,12 @@
                 imgShow: false,
                 imgUrl: '',
                 csvShow: false,
-                pdfShow: false
+                pdfShow: false,
+                pdfPages: [], // 页数
+                pdfWidth: '', // 宽度
+                pdfSrc: '', // 地址
+                pdfDoc: '', // 文档内容
+                pdfScale: 1.5 // 放大倍数
             }
         },
         computed: {
@@ -129,16 +134,13 @@
                             this.showFrame = true
                             this.pageUrl = url
                         } else if (isText(res.data.data.suffix)) {
-                            this.loading = false
                             this.previewBasic = true
                             const reader = new FileReader()
-                            let text = ''
                             reader.onload = function (event) {
-                                // 读取的文本内容
-                                text = event.target.result
+                                // 读取的文本内容,强行赋值渲染
+                                document.getElementById('basicFileText').value = Base64.decode(event.target.result)
                             }
                             reader.readAsText(fileDate.data)
-                            this.basicFileText = text
                         } else if (isPic(res.data.data.suffix)) {
                             this.imgShow = true
                             this.imgUrl = URL.createObjectURL(fileDate.data)

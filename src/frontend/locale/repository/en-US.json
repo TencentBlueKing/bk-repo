@@ -773,6 +773,8 @@
     "noProjectData":"No Project Data",
     "enable": "Enable",
     "disable": "Disable",
+    "yes": "Enable",
+    "no": "Disable",
     "newToken": "New Access Token",
     "newAnalysis": "New Analysis Plan",
     "relatedUsers":"Related Users",
@@ -909,6 +911,8 @@
     "ohpmPushPlaceHolder": "Please enter the full path of the har or tgz file to be released",
     "ohpmPushGuideSubTitle1": "After setting the warehouse address, you can use the following command to push the product",
     "ohpmPushGuideSubTitle2": "You can also push products by specifying publish_registry, as follows",
+    "isAllowShowFolder": "Directory View Access",
+    "isAllowShowFolderHelp": "Only effective when used as a static file repository",
     "fileLoadingTip": "File loading,Please wait",
     "itsmTip": "This operation requires approval and the apply has been submitted. Please refresh the page after approved",
     "viewApproval": "View Approval",
@@ -919,5 +923,7 @@
     "getShareConfigFailed": "Get share config failed",
     "shareFileDeleted": "The share file has been deleted",
     "getShareFileFailed": "Get share file failed",
-    "getDownloadUrlFailed": "Get download url failed"
+    "getDownloadUrlFailed": "Download failed",
+    "pendingApproval": "Pending Approval",
+    "waitUpload": "Waiting Upload"
 }

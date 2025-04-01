@@ -32,6 +32,8 @@
 package com.tencent.bkrepo.npm.service.impl
 
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
@@ -122,7 +124,8 @@ open class AbstractNpmService {
 			ArtifactContextHolder.getRepository().query(context) as? InputStream
 				?: throw NpmArtifactNotFoundException("document not found")
 		val packageMetaData = inputStream.use { JsonUtils.objectMapper.readValue(it, NpmPackageMetaData::class.java) }
-		if (showCustomTarball && !showDefaultTarball()) {
+		val ohpm = context.repositoryDetail.type == RepositoryType.OHPM
+		if (showCustomTarball && !showDefaultTarball(ohpm)) {
 			val versionsMap = packageMetaData.versions.map
 			val iterator = versionsMap.entries.iterator()
 			while (iterator.hasNext()) {
@@ -133,10 +136,13 @@ open class AbstractNpmService {
 		return packageMetaData
 	}
 
-	private fun showDefaultTarball(): Boolean {
-		val domain = npmProperties.domain
-		val tarballPrefix = npmProperties.tarball.prefix
+	private fun showDefaultTarball(ohpm: Boolean): Boolean {
 		val npmPrefixHeader = HeaderUtils.getHeader(NPM_TGZ_TARBALL_PREFIX).orEmpty()
+		val (domain, tarballPrefix) = if (ohpm) {
+			Pair(npmProperties.ohpmDomain, npmProperties.tarball.ohpmPrefix)
+		} else {
+			Pair(npmProperties.domain, npmProperties.tarball.prefix)
+		}
 		return npmPrefixHeader.isEmpty() && tarballPrefix.isEmpty() && domain.isEmpty()
 	}
 
@@ -145,12 +151,18 @@ open class AbstractNpmService {
 		name: String,
 		versionMetadata: NpmVersionMetadata
 	) {
+		val repo = ArtifactContextHolder.getRepoDetail(RepositoryId(artifactInfo.projectId, artifactInfo.repoName))
+		val (domain, prefix, returnRepoId) = if (repo.type == RepositoryType.OHPM) {
+			Triple(npmProperties.ohpmDomain, npmProperties.tarball.ohpmPrefix, npmProperties.ohpmReturnRepoId)
+		} else {
+			Triple(npmProperties.domain, npmProperties.tarball.prefix, npmProperties.returnRepoId)
+		}
 		val oldTarball = versionMetadata.dist?.tarball!!
         versionMetadata.dist?.tarball = NpmUtils.buildPackageTgzTarball(
             oldTarball,
-            npmProperties.domain,
-            npmProperties.tarball.prefix,
-            npmProperties.returnRepoId,
+            domain,
+            prefix,
+            returnRepoId,
             name,
             artifactInfo
         )

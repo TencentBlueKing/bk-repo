@@ -96,15 +96,16 @@ data class ScannerProperties(
      */
     var maxGlobalTaskCount: Int = 1,
     /**
-     * 扫描结果报告保留时间
+     * 扫描结果报告保留时间，为0时表示不清理
      */
-    var reportKeepDuration: Duration = Duration.ofDays(365L),
+    var reportKeepDuration: Duration = Duration.ofDays(0L),
 ) {
     companion object {
         /**
          * 默认任务最长执行时间，超过后会触发重试
          */
         const val DEFAULT_TASK_EXECUTE_TIMEOUT_SECONDS = 1200L
+
         /**
          * 任务过期时间
          */

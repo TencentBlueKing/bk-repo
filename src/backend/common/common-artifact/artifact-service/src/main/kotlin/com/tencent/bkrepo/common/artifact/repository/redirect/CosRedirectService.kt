@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -46,7 +45,6 @@ import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import com.tencent.bkrepo.common.storage.innercos.request.CosRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.urlEncode
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
@@ -108,7 +106,7 @@ class CosRedirectService(
             storageProperties.redirect.redirectAllDownload
 
         // 文件存在于COS上时才会被重定向
-        return needToRedirect && isSystemOrAdmin() && guessFileExists(node, storageCredentials)
+        return needToRedirect && isProjectAllowed(context.projectId) && guessFileExists(node, storageCredentials)
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
@@ -172,9 +170,9 @@ class CosRedirectService(
         return storageService.exist(node.sha256!!, storageCredentials)
     }
 
-    private fun isSystemOrAdmin(): Boolean {
-        val userId = SecurityUtils.getUserId()
-        return userId == SYSTEM_USER || permissionManager.isAdminUser(SecurityUtils.getUserId())
+    private fun isProjectAllowed(projectId: String ): Boolean {
+        val blackProjectList = storageProperties.redirect.projectBlackList
+        return !blackProjectList.contains(projectId)
     }
 
     companion object {

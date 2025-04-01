@@ -33,12 +33,14 @@ import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.IdleNodeArchiveJobProperties
+import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -66,6 +68,8 @@ class IdleNodeArchiveJob(
     private val properties: IdleNodeArchiveJobProperties,
     private val archiveClient: ArchiveClient,
     private val fileReferenceService: FileReferenceService,
+    private val migrateRepoStorageService: MigrateRepoStorageService,
+    private val storageService: StorageService,
 ) : MongoDbBatchJob<IdleNodeArchiveJob.Node, NodeContext>(properties) {
     private var lastCutoffTime: LocalDateTime? = null
     private var tempCutoffTime: LocalDateTime? = null
@@ -146,6 +150,11 @@ class IdleNodeArchiveJob(
         val projectId = row.projectId
         val repoName = row.repoName
         val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
+        val migrating = migrateRepoStorageService.migrating(projectId, repoName)
+        if (migrating && !storageService.exist(sha256, repo.storageCredentials)) {
+            logger.info("repo[$projectId/$repoName] is migrating, skip unmigrated node[${row.fullPath}][$sha256]")
+            return
+        }
         val credentialsKey = repo.storageCredentials?.key
         if (properties.ignoreStorageCredentialsKeys.contains(credentialsKey) ||
             properties.ignoreRepoType.contains(repo.type.name)

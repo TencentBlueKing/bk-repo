@@ -118,7 +118,13 @@ open class DefaultArtifactResourceWriter(
             response.setHeader(X_CHECKSUM_SHA256, it.sha256)
             response.setDateHeader(HttpHeaders.LAST_MODIFIED, resolveLastModified(it.lastModifiedDate))
         }
+
+        setCustomHeader(response, resource)
         return writeRangeStream(resource, request, response)
+    }
+
+    open fun setCustomHeader(response: HttpServletResponse, resource: ArtifactResource) {
+
     }
 
     /**

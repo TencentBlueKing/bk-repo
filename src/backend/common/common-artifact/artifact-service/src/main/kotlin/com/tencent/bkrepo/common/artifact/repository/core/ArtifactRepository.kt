@@ -84,4 +84,5 @@ interface ArtifactRepository {
      * @param context 构件迁移上下文
      */
     fun migrate(context: ArtifactMigrateContext): MigrateDetail
+
 }

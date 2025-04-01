@@ -776,6 +776,8 @@
     "noProjectData":"无项目数据",
     "enable": "开启",
     "disable": "关闭",
+    "yes": "是",
+    "no": "否",
     "newToken": "新增",
     "newAnalysis": "创建",
     "relatedUsers":"关联团队用户",
@@ -912,6 +914,8 @@
     "ohpmPushPlaceHolder": "请输入待发布的har或tgz文件完整路径",
     "ohpmPushGuideSubTitle1": "在设置仓库地址之后就可以使用如下命令去推送制品",
     "ohpmPushGuideSubTitle2": "也可以通过指定publish_registry的方式去推送制品，如下命令",
+    "isAllowShowFolder": "是否允许查看目录",
+    "isAllowShowFolderHelp": "仅作为静态文件仓库时生效",
     "fileLoadingTip": "文件加载中，请稍后",
     "itsmTip": "该操作需要审批，申请单已提交，请审批通过后刷新页面",
     "viewApproval": "查看审批",
@@ -922,5 +926,7 @@
     "getShareConfigFailed": "获取仓库分享配置失败",
     "shareFileDeleted": "分享文件已删除",
     "getShareFileFailed": "获取分享文件失败",
-    "getDownloadUrlFailed": "获取下载链接失败"
+    "getDownloadUrlFailed": "下载失败",
+    "pendingApproval": "审批中",
+    "waitUpload": "等待上传中"
 }

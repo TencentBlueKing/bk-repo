@@ -11,8 +11,10 @@
                     </div>
                 </div>
             </div>
-            <button class="download-btn white-bg" v-if="download" @click="downloadFile">{{ $t('download') }}</button>
-            <button class="download-btn white-bg" v-else @click="applyDownload">{{ $t('applyDownload') }}</button>
+            <bk-button class="download-btn white-bg" v-if="needApproval && approvalUrl == null" @click="applyDownload">{{ $t('applyDownload') }}</bk-button>
+            <bk-button class="download-btn white-bg" v-if="needApproval && approvalUrl != null && !approved" @click="redirectToTicket">{{ $t('pendingApproval') }}</bk-button>
+            <bk-button class="download-btn white-bg" v-if="(!needApproval || approved) && !exist">{{ $t('waitUpload') }}</bk-button>
+            <bk-button class="download-btn white-bg" v-if="(!needApproval || approved) && exist" @click="downloadFile">{{ $t('download') }}</bk-button>
         </div>
         <div class="bottom-section">
             <div class="file-preview">
@@ -20,8 +22,10 @@
                 <div class="file-details">
                     <div class="file-name">{{ file.name }}</div>
                     <div class="file-size">{{ convertFileSize(file.size) }}</div>
-                    <button class="download-btn" v-if="download" @click="downloadFile">{{ $t('download') }}</button>
-                    <button class="download-btn" v-else @click="applyDownload">{{ $t('applyDownload') }}</button>
+                    <bk-button class="download-btn" v-if="needApproval && approvalUrl == null" @click="applyDownload">{{ $t('applyDownload') }}</bk-button>
+                    <bk-button class="download-btn" v-if="needApproval && approvalUrl != null && !approved" @click="redirectToTicket">{{ $t('pendingApproval') }}</bk-button>
+                    <bk-button class="download-btn" v-if="(!needApproval || approved) && !exist">{{ $t('waitUpload') }}</bk-button>
+                    <bk-button class="download-btn" v-if="(!needApproval || approved) && exist" @click="downloadFile">{{ $t('download') }}</bk-button>
                 </div>
             </div>
         </div>
@@ -41,15 +45,18 @@
         },
         data () {
             return {
+                timer: null,
                 isLoading: false,
                 projectId: '',
                 shareId: '',
                 userId: '',
                 shareInfo: null,
                 file: null,
-                download: false,
-                approvalId: null,
                 showItsmDialog: false,
+                needApproval: true,
+                approvalUrl: null,
+                approved: false,
+                exist: false,
                 showData: {}
             }
         },
@@ -67,14 +74,15 @@
             formatDate,
             getIconName,
             ...mapActions([
-                'getShareInfo', 'getShareNodeInfo', 'getShareConfig', 'getShareDownloadUrl', 'createApproval', 'getApprovalStatus'
+                'getShareInfo', 'getShareNodeInfo', 'getShareConfig', 'getShareDownloadUrl', 'createApproval', 'getApproval'
             ]),
             checkApprovalStatus () {
-                this.getApprovalStatus({
+                this.getApproval({
                     shareId: this.$route.params.shareId,
                     userId: this.userInfo.username
-                }).then(approved => {
-                    this.download = approved
+                }).then(approvalInfo => {
+                    this.approved = approvalInfo.approved
+                    this.approvalUrl = approvalInfo.approvalTicketUrl
                 }).catch(e => {
                     if (e.status !== 404) {
                         this.$bkMessage({
@@ -87,12 +95,12 @@
             applyDownload () {
                 this.createApproval({
                     shareId: this.$route.params.shareId
-                }).then(itsmTicket => {
-                    this.approvalId = itsmTicket.sn
+                }).then(approvalInfo => {
+                    this.approvalUrl = approvalInfo.approvalTicketUrl
                     this.showItsmDialog = true
                     this.showData = {
-                        id: this.approvalId,
-                        url: itsmTicket.ticket_url
+                        id: approvalInfo.approvalId,
+                        url: approvalInfo.approvalTicketUrl
                     }
                 }).catch(() => {
                     this.$bkMessage({
@@ -107,14 +115,14 @@
                     repoName: nodeInfo.repoName
                 }).then(config => {
                     if (nodeInfo.size < config.sizeLimit) {
-                        this.download = true
+                        this.needApproval = false
                     } else {
                         this.checkApprovalStatus()
                     }
                 }).catch(e => {
                     console.log(e)
                     if (e.status === 404) {
-                        this.download = true
+                        this.needApproval = false
                     } else {
                         this.$bkMessage({
                             theme: 'error',
@@ -122,7 +130,6 @@
                         })
                     }
                 }).finally(() => {
-                    console.log(this.download)
                     this.setFile(nodeInfo)
                 })
             },
@@ -130,7 +137,6 @@
                 this.file = {
                     name: nodeInfo.name,
                     size: nodeInfo.size,
-                    date: nodeInfo.createdDate,
                     shareUserId: this.shareInfo.createBy
                 }
             },
@@ -148,14 +154,23 @@
                     })
                 }).then(res => {
                     if (res.count < 1) {
-                        this.$bkMessage({
-                            theme: 'error',
-                            message: this.$t('shareFileDeleted')
-                        })
-                        return
+                        if (this.shareInfo.workspaceFiles == null) {
+                            this.$bkMessage({
+                                theme: 'error',
+                                message: this.$t('shareFileDeleted')
+                            })
+                        } else {
+                            this.timer = setInterval(this.checkNodeExist, 15000);
+                            this.checkSizeLimit({
+                                repoName: this.shareInfo.repoName,
+                                size: this.shareInfo.workspaceFiles[0].size,
+                                name: this.shareInfo.workspaceFiles[0].name
+                            })
+                        }
+                    } else {
+                        this.exist = true
+                        this.checkSizeLimit(res.records[0])
                     }
-                    const nodeInfo = res.records[0]
-                    this.checkSizeLimit(nodeInfo)
                 }).catch(error => {
                     console.log(error)
                     this.$bkMessage({
@@ -189,6 +204,23 @@
                     })
                 }).finally(() => {
                     this.isLoading = false
+                })
+            },
+            redirectToTicket () {
+                window.open(this.approvalUrl, '_blank')
+            },
+            checkNodeExist () {
+                this.getShareNodeInfo({
+                        projectId: this.shareInfo.projectId,
+                        repoName: this.shareInfo.repoName,
+                        path: this.shareInfo.path
+                }).then(res => {
+                    if (res.count > 0) {
+                        this.exist = true
+                        clearInterval(this.timer)
+                    } 
+                }).catch(error => {
+                    console.log(error)
                 })
             }
         }
