@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,14 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.artifact.remote
+package com.tencent.bkrepo.huggingface.pojo
 
-import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
-import okhttp3.OkHttpClient
-
-/**
- * 用于创建异步缓存的HTTP客户端
- */
-interface AsyncCacheHttpClientBuilderFactory {
-    fun newBuilder(configuration: RemoteConfiguration): OkHttpClient.Builder
-}
+data class RepoCreateRequest(
+    val projectId: String,
+    val repoName: String,
+    val repoId: String,
+    val private: Boolean,
+    val type: String,
+)

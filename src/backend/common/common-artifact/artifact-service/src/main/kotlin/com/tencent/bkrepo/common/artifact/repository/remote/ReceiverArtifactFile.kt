@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.artifact.remote
+package com.tencent.bkrepo.common.artifact.repository.remote
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha1
@@ -34,7 +34,7 @@ import java.io.File
 import java.io.InputStream
 
 /**
- * 通过已完成文件接收的[ArtifactDataReceiver]构造的[ArtifactFile]
+ * 通过已完成文件接收的[com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver]构造的[com.tencent.bkrepo.common.artifact.api.ArtifactFile]
  */
 class ReceiverArtifactFile(
     /**

@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
+import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import com.tencent.bkrepo.common.metadata.util.PackageEventFactory
 import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildCreatedEvent
@@ -56,11 +57,11 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import com.tencent.bkrepo.repository.pojo.packages.request.PackageCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
-import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
@@ -246,6 +247,15 @@ class PackageServiceImpl(
         }
     }
 
+    override fun createPackage(request: PackageCreateRequest, realIpAddress: String?) {
+        with(request) {
+            Preconditions.checkNotBlank(packageKey, this::packageKey.name)
+            Preconditions.checkNotBlank(packageName, this::packageName.name)
+            // 先查询包是否存在，不存在先创建包
+            findOrCreatePackage(buildPackage(request))
+        }
+    }
+
     override fun deletePackage(projectId: String, repoName: String, packageKey: String, realIpAddress: String?) {
         val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
         packageVersionDao.deleteByPackageId(tPackage.id!!)
@@ -324,6 +334,7 @@ class PackageServiceImpl(
         val tPackage = checkPackage(projectId, repoName, packageKey).apply {
             checkCluster(this)
             name = request.name ?: name
+            key = request.key ?: packageKey
             description = request.description ?: description
             versionTag = request.versionTag ?: versionTag
             extension = request.extension ?: extension
@@ -513,6 +524,7 @@ class PackageServiceImpl(
         private fun convert(tPackage: TPackage?): PackageSummary? {
             return tPackage?.let {
                 PackageSummary(
+                    id = it.id!!,
                     createdBy = it.createdBy,
                     createdDate = it.createdDate,
                     lastModifiedBy = it.lastModifiedBy,
