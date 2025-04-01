@@ -59,4 +59,10 @@ data class TProject(
      * 项目新建仓库默认使用的存储凭据，为null时表示未配置，将会使用全局默认存储凭据
      */
     var credentialsKey: String? = null,
+
+    /**
+     * 多租户相关配置
+     */
+    var projectCode: String? = null,
+    var tenantId: String? = null
 )
