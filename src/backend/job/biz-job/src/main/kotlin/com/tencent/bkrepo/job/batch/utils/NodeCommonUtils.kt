@@ -65,12 +65,12 @@ class NodeCommonUtils(
             ThreadFactoryBuilder().setNameFormat("node-utils-%d").build(),
         )
 
-        fun findNodes(query: Query, storageCredentialsKey: String?): List<Node> {
+        fun findNodes(query: Query, storageCredentialsKey: String?, checkMigrating: Boolean = true): List<Node> {
             val nodes = mutableListOf<Node>()
             (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.forEach { collection ->
                 val find = mongoTemplate.find(query, Node::class.java, collection).filter {
                     val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
-                    val key = if (migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
+                    val key = if (checkMigrating && migrateRepoStorageService.migrating(it.projectId, it.repoName)) {
                         repo.oldCredentialsKey
                     } else {
                         repo.storageCredentials?.key

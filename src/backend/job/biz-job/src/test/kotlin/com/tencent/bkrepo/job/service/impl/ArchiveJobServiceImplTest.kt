@@ -41,6 +41,9 @@ class ArchiveJobServiceImplTest @Autowired constructor(
     @MockBean
     private lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
+    @MockBean
+    private lateinit var migrateArchivedFileService: MigrateArchivedFileServiceImpl
+
     @Test
     fun test() {
         mockNode()

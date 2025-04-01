@@ -66,4 +66,11 @@ data class MigrateRepoStorageProperties(
      * 任务执行超时时间，超时后会检查任务是否被中断
      */
     var timeout: Duration = Duration.ofMinutes(10L),
+
+    /**
+     * 每秒允许迁移已归档文件的数量
+     *
+     * 由于迁移已归档文件实际为数据库操作，需要减小并发度，避免对数据库造成压力
+     */
+    var migrateArchivedFileRate: Double = 100.0,
 )
