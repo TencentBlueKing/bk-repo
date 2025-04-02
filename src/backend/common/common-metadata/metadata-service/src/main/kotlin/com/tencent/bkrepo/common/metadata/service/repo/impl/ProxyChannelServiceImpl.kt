@@ -121,4 +121,8 @@ class ProxyChannelServiceImpl(
         ).map { convert(it)!! }
     }
 
+    override fun addSyncRecord(projectId: String, repoName: String, name: String, status: Boolean) {
+        proxyChannelDao.addSyncRecord(projectId, repoName, name, status)
+    }
+
 }
