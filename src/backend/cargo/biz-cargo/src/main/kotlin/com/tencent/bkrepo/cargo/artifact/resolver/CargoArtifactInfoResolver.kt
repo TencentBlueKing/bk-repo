@@ -29,40 +29,29 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.cargo.artifact.resolver
 
-/**
- * 仓库类型
- */
-enum class RepositoryType(val supportPackage: Boolean) {
-    NONE(false),
-    GENERIC(false),
-    DOCKER(true),
-    MAVEN(true),
-    PYPI(true),
-    NPM(true),
-    HELM(true),
-    RDS(true),
-    COMPOSER(true),
-    RPM(true),
-    NUGET(true),
-    GIT(true),
-    OCI(true),
-    CONAN(true),
-    LFS(false),
-    DDC(false),
-    SVN(false),
-    S3(false),
-    MEDIA(false),
-    OHPM(true),
-    CARGO(true),
-    HUGGINGFACE(true),
-    ;
+import com.tencent.bkrepo.cargo.constants.CRATE_NAME
+import com.tencent.bkrepo.cargo.constants.VERSION
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import org.springframework.stereotype.Component
+import org.springframework.web.servlet.HandlerMapping
+import javax.servlet.http.HttpServletRequest
 
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
+@Component
+@Resolver(CargoArtifactInfo::class)
+class CargoArtifactInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): CargoArtifactInfo {
+        val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
+        val crateName = attributes[CRATE_NAME]?.toString()
+        val version = attributes[VERSION]?.toString()
+        return CargoArtifactInfo(projectId, repoName, artifactUri, crateName, version)
     }
 }

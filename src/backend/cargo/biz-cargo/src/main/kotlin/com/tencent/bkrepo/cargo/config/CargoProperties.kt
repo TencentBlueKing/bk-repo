@@ -29,40 +29,18 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.cargo.config
 
-/**
- * 仓库类型
- */
-enum class RepositoryType(val supportPackage: Boolean) {
-    NONE(false),
-    GENERIC(false),
-    DOCKER(true),
-    MAVEN(true),
-    PYPI(true),
-    NPM(true),
-    HELM(true),
-    RDS(true),
-    COMPOSER(true),
-    RPM(true),
-    NUGET(true),
-    GIT(true),
-    OCI(true),
-    CONAN(true),
-    LFS(false),
-    DDC(false),
-    SVN(false),
-    S3(false),
-    MEDIA(false),
-    OHPM(true),
-    CARGO(true),
-    HUGGINGFACE(true),
-    ;
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
-    }
-}
+@ConfigurationProperties(prefix = "cargo")
+data class CargoProperties(
+    /**
+     * cargo服务domain地址，用于生成url
+     */
+    var domain: String = "localhost",
+    /**
+     * 是否需要鉴权
+     */
+    var authRequired: Boolean = true,
+)

@@ -29,40 +29,10 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
-
-/**
- * 仓库类型
- */
-enum class RepositoryType(val supportPackage: Boolean) {
-    NONE(false),
-    GENERIC(false),
-    DOCKER(true),
-    MAVEN(true),
-    PYPI(true),
-    NPM(true),
-    HELM(true),
-    RDS(true),
-    COMPOSER(true),
-    RPM(true),
-    NUGET(true),
-    GIT(true),
-    OCI(true),
-    CONAN(true),
-    LFS(false),
-    DDC(false),
-    SVN(false),
-    S3(false),
-    MEDIA(false),
-    OHPM(true),
-    CARGO(true),
-    HUGGINGFACE(true),
-    ;
-
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
-    }
+dependencies {
+    api(project(":cargo:api-cargo"))
+    api(project(":common:common-job"))
+    api(project(":common:common-artifact:artifact-service"))
+    api(project(":common:common-lock"))
+    implementation("com.github.zafarkhaja:java-semver")
 }

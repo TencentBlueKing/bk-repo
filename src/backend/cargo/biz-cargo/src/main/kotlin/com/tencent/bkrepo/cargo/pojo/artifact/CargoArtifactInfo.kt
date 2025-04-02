@@ -29,40 +29,35 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.cargo.pojo.artifact
 
-/**
- * 仓库类型
- */
-enum class RepositoryType(val supportPackage: Boolean) {
-    NONE(false),
-    GENERIC(false),
-    DOCKER(true),
-    MAVEN(true),
-    PYPI(true),
-    NPM(true),
-    HELM(true),
-    RDS(true),
-    COMPOSER(true),
-    RPM(true),
-    NUGET(true),
-    GIT(true),
-    OCI(true),
-    CONAN(true),
-    LFS(false),
-    DDC(false),
-    SVN(false),
-    S3(false),
-    MEDIA(false),
-    OHPM(true),
-    CARGO(true),
-    HUGGINGFACE(true),
-    ;
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 
+open class CargoArtifactInfo(
+    projectId: String,
+    repoName: String,
+    artifactUri: String,
+    val crateName: String? = null,
+    val crateVersion: String? = null
+) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
+
+        const val PUBLISH = "/{projectId}/{repoName}/api/v1/crates/new"
+        const val YANK = "/{projectId}/{repoName}/api/v1/crates/{crateName}/{version}/yank"
+        const val UNYANK = "/{projectId}/{repoName}/api/v1/crates/{crateName}/{version}/unyank"
+        const val OWNERS = "/{projectId}/{repoName}/api/v1/crates/{crateName}/owners"
+        const val SEARCH = "/{projectId}/{repoName}/api/v1/crates"
+        const val INDEX = "{projectId}/{repoName}/index/**"
+        const val DOWNLOAD = "/{projectId}/{repoName}/api/v1/crates/{crateName}/{version}/download"
+
+        // cargo version detail
+        const val CARGO_VERSION_DETAIL = "/version/detail/{projectId}/{repoName}"
+
+        // cargo delete
+        const val CARGO_PACKAGE_DELETE_URL = "/package/delete/{projectId}/{repoName}"
+        const val CARGO_VERSION_DELETE_URL = "/version/delete/{projectId}/{repoName}"
+
+        // cargo index refresh
+        const val FIX_INDEX = "/index/fix/{projectId}/{repoName}/{crateName}"
     }
 }

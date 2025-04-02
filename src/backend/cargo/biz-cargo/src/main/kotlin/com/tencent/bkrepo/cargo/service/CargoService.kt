@@ -29,40 +29,25 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.cargo.service
 
-/**
- * 仓库类型
- */
-enum class RepositoryType(val supportPackage: Boolean) {
-    NONE(false),
-    GENERIC(false),
-    DOCKER(true),
-    MAVEN(true),
-    PYPI(true),
-    NPM(true),
-    HELM(true),
-    RDS(true),
-    COMPOSER(true),
-    RPM(true),
-    NUGET(true),
-    GIT(true),
-    OCI(true),
-    CONAN(true),
-    LFS(false),
-    DDC(false),
-    SVN(false),
-    S3(false),
-    MEDIA(false),
-    OHPM(true),
-    CARGO(true),
-    HUGGINGFACE(true),
-    ;
+import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
-    }
+interface CargoService {
+    /**
+     * get index of crate
+     */
+    fun getIndexOfCrate(cargoArtifactInfo: CargoArtifactInfo)
+
+    fun uploadFile(cargoArtifactInfo: CargoArtifactInfo, artifactFile: ArtifactFile)
+
+    fun downloadFile(cargoArtifactInfo: CargoArtifactInfo)
+
+    fun yank(cargoArtifactInfo: CargoArtifactInfo)
+
+    fun unYank(cargoArtifactInfo: CargoArtifactInfo)
+
+    fun search(cargoArtifactInfo: CargoArtifactInfo, q: String, perPage: Int): CargoSearchResult
 }

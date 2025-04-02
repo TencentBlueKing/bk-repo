@@ -48,5 +48,6 @@ enum class PackageType {
     CONAN,
     OCI,
     OHPM,
+    CARGO,
     HUGGINGFACE,
 }

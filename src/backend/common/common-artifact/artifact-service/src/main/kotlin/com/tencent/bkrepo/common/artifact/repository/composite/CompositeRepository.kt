@@ -252,6 +252,7 @@ class CompositeRepository(
             remoteConfiguration.url = tProxyChannel.url
             remoteConfiguration.credentials.username = tProxyChannel.username
             remoteConfiguration.credentials.password = tProxyChannel.password
+            remoteConfiguration.credentials.credentialKey = tProxyChannel.credentialKey
             return remoteConfiguration
         }
     }

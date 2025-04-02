@@ -1,0 +1,5 @@
+spring.application.name: cargo
+server.port: 25824
+
+cargo:
+  domain: ${cluster.self.url}/cargo

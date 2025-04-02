@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCreden
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.service.util.okhttp.TokenAuthInterceptor
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -76,8 +77,11 @@ fun createProxyAuthenticator(configuration: NetworkProxyConfiguration?): Authent
 fun createAuthenticateInterceptor(configuration: RemoteCredentialsConfiguration): Interceptor? {
     val username = configuration.username
     val password = configuration.password
+    val credentialKey = configuration.credentialKey
     return if (username != null && password != null) {
         BasicAuthInterceptor(username, password)
+    } else if(!credentialKey.isNullOrEmpty()){
+        TokenAuthInterceptor(credentialKey)
     } else {
         null
     }

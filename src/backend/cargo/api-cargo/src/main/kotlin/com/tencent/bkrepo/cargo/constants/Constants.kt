@@ -29,40 +29,40 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo
+package com.tencent.bkrepo.cargo.constants
 
-/**
- * 仓库类型
- */
-enum class RepositoryType(val supportPackage: Boolean) {
-    NONE(false),
-    GENERIC(false),
-    DOCKER(true),
-    MAVEN(true),
-    PYPI(true),
-    NPM(true),
-    HELM(true),
-    RDS(true),
-    COMPOSER(true),
-    RPM(true),
-    NUGET(true),
-    GIT(true),
-    OCI(true),
-    CONAN(true),
-    LFS(false),
-    DDC(false),
-    SVN(false),
-    S3(false),
-    MEDIA(false),
-    OHPM(true),
-    CARGO(true),
-    HUGGINGFACE(true),
-    ;
 
-    companion object {
-        fun ofValueOrDefault(type: String): RepositoryType {
-            val upperCase = type.toUpperCase()
-            return values().find { it.name == upperCase } ?: NONE
-        }
-    }
-}
+const val NAME = "name"
+const val PACKAGE_KEY = "packageKey"
+const val VERSION = "version"
+const val DESCRIPTION = "description"
+const val LATEST = "latest"
+const val PAGE_SIZE = "pageSize"
+const val QUERY = "query"
+const val FILE_TYPE = "fileType"
+const val CRATE_FILE = "crate"
+const val CRATE_INDEX = "index"
+
+const val FILE_SIZE = "fileSize"
+const val FILE_SHA256 = "fileSha256"
+
+const val CRATE_CONFIG = "config.json"
+const val CRATE_DOWNLOAD_URL_SUFFIX = "/api/v1/crates"
+
+const val CARGO_METADATA = "cargoMetadata"
+
+const val CARGO_CRATE_FILE = "cargoCrateFile"
+
+const val CARGO_NODE_PREFIX = "/crates/"
+
+const val CARGO_JSON_PREFIX = "/.cargo/crates/"
+
+const val CARGO_INDEX_PREFIX = "/index/"
+
+const val CARGO_NODE_SUFFIX = ".crate"
+
+const val CARGO_JSON_SUFFIX = ".json"
+
+const val CRATE_NAME = "crateName"
+
+const val YANKED = "yanked"
