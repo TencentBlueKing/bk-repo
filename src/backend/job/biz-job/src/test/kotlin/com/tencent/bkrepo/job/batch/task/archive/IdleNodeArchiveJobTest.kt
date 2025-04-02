@@ -2,8 +2,10 @@ package com.tencent.bkrepo.job.batch.task.archive
 
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
+import com.tencent.bkrepo.archive.pojo.ArchiveFile
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -78,7 +80,6 @@ class IdleNodeArchiveJobTest @Autowired constructor(
     @MockBean
     lateinit var operateLogService: OperateLogService
 
-
     @BeforeEach
     fun setup() {
         mongoTemplate.remove(Query(), NodeDetail::class.java)
@@ -98,6 +99,10 @@ class IdleNodeArchiveJobTest @Autowired constructor(
 
         whenever(repositoryService.updateStorageCredentialsKey(anyString(), anyString(), anyString())).then {  }
         whenever(repositoryService.unsetOldStorageCredentialsKey(anyString(), anyString())).then {  }
+        whenever(archiveClient.get(any(), anyOrNull())).thenReturn(Response<ArchiveFile?>(
+            data = null,
+            code = 0
+        ))
     }
 
     @Test
