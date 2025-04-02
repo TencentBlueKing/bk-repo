@@ -51,6 +51,7 @@ object PackageKeys {
     private const val MAVEN = "gav"
     private const val OCI = "oci"
     private const val CONAN = "conan"
+    private const val HUGGINGFACE = "huggingface"
     private const val CARGO = "cargo"
     private const val SEPARATOR = "://"
 
@@ -161,6 +162,14 @@ object PackageKeys {
     }
 
     /**
+     * 生成huggingface格式key
+     * 例子：huggingface://model/test
+     */
+    fun ofHuggingface(type: String, name: String): String {
+        return ofName(HUGGINGFACE, "$type/$name")
+    }
+
+    /**
      * 生成cargo格式key
      * 例子: cargo://test
      */
@@ -262,6 +271,17 @@ object PackageKeys {
      */
     fun resolveCargo(cargoKey: String): String {
         return resolveName(CARGO, cargoKey)
+    }
+
+    /**
+     * 解析huggingface格式的key
+     *
+     * 例子：huggingface://model/test -> model,test
+     */
+    fun resolveHuggingface(huggingfaceKey: String): Pair<String, String> {
+        val key = resolveName(HUGGINGFACE, huggingfaceKey)
+        val (type, name) = key.split(StringPool.SLASH, limit = 2)
+        return Pair(type, name)
     }
 
     /**

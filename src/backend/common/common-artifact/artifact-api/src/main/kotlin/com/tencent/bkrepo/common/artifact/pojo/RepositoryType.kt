@@ -56,6 +56,7 @@ enum class RepositoryType(val supportPackage: Boolean) {
     MEDIA(false),
     OHPM(true),
     CARGO(true),
+    HUGGINGFACE(true),
     ;
 
     companion object {

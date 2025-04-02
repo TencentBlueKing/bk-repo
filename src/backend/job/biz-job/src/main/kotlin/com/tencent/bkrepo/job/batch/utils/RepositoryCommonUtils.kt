@@ -52,6 +52,23 @@ class RepositoryCommonUtils(
                     ?: throw RepoNotFoundException("$projectId/$repoName")
             }
         }
+
+        /**
+         * 更新属性，仅单元测试中使用
+         */
+        fun updateService(
+            repositoryService: RepositoryService? = null,
+            storageCredentialService: StorageCredentialService? = null
+        ) {
+            repositoryService?.let {
+                RepositoryCommonUtils.repositoryService = it
+                repositoryCache.invalidateAll()
+            }
+            storageCredentialService?.let {
+                RepositoryCommonUtils.storageCredentialService = it
+                storageCredentialsCache.invalidateAll()
+            }
+        }
     }
 
     data class RepositoryId(val projectId: String, val repoName: String, val type: RepositoryType) {

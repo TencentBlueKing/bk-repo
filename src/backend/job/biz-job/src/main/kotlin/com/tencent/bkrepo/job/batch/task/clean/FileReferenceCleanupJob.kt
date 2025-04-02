@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.job.ARCHIVE_FILE_COLLECTION
 import com.tencent.bkrepo.job.COUNT
 import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.FOLDER
@@ -312,7 +313,6 @@ class FileReferenceCleanupJob(
         private val logger = LoggerHolder.jobLogger
         private const val COLLECTION_NAME_PREFIX = "file_reference_"
         private const val COMPRESS_FILE_COLLECTION = "compress_file"
-        private const val ARCHIVE_FILE_COLLECTION = "archive_file"
         private const val STORAGE_CREDENTIALS = "storageCredentialsKey"
         private const val BASE_SHA256 = "baseSha256"
         private const val STATUS = "status"

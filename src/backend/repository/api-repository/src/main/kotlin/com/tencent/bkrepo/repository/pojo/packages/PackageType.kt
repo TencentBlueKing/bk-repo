@@ -49,4 +49,5 @@ enum class PackageType {
     OCI,
     OHPM,
     CARGO,
+    HUGGINGFACE,
 }
