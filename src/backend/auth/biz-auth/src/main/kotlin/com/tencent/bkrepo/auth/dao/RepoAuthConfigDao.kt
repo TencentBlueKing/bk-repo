@@ -50,6 +50,15 @@ class RepoAuthConfigDao : SimpleMongoDao<TRepoAuthConfig>() {
         )
     }
 
+    fun checkByProject(projectId: String): Boolean {
+        return this.exists(
+            Query.query(
+                Criteria.where(TRepoAuthConfig::projectId.name).`is`(projectId)
+                    .and(TRepoAuthConfig::bkiamv3Check.name).`is`(true)
+            )
+        )
+    }
+
     fun upsertProjectRepo(
         projectId: String,
         repoName: String,
