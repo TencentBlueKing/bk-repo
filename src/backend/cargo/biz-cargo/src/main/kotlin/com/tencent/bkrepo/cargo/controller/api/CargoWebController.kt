@@ -41,6 +41,7 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.DOWNLOAD
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.FIX_INDEX
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.INDEX
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.OWNERS
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.PUBLISH

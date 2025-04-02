@@ -56,5 +56,8 @@ open class CargoArtifactInfo(
         // cargo delete
         const val CARGO_PACKAGE_DELETE_URL = "/package/delete/{projectId}/{repoName}"
         const val CARGO_VERSION_DELETE_URL = "/version/delete/{projectId}/{repoName}"
+
+        // cargo index refresh
+        const val FIX_INDEX = "/index/fix/{projectId}/{repoName}/{crateName}"
     }
 }

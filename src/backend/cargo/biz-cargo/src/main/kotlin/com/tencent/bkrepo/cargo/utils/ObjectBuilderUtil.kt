@@ -220,11 +220,27 @@ object ObjectBuilderUtil {
                 defaultFeatures = defaultFeatures,
                 features = features,
                 kind = kind,
+                target = target
             )
         }
     }
 
     private fun convert2IndexDependency(dependency: MetaDependency): IndexDependency {
+        with(dependency) {
+            return IndexDependency(
+                name = name,
+                req = versionReq,
+                optional = optional,
+                registry = registry,
+                defaultFeatures = defaultFeatures,
+                features = features,
+                kind = kind,
+                target = target
+            )
+        }
+    }
+
+    fun convert2IndexDependency(dependency: JsonDataDependency): IndexDependency {
         with(dependency) {
             return IndexDependency(
                 name = name,

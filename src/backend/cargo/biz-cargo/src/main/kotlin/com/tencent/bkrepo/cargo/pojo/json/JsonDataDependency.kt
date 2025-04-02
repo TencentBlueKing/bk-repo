@@ -27,14 +27,17 @@
 
 package com.tencent.bkrepo.cargo.pojo.json
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.tencent.bkrepo.cargo.pojo.base.Dependency
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 class JsonDataDependency(
     @JsonProperty("default_features")
     val defaultFeatures: Boolean,
     @JsonProperty("version_req")
     val versionReq: String,
+    val target: String? = null,
     name: String,
     features: List<String>,
     optional: Boolean,

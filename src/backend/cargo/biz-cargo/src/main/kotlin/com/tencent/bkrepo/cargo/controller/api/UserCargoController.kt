@@ -40,6 +40,7 @@ import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_PACKAGE_DELETE_URL
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_VERSION_DELETE_URL
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_VERSION_DETAIL
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.FIX_INDEX
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.cargo.service.CargoExtService
@@ -52,8 +53,10 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -147,5 +150,15 @@ class UserCargoController(
     @GetMapping("/address")
     fun getRegistryDomain(): Response<CargoDomainInfo> {
         return ResponseBuilder.success(cargoExtService.getRegistryDomain())
+    }
+
+
+    /**
+     * 索引修复
+     */
+    @PostMapping(FIX_INDEX)
+    fun fixIndex(artifactInfo: CargoArtifactInfo): ResponseEntity<Void> {
+        cargoExtService.fixIndex(artifactInfo)
+        return ResponseEntity.ok().build()
     }
 }

@@ -47,4 +47,6 @@ interface CargoExtService {
     fun deleteVersion(userId: String, artifactInfo: CargoDeleteArtifactInfo)
 
     fun getRegistryDomain(): CargoDomainInfo
+
+    fun fixIndex(artifactInfo: CargoArtifactInfo)
 }

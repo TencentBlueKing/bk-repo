@@ -55,6 +55,10 @@ object CargoUtils {
         return CARGO_INDEX_PREFIX + createDirectory(name) + StringPool.SLASH + name
     }
 
+    fun getCargoFileFolder(name: String): String {
+        return CARGO_NODE_PREFIX + name + StringPool.SLASH
+    }
+
     /**
      * Packages with 1 character names are placed in a directory named 1.
      * Packages with 2 character names are placed in a directory named 2.

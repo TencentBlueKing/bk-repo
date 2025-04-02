@@ -28,20 +28,32 @@
 package com.tencent.bkrepo.cargo.service.impl
 
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
+import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
+import com.tencent.bkrepo.cargo.pojo.json.CrateJsonData
+import com.tencent.bkrepo.cargo.service.impl.CargoExtServiceImpl.Companion.PAGE_SIZE
+import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoFileFolder
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoFileFullPath
+import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoIndexFullPath
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoJsonFullPath
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildMetadataSaveRequest
+import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.jsonCompress
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.lock.service.LockOperation
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -52,9 +64,11 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.io.InputStream
 
 @Component
 class CommonService {
@@ -77,6 +91,9 @@ class CommonService {
     @Autowired
     lateinit var metadataService: MetadataService
 
+    @Autowired
+    lateinit var nodeSearchService: NodeSearchService
+
     /**
      * 针对自旋达到次数后，还没有获取到锁的情况默认也会执行所传入的方法,确保业务流程不中断
      */
@@ -96,10 +113,52 @@ class CommonService {
         }
     }
 
-    fun getIndexOfCrate(projectId: String, repoName: String, fullPath: String): ArtifactInputStream? {
+    fun getStreamOfCrate(projectId: String, repoName: String, fullPath: String): ArtifactInputStream? {
         val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         val storageCredentials = getStorageCredentials(projectId, repoName)
         return storageManager.loadArtifactInputStream(nodeDetail, storageCredentials)
+    }
+
+    fun getIndexOfCrate(projectId: String, repoName: String, crateName: String): MutableList<CrateIndex> {
+        val fullPath = getCargoIndexFullPath(crateName)
+        val inputStream = getStreamOfCrate(projectId, repoName, fullPath)
+        return convertToCrateIndex(inputStream)
+    }
+
+    fun getJsonOfCrate(projectId: String, repoName: String, crateName: String, version: String): CrateJsonData? {
+        val fullPath = getCargoJsonFullPath(crateName, version)
+        val inputStream = getStreamOfCrate(projectId, repoName, fullPath)
+        return inputStream?.use {
+            JsonUtils.objectMapper.readValue(it, CrateJsonData::class.java)
+        }
+    }
+
+    fun convertToCrateIndex(inputStream: InputStream?): MutableList<CrateIndex> {
+        return inputStream?.use {
+            // 读取 InputStream 的内容
+            val lines = it.bufferedReader().readLines()
+            // 解析为对象，并去重
+            return lines.asSequence()
+                .mapNotNull { line ->
+                    try {
+                        JsonUtils.objectMapper.readValue(line, CrateIndex::class.java)
+                    } catch (e: Exception) {
+                        // 记录日志或忽略无效行
+                        null
+                    }
+                }
+                .toMutableList()
+        } ?: mutableListOf()
+    }
+
+    fun buildIndexArtifactFile(
+        versions: MutableList<CrateIndex>, storageCredentials: StorageCredentials?
+    ): ArtifactFile {
+        val updatedLines = versions.joinToString("\n") { crateIndex ->
+            // 将对象序列化为紧凑的 JSON 字符串
+            JsonUtils.objectMapper.writeValueAsString(crateIndex).jsonCompress()
+        }
+        return ArtifactFileFactory.build(updatedLines.byteInputStream(), storageCredentials = storageCredentials)
     }
 
     fun getStorageCredentials(projectId: String, repoName: String): StorageCredentials? {
@@ -211,6 +270,22 @@ class CommonService {
             metadataService.saveMetadata(metadataSaveRequest)
         } catch (ignore: Exception) {
         }
+    }
+
+    fun queryCrateNodesByCrateName(
+        projectId: String,
+        repoName: String,
+        crateName: String,
+        pageNum: Int
+    ): Page<Map<String, Any?>> {
+        val cargoFileFolder = getCargoFileFolder(crateName)
+        val queryModelBuilder = NodeQueryBuilder()
+            .select(TNode::metadata.name, TNode::sha256.name)
+            .sortByAsc(TNode::name.name)
+            .page(pageNum, PAGE_SIZE)
+            .projectId(projectId)
+            .repoName(repoName).path(PathUtils.toPath(cargoFileFolder))
+        return nodeSearchService.searchWithoutCount(queryModelBuilder.build())
     }
 
     private fun buildRedisKey(projectId: String, repoName: String, revPath: String): String {

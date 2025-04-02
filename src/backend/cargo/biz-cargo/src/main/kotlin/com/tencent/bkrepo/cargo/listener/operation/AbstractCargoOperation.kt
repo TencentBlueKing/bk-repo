@@ -75,7 +75,7 @@ abstract class AbstractCargoOperation(
                         "in repo [$projectId/$repoName] by User [$userId]"
                 )
                 stopWatch.start()
-                val indexInputStream = commonService.getIndexOfCrate(projectId, repoName, indexFullPath)
+                val indexInputStream = commonService.getStreamOfCrate(projectId, repoName, indexFullPath)
                 val storageCredentials = commonService.getStorageCredentials(projectId, repoName)
                 logger.info(
                     "query index.json " +
@@ -112,25 +112,9 @@ abstract class AbstractCargoOperation(
         storageCredentials: StorageCredentials?,
     ): ArtifactFile {
         try {
-            // 读取 InputStream 的内容
-            val lines = inputStream?.bufferedReader()?.readLines() ?: emptyList()
-            // 解析为对象，并去重
-            var versions = lines.asSequence()
-                .mapNotNull { line ->
-                    try {
-                        JsonUtils.objectMapper.readValue(line, CrateIndex::class.java)
-                    } catch (e: Exception) {
-                        // 记录日志或忽略无效行
-                        null
-                    }
-                }
-                .toMutableList()
+            var versions = commonService.convertToCrateIndex(inputStream)
             versions = handleEvent(versions)
-            val updatedLines = versions.joinToString("\n") { crateIndex ->
-                // 将对象序列化为紧凑的 JSON 字符串
-                JsonUtils.objectMapper.writeValueAsString(crateIndex).jsonCompress()
-            }
-            return ArtifactFileFactory.build(updatedLines.byteInputStream(), storageCredentials = storageCredentials)
+            return commonService.buildIndexArtifactFile(versions, storageCredentials)
         } catch (e: Exception) {
             logger.error("Failed to handle index update event $request: ${e.message}")
             // TODO 如果失败了如何处理？？
