@@ -36,7 +36,9 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
+import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
 import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -83,4 +85,8 @@ interface MavenWebResource {
         @RequestParam c: String?,
         @RequestParam repos: String?
     ): Response<Page<MavenGAVCResponse.UriResult>>
+
+    @ApiOperation("maven jar search")
+    @GetMapping("/search/jar")
+    fun searchJar(request: MavenJarSearchRequest): Response<MavenJarInfoResponse>
 }

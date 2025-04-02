@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.maven.util
 
 import com.tencent.bkrepo.maven.constants.ARTIFACT_FORMAT
+import com.tencent.bkrepo.maven.constants.FILE_NAME_REGEX
 import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
 import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
@@ -37,9 +38,9 @@ import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.exception.MavenArtifactFormatException
 import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.pojo.MavenVersion
+import java.util.regex.Pattern
 import org.apache.commons.lang3.StringUtils
 import org.springframework.http.HttpStatus
-import java.util.regex.Pattern
 
 object MavenStringUtils {
 
@@ -85,7 +86,7 @@ object MavenStringUtils {
      */
     fun String.isSnapshotNonUniqueUri(): Boolean {
         return this.isSnapshotUri() &&
-            this.substringAfterLast("/").contains(SNAPSHOT_SUFFIX)
+                this.substringAfterLast("/").contains(SNAPSHOT_SUFFIX)
     }
 
     /**
@@ -145,6 +146,23 @@ object MavenStringUtils {
                 }
             }
             this.classifier = matcher.group(2)
+        }
+    }
+
+    /**
+     * 根据filename解析出对应MavenVersion信息
+     */
+    fun parseMavenFileName(fileName: String): MavenVersion? {
+        val regex = Regex(FILE_NAME_REGEX)
+        val matchResult = regex.find(fileName)
+        return if (matchResult != null) {
+            MavenVersion(
+                artifactId = matchResult.groupValues[1],
+                packaging = matchResult.groupValues.last(),
+                version = matchResult.groupValues[2]
+            )
+        } else {
+            null
         }
     }
 }
