@@ -31,8 +31,174 @@
 
 package com.tencent.bkrepo.cargo.artifact.repository
 
+import com.google.common.cache.CacheBuilder
+import com.tencent.bkrepo.cargo.constants.CRATE_CONFIG
+import com.tencent.bkrepo.cargo.constants.CRATE_FILE
+import com.tencent.bkrepo.cargo.constants.CargoMessageCode
+import com.tencent.bkrepo.cargo.constants.FILE_TYPE
+import com.tencent.bkrepo.cargo.constants.PAGE_SIZE
+import com.tencent.bkrepo.cargo.constants.QUERY
+import com.tencent.bkrepo.cargo.exception.CargoBadRequestException
+import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
+import com.tencent.bkrepo.cargo.pojo.index.IndexConfiguration
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import okhttp3.Request
+import okhttp3.Response
+import org.aspectj.weaver.tools.cache.AbstractIndexedFileCacheBacking.INDEX_FILE
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
 
 @Component
-class CargoRemoteRepository : RemoteRepository()
+class CargoRemoteRepository : RemoteRepository() {
+
+    private val downloadHostCache = CacheBuilder.newBuilder().maximumSize(100)
+        .expireAfterWrite(60, TimeUnit.MINUTES).build<String, String>()
+
+    override fun upload(context: ArtifactUploadContext) {
+        with(context) {
+            val message = "Forbidden to upload crate into a remote repository [$projectId/$repoName]"
+            logger.warn(message)
+            throw CargoBadRequestException(CargoMessageCode.CARGO_FILE_UPLOAD_FORBIDDEN, "$projectId/$repoName")
+        }
+    }
+
+    override fun query(context: ArtifactQueryContext): Any? {
+        return doRequest(context)
+    }
+
+    override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
+        return doRequest(context) as ArtifactResource?
+    }
+
+    private fun doRequest(context: ArtifactContext): Any? {
+        val remoteConfiguration = context.getRemoteConfiguration()
+        val remoteUrl = remoteConfiguration.url
+        if (remoteUrl.isEmpty()) {
+            logger.warn("cargo remoteUrl is empty")
+            throw CargoBadRequestException(CommonMessageCode.PARAMETER_INVALID, "remoteUrl")
+        }
+        return when (context.getStringAttribute(FILE_TYPE)) {
+            INDEX_FILE -> handleIndexFileRequest(context, remoteUrl)
+            CRATE_FILE -> handleCrateFileRequest(context, remoteUrl)
+            else -> handleSearchRequest(context, remoteUrl)
+        }
+    }
+
+    private fun handleIndexFileRequest(context: ArtifactContext, remoteUrl: String): Any? {
+        val downloadUrl = remoteUrl.trim('/') + StringPool.SLASH + context.artifactInfo.getArtifactName()
+        return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
+    }
+
+    private fun handleCrateFileRequest(context: ArtifactContext, remoteUrl: String): Any? {
+        getCacheArtifactResource(context as ArtifactDownloadContext)?.let { return it }
+
+        val downloadHost = getDownloadHost(remoteUrl, context)
+        val artifactInfo = context.artifactInfo as CargoArtifactInfo
+        val downloadUrl = buildString {
+            append(downloadHost.trimEnd('/'))
+            append(StringPool.SLASH)
+            append(artifactInfo.crateName)
+            append(StringPool.SLASH)
+            append(artifactInfo.crateVersion)
+            append(StringPool.SLASH)
+            append("download")
+        }
+
+        return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
+    }
+
+    private fun handleSearchRequest(context: ArtifactContext, remoteUrl: String): Any? {
+        val downloadHost = getDownloadHost(remoteUrl, context)
+        val downloadUrl = buildString {
+            append(downloadHost)
+            append("?q=")
+            append(context.getStringAttribute(QUERY))
+            append("&per_page=")
+            append(context.getIntegerAttribute(PAGE_SIZE))
+        }
+
+        return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
+    }
+
+    private fun getDownloadHost(remoteUrl: String, context: ArtifactContext): String {
+        return downloadHostCache.getIfPresent(remoteUrl) ?: run {
+            val configUrl = remoteUrl.trim('/') + StringPool.SLASH + CRATE_CONFIG
+            val config = executeRequest(context, configUrl) { response ->
+                if (checkResponse(response)) {
+                    parseConfigResponse(response)
+                } else {
+                    throw CargoBadRequestException(CommonMessageCode.PARAMETER_INVALID, "remoteUrl")
+                }
+            } as IndexConfiguration
+
+            downloadHostCache.put(remoteUrl, config.dl)
+            config.dl
+        }
+    }
+
+    private fun <T> executeRequest(
+        context: ArtifactContext,
+        url: String,
+        responseHandler: (Response) -> T
+    ): T {
+        val remoteConfiguration = context.getRemoteConfiguration()
+        val request = Request.Builder().url(url).build()
+        val httpClient = createHttpClient(remoteConfiguration)
+
+        return try {
+            httpClient.newCall(request).execute().use(responseHandler)
+        } catch (e: Exception) {
+            logger.error("Error occurred while sending request $url", e)
+            throw when (context) {
+                is ArtifactDownloadContext -> NodeNotFoundException(context.artifactInfo.getArtifactFullPath())
+                else -> NodeNotFoundException(url)
+            }
+        }
+    }
+
+    /**
+     * 远程下载响应回调
+     */
+    override fun onQueryResponse(context: ArtifactQueryContext, response: Response): Any? {
+        logger.info("on remote query response...")
+        return parseSearchResponse(response)
+    }
+
+    private fun parseConfigResponse(response: Response): IndexConfiguration? {
+        return response.body?.byteStream().use {
+            JsonUtils.objectMapper.readValue(it, IndexConfiguration::class.java)
+        }
+    }
+
+    private fun parseSearchResponse(response: Response): List<CargoSearchResult> {
+        return response.body?.byteStream().use {
+            listOf(JsonUtils.objectMapper.readValue(it, CargoSearchResult::class.java))
+        }
+    }
+
+    private fun onResponse(context: ArtifactContext, response: Response): Any? {
+        if (context is ArtifactDownloadContext) {
+            return onDownloadResponse(context, response)
+        }
+        if (context is ArtifactQueryContext) {
+            return onQueryResponse(context, response)
+        }
+        return null
+    }
+
+    companion object {
+        val logger: Logger = LoggerFactory.getLogger(CargoRemoteRepository::class.java)
+    }
+}

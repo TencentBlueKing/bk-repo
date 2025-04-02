@@ -36,14 +36,14 @@ import com.tencent.bkrepo.cargo.config.CargoProperties
 import com.tencent.bkrepo.cargo.constants.CARGO_INDEX_PREFIX
 import com.tencent.bkrepo.cargo.constants.CRATE_CONFIG
 import com.tencent.bkrepo.cargo.constants.CRATE_DOWNLOAD_URL_SUFFIX
-import com.tencent.bkrepo.cargo.constants.DESCRIPTION
-import com.tencent.bkrepo.cargo.constants.LATEST
-import com.tencent.bkrepo.cargo.constants.NAME
+import com.tencent.bkrepo.cargo.constants.CRATE_FILE
+import com.tencent.bkrepo.cargo.constants.CRATE_INDEX
+import com.tencent.bkrepo.cargo.constants.FILE_TYPE
+import com.tencent.bkrepo.cargo.constants.PAGE_SIZE
+import com.tencent.bkrepo.cargo.constants.QUERY
 import com.tencent.bkrepo.cargo.constants.YANKED
 import com.tencent.bkrepo.cargo.listener.event.CargoPackageYankEvent
 import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
-import com.tencent.bkrepo.cargo.pojo.CratesDetail
-import com.tencent.bkrepo.cargo.pojo.SearchMeta
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.index.IndexConfiguration
 import com.tencent.bkrepo.cargo.service.CargoService
@@ -58,20 +58,17 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
-import com.tencent.bkrepo.common.metadata.service.packages.PackageService
-import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
-import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
 import org.springframework.stereotype.Service
 
 @Service
 class CargoServiceImpl(
     private val cargoProperties: CargoProperties,
     private val permissionManager: PermissionManager,
-    private val packageService: PackageService,
     private val commonService: CommonService
 ) : CargoService {
 
@@ -91,6 +88,7 @@ class CargoServiceImpl(
             val context = ArtifactDownloadContext()
             val fullPath = CARGO_INDEX_PREFIX.removeSuffix(StringPool.SLASH) + cargoArtifactInfo.getArtifactFullPath()
             cargoArtifactInfo.setArtifactMappingUri(fullPath)
+            context.putAttribute(FILE_TYPE, CRATE_INDEX)
             ArtifactContextHolder.getRepository().download(context)
         }
     }
@@ -106,6 +104,7 @@ class CargoServiceImpl(
         val context = ArtifactDownloadContext()
         val fullPath = getCargoFileFullPath(cargoArtifactInfo.crateName!!, cargoArtifactInfo.crateVersion!!)
         context.artifactInfo.setArtifactMappingUri(fullPath)
+        context.putAttribute(FILE_TYPE, CRATE_FILE)
         ArtifactContextHolder.getRepository().download(context)
 
     }
@@ -120,29 +119,10 @@ class CargoServiceImpl(
     }
 
     override fun search(cargoArtifactInfo: CargoArtifactInfo, q: String, perPage: Int): CargoSearchResult {
-        with(cargoArtifactInfo) {
-            val queryModel = PackageQueryBuilder().select(NAME, DESCRIPTION, LATEST)
-                .projectId(projectId).repoName(repoName).sortByAsc(NAME)
-                .page(0, perPage)
-            if (q.isNotBlank()) {
-                queryModel.name("*$q*", OperationType.MATCH)
-            }
-            val queryResult = packageService.searchPackage(queryModel.build())
-            val crates: MutableList<CratesDetail> = mutableListOf()
-            queryResult.records.forEach { map ->
-                crates.add(
-                    CratesDetail(
-                        name = map[NAME] as String,
-                        description = map[DESCRIPTION] as String?,
-                        maxVersion = map[LATEST] as String,
-                    )
-                )
-            }
-            return CargoSearchResult(
-                crates = crates,
-                meta = SearchMeta(queryResult.totalRecords)
-            )
-        }
+        val context = ArtifactQueryContext()
+        context.putAttribute(QUERY, q)
+        context.putAttribute(PAGE_SIZE, perPage)
+        return ArtifactContextHolder.getRepository().query(context) as CargoSearchResult
     }
 
     private fun doYankOperation(cargoArtifactInfo: CargoArtifactInfo, yanked: Boolean) {

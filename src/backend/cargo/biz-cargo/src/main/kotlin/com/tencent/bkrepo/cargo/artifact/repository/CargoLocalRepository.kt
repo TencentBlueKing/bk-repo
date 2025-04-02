@@ -34,14 +34,22 @@ package com.tencent.bkrepo.cargo.artifact.repository
 import com.tencent.bkrepo.cargo.constants.CARGO_CRATE_FILE
 import com.tencent.bkrepo.cargo.constants.CARGO_METADATA
 import com.tencent.bkrepo.cargo.constants.CargoMessageCode
+import com.tencent.bkrepo.cargo.constants.DESCRIPTION
 import com.tencent.bkrepo.cargo.constants.FILE_SHA256
 import com.tencent.bkrepo.cargo.constants.FILE_SIZE
+import com.tencent.bkrepo.cargo.constants.LATEST
+import com.tencent.bkrepo.cargo.constants.NAME
+import com.tencent.bkrepo.cargo.constants.PAGE_SIZE
+import com.tencent.bkrepo.cargo.constants.QUERY
 import com.tencent.bkrepo.cargo.constants.YANKED
 import com.tencent.bkrepo.cargo.exception.CargoBadRequestException
 import com.tencent.bkrepo.cargo.exception.CargoYankedException
 import com.tencent.bkrepo.cargo.listener.event.CargoPackageDeleteEvent
 import com.tencent.bkrepo.cargo.listener.event.CargoPackageUploadEvent
+import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
 import com.tencent.bkrepo.cargo.pojo.CargoSuccessResponse
+import com.tencent.bkrepo.cargo.pojo.CratesDetail
+import com.tencent.bkrepo.cargo.pojo.SearchMeta
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.base.CargoMetadata
@@ -61,6 +69,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
@@ -73,6 +82,7 @@ import com.tencent.bkrepo.repository.constant.FULL_PATH
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.DataInputStream
@@ -241,6 +251,34 @@ class CargoLocalRepository(
                 )
             )
             publishEvent(event)
+        }
+    }
+
+    override fun query(context: ArtifactQueryContext): Any? {
+        with(context.artifactInfo as CargoArtifactInfo) {
+            val q = context.getStringAttribute(QUERY)
+            val perPage = context.getIntegerAttribute(PAGE_SIZE) ?: 10
+            val queryModel = PackageQueryBuilder().select(NAME, DESCRIPTION, LATEST)
+                .projectId(projectId).repoName(repoName).sortByAsc(NAME)
+                .page(0, perPage)
+            if (!q.isNullOrEmpty()) {
+                queryModel.name("*$q*", com.tencent.bkrepo.common.query.enums.OperationType.MATCH)
+            }
+            val queryResult = packageService.searchPackage(queryModel.build())
+            val crates: MutableList<CratesDetail> = mutableListOf()
+            queryResult.records.forEach { map ->
+                crates.add(
+                    CratesDetail(
+                        name = map[NAME] as String,
+                        description = map[DESCRIPTION] as String?,
+                        maxVersion = map[LATEST] as String,
+                    )
+                )
+            }
+            return CargoSearchResult(
+                crates = crates,
+                meta = SearchMeta(queryResult.totalRecords)
+            )
         }
     }
 
