@@ -928,5 +928,7 @@
     "getShareFileFailed": "获取分享文件失败",
     "getDownloadUrlFailed": "下载失败",
     "pendingApproval": "审批中",
-    "waitUpload": "等待上传中"
+    "waitUpload": "等待上传中",
+    "lastDownloadBy": "最近下载人",
+    "lastDownloadDate": "下载时间"
 }

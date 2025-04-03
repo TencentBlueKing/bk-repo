@@ -152,7 +152,9 @@
                     { name: 'createdBy', label: this.$t('createdBy') },
                     { name: 'createdDate', label: this.$t('createdDate') },
                     { name: 'lastModifiedBy', label: this.$t('lastModifiedBy') },
-                    { name: 'lastModifiedDate', label: this.$t('lastModifiedDate') }
+                    { name: 'lastModifiedDate', label: this.$t('lastModifiedDate') },
+                    { name: 'lastDownloadBy', label: this.$t('lastDownloadBy') },
+                    { name: 'lastDownloadDate', label: this.$t('lastDownloadDate') }
                 ].filter(({ name }) => name in this.detailSlider.data && (name !== 'size' || !this.detailSlider.data.folder))
                     .map(item => ({ ...item, value: this.detailSlider.data[item.name] }))
             },
@@ -187,7 +189,8 @@
                         createdBy: this.userList[data.createdBy] ? this.userList[data.createdBy].name : data.createdBy,
                         createdDate: formatDate(data.createdDate),
                         lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
-                        lastModifiedDate: formatDate(data.lastModifiedDate)
+                        lastModifiedDate: formatDate(data.lastModifiedDate),
+                        lastDownloadDate: data.lastDownloadDate ? formatDate(data.lastDownloadDate) : null
                     }
                 }).catch(e => {
                     this.hasErr = true

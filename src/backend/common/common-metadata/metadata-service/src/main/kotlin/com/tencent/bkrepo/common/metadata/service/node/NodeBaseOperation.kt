@@ -107,4 +107,9 @@ interface NodeBaseOperation {
      * 更新节点访问时间
      */
     fun updateNodeAccessDate(updateAccessDateRequest: NodeUpdateAccessDateRequest)
+
+    /**
+     *  更新下载时间
+     */
+    fun updateNodeDownloadDate(artifact: ArtifactInfo, userId: String)
 }

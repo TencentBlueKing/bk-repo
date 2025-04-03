@@ -31,7 +31,9 @@ import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
+import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
 import com.tencent.bkrepo.common.artifact.event.ArtifactDownloadedEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactResponseEvent
 import com.tencent.bkrepo.common.artifact.event.ArtifactUploadedEvent
@@ -245,6 +247,16 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
             buildDownloadRecord(context, artifactResource)?.let {
                 taskAsyncExecutor.execute { packageDownloadsService.record(it) }
                 publishPackageDownloadEvent(context, it)
+            }
+        }
+        if (context.request.getAttribute(PARAM_PREVIEW) != true) {
+            if (context.artifacts.isNullOrEmpty()) {
+                nodeService.updateNodeDownloadDate(context.artifactInfo, context.userId)
+            } else {
+                context.artifacts.forEach {
+                    nodeService.updateNodeDownloadDate(
+                        ArtifactInfo(it.projectId, it.repoName, it.getArtifactFullPath()), context.userId)
+                }
             }
         }
         if (throughput != Throughput.EMPTY) {

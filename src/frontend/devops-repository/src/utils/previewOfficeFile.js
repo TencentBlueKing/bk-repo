@@ -3,7 +3,7 @@ import axios from 'axios'
 export function customizePreviewOfficeFile (projectId, repoName, fullPath) {
     const url = projectId + '/' + repoName + fullPath
     return axios({
-        url: `${location.origin}/web/generic/` + url,
+        url: `${location.origin}/web/generic/` + url + '?preview=true',
         method: 'get',
         // 注意，此处需要设置下载的文件的返回类型为二进制，即 blob
         responseType: 'blob',
@@ -24,7 +24,7 @@ export function getPreviewLocalOfficeFileInfo (projectId, repoName, fullPath) {
     })
 }
 
-export function getPreviewRemoteOfficeFileInfo(extraParam) {
+export function getPreviewRemoteOfficeFileInfo (extraParam) {
     return axios({
         url: `${location.origin}/web/preview/api/file/getPreviewInfo/`,
         method: 'get',

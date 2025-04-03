@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PREVIEW_ARTIFACT_TO_FILE
+import com.tencent.bkrepo.preview.constant.ATTRIBUTE_PREVIEW
 import com.tencent.bkrepo.preview.constant.PREVIEW_NODE_DETAIL
 import com.tencent.bkrepo.preview.constant.PREVIEW_TMP_FILE_SAVE_PATH
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
@@ -160,6 +161,7 @@ class FileTransferService(
         val fileTmpPath = downloadUtils.getRelFilePath(fileAttribute.fileName, fileAttribute.suffix!!, config.fileDir)
         request.setAttribute(PREVIEW_TMP_FILE_SAVE_PATH, fileTmpPath)
         request.setAttribute(PREVIEW_ARTIFACT_TO_FILE, toFile)
+        request.setAttribute(ATTRIBUTE_PREVIEW, true)
     }
 
     /**

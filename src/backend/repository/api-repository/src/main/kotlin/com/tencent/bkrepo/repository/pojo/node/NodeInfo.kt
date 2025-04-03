@@ -50,6 +50,10 @@ data class NodeInfo(
     val lastModifiedBy: String,
     @ApiModelProperty("修改时间")
     val lastModifiedDate: String,
+    @ApiModelProperty("下载人")
+    var lastDownloadBy: String? = null,
+    @ApiModelProperty("下载时间")
+    var lastDownloadDate: String? = null,
     @ApiModelProperty("访问时间")
     val lastAccessDate: String? = null,
 

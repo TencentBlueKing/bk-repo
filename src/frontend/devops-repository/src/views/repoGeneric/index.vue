@@ -155,6 +155,14 @@
                             {{ row.clusterNames ? row.clusterNames.join() : row.clusterNames }}
                         </template>
                     </bk-table-column>
+                    <bk-table-column :label="$t('lastDownloadDate')" prop="lastDownloadDate" width="150" :render-header="renderHeader">
+                        <template #default="{ row }">{{ row.lastDownloadDate ? formatDate(row.lastDownloadDate) : '' }}</template>
+                    </bk-table-column>
+                    <bk-table-column :label="$t('lastDownloadBy')" width="150" show-overflow-tooltip>
+                        <template #default="{ row }">
+                            {{ userList[row.lastDownloadBy] ? userList[row.lastDownloadBy].name : row.lastDownloadBy }}
+                        </template>
+                    </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="150" :render-header="renderHeader">
                         <template #default="{ row }">{{ formatDate(row.lastModifiedDate) }}</template>
                     </bk-table-column>
@@ -1043,6 +1051,7 @@
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 this.$ajax.head(url).then(() => {
+                    this.getArtifactories()
                     window.open(
                         '/web' + url,
                         '_self'

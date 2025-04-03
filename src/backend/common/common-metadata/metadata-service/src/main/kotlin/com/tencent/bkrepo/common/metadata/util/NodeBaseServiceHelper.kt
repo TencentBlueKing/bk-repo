@@ -74,6 +74,8 @@ object NodeBaseServiceHelper {
                 createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = it.lastModifiedBy,
                 lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastDownloadBy = it.lastDownloadBy,
+                lastDownloadDate = it.lastDownloadDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                 projectId = it.projectId,
                 repoName = it.repoName,
                 folder = it.folder,

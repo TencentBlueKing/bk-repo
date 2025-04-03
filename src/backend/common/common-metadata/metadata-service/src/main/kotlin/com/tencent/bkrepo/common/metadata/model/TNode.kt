@@ -77,6 +77,8 @@ data class TNode(
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
+    var lastDownloadBy: String? = null,
+    var lastDownloadDate: LocalDateTime ? = null,
     var lastAccessDate: LocalDateTime? = null,
 
     var folder: Boolean,
