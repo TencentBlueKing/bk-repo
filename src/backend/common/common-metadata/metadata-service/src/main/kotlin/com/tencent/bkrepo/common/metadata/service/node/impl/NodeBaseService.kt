@@ -357,6 +357,24 @@ abstract class NodeBaseService(
         }
     }
 
+    override fun updateNodeDownloadDate(artifact: ArtifactInfo, userId: String) {
+        val fullPath = artifact.getArtifactFullPath()
+        with(artifact) {
+            val node = nodeDao.findNode(projectId, repoName, fullPath)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            val criteria = where(TNode::projectId).isEqualTo(projectId)
+                .and(TNode::repoName).isEqualTo(repoName)
+                .and(TNode::deleted).isEqualTo(null)
+                .and(TNode::fullPath).isEqualTo(node.fullPath)
+            val query = Query(criteria).withHint(TNode.FULL_PATH_IDX)
+            val update = Update().set(TNode::lastDownloadDate.name, LocalDateTime.now())
+                        .set(TNode::lastDownloadBy.name, userId)
+            nodeDao.updateFirst(query, update)
+            logger.info("Update node Download time [$this] success.")
+        }
+
+    }
+
     open fun doCreate(node: TNode, repository: TRepository? = null, separate: Boolean = false): TNode {
         try {
             nodeDao.insert(node)

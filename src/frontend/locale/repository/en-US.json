@@ -925,5 +925,7 @@
     "getShareFileFailed": "Get share file failed",
     "getDownloadUrlFailed": "Download failed",
     "pendingApproval": "Pending Approval",
-    "waitUpload": "Waiting Upload"
+    "waitUpload": "Waiting Upload",
+    "lastDownloadBy": "Last Download By",
+    "lastDownloadDate": "Last Download at"
 }
