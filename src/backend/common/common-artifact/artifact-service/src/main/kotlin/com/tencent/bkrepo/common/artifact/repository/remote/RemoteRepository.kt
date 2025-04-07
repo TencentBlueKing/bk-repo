@@ -356,8 +356,12 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 创建http client
      */
-    protected fun createHttpClient(configuration: RemoteConfiguration, addInterceptor: Boolean = true): OkHttpClient {
-        return buildOkHttpClient(configuration, addInterceptor).build()
+    protected fun createHttpClient(
+        configuration: RemoteConfiguration,
+        addInterceptor: Boolean = true,
+        followRedirect: Boolean = false
+    ): OkHttpClient {
+        return buildOkHttpClient(configuration, addInterceptor, followRedirect).build()
     }
 
     /**

@@ -119,13 +119,13 @@ class CargoWebController(
     @DeleteMapping(YANK)
     fun yank(@ArtifactPathVariable artifactInfo: CargoArtifactInfo): ResponseEntity<Any> {
         cargoService.yank(artifactInfo)
-        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body("{\"ok\": true,}")
+        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body("{\"ok\": true}")
     }
 
     @PutMapping(UNYANK)
     fun unYank(@ArtifactPathVariable artifactInfo: CargoArtifactInfo): ResponseEntity<Any> {
         cargoService.unYank(artifactInfo)
-        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body("{\"ok\": true,}")
+        return ResponseEntity.ok().header(CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body("{\"ok\": true}")
     }
 
 
@@ -164,14 +164,5 @@ class CargoWebController(
         @RequestParam("per_page") perPage: Int = 10
     ): ResponseEntity<CargoSearchResult> {
         return ResponseEntity.ok(cargoService.search(artifactInfo, q, perPage))
-    }
-
-    companion object {
-
-        fun buildResponse(body: Any, contentType: String = APPLICATION_JSON_WITHOUT_CHARSET): ResponseEntity<Any> {
-            return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, contentType)
-                .body(body)
-        }
     }
 }

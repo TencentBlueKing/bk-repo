@@ -275,10 +275,14 @@ class CargoLocalRepository(
                     )
                 )
             }
-            return CargoSearchResult(
-                crates = crates,
-                meta = SearchMeta(queryResult.totalRecords)
-            )
+            if (crates.isEmpty()) {
+                return null
+            } else {
+                return CargoSearchResult(
+                    crates = crates,
+                    meta = SearchMeta(queryResult.totalRecords)
+                )
+            }
         }
     }
 

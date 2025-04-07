@@ -65,4 +65,6 @@ const val CARGO_JSON_SUFFIX = ".json"
 
 const val CRATE_NAME = "crateName"
 
+const val CRATE_VERSION = "crateVersion"
+
 const val YANKED = "yanked"

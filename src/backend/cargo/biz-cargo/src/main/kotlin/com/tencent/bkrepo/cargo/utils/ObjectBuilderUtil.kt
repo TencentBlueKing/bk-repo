@@ -93,14 +93,38 @@ object ObjectBuilderUtil {
         fullPath: String,
         metadataList: List<MetadataModel>
     ): PackageVersionCreateRequest {
+        return buildPackageVersionCreateRequest(
+            projectId = projectId,
+            repoName = repoName,
+            name = cargoMetadata.name,
+            version = cargoMetadata.vers,
+            description = cargoMetadata.description,
+            size = size,
+            metadataList = metadataList,
+            fullPath = fullPath,
+            userId = userId,
+        )
+    }
+
+    fun buildPackageVersionCreateRequest(
+        userId: String,
+        projectId: String,
+        repoName: String,
+        name: String,
+        version: String,
+        description: String? = null,
+        size: Long,
+        fullPath: String,
+        metadataList: List<MetadataModel> = emptyList()
+    ): PackageVersionCreateRequest {
         return PackageVersionCreateRequest(
             projectId = projectId,
             repoName = repoName,
-            packageName = cargoMetadata.name,
-            packageKey = PackageKeys.ofCargo(cargoMetadata.name),
+            packageName = name,
+            packageKey = PackageKeys.ofCargo(name),
             packageType = PackageType.CARGO,
-            packageDescription = cargoMetadata.description,
-            versionName = cargoMetadata.vers,
+            packageDescription = description,
+            versionName = version,
             size = size,
             manifestPath = null,
             artifactPath = fullPath,

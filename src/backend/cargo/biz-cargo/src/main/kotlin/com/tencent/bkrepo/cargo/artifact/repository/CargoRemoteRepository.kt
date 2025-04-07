@@ -34,6 +34,9 @@ package com.tencent.bkrepo.cargo.artifact.repository
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.cargo.constants.CRATE_CONFIG
 import com.tencent.bkrepo.cargo.constants.CRATE_FILE
+import com.tencent.bkrepo.cargo.constants.CRATE_INDEX
+import com.tencent.bkrepo.cargo.constants.CRATE_NAME
+import com.tencent.bkrepo.cargo.constants.CRATE_VERSION
 import com.tencent.bkrepo.cargo.constants.CargoMessageCode
 import com.tencent.bkrepo.cargo.constants.FILE_TYPE
 import com.tencent.bkrepo.cargo.constants.PAGE_SIZE
@@ -41,7 +44,9 @@ import com.tencent.bkrepo.cargo.constants.QUERY
 import com.tencent.bkrepo.cargo.exception.CargoBadRequestException
 import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_PREFIX
 import com.tencent.bkrepo.cargo.pojo.index.IndexConfiguration
+import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.JsonUtils
@@ -54,7 +59,6 @@ import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import okhttp3.Request
 import okhttp3.Response
-import org.aspectj.weaver.tools.cache.AbstractIndexedFileCacheBacking.INDEX_FILE
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -90,14 +94,21 @@ class CargoRemoteRepository : RemoteRepository() {
             throw CargoBadRequestException(CommonMessageCode.PARAMETER_INVALID, "remoteUrl")
         }
         return when (context.getStringAttribute(FILE_TYPE)) {
-            INDEX_FILE -> handleIndexFileRequest(context, remoteUrl)
-            CRATE_FILE -> handleCrateFileRequest(context, remoteUrl)
+            CRATE_INDEX -> handleIndexFileRequest(context, remoteUrl)
+            CRATE_FILE -> {
+                val artifactResource = handleCrateFileRequest(context, remoteUrl)
+                if (artifactResource != null) {
+                    initVersion(context, artifactResource as ArtifactResource)
+                }
+                return artifactResource
+            }
+
             else -> handleSearchRequest(context, remoteUrl)
         }
     }
 
     private fun handleIndexFileRequest(context: ArtifactContext, remoteUrl: String): Any? {
-        val downloadUrl = remoteUrl.trim('/') + StringPool.SLASH + context.artifactInfo.getArtifactName()
+        val downloadUrl = remoteUrl.trim('/') + context.artifactInfo.getArtifactName()
         return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
     }
 
@@ -108,6 +119,7 @@ class CargoRemoteRepository : RemoteRepository() {
         val artifactInfo = context.artifactInfo as CargoArtifactInfo
         val downloadUrl = buildString {
             append(downloadHost.trimEnd('/'))
+            append(CARGO_PREFIX)
             append(StringPool.SLASH)
             append(artifactInfo.crateName)
             append(StringPool.SLASH)
@@ -116,19 +128,38 @@ class CargoRemoteRepository : RemoteRepository() {
             append("download")
         }
 
-        return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
+        return executeRequest(context, downloadUrl) { response ->
+            onResponse(context, response)
+        }
+    }
+
+    private fun initVersion(context: ArtifactContext, artifactResource: ArtifactResource) {
+        with(context as ArtifactDownloadContext) {
+            val packageVersionCreateRequest = ObjectBuilderUtil.buildPackageVersionCreateRequest(
+                userId = userId,
+                projectId = projectId,
+                repoName = repoName,
+                name = getStringAttribute(CRATE_NAME)!!,
+                version = getStringAttribute(CRATE_VERSION)!!,
+                size = artifactResource.node!!.size,
+                fullPath = artifactResource.node!!.fullPath,
+            )
+            packageService.createPackageVersion(packageVersionCreateRequest).apply {
+                logger.info("user: [$userId] create remote package version [$packageVersionCreateRequest] success!")
+            }
+        }
     }
 
     private fun handleSearchRequest(context: ArtifactContext, remoteUrl: String): Any? {
         val downloadHost = getDownloadHost(remoteUrl, context)
         val downloadUrl = buildString {
-            append(downloadHost)
+            append(downloadHost.trimEnd('/'))
+            append(CARGO_PREFIX)
             append("?q=")
             append(context.getStringAttribute(QUERY))
             append("&per_page=")
             append(context.getIntegerAttribute(PAGE_SIZE))
         }
-
         return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
     }
 
@@ -143,28 +174,31 @@ class CargoRemoteRepository : RemoteRepository() {
                 }
             } as IndexConfiguration
 
-            downloadHostCache.put(remoteUrl, config.dl)
-            config.dl
+            downloadHostCache.put(remoteUrl, config.api)
+            config.api
         }
     }
 
     private fun <T> executeRequest(
-        context: ArtifactContext,
-        url: String,
-        responseHandler: (Response) -> T
+        context: ArtifactContext, url: String, responseHandler: (Response) -> T
     ): T {
         val remoteConfiguration = context.getRemoteConfiguration()
         val request = Request.Builder().url(url).build()
-        val httpClient = createHttpClient(remoteConfiguration)
+
+        val httpClient = createHttpClient(remoteConfiguration, followRedirect = true)
 
         return try {
-            httpClient.newCall(request).execute().use(responseHandler)
+            logger.info("Sending cargo request $url")
+            httpClient.newCall(request).execute().use {
+                if (checkResponse(it)) {
+                    responseHandler(it)
+                } else {
+                    throw CargoBadRequestException(CommonMessageCode.PARAMETER_INVALID, "remoteUrl")
+                }
+            }
         } catch (e: Exception) {
             logger.error("Error occurred while sending request $url", e)
-            throw when (context) {
-                is ArtifactDownloadContext -> NodeNotFoundException(context.artifactInfo.getArtifactFullPath())
-                else -> NodeNotFoundException(url)
-            }
+            throw NodeNotFoundException(context.artifactInfo.getArtifactFullPath())
         }
     }
 
@@ -182,9 +216,9 @@ class CargoRemoteRepository : RemoteRepository() {
         }
     }
 
-    private fun parseSearchResponse(response: Response): List<CargoSearchResult> {
+    private fun parseSearchResponse(response: Response): CargoSearchResult {
         return response.body?.byteStream().use {
-            listOf(JsonUtils.objectMapper.readValue(it, CargoSearchResult::class.java))
+            JsonUtils.objectMapper.readValue(it, CargoSearchResult::class.java)
         }
     }
 

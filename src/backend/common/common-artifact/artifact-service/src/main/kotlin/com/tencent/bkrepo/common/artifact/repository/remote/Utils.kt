@@ -87,7 +87,11 @@ fun createAuthenticateInterceptor(configuration: RemoteCredentialsConfiguration)
     }
 }
 
-fun buildOkHttpClient(configuration: RemoteConfiguration, addInterceptor: Boolean = true): OkHttpClient.Builder {
+fun buildOkHttpClient(
+    configuration: RemoteConfiguration,
+    addInterceptor: Boolean = true,
+    followRedirect: Boolean = false
+): OkHttpClient.Builder {
     val builder = HttpClientBuilderFactory.create()
     builder.readTimeout(configuration.network.readTimeout, TimeUnit.MILLISECONDS)
     builder.connectTimeout(configuration.network.connectTimeout, TimeUnit.MILLISECONDS)
@@ -95,6 +99,10 @@ fun buildOkHttpClient(configuration: RemoteConfiguration, addInterceptor: Boolea
     builder.proxyAuthenticator(createProxyAuthenticator(configuration.network.proxy))
     if (addInterceptor) {
         createAuthenticateInterceptor(configuration.credentials)?.let { builder.addInterceptor(it) }
+    }
+    if (followRedirect) {
+        builder.followRedirects(true)
+        builder.followSslRedirects(true)
     }
     builder.retryOnConnectionFailure(true)
     return builder

@@ -38,10 +38,14 @@ import com.tencent.bkrepo.cargo.constants.CRATE_CONFIG
 import com.tencent.bkrepo.cargo.constants.CRATE_DOWNLOAD_URL_SUFFIX
 import com.tencent.bkrepo.cargo.constants.CRATE_FILE
 import com.tencent.bkrepo.cargo.constants.CRATE_INDEX
+import com.tencent.bkrepo.cargo.constants.CRATE_NAME
+import com.tencent.bkrepo.cargo.constants.CRATE_VERSION
+import com.tencent.bkrepo.cargo.constants.CargoMessageCode
 import com.tencent.bkrepo.cargo.constants.FILE_TYPE
 import com.tencent.bkrepo.cargo.constants.PAGE_SIZE
 import com.tencent.bkrepo.cargo.constants.QUERY
 import com.tencent.bkrepo.cargo.constants.YANKED
+import com.tencent.bkrepo.cargo.exception.CargoFileNotFoundException
 import com.tencent.bkrepo.cargo.listener.event.CargoPackageYankEvent
 import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
@@ -105,8 +109,9 @@ class CargoServiceImpl(
         val fullPath = getCargoFileFullPath(cargoArtifactInfo.crateName!!, cargoArtifactInfo.crateVersion!!)
         context.artifactInfo.setArtifactMappingUri(fullPath)
         context.putAttribute(FILE_TYPE, CRATE_FILE)
+        context.putAttribute(CRATE_NAME, cargoArtifactInfo.crateName)
+        context.putAttribute(CRATE_VERSION, cargoArtifactInfo.crateVersion)
         ArtifactContextHolder.getRepository().download(context)
-
     }
 
     override fun yank(cargoArtifactInfo: CargoArtifactInfo) {
@@ -119,6 +124,10 @@ class CargoServiceImpl(
     }
 
     override fun search(cargoArtifactInfo: CargoArtifactInfo, q: String, perPage: Int): CargoSearchResult {
+        ArtifactContextHolder.getRepoDetail()
+        permissionManager.checkRepoPermission(
+            PermissionAction.READ, cargoArtifactInfo.projectId, cargoArtifactInfo.repoName
+        )
         val context = ArtifactQueryContext()
         context.putAttribute(QUERY, q)
         context.putAttribute(PAGE_SIZE, perPage)
@@ -126,17 +135,23 @@ class CargoServiceImpl(
     }
 
     private fun doYankOperation(cargoArtifactInfo: CargoArtifactInfo, yanked: Boolean) {
-        validParams(cargoArtifactInfo)
-        val crateFilePath = getCargoFileFullPath(cargoArtifactInfo.crateName!!, cargoArtifactInfo.crateVersion!!)
-        val metadata = mutableMapOf<String, Any>(YANKED to yanked)
-        commonService.updateNodeMetaData(
-            cargoArtifactInfo.projectId, cargoArtifactInfo.repoName, crateFilePath, metadata
-        )
-        publishEvent(
-            CargoPackageYankEvent(
-                ObjectBuilderUtil.buildCargoPackageYankRequest(cargoArtifactInfo, yanked)
+        with(cargoArtifactInfo) {
+            validParams(cargoArtifactInfo)
+            val crateFilePath = getCargoFileFullPath(crateName!!, crateVersion!!)
+            commonService.getNodeDetail(projectId, repoName, crateFilePath)
+                ?: throw CargoFileNotFoundException(
+                    CargoMessageCode.CARGO_FILE_NOT_FOUND, crateFilePath, "$projectId|$repoName"
+                )
+            val metadata = mutableMapOf<String, Any>(YANKED to yanked)
+            commonService.updateNodeMetaData(
+                projectId, repoName, crateFilePath, metadata
             )
-        )
+            publishEvent(
+                CargoPackageYankEvent(
+                    ObjectBuilderUtil.buildCargoPackageYankRequest(cargoArtifactInfo, yanked)
+                )
+            )
+        }
     }
 
     private fun validParams(cargoArtifactInfo: CargoArtifactInfo) {

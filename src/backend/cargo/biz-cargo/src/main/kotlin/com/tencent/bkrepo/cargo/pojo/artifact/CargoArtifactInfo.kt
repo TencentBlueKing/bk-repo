@@ -42,13 +42,15 @@ open class CargoArtifactInfo(
 ) : ArtifactInfo(projectId, repoName, artifactUri) {
     companion object {
 
-        const val PUBLISH = "/{projectId}/{repoName}/api/v1/crates/new"
-        const val YANK = "/{projectId}/{repoName}/api/v1/crates/{crateName}/{version}/yank"
-        const val UNYANK = "/{projectId}/{repoName}/api/v1/crates/{crateName}/{version}/unyank"
-        const val OWNERS = "/{projectId}/{repoName}/api/v1/crates/{crateName}/owners"
-        const val SEARCH = "/{projectId}/{repoName}/api/v1/crates"
+        const val CARGO_PREFIX = "/api/v1/crates"
+
+        const val PUBLISH = "/{projectId}/{repoName}$CARGO_PREFIX/new"
+        const val YANK = "/{projectId}/{repoName}$CARGO_PREFIX/{crateName}/{version}/yank"
+        const val UNYANK = "/{projectId}/{repoName}$CARGO_PREFIX/{crateName}/{version}/unyank"
+        const val OWNERS = "/{projectId}/{repoName}$CARGO_PREFIX/{crateName}/owners"
+        const val SEARCH = "/{projectId}/{repoName}$CARGO_PREFIX"
         const val INDEX = "{projectId}/{repoName}/index/**"
-        const val DOWNLOAD = "/{projectId}/{repoName}/api/v1/crates/{crateName}/{version}/download"
+        const val DOWNLOAD = "/{projectId}/{repoName}$CARGO_PREFIX/{crateName}/{version}/download"
 
         // cargo version detail
         const val CARGO_VERSION_DETAIL = "/version/detail/{projectId}/{repoName}"
