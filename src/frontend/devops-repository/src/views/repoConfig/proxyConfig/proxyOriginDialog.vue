@@ -81,32 +81,12 @@
                             validator: this.checkName,
                             message: this.$t('sameProxyExist'),
                             trigger: 'blur'
-                        },
-                        {
-                            validator: this.checkValid,
-                            trigger: 'blur'
                         }
                     ],
                     url: [
                         {
                             required: true,
                             message: this.$t('proxyUrlRule'),
-                            trigger: 'blur'
-                        },
-                        {
-                            validator: this.checkValid,
-                            trigger: 'blur'
-                        }
-                    ],
-                    username: [
-                        {
-                            validator: this.checkValid,
-                            trigger: 'blur'
-                        }
-                    ],
-                    password: [
-                        {
-                            validator: this.checkValid,
                             trigger: 'blur'
                         }
                     ]
@@ -142,6 +122,18 @@
                 }
             },
             'editProxyData.proxyType' () {
+                this.checkValid()
+            },
+            'editProxyData.password' () {
+                this.checkValid()
+            },
+            'editProxyData.username' () {
+                this.checkValid()
+            },
+            'editProxyData.url' () {
+                this.checkValid()
+            },
+            'editProxyData.name' () {
                 this.checkValid()
             }
         },
