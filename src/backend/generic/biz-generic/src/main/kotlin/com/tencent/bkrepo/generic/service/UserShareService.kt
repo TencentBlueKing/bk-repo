@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent.PROJECT_CODE_TEMPLATE
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent.REPO_NAME_TEMPLATE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
@@ -70,9 +71,10 @@ class UserShareService(
         with(request) {
             if (path == StringPool.ROOT) throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "path[$path]")
             val nodes = nodeService.listNode(ArtifactInfo(projectId, repoName, path), NodeListOption())
-            if (nodes.isEmpty()) {
+            if (nodes.isEmpty() && workspaceFiles.isNullOrEmpty()) {
                 throw NodeNotFoundException(path)
             }
+            workspaceFiles?.forEach { it.name = PathUtils.resolveName(PathUtils.normalizeFullPath(it.fullPath)) }
             val record = TUserShareRecord(
                 projectId = projectId,
                 repoName = repoName,
@@ -80,12 +82,15 @@ class UserShareService(
                 expiredDate = expireSeconds?.let { LocalDateTime.now().plusSeconds(expireSeconds!!) },
                 permits = permits,
                 workspaceName = workspaceName,
+                workspaceFiles = workspaceFiles,
                 createBy = SecurityUtils.getUserId(),
                 createDate = LocalDateTime.now(),
                 lastModifiedDate = LocalDateTime.now()
             )
             val tUserShareRecord = userShareRecordDao.insert(record)
             ActionAuditContext.current().addExtendData(TUserShareRecord::id.name, tUserShareRecord.id)
+            ActionAuditContext.current()
+                .addExtendData(TUserShareRecord::workspaceFiles.name, tUserShareRecord.workspaceFiles)
             return convert(tUserShareRecord)
         }
     }
@@ -112,6 +117,7 @@ class UserShareService(
             ActionAuditContext.current().addAttribute(PROJECT_CODE_TEMPLATE, record.projectId)
             ActionAuditContext.current().addAttribute(REPO_NAME_TEMPLATE, record.repoName)
             ActionAuditContext.current().addExtendData(TUserShareRecord::workspaceName.name, record.workspaceName)
+            ActionAuditContext.current().addExtendData(TUserShareRecord::workspaceFiles.name, record.workspaceFiles)
             permissionManager.checkNodePermission(
                 PermissionAction.DOWNLOAD, record.projectId, record.repoName, record.path
             )
@@ -189,6 +195,8 @@ class UserShareService(
                 path = path,
                 expiredDate = expiredDate,
                 permits = permits,
+                workspaceName = workspaceName,
+                workspaceFiles = workspaceFiles,
                 createBy = createBy,
                 createDate = createDate,
                 lastModifiedDate = lastModifiedDate

@@ -40,6 +40,9 @@ import com.tencent.bkrepo.common.artifact.repository.redirect.CosRedirectService
 import com.tencent.bkrepo.common.artifact.repository.redirect.DownloadRedirectManager
 import com.tencent.bkrepo.common.artifact.repository.redirect.EdgeNodeRedirectService
 import com.tencent.bkrepo.common.artifact.repository.redirect.LinkNodeRedirectService
+import com.tencent.bkrepo.common.artifact.repository.remote.AsyncRemoteArtifactCacheWriter
+import com.tencent.bkrepo.common.artifact.repository.remote.DefaultAsyncCacheHttpClientBuilderFactory
+import com.tencent.bkrepo.common.artifact.repository.remote.RemoteArtifactCacheLocks
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -55,6 +58,9 @@ import org.springframework.context.annotation.Import
     CosRedirectService::class,
     LinkNodeRedirectService::class,
     DownloadRedirectManager::class,
+    AsyncRemoteArtifactCacheWriter::class,
+    DefaultAsyncCacheHttpClientBuilderFactory::class,
+    RemoteArtifactCacheLocks::class
 )
 class ArtifactContextConfiguration {
 

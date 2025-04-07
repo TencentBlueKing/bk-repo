@@ -47,9 +47,9 @@ export default {
             `${prefix}/approval/create/${shareId}`
         )
     },
-    getApprovalStatus (_, { shareId, userId }) {
+    getApproval (_, { shareId, userId }) {
         return Vue.prototype.$ajax.get(
-            `${prefix}/approval/status`,
+            `${prefix}/approval`,
             {
                 params: {
                     shareId,

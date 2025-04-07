@@ -197,7 +197,12 @@ class HelmRemoteRepository(
     /**
      * 远程下载响应回调
      */
-    override fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
+    override fun onDownloadResponse(
+        context: ArtifactDownloadContext,
+        response: Response,
+        useDisposition: Boolean,
+        syncCache: Boolean
+    ): ArtifactResource {
         val tempFile = createTempFile(response.body!!)
         val artifactFile = buildNewIndex(context, tempFile)
         val size = artifactFile.getSize()

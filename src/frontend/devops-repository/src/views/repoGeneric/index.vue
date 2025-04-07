@@ -813,8 +813,9 @@
                     this.$set(item, 'loading', false)
                 })
             },
-            // 单击table打开文件夹
+            // 单击table打开预览
             previewFile (row) {
+                if (row.folder || !this.community) return
                 if (isOutDisplayType(row.fullPath)) {
                     const isLocal = this.localRepo
                     const typeParam = isLocal ? 'local/' : 'remote/'
@@ -1464,7 +1465,7 @@
             },
 
             getBtnDisabled (name) {
-                return isOutDisplayType(name)
+                return this.community ? isOutDisplayType(name) : isText(name)
             },
             // 文件夹内部的搜索，根据文件名或文件夹名搜索
             inFolderSearchFile () {

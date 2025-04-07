@@ -34,4 +34,5 @@ data class UserShareRecordCreateRequest(
     val expireSeconds: Long?,
     val permits: Int?,
     val workspaceName: String?,
+    val workspaceFiles: List<WorkspaceFile>?
 )

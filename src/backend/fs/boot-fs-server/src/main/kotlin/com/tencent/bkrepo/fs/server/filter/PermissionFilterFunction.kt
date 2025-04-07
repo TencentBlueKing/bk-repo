@@ -37,6 +37,7 @@ import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.fs.server.service.PermissionService
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils.bearerToken
 import com.tencent.bkrepo.fs.server.utils.SecurityManager
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -64,6 +65,7 @@ class PermissionFilterFunction(
             return if (permissionService.checkPermission(projectId, repoName, action, userId)) {
                 next(request)
             } else {
+                logger.info("user[$userId] no $action permission in [$projectId/$repoName]")
                 ServerResponse.status(HttpStatus.FORBIDDEN).buildAndAwait()
             }
         }
@@ -111,6 +113,7 @@ class PermissionFilterFunction(
     }
 
     companion object {
+        private val logger = LoggerFactory.getLogger(PermissionFilterFunction::class.java)
         private val WRITE_REQUEST_URL_PATTERN_SET = arrayOf(
             "/node/change/**",
             "/node/move/**",

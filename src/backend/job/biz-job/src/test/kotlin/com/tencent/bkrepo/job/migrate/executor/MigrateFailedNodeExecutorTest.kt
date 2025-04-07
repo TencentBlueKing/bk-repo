@@ -35,7 +35,6 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING_FAILED_NODE
-import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeAutoFixStrategy
 import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -45,11 +44,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
-import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -65,9 +62,6 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
     private val executor: MigrateFailedNodeExecutor,
 ) : ExecutorBaseTest() {
 
-    @MockBean
-    private lateinit var migrateFailedNodeAutoFixStrategy: MigrateFailedNodeAutoFixStrategy
-
     @AfterAll
     fun afterAll() {
         executor.close(1L, TimeUnit.MINUTES)
@@ -76,7 +70,6 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
-        whenever(migrateFailedNodeAutoFixStrategy.fix(any())).thenReturn(true)
         migrateRepoStorageTaskDao.remove(Query())
         migrateFailedNodeDao.remove(Query())
     }

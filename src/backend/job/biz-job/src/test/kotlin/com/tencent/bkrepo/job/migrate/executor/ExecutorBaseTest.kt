@@ -46,14 +46,17 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.CreateMigrateRepoStorageTaskRequest
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrationContext
+import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeAutoFixStrategy
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
+import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.junit.jupiter.api.TestInstance
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -108,6 +111,17 @@ open class ExecutorBaseTest {
     @MockBean
     protected lateinit var storageService: StorageService
 
+    @MockBean
+    protected lateinit var migrateArchivedFileService: MigrateArchivedFileService
+
+    @MockBean
+    @Qualifier("fileNotFoundAutoFixStrategy")
+    private lateinit var fileNotFoundAutoFixStrategy: MigrateFailedNodeAutoFixStrategy
+
+    @MockBean
+    @Qualifier("archivedFileAutoFixStrategy")
+    private lateinit var archivedFileAutoFixStrategy: MigrateFailedNodeAutoFixStrategy
+
     fun initMock() {
         whenever(fileReferenceService.increment(any(), anyOrNull(), any())).thenReturn(true)
         whenever(fileReferenceService.decrement(any(), anyOrNull())).thenReturn(true)
@@ -115,14 +129,17 @@ open class ExecutorBaseTest {
 
         whenever(repositoryService.getRepoDetail(anyString(), anyString(), anyOrNull()))
             .thenReturn(MigrateTestUtils.buildRepo())
-        whenever(repositoryService.updateStorageCredentialsKey(anyString(), anyString(), anyString())).then {  }
-        whenever(repositoryService.unsetOldStorageCredentialsKey(anyString(), anyString())).then {  }
+        whenever(repositoryService.updateStorageCredentialsKey(anyString(), anyString(), anyString())).then { }
+        whenever(repositoryService.unsetOldStorageCredentialsKey(anyString(), anyString())).then { }
         whenever(storageCredentialService.findByKey(anyString()))
             .thenReturn(FileSystemCredentials())
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then {
             Thread.sleep(1000L)
         }
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
+        whenever(fileNotFoundAutoFixStrategy.fix(any())).thenReturn(true)
+        whenever(archivedFileAutoFixStrategy.fix(any())).thenReturn(true)
+        whenever(migrateArchivedFileService.archivedFileCompleted(anyOrNull(), anyString())).thenReturn(true)
     }
 
     protected fun createTask(repoName: String = UT_REPO_NAME): MigrateRepoStorageTask {

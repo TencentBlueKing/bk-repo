@@ -41,6 +41,7 @@ import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadPoolExecutor
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
+import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
@@ -54,6 +55,7 @@ class MigrateFailedNodeExecutor(
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
+    migrateArchivedFileService: MigrateArchivedFileService,
     private val transferDataExecutor: TransferDataExecutor,
     private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
 ) : BaseTaskExecutor(
@@ -63,6 +65,7 @@ class MigrateFailedNodeExecutor(
     fileReferenceService,
     storageService,
     executingTaskRecorder,
+    migrateArchivedFileService,
 ) {
     /**
      * 用于重新迁移失败的node

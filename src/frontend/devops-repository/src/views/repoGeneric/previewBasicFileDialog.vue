@@ -50,6 +50,7 @@
             setData (data) {
                 this.basicFileText = data
                 this.previewDialog.isLoading = false
+                if (RELEASE_MODE !== 'community') return
                 if (this.previewDialog.repoType === 'local') {
                     getPreviewLocalOfficeFileInfo(this.projectId, this.previewDialog.repoName, '/' + this.previewDialog.filePath).then(res => {
                         if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {

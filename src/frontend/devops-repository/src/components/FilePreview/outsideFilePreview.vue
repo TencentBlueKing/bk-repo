@@ -14,6 +14,10 @@
                 :id="'pdfCanvas' + page"
             ></canvas>
         </div>
+        <div v-if="previewBasic" class="flex-column flex-center">
+            <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
+            <textarea id="basicFileText" v-model="basicFileText" class="textarea" readonly></textarea>
+        </div>
         <img v-if="imgShow" :src="imgUrl" />
         <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
@@ -74,6 +78,8 @@
                     } // 将获取到的excel数据进行处理之后且渲染到页面之前，可通过transformData对即将渲染的数据及样式进行修改，此时每个单元格的text值就是即将渲染到页面上的内容
                 },
                 previewExcel: false,
+                previewBasic: false,
+                basicFileText: '',
                 hasError: false,
                 pageUrl: '',
                 showFrame: false,
@@ -128,8 +134,13 @@
                             this.showFrame = true
                             this.pageUrl = url
                         } else if (isText(res.data.data.suffix)) {
-                            this.showFrame = true
-                            this.pageUrl = obj.url
+                            this.previewBasic = true
+                            const reader = new FileReader()
+                            reader.onload = function (event) {
+                                // 读取的文本内容,强行赋值渲染
+                                document.getElementById('basicFileText').value = Base64.decode(event.target.result)
+                            }
+                            reader.readAsText(fileDate.data)
                         } else if (isPic(res.data.data.suffix)) {
                             this.imgShow = true
                             this.imgUrl = URL.createObjectURL(fileDate.data)
@@ -163,6 +174,7 @@
             cancel () {
                 this.dataSource = ''
                 this.previewExcel = false
+                this.previewBasic = false
                 this.showFrame = false
                 this.pageUrl = ''
                 this.imgShow = false
