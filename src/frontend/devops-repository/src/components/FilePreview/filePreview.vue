@@ -50,7 +50,6 @@
 
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.workerSrc = location.origin + '/ui/pdf.worker.js'
-    console.log(location.origin + '/ui/pdf.worker.js')
 
     export default {
         name: 'FilePreview',
@@ -98,7 +97,11 @@
                 pdfWidth: '', // 宽度
                 pdfSrc: '', // 地址
                 pdfDoc: '', // 文档内容
-                pdfScale: 1.5 // 放大倍数
+                pdfScale: 1.5, // 放大倍数
+                repoTypeEnum: [
+                    'local',
+                    'remote'
+                ]
             }
         },
         computed: {
@@ -108,7 +111,28 @@
         },
         async created () {
             this.loading = true
-            this.dealWaterMark()
+            if (!this.checkRepoType()) {
+                this.showError()
+                return
+            }
+            if (RELEASE_MODE !== 'community') {
+                if (isText(this.filePath)) {
+                    this.previewBasicFile({
+                        projectId: this.projectId,
+                        repoName: this.repoName,
+                        path: '/' + this.filePath
+                    }).then(res => {
+                        this.loading = false
+                        this.previewBasic = true
+                        this.basicFileText = res
+                    }).catch(() => this.showError())
+                } else {
+                    this.showError()
+                }
+                return
+            } else {
+                this.dealWaterMark()
+            }
             if (isText(this.filePath)) {
                 this.previewBasicFile({
                     projectId: this.projectId,
@@ -118,47 +142,31 @@
                     this.loading = false
                     this.previewBasic = true
                     this.basicFileText = res
-                }).catch((e) => {
-                    this.loading = false
-                    this.hasError = true
-                })
+                }).catch(() => this.showError())
             } else if (this.filePath.endsWith('.xlsx')) {
                 customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
                     this.loading = false
                     this.previewExcel = true
                     this.dataSource = res.data
-                }).catch((e) => {
-                    this.loading = false
-                    this.hasError = true
-                })
+                }).catch(() => this.showError())
             } else if (this.filePath.endsWith('.csv')) {
                 customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
                     this.csvShow = true
                     this.dealCsv(res)
                     this.loading = false
-                }).catch((e) => {
-                    this.loading = false
-                    this.hasError = true
-                })
+                }).catch(() => this.showError())
             } else if (isFormatType(this.filePath) || isPic(this.filePath)) {
                 if (this.repoType === 'local') {
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
                         this.dealDate(res)
-                    }).catch(() => {
-                        this.loading = false
-                        this.hasError = true
-                    })
+                    }).catch(() => this.showError())
                 } else {
                     customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(res => {
                         this.dealDate(res)
-                    }).catch(() => {
-                        this.loading = false
-                        this.hasError = true
-                    })
+                    }).catch(() => this.showError())
                 }
             } else {
-                this.loading = false
-                this.hasError = true
+                this.showError()
             }
         },
         destroyed () {
@@ -168,6 +176,13 @@
             ...mapActions([
                 'previewBasicFile'
             ]),
+            checkRepoType () {
+                return this.repoTypeEnum.includes(this.repoType)
+            },
+            showError () {
+                this.loading = false
+                this.hasError = true
+            },
             cancel () {
                 this.dataSource = ''
                 this.previewExcel = false
