@@ -33,10 +33,7 @@ import com.tencent.bkrepo.cargo.service.impl.CommonService
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoIndexFullPath
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildNodeCreateRequest
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
-import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.api.util.jsonCompress
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

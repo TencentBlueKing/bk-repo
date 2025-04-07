@@ -41,7 +41,6 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.DOWNLOAD
-import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.FIX_INDEX
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.INDEX
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.OWNERS
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.PUBLISH
@@ -50,8 +49,6 @@ import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.UNYANK
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.YANK
 import com.tencent.bkrepo.cargo.pojo.request.OwnerUserAddRequest
 import com.tencent.bkrepo.cargo.service.CargoService
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.api.constant.MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
