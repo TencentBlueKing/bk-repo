@@ -41,7 +41,9 @@ import com.tencent.bkrepo.common.storage.core.operation.HealthCheckOperation
 import com.tencent.bkrepo.common.storage.core.operation.OverlayOperation
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.filesystem.check.SynchronizeResult
+import java.io.FileNotFoundException
 import java.nio.file.Path
+import kotlin.jvm.Throws
 
 /**
  * 存储服务接口
@@ -88,6 +90,7 @@ interface StorageService :
      * 若B中已经存在相同文件则立即返回
      * 若A == B，立即返回
      */
+    @Throws(FileNotFoundException::class)
     fun copy(digest: String, fromCredentials: StorageCredentials?, toCredentials: StorageCredentials?)
 
     /**

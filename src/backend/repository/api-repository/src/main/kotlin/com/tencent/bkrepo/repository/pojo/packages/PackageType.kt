@@ -47,5 +47,6 @@ enum class PackageType {
     GIT,
     CONAN,
     OCI,
-    OHPM
+    OHPM,
+    HUGGINGFACE,
 }
