@@ -197,7 +197,7 @@ class CargoRemoteRepository : RemoteRepository() {
                 }
             }
         } catch (e: Exception) {
-            logger.error("Error occurred while sending request $url", e)
+            logger.warn("Error occurred while sending request $url", e)
             throw NodeNotFoundException(context.artifactInfo.getArtifactFullPath())
         }
     }
