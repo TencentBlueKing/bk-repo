@@ -16,7 +16,7 @@
         style="margin-left: 15px"
         label="节点"
       >
-        <el-select :disabled="!service" v-model="node" clearable placeholder="请选择">
+        <el-select v-model="node" :disabled="!service" clearable placeholder="请选择">
           <el-option
             v-for="item in nodeOptions"
             :key="item"
@@ -79,13 +79,12 @@ export default {
   },
   watch: {
     logName(val) {
+      this.text = ''
+      this.startPosition = 0
+      this.editor.setValue('')
+      clearInterval(this.timer)
       if (val) {
-        this.editor.setValue('')
-        this.startPosition = 0
-        this.showLog(val)
-        this.timer = setInterval(() => {
-          this.showLog(val)
-        }, this.originTimeLimit)
+        this.setNewTimer()
         if (!this.countTimer) {
           this.countTimer = setInterval(() => {
             if (this.timeLimit > 0) {
@@ -94,9 +93,6 @@ export default {
           }, 1000)
         }
       } else {
-        this.text = ''
-        this.startPosition = 0
-        this.editor.setValue('')
         this.pause()
       }
     },
@@ -104,6 +100,11 @@ export default {
       this.text = ''
       this.editor.setValue('')
       this.startPosition = 0
+      clearInterval(this.timer)
+      if (this.logName !== '') {
+        this.timeLimit = this.originTimeLimit / 1000
+        this.setNewTimer()
+      }
     }
   },
   mounted() {
@@ -133,7 +134,16 @@ export default {
       })
     },
     serviceChanged() {
+      this.text = ''
       this.node = ''
+      this.editor.setValue('')
+      this.startPosition = 0
+      if (this.timer !== null) {
+        clearInterval(this.timer)
+      }
+      if (this.logName !== '') {
+        this.setNewTimer()
+      }
       this.nodeOptions = this.serviceNodeMap[this.service]
     },
     showLog(val) {
@@ -142,7 +152,7 @@ export default {
         if (this.text === '') {
           this.text = res.data.logContent
         } else {
-          this.text = this.text + '\n' + res.data.logContent
+          this.text = this.text + res.data.logContent
         }
         this.editor.setValue(this.text)
         this.startPosition = res.data.fileSize
@@ -156,12 +166,17 @@ export default {
     refresh() {
       if (this.timer !== null) {
         this.showLog(this.logName)
+      } else if (this.logName !== '') {
+        this.setNewTimer()
       } else {
-        this.showLog(this.logName)
-        this.timer = setInterval(() => {
-          this.showLog(this.logName)
-        }, this.originTimeLimit)
+        clearInterval(this.timer)
       }
+    },
+    setNewTimer() {
+      this.showLog(this.logName)
+      this.timer = setInterval(() => {
+        this.showLog(this.logName)
+      }, this.originTimeLimit)
     }
   }
 }
