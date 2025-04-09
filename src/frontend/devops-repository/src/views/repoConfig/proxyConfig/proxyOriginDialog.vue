@@ -42,6 +42,7 @@
 </template>
 <script>
     import { mapActions } from 'vuex'
+    import { debounce } from 'lodash'
 
     export default {
         name: 'ProxyOriginDialog',
@@ -70,6 +71,7 @@
                 condition: false,
                 loading: false,
                 connected: false,
+                debouncedTestConnection: null,
                 rules: {
                     name: [
                         {
@@ -81,12 +83,32 @@
                             validator: this.checkName,
                             message: this.$t('sameProxyExist'),
                             trigger: 'blur'
+                        },
+                        {
+                            validator: this.checkValid,
+                            trigger: 'blur'
                         }
                     ],
                     url: [
                         {
                             required: true,
                             message: this.$t('proxyUrlRule'),
+                            trigger: 'blur'
+                        },
+                        {
+                            validator: this.checkValid,
+                            trigger: 'blur'
+                        }
+                    ],
+                    username: [
+                        {
+                            validator: this.checkValid,
+                            trigger: 'blur'
+                        }
+                    ],
+                    password: [
+                        {
+                            validator: this.checkValid,
                             trigger: 'blur'
                         }
                     ]
@@ -123,19 +145,10 @@
             },
             'editProxyData.proxyType' () {
                 this.checkValid()
-            },
-            'editProxyData.password' () {
-                this.checkValid()
-            },
-            'editProxyData.username' () {
-                this.checkValid()
-            },
-            'editProxyData.url' () {
-                this.checkValid()
-            },
-            'editProxyData.name' () {
-                this.checkValid()
             }
+        },
+        created () {
+            this.debouncedTestConnection = debounce(this.testConnection, 300)
         },
         methods: {
             ...mapActions(['checkProxy', 'getRSAKey']),
@@ -149,7 +162,7 @@
                 }
                 if (this.editProxyData.proxyType === 'publicProxy' && this.editProxyData.name.trim().length > 0 && this.editProxyData.url.trim().length > 0) {
                     this.condition = true
-                    this.testConnection()
+                    this.debouncedTestConnection()
                     return true
                 } else if (this.editProxyData.proxyType === 'privateProxy'
                     && this.editProxyData.name.trim().length > 0
@@ -158,7 +171,7 @@
                     && this.editProxyData.password.trim().length > 0
                 ) {
                     this.condition = true
-                    this.testConnection()
+                    this.debouncedTestConnection()
                     return true
                 } else {
                     this.condition = false
