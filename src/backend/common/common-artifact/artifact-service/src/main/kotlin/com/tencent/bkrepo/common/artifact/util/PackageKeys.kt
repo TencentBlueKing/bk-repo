@@ -52,6 +52,7 @@ object PackageKeys {
     private const val OCI = "oci"
     private const val CONAN = "conan"
     private const val HUGGINGFACE = "huggingface"
+    private const val CARGO = "cargo"
     private const val SEPARATOR = "://"
 
     /**
@@ -169,6 +170,14 @@ object PackageKeys {
     }
 
     /**
+     * 生成cargo格式key
+     * 例子: cargo://test
+     */
+    fun ofCargo(name: String): String {
+        return ofName(CARGO, name)
+    }
+
+    /**
      * 生成gav格式key
      */
     fun resolveGav(gavKey: String): String {
@@ -253,6 +262,15 @@ object PackageKeys {
      */
     fun resolveComposer(composerKey: String): String {
         return resolveName(COMPOSER, composerKey)
+    }
+
+    /**
+     * 解析cargo格式的key
+     *
+     * 例子: cargo://test  ->  test
+     */
+    fun resolveCargo(cargoKey: String): String {
+        return resolveName(CARGO, cargoKey)
     }
 
     /**
