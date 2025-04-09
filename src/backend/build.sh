@@ -167,6 +167,7 @@ if [[ $ALL -eq 1 || $INIT -eq 1 ]] ; then
     rm -rf $tmp_dir/*
     cp -rf init/init-mongodb.sh $tmp_dir/
     cp -rf $ROOT_DIR/support-files/sql/init-data.js $tmp_dir/
+    cp -rf $ROOT_DIR/support-files/sql/init-data-tenant.js $tmp_dir/
     cp -rf $ROOT_DIR/support-files/sql/init-data-ext.js $tmp_dir/
     docker build -f init/init.Dockerfile -t $REGISTRY/bkrepo-init:$VERSION $tmp_dir --no-cache --network=host
     if [[ $PUSH -eq 1 ]] ; then

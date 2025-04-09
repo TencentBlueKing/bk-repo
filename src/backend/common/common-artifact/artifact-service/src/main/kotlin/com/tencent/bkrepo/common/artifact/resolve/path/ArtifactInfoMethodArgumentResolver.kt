@@ -55,6 +55,8 @@ class ArtifactInfoMethodArgumentResolver(
 ) : HandlerMethodArgumentResolver {
 
     private val antPathMatcher = AntPathMatcher()
+
+
     override fun supportsParameter(parameter: MethodParameter): Boolean {
         return ArtifactInfo::class.java.isAssignableFrom(parameter.parameterType)
     }
@@ -65,6 +67,7 @@ class ArtifactInfoMethodArgumentResolver(
         nativeWebRequest: NativeWebRequest,
         factory: WebDataBinderFactory?
     ): Any {
+
         val attributes = nativeWebRequest.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, 0) as Map<*, *>
         val projectId = attributes[PROJECT_ID].toString()
         val repoName = attributes[REPO_NAME].toString()
