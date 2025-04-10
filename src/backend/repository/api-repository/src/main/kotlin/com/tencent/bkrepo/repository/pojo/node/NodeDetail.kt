@@ -56,7 +56,10 @@ data class NodeDetail(
     val lastModifiedDate: String = nodeInfo.lastModifiedDate,
     @ApiModelProperty("访问时间")
     val lastAccessDate: String? = nodeInfo.lastAccessDate,
-
+    @ApiModelProperty("下载人")
+    var lastDownloadBy: String? = nodeInfo.lastDownloadBy,
+    @ApiModelProperty("下载时间")
+    var lastDownloadDate: String? = nodeInfo.lastDownloadDate,
     @ApiModelProperty("是否为文件夹")
     val folder: Boolean = nodeInfo.folder,
     @ApiModelProperty("路径")
