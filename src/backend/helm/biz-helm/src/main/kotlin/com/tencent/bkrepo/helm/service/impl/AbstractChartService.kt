@@ -706,7 +706,10 @@ open class AbstractChartService : ArtifactService() {
             name = setting.name
         )!!
         // 构造RemoteConfiguration
-        return (CompositeRepository.convertConfig(proxyChannel) as RemoteConfiguration)
+        val repoConfiguration = repositoryDetail.configuration as CompositeConfiguration
+        val network = repoConfiguration.proxy.network
+        val cache = repoConfiguration.proxy.cache
+        return (CompositeRepository.convertConfig(proxyChannel, network, cache) as RemoteConfiguration)
     }
 
     companion object {
