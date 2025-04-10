@@ -1,6 +1,7 @@
 'use strict'
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin')
 
 function resolve(dir) {
   return path.join(__dirname, dir)
@@ -42,7 +43,11 @@ module.exports = {
       fallback: {
         'path': require.resolve('path-browserify')
       }
-    }
+    },
+    plugins: [
+      // 在这里添加你的插件
+      new MonacoWebpackPlugin()
+    ]
   },
   chainWebpack(config) {
     // it can improve the speed of the first screen, it is recommended to turn on preload
