@@ -102,6 +102,10 @@
         },
         async created () {
             this.loading = true
+            if (RELEASE_MODE !== 'community') {
+                this.showError()
+                return
+            }
             const param = Base64.decode(this.extraParam)
             await getPreviewRemoteOfficeFileInfo(Base64.encode(param)).then(res => {
                 // 需解析传递参数，如果传递参数里面携带，优先渲染传递的水印
@@ -151,18 +155,11 @@
                             this.pdfShow = true
                             this.loadFile(URL.createObjectURL(fileDate.data))
                         }
-                    }).catch(() => {
-                        this.loading = false
-                        this.hasError = true
-                    })
+                    }).catch(() => this.showError())
                 } else {
-                    this.loading = false
-                    this.hasError = true
+                    this.showError()
                 }
-            }).catch((e) => {
-                this.loading = false
-                this.hasError = true
-            })
+            }).catch(() => this.showError())
         },
         destroyed () {
             this.cancel()
@@ -171,6 +168,10 @@
             ...mapActions([
                 'previewBasicFile'
             ]),
+            showError () {
+                this.loading = false
+                this.hasError = true
+            },
             cancel () {
                 this.dataSource = ''
                 this.previewExcel = false

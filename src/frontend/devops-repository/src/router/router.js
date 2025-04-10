@@ -82,8 +82,17 @@ const routes = [
                 })
             },
             {
-                path: 'filePreview/:repoType/:extraParam/:repoName/*',
+                path: 'filePreview/:repoType?/:extraParam?/:repoName?/*',
                 name: 'filePreview',
+                beforeEnter: (to, from, next) => {
+                    const { repoType, extraParam, repoName } = to.params
+                    const filePath = to.params.pathMatch
+                    if (!repoType || !extraParam || !repoName || !filePath) {
+                        next({ path: `/${to.params.projectId}/repoList` })
+                    } else {
+                        next()
+                    }
+                },
                 component: filePreview,
                 props: route => ({
                     repoType: route.params.repoType,
