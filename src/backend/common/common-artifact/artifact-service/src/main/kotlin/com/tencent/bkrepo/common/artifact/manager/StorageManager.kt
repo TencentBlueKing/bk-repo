@@ -32,6 +32,8 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
@@ -153,7 +155,14 @@ class StorageManager(
             }
         }
         val load = forwardNode ?: node
-        return loadArtifactInputStream(load.nodeInfo, storageCredentials)
+        val loadStorageCredentials = if (load.repoName == node.repoName) {
+            storageCredentials
+        } else {
+            val repo = ArtifactContextHolder.getRepoDetail(RepositoryId(load.projectId, load.repoName))
+            logger.info("use forward node storage credentials[${repo.storageCredentials?.key}]")
+            repo.storageCredentials
+        }
+        return loadArtifactInputStream(load.nodeInfo, loadStorageCredentials)
     }
 
     /**
