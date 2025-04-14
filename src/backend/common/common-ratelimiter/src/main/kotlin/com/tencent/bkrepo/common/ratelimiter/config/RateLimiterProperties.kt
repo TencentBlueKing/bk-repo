@@ -47,5 +47,15 @@ data class RateLimiterProperties(
     // 针对读流的请求，避免频繁去请求，每次申请固定大小
     var permitsOnce: Long = 1024 * 1024,
     // 只对指定url进行从request body解析项目仓库信息
-    var specialUrls: List<String> = emptyList()
+    var specialUrls: List<String> = emptyList(),
+    // 避免连接断开，当尝试获取允许超时时间指定时间则直接放过，单位毫秒
+    var timeout: Long = 1000,
+    // 小文件阈值，单位字节，小于此值的文件会被视为小文件
+    var smallFileThreshold: Long = 1024 * 1024,
+    // 进度报告阈值，0-1之间的小数，表示上传/下载进度达到多少时需要报告进度
+    var progressThreshold: Double = 0.6,
+    // 最小尝试大小
+    var minPermits: Long = 1024,
+    // 当带宽达到限制时是断连还是等待, 默认等待
+    var waitOnLimit: Boolean = true
 )

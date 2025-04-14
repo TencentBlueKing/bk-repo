@@ -84,7 +84,12 @@ abstract class AbstractBandwidthRateLimiterService(
                 rateLimiter = rateLimiter, latency = rateLimiterProperties.latency,
                 waitRound = rateLimiterProperties.waitRound, rangeLength = rangeLength,
                 dryRun = rateLimiterProperties.dryRun, permitsOnce = rateLimiterProperties.permitsOnce,
-                limitPerSecond = getPermitsPerSecond(resLimitInfo.resourceLimit)
+                limitPerSecond = getPermitsPerSecond(resLimitInfo.resourceLimit),
+                progressThreshold = rateLimiterProperties.progressThreshold,
+                timeout = rateLimiterProperties.timeout,
+                smallFileThreshold = rateLimiterProperties.smallFileThreshold,
+                minPermits = rateLimiterProperties.minPermits,
+                waitOnLimit = rateLimiterProperties.waitOnLimit,
             )
             CommonRateLimitInputStream(
                 delegate = inputStream,

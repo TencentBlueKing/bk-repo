@@ -153,7 +153,11 @@ class CommonRateLimitInputStreamTest : DistributedTest() {
             RateCheckContext(
                 rateLimiter = rateLimiter, latency = 10,
                 waitRound = 3, rangeLength = content.length.toLong(),
-                dryRun = false, permitsOnce = permitsOnce, limitPerSecond = limit
+                dryRun = false, permitsOnce = permitsOnce, limitPerSecond = limit,
+                progressThreshold = 0.6,
+                timeout = 1000,
+                smallFileThreshold = 1024 * 1024,
+                minPermits = 1024,
             ), key
         )
     }
