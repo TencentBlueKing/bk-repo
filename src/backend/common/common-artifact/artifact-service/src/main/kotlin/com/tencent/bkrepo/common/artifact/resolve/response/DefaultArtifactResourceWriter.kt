@@ -48,10 +48,13 @@ import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil.Companion.headers
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import okhttp3.CacheControl
+import okhttp3.Headers.Companion.toHeaders
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import java.io.IOException
@@ -95,9 +98,6 @@ open class DefaultArtifactResourceWriter(
         val response = HttpContextHolder.getResponse()
         val name = resource.getSingleName()
         val range = resource.getSingleStream().range
-        val cacheControl = resource.node?.metadata?.get(HttpHeaders.CACHE_CONTROL)?.toString()
-            ?: resource.node?.metadata?.get(HttpHeaders.CACHE_CONTROL.lowercase(Locale.getDefault()))?.toString()
-            ?: StringPool.NO_CACHE
 
         response.bufferSize = getBufferSize(range.length)
         val mediaType = resource.contentType ?: determineMediaType(name, storageProperties.response.mimeMappings)
@@ -106,7 +106,7 @@ open class DefaultArtifactResourceWriter(
         response.status = resource.status?.value ?: resolveStatus(request)
         response.setContentLengthLong(range.length)
         response.setHeader(HttpHeaders.ACCEPT_RANGES, StringPool.BYTES)
-        response.setHeader(HttpHeaders.CACHE_CONTROL, cacheControl)
+        response.setHeader(HttpHeaders.CACHE_CONTROL, resolveCacheControl(resource))
         response.setHeader(HttpHeaders.CONTENT_RANGE, resolveContentRange(range))
         if (resource.useDisposition) {
             response.setHeader(HttpHeaders.CONTENT_DISPOSITION, encodeDisposition(name))
@@ -162,6 +162,30 @@ open class DefaultArtifactResourceWriter(
             else -> resource.node.name
         }
         return "$baseName.zip"
+    }
+
+    /**
+     * 根据节点元数据或请求头返回Cache-Control响应头
+     */
+    private fun resolveCacheControl(resource: ArtifactResource): String {
+        val cacheControl = resource.node?.let {
+            it.metadata[HttpHeaders.CACHE_CONTROL]?.toString()
+            ?: it.metadata[HttpHeaders.CACHE_CONTROL.lowercase(Locale.getDefault())]?.toString()
+        }
+        if (!cacheControl.isNullOrEmpty()) {
+            return cacheControl
+        }
+        try {
+            val headers = HttpContextHolder.getRequest().headers().toHeaders()
+            val cacheControlRequestHeader = CacheControl.parse(headers)
+            if (cacheControlRequestHeader.maxAgeSeconds >= 0) {
+                return "max-age=${cacheControlRequestHeader.maxAgeSeconds}"
+            }
+            return StringPool.NO_CACHE
+        } catch (e: Exception) {
+            logger.warn("Failed to resolve cache control ", e)
+            return StringPool.NO_CACHE
+        }
     }
 
     /**
