@@ -30,6 +30,8 @@ package com.tencent.bkrepo.maven.service
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
+import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
 
 interface MavenService {
 
@@ -60,4 +62,9 @@ interface MavenService {
      * 获取对应制品版本详情
      */
     fun artifactDetail(mavenArtifactInfo: MavenArtifactInfo, packageKey: String, version: String?): Any?
+
+    /**
+     * 根据ave获取对应node信息
+     */
+    fun searchJar(request: MavenJarSearchRequest): MavenJarInfoResponse
 }
