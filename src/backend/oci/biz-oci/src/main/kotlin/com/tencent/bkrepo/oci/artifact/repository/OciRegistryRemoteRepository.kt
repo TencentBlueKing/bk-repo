@@ -518,8 +518,7 @@ class OciRegistryRemoteRepository(
 
     fun cacheArtifact(context: ArtifactDownloadContext, artifactFile: ArtifactFile): NodeDetail? {
         logger.info("Remote artifact will be cached")
-        val configuration = context.getRemoteConfiguration()
-        if (!configuration.cache.enabled) return null
+        if (!shouldCache(context)) return null
         val ociArtifactInfo = context.artifactInfo as OciArtifactInfo
         val fullPath = ociOperationService.getNodeFullPath(ociArtifactInfo)
         // 针对manifest文件获取会通过tag或manifest获取，避免重复创建

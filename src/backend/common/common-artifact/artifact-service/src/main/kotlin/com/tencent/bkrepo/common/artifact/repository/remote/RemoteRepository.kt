@@ -136,18 +136,14 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 尝试读取缓存的远程构件
      */
     fun getCacheArtifactResource(context: ArtifactDownloadContext): ArtifactResource? {
-        val configuration = context.getRemoteConfiguration()
-        if (!configuration.cache.enabled) return null
+        if (!shouldCache(context)) {
+            return null
+        }
 
         val cacheNode = findCacheNodeDetail(context)
         if (cacheNode == null || cacheNode.folder) return null
 
-        val queryCache = HttpContextHolder.getRequestOrNull()?.getParameter(FLAG_QUERY_CACHE)
-        if (queryCache?.lowercase() == "false") {
-            return null
-        }
-
-        return if (!isExpired(cacheNode, configuration.cache.expiration)) {
+        return if (!isExpired(cacheNode, context.getRemoteConfiguration().cache.expiration)) {
             loadArtifactResource(cacheNode, context)
         } else null
     }
@@ -188,8 +184,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 将远程拉取的构件缓存本地
      */
     protected fun cacheArtifactFile(context: ArtifactContext, artifactFile: ArtifactFile): NodeDetail? {
-        val configuration = context.getRemoteConfiguration()
-        return if (configuration.cache.enabled) {
+        return if (shouldCache(context)) {
             val nodeCreateRequest = buildCacheNodeCreateRequest(context, artifactFile)
             storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, context.storageCredentials)
         } else null
@@ -248,10 +243,10 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         } else {
             // 返回文件内容
             response.body!!.byteStream().artifactStream(range).apply {
-                if (range.isFullContent() && context.getRemoteConfiguration().cache.enabled) {
+                if (range.isFullContent() && shouldCache(context)) {
                     // 仅缓存完整文件，返回响应的同时写入缓存
                     addListener(buildCacheWriter(context, contentLength))
-                } else if (context.getRemoteConfiguration().cache.enabled) {
+                } else if (shouldCache(context)) {
                     // 分片下载时异步拉取完整文件并缓存
                     asyncCache(context, response.request)
                 }
@@ -290,6 +285,11 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             remoteNodes = remoteNodes
         )
         asyncCacheWriter.cache(cacheTask)
+    }
+
+    protected fun shouldCache(context: ArtifactContext): Boolean {
+        val cacheFlag = HttpContextHolder.getRequestOrNull()?.getParameter(FLAG_QUERY_CACHE)?.lowercase() != "false"
+        return context.getRemoteConfiguration().cache.enabled && cacheFlag
     }
 
     /**
