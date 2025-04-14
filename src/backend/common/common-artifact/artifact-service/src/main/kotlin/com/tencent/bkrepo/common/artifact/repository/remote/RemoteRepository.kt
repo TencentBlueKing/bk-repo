@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.FLAG_QUERY_CACHE
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -140,6 +141,12 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
 
         val cacheNode = findCacheNodeDetail(context)
         if (cacheNode == null || cacheNode.folder) return null
+
+        val queryCache = HttpContextHolder.getRequestOrNull()?.getParameter(FLAG_QUERY_CACHE)
+        if (queryCache?.lowercase() == "false") {
+            return null
+        }
+
         return if (!isExpired(cacheNode, configuration.cache.expiration)) {
             loadArtifactResource(cacheNode, context)
         } else null
