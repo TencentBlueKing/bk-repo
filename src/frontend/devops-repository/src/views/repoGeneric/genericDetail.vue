@@ -190,6 +190,7 @@
                         createdDate: formatDate(data.createdDate),
                         lastModifiedBy: this.userList[data.lastModifiedBy] ? this.userList[data.lastModifiedBy].name : data.lastModifiedBy,
                         lastModifiedDate: formatDate(data.lastModifiedDate),
+                        lastDownloadBy: this.userList[data.lastDownloadBy] ? this.userList[data.lastDownloadBy].name : data.lastDownloadBy,
                         lastDownloadDate: data.lastDownloadDate ? formatDate(data.lastDownloadDate) : null
                     }
                 }).catch(e => {
