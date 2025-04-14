@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.properties.ArtifactEventProperties
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
@@ -70,6 +71,7 @@ import java.util.function.Consumer
     RouterControllerProperties::class,
     ArtifactEventProperties::class,
     RepositoryProperties::class,
+    EnableMultiTenantProperties::class
 )
 class MetadataAutoConfiguration {
 
