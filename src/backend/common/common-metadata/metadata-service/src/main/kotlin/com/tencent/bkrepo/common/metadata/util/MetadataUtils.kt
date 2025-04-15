@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.util
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.FORBID_REASON
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
@@ -114,11 +115,11 @@ object MetadataUtils {
         } ?: return null
         val forbidReason = metadata.firstOrNull {
             it.key == FORBID_REASON && it.value is String
-        }
-        val result = mutableListOf<MetadataModel>()
+        } ?: MetadataModel(FORBID_REASON, StringPool.EMPTY)
+        val result = ArrayList<MetadataModel>(4)
 
         result.add(forbidStatus.copy(system = true))
-        forbidReason?.let { result.add(it.copy(system = true)) }
+        result.add(forbidReason.copy(system = true))
         // 添加禁用操作用户和类型
         result.add(MetadataModel(key = FORBID_USER, value = operator, system = true))
         result.add(MetadataModel(key = FORBID_TYPE, value = ForbidType.MANUAL.name, system = true))

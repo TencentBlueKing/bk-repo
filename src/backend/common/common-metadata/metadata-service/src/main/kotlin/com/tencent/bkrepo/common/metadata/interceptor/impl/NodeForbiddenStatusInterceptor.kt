@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,30 +28,18 @@
 package com.tencent.bkrepo.common.metadata.interceptor.impl
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
-import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptor
+import com.tencent.bkrepo.common.artifact.constant.FORBID_REASON
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptorFactory
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
-/**
- * 制品禁用拦截器
- */
-abstract class ForbidStatusInterceptor<A> : DownloadInterceptor<Any, A>(emptyMap()) {
+class NodeForbiddenStatusInterceptor : NodeMetadataInterceptor(DownloadInterceptorFactory.forbidRule) {
 
-    override fun parseRule() {
-        throw UnsupportedOperationException()
+    override fun forbiddenException(projectId: String, artifact: NodeDetail): Exception {
+        return ErrorCodeException(
+            ArtifactMessageCode.ARTIFACT_FORBIDDEN,
+            artifact.fullPath,
+            artifact.metadata[FORBID_REASON]?.toString().orEmpty()
+        )
     }
-
-    override fun matcher(artifact: A, rule: Any): Boolean {
-        throw UnsupportedOperationException()
-    }
-
-    override fun intercept(projectId: String, artifact: A) {
-        if (artifactMetadata(artifact)[FORBID_STATUS] == true) {
-            throw ErrorCodeException(ArtifactMessageCode.ARTIFACT_FORBIDDEN, artifactFullPath(artifact))
-        }
-    }
-
-    abstract fun artifactMetadata(artifact: A): Map<String, Any>
-
-    abstract fun artifactFullPath(artifact: A): String
 }
