@@ -926,7 +926,7 @@
     "getDownloadUrlFailed": "Download failed",
     "pendingApproval": "Pending Approval",
     "waitUpload": "Waiting Upload",
-    "reason": "reason",
+    "reason": "Reason",
     "forbidMsg": "After disabling, download is not possible",
     "forbidTitle": "Forbid：{0}"
 }
