@@ -1,6 +1,7 @@
 const gulp = require('gulp')
 const Ora = require('ora')
 const yargs = require('yargs')
+const cp = require("child_process");
 const argv = yargs.alias({
     dist: 'd',
     env: 'e',
@@ -22,9 +23,9 @@ const { dist, env, lsVersion, mode } = argv
 
 gulp.task('build', cb => {
     const spinner = new Ora(`building bkrepo frontend project, mode: ${mode}`).start()
-    const scopeCli = mode === 'canway-ci' ? '--scope=devops-{repository-ci,software}' : '--scope=devops-{repository,software,op}'
+    const scopeCli = mode === 'canway-ci' ? '--scope=devops-{repository-ci}' : '--scope=devops-{repository,op}'
     const cp = require('child_process')
-    cp.execSync('cd ./devops-repository && yarn sprite')
+    cp.execSync('cd ./core/devops-repository && yarn sprite')
     spinner.succeed('create sprite.svg finished')
     cp.exec(`lerna run public:${env} ${scopeCli} --parallel -- --env dist=${dist} --env lsVersion=${lsVersion}`, {
         maxBuffer: 5000 * 1024

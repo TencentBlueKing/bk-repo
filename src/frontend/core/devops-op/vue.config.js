@@ -7,7 +7,7 @@ function resolve(dir) {
 }
 
 const envDist = process.env && process.env.dist ? process.env.dist : 'frontend'
-const dist = resolve(`../${envDist}/${process.env.VUE_APP_BASE_DIR}`)
+const dist = resolve(`../../${envDist}/${process.env.VUE_APP_BASE_DIR}`)
 
 module.exports = {
   publicPath: `/${process.env.VUE_APP_BASE_DIR}`,

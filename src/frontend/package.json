@@ -68,7 +68,6 @@
   },
   "workspaces": [
     "devops-repository",
-    "devops-software",
     "devops-op"
   ]
 }
