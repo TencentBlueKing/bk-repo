@@ -34,6 +34,7 @@ import org.springframework.util.unit.DataSize
 
 @ConfigurationProperties(value = "job.idle-node-archive")
 class IdleNodeArchiveJobProperties(
+    override var enabled: Boolean = false,
     override var cron: String = "0 0 0 * * ?",
     var days: Int = 365,
     var fileSizeThreshold: DataSize = DataSize.ofMegabytes(10),

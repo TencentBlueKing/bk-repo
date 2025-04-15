@@ -26,7 +26,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -44,6 +46,7 @@ import java.time.LocalDateTime
 @DisplayName("空闲节点归档Job测试")
 @DataMongoTest
 @EnableConfigurationProperties(IdleNodeArchiveJobProperties::class)
+@TestMethodOrder(MethodOrderer.MethodName::class)
 class IdleNodeArchiveJobTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
     private val job: IdleNodeArchiveJob,
@@ -84,9 +87,9 @@ class IdleNodeArchiveJobTest @Autowired constructor(
     fun setup() {
         mongoTemplate.remove(Query(), NodeDetail::class.java)
         // 初始化真实配置对象
-        properties.projectArchiveCredentialsKeys = emptyMap()
         properties.storageClass = ArchiveStorageClass.DEEP_ARCHIVE
         properties.days = 365
+        properties.enabled = true
 
         // 模拟仓库服务返回有效数据
         // 模拟返回包含有效storageCredentials的RepositoryDetail
@@ -145,6 +148,24 @@ class IdleNodeArchiveJobTest @Autowired constructor(
         job.start()
 
         Mockito.verify(archiveClient, Mockito.times(2)).archive(any())
+    }
+
+    @Test
+    fun testSkipWhenProjectArchiveCredentialsKeysEmpty() {
+
+        properties.projectArchiveCredentialsKeys = emptyMap()
+
+        // 插入测试数据
+        insertTestNode()
+
+        // 执行任务
+        job.start()
+
+        // 验证没有执行归档操作
+        Mockito.verify(archiveClient, Mockito.never()).archive(any())
+
+        // 验证集合数量为默认分片数
+        assertEquals(SHARDING_COUNT, job.collectionNames().size)
     }
 
     private fun insertTestNode(projectId: String = UT_PROJECT_ID): IdleNodeArchiveJob.Node {
