@@ -161,6 +161,7 @@ const val SOURCE_TYPE = "sourceType"
 const val FORBID_STATUS = "forbidStatus"
 const val FORBID_USER = "forbidUser"
 const val FORBID_TYPE = "forbidType"
+const val FORBID_REASON = "forbidReason"
 
 // 制品扫描状态
 const val SCAN_STATUS = "scanStatus"

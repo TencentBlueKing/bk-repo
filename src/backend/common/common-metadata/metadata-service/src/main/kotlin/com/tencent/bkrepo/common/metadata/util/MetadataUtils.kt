@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.constant.FORBID_REASON
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
 import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
@@ -39,9 +40,9 @@ import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_PROJECT
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
-import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 
@@ -108,12 +109,16 @@ object MetadataUtils {
         metadata: List<MetadataModel>,
         operator: String = SecurityUtils.getUserId()
     ): MutableList<MetadataModel>? {
-        val forbidMetadata = metadata.firstOrNull {
+        val forbidStatus = metadata.firstOrNull {
             it.key == FORBID_STATUS && it.value is Boolean
         } ?: return null
-        val result = ArrayList<MetadataModel>(3)
+        val forbidReason = metadata.firstOrNull {
+            it.key == FORBID_REASON && it.value is String
+        }
+        val result = mutableListOf<MetadataModel>()
 
-        result.add(forbidMetadata.copy(system = true))
+        result.add(forbidStatus.copy(system = true))
+        forbidReason?.let { result.add(it.copy(system = true)) }
         // 添加禁用操作用户和类型
         result.add(MetadataModel(key = FORBID_USER, value = operator, system = true))
         result.add(MetadataModel(key = FORBID_TYPE, value = ForbidType.MANUAL.name, system = true))
