@@ -925,5 +925,6 @@
     "getShareFileFailed": "Get share file failed",
     "getDownloadUrlFailed": "Download failed",
     "pendingApproval": "Pending Approval",
-    "waitUpload": "Waiting Upload"
+    "waitUpload": "Waiting Upload",
+    "daysOverLimit": "The storage time shall not exceed 10 years"
 }
