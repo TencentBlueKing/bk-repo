@@ -1,7 +1,6 @@
 const gulp = require('gulp')
 const Ora = require('ora')
 const yargs = require('yargs')
-const cp = require("child_process");
 const argv = yargs.alias({
     dist: 'd',
     env: 'e',
