@@ -92,6 +92,10 @@ class IdleNodeArchiveJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
     override fun doStart0(jobContext: NodeContext) {
+        if (properties.projectArchiveCredentialsKeys.isEmpty()) {
+            logger.info("projectArchiveCredentialsKeys is empty, skip archive job")
+            return
+        }
         super.doStart0(jobContext)
         // 由于新的文件可能会被删除，所以旧文件数据的引用会被改变，所以需要重新扫描旧文件引用。
         if (refreshCount-- < 0) {
