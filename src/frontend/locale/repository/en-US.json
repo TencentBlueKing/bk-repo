@@ -925,5 +925,8 @@
     "getShareFileFailed": "Get share file failed",
     "getDownloadUrlFailed": "Download failed",
     "pendingApproval": "Pending Approval",
-    "waitUpload": "Waiting Upload"
+    "waitUpload": "Waiting Upload",
+    "reason": "reason",
+    "forbidMsg": "After disabling, download is not possible",
+    "forbidTitle": "Forbid：{0}"
 }
