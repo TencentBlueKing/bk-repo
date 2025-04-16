@@ -167,17 +167,7 @@ class CommonRateLimitInputStream(
                 }
                 failedNum++
                 val type = selectRateLimitStrategy()
-                val tryAcquirePermits = when (type) {
-                    TYPE_A -> acquirePermits
-                    // 当已经申请通过一定数量后，又失败，避免再次从最小开始，直接从上次减半开始
-                    TYPE_B -> if (alreadyAcquirePermits == 0L) {
-                        rateCheckContext.minPermits
-                    } else {
-                        acquirePermits / 2
-                    }
-
-                    else -> rateCheckContext.minPermits
-                }
+                val tryAcquirePermits = getTryAcquirePermits(type, acquirePermits, alreadyAcquirePermits)
                 // 根据文件大小/已传输数量去生成下次申请许可数量
                 acquirePermits = calculatePermitsOnce(permits, tryAcquirePermits, type)
                 try {
@@ -206,11 +196,23 @@ class CommonRateLimitInputStream(
                     // 默认情况下申请数量会大于单次读取数量，在发生限速后，只需申请大于单次读取数量即可，快速响应
                     alreadyAcquirePermits >= permits.coerceAtMost(bytes)
                 }
-
                 else -> alreadyAcquirePermits >= permits
             }
         }
         return alreadyAcquirePermits
+    }
+
+    private fun getTryAcquirePermits(type: String, acquirePermits: Long, alreadyAcquirePermits: Long) : Long {
+        return when (type) {
+            TYPE_A -> acquirePermits
+            // 当已经申请通过一定数量后，又失败，避免再次从最小开始，直接从上次减半开始
+            TYPE_B -> if (alreadyAcquirePermits == 0L) {
+                rateCheckContext.minPermits
+            } else {
+                acquirePermits / 2
+            }
+            else -> rateCheckContext.minPermits
+        }
     }
 
     /**
