@@ -1,11 +1,14 @@
 package com.tencent.bkrepo.job.migrate
 
 import com.tencent.bkrepo.common.metadata.dao.file.FileReferenceDao
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.file.impl.FileReferenceServiceImpl
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.storage.config.StorageProperties
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
@@ -21,6 +24,7 @@ import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeAutoFixStrategy
 import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.insertFailedNode
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.BeforeAll
@@ -54,6 +58,8 @@ import java.time.LocalDateTime
     FileReferenceServiceImpl::class,
     FileReferenceDao::class,
     RepositoryDao::class,
+    NodeDao::class,
+    StorageProperties::class,
 )
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class MigrateFailedNodeServiceTest @Autowired constructor(
@@ -76,6 +82,12 @@ class MigrateFailedNodeServiceTest @Autowired constructor(
 
     @MockBean
     private lateinit var storageCredentialService: StorageCredentialService
+
+    @MockBean
+    private lateinit var storageService: StorageService
+
+    @MockBean
+    private lateinit var migrateArchivedFileService: MigrateArchivedFileService
 
     @BeforeAll
     fun beforeAll() {

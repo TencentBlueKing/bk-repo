@@ -117,4 +117,23 @@ class UserMigrateRepoStorageController(
     ) {
         migrateFailedNodeService.correctMigratedStorageFileReference(srcCredentialKey, dstCredentialKey)
     }
+
+    /**
+     * 修复缺失的失败节点
+     */
+    @PostMapping("/failed/node/fix/missing")
+    fun fixMissingFailedNode() {
+        migrateFailedNodeService.fixMissingFailedNode()
+    }
+
+    /**
+     * 更新node归档状态
+     */
+    @PostMapping("/archive/node/update")
+    fun updateNodeArchiveStatus(
+        @RequestParam nodeId: String,
+        @RequestParam(required = false, defaultValue = "true") archived: Boolean = true
+    ) {
+        migrateFailedNodeService.updateNodeArchiveStatus(nodeId, archived)
+    }
 }

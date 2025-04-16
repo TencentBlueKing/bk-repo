@@ -52,7 +52,7 @@ class DefaultMigrateFailedHandler(
     }
 
     private fun saveMigrateFailedNode(taskId: String, node: Node) {
-        if (migrateFailedNodeDao.existsFailedNode(node.projectId, node.repoName, node.fullPath)) {
+        if (migrateFailedNodeDao.existsFailedNode(node.id)) {
             return
         }
 
@@ -76,6 +76,7 @@ class DefaultMigrateFailedHandler(
                     )
                 )
             } catch (ignore: DuplicateKeyException) {
+                logger.warn("duplicate failed node[$node]", ignore)
             }
         }
     }
