@@ -286,7 +286,7 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
             (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthLimitHandler(rateLimiter, 1)
         )
         Assertions.assertEquals(
-            false,
+            true,
             (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthLimitHandler(rateLimiter, 100)
         )
     }

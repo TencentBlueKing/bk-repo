@@ -135,18 +135,47 @@ abstract class AbstractBandwidthRateLimiterService(
         permits: Long
     ): Boolean {
         var flag = false
+        val startTime = System.currentTimeMillis()
         var failedNum = 0
+        var acquirePermits = permits
+        var alreadyAcquirePermits = 0L
+
         while (!flag) {
-            flag = rateLimiter.tryAcquire(permits)
-            if (!flag && failedNum < rateLimiterProperties.waitRound) {
+            // 当限制小于读取大小时，会进入死循环，增加等待轮次，如果等待达到时间上限，则放通一次避免连接断开
+            if ((System.currentTimeMillis() - startTime) > rateLimiterProperties.timeout) {
+                return true
+            }
+            try {
+                flag = rateLimiter.tryAcquire(acquirePermits)
+            } catch (ignore: AcquireLockFailedException) {
+                return true
+            }
+            if (!flag) {
+                if (rateLimiterProperties.dryRun) {
+                    return true
+                }
                 failedNum++
+                // 失败就减半获取
+                acquirePermits = (acquirePermits / 2).coerceAtLeast(rateLimiterProperties.minPermits)
                 try {
-                    Thread.sleep(rateLimiterProperties.latency)
+                    Thread.sleep(rateLimiterProperties.latency * failedNum)
                 } catch (ignore: InterruptedException) {
                 }
+                continue
             }
-            if (!flag && failedNum >= rateLimiterProperties.waitRound) {
-                return false
+            alreadyAcquirePermits += acquirePermits
+            // 判断是否需要继续获取许可
+            flag = when {
+                // 当发生限流时，降低预申请数量，只要达到一次读写要求即可
+                failedNum > 0 -> {
+                    // 当发生限速后， 此时申请成功，下一次申请请求翻倍
+                    acquirePermits = (acquirePermits * 2).coerceAtMost(
+                        permits - alreadyAcquirePermits
+                    )
+                    alreadyAcquirePermits >= permits
+                }
+
+                else -> alreadyAcquirePermits >= permits
             }
         }
         return true

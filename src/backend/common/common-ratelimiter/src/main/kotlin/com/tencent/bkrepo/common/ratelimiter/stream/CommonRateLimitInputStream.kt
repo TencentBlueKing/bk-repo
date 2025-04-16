@@ -153,7 +153,7 @@ class CommonRateLimitInputStream(
 
         while (!flag) {
             // 当限制小于读取大小时，会进入死循环，增加等待轮次，如果等待达到时间上限，则放通一次避免连接断开
-            if (System.currentTimeMillis() - startTime > rateCheckContext.timeout) {
+            if ((System.currentTimeMillis() - startTime) > rateCheckContext.timeout) {
                 return permits.coerceAtMost(bytes)
             }
             try {
