@@ -29,7 +29,7 @@ export const ROUTER_NAME_PRELOAD_CONFIG = 'PreloadConfig'
 export const ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG = 'ExecutionClustersConfig'
 export const ROUTER_NAME_SEPARATION_CONFIG = 'SeparationConfig'
 export const ROUTER_NAME_SEPARATION_RECORD = 'SeparationRecord'
-export const ROUTER_NAME_JFROG_LOG = 'JfrogLog'
+export const ROUTER_NAME_BkREPO_LOG = 'Bkrepolog'
 
 Vue.use(Router)
 
@@ -372,12 +372,12 @@ export const asyncRoutes = [
     ]
   },
   {
-    path: '/jforgLog',
+    path: '/repo-log',
     component: Layout,
     children: [
       {
         path: '/',
-        name: ROUTER_NAME_JFROG_LOG,
+        name: ROUTER_NAME_BkREPO_LOG,
         meta: { title: '服务端日志', icon: 'jfrog-log' },
         component: () => import('@/views/jfrog-log/index')
       }
