@@ -79,7 +79,7 @@ class CommonRateLimitInputStreamTest {
         `when`(rateLimiter.tryAcquire(anyLong())).thenReturn(true)
         val bytes = 50
         method.call(stream, bytes)
-//        assertEquals(stream.rateCheckContext.limitPerSecond.toInt(), stream.getApplyNum().toInt())
+        assertEquals(100, stream.getApplyNum().toInt())
     }
 
     @Test
