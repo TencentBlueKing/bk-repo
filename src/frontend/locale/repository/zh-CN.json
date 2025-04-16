@@ -928,5 +928,8 @@
     "getShareFileFailed": "获取分享文件失败",
     "getDownloadUrlFailed": "下载失败",
     "pendingApproval": "审批中",
-    "waitUpload": "等待上传中"
+    "waitUpload": "等待上传中",
+    "reason": "原因",
+    "forbidMsg": "禁用后，不可下载",
+    "forbidTitle": "禁用：{0}"
 }
