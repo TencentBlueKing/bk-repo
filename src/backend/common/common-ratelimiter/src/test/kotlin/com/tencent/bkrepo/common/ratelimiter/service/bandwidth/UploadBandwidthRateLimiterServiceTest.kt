@@ -234,29 +234,20 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
     @Test
     fun bandwidthRateLimitTest() {
-        Assertions.assertEquals(
-            true,
-            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
-                request = request,
-                permits = 1,
-                circuitBreakerPerSecond = DataSize.ofBytes(0)
-            )
+        (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+            request = request,
+            permits = 1,
+            circuitBreakerPerSecond = DataSize.ofBytes(0)
         )
-        Assertions.assertEquals(
-            true,
-            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
-                request = request,
-                permits = 10000,
-                circuitBreakerPerSecond = DataSize.ofBytes(0)
-            )
+        (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+            request = request,
+            permits = 10000,
+            circuitBreakerPerSecond = DataSize.ofBytes(0)
         )
-        Assertions.assertEquals(
-            true,
-            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
-                request = request,
-                permits = 1,
-                circuitBreakerPerSecond = DataSize.ofTerabytes(1)
-            )
+        (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+            request = request,
+            permits = 1,
+            circuitBreakerPerSecond = DataSize.ofTerabytes(1)
         )
     }
 
