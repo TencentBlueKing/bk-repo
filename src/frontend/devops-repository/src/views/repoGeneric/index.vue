@@ -233,6 +233,7 @@
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
         <preview-office-file-dialog ref="previewOfficeFileDialog"></preview-office-file-dialog>
+        <generic-forbid-dialog ref="genericForbidDialog" @refresh="refreshNodeChange"></generic-forbid-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
         <loading ref="loading" @closeLoading="closeLoading"></loading>
         <iam-deny-dialog :visible.sync="showIamDenyDialog" :show-data="showData"></iam-deny-dialog>
@@ -252,6 +253,7 @@
     import metadataTag from '@repository/views/repoCommon/metadataTag'
     import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
+    import genericForbidDialog from '@repository/views/repoGeneric/genericForbidDialog'
     import genericFormDialog from '@repository/views/repoGeneric/genericFormDialog'
     import genericShareDialog from '@repository/views/repoGeneric/genericShareDialog'
     import genericTreeDialog from '@repository/views/repoGeneric/genericTreeDialog'
@@ -281,7 +283,8 @@
             compressedFileTable,
             iamDenyDialog,
             genericCleanDialog,
-            previewOfficeFileDialog
+            previewOfficeFileDialog,
+            genericForbidDialog
         },
         data () {
             return {
@@ -1142,7 +1145,15 @@
                 }
                 customizeDownloadFile(this.projectId, this.repoName, paths)
             },
-            handlerForbid ({ fullPath, metadata: { forbidStatus } }) {
+            handlerForbid ({ name, fullPath, metadata: { forbidStatus } }) {
+                if (!forbidStatus) {
+                    this.$refs.genericForbidDialog.repoName = this.repoName
+                    this.$refs.genericForbidDialog.projectId = this.projectId
+                    this.$refs.genericForbidDialog.fullPath = fullPath
+                    this.$refs.genericForbidDialog.title = this.$t('forbidTitle', { 0: name })
+                    this.$refs.genericForbidDialog.show = true
+                    return
+                }
                 this.forbidMetadata({
                     projectId: this.projectId,
                     repoName: this.repoName,
