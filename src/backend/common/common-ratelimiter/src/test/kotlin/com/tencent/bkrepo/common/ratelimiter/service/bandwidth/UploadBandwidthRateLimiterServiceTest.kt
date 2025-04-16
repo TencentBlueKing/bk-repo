@@ -244,11 +244,13 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
             permits = 10000,
             circuitBreakerPerSecond = DataSize.ofBytes(0)
         )
-        (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
-            request = request,
-            permits = 1,
-            circuitBreakerPerSecond = DataSize.ofTerabytes(1)
-        )
+        Assertions.assertThrows(OverloadException::class.java) {
+            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+                request = request,
+                permits = 1,
+                circuitBreakerPerSecond = DataSize.ofTerabytes(1)
+            )
+        }
     }
 
     @Test
