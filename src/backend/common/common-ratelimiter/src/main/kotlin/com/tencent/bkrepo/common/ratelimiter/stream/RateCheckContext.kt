@@ -33,7 +33,6 @@ data class RateCheckContext(
     var rateLimiter: RateLimiter,
     var latency: Long,
     var waitRound: Int,
-    var waitOnLimit: Boolean = true,
     var limitPerSecond: Long,
     var timeout: Long,
     var smallFileThreshold: Long,

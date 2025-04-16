@@ -89,7 +89,6 @@ abstract class AbstractBandwidthRateLimiterService(
                 timeout = rateLimiterProperties.timeout,
                 smallFileThreshold = rateLimiterProperties.smallFileThreshold,
                 minPermits = rateLimiterProperties.minPermits,
-                waitOnLimit = rateLimiterProperties.waitOnLimit,
             )
             CommonRateLimitInputStream(
                 delegate = inputStream,

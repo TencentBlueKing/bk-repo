@@ -53,9 +53,7 @@ data class RateLimiterProperties(
     // 小文件阈值，单位字节，小于此值的文件会被视为小文件
     var smallFileThreshold: Long = 1024 * 1024,
     // 进度报告阈值，0-1之间的小数，表示上传/下载进度达到多少时需要报告进度
-    var progressThreshold: Double = 0.6,
+    var progressThreshold: Double = 0.5,
     // 最小尝试大小
-    var minPermits: Long = 1024,
-    // 当带宽达到限制时是断连还是等待, 默认等待
-    var waitOnLimit: Boolean = true
+    var minPermits: Long = 8 * 1024,
 )

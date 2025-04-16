@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.ratelimiter.stream
 
-import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import java.io.InputStream
@@ -54,14 +53,30 @@ import java.io.InputStream
 
 class CommonRateLimitInputStream(
     delegate: InputStream,
-    private val rateCheckContext: RateCheckContext
+    private val rateCheckContext: RateCheckContext,
 ) : DelegateInputStream(delegate) {
 
     private var bytesRead: Long = 0
     private var applyNum: Long = 0
 
+    fun setBytesRead(bytesRead: Long) {
+        this.bytesRead = bytesRead
+    }
+
+    fun setApplyNum(applyNum: Long) {
+        this.applyNum = applyNum
+    }
+
+    fun getBytesRead(): Long {
+        return bytesRead
+    }
+
+    fun getApplyNum(): Long {
+        return applyNum
+    }
+
     override fun read(): Int {
-        tryAcquire(1)
+        tryAcquireOrWait(1)
         val data = super.read()
         if (data != -1) {
             bytesRead++
@@ -70,7 +85,7 @@ class CommonRateLimitInputStream(
     }
 
     override fun read(byteArray: ByteArray): Int {
-        tryAcquire(byteArray.size)
+        tryAcquireOrWait(byteArray.size)
         val readLen = super.read(byteArray)
         if (readLen != -1) {
             bytesRead += readLen
@@ -79,78 +94,12 @@ class CommonRateLimitInputStream(
     }
 
     override fun read(byteArray: ByteArray, off: Int, len: Int): Int {
-        tryAcquire(len)
+        tryAcquireOrWait(len)
         val readLen = super.read(byteArray, off, len)
         if (readLen != -1) {
             bytesRead += readLen
         }
         return readLen
-    }
-
-    private fun tryAcquire(bytes: Int) {
-        if (rateCheckContext.waitOnLimit) {
-            tryAcquireOrWait(bytes)
-        } else {
-            tryAcquireOrBreak(bytes)
-        }
-    }
-
-    private fun tryAcquireOrBreak(bytes: Int) {
-        with(rateCheckContext) {
-            if (rangeLength == null || rangeLength!! <= 0) {
-                // 当不知道文件大小时，没办法进行大小预估，无法降低申请频率， 只能每次读取都进行判断
-                acquireOrBreak(bytes.toLong())
-            } else {
-                // 避免频繁申请，增加耗时，降低申请频率， 每次申请一定数量
-                // 当申请的bytes比limitPerSecond还大时,直接限流
-                if (limitPerSecond < bytes) {
-                    if (rateCheckContext.dryRun) {
-                        return
-                    }
-                    throw OverloadException("request reached bandwidth limit")
-                }
-                // 此处避免限流带宽大小比每次申请的还少的情况下，每次都被限流
-                val realPermitOnce = limitPerSecond.coerceAtMost(permitsOnce)
-                if (bytesRead == 0L || (bytesRead + bytes) > applyNum) {
-                    val leftLength = rangeLength!! - bytesRead
-                    val permits = if (leftLength >= 0) {
-                        leftLength.coerceAtMost(realPermitOnce)
-                    } else {
-                        // 当剩余文件大小小于0时，说明文件大小不正确，无法确认剩余多少
-                        realPermitOnce
-                    }
-                    acquireOrBreak(permits)
-                    applyNum += permits
-                }
-            }
-        }
-    }
-
-    private fun acquireOrBreak(permits: Long) {
-        var flag = false
-        var failedNum = 0
-        while (!flag) {
-            // 当限制小于读取大小时，会进入死循环，增加等待轮次，如果达到等待轮次上限后还是无法获取，则抛异常结束
-            try {
-                flag = rateCheckContext.rateLimiter.tryAcquire(permits)
-            } catch (ignore: AcquireLockFailedException) {
-                return
-            }
-            if (!flag && failedNum < rateCheckContext.waitRound) {
-                failedNum++
-                try {
-                    Thread.sleep(rateCheckContext.latency * failedNum)
-                } catch (ignore: InterruptedException) {
-                }
-                continue
-            }
-            if (!flag && failedNum >= rateCheckContext.waitRound) {
-                if (rateCheckContext.dryRun) {
-                    return
-                }
-                throw OverloadException("request reached bandwidth limit")
-            }
-        }
     }
 
     private fun tryAcquireOrWait(bytes: Int) {
@@ -213,10 +162,20 @@ class CommonRateLimitInputStream(
                 return permits
             }
             if (!flag) {
+                if (rateCheckContext.dryRun) {
+                    return permits
+                }
                 failedNum++
                 val type = selectRateLimitStrategy()
                 val tryAcquirePermits = when (type) {
                     TYPE_A -> acquirePermits
+                    // 当已经申请通过一定数量后，又失败，避免再次从最小开始，直接从上次减半开始
+                    TYPE_B -> if (alreadyAcquirePermits == 0L) {
+                        rateCheckContext.minPermits
+                    } else {
+                        acquirePermits / 2
+                    }
+
                     else -> rateCheckContext.minPermits
                 }
                 // 根据文件大小/已传输数量去生成下次申请许可数量
@@ -230,9 +189,24 @@ class CommonRateLimitInputStream(
             alreadyAcquirePermits += acquirePermits
             // 判断是否需要继续获取许可
             flag = when {
-                compositeRequest -> alreadyAcquirePermits >= bytes
+                compositeRequest -> {
+                    acquirePermits = if (failedNum > 0) {
+                        (acquirePermits * 2).coerceAtMost(permits)
+                    } else {
+                        acquirePermits
+                    }.coerceAtMost(bytes - alreadyAcquirePermits)
+                    alreadyAcquirePermits >= bytes
+                }
                 // 当发生限流时，降低预申请数量，只要达到一次读写要求即可
-                failedNum > 0 -> alreadyAcquirePermits >= permits.coerceAtMost(bytes)
+                failedNum > 0 -> {
+                    // 当发生限速后， 此时申请成功，下一次申请请求翻倍
+                    acquirePermits = (acquirePermits * 2).coerceAtMost(
+                        permits.coerceAtMost(bytes) - alreadyAcquirePermits
+                    )
+                    // 默认情况下申请数量会大于单次读取数量，在发生限速后，只需申请大于单次读取数量即可，快速响应
+                    alreadyAcquirePermits >= permits.coerceAtMost(bytes)
+                }
+
                 else -> alreadyAcquirePermits >= permits
             }
         }
@@ -264,6 +238,7 @@ class CommonRateLimitInputStream(
                     tryAcquirePermits * 2
                 }
             }
+
             else -> rateCheckContext.minPermits // 默认返回最小许可数量
         }.coerceAtMost(realAcquirePermits) // 不能超过总限速带宽
     }
@@ -287,7 +262,7 @@ class CommonRateLimitInputStream(
     }
 
     companion object {
-        private const val TYPE_A = "A"
-        private const val TYPE_B = "B"
+        const val TYPE_A = "A"
+        const val TYPE_B = "B"
     }
 }
