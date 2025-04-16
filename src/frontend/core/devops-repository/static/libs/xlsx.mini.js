@@ -7848,14 +7848,14 @@ function parse_Cache(data) {
 	var num = data.match(/^<c:numCache>/);
 	var f;
 
-	/* 21.2.2.150 pt CT_NumVal */
+	/* pt CT_NumVal */
 	(data.match(/<c:pt idx="(\d*)">(.*?)<\/c:pt>/mg)||[]).forEach(function(pt) {
 		var q = pt.match(/<c:pt idx="(\d*?)"><c:v>(.*)<\/c:v><\/c:pt>/);
 		if(!q) return;
 		col[+q[1]] = num ? +q[2] : q[2];
 	});
 
-	/* 21.2.2.71 formatCode CT_Xstring */
+	/* formatCode CT_Xstring */
 	var nf = unescapexml((data.match(/<c:formatCode>([\s\S]*?)<\/c:formatCode>/) || ["","General"])[1]);
 
 	(data.match(/<c:f>(.*?)<\/c:f>/mg)||[]).forEach(function(F) { f = F.replace(/<.*?>/g,""); });
@@ -7867,7 +7867,7 @@ function parse_Cache(data) {
 function parse_chart(data, name, opts, rels, wb, csheet) {
 	var cs = ((csheet || {"!type":"chart"}));
 	if(!data) return csheet;
-	/* 21.2.2.27 chart CT_Chart */
+	/* chart CT_Chart */
 
 	var C = 0, R = 0, col = "A";
 	var refguess = {s: {r:2000000, c:2000000}, e: {r:0, c:0} };
@@ -10123,7 +10123,7 @@ function readSync(data, opts) {
 		case 0x03: case 0x83: case 0x8B: case 0x8C: return DBF.to_workbook(d, o);
 		case 0x7B: if(n[1] === 0x5C && n[2] === 0x72 && n[3] === 0x74) return RTF.to_workbook(d, o); break;
 		case 0x0A: case 0x0D: case 0x20: return read_plaintext_raw(d, o);
-		case 0x89: if(n[1] === 0x50 && n[2] === 0x4E && n[3] === 0x47) throw new Error("PNG Image File is not a spreadsheet"); break; 
+		case 0x89: if(n[1] === 0x50 && n[2] === 0x4E && n[3] === 0x47) throw new Error("PNG Image File is not a spreadsheet"); break;
 	}
 	if(DBF.versions.indexOf(n[0]) > -1 && n[2] <= 12 && n[3] <= 31) return DBF.to_workbook(d, o);
 	return read_prn(data, d, o, str);
