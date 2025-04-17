@@ -3,6 +3,7 @@ package com.tencent.bkrepo.job.migrate
 import com.tencent.bkrepo.common.metadata.dao.file.FileReferenceDao
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.file.impl.FileReferenceServiceImpl
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -116,6 +117,7 @@ class MigrateFailedNodeServiceTest @Autowired constructor(
         whenever(autoFixStrategy.fix(any())).thenReturn(true)
         migrateFailedNodeDao.remove(Query())
         migrateRepoStorageTaskDao.remove(Query())
+        nodeDao.remove(Query(TNode::projectId.isEqualTo(UT_PROJECT_ID)))
     }
 
     @Test
