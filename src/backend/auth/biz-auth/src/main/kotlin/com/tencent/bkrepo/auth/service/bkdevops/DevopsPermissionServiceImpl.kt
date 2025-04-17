@@ -99,14 +99,23 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
-
+        logger.debug("devops check permission request [$request]")
         // 校验平台账号操作范围
         if (request.appId != null && !checkPlatformPermission(request)) return false
 
-        // bkiamv3权限校验
-        if (matchBkiamv3Cond(request)) {
-            // 当有v3权限时，返回成功；如没有v3权限则按devops账号体系继续进行判断
-            if (checkBkIamV3Permission(request)) return true
+        // repo,node权限兼容bkiam权限与devops权限
+        if (matchBkiamv3Cond(request.projectId, request.repoName) && matchDevopsRepoCond(request.repoName)) {
+            return checkBkIamV3Permission(request) || checkDevopsPermission(request)
+        }
+
+        // 采用bkiamv3权限
+        if (matchBkiamv3Cond(request.projectId, request.repoName) && !matchDevopsRepoCond(request.repoName)) {
+            return checkBkIamV3Permission(request)
+        }
+
+        // project，read权限
+        if (matchBkiamv3ProjectCond(request)) {
+            return checkBkIamV3Permission(request) || checkDevopsPermission(request)
         }
 
         return checkDevopsPermission(request)
@@ -155,8 +164,6 @@ class DevopsPermissionServiceImpl constructor(
 
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
-            logger.debug("check devops permission request [$request]")
-
             // 用户不存在
             val user = getUserInfo(uid) ?: return false
             // 系统管理员用户
@@ -199,6 +206,11 @@ class DevopsPermissionServiceImpl constructor(
         }
     }
 
+    private fun matchDevopsRepoCond(repoName: String?): Boolean {
+        return repoName != null && defaultRepoList.contains(repoName)
+    }
+
+
     private fun checkProjectPermission(context: CheckPermissionContext): Boolean {
         with(context) {
             // 只有用户为非项目管理员，代码才会走到这里, action为MANAGE需要项目管理员权限
@@ -206,8 +218,8 @@ class DevopsPermissionServiceImpl constructor(
                 logger.debug("project request need manage permission [$context]")
                 return false
             }
+            // 项目权限暂时以devops为准
             return isDevopsProjectMember(userId, projectId, action)
-                    || checkBkIamV3ProjectPermission(projectId, userId, action)
         }
     }
 
@@ -304,5 +316,6 @@ class DevopsPermissionServiceImpl constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevopsPermissionServiceImpl::class.java)
+        private val defaultRepoList = listOf(CUSTOM, PIPELINE, LOG, REPORT)
     }
 }

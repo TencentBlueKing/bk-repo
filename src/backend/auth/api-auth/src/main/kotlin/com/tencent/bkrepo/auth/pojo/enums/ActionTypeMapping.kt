@@ -49,13 +49,12 @@ enum class ActionTypeMapping(val resType: String, val pAction: String) {
     NODE_WRITE(ResourceType.NODE.name, PermissionAction.WRITE.name),
     NODE_DELETE(ResourceType.NODE.name, PermissionAction.DELETE.name);
 
-    fun id() = this.name.toLowerCase()
+    fun id() = this.name.lowercase()
 
     companion object {
 
         fun lookup(resType: String, pAction: String): ActionTypeMapping {
-            return values().find { it.resType == resType && it.pAction == pAction }
-                ?:  throw IllegalArgumentException("No enum for resType $resType and pAction $pAction!")
+            return values().find { it.resType == resType && it.pAction == pAction } ?: PROJECT_MANAGE
         }
     }
 }
