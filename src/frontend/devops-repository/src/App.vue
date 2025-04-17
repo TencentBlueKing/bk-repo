@@ -93,7 +93,7 @@
                         if (specTargetMatch === 'filePreview' || specTargetMatch === 'outsideFilePreview') return
                         let projectId = ''
                         const hasUrlProjectId = this.projectList.find(v => v.id === urlProjectId)
-                        if (!hasUrlProjectId) {
+                        if (!hasUrlProjectId && urlProjectId !== undefined) {
                             this.$bkMessage({
                                 message: this.$t('projectNoPermissionTip', { 0: urlProjectId }),
                                 theme: 'error'
