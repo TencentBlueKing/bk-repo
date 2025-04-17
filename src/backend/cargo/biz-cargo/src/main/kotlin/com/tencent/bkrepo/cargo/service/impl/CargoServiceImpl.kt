@@ -131,7 +131,7 @@ class CargoServiceImpl(
         val context = ArtifactQueryContext()
         context.putAttribute(QUERY, q)
         context.putAttribute(PAGE_SIZE, perPage)
-        return ArtifactContextHolder.getRepository().query(context) as CargoSearchResult
+        return (ArtifactContextHolder.getRepository().query(context) as? CargoSearchResult) ?: CargoSearchResult()
     }
 
     private fun doYankOperation(cargoArtifactInfo: CargoArtifactInfo, yanked: Boolean) {
