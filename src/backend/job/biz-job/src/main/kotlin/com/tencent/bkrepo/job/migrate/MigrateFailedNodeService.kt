@@ -168,9 +168,10 @@ class MigrateFailedNodeService(
     /**
      * 更新node归档状态
      */
-    fun updateNodeArchiveStatus(nodeId: String, archived: Boolean = true) {
+    fun updateNodeArchiveStatus(projectId: String, nodeId: String, archived: Boolean = true) {
+        val query = Query(TNode::projectId.isEqualTo(projectId).and(ID).isEqualTo(nodeId))
         val update = Update().set(TNode::archived.name, archived)
-        nodeDao.updateFirst(Query(Criteria.where(ID).isEqualTo(nodeId)), update)
+        nodeDao.updateFirst(query, update)
         logger.info("set node $nodeId archived[$archived]")
     }
 
@@ -182,7 +183,9 @@ class MigrateFailedNodeService(
         logger.info("start fix missing failed node")
         val taskCache = HashMap<String, TMigrateRepoStorageTask>()
         migrateFailedNodeDao.iterate(null, null, null) { failedNode ->
-            val task = taskCache.getOrPut(failedNode.taskId) { migrateRepoStorageTaskDao.findById(failedNode.taskId)!! }
+            val task = taskCache.getOrPut(failedNode.taskId) {
+                migrateRepoStorageTaskDao.find(failedNode.projectId, failedNode.repoName)!!
+            }
             nodeDao.findNodeIncludeDeleted(failedNode.projectId, failedNode.repoName, failedNode.fullPath)
                 .distinctBy { it.sha256 }
                 .filter { it.sha256 != null && it.sha256 != failedNode.sha256 }
@@ -222,7 +225,7 @@ class MigrateFailedNodeService(
                 )
                 logger.info("create failed node[$projectId/$repoName/$fullPath][$sha256] success")
             } else {
-                logger.info("node[$projectId/$repoName/$fullPath][$sha256] already exists]")
+                logger.info("failed node[$projectId/$repoName/$fullPath][$sha256] already exists]")
             }
         }
     }

@@ -45,7 +45,6 @@ import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadP
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
-import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
@@ -124,7 +123,8 @@ class MigrateFailedNodeExecutor(
     }
 
     private fun convert(failedNode: TMigrateFailedNode): Node {
-        val node = nodeDao.findOne(Query(Criteria.where(ID).isEqualTo(failedNode.nodeId)))
+        val criteria = Node::projectId.isEqualTo(failedNode.projectId).and(ID).isEqualTo(failedNode.nodeId)
+        val node = nodeDao.findOne(Query(criteria))
         return Node(
             id = failedNode.nodeId,
             projectId = failedNode.projectId,

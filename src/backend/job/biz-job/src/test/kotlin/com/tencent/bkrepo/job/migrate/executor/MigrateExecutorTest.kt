@@ -10,6 +10,7 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDt
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.insertFailedNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.removeNodes
 import com.tencent.bkrepo.job.model.TNode
 import org.junit.jupiter.api.AfterAll
@@ -119,12 +120,14 @@ class MigrateExecutorTest @Autowired constructor(
         mongoTemplate.createNode()
         mongoTemplate.createNode(sha256 = FAKE_SHA256, fullPath = "/a/b/d.txt")
         mongoTemplate.createNode(compressed = true, fullPath = "/a/b/e.txt")
+        val node = mongoTemplate.createNode(fullPath = "/a/b/f.txt")
+        migrateFailedNodeDao.insertFailedNode(nodeId = node.id!!)
         val context = executor.execute(buildContext(createTask()))!!
 
         // 等待任务执行完
         Thread.sleep(1000L)
         context.waitAllTransferFinished()
-        assertEquals(3, migrateFailedNodeDao.count(Query()))
+        assertEquals(4, migrateFailedNodeDao.count(Query()))
     }
 
     @Test

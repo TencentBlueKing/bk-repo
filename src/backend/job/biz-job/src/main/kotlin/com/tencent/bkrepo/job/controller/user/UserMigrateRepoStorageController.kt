@@ -131,9 +131,10 @@ class UserMigrateRepoStorageController(
      */
     @PostMapping("/archive/node/update")
     fun updateNodeArchiveStatus(
+        @RequestParam projectId: String,
         @RequestParam nodeId: String,
         @RequestParam(required = false, defaultValue = "true") archived: Boolean = true
     ) {
-        migrateFailedNodeService.updateNodeArchiveStatus(nodeId, archived)
+        migrateFailedNodeService.updateNodeArchiveStatus(projectId, nodeId, archived)
     }
 }
