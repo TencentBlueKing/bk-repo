@@ -52,12 +52,13 @@ class DefaultMigrateFailedHandler(
     }
 
     private fun saveMigrateFailedNode(taskId: String, node: Node) {
-        if (migrateFailedNodeDao.existsFailedNode(node.projectId, node.repoName, node.fullPath)) {
-            return
-        }
-
-        val now = LocalDateTime.now()
         with(node) {
+            if (migrateFailedNodeDao.existsFailedNode(id)) {
+                logger.info("failed node[${projectId}/${repoName}${fullPath}] already exists, nodeId[${id}]")
+                return
+            }
+
+            val now = LocalDateTime.now()
             try {
                 migrateFailedNodeDao.insert(
                     TMigrateFailedNode(
@@ -72,10 +73,12 @@ class DefaultMigrateFailedHandler(
                         sha256 = sha256,
                         md5 = md5,
                         size = size,
-                        retryTimes = 0
+                        retryTimes = 0,
                     )
                 )
+                logger.info("insert failed node[${projectId}/${repoName}${fullPath}] success")
             } catch (ignore: DuplicateKeyException) {
+                logger.warn("duplicate failed node[$node]", ignore)
             }
         }
     }
