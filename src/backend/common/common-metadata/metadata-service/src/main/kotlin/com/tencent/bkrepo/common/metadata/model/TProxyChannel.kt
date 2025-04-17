@@ -86,6 +86,8 @@ data class TProxyChannel(
 
     var createdBy: String,
     var createdDate: LocalDateTime,
+    var lastSyncStatus: Boolean? = null,
+    var lastSyncDate: LocalDateTime? = null,
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime
 )

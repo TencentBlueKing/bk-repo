@@ -9,8 +9,8 @@ import nodeManage from './nodeManage'
 import project from './project'
 import scan from './scan'
 import oauth from './oauth'
+import helm from './helm'
 import share from './share'
-
 const prefix = 'repository/api'
 
 export default {
@@ -22,6 +22,7 @@ export default {
     ...project,
     ...scan,
     ...oauth,
+    ...helm,
     ...share,
     /*
         创建仓库

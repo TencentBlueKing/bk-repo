@@ -74,13 +74,13 @@
                     </bk-form-item>
                 </bk-form>
             </bk-tab-panel>
-            <bk-tab-panel render-directive="if" v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
-                <proxy-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></proxy-config>
+            <bk-tab-panel v-if="showProxyConfigTab" name="proxyConfig" :label="$t('proxyConfig')">
+                <proxy-config ref="proxyTab" :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></proxy-config>
             </bk-tab-panel>
             <bk-tab-panel v-if="showCleanConfigTab" name="cleanConfig" :label="$t('cleanConfig')">
                 <clean-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler"></clean-config>
             </bk-tab-panel>
-            <bk-tab-panel render-directive="if" v-if="showControlConfigTab" name="controlConfig" :label="$t('rootDirectoryPermissionTitle')">
+            <bk-tab-panel v-if="showControlConfigTab" name="controlConfig" :label="$t('rootDirectoryPermissionTitle')">
                 <control-config :base-data="repoBaseInfo" @refresh="getRepoInfoHandler" @showPermissionConfigTab="changePermissionConfigTabStatus"></control-config>
             </bk-tab-panel>
         </bk-tab>
@@ -169,7 +169,7 @@
                 return this.$route.params.repoType
             },
             showProxyConfigTab () {
-                return ['maven', 'pypi', 'npm', 'composer', 'nuget'].includes(this.repoType)
+                return ['maven', 'pypi', 'npm', 'composer', 'nuget', 'helm'].includes(this.repoType) && this.repoBaseInfo.category === 'COMPOSITE'
             },
             showCleanConfigTab () {
                 return ['docker', 'generic', 'helm'].includes(this.repoType) && (this.userInfo.admin || this.userInfo.manage)
@@ -219,6 +219,14 @@
             repoType: {
                 handler (type) {
                     type && this.getDomain(type)
+                },
+                immediate: true
+            },
+            tabName: {
+                handler (type) {
+                    if (type === 'proxyConfig' && this.repoType === 'helm') {
+                        this.$refs.proxyTab.getProxyChannelInfo()
+                    }
                 },
                 immediate: true
             }
