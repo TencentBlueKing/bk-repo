@@ -51,6 +51,7 @@ class MigrateExecutorTest @Autowired constructor(
     fun beforeEach() {
         initMock()
         migrateRepoStorageTaskDao.remove(Query())
+        migrateFailedNodeDao.remove(Query())
         mongoTemplate.removeNodes()
     }
 
