@@ -30,7 +30,10 @@
  */
 
 dependencies {
-    api(project(":oci:api-oci"))
-    api("javax.ws.rs:jsr311-api:${Versions.JSR311API}")
-    implementation("org.glassfish.jersey.core:jersey-server:${Versions.Jersey}")
+    api(project(":core:helm:api-helm"))
+    api(project(":common:common-job"))
+    api(project(":common:common-artifact:artifact-service"))
+    api(project(":common:common-lock"))
+    implementation("org.yaml:snakeyaml")
+    implementation("com.github.zafarkhaja:java-semver")
 }

@@ -29,7 +29,7 @@ dependencies {
     implementation("com.alibaba:easyexcel:3.1.1")
     implementation(project(":analyst:api-analyst"))
     implementation(project(":analysis-executor:api-analysis-executor"))
-    implementation(project(":oci:api-oci"))
+    implementation(project(":core:oci:api-oci"))
     implementation(project(":common:common-notify:notify-service"))
     implementation(project(":common:common-service:service-servlet"))
     implementation("org.springframework.boot:spring-boot-starter-webflux")

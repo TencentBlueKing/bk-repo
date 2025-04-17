@@ -30,6 +30,6 @@
  */
 
 dependencies {
-    implementation(project(":oci:biz-oci"))
+    implementation(project(":core:oci:biz-oci"))
 }
 

@@ -30,5 +30,5 @@
  */
 
 dependencies {
-    implementation(project(":helm:biz-helm"))
+    implementation(project(":core:helm:biz-helm"))
 }
