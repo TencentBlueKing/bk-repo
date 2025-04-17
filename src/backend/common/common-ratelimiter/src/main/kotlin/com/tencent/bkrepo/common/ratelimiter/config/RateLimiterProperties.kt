@@ -48,7 +48,7 @@ data class RateLimiterProperties(
     var permitsOnce: Long = 1024 * 1024,
     // 只对指定url进行从request body解析项目仓库信息
     var specialUrls: List<String> = emptyList(),
-    // 避免连接断开，当尝试获取允许超时时间指定时间则直接放过，单位毫秒
+    // 为避免连接断开，当尝试获取允许总耗时超过设置时间则直接放过，单位毫秒
     var timeout: Long = 1000,
     // 小文件阈值，单位字节，小于此值的文件会被视为小文件
     var smallFileThreshold: Long = 1024 * 1024,
