@@ -34,6 +34,7 @@ import com.tencent.bkrepo.archive.repository.ArchiveFileDao
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
@@ -101,14 +102,17 @@ object MigrateTestUtils {
         storageCredentials = storageCredentials,
     )
 
-    fun MigrateFailedNodeDao.insertFailedNode(fullPath: String = "/a/b/c.txt"): TMigrateFailedNode {
+    fun MigrateFailedNodeDao.insertFailedNode(
+        fullPath: String = "/a/b/c.txt",
+        nodeId: String = ""
+    ): TMigrateFailedNode {
         val now = LocalDateTime.now()
         return insert(
             TMigrateFailedNode(
                 id = null,
                 createdDate = now,
                 lastModifiedDate = now,
-                nodeId = "",
+                nodeId = nodeId,
                 taskId = "",
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
@@ -146,6 +150,38 @@ object MigrateTestUtils {
         val collectionName = "node_$sharding"
         ensureNodeIndex(collectionName)
         return insert(node, collectionName)
+    }
+
+    fun NodeDao.createNode(
+        projectId: String = UT_PROJECT_ID,
+        repoName: String = UT_REPO_NAME,
+        fullPath: String = "/a/b/c.txt",
+        sha256: String = UT_SHA256,
+        archived: Boolean = false,
+        compressed: Boolean = false,
+        deleted: LocalDateTime? = null,
+    ): com.tencent.bkrepo.common.metadata.model.TNode {
+        val now = LocalDateTime.now()
+        val node = com.tencent.bkrepo.common.metadata.model.TNode(
+            id = null,
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            createdBy = UT_USER,
+            createdDate = now,
+            lastModifiedBy = UT_USER,
+            lastModifiedDate = now,
+            name = "",
+            path = "",
+            size = 100L,
+            sha256 = sha256,
+            md5 = UT_MD5,
+            folder = false,
+            archived = archived,
+            compressed = compressed,
+            deleted = deleted,
+        )
+        return insert(node)
     }
 
     fun MongoTemplate.ensureNodeIndex(collectionName: String) {

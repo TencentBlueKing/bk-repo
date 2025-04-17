@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.Page
 import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
@@ -65,6 +66,13 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         // 系统设计上不保存根目录节点到数据库，但是有用户会手动创建根目录节点
         return this.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))
             ?: if (PathUtils.isRoot(fullPath)) buildRootNode(projectId, repoName) else null
+    }
+
+    fun findNodeIncludeDeleted(projectId: String, repoName: String, fullPath: String): List<TNode> {
+        val criteria = Criteria.where(TNode::projectId.name).isEqualTo(projectId)
+            .and(TNode::repoName.name).isEqualTo(repoName)
+            .and(TNode::fullPath.name).isEqualTo(fullPath)
+        return find(Query(criteria))
     }
 
     /**

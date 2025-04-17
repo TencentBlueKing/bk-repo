@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
@@ -77,6 +78,7 @@ import java.time.LocalDateTime
     MigrateRepoStorageProperties::class,
     RepositoryCommonUtils::class,
     StorageProperties::class,
+    NodeDao::class
 )
 @ComponentScan(basePackages = ["com.tencent.bkrepo.job.migrate"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
