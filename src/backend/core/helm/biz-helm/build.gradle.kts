@@ -30,7 +30,7 @@
  */
 
 dependencies {
-    api(project(":helm:api-helm"))
+    api(project(":core:helm:api-helm"))
     api(project(":common:common-job"))
     api(project(":common:common-artifact:artifact-service"))
     api(project(":common:common-lock"))
