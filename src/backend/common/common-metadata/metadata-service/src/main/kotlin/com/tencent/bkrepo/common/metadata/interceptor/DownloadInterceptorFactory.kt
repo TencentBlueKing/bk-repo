@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.metadata.interceptor.impl.FilenameInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.IpSegmentInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.MetadataInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.MobileInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.impl.NodeForbiddenStatusInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.NodeMetadataInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.OfficeNetworkInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.PackageMetadataInterceptor
@@ -63,7 +64,7 @@ class DownloadInterceptorFactory(
         const val IOS_APP_USER_AGENT = "com.apple.appstored"
         private const val INTERCEPTORS = "interceptors"
         private const val TYPE = "type"
-        private val forbidRule = mapOf(
+        val forbidRule = mapOf(
             MetadataInterceptor.METADATA to "$FORBID_STATUS:true",
             DownloadInterceptor.ALLOWED to false
         )
@@ -101,7 +102,7 @@ class DownloadInterceptorFactory(
                 type == DownloadInterceptorType.WEB && type == downloadSource -> WebInterceptor(rules)
                 type == DownloadInterceptorType.MOBILE && type == downloadSource -> MobileInterceptor(rules)
                 type == DownloadInterceptorType.OFFICE_NETWORK -> OfficeNetworkInterceptor(rules, properties)
-                type == DownloadInterceptorType.NODE_FORBID -> buildNodeForbidInterceptor()
+                type == DownloadInterceptorType.NODE_FORBID -> NodeForbiddenStatusInterceptor()
                 type == DownloadInterceptorType.IP_SEGMENT -> IpSegmentInterceptor(rules, properties)
                 else -> null
             }
