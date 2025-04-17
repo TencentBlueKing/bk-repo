@@ -198,5 +198,18 @@ export default {
                 }
             }
         )
+    },
+    // 检查代理是否有效
+    checkProxy (_, { body }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/proxy-channel/check`,
+            body
+        )
+    },
+    // 查询某仓库下所有的代理信息
+    listRepoProxyChannel (_, { type, projectId, repoName }) {
+        return Vue.prototype.$ajax.get(
+            `${prefix}/proxy-channel/${type}/${projectId}/${repoName}`
+        )
     }
 }
