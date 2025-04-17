@@ -30,6 +30,7 @@
  */
 
 dependencies {
-    implementation(project(":oci:biz-oci"))
+    api(project(":core:oci:api-oci"))
+    api("javax.ws.rs:jsr311-api:${Versions.JSR311API}")
+    implementation("org.glassfish.jersey.core:jersey-server:${Versions.Jersey}")
 }
-

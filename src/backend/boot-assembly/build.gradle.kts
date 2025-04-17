@@ -39,7 +39,7 @@ dependencies {
     implementation(project(":npm:biz-npm"))
     implementation(project(":nuget:biz-nuget"))
     implementation(project(":rpm:biz-rpm"))
-    implementation(project(":oci:biz-oci"))
+    implementation(project(":core:oci:biz-oci"))
     implementation(project(":job:biz-job"))
     implementation(project(":analyst:biz-analyst"))
     implementation(project(":replication:biz-replication"))

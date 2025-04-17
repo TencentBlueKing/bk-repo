@@ -39,7 +39,7 @@ dependencies {
     implementation(project(":common:common-lock"))
     implementation(project(":repository:api-repository"))
     implementation(project(":core:helm:api-helm"))
-    implementation(project(":oci:api-oci"))
+    implementation(project(":core:oci:api-oci"))
     implementation(project(":maven:api-maven"))
     implementation(project(":replication:api-replication"))
     implementation(project(":archive:api-archive"))
