@@ -1,12 +1,12 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
-const webpackBaseConfig = require('../webpack.base')
+const webpackBaseConfig = require('../../webpack.base')
 
 module.exports = (env, argv) => {
     const isProd = argv.mode === 'production'
     const envDist = env && env.dist ? env.dist : 'frontend'
-    const dist = path.join(__dirname, `../${envDist}/ui`)
+    const dist = path.join(__dirname, `../../${envDist}/ui`)
     const config = webpackBaseConfig({
         env,
         argv,
@@ -29,7 +29,7 @@ module.exports = (env, argv) => {
         new CopyWebpackPlugin({
             patterns: [
                 { from: path.join(__dirname, './static'), to: dist },
-                { from: path.join(__dirname, '../../../versionLogs'), to: `${dist}/versionLogs` },
+                { from: path.join(__dirname, '../../../../versionLogs'), to: `${dist}/versionLogs` },
                 { from: path.join(__dirname, './public'), to: dist }
             ]
         })
