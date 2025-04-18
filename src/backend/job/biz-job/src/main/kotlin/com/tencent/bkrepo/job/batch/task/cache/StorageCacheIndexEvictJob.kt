@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexProperties
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.job.batch.file.BasedRepositoryNodeRetainResolver
 import com.tencent.bkrepo.job.config.properties.StorageCacheIndexEvictJobProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -49,7 +50,8 @@ class StorageCacheIndexEvictJob(
     clusterProperties: ClusterProperties,
     mongoTemplate: MongoTemplate,
     storageCacheIndexProperties: StorageCacheIndexProperties?,
-    indexerManager: StorageCacheIndexerManager?
+    indexerManager: StorageCacheIndexerManager?,
+    private val fileRetainResolver: BasedRepositoryNodeRetainResolver,
 ) : StorageCacheIndexJob(
     properties,
     storageProperties,
@@ -60,6 +62,7 @@ class StorageCacheIndexEvictJob(
 ) {
 
     override fun doWithCredentials(credentials: StorageCredentials) {
+        fileRetainResolver.refreshRetainNode()
         val evicted = indexerManager?.evict(credentials, Int.MAX_VALUE)
         logger.info("credential[${credentials.key}] evict[$evicted]")
     }
