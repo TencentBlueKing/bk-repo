@@ -166,9 +166,8 @@ abstract class AbstractBandwidthRateLimiterService(
             alreadyAcquirePermits += acquirePermits
             // 判断是否需要继续获取许可
             flag = when {
-                // 当发生限流时，降低预申请数量，只要达到一次读写要求即可
                 failedNum > 0 -> {
-                    // 当发生限速后， 此时申请成功，下一次申请请求翻倍
+                    // 进到这块说明当前申请成功，可以认为现在带宽情况有所缓解，顾尝试将请求许可数量翻倍，加快速度
                     acquirePermits = (acquirePermits * 2).coerceAtMost(
                         permits - alreadyAcquirePermits
                     )
