@@ -27,21 +27,16 @@
 
 package com.tencent.bkrepo.job.migrate.strategy
 
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils.shardingSequenceFor
-import com.tencent.bkrepo.job.SHARDING_COUNT
-import com.tencent.bkrepo.job.migrate.pojo.Node
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
+import com.tencent.bkrepo.common.storage.config.StorageProperties
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 
 abstract class BaseAutoFixStrategy : MigrateFailedNodeAutoFixStrategy {
-    protected fun MongoTemplate.findNode(projectId: String, repoName: String, fullPath: String): Node {
-        val collectionName = "node_${shardingSequenceFor(projectId, SHARDING_COUNT)}"
-        val criteria = Criteria
-            .where(Node::projectId.name).isEqualTo(projectId)
-            .and(Node::repoName.name).isEqualTo(repoName)
-            .and(Node::fullPath.name).isEqualTo(fullPath)
-        return findOne(Query(criteria), Node::class.java, collectionName)!!
+    protected fun getStorageCredentials(storageProperties: StorageProperties, key: String?): StorageCredentials {
+        return if (key == null) {
+            storageProperties.defaultStorageCredentials()
+        } else {
+            RepositoryCommonUtils.getStorageCredentials(key)!!
+        }
     }
 }

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.dao.node
 
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.path.PathUtils
@@ -73,6 +74,16 @@ class NodeDao : HashShardingMongoDao<TNode>() {
             .and(TNode::repoName.name).isEqualTo(repoName)
             .and(TNode::fullPath.name).isEqualTo(fullPath)
         return find(Query(criteria))
+    }
+
+    fun findById(projectId: String, id: String): TNode? {
+        return findOne(Query(TNode::projectId.isEqualTo(projectId).and(ID).isEqualTo(id)))
+    }
+
+    fun setNodeArchived(projectId: String, nodeId: String, archived: Boolean): UpdateResult {
+        val query = Query(TNode::projectId.isEqualTo(projectId).and(ID).isEqualTo(nodeId))
+        val update = Update().set(TNode::archived.name, archived)
+        return updateFirst(query, update)
     }
 
     /**

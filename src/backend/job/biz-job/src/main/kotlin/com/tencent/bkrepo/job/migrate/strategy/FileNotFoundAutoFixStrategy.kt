@@ -27,35 +27,33 @@
 
 package com.tencent.bkrepo.job.migrate.strategy
 
+import com.tencent.bkrepo.archive.repository.ArchiveFileDao
+import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.job.ARCHIVE_FILE_COLLECTION
-import com.tencent.bkrepo.job.batch.task.archive.ArchivedNodeRestoreJob
-import com.tencent.bkrepo.job.batch.task.archive.NodeCompressedJob
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.dao.ArchiveMigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.model.TArchiveMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
-import com.tencent.bkrepo.job.migrate.pojo.Node
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
-import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class FileNotFoundAutoFixStrategy(
-    private val mongoTemplate: MongoTemplate,
+    private val nodeDao: NodeDao,
+    private val archiveFileDao: ArchiveFileDao,
+    private val compressFileDao: CompressFileDao,
     private val storageCredentialService: StorageCredentialService,
     private val fileReferenceService: FileReferenceService,
     private val storageService: StorageService,
@@ -68,7 +66,8 @@ class FileNotFoundAutoFixStrategy(
         val repoName = failedNode.repoName
         val fullPath = failedNode.fullPath
         val sha256 = failedNode.sha256
-        val oldCredentials = getOldCredentials(projectId, repoName)
+        val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
+        val oldCredentials = getStorageCredentials(storageProperties, repo.oldCredentialsKey)
         if (sha256 == FAKE_SHA256) {
             return false
         }
@@ -76,10 +75,10 @@ class FileNotFoundAutoFixStrategy(
             // 文件存在
             return true
         }
-        val node = mongoTemplate.findNode(projectId, repoName, fullPath)
+        val node = nodeDao.findById(projectId, failedNode.nodeId) ?: return false
 
         // 检查是否被归档或压缩
-        if (archivedOrCompressed(node)) {
+        if (archivedOrCompressed(node, repo.oldCredentialsKey, repo.storageCredentials?.key)) {
             logger.info("node[$fullPath] was archived or compressed, task[$projectId/$repoName]")
             return false
         }
@@ -96,27 +95,23 @@ class FileNotFoundAutoFixStrategy(
         return true
     }
 
-    private fun archivedOrCompressed(node: Node): Boolean {
+    private fun archivedOrCompressed(node: TNode, srcStorageKey: String?, dstStorageKey: String?): Boolean {
         // node已经被归档或压缩，需要先恢复到原存储再迁移
         if (node.archived == true || node.compressed == true) {
             return true
         }
 
         // 查看是否存在归档任务
-        val archivedFile = mongoTemplate.findOne(
-            Query.query(Criteria.where("sha256").isEqualTo(node.sha256)),
-            ArchivedNodeRestoreJob.ArchiveFile::class.java, ARCHIVE_FILE_COLLECTION
-        )
+        val archivedFile = archiveFileDao.findByStorageKeyAndSha256(srcStorageKey, node.sha256!!)
+            ?: archiveFileDao.findByStorageKeyAndSha256(dstStorageKey, node.sha256!!)
         if (archivedFile != null) {
             logger.info("node[${node.fullPath}] exists archived file, task[${node.projectId}/${node.repoName}]")
             return true
         }
 
         // 查看是否存在压缩任务
-        val compressedFile = mongoTemplate.findOne(
-            Query.query(Criteria.where("sha256").isEqualTo(node.sha256)),
-            NodeCompressedJob.CompressFile::class.java, "compress_file"
-        )
+        val compressedFile = compressFileDao.findByStorageKeyAndSha256(srcStorageKey, node.sha256!!)
+            ?: compressFileDao.findByStorageKeyAndSha256(dstStorageKey, node.sha256!!)
         if (compressedFile != null) {
             logger.info("node[${node.fullPath}] exists compressed file, task[${node.projectId}/${node.repoName}]")
             return true
@@ -151,16 +146,6 @@ class FileNotFoundAutoFixStrategy(
             }
         }
         return false
-    }
-
-    private fun getOldCredentials(projectId: String, repoName: String): StorageCredentials {
-        val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
-        val oldCredentialsKey = repo.oldCredentialsKey
-        return if (oldCredentialsKey == null) {
-            storageProperties.defaultStorageCredentials()
-        } else {
-            RepositoryCommonUtils.getStorageCredentials(oldCredentialsKey)!!
-        }
     }
 
     companion object {
