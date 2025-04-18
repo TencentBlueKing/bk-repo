@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.batch
 
 import com.tencent.bkrepo.archive.repository.ArchiveFileDao
+import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
@@ -70,6 +71,7 @@ import org.springframework.test.context.TestPropertySource
     EnableMultiTenantProperties::class,
     ArchiveFileDao::class,
     MigrateArchivedFileServiceImpl::class,
+    CompressFileDao::class,
 )
 @TestPropertySource(
     locations = [
