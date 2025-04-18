@@ -1,4 +1,5 @@
 import { mapState, mapActions } from 'vuex'
+import { Base64 } from 'js-base64'
 const guideMap = {
     rds: 'helm'
 }
@@ -53,6 +54,9 @@ export default {
         },
         accessToken () {
             return this.dependAccessTokenValue || '<PERSONAL_ACCESS_TOKEN>'
+        },
+        base64AccessToken () {
+            return this.dependAccessTokenValue ? Base64.encode(this.userName + ":" + this.dependAccessTokenValue): '<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>'
         },
         packageFullPath () {
             return this.$route.query.packageFullPath || '/<RPM_FILE_NAME>'
@@ -1348,6 +1352,84 @@ export default {
                             subTitle: this.$t('npmDownloadGuideSubTitle2'),
                             codeList: [
                                 `ohpm install ${this.packageName}@${this.versionLabel} --registry ${this.domain.ohpm}/${this.projectId}/${this.repoName}/`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        cargoGuide () {
+            return [
+                {
+                    title: this.$t('setCredentials'),
+                    optionType: 'setCredentials',
+                    main: [
+                        {
+                            subTitle: this.$t('cargoCreditGuideSubTitle1'),
+                            codeList: [
+                                "[registry]\n" + "default = \"bkrepo\"" + "\n\n"
+                                + "[registries.bkrepo]\n" + `index = "${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
+                                + "\n" + `global-credential-providers = ["cargo:token", "cargo:libsecret", "cargo:macos-keychain", "cargo:wincred"]`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('cargoCreditGuideSubTitle2'),
+                            codeList: [
+                                "[registries.bkrepo]"
+                                + "\n" + `token = "Basic ${this.base64AccessToken}"`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('push'),
+                    optionType: 'push',
+                    main: [
+                        {
+                            subTitle: this.$t('pushGuideSubTitle'),
+                            codeList: [
+                                `cargo publish --index ${this.domain.cargo}/${this.projectId}/${this.repoName}/index/`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('pull'),
+                    optionType: 'pull',
+                    main: [
+                        {
+                            subTitle: this.$t('helmPullGuideSubTitle'),
+                            codeList: [
+                                `cargo install --index ${this.domain.cargo}/${this.projectId}/${this.repoName}/index/`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        cargoInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: this.$t('cargoCreditGuideSubTitle1'),
+                            codeList: [
+                                "[registry]\n" + "default = \"bkrepo\"" + "\n\n"
+                                + "[registries.bkrepo]\n" + `index = "${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
+                                + "\n" + `global-credential-providers = ["cargo:token", "cargo:libsecret", "cargo:macos-keychain", "cargo:wincred"]`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('cargoCreditGuideSubTitle2'),
+                            codeList: [
+                                "[registries.bkrepo]"
+                                + "\n" + `token = "Basic ${this.userName}:${this.accessToken} (convert to base64)"`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('helmPullGuideSubTitle'),
+                            codeList: [
+                                `cargo install --index ${this.domain.cargo}/${this.projectId}/${this.repoName}/index/ --version ${this.versionLabel}`
                             ]
                         }
                     ]

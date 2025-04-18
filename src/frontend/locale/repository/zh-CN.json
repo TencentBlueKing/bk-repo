@@ -939,5 +939,7 @@
     "waitUpload": "等待上传中",
     "reason": "原因",
     "forbidMsg": "禁用后，不可下载",
-    "forbidTitle": "禁用：{0}"
+    "forbidTitle": "禁用：{0}",
+    "cargoCreditGuideSubTitle1":"1、编辑 Cargo 主目录下的配置文件（例如/.cargo/config.toml）",
+    "cargoCreditGuideSubTitle2":"2、请将以下部分添加到 Cargo 主目录下的凭据文件（例如/.cargo/credentials.toml）"
 }
