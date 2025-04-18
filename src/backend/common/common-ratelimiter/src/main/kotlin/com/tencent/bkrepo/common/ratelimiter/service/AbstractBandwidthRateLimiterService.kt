@@ -84,7 +84,11 @@ abstract class AbstractBandwidthRateLimiterService(
                 rateLimiter = rateLimiter, latency = rateLimiterProperties.latency,
                 waitRound = rateLimiterProperties.waitRound, rangeLength = rangeLength,
                 dryRun = rateLimiterProperties.dryRun, permitsOnce = rateLimiterProperties.permitsOnce,
-                limitPerSecond = getPermitsPerSecond(resLimitInfo.resourceLimit)
+                limitPerSecond = getPermitsPerSecond(resLimitInfo.resourceLimit),
+                progressThreshold = rateLimiterProperties.progressThreshold,
+                timeout = rateLimiterProperties.timeout,
+                smallFileThreshold = rateLimiterProperties.smallFileThreshold,
+                minPermits = rateLimiterProperties.minPermits,
             )
             CommonRateLimitInputStream(
                 delegate = inputStream,
@@ -131,18 +135,46 @@ abstract class AbstractBandwidthRateLimiterService(
         permits: Long
     ): Boolean {
         var flag = false
+        val startTime = System.currentTimeMillis()
         var failedNum = 0
+        var acquirePermits = permits
+        var alreadyAcquirePermits = 0L
+
         while (!flag) {
-            flag = rateLimiter.tryAcquire(permits)
-            if (!flag && failedNum < rateLimiterProperties.waitRound) {
+            // 当限制小于读取大小时，会进入死循环，增加等待轮次，如果等待达到时间上限，则放通一次避免连接断开
+            if ((System.currentTimeMillis() - startTime) > rateLimiterProperties.timeout) {
+                return true
+            }
+            try {
+                flag = rateLimiter.tryAcquire(acquirePermits)
+            } catch (ignore: AcquireLockFailedException) {
+                return true
+            }
+            if (!flag) {
+                if (rateLimiterProperties.dryRun) {
+                    return true
+                }
                 failedNum++
+                // 失败就减半获取
+                acquirePermits = (acquirePermits / 2).coerceAtLeast(rateLimiterProperties.minPermits)
                 try {
-                    Thread.sleep(rateLimiterProperties.latency)
+                    Thread.sleep(rateLimiterProperties.latency * failedNum)
                 } catch (ignore: InterruptedException) {
                 }
+                continue
             }
-            if (!flag && failedNum >= rateLimiterProperties.waitRound) {
-                return false
+            alreadyAcquirePermits += acquirePermits
+            // 判断是否需要继续获取许可
+            flag = when {
+                failedNum > 0 -> {
+                    // 进到这块说明当前申请成功，可以认为现在带宽情况有所缓解，顾尝试将请求许可数量翻倍，加快速度
+                    acquirePermits = (acquirePermits * 2).coerceAtMost(
+                        permits - alreadyAcquirePermits
+                    )
+                    alreadyAcquirePermits >= permits
+                }
+
+                else -> alreadyAcquirePermits >= permits
             }
         }
         return true
