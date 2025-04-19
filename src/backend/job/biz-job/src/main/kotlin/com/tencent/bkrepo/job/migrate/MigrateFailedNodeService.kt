@@ -82,11 +82,15 @@ class MigrateFailedNodeService(
      *
      * @param projectId 项目id
      * @param repoName 仓库名
-     * @param fullPath 迁移失败的node完整路径
+     * @param failedNodeId failedNodeId
      */
-    fun removeFailedNode(projectId: String, repoName: String, fullPath: String?) {
-        val result = migrateFailedNodeDao.remove(projectId, repoName, fullPath)
-        logger.info("remove [${result.deletedCount}] failed node of [$projectId/$repoName$fullPath]")
+    fun removeFailedNode(projectId: String, repoName: String, failedNodeId: String?) {
+        val result = if (failedNodeId.isNullOrEmpty()) {
+            migrateFailedNodeDao.remove(projectId, repoName)
+        } else {
+            migrateFailedNodeDao.remove(failedNodeId)
+        }
+        logger.info("remove [${result.deletedCount}] failed node of [$projectId/$repoName] failedNode[$failedNodeId]")
     }
 
     /**
@@ -94,11 +98,15 @@ class MigrateFailedNodeService(
      *
      * @param projectId 项目id
      * @param repoName 仓库名
-     * @param fullPath 迁移失败的node完整路径
+     * @param failedNodeId failedNodeId
      */
-    fun resetRetryCount(projectId: String, repoName: String, fullPath: String?) {
-        val result = migrateFailedNodeDao.resetRetryCount(projectId, repoName, fullPath)
-        logger.info("reset [${result.modifiedCount}] retry count of [$projectId/$repoName$fullPath]")
+    fun resetRetryCount(projectId: String, repoName: String, failedNodeId: String?) {
+        val result = if (failedNodeId.isNullOrEmpty()) {
+            migrateFailedNodeDao.resetRetryCount(projectId, repoName)
+        } else {
+            migrateFailedNodeDao.resetRetryCount(failedNodeId)
+        }
+        logger.info("reset [${result.modifiedCount}] retry count of [$projectId/$repoName] failedNode[$failedNodeId]")
     }
 
     /**
