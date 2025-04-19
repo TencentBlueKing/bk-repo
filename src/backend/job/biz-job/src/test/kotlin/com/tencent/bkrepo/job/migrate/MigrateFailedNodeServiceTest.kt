@@ -123,16 +123,16 @@ class MigrateFailedNodeServiceTest @Autowired constructor(
     @Test
     fun testRemoveFailedNode() {
         // remove repo failed node
-        val failedNode1 = migrateFailedNodeDao.insertFailedNode("/a/b/c.txt")
+        migrateFailedNodeDao.insertFailedNode("/a/b/c.txt")
         migrateFailedNodeDao.insertFailedNode("/a/b/d.txt")
         assertEquals(2, migrateFailedNodeDao.count(Query()))
         migrateFailedNodeService.removeFailedNode(UT_PROJECT_ID, UT_REPO_NAME, null)
         assertEquals(0, migrateFailedNodeDao.count(Query()))
 
         // remove failed node
-        migrateFailedNodeDao.insertFailedNode("/a/b/c.txt")
+        val failedNode = migrateFailedNodeDao.insertFailedNode("/a/b/c.txt")
         assertEquals(1, migrateFailedNodeDao.count(Query()))
-        migrateFailedNodeService.removeFailedNode(UT_PROJECT_ID, UT_REPO_NAME, failedNode1.id!!)
+        migrateFailedNodeService.removeFailedNode(UT_PROJECT_ID, UT_REPO_NAME, failedNode.id!!)
         assertEquals(0, migrateFailedNodeDao.count(Query()))
     }
 
