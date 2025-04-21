@@ -43,7 +43,7 @@
           label="保存时间(天)"
           prop="cleanupValue"
         >
-          <el-input-number v-model="cleanValue" controls-position="right" :min="0" @change="changeEnable" />
+          <el-input-number v-model="cleanValue" controls-position="right" :max="3650" :min="0" @change="changeEnable" />
         </el-form-item>
         <el-form-item
           v-if="repoConfig.configuration.settings.cleanupStrategy.enable && repoConfig.configuration.settings.cleanupStrategy.cleanupType === 'retentionNums'"

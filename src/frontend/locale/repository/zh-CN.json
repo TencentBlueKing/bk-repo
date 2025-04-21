@@ -939,5 +939,6 @@
     "waitUpload": "等待上传中",
     "reason": "原因",
     "forbidMsg": "禁用后，不可下载",
-    "forbidTitle": "禁用：{0}"
+    "forbidTitle": "禁用：{0}",
+    "daysOverLimit": "保存时间不能超过10年"
 }

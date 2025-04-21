@@ -936,5 +936,6 @@
     "waitUpload": "Waiting Upload",
     "reason": "Reason",
     "forbidMsg": "After disabling, download is not possible",
-    "forbidTitle": "Forbid：{0}"
+    "forbidTitle": "Forbid：{0}",
+    "daysOverLimit": "The storage time shall not exceed 10 years"
 }

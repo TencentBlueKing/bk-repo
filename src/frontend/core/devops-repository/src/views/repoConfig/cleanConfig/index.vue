@@ -78,7 +78,12 @@
                             required: true,
                             message: this.$t('cleanConfigTip'),
                             trigger: 'blur'
-                        }
+                        },
+                        {
+                            validator: this.asynCheckDays,
+                            message: this.$t('daysOverLimit'),
+                            trigger: 'blur'
+                        },
                     ]
                 }
             }
@@ -198,6 +203,12 @@
                         return validType
                     }
                 }
+            },
+            asynCheckDays () {
+                if (this.cleanupStrategy.cleanupType === 'retentionDays') {
+                    return this.cleanupStrategy.cleanupValue <= 10 * 365
+                }
+                return true
             },
             changeType () {
                 if (this.cleanupStrategy.cleanupType !== 'retentionDate') {
