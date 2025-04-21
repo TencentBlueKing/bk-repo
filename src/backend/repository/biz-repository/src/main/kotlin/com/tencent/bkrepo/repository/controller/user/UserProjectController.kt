@@ -91,7 +91,7 @@ class UserProjectController(
         @RequestAttribute userId: String,
         @AuditRequestBody
         @RequestBody userProjectRequest: UserProjectCreateRequest
-    ): Response<Void> {
+    ): Response<String> {
         val createRequest = with(userProjectRequest) {
             ProjectCreateRequest(
                 name = name,
@@ -103,18 +103,18 @@ class UserProjectController(
             )
         }
         ActionAuditContext.current().setInstance(createRequest)
-        projectService.createProject(createRequest)
-        return ResponseBuilder.success()
+        val projectInfo = projectService.createProject(createRequest)
+        return ResponseBuilder.success(projectInfo.name)
     }
 
     @ApiOperation("查询项目是否存在")
     @GetMapping("/exist/{projectId}")
+    @Principal(PrincipalType.GENERAL)
     fun checkExist(
         @RequestAttribute userId: String,
         @ApiParam(value = "项目ID", required = true)
         @PathVariable projectId: String
     ): Response<Boolean> {
-        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
         return ResponseBuilder.success(projectService.checkExist(projectId))
     }
 
@@ -194,7 +194,7 @@ class UserProjectController(
     fun create(
         @RequestAttribute userId: String,
         @RequestBody userProjectRequest: UserProjectCreateRequest
-    ): Response<Void> {
+    ): Response<String> {
         return this.createProject(userId, userProjectRequest)
     }
 

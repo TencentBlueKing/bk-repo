@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.maven.util
 
 import com.tencent.bkrepo.maven.pojo.MavenVersion
+import com.tencent.bkrepo.maven.util.MavenStringUtils.parseMavenFileName
 import com.tencent.bkrepo.maven.util.MavenStringUtils.setVersion
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -146,5 +147,73 @@ internal class MavenStringUtilsTest {
             { Assertions.assertEquals("aar", mavenVersion.packaging) }
         )
         println("$mavenVersion")
+    }
+
+    @Test
+    fun parseMavenFileNameTest() {
+        var jarName = "my-app-4.0-20220110.065755-5-jar-with-dependencies.jar"
+        var mavenVersion = parseMavenFileName(jarName)
+        assertAll(
+            { Assertions.assertEquals("my-app", mavenVersion?.artifactId) },
+            { Assertions.assertEquals("4.0-20220110.065755-5-jar-with-dependencies", mavenVersion?.version) },
+            { Assertions.assertEquals("jar", mavenVersion?.packaging) }
+        )
+
+        jarName = "my-app-4.0.jar"
+        mavenVersion = parseMavenFileName(jarName)
+        assertAll(
+            { Assertions.assertEquals("my-app", mavenVersion?.artifactId) },
+            { Assertions.assertEquals("4.0", mavenVersion?.version) },
+            { Assertions.assertEquals("jar", mavenVersion?.packaging) }
+        )
+
+        jarName = "my-app-4.0-jar-with-dependencies.jar"
+        mavenVersion = parseMavenFileName(jarName)
+        assertAll(
+            { Assertions.assertEquals("my-app", mavenVersion?.artifactId) },
+            { Assertions.assertEquals("4.0-jar-with-dependencies", mavenVersion?.version) },
+            { Assertions.assertEquals("jar", mavenVersion?.packaging) }
+        )
+
+
+        jarName = "my-app-4.0-jar-with-dependencies.jar"
+        mavenVersion = parseMavenFileName(jarName)
+        assertAll(
+            { Assertions.assertEquals("my-app", mavenVersion?.artifactId) },
+            { Assertions.assertEquals("4.0-jar-with-dependencies", mavenVersion?.version) },
+            { Assertions.assertEquals("jar", mavenVersion?.packaging) }
+        )
+
+        jarName = "my-app-4.0-SNAPSHOT-01-jar-with-dependencies.jar"
+        mavenVersion = parseMavenFileName(jarName)
+        assertAll(
+            { Assertions.assertEquals("my-app", mavenVersion?.artifactId) },
+            { Assertions.assertEquals("4.0-SNAPSHOT-01-jar-with-dependencies", mavenVersion?.version) },
+            { Assertions.assertEquals("jar", mavenVersion?.packaging) }
+        )
+
+        jarName = "my-app-1.2.58.1-debug.aar"
+        mavenVersion = parseMavenFileName(jarName)
+        assertAll(
+            { Assertions.assertEquals("my-app", mavenVersion?.artifactId) },
+            { Assertions.assertEquals("1.2.58.1-debug", mavenVersion?.version) },
+            { Assertions.assertEquals("aar", mavenVersion?.packaging) }
+        )
+
+        jarName = "my-app-client-a-2.8.5-tq-0.1.8.jar"
+        mavenVersion = parseMavenFileName(jarName)
+        assertAll(
+            { Assertions.assertEquals("my-app-client-a", mavenVersion?.artifactId) },
+            { Assertions.assertEquals("2.8.5-tq-0.1.8", mavenVersion?.version) },
+            { Assertions.assertEquals("jar", mavenVersion?.packaging) }
+        )
+
+        jarName = "my-app-client-a-2.8.5-tq-0.1.8-source.jar"
+        mavenVersion = parseMavenFileName(jarName)
+        assertAll(
+            { Assertions.assertEquals("my-app-client-a", mavenVersion?.artifactId) },
+            { Assertions.assertEquals("2.8.5-tq-0.1.8-source", mavenVersion?.version) },
+            { Assertions.assertEquals("jar", mavenVersion?.packaging) }
+        )
     }
 }

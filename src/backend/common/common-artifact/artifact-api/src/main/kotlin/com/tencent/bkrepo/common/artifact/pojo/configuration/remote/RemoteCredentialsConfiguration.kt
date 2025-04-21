@@ -42,5 +42,9 @@ data class RemoteCredentialsConfiguration(
     /**
      * 密码
      */
-    var password: String? = null
+    var password: String? = null,
+    /**
+     * 鉴权凭据key
+     */
+    var credentialKey: String? = null,
 )

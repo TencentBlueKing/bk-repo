@@ -70,4 +70,11 @@ interface ProxyChannelService {
      * 根据项目仓库信息获取列表
      */
     fun listProxyChannel(projectId: String, repoName: String, repoType: RepositoryType,): List<ProxyChannelInfo>
+
+    fun addSyncRecord(
+        projectId: String,
+        repoName: String,
+        name: String,
+        status: Boolean
+    )
 }

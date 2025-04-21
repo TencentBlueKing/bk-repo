@@ -34,6 +34,7 @@ package com.tencent.bkrepo.repository.pojo.proxy
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
+import java.time.LocalDateTime
 
 @ApiModel("代理源信息")
 data class ProxyChannelInfo(
@@ -56,5 +57,9 @@ data class ProxyChannelInfo(
     @ApiModelProperty("代理源认证用户名")
     val username: String? = null,
     @ApiModelProperty("代理源认证密码")
-    val password: String? = null
+    val password: String? = null,
+    @ApiModelProperty("代理源最近同步状态")
+    val lastSyncStatus: Boolean? = null,
+    @ApiModelProperty("代理源最近同步时间")
+    val lastSyncDate: LocalDateTime? = null,
 )

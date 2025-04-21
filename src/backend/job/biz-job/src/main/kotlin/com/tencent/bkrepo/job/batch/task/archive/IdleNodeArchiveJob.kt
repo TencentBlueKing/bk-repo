@@ -78,8 +78,8 @@ class IdleNodeArchiveJob(
 
     override fun collectionNames(): List<String> {
         val collectionNames = mutableListOf<String>()
-        if (properties.projects.isNotEmpty()) {
-            properties.projects.forEach {
+        if (properties.projectArchiveCredentialsKeys.isNotEmpty()) {
+            properties.projectArchiveCredentialsKeys.keys.forEach {
                 val index = HashShardingUtils.shardingSequenceFor(it, SHARDING_COUNT)
                 collectionNames.add("$COLLECTION_NAME_PREFIX$index")
             }
@@ -92,6 +92,10 @@ class IdleNodeArchiveJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
     override fun doStart0(jobContext: NodeContext) {
+        if (properties.projectArchiveCredentialsKeys.isEmpty()) {
+            logger.info("projectArchiveCredentialsKeys is empty, skip archive job")
+            return
+        }
         super.doStart0(jobContext)
         // 由于新的文件可能会被删除，所以旧文件数据的引用会被改变，所以需要重新扫描旧文件引用。
         if (refreshCount-- < 0) {
@@ -115,8 +119,8 @@ class IdleNodeArchiveJob(
                 .and("compressed").ne(true)
                 .and("size").gt(properties.fileSizeThreshold.toBytes())
                 .apply {
-                    if (properties.projects.isNotEmpty()) {
-                        and("projectId").inValues(properties.projects)
+                    if (properties.projectArchiveCredentialsKeys.isNotEmpty()) {
+                        and("projectId").inValues(properties.projectArchiveCredentialsKeys.keys)
                     }
                     if (lastCutoffTime == null) {
                         // 首次查询
@@ -132,7 +136,11 @@ class IdleNodeArchiveJob(
     }
 
     override fun run(row: Node, collectionName: String, context: NodeContext) {
-        archiveNode(row, context, ArchiveStorageClass.DEEP_ARCHIVE, null, properties.days)
+        val archiveCredentialsKey = properties.projectArchiveCredentialsKeys[row.projectId]
+        val storageClass = properties.storageClass
+        val days = properties.days
+        logger.info("Start to archive $row, storageClass: $storageClass, collectionName: $collectionName, days: $days")
+        archiveNode(row, context, storageClass, archiveCredentialsKey, days)
     }
 
     fun archiveNode(

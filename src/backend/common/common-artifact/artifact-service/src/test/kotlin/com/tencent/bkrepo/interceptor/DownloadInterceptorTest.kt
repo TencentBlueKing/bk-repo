@@ -27,11 +27,13 @@
 
 package com.tencent.bkrepo.interceptor
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType.PACKAGE_FORBID
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.exception.ArtifactDownloadForbiddenException
 import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptorFactory
 import com.tencent.bkrepo.common.metadata.interceptor.impl.FilenameInterceptor
+import com.tencent.bkrepo.common.metadata.interceptor.impl.NodeForbiddenStatusInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.NodeMetadataInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.WebInterceptor
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -93,12 +95,12 @@ class DownloadInterceptorTest {
     @Test
     @DisplayName("制品禁用下载拦截器测试")
     fun forbidTest() {
-        val forbidInterceptor = DownloadInterceptorFactory.buildNodeForbidInterceptor()
+        val forbidInterceptor = NodeForbiddenStatusInterceptor()
 
         var node = nodeDetail("test", emptyMap())
         assertDoesNotThrow { forbidInterceptor.intercept(node.projectId, node) }
         node = node.copy(metadata = mapOf(FORBID_STATUS to true))
-        assertThrows<ArtifactDownloadForbiddenException> { forbidInterceptor.intercept(node.projectId, node) }
+        assertThrows<ErrorCodeException> { forbidInterceptor.intercept(node.projectId, node) }
     }
 
     @Test

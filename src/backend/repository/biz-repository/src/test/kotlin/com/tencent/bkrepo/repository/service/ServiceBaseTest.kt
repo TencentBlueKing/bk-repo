@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
@@ -99,7 +100,8 @@ import org.springframework.test.context.TestPropertySource
     SpringContextUtils::class,
     NodeDao::class,
     RouterControllerProperties::class,
-    RepositoryProperties::class
+    RepositoryProperties::class,
+    EnableMultiTenantProperties::class,
 )
 @ComponentScan(value = ["com.tencent.bkrepo.repository.service", "com.tencent.bkrepo.common.metadata"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])

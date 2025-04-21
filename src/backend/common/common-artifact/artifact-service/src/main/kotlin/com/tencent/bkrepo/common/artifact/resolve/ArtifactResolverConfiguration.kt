@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.resolve
 
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileCleanInterceptor
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.file.UploadConfigElement
@@ -41,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResour
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -50,6 +52,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
 @Import(ArtifactFileFactory::class)
+@EnableConfigurationProperties(EnableMultiTenantProperties::class)
 class ArtifactResolverConfiguration {
 
     @Bean
@@ -59,7 +62,9 @@ class ArtifactResolverConfiguration {
     fun resolverMap(resolverList: List<ArtifactInfoResolver>) = ResolverMap(resolverList)
 
     @Bean
-    fun artifactInfoMethodArgumentResolver(resolverMap: ResolverMap) = ArtifactInfoMethodArgumentResolver(resolverMap)
+    fun artifactInfoMethodArgumentResolver(
+        resolverMap: ResolverMap
+    ) = ArtifactInfoMethodArgumentResolver(resolverMap)
 
     @Bean
     fun artifactFileMethodArgumentResolver() = ArtifactFileMethodArgumentResolver()

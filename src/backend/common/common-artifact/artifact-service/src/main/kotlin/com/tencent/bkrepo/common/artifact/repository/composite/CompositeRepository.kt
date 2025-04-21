@@ -34,7 +34,9 @@ package com.tencent.bkrepo.common.artifact.repository.composite
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChannelSetting
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCacheConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteNetworkConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactMigrateContext
@@ -217,7 +219,9 @@ class CompositeRepository(
             name = setting.name
         )!!
         // 构造proxyConfiguration
-        val remoteConfiguration = convertConfig(proxyChannel)
+        val networkConfig = context.getCompositeConfiguration().proxy.network
+        val cacheConfig = context.getCompositeConfiguration().proxy.cache
+        val remoteConfiguration = convertConfig(proxyChannel, networkConfig, cacheConfig)
         val remoteRepoDetail = convert(remoteConfiguration, context.repositoryDetail)
         return context.copy(remoteRepoDetail)
     }
@@ -247,11 +251,18 @@ class CompositeRepository(
             )
         }
 
-        fun convertConfig(tProxyChannel: ProxyChannelInfo): RepositoryConfiguration {
+        fun convertConfig(
+            tProxyChannel: ProxyChannelInfo,
+            networkConfiguration: RemoteNetworkConfiguration,
+            cacheConfiguration: RemoteCacheConfiguration
+        ): RepositoryConfiguration {
             val remoteConfiguration = RemoteConfiguration()
             remoteConfiguration.url = tProxyChannel.url
             remoteConfiguration.credentials.username = tProxyChannel.username
             remoteConfiguration.credentials.password = tProxyChannel.password
+            remoteConfiguration.credentials.credentialKey = tProxyChannel.credentialKey
+            remoteConfiguration.network = networkConfiguration
+            remoteConfiguration.cache = cacheConfiguration
             return remoteConfiguration
         }
     }

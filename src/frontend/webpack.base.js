@@ -72,7 +72,7 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
                 // 指定要检查的文件扩展名
                 extensions: ['js', 'vue'],
                 // 指定要检查的目录
-                context: path.resolve(__dirname, 'devops-repository/src'), // 主要上下文目录
+                context: path.resolve(__dirname, 'core/devops-repository/src'), // 主要上下文目录
                 // 其他选项
                 fix: true, // 自动修复问题
                 formatter: require('eslint-friendly-formatter'), // 使用友好的格式化程序
@@ -82,8 +82,8 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
                 failOnWarning: false, // 如果有警告，是否使构建失败
                 // 使用 include 选项来指定多个路径
                 files: [
-                    path.resolve(__dirname, 'devops-repository/src/**/*.js'),
-                    path.resolve(__dirname, 'devops-repository/src/**/*.vue'),
+                    path.resolve(__dirname, 'core/devops-repository/src/**/*.js'),
+                    path.resolve(__dirname, 'core/devops-repository/src/**/*.vue'),
                     path.resolve(__dirname, 'src/**/*.js'),
                     path.resolve(__dirname, 'src/**/*.vue')
                 ]
@@ -104,7 +104,7 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
             fallback: { path: false },
             alias: {
                 '@': path.resolve('src'),
-                '@repository': path.resolve(__dirname, 'devops-repository/src'),
+                '@repository': path.resolve(__dirname, 'core/devops-repository/src'),
                 '@locale': path.resolve(__dirname, 'locale')
             }
         },

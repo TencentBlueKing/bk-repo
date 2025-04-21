@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.job.migrate.model
 
-import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode.Companion.FULL_PATH_IDX
-import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode.Companion.FULL_PATH_IDX_DEF
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode.Companion.NEW_FULL_PATH_IDX
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode.Companion.NEW_FULL_PATH_IDX_DEF
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode.Companion.NODE_ID_IDX
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode.Companion.NODE_ID_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -36,7 +38,8 @@ import java.time.LocalDateTime
 
 @Document("migrate_failed_node")
 @CompoundIndexes(
-    CompoundIndex(name = FULL_PATH_IDX, def = FULL_PATH_IDX_DEF, unique = true)
+    CompoundIndex(name = NEW_FULL_PATH_IDX, def = NEW_FULL_PATH_IDX_DEF, background = true),
+    CompoundIndex(name = NODE_ID_IDX, def = NODE_ID_IDX_DEF, unique = true, background = true)
 )
 data class TMigrateFailedNode(
     val id: String? = null,
@@ -67,7 +70,9 @@ data class TMigrateFailedNode(
     val migrating: Boolean = false,
 ) {
     companion object {
-        const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
-        const val FULL_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'fullPath': 1}"
+        const val NEW_FULL_PATH_IDX = "projectId_repoName_fullPath_retryTimes_idx"
+        const val NEW_FULL_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'retryTimes': 1}"
+        const val NODE_ID_IDX = "nodeId_idx"
+        const val NODE_ID_IDX_DEF = "{'nodeId': 1}"
     }
 }
