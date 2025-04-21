@@ -923,6 +923,8 @@
     "latestSyncData": "最后同步 {0}",
     "totalProxyCount": "共计{0}个代理",
     "connectionTest": "连通性测试",
+    "Yes": "是",
+    "No": "否",
     "itsmTip": "该操作需要审批，申请单已提交，请审批通过后刷新页面",
     "viewApproval": "查看审批",
     "shareUser": "分享人",
