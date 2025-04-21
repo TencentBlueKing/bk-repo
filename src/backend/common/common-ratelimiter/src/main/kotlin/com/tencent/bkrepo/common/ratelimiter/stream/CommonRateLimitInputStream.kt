@@ -157,7 +157,7 @@ class CommonRateLimitInputStream(
                 return permits.coerceAtMost(bytes)
             }
             try {
-                flag = rateCheckContext.rateLimiter.tryAcquire(acquirePermits)
+                flag = rateCheckContext.getRateLimiter().tryAcquire(acquirePermits)
             } catch (ignore: AcquireLockFailedException) {
                 return permits
             }

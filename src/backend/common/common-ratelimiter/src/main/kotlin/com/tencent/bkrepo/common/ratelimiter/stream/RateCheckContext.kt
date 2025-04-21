@@ -30,7 +30,7 @@ package com.tencent.bkrepo.common.ratelimiter.stream
 import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
 
 data class RateCheckContext(
-    var rateLimiter: RateLimiter,
+    val rateLimiterProvider: () -> RateLimiter,
     var latency: Long,
     var waitRound: Int,
     var limitPerSecond: Long,
@@ -41,4 +41,6 @@ data class RateCheckContext(
     var rangeLength: Long? = null,
     var dryRun: Boolean = false,
     var permitsOnce: Long = 1024 * 1024,
-)
+) {
+    fun getRateLimiter(): RateLimiter = rateLimiterProvider()
+}

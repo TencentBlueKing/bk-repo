@@ -79,9 +79,9 @@ abstract class AbstractBandwidthRateLimiterService(
         return try {
             interceptorChain.doBeforeLimitCheck(resLimitInfo.resource, resLimitInfo.resourceLimit)
             circuitBreakerCheck(resLimitInfo.resourceLimit, circuitBreakerPerSecond.toBytes())
-            val rateLimiter = getAlgorithmOfRateLimiter(resLimitInfo.resource, resLimitInfo.resourceLimit)
             val context = RateCheckContext(
-                rateLimiter = rateLimiter, latency = rateLimiterProperties.latency,
+                rateLimiterProvider = { getAlgorithmOfRateLimiter(resLimitInfo.resource, resLimitInfo.resourceLimit) },
+                latency = rateLimiterProperties.latency,
                 waitRound = rateLimiterProperties.waitRound, rangeLength = rangeLength,
                 dryRun = rateLimiterProperties.dryRun, permitsOnce = rateLimiterProperties.permitsOnce,
                 limitPerSecond = getPermitsPerSecond(resLimitInfo.resourceLimit),

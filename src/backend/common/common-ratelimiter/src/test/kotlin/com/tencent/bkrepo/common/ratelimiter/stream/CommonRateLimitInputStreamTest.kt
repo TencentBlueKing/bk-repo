@@ -527,7 +527,7 @@ class CommonRateLimitInputStreamTest {
         permitsOnce: Long = 1000,
     ): RateCheckContext {
         return RateCheckContext(
-            rateLimiter = rateLimiter,
+            rateLimiterProvider = { rateLimiter },
             limitPerSecond = limitPerSecond,
             permitsOnce = permitsOnce,
             minPermits = minPermits,
