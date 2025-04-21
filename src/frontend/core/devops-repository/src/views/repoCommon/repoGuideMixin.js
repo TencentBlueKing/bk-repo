@@ -1367,16 +1367,16 @@ export default {
                         {
                             subTitle: this.$t('cargoCreditGuideSubTitle1'),
                             codeList: [
-                                "[registry]\n" + "default = \"bkrepo\"" + "\n\n"
-                                + "[registries.bkrepo]\n" + `index = "${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
-                                + "\n" + `global-credential-providers = ["cargo:token", "cargo:libsecret", "cargo:macos-keychain", "cargo:wincred"]`
+                                '[registry]\n' + 'default = "bkrepo"' + '\n\n'
+                                + '[registries.bkrepo]\n' + `index = "${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
+                                + '\n' + `global-credential-providers = ["cargo:token", "cargo:libsecret", "cargo:macos-keychain", "cargo:wincred"]`
                             ]
                         },
                         {
                             subTitle: this.$t('cargoCreditGuideSubTitle2'),
                             codeList: [
-                                "[registries.bkrepo]"
-                                + "\n" + `token = "Basic ${this.base64AccessToken}"`
+                                '[registries.bkrepo]'
+                                + '\n' + `token = "Basic ${this.base64AccessToken}"`
                             ]
                         }
                     ]
@@ -1414,16 +1414,16 @@ export default {
                         {
                             subTitle: this.$t('cargoCreditGuideSubTitle1'),
                             codeList: [
-                                "[registry]\n" + "default = \"bkrepo\"" + "\n\n"
-                                + "[registries.bkrepo]\n" + `index = "${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
-                                + "\n" + `global-credential-providers = ["cargo:token", "cargo:libsecret", "cargo:macos-keychain", "cargo:wincred"]`
+                                '[registry]\n' + 'default = "bkrepo"' + '\n\n'
+                                + '[registries.bkrepo]\n' + `index = "${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
+                                + '\n' + `global-credential-providers = ["cargo:token", "cargo:libsecret", "cargo:macos-keychain", "cargo:wincred"]`
                             ]
                         },
                         {
                             subTitle: this.$t('cargoCreditGuideSubTitle2'),
                             codeList: [
-                                "[registries.bkrepo]"
-                                + "\n" + `token = "Basic ${this.userName}:${this.accessToken} (convert to base64)"`
+                                '[registries.bkrepo]'
+                                + '\n' + `token = "Basic ${this.userName}:${this.accessToken} (convert to base64)"`
                             ]
                         },
                         {
