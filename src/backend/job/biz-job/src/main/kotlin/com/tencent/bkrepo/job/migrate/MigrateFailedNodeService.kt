@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.metadata.model.TFileReference
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -56,7 +55,6 @@ import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
@@ -169,9 +167,7 @@ class MigrateFailedNodeService(
      * 更新node归档状态
      */
     fun updateNodeArchiveStatus(projectId: String, nodeId: String, archived: Boolean = true) {
-        val query = Query(TNode::projectId.isEqualTo(projectId).and(ID).isEqualTo(nodeId))
-        val update = Update().set(TNode::archived.name, archived)
-        nodeDao.updateFirst(query, update)
+        nodeDao.setNodeArchived(projectId, nodeId, archived)
         logger.info("set node $nodeId archived[$archived]")
     }
 

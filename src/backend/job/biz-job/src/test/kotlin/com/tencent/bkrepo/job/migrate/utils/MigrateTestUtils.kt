@@ -60,6 +60,7 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import java.time.LocalDateTime
 
 object MigrateTestUtils {
@@ -193,6 +194,10 @@ object MigrateTestUtils {
         remove(Query(), "node_$sequence")
     }
 
+    fun NodeDao.removeNodes() {
+        remove(Query(TNode::projectId.isEqualTo(UT_PROJECT_ID)))
+    }
+
     fun ArchiveFileDao.createArchiveFile(
         sha256: String,
         storageKey: String?,
@@ -219,11 +224,13 @@ object MigrateTestUtils {
 
     fun mockRepositoryCommonUtils(storageKey: String? = UT_STORAGE_CREDENTIALS_KEY, oldCredentialsKey: String? = null) {
         val repositoryService = Mockito.mock(RepositoryService::class.java)
+        val storageCredentialService = Mockito.mock(StorageCredentialService::class.java)
+        val storageCredentials = InnerCosCredentials(key = storageKey)
         whenever(repositoryService.getRepoDetail(anyString(), anyString(), anyOrNull())).thenReturn(
             RepositoryDetail(
                 projectId = UT_PROJECT_ID,
                 name = UT_REPO_NAME,
-                storageCredentials = InnerCosCredentials(key = storageKey),
+                storageCredentials = storageCredentials,
                 type = RepositoryType.GENERIC,
                 category = RepositoryCategory.LOCAL,
                 public = false,
@@ -238,6 +245,7 @@ object MigrateTestUtils {
                 used = 0,
             )
         )
-        RepositoryCommonUtils.updateService(repositoryService, Mockito.mock(StorageCredentialService::class.java))
+        whenever(storageCredentialService.findByKey(anyOrNull())).thenReturn(storageCredentials)
+        RepositoryCommonUtils.updateService(repositoryService, storageCredentialService)
     }
 }
