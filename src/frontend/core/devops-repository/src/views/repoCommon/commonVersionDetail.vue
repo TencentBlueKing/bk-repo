@@ -286,6 +286,11 @@
             ]),
             getDetail () {
                 this.isLoading = true
+                this.detail = {
+                    basic: {
+                        readme: ''
+                    }
+                }
                 this.getVersionDetail({
                     projectId: this.projectId,
                     repoType: this.repoType,
