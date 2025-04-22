@@ -88,11 +88,12 @@ class ArchivedNodeCompleteJob(
         with(row) {
             val now = LocalDateTime.now()
             var shouldDeleteStorage = true
-            for (node in listNode(sha256, storageCredentialsKey)) {
+            val nodes = listNode(sha256, storageCredentialsKey)
+            for (node in nodes) {
                 val accessInterval = node.lastAccessDate?.let { Duration.between(it, now) }
                 if (accessInterval != null && accessInterval < properties.minAccessInterval) {
                     logger.info("node[$node] was accessed recently, skip mark as archived")
-                    // 存在开始归档后上传到到同存储的同sha256制品时不删除原存储
+                    // 存在开始归档后又被访问的同sha256制品保留原存储，此时可能导致冗余存储
                     shouldDeleteStorage = false
                     continue
                 }

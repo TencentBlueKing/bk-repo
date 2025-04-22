@@ -161,6 +161,7 @@ object MigrateTestUtils {
         archived: Boolean = false,
         compressed: Boolean = false,
         deleted: LocalDateTime? = null,
+        lastAccessDate: LocalDateTime? = null,
     ): com.tencent.bkrepo.common.metadata.model.TNode {
         val now = LocalDateTime.now()
         val node = com.tencent.bkrepo.common.metadata.model.TNode(
@@ -181,6 +182,7 @@ object MigrateTestUtils {
             archived = archived,
             compressed = compressed,
             deleted = deleted,
+            lastAccessDate = lastAccessDate
         )
         return insert(node)
     }

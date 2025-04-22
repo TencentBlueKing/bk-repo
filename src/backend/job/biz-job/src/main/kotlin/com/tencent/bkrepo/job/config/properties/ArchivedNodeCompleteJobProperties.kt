@@ -36,5 +36,5 @@ class ArchivedNodeCompleteJobProperties(
     /**
      * 只允许标记最后访问时间与当前时间间隔大于该值的制品为已归档
      */
-    val minAccessInterval: Duration = Duration.ofDays(7L)
+    var minAccessInterval: Duration = Duration.ofDays(7L)
 ) : MongodbJobProperties()
