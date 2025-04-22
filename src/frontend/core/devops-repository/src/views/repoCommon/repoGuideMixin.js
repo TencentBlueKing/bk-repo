@@ -1368,8 +1368,8 @@ export default {
                             subTitle: this.$t('cargoCreditGuideSubTitle1'),
                             codeList: [
                                 '[registry]\n' + 'default = "bkrepo"' + '\n\n'
-                                + '[registries.bkrepo]\n' + `index = "${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
-                                + '\n' + `global-credential-providers = ["cargo:token", "cargo:libsecret", "cargo:macos-keychain", "cargo:wincred"]`
+                                + '[registries.bkrepo]\n' + `index = "sparse+${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
+                                + '\n' + `credential-provider = "cargo:token"`
                             ]
                         },
                         {
@@ -1388,7 +1388,7 @@ export default {
                         {
                             subTitle: this.$t('pushGuideSubTitle'),
                             codeList: [
-                                `cargo publish --index ${this.domain.cargo}/${this.projectId}/${this.repoName}/index/`
+                                `cargo publish --registry bkrepo --allow-dirty`
                             ]
                         }
                     ]
@@ -1396,11 +1396,25 @@ export default {
                 {
                     title: this.$t('pull'),
                     optionType: 'pull',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1', // vux中存储的变量名
+                            label: this.$t('artifactName'), // 输入框左侧label文案
+                            placeholder: this.$t('artifactNamePlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1' // vuex中mutations中的方法名
+                        },
+                        {
+                            key: 'dependInputValue2', // vux中存储的变量名
+                            label: this.$t('artifactVersion'), // 输入框左侧label文案
+                            placeholder: this.$t('packageVersionPlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2' // vuex中mutations中的方法名
+                        }
+                    ],
                     main: [
                         {
                             subTitle: this.$t('helmPullGuideSubTitle'),
                             codeList: [
-                                `cargo install --index ${this.domain.cargo}/${this.projectId}/${this.repoName}/index/`
+                                `cargo install --registry bkrepo ${this.dependInputValue1 || this.packageName} --version ${this.dependInputValue2 || this.versionLabel}`
                             ]
                         }
                     ]
@@ -1415,8 +1429,8 @@ export default {
                             subTitle: this.$t('cargoCreditGuideSubTitle1'),
                             codeList: [
                                 '[registry]\n' + 'default = "bkrepo"' + '\n\n'
-                                + '[registries.bkrepo]\n' + `index = "${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
-                                + '\n' + `global-credential-providers = ["cargo:token", "cargo:libsecret", "cargo:macos-keychain", "cargo:wincred"]`
+                                + '[registries.bkrepo]\n' + `index = "sparse+${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
+                                + '\n' + `credential-provider = "cargo:token"`
                             ]
                         },
                         {
@@ -1429,7 +1443,7 @@ export default {
                         {
                             subTitle: this.$t('helmPullGuideSubTitle'),
                             codeList: [
-                                `cargo install --index ${this.domain.cargo}/${this.projectId}/${this.repoName}/index/ --version ${this.versionLabel}`
+                                `cargo install --registry bkrepo ${this.packageName} --version ${this.versionLabel}`
                             ]
                         }
                     ]
