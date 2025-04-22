@@ -1388,7 +1388,7 @@ export default {
                         {
                             subTitle: this.$t('pushGuideSubTitle'),
                             codeList: [
-                                `cargo publish --registry bkrepo --allow-dirty`
+                                `cargo publish --registry bkrepo`
                             ]
                         }
                     ]
