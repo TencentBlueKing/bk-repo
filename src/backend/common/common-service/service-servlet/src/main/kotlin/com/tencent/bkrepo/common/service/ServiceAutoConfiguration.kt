@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.service.exception.ServiceExceptionHandler
 import com.tencent.bkrepo.common.service.feign.ClientConfiguration
 import com.tencent.bkrepo.common.service.feign.CustomFeignClientsConfiguration
 import com.tencent.bkrepo.common.service.log.AccessLogWebServerCustomizer
+import com.tencent.bkrepo.common.service.log.LogDataConfiguration
 import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
 import com.tencent.bkrepo.common.service.metrics.UndertowMetrics
 import com.tencent.bkrepo.common.service.otel.mongodb.OtelMongoConfiguration
@@ -73,8 +74,9 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
     CustomFeignClientsConfiguration::class,
     OtelMongoConfiguration::class,
     OtelWebConfiguration::class,
-    StandaloneJobAspect::class
-)
+    StandaloneJobAspect::class,
+    LogDataConfiguration::class,
+    )
 class ServiceAutoConfiguration {
 
     @Bean

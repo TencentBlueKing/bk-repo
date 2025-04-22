@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.logs
+package com.tencent.bkrepo.common.service.log
 
 data class LogData(
     val fileSize: Long = 0,

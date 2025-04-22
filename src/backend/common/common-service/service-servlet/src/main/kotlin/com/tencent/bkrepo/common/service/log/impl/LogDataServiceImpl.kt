@@ -1,16 +1,16 @@
-package com.tencent.bkrepo.common.artifact.logs.impl
+package com.tencent.bkrepo.common.service.log.impl
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.artifact.logs.LogData
-import com.tencent.bkrepo.common.artifact.logs.LogDataService
-import com.tencent.bkrepo.common.artifact.logs.LogType
+import com.tencent.bkrepo.common.service.log.LogData
+import com.tencent.bkrepo.common.service.log.LogDataService
+import com.tencent.bkrepo.common.service.log.LogType
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.stereotype.Service
 import java.io.File
 import java.io.RandomAccessFile
 import java.time.LocalDateTime
 import java.util.regex.Pattern
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.stereotype.Service
 
 
 @Service
@@ -56,32 +56,33 @@ class LogDataServiceImpl : LogDataService {
             // 读取内容
             val buffer = ByteArray((endPosition - startPosition).toInt())
             raf.read(buffer)
-            var content = String(buffer)
-
-            // 确保每行日志完整
-            if (endPosition < fileSize) {
-                // 查找最后一个换行符
-                val lastNewline = content.lastIndexOf('\n')
-                if (lastNewline != -1) {
-                    content = content.substring(0, lastNewline + 1)
-                    endPosition = startPosition + lastNewline + 1
-                } else {
-                    content = "" // 如果没有换行符，说明内容不完整，丢弃
-                }
+            // 直接处理字节数组，避免创建完整字符串
+            val lastNewline = buffer.indexOfLast { it == '\n'.code.toByte() }
+            val (contentBytes, newEndPos) = if (endPosition < fileSize && lastNewline != -1) {
+                buffer.copyOfRange(0, lastNewline + 1) to (startPosition + lastNewline + 1)
+            } else if (endPosition < fileSize) {
+                byteArrayOf() to startPosition // 内容不完整时返回空
+            } else {
+                buffer to endPosition
             }
-            val lastUpdateLabel = parseTimestampFromLastLine(content) ?: LocalDateTime.now().toString()
+            val content = String(contentBytes)
+            val lastUpdateLabel = parseTimestampFromLastLineOptimized(contentBytes) ?: LocalDateTime.now().toString()
             return LogData(endPosition, content, lastUpdateLabel)
         }
     }
 
-    fun parseTimestampFromLastLine(content: String): String? {
-        val lines = content.trim().lines()
-        if (lines.isEmpty()) return null
-
-        val lastLine = lines.last()
-        val pattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}")
-        val matcher = pattern.matcher(lastLine)
-        return if (matcher.find()) matcher.group() else null
+    private fun parseTimestampFromLastLineOptimized(bytes: ByteArray): String? {
+        if (bytes.isEmpty()) return null
+        // 从后向前查找最后一个换行符
+        var lineStart = bytes.size - 1
+        while (lineStart >= 0 && bytes[lineStart] != '\n'.code.toByte()) {
+            lineStart--
+        }
+        lineStart++ // 跳过换行符
+        // 直接处理字节数组
+        val pattern = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}".toRegex()
+        val lastLine = String(bytes, lineStart, bytes.size - lineStart)
+        return pattern.find(lastLine)?.value
     }
 
     private companion object {

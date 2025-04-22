@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.artifact.logs
+package com.tencent.bkrepo.common.service.log
 
 enum class LogType {
     APP,

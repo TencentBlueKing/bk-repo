@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.artifact.cns.CnsConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
-import com.tencent.bkrepo.common.artifact.logs.LogDataConfiguration
 import com.tencent.bkrepo.common.artifact.manager.ArtifactManagerConfiguration
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionConfiguration
@@ -73,6 +72,5 @@ import org.springframework.context.annotation.PropertySource
     CnsConfiguration::class,
     ArtifactRouterControllerConfiguration::class,
     BkAuditConfiguration::class,
-    LogDataConfiguration::class,
 )
 class ArtifactAutoConfiguration

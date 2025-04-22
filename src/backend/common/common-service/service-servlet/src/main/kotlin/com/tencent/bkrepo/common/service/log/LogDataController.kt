@@ -1,15 +1,12 @@
-package com.tencent.bkrepo.common.artifact.logs
+package com.tencent.bkrepo.common.service.log
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Principal(type = PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/service/logs")
 class LogDataController(private val logDataService: LogDataService) {

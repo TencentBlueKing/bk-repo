@@ -1,6 +1,6 @@
-package com.tencent.bkrepo.common.artifact.logs
+package com.tencent.bkrepo.common.service.log
 
-import com.tencent.bkrepo.common.artifact.logs.impl.LogDataServiceImpl
+import com.tencent.bkrepo.common.service.log.impl.LogDataServiceImpl
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 

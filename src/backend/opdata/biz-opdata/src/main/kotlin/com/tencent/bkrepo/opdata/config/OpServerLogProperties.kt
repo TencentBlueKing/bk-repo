@@ -1,18 +1,12 @@
 package com.tencent.bkrepo.opdata.config
 
-import com.tencent.bkrepo.common.artifact.logs.LogType
-import java.time.Duration
+import com.tencent.bkrepo.common.service.log.LogType
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.util.unit.DataSize
+import java.time.Duration
 
 @ConfigurationProperties("op.server.logs")
 data class OpServerLogProperties(
-    /**
-     * 服务列表，单体服务时填写
-     *
-     * 如http{s}://host:port
-     * */
-    var services: Set<String> = setOf(),
     /**
      * 服务列表更新时间
      * */
@@ -20,7 +14,7 @@ data class OpServerLogProperties(
     /**
      * 日志刷新周期
      */
-    var refreshRateMillis: Duration = Duration.ofMillis(10000),
+    var refreshRate: Duration = Duration.ofMillis(10000),
     /**
      * 日志文件列表
      */
