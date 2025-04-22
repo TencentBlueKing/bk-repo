@@ -161,6 +161,7 @@ const val SOURCE_TYPE = "sourceType"
 const val FORBID_STATUS = "forbidStatus"
 const val FORBID_USER = "forbidUser"
 const val FORBID_TYPE = "forbidType"
+const val FORBID_REASON = "forbidReason"
 
 // 制品扫描状态
 const val SCAN_STATUS = "scanStatus"
@@ -185,3 +186,8 @@ const val METADATA_KEY_LINK_FULL_PATH = "targetFullPath"
  * sha256长度
  */
 const val SHA256_STR_LENGTH = 64
+
+/**
+ * 下载请求参数，用于指示从远程仓库下载时是否读取缓存
+ */
+const val FLAG_QUERY_CACHE = "queryCacheFlag"

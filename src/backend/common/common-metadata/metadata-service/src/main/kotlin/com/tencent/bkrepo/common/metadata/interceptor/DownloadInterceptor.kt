@@ -50,8 +50,12 @@ abstract class DownloadInterceptor<R, A>(
         val match = matcher(artifact, rule)
         val forbidden = (allowed() && !match) || (!allowed() && match)
         if (forbidden) {
-            throw ArtifactDownloadForbiddenException(projectId)
+            throw forbiddenException(projectId, artifact)
         }
+    }
+
+    open fun forbiddenException(projectId: String, artifact: A): Exception {
+        return ArtifactDownloadForbiddenException(projectId)
     }
 
     /**

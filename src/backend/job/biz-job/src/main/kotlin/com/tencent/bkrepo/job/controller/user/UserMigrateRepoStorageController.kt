@@ -79,18 +79,18 @@ class UserMigrateRepoStorageController(
     fun removeFailedNode(
         @RequestParam projectId: String,
         @RequestParam repoName: String,
-        @RequestParam(required = false) fullPath: String? = null
+        @RequestParam(required = false) failedNodeId: String? = null
     ) {
-        migrateFailedNodeService.removeFailedNode(projectId, repoName, fullPath)
+        migrateFailedNodeService.removeFailedNode(projectId, repoName, failedNodeId)
     }
 
     @PostMapping("/failed/node/reset")
     fun resetFailedNodeRetryCount(
         @RequestParam projectId: String,
         @RequestParam repoName: String,
-        @RequestParam(required = false) fullPath: String? = null
+        @RequestParam(required = false) failedNodeId: String? = null
     ) {
-        migrateFailedNodeService.resetRetryCount(projectId, repoName, fullPath)
+        migrateFailedNodeService.resetRetryCount(projectId, repoName, failedNodeId)
     }
 
     @PostMapping("/failed/node/autofix")
@@ -116,5 +116,25 @@ class UserMigrateRepoStorageController(
         @RequestParam(required = false) dstCredentialKey: String? = null,
     ) {
         migrateFailedNodeService.correctMigratedStorageFileReference(srcCredentialKey, dstCredentialKey)
+    }
+
+    /**
+     * 修复缺失的失败节点
+     */
+    @PostMapping("/failed/node/fix/missing")
+    fun fixMissingFailedNode() {
+        migrateFailedNodeService.fixMissingFailedNode()
+    }
+
+    /**
+     * 更新node归档状态
+     */
+    @PostMapping("/archive/node/update")
+    fun updateNodeArchiveStatus(
+        @RequestParam projectId: String,
+        @RequestParam nodeId: String,
+        @RequestParam(required = false, defaultValue = "true") archived: Boolean = true
+    ) {
+        migrateFailedNodeService.updateNodeArchiveStatus(projectId, nodeId, archived)
     }
 }

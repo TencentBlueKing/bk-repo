@@ -8,7 +8,9 @@ import com.tencent.bkrepo.job.UT_USER
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask.Companion.toDto
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
+import com.tencent.bkrepo.job.migrate.pojo.Node
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.insertFailedNode
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.removeNodes
 import com.tencent.bkrepo.job.model.TNode
 import org.junit.jupiter.api.AfterAll
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
+import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -48,6 +51,7 @@ class MigrateExecutorTest @Autowired constructor(
     fun beforeEach() {
         initMock()
         migrateRepoStorageTaskDao.remove(Query())
+        migrateFailedNodeDao.remove(Query())
         mongoTemplate.removeNodes()
     }
 
@@ -117,12 +121,44 @@ class MigrateExecutorTest @Autowired constructor(
         mongoTemplate.createNode()
         mongoTemplate.createNode(sha256 = FAKE_SHA256, fullPath = "/a/b/d.txt")
         mongoTemplate.createNode(compressed = true, fullPath = "/a/b/e.txt")
+        val node = mongoTemplate.createNode(fullPath = "/a/b/f.txt")
+        migrateFailedNodeDao.insertFailedNode(nodeId = node.id!!)
         val context = executor.execute(buildContext(createTask()))!!
 
         // 等待任务执行完
         Thread.sleep(1000L)
         context.waitAllTransferFinished()
-        assertEquals(3, migrateFailedNodeDao.count(Query()))
+        assertEquals(4, migrateFailedNodeDao.count(Query()))
+    }
+
+    @Test
+    fun testMigrateArchivedFile() {
+        // mock
+        whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull()))
+            .thenThrow(FileNotFoundException::class.java)
+        whenever(migrateArchivedFileService.migrateArchivedFile(any(), any())).then {
+            val node = it.arguments[1] as Node
+            when (node.fullPath) {
+                "archiving" -> throw IllegalStateException("archiving")
+                "notArchived" -> false
+                else -> true
+            }
+        }
+        // 创建node用于模拟遍历迁移
+        // 迁移归档文件成功，最终只迁移归档文件
+        mongoTemplate.createNode(archived = true)
+        // 迁移中，抛出IllegalStateException
+        mongoTemplate.createNode(fullPath = "archiving")
+        // 未迁移，返回false，最终抛出FileNotFoundException
+        mongoTemplate.createNode(fullPath = "notArchived")
+        // node未归档，但是迁移归档文件成功，最终抛出FileNotFoundException
+        mongoTemplate.createNode()
+        val context = executor.execute(buildContext(createTask()))!!
+
+        // 等待任务执行结束
+        val task = migrateTaskService.findTask(UT_PROJECT_ID, UT_REPO_NAME)!!
+        context.waitAllTransferFinished()
+        assertTaskFinished(task.id!!, 4)
     }
 
     private fun assertTaskFinished(taskId: String, totalCount: Long) {

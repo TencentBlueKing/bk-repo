@@ -1,15 +1,19 @@
 package com.tencent.bkrepo.job.migrate.strategy
 
 import com.sun.xml.internal.messaging.saaj.util.ByteInputStream
+import com.tencent.bkrepo.archive.CompressStatus
+import com.tencent.bkrepo.archive.model.TCompressFile
+import com.tencent.bkrepo.archive.repository.ArchiveFileDao
+import com.tencent.bkrepo.archive.repository.CompressFileDao
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
-import com.tencent.bkrepo.job.batch.task.archive.NodeCompressedJob
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.dao.ArchiveMigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
@@ -36,9 +40,9 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Import
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.context.TestPropertySource
+import java.time.LocalDateTime
 
 @DisplayName("文件找不到错误自动修复策略测试")
 @DataMongoTest
@@ -49,11 +53,15 @@ import org.springframework.test.context.TestPropertySource
     RepositoryCommonUtils::class,
     MigrateFailedNodeDao::class,
     ArchiveMigrateFailedNodeDao::class,
+    NodeDao::class,
+    ArchiveFileDao::class,
+    CompressFileDao::class,
 )
 @ComponentScan(basePackages = ["com.tencent.bkrepo.common.metadata"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class FileNotFoundAutoFixStrategyTest @Autowired constructor(
-    private val mongoTemplate: MongoTemplate,
+    private val nodeDao: NodeDao,
+    private val compressFileDao: CompressFileDao,
     private val strategy: FileNotFoundAutoFixStrategy,
     private val migrateFailedNodeDao: MigrateFailedNodeDao,
     private val archiveMigrateFailedNodeDao: ArchiveMigrateFailedNodeDao,
@@ -84,38 +92,42 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(false)
         migrateFailedNodeDao.remove(Query())
         archiveMigrateFailedNodeDao.remove(Query())
-        mongoTemplate.removeNodes()
+        nodeDao.removeNodes()
     }
 
     @Test
     fun testNodeExists() {
         whenever(storageService.exist(anyString(), anyOrNull())).thenReturn(true)
         val node = migrateFailedNodeDao.insertFailedNode()
-        assertFalse(strategy.fix(node))
+        assertTrue(strategy.fix(node))
     }
 
     @Test
     fun testNodeCompressedOrArchived() {
         // node compressed or archived
-        var node = mongoTemplate.createNode(archived = true, compressed = true)
+        var node = nodeDao.createNode(archived = true, compressed = true)
         val failedNode = migrateFailedNodeDao.insertFailedNode(node.fullPath)
         assertFalse(strategy.fix(failedNode))
 
         // exists compressed or archived record
-        mongoTemplate.removeNodes()
-        node = mongoTemplate.createNode()
-        mongoTemplate.insert(
-            NodeCompressedJob.CompressFile(
+        nodeDao.removeNodes()
+        node = nodeDao.createNode()
+        compressFileDao.insert(
+            TCompressFile(
                 id = null,
-                sha256 = node.sha256,
-                storageCredentialsKey = null,
                 lastModifiedBy = "",
+                lastModifiedDate = LocalDateTime.now(),
+                createdBy = "",
+                createdDate = LocalDateTime.now(),
+                sha256 = node.sha256!!,
+                baseSha256 = "",
+                status = CompressStatus.COMPLETED,
+                storageCredentialsKey = null,
                 uncompressedSize = node.size
-            ),
-            "compress_file"
+            )
         )
         assertFalse(strategy.fix(failedNode))
-        mongoTemplate.remove(Query(), "compress_file")
+        compressFileDao.remove(Query())
     }
 
     @Test
@@ -123,8 +135,8 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
         whenever(storageService.load(anyString(), any(), anyOrNull()))
             .thenReturn(ByteInputStream(ByteArray(1), 1).artifactStream(Range.full(1)))
         doNothing().whenever(storageService).copy(anyString(), anyOrNull(), anyOrNull())
-        val node = mongoTemplate.createNode()
-        val failedNode = migrateFailedNodeDao.insertFailedNode(node.fullPath)
+        val node = nodeDao.createNode()
+        val failedNode = migrateFailedNodeDao.insertFailedNode(node.fullPath, nodeId = node.id!!)
         assertTrue(strategy.fix(failedNode))
         verify(fileReferenceService, times(1)).increment(any(), anyOrNull(), any())
     }
@@ -132,8 +144,8 @@ class FileNotFoundAutoFixStrategyTest @Autowired constructor(
     @Test
     fun testArchiveMigrateFailedNode() {
         whenever(storageService.load(anyString(), any(), anyOrNull())).thenReturn(null)
-        val node = mongoTemplate.createNode()
-        val failedNode = migrateFailedNodeDao.insertFailedNode(node.fullPath)
+        val node = nodeDao.createNode()
+        val failedNode = migrateFailedNodeDao.insertFailedNode(node.fullPath, nodeId = node.id!!)
         assertTrue(strategy.fix(failedNode))
         assertEquals(0, migrateFailedNodeDao.count(Query()))
         assertEquals(1, archiveMigrateFailedNodeDao.count(Query()))

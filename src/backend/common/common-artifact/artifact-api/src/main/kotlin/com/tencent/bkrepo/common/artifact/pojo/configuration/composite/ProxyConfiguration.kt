@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.common.artifact.pojo.configuration.composite
 
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCacheConfiguration
+import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteNetworkConfiguration
 import io.swagger.annotations.ApiModel
 import io.swagger.annotations.ApiModelProperty
 
@@ -40,5 +42,9 @@ import io.swagger.annotations.ApiModelProperty
 @ApiModel("代理配置")
 data class ProxyConfiguration(
     @ApiModelProperty("代理源列表", required = false)
-    val channelList: List<ProxyChannelSetting> = emptyList()
+    val channelList: List<ProxyChannelSetting> = emptyList(),
+    @ApiModelProperty("网络配置", required = false)
+    var network: RemoteNetworkConfiguration = RemoteNetworkConfiguration(),
+    @ApiModelProperty("缓存配置", required = false)
+    var cache: RemoteCacheConfiguration = RemoteCacheConfiguration(),
 )

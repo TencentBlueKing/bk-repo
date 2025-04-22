@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
 import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
@@ -165,7 +166,9 @@ class UserNpmController(
 
     @ApiOperation("获取npm域名地址")
     @GetMapping("/address")
-    fun getRegistryDomain(): Response<NpmDomainInfo> {
-        return ResponseBuilder.success(npmWebService.getRegistryDomain())
+    fun getRegistryDomain(
+        @RequestParam(required = false, defaultValue = "NPM") repositoryType: String = RepositoryType.NPM.name
+    ): Response<NpmDomainInfo> {
+        return ResponseBuilder.success(npmWebService.getRegistryDomain(repositoryType))
     }
 }

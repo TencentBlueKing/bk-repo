@@ -33,12 +33,14 @@ import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.IdleNodeArchiveJobProperties
+import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -66,6 +68,8 @@ class IdleNodeArchiveJob(
     private val properties: IdleNodeArchiveJobProperties,
     private val archiveClient: ArchiveClient,
     private val fileReferenceService: FileReferenceService,
+    private val migrateRepoStorageService: MigrateRepoStorageService,
+    private val storageService: StorageService,
 ) : MongoDbBatchJob<IdleNodeArchiveJob.Node, NodeContext>(properties) {
     private var lastCutoffTime: LocalDateTime? = null
     private var tempCutoffTime: LocalDateTime? = null
@@ -74,8 +78,8 @@ class IdleNodeArchiveJob(
 
     override fun collectionNames(): List<String> {
         val collectionNames = mutableListOf<String>()
-        if (properties.projects.isNotEmpty()) {
-            properties.projects.forEach {
+        if (properties.projectArchiveCredentialsKeys.isNotEmpty()) {
+            properties.projectArchiveCredentialsKeys.keys.forEach {
                 val index = HashShardingUtils.shardingSequenceFor(it, SHARDING_COUNT)
                 collectionNames.add("$COLLECTION_NAME_PREFIX$index")
             }
@@ -88,6 +92,10 @@ class IdleNodeArchiveJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
     override fun doStart0(jobContext: NodeContext) {
+        if (properties.projectArchiveCredentialsKeys.isEmpty()) {
+            logger.info("projectArchiveCredentialsKeys is empty, skip archive job")
+            return
+        }
         super.doStart0(jobContext)
         // 由于新的文件可能会被删除，所以旧文件数据的引用会被改变，所以需要重新扫描旧文件引用。
         if (refreshCount-- < 0) {
@@ -111,8 +119,8 @@ class IdleNodeArchiveJob(
                 .and("compressed").ne(true)
                 .and("size").gt(properties.fileSizeThreshold.toBytes())
                 .apply {
-                    if (properties.projects.isNotEmpty()) {
-                        and("projectId").inValues(properties.projects)
+                    if (properties.projectArchiveCredentialsKeys.isNotEmpty()) {
+                        and("projectId").inValues(properties.projectArchiveCredentialsKeys.keys)
                     }
                     if (lastCutoffTime == null) {
                         // 首次查询
@@ -128,7 +136,11 @@ class IdleNodeArchiveJob(
     }
 
     override fun run(row: Node, collectionName: String, context: NodeContext) {
-        archiveNode(row, context, ArchiveStorageClass.DEEP_ARCHIVE, null, properties.days)
+        val archiveCredentialsKey = properties.projectArchiveCredentialsKeys[row.projectId]
+        val storageClass = properties.storageClass
+        val days = properties.days
+        logger.info("Start to archive $row, storageClass: $storageClass, collectionName: $collectionName, days: $days")
+        archiveNode(row, context, storageClass, archiveCredentialsKey, days)
     }
 
     fun archiveNode(
@@ -142,6 +154,11 @@ class IdleNodeArchiveJob(
         val projectId = row.projectId
         val repoName = row.repoName
         val repo = RepositoryCommonUtils.getRepositoryDetail(projectId, repoName)
+        val migrating = migrateRepoStorageService.migrating(projectId, repoName)
+        if (migrating && !storageService.exist(sha256, repo.storageCredentials)) {
+            logger.info("repo[$projectId/$repoName] is migrating, skip unmigrated node[${row.fullPath}][$sha256]")
+            return
+        }
         val credentialsKey = repo.storageCredentials?.key
         if (properties.ignoreStorageCredentialsKeys.contains(credentialsKey) ||
             properties.ignoreRepoType.contains(repo.type.name)

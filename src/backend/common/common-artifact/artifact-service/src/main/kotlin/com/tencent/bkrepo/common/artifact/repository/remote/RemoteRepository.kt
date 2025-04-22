@@ -31,8 +31,13 @@
 
 package com.tencent.bkrepo.common.artifact.repository.remote
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.constant.FLAG_QUERY_CACHE
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -42,15 +47,26 @@ import com.tencent.bkrepo.common.artifact.repository.core.AbstractArtifactReposi
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveContentRange
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.config.StorageProperties
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod.HEAD
+import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -60,6 +76,21 @@ import java.time.format.DateTimeFormatter
  */
 @Suppress("TooManyFunctions")
 abstract class RemoteRepository : AbstractArtifactRepository() {
+
+    @Autowired
+    lateinit var asyncCacheWriter: AsyncRemoteArtifactCacheWriter
+
+    @Autowired
+    lateinit var storageProperties: StorageProperties
+
+    @Autowired
+    lateinit var storageHealthMonitorHelper: StorageHealthMonitorHelper
+
+    @Autowired
+    lateinit var cacheLocks: RemoteArtifactCacheLocks
+
+    @Autowired
+    lateinit var metadataService: MetadataService
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return getCacheArtifactResource(context) ?: run {
@@ -105,12 +136,14 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 尝试读取缓存的远程构件
      */
     fun getCacheArtifactResource(context: ArtifactDownloadContext): ArtifactResource? {
-        val configuration = context.getRemoteConfiguration()
-        if (!configuration.cache.enabled) return null
+        if (!shouldCache(context)) {
+            return null
+        }
 
         val cacheNode = findCacheNodeDetail(context)
         if (cacheNode == null || cacheNode.folder) return null
-        return if (!isExpired(cacheNode, configuration.cache.expiration)) {
+
+        return if (!isExpired(cacheNode, context.getRemoteConfiguration().cache.expiration)) {
             loadArtifactResource(cacheNode, context)
         } else null
     }
@@ -151,8 +184,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 将远程拉取的构件缓存本地
      */
     protected fun cacheArtifactFile(context: ArtifactContext, artifactFile: ArtifactFile): NodeDetail? {
-        val configuration = context.getRemoteConfiguration()
-        return if (configuration.cache.enabled) {
+        return if (shouldCache(context)) {
             val nodeCreateRequest = buildCacheNodeCreateRequest(context, artifactFile)
             storageManager.storeArtifactFile(nodeCreateRequest, artifactFile, context.storageCredentials)
         } else null
@@ -161,12 +193,130 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 远程下载响应回调
      */
-    open fun onDownloadResponse(context: ArtifactDownloadContext, response: Response): ArtifactResource {
+    open fun onDownloadResponse(
+        context: ArtifactDownloadContext,
+        response: Response,
+        useDisposition: Boolean = false,
+        syncCache: Boolean = true
+    ): ArtifactResource {
+        return if (syncCache) {
+            syncCacheResponse(response, context, useDisposition)
+        } else {
+            asyncCacheResponse(response, context, useDisposition)
+        }
+    }
+
+    private fun syncCacheResponse(
+        response: Response,
+        context: ArtifactDownloadContext,
+        useDisposition: Boolean
+    ): ArtifactResource {
         val artifactFile = createTempFile(response.body!!)
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
         val node = cacheArtifactFile(context, artifactFile)
-        return ArtifactResource(artifactStream, context.artifactInfo.getResponseName(), node, ArtifactChannel.LOCAL)
+        return ArtifactResource(
+            artifactStream,
+            context.artifactInfo.getResponseName(),
+            node,
+            ArtifactChannel.LOCAL,
+            useDisposition
+        )
+    }
+
+    private fun asyncCacheResponse(
+        response: Response,
+        context: ArtifactDownloadContext,
+        useDisposition: Boolean
+    ): ArtifactResource {
+        if (response.header(HttpHeaders.TRANSFER_ENCODING) == "chunked") {
+            throw ErrorCodeException(PARAMETER_INVALID, "Transfer-Encoding: chunked was not supported")
+        }
+        val contentLength = response.header(HttpHeaders.CONTENT_LENGTH)!!.toLong()
+        val range = resolveContentRange(response.header(HttpHeaders.CONTENT_RANGE)) ?: Range.full(contentLength)
+
+        val request = HttpContextHolder.getRequestOrNull()
+        val artifactStream = if (range.isEmpty() || request?.method == HEAD.name) {
+            // 返回空文件
+            response.close()
+            ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+        } else {
+            // 返回文件内容
+            response.body!!.byteStream().artifactStream(range).apply {
+                if (range.isFullContent() && shouldCache(context)) {
+                    // 仅缓存完整文件，返回响应的同时写入缓存
+                    addListener(buildCacheWriter(context, contentLength))
+                } else if (shouldCache(context)) {
+                    // 分片下载时异步拉取完整文件并缓存
+                    asyncCache(context, response.request)
+                }
+            }
+        }
+        // 由于此处node为null，需要手动设置sha256,md5等node相关header
+        addHeadersOfNode(response.headers)
+        return ArtifactResource(
+            inputStream = artifactStream,
+            artifactName = context.artifactInfo.getResponseName(),
+            node = null,
+            channel = ArtifactChannel.LOCAL,
+            useDisposition = useDisposition,
+        )
+    }
+
+    /**
+     * 使用此方法可以避免远程Node尚未被缓存时，返回给客户端的响应中不包含Node相关header
+     */
+    open fun addHeadersOfNode(headers: Headers) {
+        val response = HttpContextHolder.getResponse()
+        headers[HttpHeaders.ETAG]?.let { response.setHeader(HttpHeaders.ETAG, it) }
+    }
+
+    private fun asyncCache(context: ArtifactDownloadContext, request: Request) {
+        val repoDetail = context.repositoryDetail
+        val remoteNodes = safeSearchParents(context.repositoryDetail, context.artifactInfo)
+        val cacheTask = AsyncRemoteArtifactCacheWriter.CacheTask(
+            projectId = repoDetail.projectId,
+            repoName = repoDetail.name,
+            storageCredentials = repoDetail.storageCredentials ?: storageProperties.defaultStorageCredentials(),
+            remoteConfiguration = context.getRemoteConfiguration(),
+            fullPath = context.artifactInfo.getArtifactFullPath(),
+            userId = context.userId,
+            request = request,
+            remoteNodes = remoteNodes
+        )
+        asyncCacheWriter.cache(cacheTask)
+    }
+
+    protected fun shouldCache(context: ArtifactContext): Boolean {
+        val cacheFlag = HttpContextHolder.getRequestOrNull()?.getParameter(FLAG_QUERY_CACHE)?.lowercase() != "false"
+        return context.getRemoteConfiguration().cache.enabled && cacheFlag
+    }
+
+    /**
+     * 查询[artifactInfo]对应的节点及其父节点
+     */
+    open fun safeSearchParents(
+        repositoryDetail: RepositoryDetail,
+        artifactInfo: ArtifactInfo
+    ): List<Any> {
+        return emptyList()
+    }
+
+    open fun buildCacheWriter(context: ArtifactContext, contentLength: Long): RemoteArtifactCacheWriter {
+        val storageCredentials = context.repositoryDetail.storageCredentials
+            ?: storageProperties.defaultStorageCredentials()
+        val monitor = storageHealthMonitorHelper.getMonitor(storageProperties, storageCredentials)
+        val remoteNodes = safeSearchParents(context.repositoryDetail, context.artifactInfo)
+        return RemoteArtifactCacheWriter(
+            context = context,
+            storageManager = storageManager,
+            cacheLocks = cacheLocks,
+            remoteNodes = remoteNodes,
+            metadataService = metadataService,
+            monitor = monitor,
+            contentLength = contentLength,
+            storageProperties = storageProperties
+        )
     }
 
     /**
@@ -213,8 +363,12 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 创建http client
      */
-    protected fun createHttpClient(configuration: RemoteConfiguration, addInterceptor: Boolean = true): OkHttpClient {
-        return buildOkHttpClient(configuration, addInterceptor).build()
+    protected fun createHttpClient(
+        configuration: RemoteConfiguration,
+        addInterceptor: Boolean = true,
+        followRedirect: Boolean = false
+    ): OkHttpClient {
+        return buildOkHttpClient(configuration, addInterceptor, followRedirect).build()
     }
 
     /**

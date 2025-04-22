@@ -27,7 +27,9 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.job.migrate.Constant.MAX_MIGRATE_FAILED_RETRY_TIMES
 import com.tencent.bkrepo.job.migrate.config.MigrateRepoStorageProperties
@@ -41,7 +43,10 @@ import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
 import com.tencent.bkrepo.job.migrate.utils.ExecutingTaskRecorder
 import com.tencent.bkrepo.job.migrate.utils.MigrateRepoStorageUtils.buildThreadPoolExecutor
 import com.tencent.bkrepo.job.migrate.utils.TransferDataExecutor
+import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -54,8 +59,10 @@ class MigrateFailedNodeExecutor(
     migrateFailedNodeDao: MigrateFailedNodeDao,
     storageService: StorageService,
     executingTaskRecorder: ExecutingTaskRecorder,
+    migrateArchivedFileService: MigrateArchivedFileService,
     private val transferDataExecutor: TransferDataExecutor,
     private val migrateFailedNodeFixer: MigrateFailedNodeFixer,
+    private val nodeDao: NodeDao,
 ) : BaseTaskExecutor(
     properties,
     migrateRepoStorageTaskDao,
@@ -63,6 +70,7 @@ class MigrateFailedNodeExecutor(
     fileReferenceService,
     storageService,
     executingTaskRecorder,
+    migrateArchivedFileService,
 ) {
     /**
      * 用于重新迁移失败的node
@@ -92,7 +100,7 @@ class MigrateFailedNodeExecutor(
                     logger.info("migrate failed node[${node.fullPath}] success, task[${projectId}/${repoName}]")
                     migrateFailedNodeDao.removeById(failedNode.id!!)
                 } catch (e: Exception) {
-                    migrateFailedNodeDao.resetMigrating(projectId, repoName, node.fullPath)
+                    migrateFailedNodeDao.resetMigrating(failedNode.id!!)
                     logger.error("migrate failed node[${node.fullPath}] failed, task[${projectId}/${repoName}]", e)
                     if (failedNode.retryTimes >= MAX_MIGRATE_FAILED_RETRY_TIMES) {
                         logger.info("try to fix node[${node.fullPath}] failed, task[${projectId}/${repoName}]")
@@ -114,15 +122,21 @@ class MigrateFailedNodeExecutor(
         }
     }
 
-    private fun convert(failedNode: TMigrateFailedNode) = Node(
-        id = failedNode.nodeId,
-        projectId = failedNode.projectId,
-        repoName = failedNode.repoName,
-        fullPath = failedNode.fullPath,
-        size = failedNode.size,
-        sha256 = failedNode.sha256,
-        md5 = failedNode.md5,
-    )
+    private fun convert(failedNode: TMigrateFailedNode): Node {
+        val criteria = Node::projectId.isEqualTo(failedNode.projectId).and(ID).isEqualTo(failedNode.nodeId)
+        val node = nodeDao.findOne(Query(criteria))
+        return Node(
+            id = failedNode.nodeId,
+            projectId = failedNode.projectId,
+            repoName = failedNode.repoName,
+            fullPath = failedNode.fullPath,
+            size = failedNode.size,
+            sha256 = failedNode.sha256,
+            md5 = failedNode.md5,
+            archived = node?.archived,
+            compressed = node?.compressed,
+        )
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(MigrateFailedNodeExecutor::class.java)

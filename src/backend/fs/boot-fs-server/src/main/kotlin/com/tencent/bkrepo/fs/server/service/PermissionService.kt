@@ -32,9 +32,9 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
+import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
-import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import kotlinx.coroutines.reactor.awaitSingle
 
@@ -54,10 +54,11 @@ class PermissionService(
             repoName = repoName
         )
 
-
-        val headerValue = ReactiveRequestContextHolder.getRequest().headers[devXProperties.srcHeaderName!!]
-        if (headerValue?.first() == devXProperties.srcHeaderValues[1]) {
-            checkRequest.requestSource = DEVX_ACCESS_FROM_OFFICE
+        if (devXProperties.enabled) {
+            val headerValue = ReactiveRequestContextHolder.getRequest().headers[devXProperties.srcHeaderName!!]
+            if (headerValue?.first() == devXProperties.srcHeaderValues[1]) {
+                checkRequest.requestSource = DEVX_ACCESS_FROM_OFFICE
+            }
         }
 
         return rAuthClient.checkPermission(checkRequest).awaitSingle().data ?: false

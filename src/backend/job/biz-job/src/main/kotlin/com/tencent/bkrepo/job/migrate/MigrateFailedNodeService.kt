@@ -32,24 +32,33 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TFileReference
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.storage.config.StorageProperties
+import com.tencent.bkrepo.common.storage.core.StorageService
+import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
+import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.dao.MigrateRepoStorageTaskDao
+import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.model.TMigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
+import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -63,17 +72,25 @@ class MigrateFailedNodeService(
     private val fileReferenceService: FileReferenceService,
     private val storageCredentialsService: StorageCredentialService,
     private val repositoryDao: RepositoryDao,
+    private val nodeDao: NodeDao,
+    private val storageService: StorageService,
+    private val migrateArchivedFileService: MigrateArchivedFileService,
+    private val storageProperties: StorageProperties,
 ) {
     /**
      * 无法处理时，或已经手动处理成功则可以移除迁移失败的node
      *
      * @param projectId 项目id
      * @param repoName 仓库名
-     * @param fullPath 迁移失败的node完整路径
+     * @param failedNodeId failedNodeId
      */
-    fun removeFailedNode(projectId: String, repoName: String, fullPath: String?) {
-        val result = migrateFailedNodeDao.remove(projectId, repoName, fullPath)
-        logger.info("remove [${result.deletedCount}] failed node of [$projectId/$repoName$fullPath]")
+    fun removeFailedNode(projectId: String, repoName: String, failedNodeId: String?) {
+        val result = if (failedNodeId.isNullOrEmpty()) {
+            migrateFailedNodeDao.remove(projectId, repoName)
+        } else {
+            migrateFailedNodeDao.remove(failedNodeId)
+        }
+        logger.info("remove [${result.deletedCount}] failed node of [$projectId/$repoName] failedNode[$failedNodeId]")
     }
 
     /**
@@ -81,11 +98,15 @@ class MigrateFailedNodeService(
      *
      * @param projectId 项目id
      * @param repoName 仓库名
-     * @param fullPath 迁移失败的node完整路径
+     * @param failedNodeId failedNodeId
      */
-    fun resetRetryCount(projectId: String, repoName: String, fullPath: String?) {
-        val result = migrateFailedNodeDao.resetRetryCount(projectId, repoName, fullPath)
-        logger.info("reset [${result.modifiedCount}] retry count of [$projectId/$repoName$fullPath]")
+    fun resetRetryCount(projectId: String, repoName: String, failedNodeId: String?) {
+        val result = if (failedNodeId.isNullOrEmpty()) {
+            migrateFailedNodeDao.resetRetryCount(projectId, repoName)
+        } else {
+            migrateFailedNodeDao.resetRetryCount(failedNodeId)
+        }
+        logger.info("reset [${result.modifiedCount}] retry count of [$projectId/$repoName] failedNode[$failedNodeId]")
     }
 
     /**
@@ -147,6 +168,77 @@ class MigrateFailedNodeService(
                 fileReferenceService.increment(sha256, srcCredentialKey, -count)
             }
             logger.info("finish clean ref[$sha256], cleaned[${cleaned.incrementAndGet()}]")
+        }
+    }
+
+    /**
+     * 更新node归档状态
+     */
+    fun updateNodeArchiveStatus(projectId: String, nodeId: String, archived: Boolean = true) {
+        nodeDao.setNodeArchived(projectId, nodeId, archived)
+        logger.info("set node $nodeId archived[$archived]")
+    }
+
+    /**
+     * 修复缺失的失败node
+     */
+    @Async
+    fun fixMissingFailedNode() {
+        logger.info("start fix missing failed node")
+        val taskCache = HashMap<String, TMigrateRepoStorageTask>()
+        migrateFailedNodeDao.iterate(null, null, null) { failedNode ->
+            val task = taskCache.getOrPut(failedNode.taskId) {
+                migrateRepoStorageTaskDao.find(failedNode.projectId, failedNode.repoName)!!
+            }
+            nodeDao.findNodeIncludeDeleted(failedNode.projectId, failedNode.repoName, failedNode.fullPath)
+                .distinctBy { it.sha256 }
+                .filter { it.sha256 != null && it.sha256 != failedNode.sha256 }
+                .forEach { node ->
+                    try {
+                        tryCreateFailedNodeFor(task, node)
+                    } catch (e: Exception) {
+                        logger.error("create failed node for [${node}] failed", e)
+                    }
+                }
+        }
+        logger.info("fix missing failed node finished")
+    }
+
+    private fun tryCreateFailedNodeFor(task: TMigrateRepoStorageTask, node: TNode) {
+        with(node) {
+            val fileExist = storageService.exist(sha256!!, getStorageCredentials(task.dstStorageKey))
+            val archivedFileExist = node.archived == true &&
+                    migrateArchivedFileService.archivedFileCompleted(task.dstStorageKey, sha256!!)
+            if (!fileExist && !archivedFileExist) {
+                val now = LocalDateTime.now()
+                migrateFailedNodeDao.insert(
+                    TMigrateFailedNode(
+                        id = null,
+                        createdDate = now,
+                        lastModifiedDate = now,
+                        nodeId = node.id!!,
+                        taskId = task.id!!,
+                        projectId = projectId,
+                        repoName = repoName,
+                        fullPath = fullPath,
+                        sha256 = sha256!!,
+                        md5 = md5!!,
+                        size = size,
+                        retryTimes = 0,
+                    )
+                )
+                logger.info("create failed node[$projectId/$repoName/$fullPath][$sha256] success")
+            } else {
+                logger.info("failed node[$projectId/$repoName/$fullPath][$sha256] already exists]")
+            }
+        }
+    }
+
+    private fun getStorageCredentials(key: String?): StorageCredentials {
+        return if (key == null) {
+            storageProperties.defaultStorageCredentials()
+        } else {
+            RepositoryCommonUtils.getStorageCredentials(key)!!
         }
     }
 

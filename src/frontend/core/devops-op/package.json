@@ -1,0 +1,57 @@
+{
+  "name": "devops-op",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vue-cli-service serve",
+    "public": "vue-cli-service build",
+    "public:master": "vue-cli-service build",
+    "build:prod": "vue-cli-service build",
+    "build:stage": "vue-cli-service build --mode staging",
+    "preview": "node build/index.js --preview",
+    "svgo": "svgo -f src/icons/svg --config=src/icons/svgo.yml",
+    "lint": "eslint --ext .js,.vue src",
+    "test:unit": "jest --clearCache && vue-cli-service test:unit",
+    "test:ci": "npm run lint && npm run test:unit"
+  },
+  "dependencies": {
+    "axios": "1.7.7",
+    "core-js": "3.38.1",
+    "element-ui": "2.15.14",
+    "js-cookie": "2.2.0",
+    "jsencrypt": "^3.2.1",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.3",
+    "monaco-editor": "^0.52.2",
+    "monaco-editor-webpack-plugin": "^7.1.0",
+    "normalize.css": "7.0.0",
+    "nprogress": "0.2.0",
+    "path-browserify": "^1.0.1",
+    "path-to-regexp": "8.0.0",
+    "vue": "2.6.14",
+    "vue-router": "3.0.6",
+    "vuex": "3.1.0"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-babel": "~5.0.8",
+    "@vue/cli-plugin-eslint": "~5.0.8",
+    "@vue/cli-service": "~5.0.8",
+    "autoprefixer": "9.5.1",
+    "babel-plugin-dynamic-import-node": "2.3.3",
+    "chalk": "2.4.2",
+    "connect": "3.6.6",
+    "eslint-plugin-vue": "^9.28.0",
+    "html-webpack-plugin": "^5.6.0",
+    "serve-static": "1.13.2",
+    "svgo": "3.3.2",
+    "tasksfile": "^5.1.1"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions"
+  ],
+  "engines": {
+    "node": ">=8.9",
+    "npm": ">= 3.0.0"
+  }
+}

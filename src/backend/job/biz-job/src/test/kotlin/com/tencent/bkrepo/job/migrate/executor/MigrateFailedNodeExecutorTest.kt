@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor
 
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.job.UT_MD5
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
@@ -35,8 +36,8 @@ import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.CORRECT_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATE_FAILED_NODE_FINISHED
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState.MIGRATING_FAILED_NODE
-import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeAutoFixStrategy
 import com.tencent.bkrepo.job.migrate.strategy.MigrateFailedNodeFixer
+import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -45,11 +46,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyString
-import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -63,10 +62,8 @@ import java.util.concurrent.TimeUnit
 @Import(MigrateFailedNodeFixer::class)
 class MigrateFailedNodeExecutorTest @Autowired constructor(
     private val executor: MigrateFailedNodeExecutor,
+    private val nodeDao: NodeDao,
 ) : ExecutorBaseTest() {
-
-    @MockBean
-    private lateinit var migrateFailedNodeAutoFixStrategy: MigrateFailedNodeAutoFixStrategy
 
     @AfterAll
     fun afterAll() {
@@ -76,7 +73,6 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
     @BeforeEach
     fun beforeEach() {
         initMock()
-        whenever(migrateFailedNodeAutoFixStrategy.fix(any())).thenReturn(true)
         migrateRepoStorageTaskDao.remove(Query())
         migrateFailedNodeDao.remove(Query())
     }
@@ -89,7 +85,10 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
 
 
         // 创建待迁移的失败节点
-        createFailedNode(task.id!!)
+        val node1 = nodeDao.createNode(archived = false)
+        createFailedNode(task.id!!, node1.id!!)
+        val node2 = nodeDao.createNode(archived = true, deleted = LocalDateTime.now())
+        createFailedNode(task.id!!, node2.id!!)
         assertTrue(migrateFailedNodeDao.existsFailedNode(UT_PROJECT_ID, UT_REPO_NAME))
 
         // 执行任务
@@ -138,13 +137,13 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
         assertEquals(0, migrateFailedNodeDao.findOne(Query())!!.retryTimes)
     }
 
-    private fun createFailedNode(taskId: String) {
+    private fun createFailedNode(taskId: String, nodeId: String = "") {
         migrateFailedNodeDao.insert(
             TMigrateFailedNode(
                 id = null,
                 createdDate = LocalDateTime.now(),
                 lastModifiedDate = LocalDateTime.now(),
-                nodeId = "",
+                nodeId = nodeId,
                 taskId = taskId,
                 projectId = UT_PROJECT_ID,
                 repoName = UT_REPO_NAME,
