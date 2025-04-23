@@ -73,15 +73,48 @@ class LogDataServiceImpl : LogDataService {
     private fun parseTimestampFromLastLineOptimized(bytes: ByteArray): String? {
         if (bytes.isEmpty()) return null
         // 从后向前查找最后一个换行符
-        var lineStart = bytes.size - 1
-        while (lineStart >= 0 && bytes[lineStart] != '\n'.code.toByte()) {
-            lineStart--
+        var lineEnd = bytes.size - 1
+        while (lineEnd >= 0 && bytes[lineEnd] != '\n'.code.toByte()) {
+            lineEnd--
         }
-        lineStart++ // 跳过换行符
+        val lineStart = if (lineEnd >= 0) lineEnd + 1 else 0
         // 直接处理字节数组
-        val pattern = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}".toRegex()
-        val lastLine = String(bytes, lineStart, bytes.size - lineStart)
-        return pattern.find(lastLine)?.value
+        val lastLine = String(bytes, lineStart, bytes.size - lineStart).trim()
+        // 如果最后一行非空，尝试提取时间戳
+        if (lastLine.isNotEmpty()) {
+            return extractTimestamp(lastLine) ?: run {
+                // 如果最后一行没有时间戳，尝试倒数第二行
+                findPreviousLineTimestamp(bytes, lineEnd)
+            }
+        }
+        // 如果最后一行是空的，直接找倒数第二行
+        return findPreviousLineTimestamp(bytes, lineEnd)
+    }
+
+    /**
+     * 从字节数组中查找上一行的时间戳
+     */
+    private fun findPreviousLineTimestamp(bytes: ByteArray, currentLineEnd: Int): String? {
+        if (currentLineEnd <= 0) return null
+
+        // 查找上一行的起始位置
+        var prevLineEnd = currentLineEnd - 1
+        while (prevLineEnd >= 0 && bytes[prevLineEnd] != '\n'.code.toByte()) {
+            prevLineEnd--
+        }
+
+        val prevLineStart = if (prevLineEnd >= 0) prevLineEnd + 1 else 0
+        val prevLine = String(bytes, prevLineStart, currentLineEnd - prevLineStart).trim()
+
+        return extractTimestamp(prevLine)
+    }
+
+    /**
+     * 从单行文本中提取时间戳
+     */
+    private fun extractTimestamp(line: String): String? {
+        val timestampRegex = Regex("""^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}""")
+        return timestampRegex.find(line)?.value
     }
 
     private companion object {
