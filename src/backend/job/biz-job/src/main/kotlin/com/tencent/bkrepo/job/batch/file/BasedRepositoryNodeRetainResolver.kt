@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.job.batch.file
 
 import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.DELETED_DATE
@@ -12,6 +15,7 @@ import com.tencent.bkrepo.job.REPO
 import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.SIZE
+import com.tencent.bkrepo.job.batch.base.BaseService
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.pojo.TFileCache
 import com.tencent.bkrepo.job.service.FileCacheService
@@ -23,9 +27,11 @@ import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
 import java.time.LocalDateTime
+import java.util.concurrent.TimeUnit
 
 /**
  * 基于仓库配置判断文件是否过期
@@ -35,7 +41,9 @@ class BasedRepositoryNodeRetainResolver(
     taskScheduler: ThreadPoolTaskScheduler,
     private val fileCacheService: FileCacheService,
     private val mongoTemplate: MongoTemplate,
-) : NodeRetainResolver {
+    private val redisTemplate: RedisTemplate<String, String>,
+    private val lockOperation: LockOperation
+) : NodeRetainResolver, BaseService(redisTemplate, lockOperation) {
 
     private var retainNodes = HashMap<String, RetainNode>()
 
@@ -44,15 +52,22 @@ class BasedRepositoryNodeRetainResolver(
     }
 
     override fun retain(sha256: String): Boolean {
-        return retainNodes.contains(sha256)
+        return getValue(sha256, retainNodes) != null
     }
 
     override fun getRetainNode(sha256: String): RetainNode? {
-        return retainNodes[sha256]
+        return getValue(sha256, retainNodes)
     }
 
     private fun refreshRetainNode() {
         logger.info("Refresh retain nodes start. size of nodes ${retainNodes.size}")
+        refreshData(RETAIN_NODES_REFRESH_JOB) {
+            refreshRetainNodes()
+        }
+        logger.info("Refresh retain nodes finished. size of nodes ${retainNodes.size}")
+    }
+
+    private fun refreshRetainNodes() {
         try {
             val temp = HashMap<String, RetainNode>()
             val configs = expireConfig.repos.map { convertRepoConfigToFileCache(it) } + fileCacheService.list()
@@ -70,13 +85,44 @@ class BasedRepositoryNodeRetainResolver(
                 }
             }
             retainNodes = temp
+            logger.info("size of retain nodes ${retainNodes.size}")
+            storeValue(retainNodes)
         } catch (e: Exception) {
             logger.warn("An error occurred while refreshing retain node $e")
         }
-        logger.info("Refresh retain nodes finished. size of nodes ${retainNodes.size}")
     }
 
-    private fun convertRepoConfigToFileCache(repoConfig: RepoConfig):TFileCache {
+    private fun storeValue(retainValue: HashMap<String, RetainNode>) {
+        try {
+            logger.info("store retain nodes start.")
+            retainValue.forEach { (sha256, retainedNode) ->
+                val redisKey = buildRedisKey(JOB_RETAIN_PREFIX, sha256)
+                redisTemplate.opsForValue().set(redisKey, retainedNode.toJsonString(), 3L, TimeUnit.HOURS)
+            }
+            // 避免内存中存储的活跃数据不是最新的
+            retainValue.clear()
+            logger.info("store retain nodes end.")
+        } catch (e: Exception) {
+            logger.warn("store retain nodes error: ${e.message}")
+        }
+    }
+
+    private fun getValue(sha256: String, cacheValue: HashMap<String, RetainNode>): RetainNode? {
+        if (cacheValue.isNotEmpty()) return cacheValue[sha256]
+        try {
+            val redisKey = buildRedisKey(JOB_RETAIN_PREFIX, sha256)
+            val valueStr = redisTemplate.opsForValue().get(redisKey)
+            if (valueStr.isNullOrEmpty()) {
+                return null
+            }
+            return valueStr.readJsonString<RetainNode>()
+        } catch (e: Exception) {
+            logger.warn("get retain nodes from redis error:${e.message}")
+            return null
+        }
+    }
+
+    private fun convertRepoConfigToFileCache(repoConfig: RepoConfig): TFileCache {
         return TFileCache(
             id = null,
             projectId = repoConfig.projectId,
@@ -149,6 +195,8 @@ class BasedRepositoryNodeRetainResolver(
     companion object {
         private val logger = LoggerFactory.getLogger(BasedRepositoryNodeRetainResolver::class.java)
         private const val COLLECTION_NODE_PREFIX = "node_"
+        private const val RETAIN_NODES_REFRESH_JOB = "retainNodesRefreshJob"
+        private const val JOB_RETAIN_PREFIX = "job:retainCacheNodes:"
 
     }
 }

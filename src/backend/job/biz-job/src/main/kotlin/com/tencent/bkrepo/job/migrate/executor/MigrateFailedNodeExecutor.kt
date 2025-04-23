@@ -100,7 +100,7 @@ class MigrateFailedNodeExecutor(
                     logger.info("migrate failed node[${node.fullPath}] success, task[${projectId}/${repoName}]")
                     migrateFailedNodeDao.removeById(failedNode.id!!)
                 } catch (e: Exception) {
-                    migrateFailedNodeDao.resetMigrating(projectId, repoName, node.fullPath)
+                    migrateFailedNodeDao.resetMigrating(failedNode.id!!)
                     logger.error("migrate failed node[${node.fullPath}] failed, task[${projectId}/${repoName}]", e)
                     if (failedNode.retryTimes >= MAX_MIGRATE_FAILED_RETRY_TIMES) {
                         logger.info("try to fix node[${node.fullPath}] failed, task[${projectId}/${repoName}]")
