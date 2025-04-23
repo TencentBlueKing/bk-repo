@@ -138,6 +138,8 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         filterRule: MergedFilterRule? = null
     ): Map<String, Any?> {
         val overview = HashMap<String, Long>()
+        val countedVulIds = mutableSetOf<String>()
+        val countedLicenses = mutableSetOf<String>()
 
         // security统计
         securityResults?.forEach { securityResult ->
@@ -149,9 +151,10 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
                 securityResult.pkgVersions,
                 severityLevel
             )
-            if (shouldIgnore != true) {
+            if (shouldIgnore != true && securityResult.vulId !in countedVulIds) {
                 val key = CveOverviewKey.overviewKeyOf(securityResult.severity)
                 overview[key] = overview.getOrDefault(key, 0L) + 1
+                countedVulIds.add(securityResult.vulId)
             }
         }
 
@@ -168,8 +171,14 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         val licenseIds = licenseResults.map { it.licenseName.lowercase(Locale.getDefault()) }.distinct()
         val licensesInfo = licenseService.listLicenseByIds(licenseIds).mapKeys { it.key.lowercase(Locale.getDefault()) }
 
-        overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = licenseResults.size.toLong()
+        overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = licenseIds.size.toLong()
         for (licenseResult in licenseResults) {
+            if (licenseResult.licenseName in countedLicenses) {
+                continue
+            } else {
+                countedLicenses.add(licenseResult.licenseName)
+            }
+
             if (filterRule?.shouldIgnore(licenseResult.licenseName) == true) {
                 val total = overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] as Long
                 overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = total - 1
