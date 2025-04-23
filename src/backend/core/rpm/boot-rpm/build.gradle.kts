@@ -30,5 +30,5 @@
  */
 
 dependencies {
-    implementation(project(":npm:biz-npm"))
+    api(project(":core:rpm:biz-rpm"))
 }

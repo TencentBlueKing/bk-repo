@@ -29,11 +29,6 @@
  * SOFTWARE.
  */
 
-dependencies{
-    api(project(":maven:api-maven"))
-    api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-mongo"))
-    implementation("org.apache.maven:maven-repository-metadata:${Versions.MAVEN}")
-    implementation("org.apache.maven:maven-model:${Versions.MAVEN}")
-    implementation ("org.apache.maven:maven-artifact:${Versions.MavenArtifact}")
+dependencies {
+    implementation(project(":core:npm:biz-npm"))
 }

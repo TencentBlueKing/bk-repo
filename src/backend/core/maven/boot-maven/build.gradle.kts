@@ -30,12 +30,5 @@
  */
 
 dependencies {
-    api(project(":common:common-artifact:artifact-service"))
-    api(project(":pypi:api-pypi"))
-    api(project(":common:common-job"))
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-    implementation("org.jsoup:jsoup:${Versions.Jsoup}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
-    implementation("com.google.code.gson:gson")
+    implementation(project(":core:maven:biz-maven"))
 }

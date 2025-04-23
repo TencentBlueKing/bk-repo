@@ -30,9 +30,5 @@
  */
 
 dependencies {
-    api(project(":rpm:api-rpm"))
-    api(project(":common:common-job"))
-    implementation("org.redline-rpm:redline:${Versions.Redline}")
-    implementation("com.thoughtworks.xstream:xstream:${Versions.XStream}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core")
+    implementation(project(":core:pypi:biz-pypi"))
 }
