@@ -64,7 +64,7 @@ class MigrateFailedNodeFixer(
             if (strategy.fix(failedNode)) {
                 logger.info("auto fix failed node[${fullPath}] success, task[$projectId/$repoName]")
                 // 修复成功后重置重试次数以便重新开始重试流程
-                val result = migrateFailedNodeDao.resetRetryCount(projectId, repoName, fullPath)
+                val result = migrateFailedNodeDao.resetRetryCount(failedNode.id!!)
                 logger.info("reset [${result.modifiedCount}] retry count of [$projectId/$repoName$fullPath]")
                 return true
             }

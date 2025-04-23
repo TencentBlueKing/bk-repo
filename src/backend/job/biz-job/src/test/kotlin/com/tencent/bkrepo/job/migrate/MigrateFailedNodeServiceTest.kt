@@ -130,16 +130,16 @@ class MigrateFailedNodeServiceTest @Autowired constructor(
         assertEquals(0, migrateFailedNodeDao.count(Query()))
 
         // remove failed node
-        migrateFailedNodeDao.insertFailedNode("/a/b/c.txt")
+        val failedNode = migrateFailedNodeDao.insertFailedNode("/a/b/c.txt")
         assertEquals(1, migrateFailedNodeDao.count(Query()))
-        migrateFailedNodeService.removeFailedNode(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c.txt")
+        migrateFailedNodeService.removeFailedNode(UT_PROJECT_ID, UT_REPO_NAME, failedNode.id!!)
         assertEquals(0, migrateFailedNodeDao.count(Query()))
     }
 
     @Test
     fun testResetRetryCount() {
-        migrateFailedNodeDao.insertFailedNode("/a/b/c.txt")
-        migrateFailedNodeDao.insertFailedNode("/a/b/d.txt")
+        val failedNode1 = migrateFailedNodeDao.insertFailedNode("/a/b/c.txt")
+        val failedNode2 = migrateFailedNodeDao.insertFailedNode("/a/b/d.txt")
 
         // reset repo nodes
         var node1 = migrateFailedNodeDao.findOneToRetry(UT_PROJECT_ID, UT_REPO_NAME)!!
@@ -149,15 +149,15 @@ class MigrateFailedNodeServiceTest @Autowired constructor(
         migrateFailedNodeService.resetRetryCount(UT_PROJECT_ID, UT_REPO_NAME, null)
         assertEquals(0, migrateFailedNodeDao.findById(node1.id!!)!!.retryTimes)
         assertEquals(0, migrateFailedNodeDao.findById(node2.id!!)!!.retryTimes)
-        migrateFailedNodeDao.resetMigrating(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c.txt")
-        migrateFailedNodeDao.resetMigrating(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/d.txt")
+        migrateFailedNodeDao.resetMigrating(failedNode1.id!!)
+        migrateFailedNodeDao.resetMigrating(failedNode2.id!!)
 
         // reset single node
         node1 = migrateFailedNodeDao.findOneToRetry(UT_PROJECT_ID, UT_REPO_NAME)!!
         node2 = migrateFailedNodeDao.findOneToRetry(UT_PROJECT_ID, UT_REPO_NAME)!!
         assertEquals(1, node1.retryTimes)
         assertEquals(1, node2.retryTimes)
-        migrateFailedNodeService.resetRetryCount(UT_PROJECT_ID, UT_REPO_NAME, "/a/b/c.txt")
+        migrateFailedNodeService.resetRetryCount(UT_PROJECT_ID, UT_REPO_NAME, failedNode1.id!!)
         assertEquals(0, migrateFailedNodeDao.findById(node1.id!!)!!.retryTimes)
         assertEquals(1, migrateFailedNodeDao.findById(node2.id!!)!!.retryTimes)
     }
