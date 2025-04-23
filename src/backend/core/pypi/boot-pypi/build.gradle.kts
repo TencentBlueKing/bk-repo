@@ -30,5 +30,5 @@
  */
 
 dependencies {
-    implementation(project(":maven:biz-maven"))
+    implementation(project(":core:pypi:biz-pypi"))
 }

@@ -61,7 +61,7 @@ warning () {
     EXITCODE=$((EXITCODE + 1))
 }
 
-core_service=("helm" "oci" "rpm")
+core_service=("helm" "oci" "rpm" "npm" "maven" "pypi")
 
 build_backend () {
     log "构建${SERVICE}镜像..."
