@@ -31,8 +31,19 @@
 
 package com.tencent.bkrepo.common.mongo
 
+import com.mongodb.Block
+import com.mongodb.ReadConcern
+import com.mongodb.ReadPreference
+import com.mongodb.WriteConcern
+import com.mongodb.connection.ConnectionPoolSettings
+import com.mongodb.connection.SocketSettings
+import com.tencent.bkrepo.common.mongo.dao.util.MongoSslUtils
+import com.tencent.bkrepo.common.mongo.properties.MongoSslProperties
+import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.autoconfigure.mongo.MongoClientSettingsBuilderCustomizer
 import org.springframework.boot.autoconfigure.mongo.MongoProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
@@ -46,6 +57,7 @@ import org.springframework.data.mongodb.core.convert.MappingMongoConverter
 import org.springframework.data.mongodb.core.convert.MongoConverter
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext
+import java.util.concurrent.TimeUnit
 
 /**
  * mongodb 4.0+开始支持事物，但springboot data mongo为了兼容老版本不出错，默认不开启事物
@@ -53,6 +65,7 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext
  */
 @Configuration
 @PropertySource("classpath:common-mongo.properties")
+@EnableConfigurationProperties(MongoSslProperties::class)
 class MongoAutoConfiguration {
 
     @Bean
@@ -94,5 +107,55 @@ class MongoAutoConfiguration {
     @Primary
     fun mongoTemplate(factory: MongoDatabaseFactory, converter: MongoConverter?): MongoTemplate {
         return MongoTemplate(factory, converter)
+    }
+
+    @Bean
+    fun mongoClientCustomizer(mongoSslProperties: MongoSslProperties): MongoClientSettingsBuilderCustomizer {
+        logger.info("Init MongoClientSettingsBuilderCustomizer")
+        val socketSettings = Block<SocketSettings.Builder> { builder ->
+            builder.connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+        }
+
+        val connectionPoolSettings = Block<ConnectionPoolSettings.Builder> { builder ->
+            builder.minSize(200).maxSize(500)
+                .maxConnectionLifeTime(0, TimeUnit.SECONDS)
+                .maxConnectionIdleTime(0, TimeUnit.SECONDS)
+        }
+
+        return MongoClientSettingsBuilderCustomizer { clientSettingsBuilder ->
+            clientSettingsBuilder
+                .writeConcern(WriteConcern.W1)
+                .readConcern(ReadConcern.LOCAL)
+                .readPreference(ReadPreference.primaryPreferred())
+                .applyToSocketSettings(socketSettings)
+                .applyToConnectionPoolSettings(connectionPoolSettings)
+
+            // 根据配置文件判断是否开启ssl
+            if (mongoSslProperties.enabled) {
+                clientSettingsBuilder.applyToSslSettings { ssl ->
+                    ssl.enabled(true)
+                    ssl.invalidHostNameAllowed(mongoSslProperties.invalidHostnameAllowed)
+
+                    try {
+                        // 根据配置判断使用单向还是双向TLS
+                        if (mongoSslProperties.isMutualTlsConfigured()) {
+                            logger.info("Detected client certificate configuration - enabling mutual TLS")
+                            ssl.context(MongoSslUtils.createMutualTlsSslContext(mongoSslProperties))
+                        } else {
+                            logger.info("Using one-way TLS configuration")
+                            ssl.context(MongoSslUtils.createOnewayTlsSslContext(mongoSslProperties))
+                        }
+                    } catch (e: Exception) {
+                        logger.error("Failed to configure MongoDB TLS context", e)
+                        throw RuntimeException("Failed to configure MongoDB TLS context", e)
+                    }
+                }
+            }
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(MongoAutoConfiguration::class.java)
     }
 }

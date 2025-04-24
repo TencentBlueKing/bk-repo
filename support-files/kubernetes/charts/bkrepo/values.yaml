@@ -100,6 +100,20 @@ mongodb:
     subPath: mongodb
     size: 20Gi
 
+tls:
+  mongodb:
+    enabled: false
+    ## 单向tls认证时需要
+    trustStore: /data/certs/mongodb/ca.jks
+    trustStorePassword: password
+    trustStoreType: JKS
+    invalidHostnameAllowed: false
+    ## 双向tls认证时必须提供
+    keyStore: ""
+    keyStorePassword: ""
+    keyStoreType: ""
+    keyPassword: ""
+
 ## 如果mongodb.enabled为false，bkrepo将使用下面的参数连接外部mongodb
 externalMongodb:
   ## mongodb 标准连接字符串
