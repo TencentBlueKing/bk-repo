@@ -28,11 +28,11 @@
 package com.tencent.bkrepo.common.ratelimiter.service
 
 import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
+import com.tencent.bkrepo.common.ratelimiter.config.BandwidthProperties
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
-import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.ratelimiter.stream.RateCheckContext
@@ -50,7 +50,7 @@ import javax.servlet.http.HttpServletRequest
 abstract class AbstractBandwidthRateLimiterService(
     taskScheduler: ThreadPoolTaskScheduler,
     rateLimiterMetrics: RateLimiterMetrics,
-    redisTemplate: RedisTemplate<String, String>? = null,
+    redisTemplate: RedisTemplate<String, String>,
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterConfigService: RateLimiterConfigService,
 ) : AbstractRateLimiterService(
@@ -60,6 +60,11 @@ abstract class AbstractBandwidthRateLimiterService(
     redisTemplate,
     rateLimiterConfigService
 ) {
+
+    override fun initCompanion() {
+        Companion.redisTemplate = redisTemplate
+        Companion.rateLimiterProperties = rateLimiterProperties
+    }
 
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {
         throw UnsupportedOperationException()
@@ -74,21 +79,19 @@ abstract class AbstractBandwidthRateLimiterService(
         circuitBreakerPerSecond: DataSize,
         rangeLength: Long? = null,
     ): CommonRateLimitInputStream? {
-        val resLimitInfo = getResLimitInfo(request) ?: return null
+        val (resLimitInfo, resInfo) = getResLimitInfoAndResInfo(request)
+        if (resLimitInfo == null) return null
         logger.info("will check the bandwidth with length $rangeLength of ${resLimitInfo.resource}")
         return try {
             interceptorChain.doBeforeLimitCheck(resLimitInfo.resource, resLimitInfo.resourceLimit)
             circuitBreakerCheck(resLimitInfo.resourceLimit, circuitBreakerPerSecond.toBytes())
             val context = RateCheckContext(
-                rateLimiterProvider = { getAlgorithmOfRateLimiter(resLimitInfo.resource, resLimitInfo.resourceLimit) },
-                latency = rateLimiterProperties.latency,
-                waitRound = rateLimiterProperties.waitRound, rangeLength = rangeLength,
-                dryRun = rateLimiterProperties.dryRun, permitsOnce = rateLimiterProperties.permitsOnce,
-                limitPerSecond = getPermitsPerSecond(resLimitInfo.resourceLimit),
-                progressThreshold = rateLimiterProperties.progressThreshold,
-                timeout = rateLimiterProperties.timeout,
-                smallFileThreshold = rateLimiterProperties.smallFileThreshold,
-                minPermits = rateLimiterProperties.minPermits,
+                resInfo = resInfo!!,
+                resourceLimit = resLimitInfo.resourceLimit,
+                limitKey = generateKey(resLimitInfo.resource, resLimitInfo.resourceLimit),
+                dryRun = rateLimiterProperties.dryRun,
+                bandwidthProperties = rateLimiterProperties.bandwidthProperties,
+                rangeLength = rangeLength
             )
             CommonRateLimitInputStream(
                 delegate = inputStream,
@@ -110,7 +113,7 @@ abstract class AbstractBandwidthRateLimiterService(
         request: HttpServletRequest,
         exception: Exception? = null,
     ) {
-        val resLimitInfo = getResLimitInfo(request) ?: return
+        val resLimitInfo = getResLimitInfoAndResInfo(request).first ?: return
         afterRateLimitCheck(resLimitInfo, exception == null, exception)
     }
 
@@ -119,7 +122,7 @@ abstract class AbstractBandwidthRateLimiterService(
         permits: Long,
         circuitBreakerPerSecond: DataSize,
     ) {
-        val resLimitInfo = getResLimitInfo(request) ?: return
+        val resLimitInfo = getResLimitInfoAndResInfo(request).first ?: return
         rateLimitCatch(
             request = request,
             resLimitInfo = resLimitInfo,
@@ -142,7 +145,7 @@ abstract class AbstractBandwidthRateLimiterService(
 
         while (!flag) {
             // 当限制小于读取大小时，会进入死循环，增加等待轮次，如果等待达到时间上限，则放通一次避免连接断开
-            if ((System.currentTimeMillis() - startTime) > rateLimiterProperties.timeout) {
+            if ((System.currentTimeMillis() - startTime) > rateLimiterProperties.bandwidthProperties.timeout) {
                 return true
             }
             try {
@@ -156,9 +159,10 @@ abstract class AbstractBandwidthRateLimiterService(
                 }
                 failedNum++
                 // 失败就减半获取
-                acquirePermits = (acquirePermits / 2).coerceAtLeast(rateLimiterProperties.minPermits)
+                acquirePermits =
+                    (acquirePermits / 2).coerceAtLeast(rateLimiterProperties.bandwidthProperties.minPermits)
                 try {
-                    Thread.sleep(rateLimiterProperties.latency * failedNum)
+                    Thread.sleep(rateLimiterProperties.bandwidthProperties.latency * failedNum)
                 } catch (ignore: InterruptedException) {
                 }
                 continue
@@ -180,11 +184,17 @@ abstract class AbstractBandwidthRateLimiterService(
         return true
     }
 
-    private fun getPermitsPerSecond(resourceLimit: ResourceLimit): Long {
-        return resourceLimit.limit / resourceLimit.duration.seconds
-    }
-
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(AbstractBandwidthRateLimiterService::class.java)
+        lateinit var redisTemplate: RedisTemplate<String, String>
+        lateinit var rateLimiterProperties: RateLimiterProperties
+
+        fun getDryRunStatus(): Boolean {
+            return rateLimiterProperties.dryRun
+        }
+
+        fun getBandwidthProperties(): BandwidthProperties {
+            return rateLimiterProperties.bandwidthProperties
+        }
     }
 }

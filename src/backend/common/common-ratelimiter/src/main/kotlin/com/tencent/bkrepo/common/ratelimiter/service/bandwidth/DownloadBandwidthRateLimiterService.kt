@@ -27,16 +27,20 @@
 
 package com.tencent.bkrepo.common.ratelimiter.service.bandwidth
 
+import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.DownloadBandwidthRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
+import com.tencent.bkrepo.common.ratelimiter.utils.RateLimiterBuilder
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -46,7 +50,7 @@ class DownloadBandwidthRateLimiterService(
     taskScheduler: ThreadPoolTaskScheduler,
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterMetrics: RateLimiterMetrics,
-    redisTemplate: RedisTemplate<String, String>? = null,
+    redisTemplate: RedisTemplate<String, String>,
     rateLimiterConfigService: RateLimiterConfigService
 ) : UploadBandwidthRateLimiterService(
     taskScheduler,
@@ -55,6 +59,11 @@ class DownloadBandwidthRateLimiterService(
     redisTemplate,
     rateLimiterConfigService
 ) {
+
+    override fun initCompanionRateLimitRule() {
+        Companion.rateLimiterCache = rateLimiterCache
+        Companion.rateLimitRule = rateLimitRule!!
+    }
 
     override fun getLimitDimensions(): List<String> {
         return listOf(
@@ -72,5 +81,20 @@ class DownloadBandwidthRateLimiterService(
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
         return KEY_PREFIX + "DownloadBandwidth:$resource"
+    }
+
+    companion object {
+        lateinit var rateLimiterCache: ConcurrentHashMap<String, RateLimiter>
+        lateinit var rateLimitRule: RateLimitRule
+
+        fun getAlgorithmOfRateLimiter(
+            limitKey: String,
+            resourceLimit: ResourceLimit,
+            redInfo: ResInfo? = null
+        ): RateLimiter {
+            return RateLimiterBuilder.getAlgorithmOfRateLimiter(
+                limitKey, resourceLimit, redisTemplate, rateLimiterCache, redInfo, rateLimitRule
+            )
+        }
     }
 }

@@ -28,7 +28,12 @@
 package com.tencent.bkrepo.common.ratelimiter.stream
 
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
+import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
+import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
+import com.tencent.bkrepo.common.ratelimiter.service.AbstractBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UploadBandwidthRateLimiterService
 import java.io.InputStream
 
 /**
@@ -53,27 +58,29 @@ import java.io.InputStream
 
 class CommonRateLimitInputStream(
     delegate: InputStream,
-    private val rateCheckContext: RateCheckContext,
+    val rateCheckContext: RateCheckContext,
 ) : DelegateInputStream(delegate) {
 
     private var bytesRead: Long = 0
     private var applyNum: Long = 0
+    private var rateLimiter: RateLimiter? = null
+    private var limitPerSecond: Long = 0
 
-    fun setBytesRead(bytesRead: Long) {
-        this.bytesRead = bytesRead
-    }
-
-    fun setApplyNum(applyNum: Long) {
-        this.applyNum = applyNum
-    }
-
-    fun getBytesRead(): Long {
-        return bytesRead
-    }
-
-    fun getApplyNum(): Long {
-        return applyNum
-    }
+//    fun setBytesRead(bytesRead: Long) {
+//        this.bytesRead = bytesRead
+//    }
+//
+//    fun setApplyNum(applyNum: Long) {
+//        this.applyNum = applyNum
+//    }
+//
+//    fun getBytesRead(): Long {
+//        return bytesRead
+//    }
+//
+//    fun getApplyNum(): Long {
+//        return applyNum
+//    }
 
     override fun read(): Int {
         tryAcquireOrWait(1)
@@ -104,6 +111,11 @@ class CommonRateLimitInputStream(
 
     private fun tryAcquireOrWait(bytes: Int) {
         with(rateCheckContext) {
+            try {
+                initRateLimiter()
+            } catch (e: Exception) {
+                return
+            }
             if (rangeLength == null || rangeLength!! <= 0) {
                 // 当不知道文件大小时，没办法进行大小预估，无法降低申请频率， 只能每次读取都进行判断
                 acquireOrWait(bytes.toLong(), bytes.toLong())
@@ -120,9 +132,9 @@ class CommonRateLimitInputStream(
                 }
                 // 此处避免限流带宽大小比每次申请还少的情况下，每次都被限流
                 val realPermitOnce = when {
-                    limitPerSecond < permitsOnce -> limitPerSecond
-                    permitsOnce < bytes -> bytes.toLong()
-                    else -> permitsOnce
+                    limitPerSecond < bandwidthProperties.permitsOnce -> limitPerSecond
+                    bandwidthProperties.permitsOnce < bytes -> bytes.toLong()
+                    else -> bandwidthProperties.permitsOnce
                 }
                 val leftLength = rangeLength!! - bytesRead
                 val permits = if (leftLength >= 0) {
@@ -153,11 +165,11 @@ class CommonRateLimitInputStream(
 
         while (!flag) {
             // 当限制小于读取大小时，会进入死循环，增加等待轮次，如果等待达到时间上限，则放通一次避免连接断开
-            if ((System.currentTimeMillis() - startTime) > rateCheckContext.timeout) {
+            if ((System.currentTimeMillis() - startTime) > rateCheckContext.bandwidthProperties.timeout) {
                 return permits.coerceAtMost(bytes)
             }
             try {
-                flag = rateCheckContext.getRateLimiter().tryAcquire(acquirePermits)
+                flag = rateLimiter!!.tryAcquire(acquirePermits)
             } catch (ignore: AcquireLockFailedException) {
                 return permits
             }
@@ -171,7 +183,7 @@ class CommonRateLimitInputStream(
                 // 根据文件大小/已传输数量去生成下次申请许可数量
                 acquirePermits = calculatePermitsOnce(permits, tryAcquirePermits, type)
                 try {
-                    Thread.sleep(rateCheckContext.latency * failedNum)
+                    Thread.sleep(rateCheckContext.bandwidthProperties.latency * failedNum)
                 } catch (ignore: InterruptedException) {
                 }
                 continue
@@ -187,6 +199,7 @@ class CommonRateLimitInputStream(
                     }.coerceAtMost(bytes - alreadyAcquirePermits)
                     alreadyAcquirePermits >= bytes
                 }
+
                 failedNum > 0 -> {
                     // 进到这块说明当前申请成功，可以认为现在带宽情况有所缓解，顾尝试将请求许可数量翻倍，加快速度
                     acquirePermits = (acquirePermits * 2).coerceAtMost(
@@ -195,22 +208,24 @@ class CommonRateLimitInputStream(
                     // 默认情况下申请数量会大于单次读取数量，在发生限速后，只需申请大于单次读取数量即可，快速响应
                     alreadyAcquirePermits >= permits.coerceAtMost(bytes)
                 }
+
                 else -> alreadyAcquirePermits >= permits
             }
         }
         return alreadyAcquirePermits
     }
 
-    private fun getTryAcquirePermits(type: String, acquirePermits: Long, alreadyAcquirePermits: Long) : Long {
+    private fun getTryAcquirePermits(type: String, acquirePermits: Long, alreadyAcquirePermits: Long): Long {
         return when (type) {
             TYPE_A -> acquirePermits
             // 当已经申请通过一定数量后，又失败，避免再次从最小开始，直接从上次减半开始
             TYPE_B -> if (alreadyAcquirePermits == 0L) {
-                rateCheckContext.minPermits
+                rateCheckContext.bandwidthProperties.minPermits
             } else {
                 acquirePermits / 2
             }
-            else -> rateCheckContext.minPermits
+
+            else -> rateCheckContext.bandwidthProperties.minPermits
         }
     }
 
@@ -225,22 +240,22 @@ class CommonRateLimitInputStream(
         return when (type) {
             // 限速方式A：每次申请容量减半
             TYPE_A -> {
-                if (tryAcquirePermits <= rateCheckContext.minPermits * 2) {
-                    rateCheckContext.minPermits // 不能小于最小许可数量
+                if (tryAcquirePermits <= rateCheckContext.bandwidthProperties.minPermits * 2) {
+                    rateCheckContext.bandwidthProperties.minPermits // 不能小于最小许可数量
                 } else {
                     tryAcquirePermits / 2
                 }
             }
             // 限速方式B：如指数增长(1K->2K->4K...)
             TYPE_B -> {
-                if (tryAcquirePermits <= rateCheckContext.minPermits) {
-                    rateCheckContext.minPermits // 从最小许可数量开始
+                if (tryAcquirePermits <= rateCheckContext.bandwidthProperties.minPermits) {
+                    rateCheckContext.bandwidthProperties.minPermits // 从最小许可数量开始
                 } else {
                     tryAcquirePermits * 2
                 }
             }
 
-            else -> rateCheckContext.minPermits // 默认返回最小许可数量
+            else -> rateCheckContext.bandwidthProperties.minPermits // 默认返回最小许可数量
         }.coerceAtMost(realAcquirePermits) // 不能超过总限速带宽
     }
 
@@ -252,14 +267,37 @@ class CommonRateLimitInputStream(
      */
     private fun selectRateLimitStrategy(): String {
         if (rateCheckContext.rangeLength == null || rateCheckContext.rangeLength!! <= 0) return TYPE_A
-        val transferredBytesThreshold = (rateCheckContext.rangeLength!! * rateCheckContext.progressThreshold).toLong()
+        val transferredBytesThreshold =
+            (rateCheckContext.rangeLength!! * rateCheckContext.bandwidthProperties.progressThreshold).toLong()
         return when {
             // 小文件或传输进度超过阈值时使用策略A
-            rateCheckContext.rangeLength!! <= rateCheckContext.smallFileThreshold ||
+            rateCheckContext.rangeLength!! <= rateCheckContext.bandwidthProperties.smallFileThreshold ||
                 bytesRead >= transferredBytesThreshold -> TYPE_A
             // 其他情况使用策略B
             else -> TYPE_B
         }
+    }
+
+    // 确保配置变化时能够快速刷新
+    private fun initRateLimiter() {
+        rateLimiter = if (rateCheckContext.resourceLimit.limitDimension == LimitDimension.UPLOAD_BANDWIDTH.name) {
+            UploadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
+                rateCheckContext.limitKey,
+                rateCheckContext.resourceLimit,
+                rateCheckContext.resInfo
+            )
+        } else if (rateCheckContext.resourceLimit.limitDimension == LimitDimension.DOWNLOAD_BANDWIDTH.name) {
+            DownloadBandwidthRateLimiterService.getAlgorithmOfRateLimiter(
+                rateCheckContext.limitKey,
+                rateCheckContext.resourceLimit,
+                rateCheckContext.resInfo
+            )
+        } else {
+            throw AcquireLockFailedException("Unsupported limitDimension type")
+        }
+        limitPerSecond = rateLimiter!!.getLimitPerSecond()
+        rateCheckContext.dryRun = AbstractBandwidthRateLimiterService.getDryRunStatus()
+        rateCheckContext.bandwidthProperties = AbstractBandwidthRateLimiterService.getBandwidthProperties()
     }
 
     companion object {

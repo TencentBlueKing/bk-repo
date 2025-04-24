@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.ratelimiter.service.bandwidth
 
 
+import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
@@ -35,11 +36,14 @@ import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedExceptio
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
+import com.tencent.bkrepo.common.ratelimiter.utils.RateLimiterBuilder
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -49,7 +53,7 @@ open class UploadBandwidthRateLimiterService(
     taskScheduler: ThreadPoolTaskScheduler,
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterMetrics: RateLimiterMetrics,
-    redisTemplate: RedisTemplate<String, String>? = null,
+    redisTemplate: RedisTemplate<String, String>,
     rateLimiterConfigService: RateLimiterConfigService
 ) : AbstractBandwidthRateLimiterService(
     taskScheduler,
@@ -58,6 +62,12 @@ open class UploadBandwidthRateLimiterService(
     rateLimiterProperties,
     rateLimiterConfigService
 ) {
+
+    override fun initCompanionRateLimitRule() {
+        Companion.rateLimiterCache = rateLimiterCache
+        Companion.rateLimitRule = rateLimitRule!!
+    }
+
 
     override fun buildResource(request: HttpServletRequest): String {
         val (projectId, repoName) = getRepoInfoFromAttribute(request)
@@ -97,5 +107,20 @@ open class UploadBandwidthRateLimiterService(
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
         return KEY_PREFIX + "UploadBandwidth:$resource"
+    }
+
+    companion object {
+        private lateinit var rateLimiterCache: ConcurrentHashMap<String, RateLimiter>
+        private lateinit var rateLimitRule: RateLimitRule
+
+        fun getAlgorithmOfRateLimiter(
+            limitKey: String,
+            resourceLimit: ResourceLimit,
+            redInfo: ResInfo? = null
+        ): RateLimiter {
+            return RateLimiterBuilder.getAlgorithmOfRateLimiter(
+                limitKey, resourceLimit, redisTemplate, rateLimiterCache, redInfo, rateLimitRule
+            )
+        }
     }
 }

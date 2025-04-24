@@ -76,7 +76,7 @@ class RateLimiterAutoConfiguration {
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
         rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>? = null,
+        redisTemplate: RedisTemplate<String, String>,
         rateLimiterConfigService: RateLimiterConfigService
     ): UrlRepoRateLimiterService {
         return UrlRepoRateLimiterService(
@@ -93,7 +93,7 @@ class RateLimiterAutoConfiguration {
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
         rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>? = null,
+        redisTemplate: RedisTemplate<String, String>,
         rateLimiterConfigService: RateLimiterConfigService
     ): UrlRateLimiterService {
         return UrlRateLimiterService(
@@ -110,7 +110,7 @@ class RateLimiterAutoConfiguration {
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
         rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>? = null,
+        redisTemplate: RedisTemplate<String, String>,
         rateLimiterConfigService: RateLimiterConfigService
     ): UserUrlRepoRateLimiterService {
         return UserUrlRepoRateLimiterService(
@@ -127,7 +127,7 @@ class RateLimiterAutoConfiguration {
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
         rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>? = null,
+        redisTemplate: RedisTemplate<String, String>,
         rateLimiterConfigService: RateLimiterConfigService
     ): UploadUsageRateLimiterService {
         return UploadUsageRateLimiterService(
@@ -144,7 +144,7 @@ class RateLimiterAutoConfiguration {
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
         rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>? = null,
+        redisTemplate: RedisTemplate<String, String>,
         rateLimiterConfigService: RateLimiterConfigService
     ): DownloadUsageRateLimiterService {
         return DownloadUsageRateLimiterService(
@@ -161,7 +161,7 @@ class RateLimiterAutoConfiguration {
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
         rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>? = null,
+        redisTemplate: RedisTemplate<String, String>,
         rateLimiterConfigService: RateLimiterConfigService
     ): UserDownloadUsageRateLimiterService {
         return UserDownloadUsageRateLimiterService(
@@ -174,7 +174,7 @@ class RateLimiterAutoConfiguration {
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
         rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>? = null,
+        redisTemplate: RedisTemplate<String, String>,
         rateLimiterConfigService: RateLimiterConfigService
     ): UserUploadUsageRateLimiterService {
         return UserUploadUsageRateLimiterService(
@@ -187,7 +187,7 @@ class RateLimiterAutoConfiguration {
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
         rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>? = null,
+        redisTemplate: RedisTemplate<String, String>,
         rateLimiterConfigService: RateLimiterConfigService
     ): UserUrlRateLimiterService {
         return UserUrlRateLimiterService(
@@ -200,7 +200,7 @@ class RateLimiterAutoConfiguration {
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
         rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>? = null,
+        redisTemplate: RedisTemplate<String, String>,
         rateLimiterConfigService: RateLimiterConfigService
     ): UploadBandwidthRateLimiterService {
         return UploadBandwidthRateLimiterService(
@@ -213,7 +213,7 @@ class RateLimiterAutoConfiguration {
         taskScheduler: ThreadPoolTaskScheduler,
         rateLimiterProperties: RateLimiterProperties,
         rateLimiterMetrics: RateLimiterMetrics,
-        redisTemplate: RedisTemplate<String, String>? = null,
+        redisTemplate: RedisTemplate<String, String>,
         rateLimiterConfigService: RateLimiterConfigService
     ): DownloadBandwidthRateLimiterService {
         return DownloadBandwidthRateLimiterService(

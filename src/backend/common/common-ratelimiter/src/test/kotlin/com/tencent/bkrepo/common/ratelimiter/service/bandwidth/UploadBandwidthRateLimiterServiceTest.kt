@@ -274,7 +274,8 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
     @Test
     fun bandwidthLimitHandlerTest() {
-        val resourceLimit = (rateLimiterService as UploadBandwidthRateLimiterService).getResLimitInfo(request)
+        val resourceLimit =
+            (rateLimiterService as UploadBandwidthRateLimiterService).getResLimitInfoAndResInfo(request).first
         Assertions.assertNotNull(resourceLimit)
         assertEqualsLimitInfo(resourceLimit!!.resourceLimit, rateLimiterProperties.rules.first())
         val rateLimiter = (rateLimiterService as UploadBandwidthRateLimiterService)
