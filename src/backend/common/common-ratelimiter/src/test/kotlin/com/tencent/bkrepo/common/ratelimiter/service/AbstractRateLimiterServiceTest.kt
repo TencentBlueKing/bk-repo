@@ -93,7 +93,9 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         val resourceLimit = (rateLimiterService as AbstractRateLimiterService).rateLimitRule?.getRateLimitRule(resInfo)
         Assertions.assertNotNull(resourceLimit)
         // 测试固定窗口本地算法生成
-        var rateLimiter = RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, resourceLimit!!.resourceLimit, redisTemplate)
+        var rateLimiter = RateLimiterBuilder.createAlgorithmOfRateLimiter(
+            resource, resourceLimit!!.resourceLimit, redisTemplate
+        )
         Assertions.assertInstanceOf(
             FixedWindowRateLimiter::class.java,
             rateLimiter
