@@ -78,14 +78,13 @@ export default {
     }
   },
   watch: {
-    logName(val) {
+    logName (val) {
+      this.text = ''
+      this.startPosition = 0
+      this.editor.setValue('')
+      clearInterval(this.timer)
       if (val) {
-        this.editor.setValue('')
-        this.startPosition = 0
-        this.showLog(val)
-        this.timer = setInterval(() => {
-          this.showLog(val)
-        }, this.originTimeLimit)
+        this.setNewTimer()
         if (!this.countTimer) {
           this.countTimer = setInterval(() => {
             if (this.timeLimit > 0) {
@@ -94,22 +93,24 @@ export default {
           }, 1000)
         }
       } else {
-        this.text = ''
-        this.startPosition = 0
-        this.editor.setValue('')
         this.pause()
       }
     },
-    node() {
+    node () {
       this.text = ''
       this.editor.setValue('')
       this.startPosition = 0
+      clearInterval(this.timer)
+      if (this.logName !== '') {
+        this.timeLimit = this.originTimeLimit / 1000
+        this.setNewTimer()
+      }
     }
   },
-  mounted() {
+  mounted () {
     this.init()
   },
-  created() {
+  created () {
     getLogConfig().then(res => {
       this.logOptions = res.data.logs
       this.timeLimit = res.data.refreshRateMillis / 1000
@@ -119,7 +120,7 @@ export default {
     })
   },
   methods: {
-    init() {
+    init () {
       this.editor = monaco.editor.create(document.getElementById('editor'), {
         value: this.text, // 编辑器初始显示文字
         language: 'javascript', // 语言
@@ -132,31 +133,46 @@ export default {
         lineNumbers: 'on' // 隐藏控制行号
       })
     },
-    serviceChanged() {
+    serviceChanged () {
+      this.text = ''
       this.node = ''
+      this.editor.setValue('')
+      this.startPosition = 0
+      if (this.timer !== null) {
+        clearInterval(this.timer)
+      }
+      if (this.logName !== '') {
+        this.setNewTimer()
+      }
       this.nodeOptions = this.serviceNodeMap[this.service]
     },
-    showLog(val) {
+    showLog (val) {
       this.timeLimit = this.originTimeLimit / 1000
       getLog(val, this.node, this.startPosition).then(res => {
         if (this.text === '') {
           this.text = res.data.logContent
         } else {
-          this.text = this.text + '\n' + res.data.logContent
+          this.text = this.text + res.data.logContent
         }
         this.editor.setValue(this.text)
         this.startPosition = res.data.fileSize
       })
     },
-    pause() {
+    pause () {
       clearInterval(this.timer)
       this.timer = null
       this.timeLimit = -1
     },
-    refresh() {
+    refresh () {
       if (this.timer !== null) {
         this.showLog(this.logName)
+      } else if (this.logName !== '') {
+        this.setNewTimer()
       } else {
+        clearInterval(this.timer)
+      }
+    },
+    setNewTimer () {
         this.showLog(this.logName)
         this.timer = setInterval(() => {
           this.showLog(this.logName)
@@ -164,7 +180,6 @@ export default {
       }
     }
   }
-}
 </script>
 
 <style lang="scss" scoped>

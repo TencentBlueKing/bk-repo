@@ -70,7 +70,7 @@ import com.tencent.bkrepo.generic.pojo.TemporaryUrlCreateRequest
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
 import com.tencent.bkrepo.generic.service.TemporaryAccessService
 import com.tencent.bkrepo.generic.service.UploadService
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.http.HttpMethod
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -135,7 +135,7 @@ class TemporaryAccessController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_SHARE_DOWNLOAD_CONTENT
     )
-    @ApiOperation("下载分享文件")
+    @Operation(summary = "下载分享文件")
     @Router
     @CrossOrigin
     @GetMapping("/share/$GENERIC_MAPPING_URI")

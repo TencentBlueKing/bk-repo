@@ -28,16 +28,16 @@
 package com.tencent.bkrepo.opdata.pojo.config
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("更新配置请求体")
+
+@Schema(title = "更新配置请求体")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class UpdateConfigRequest(
-    @ApiModelProperty("待更新的应用名")
+    @get:Schema(title = "待更新的应用名")
     val appName: String = "",
-    @ApiModelProperty("待更新的profile")
+    @get:Schema(title = "待更新的profile")
     val profile: String = "",
-    @ApiModelProperty("需要更新的配置键值对", required = true)
+    @get:Schema(title = "需要更新的配置键值对", required = true)
     val values: List<ConfigItem>
 )

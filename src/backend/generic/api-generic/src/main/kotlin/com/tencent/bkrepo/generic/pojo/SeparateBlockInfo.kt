@@ -1,17 +1,17 @@
 package com.tencent.bkrepo.generic.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
 
-@ApiModel("新分块信息")
+
+@Schema(title = "新分块信息")
 data class SeparateBlockInfo(
-    @ApiModelProperty("分块大小")
+    @get:Schema(title = "分块大小")
     val size: Long,
-    @ApiModelProperty("分块sha256")
+    @get:Schema(title = "分块sha256")
     val sha256: String,
-    @ApiModelProperty("分块起始位置")
+    @get:Schema(title = "分块起始位置")
     val startPos: Long,
-    @ApiModelProperty("分块uploadID")
+    @get:Schema(title = "分块uploadID")
     val uploadId: String?
 )
