@@ -45,13 +45,13 @@ import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.repository.DdcLocalRepository.Companion.HEADER_NAME_HASH
 import com.tencent.bkrepo.ddc.component.PermissionHelper
 import com.tencent.bkrepo.ddc.pojo.BatchOps
-import com.tencent.bkrepo.ddc.pojo.Operation
+import com.tencent.bkrepo.ddc.pojo.OperationType
 import com.tencent.bkrepo.ddc.service.ReferenceArtifactService
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_JUPITER_INLINED_PAYLOAD
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY_PACKAGE
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
@@ -86,7 +86,7 @@ class ReferencesController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
     )
-    @ApiOperation("获取ref")
+    @Operation(summary = "获取ref")
     @GetMapping(
         "/{repoName}/{$PATH_VARIABLE_BUCKET}/{$PATH_VARIABLE_REF_ID}",
         produces = [
@@ -98,7 +98,7 @@ class ReferencesController(
         ]
     )
     fun getRef(
-        @ApiParam(value = "ddc ref", required = true)
+        @Parameter(name = "ddc ref", required = true)
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo,
     ) {
@@ -124,12 +124,12 @@ class ReferencesController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_UPLOAD_CONTENT
     )
-    @ApiOperation("开始创建ref")
+    @Operation(summary = "开始创建ref")
     @PutMapping(
         "/{repoName}/{$PATH_VARIABLE_BUCKET}/{$PATH_VARIABLE_REF_ID}",
     )
     fun putObject(
-        @ApiParam(value = "ddc ref", required = true)
+        @Parameter(name = "ddc ref", required = true)
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo,
         file: ArtifactFile
@@ -140,15 +140,15 @@ class ReferencesController(
         referenceArtifactService.createRef(artifactInfo, file)
     }
 
-    @ApiOperation("结束ref创建")
+    @Operation(summary = "结束ref创建")
     @PostMapping(
         "/{repoName}/{$PATH_VARIABLE_BUCKET}/{$PATH_VARIABLE_REF_ID}/finalize/{hash}",
     )
     fun finalizeObject(
-        @ApiParam(value = "ddc ref", required = true)
+        @Parameter(name = "ddc ref", required = true)
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo,
-        @ApiParam("blob hash", required = true)
+        @Parameter(name = "blob hash", required = true)
         @PathVariable hash: String,
     ) {
         permissionHelper.checkPathPermission(PermissionAction.WRITE)
@@ -156,7 +156,7 @@ class ReferencesController(
         referenceArtifactService.finalize(artifactInfo)
     }
 
-    @ApiOperation("批量读写")
+    @Operation(summary = "批量读写")
     @PostMapping(
         "/{repoName}",
         consumes = [MEDIA_TYPE_UNREAL_COMPACT_BINARY],
@@ -170,7 +170,7 @@ class ReferencesController(
         val ops = BatchOps.deserialize(HttpContextHolder.getRequest().inputStream.use { it.readBytes() })
         var requiredPermissionAction = PermissionAction.READ
         for (op in ops.ops) {
-            if (op.op == Operation.PUT.name) {
+            if (op.op == OperationType.PUT.name) {
                 requiredPermissionAction = PermissionAction.WRITE
                 break
             }

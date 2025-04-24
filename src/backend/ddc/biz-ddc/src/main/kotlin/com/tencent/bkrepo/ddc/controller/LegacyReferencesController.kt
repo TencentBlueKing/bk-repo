@@ -35,10 +35,10 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_BUCKET
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_REF_ID
@@ -46,8 +46,8 @@ import com.tencent.bkrepo.ddc.component.PermissionHelper
 import com.tencent.bkrepo.ddc.controller.LegacyReferencesController.Companion.LEGACY_PREFIX
 import com.tencent.bkrepo.ddc.service.ReferenceArtifactService
 import com.tencent.bkrepo.ddc.utils.MEDIA_TYPE_UNREAL_COMPACT_BINARY
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -79,7 +79,7 @@ class LegacyReferencesController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
     )
-    @ApiOperation("获取ref")
+    @Operation(summary = "获取ref")
     @GetMapping(
         "/ddc/{repoName}/{${PATH_VARIABLE_BUCKET}}/{${PATH_VARIABLE_REF_ID}}.raw",
         "/ddc/{repoName}/{${PATH_VARIABLE_BUCKET}}/{${PATH_VARIABLE_REF_ID}}",
@@ -90,7 +90,7 @@ class LegacyReferencesController(
         ]
     )
     fun get(
-        @ApiParam(value = "ddc ref", required = true)
+        @Parameter(name = "ddc ref", required = true)
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo
     ) {
@@ -120,7 +120,7 @@ class LegacyReferencesController(
         consumes = [MediaType.APPLICATION_OCTET_STREAM_VALUE]
     )
     fun put(
-        @ApiParam(value = "ddc ref", required = true)
+        @Parameter(name = "ddc ref", required = true)
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo,
         file: ArtifactFile
@@ -148,7 +148,7 @@ class LegacyReferencesController(
     )
     @DeleteMapping("/ddc/{repoName}/{${PATH_VARIABLE_BUCKET}}/{${PATH_VARIABLE_REF_ID}}")
     fun delete(
-        @ApiParam(value = "ddc ref", required = true)
+        @Parameter(name = "ddc ref", required = true)
         @ArtifactPathVariable
         artifactInfo: ReferenceArtifactInfo
     ) {

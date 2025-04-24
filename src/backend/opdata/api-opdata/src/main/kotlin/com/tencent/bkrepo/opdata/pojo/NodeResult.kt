@@ -31,13 +31,13 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("node查询结果")
+
+@Schema(title = "node查询结果")
 data class NodeResult(
-    @ApiModelProperty("target")
+    @get:Schema(title = "target")
     val target: String,
-    @ApiModelProperty("datapoints")
+    @get:Schema(title = "datapoints")
     val datapoints: List<List<Long>>
 )

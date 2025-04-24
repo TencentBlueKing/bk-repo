@@ -107,7 +107,7 @@ data class BatchOp(
     val opId: Int = 0,
     val bucket: String = "",
     val key: String = "",
-    val op: String = Operation.INVALID.toString(),
+    val op: String = OperationType.INVALID.toString(),
     /**
      * 是否检查ref引用的所有blob是否存在
      */
@@ -125,7 +125,7 @@ data class BatchOp(
 /**
  * 操作类型
  */
-enum class Operation {
+enum class OperationType {
     INVALID,
     GET,
     PUT,

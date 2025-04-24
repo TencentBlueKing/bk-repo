@@ -55,7 +55,7 @@ import com.tencent.bkrepo.ddc.pojo.BatchOp
 import com.tencent.bkrepo.ddc.pojo.BatchOps
 import com.tencent.bkrepo.ddc.pojo.BatchOpsResponse
 import com.tencent.bkrepo.ddc.pojo.OpResponse
-import com.tencent.bkrepo.ddc.pojo.Operation
+import com.tencent.bkrepo.ddc.pojo.OperationType
 import com.tencent.bkrepo.ddc.pojo.RefKey
 import com.tencent.bkrepo.ddc.serialization.CbObject
 import com.tencent.bkrepo.ddc.utils.BlakeUtils
@@ -118,9 +118,12 @@ class ReferenceArtifactService(
         val userId = SecurityUtils.getUserId()
         for (op in ops.ops) {
             results[op.opId] = when (op.op) {
-                Operation.GET.name -> executor.submit<Pair<CbObject, Int>> { getRef(projectId, repoName, op, userId) }
-                Operation.HEAD.name -> executor.submit<Pair<CbObject, Int>> { headRef(projectId, repoName, op, userId) }
-                Operation.PUT.name -> executor.submit<Pair<CbObject, Int>> { putRef(repo, op, userId) }
+                OperationType.GET.name ->
+                    executor.submit<Pair<CbObject, Int>> { getRef(projectId, repoName, op, userId) }
+                OperationType.HEAD.name ->
+                    executor.submit<Pair<CbObject, Int>> { headRef(projectId, repoName, op, userId) }
+                OperationType.PUT.name ->
+                    executor.submit<Pair<CbObject, Int>> { putRef(repo, op, userId) }
                 else -> throw UnsupportedOperationException("unsupported op: ${op.op}")
             }
         }
