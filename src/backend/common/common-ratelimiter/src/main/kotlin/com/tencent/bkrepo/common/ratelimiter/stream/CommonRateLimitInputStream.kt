@@ -66,22 +66,6 @@ class CommonRateLimitInputStream(
     private var rateLimiter: RateLimiter? = null
     private var limitPerSecond: Long = 0
 
-//    fun setBytesRead(bytesRead: Long) {
-//        this.bytesRead = bytesRead
-//    }
-//
-//    fun setApplyNum(applyNum: Long) {
-//        this.applyNum = applyNum
-//    }
-//
-//    fun getBytesRead(): Long {
-//        return bytesRead
-//    }
-//
-//    fun getApplyNum(): Long {
-//        return applyNum
-//    }
-
     override fun read(): Int {
         tryAcquireOrWait(1)
         val data = super.read()
