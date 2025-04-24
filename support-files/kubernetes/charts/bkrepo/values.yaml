@@ -103,11 +103,10 @@ mongodb:
 tls:
   mongodb:
     enabled: false
-    ## 单向tls认证时需要
-    trustStore: /data/certs/mongodb/ca.jks
+    ## 运维已经创建的secret
+    existingSecret: ""
+    certJksFilename: ca.jks
     trustStorePassword: password
-    trustStoreType: JKS
-    invalidHostnameAllowed: false
     ## 双向tls认证时必须提供
     keyStore: ""
     keyStorePassword: ""

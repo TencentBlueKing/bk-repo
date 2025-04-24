@@ -67,7 +67,13 @@ data:
         username: {{ .Values.common.username }}
         password: {{ .Values.common.password }}
     {{- toYaml .Values.common.config | nindent 4 }}
+    {{ .Values.tls.mongodb.enabled }}
     tls:
       # 依赖组件使用ssl的配置
       mongodb:
-        {{- toYaml .Values.tls.mongodb | nindent 8 }}
+        enabled: true
+        trustStore: /data/certs/mongodb/{{ .Values.tls.mongodb.certJksFilename }}
+        trustStorePassword: {{ .Values.tls.mongodb.trustStorePassword }}
+        trustStoreType: JKS
+        invalidHostnameAllowed: true
+    {{- end }}

@@ -121,9 +121,11 @@ spec:
               mountPath: {{ .Values.common.mountPath }}
             - name: shared-data
               mountPath: /data/workspace/plugin/
+            {{- if .Values.tls.mongodb.enabled  }}
             - name: mongodb-ca
               mountPath: /data/certs/mongodb
               readOnly: true
+            {{- end }}
       volumes:
         - name: storage
           {{- if .Values.common.config.storage.nfs.enabled }}
@@ -137,7 +139,9 @@ spec:
           {{- end }}
         - name: shared-data
           emptyDir: {}
+        {{- if .Values.tls.mongodb.enabled }}
         - name: mongodb-ca
           secret:
-            secretName: bkrepo-mongodb-certificates
+            secretName: {{ .Values.tls.mongodb.existingSecret }}
+        {{- end }}
 {{- end }}
