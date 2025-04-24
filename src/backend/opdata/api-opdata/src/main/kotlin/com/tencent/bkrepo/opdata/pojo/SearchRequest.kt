@@ -32,13 +32,13 @@
 package com.tencent.bkrepo.opdata.pojo
 
 import com.tencent.bkrepo.opdata.pojo.enums.MetricsType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("search信息")
+
+@Schema(title = "search信息")
 data class SearchRequest(
-    @ApiModelProperty("查询类型")
+    @get:Schema(title = "查询类型")
     val type: MetricsType?,
-    @ApiModelProperty("查询目标")
+    @get:Schema(title = "查询目标")
     val target: String
 )
