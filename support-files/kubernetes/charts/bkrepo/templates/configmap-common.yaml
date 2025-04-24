@@ -67,7 +67,7 @@ data:
         username: {{ .Values.common.username }}
         password: {{ .Values.common.password }}
     {{- toYaml .Values.common.config | nindent 4 }}
-    {{ .Values.tls.mongodb.enabled }}
+    {{- if .Values.tls.mongodb.enabled }}
     tls:
       # 依赖组件使用ssl的配置
       mongodb:
