@@ -10,18 +10,18 @@
 /src/backend/rpm        @zacYL
 /src/backend/maven      @zacYL
 /src/backend/replication      @zacYL @cnlkl
-/src/backend/boot-assembly    @felixncheng
-/src/backend/archive          @felixncheng
-/src/backend/git              @felixncheng
-/src/backend/buildSrc   @felixncheng @cnlkl
+/src/backend/boot-assembly    @cnlkl
+/src/backend/archive          @cnlkl @zzdjx
+/src/backend/git              @zzdjx @cnlkl
+/src/backend/buildSrc   @cnlkl @zzdjx
 /src/backend/lfs        @yaoxuwan
 /src/backend/repository @yaoxuwan @cnlkl
 /src/backend/webhook    @yaoxuwan @zacYL
 /src/backend/pypi       @yaoxuwan @zacYL
 /src/backend/composer   @yaoxuwan @zacYL
 /src/backend/npm        @cnlkl
-/src/backend/generic    @cnlkl @yaoxuwan @felixncheng
-/src/backend/common     @cnlkl @yaoxuwan @felixncheng
+/src/backend/generic    @cnlkl @yaoxuwan @zacYL
+/src/backend/common     @cnlkl @yaoxuwan @zacYL
 /src/backend/analysis-executor    @cnlkl
 /src/backend/analysis   @cnlkl
 /src/backend/ddc        @cnlkl
