@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/component: opdata
     {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
     {{- if .Values.commonLabels }}
-      {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
   {{- if .Values.commonAnnotations }}
   annotations: {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
@@ -97,6 +97,11 @@ spec:
           volumeMounts:
             - name: storage
               mountPath: {{ .Values.common.mountPath }}
+            {{- if .Values.tls.mongodb.enabled  }}
+            - name: mongodb-ca
+              mountPath: /data/certs/mongodb
+              readOnly: true
+            {{- end }}
       volumes:
         - name: storage
           {{- if .Values.common.config.storage.nfs.enabled }}
@@ -108,4 +113,9 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
-{{- end }}
+        {{- if .Values.tls.mongodb.enabled }}
+        - name: mongodb-ca
+          secret:
+            secretName: {{ .Values.tls.mongodb.existingSecret }}
+        {{- end }}
+  {{- end }}
