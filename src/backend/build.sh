@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+
 core_service=("helm" "oci" "rpm" "npm" "maven" "pypi" "generic" "cargo" "conan" "composer" "huggingface" "s3" "nuget")
 
 rm -rf release
