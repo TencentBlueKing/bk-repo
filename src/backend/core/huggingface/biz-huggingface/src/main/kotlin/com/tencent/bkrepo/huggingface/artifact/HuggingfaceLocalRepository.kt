@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
 import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
-import com.tencent.bkrepo.huggingface.exception.RevisionNotFoundException
 import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
 import com.tencent.bkrepo.huggingface.pojo.RepoSibling
@@ -92,18 +91,21 @@ class HuggingfaceLocalRepository : LocalRepository() {
                 ?: throw HfRepoNotFoundException(getRepoId())
             transferRevision(artifactInfo)
             val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, getRevision()!!)
-                ?: throw RevisionNotFoundException(getRevision()!!)
-            val basePath = "/${getRepoId()}/resolve/${packageVersion.name}/"
-            val nodes = nodeService.listNode(
-                ArtifactInfo(projectId, repoName, basePath),
-                NodeListOption(includeFolder = false, deep = true)
-            )
-            val siblings = convert(nodes, basePath)
+            val siblings = if (packageVersion == null) {
+                emptyList()
+            } else {
+                val basePath = "/${getRepoId()}/resolve/${packageVersion.name}/"
+                val nodes = nodeService.listNode(
+                    ArtifactInfo(projectId, repoName, basePath),
+                    NodeListOption(includeFolder = false, deep = true)
+                )
+                convert(nodes, basePath)
+            }
             return if (type == REPO_TYPE_MODEL) {
                 ModelInfo(
                     id = packageSummary.name,
                     author = packageSummary.createdBy,
-                    sha = packageVersion.name,
+                    sha = packageVersion?.name.orEmpty(),
                     createdAt = packageSummary.createdDate,
                     lastModified = packageSummary.lastModifiedDate,
                     private = false,
@@ -124,7 +126,7 @@ class HuggingfaceLocalRepository : LocalRepository() {
                     _id = packageSummary.id,
                     id = packageSummary.name,
                     author = packageSummary.createdBy,
-                    sha = packageVersion.name,
+                    sha = packageVersion?.name.orEmpty(),
                     lastModified = packageSummary.lastModifiedDate,
                     private = false,
                     gated = false,
