@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,8 +30,8 @@
  */
 
 dependencies {
-    api(project(":s3:api-s3"))
-    api(project(":common:common-generic"))
+    api(project(":core:conan:api-conan"))
     api(project(":common:common-artifact:artifact-service"))
-    api("org.dom4j:dom4j:${Versions.Dom4j}")
+    api(project(":common:common-lock"))
+
 }

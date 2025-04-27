@@ -33,7 +33,7 @@ dependencies {
     implementation(project(":auth:biz-auth"))
     implementation(project(":repository:biz-repository"))
     implementation(project(":generic:biz-generic"))
-    implementation(project(":composer:biz-composer"))
+    implementation(project(":core:composer:biz-composer"))
     implementation(project(":core:helm:biz-helm"))
     implementation(project(":core:maven:biz-maven"))
     implementation(project(":core:npm:biz-npm"))

@@ -29,9 +29,6 @@
  * SOFTWARE.
  */
 
-dependencies{
-    api(project(":composer:api-composer"))
-    api(project(":common:common-job"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("com.google.code.gson:gson")
+dependencies {
+    implementation(project(":core:composer:biz-composer"))
 }

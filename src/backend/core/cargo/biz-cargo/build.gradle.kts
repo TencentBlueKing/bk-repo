@@ -30,5 +30,9 @@
  */
 
 dependencies {
-    implementation(project(":composer:biz-composer"))
+    api(project(":core:cargo:api-cargo"))
+    api(project(":common:common-job"))
+    api(project(":common:common-artifact:artifact-service"))
+    api(project(":common:common-lock"))
+    implementation("com.github.zafarkhaja:java-semver")
 }

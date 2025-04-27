@@ -29,10 +29,9 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":cargo:api-cargo"))
+dependencies{
+    api(project(":core:composer:api-composer"))
     api(project(":common:common-job"))
     api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-lock"))
-    implementation("com.github.zafarkhaja:java-semver")
+    implementation("com.google.code.gson:gson")
 }
