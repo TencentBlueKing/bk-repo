@@ -26,5 +26,5 @@
  */
 
 dependencies {
-    implementation(project(":svn:biz-svn"))
+    implementation(project(":core:svn:biz-svn"))
 }

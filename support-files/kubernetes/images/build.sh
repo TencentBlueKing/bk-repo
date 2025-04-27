@@ -61,7 +61,8 @@ warning () {
     EXITCODE=$((EXITCODE + 1))
 }
 
-core_service=("helm" "oci" "rpm" "npm" "maven" "pypi" "generic" "cargo" "conan" "composer" "huggingface" "s3" "nuget")
+core_service=("helm" "oci" "rpm" "npm" "maven" "pypi" "generic" "cargo" "conan" "composer" "huggingface" "s3" "nuget"
+              "git" "svn" "lfs" "ddc")
 
 build_backend () {
     log "构建${SERVICE}镜像..."

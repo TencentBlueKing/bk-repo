@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
 
-core_service=("helm" "oci" "rpm" "npm" "maven" "pypi" "generic" "cargo" "conan" "composer" "huggingface" "s3" "nuget")
+core_service=("helm" "oci" "rpm" "npm" "maven" "pypi" "generic" "cargo" "conan" "composer" "huggingface" "s3" "nuget"
+              "git" "svn" "lfs" "ddc")
 
 rm -rf release
 mkdir -p release

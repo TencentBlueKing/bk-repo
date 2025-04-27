@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,7 +30,9 @@
  */
 
 dependencies {
-    implementation(project(":lfs:api-lfs"))
-    implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":repository:api-repository"))
+    api(project(":core:git:api-git"))
+    api(project(":common:common-job"))
+    implementation("org.eclipse.jgit:org.eclipse.jgit.http.server")
+    testImplementation("org.eclipse.jgit:org.eclipse.jgit.junit")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }

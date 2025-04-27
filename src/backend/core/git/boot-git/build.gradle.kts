@@ -30,5 +30,5 @@
  */
 
 dependencies {
-    implementation(project(":git:biz-git"))
+    implementation(project(":core:git:biz-git"))
 }

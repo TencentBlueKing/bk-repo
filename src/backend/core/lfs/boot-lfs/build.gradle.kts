@@ -30,5 +30,5 @@
  */
 
 dependencies {
-    implementation(project(":lfs:biz-lfs"))
+    implementation(project(":core:lfs:biz-lfs"))
 }

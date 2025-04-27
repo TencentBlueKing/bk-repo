@@ -26,7 +26,9 @@
  */
 
 dependencies {
-    implementation(project(":ddc:api-ddc"))
-    implementation(project(":repository:api-repository"))
-    implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
+    api(project(":core:svn:api-svn"))
+    api(project(":common:common-service:service-servlet"))
+    implementation(project(":common:common-api"))
+    implementation(project(":common:common-artifact:artifact-service"))
+    implementation(project(":common:common-security"))
 }
