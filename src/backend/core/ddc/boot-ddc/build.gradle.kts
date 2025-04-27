@@ -26,5 +26,5 @@
  */
 
 dependencies {
-    implementation(project(":ddc:biz-ddc"))
+    implementation(project(":core:ddc:biz-ddc"))
 }

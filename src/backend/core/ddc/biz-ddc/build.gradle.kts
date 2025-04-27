@@ -26,7 +26,7 @@
  */
 
 dependencies {
-    implementation(project(":ddc:api-ddc"))
+    implementation(project(":core:ddc:api-ddc"))
     implementation(project(":repository:api-repository"))
     implementation("org.bouncycastle:bcpkix-jdk15on:1.69")
 }

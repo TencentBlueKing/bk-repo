@@ -37,7 +37,7 @@ dependencies {
     implementation(project(":core:helm:biz-helm"))
     implementation(project(":core:maven:biz-maven"))
     implementation(project(":core:npm:biz-npm"))
-    implementation(project(":nuget:biz-nuget"))
+    implementation(project(":core:nuget:biz-nuget"))
     implementation(project(":core:oci:biz-oci"))
     implementation(project(":core:rpm:biz-rpm"))
     implementation(project(":job:biz-job"))
@@ -45,7 +45,7 @@ dependencies {
     implementation(project(":replication:biz-replication"))
     implementation(project(":webhook:biz-webhook"))
     implementation(project(":lfs:biz-lfs"))
-    implementation(project(":ddc:biz-ddc"))
+    implementation(project(":core:ddc:biz-ddc"))
     implementation(project(":archive:biz-archive"))
     implementation(project(":router-controller:biz-router-controller"))
 }

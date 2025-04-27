@@ -30,9 +30,5 @@
  */
 
 dependencies {
-    api(project(":nuget:api-nuget"))
-    api(project(":common:common-job"))
-    api(project(":common:common-artifact:artifact-service"))
-    implementation("org.springframework.retry:spring-retry")
-    implementation("com.github.zafarkhaja:java-semver")
+    implementation(project(":core:nuget:biz-nuget"))
 }
