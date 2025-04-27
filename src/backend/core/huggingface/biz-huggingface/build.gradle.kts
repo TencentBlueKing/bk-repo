@@ -27,7 +27,7 @@
 
 dependencies {
     api(project(":common:common-artifact:artifact-service"))
-    api(project(":huggingface:api-huggingface"))
+    api(project(":core:huggingface:api-huggingface"))
     api(("org.eclipse.jgit:org.eclipse.jgit"))
-    api(project(":lfs:api-lfs"))
+    api(project(":core:lfs:api-lfs"))
 }

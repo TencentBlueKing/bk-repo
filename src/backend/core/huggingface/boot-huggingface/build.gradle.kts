@@ -26,5 +26,5 @@
  */
 
 dependencies {
-    implementation(project(":huggingface:biz-huggingface"))
+    implementation(project(":core:huggingface:biz-huggingface"))
 }
