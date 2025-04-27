@@ -30,5 +30,13 @@
  */
 
 dependencies {
-    implementation(project(":generic:biz-generic"))
+    api(project(":core:generic:api-generic"))
+    api(project(":common:common-redis"))
+    api(project(":analyst:api-analyst"))
+    api(project(":common:common-generic"))
+    api(project(":common:common-artifact:artifact-service"))
+    implementation(project(":common:common-artifact:artifact-cache"))
+    testImplementation("org.mockito.kotlin:mockito-kotlin")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
+    testImplementation("io.mockk:mockk")
 }
