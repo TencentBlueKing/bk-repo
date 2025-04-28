@@ -5,8 +5,10 @@
                 <bk-form class="mt50" :label-width="180">
                     <bk-form-item v-for="item in formItem" :key="item.key" :label="item.label">
                         <div v-if="!editItem.key || editItem.key !== item.key" class="flex-align-center">
-                            <span>{{ transPrivacy(userInfo[item.key], item.label)}}</span>
-                            <bk-button class="ml20 flex-align-center"
+                            <span v-if="item.key !== 'name'">{{ transPrivacy(userInfo[item.key], item.label)}}</span>
+                            <bk-user-display-name v-else :user-id="userInfo['name']"></bk-user-display-name>
+                            <bk-button
+                                class="ml20 flex-align-center"
                                 v-if="!editItem.key"
                                 text
                                 @click="editUserInfo(item)">
@@ -22,7 +24,8 @@
                     <bk-form-item :label="$t('password') + '：'">
                         <div class="flex-align-center">
                             <span>******</span>
-                            <bk-button class="ml20 flex-align-center"
+                            <bk-button
+                                class="ml20 flex-align-center"
                                 v-if="!editItem.key"
                                 text
                                 @click="showModifyPwd()">
@@ -45,7 +48,7 @@
     import { mapActions, mapState } from 'vuex'
     import userRelated from './userRelated'
     export default {
-        name: 'userInfo',
+        name: 'UserInfo',
         components: { userRelated, modifyPasswordDialog },
         directives: {
             focus: {

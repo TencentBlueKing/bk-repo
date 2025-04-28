@@ -23,7 +23,8 @@ module.exports = {
         DEVOPS_SITE_URL: true,
         SHOW_PROJECT_CONFIG_MENU: true,
         SHOW_ANALYST_MENU: true,
-        DOC_URL: true
+        DOC_URL: true,
+        API_BASE_URL: true
     },
     // add your custom rules hered
     rules: {

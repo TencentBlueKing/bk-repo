@@ -160,12 +160,12 @@
                     </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedBy')" width="150" show-overflow-tooltip>
                         <template #default="{ row }">
-                            {{ userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy }}
+                            <bk-user-display-name :user-id="userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy"></bk-user-display-name>
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('createdBy')" width="150" show-overflow-tooltip>
                         <template #default="{ row }">
-                            {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
+                            <bk-user-display-name :user-id="userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy"></bk-user-display-name>
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('operation')" width="100">

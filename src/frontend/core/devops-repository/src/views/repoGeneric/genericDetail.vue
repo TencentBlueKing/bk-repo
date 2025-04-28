@@ -14,7 +14,8 @@
                                 v-for="{ name, label, value } in detailInfoMap"
                                 :key="name">
                                 <label>{{ label }}：</label>
-                                <span class="flex-1 text-overflow" :title="value">{{ value }}</span>
+                                <span v-if="name !== 'createdBy' && name !== 'lastModifiedBy'" class="flex-1 text-overflow" :title="value">{{ value }}</span>
+                                <bk-user-display-name v-else :user-id="value"></bk-user-display-name>
                             </div>
                         </div>
                         <div v-if="!detailSlider.folder" class="version-base-info base-info-checksums display-block" data-title="Checksums" v-bkloading="{ isLoading: detailSlider.loading }">
