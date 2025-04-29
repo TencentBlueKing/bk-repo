@@ -54,7 +54,6 @@ class CheckUserStatusJob(
                 "found ${inactiveUsers.size} inactive employees")
 
         if (inactiveUsers.isNotEmpty()) {
-            logInactiveUsers(inactiveUsers)
             sendWechatMessage(inactiveUsers)
             jobContext.success.addAndGet(inactiveUsers.size.toLong())
         }
@@ -100,7 +99,6 @@ class CheckUserStatusJob(
                     synchronized(inactiveUsers) {
                         inactiveUsers.add(user)
                     }
-                    logger.info("Found inactive user: ${user.userId}")
                 }
             } catch (e: Exception) {
                 logger.error("Failed to check status for user: ${user.userId}", e)
@@ -142,16 +140,6 @@ class CheckUserStatusJob(
         val statusId = data.get("StatusId").asText()
         // 有效状态ID为1（在职）和3（试用）
         return statusId in setOf("1", "3")
-    }
-
-    private fun logInactiveUsers(users: List<TUser>) {
-        if (users.isEmpty()) return
-
-        logger.info("Inactive employees list:")
-        users.forEach { user ->
-            logger.info("用户ID: ${user.userId}, 姓名: ${user.name}, " +
-                    "邮箱: ${user.email}, 最后活跃时间: ${user.lastModifiedDate}")
-        }
     }
 
     private fun sendWechatMessage(inactiveUsers: List<TUser>) {
