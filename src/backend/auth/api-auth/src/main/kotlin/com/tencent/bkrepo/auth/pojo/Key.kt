@@ -27,18 +27,17 @@
 
 package com.tencent.bkrepo.auth.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("密钥")
+@Schema(title = "密钥")
 data class Key(
-    @ApiModelProperty("id")
+    @get:Schema(title = "id")
     val id: String,
-    @ApiModelProperty("名称")
+    @get:Schema(title = "名称")
     val name: String,
-    @ApiModelProperty("指纹")
+    @get:Schema(title = "指纹")
     val fingerprint: String,
-    @ApiModelProperty("创建日期")
+    @get:Schema(title = "创建日期")
     val createAt: LocalDateTime
 )

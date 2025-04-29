@@ -30,20 +30,20 @@ package com.tencent.bkrepo.analyst.pojo.request
 import com.fasterxml.jackson.annotation.JsonAlias
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.common.query.model.Rule
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("扫描请求")
+
+@Schema(title = "扫描请求")
 data class ScanRequest(
-    @ApiModelProperty("扫描器名")
+    @get:Schema(title = "扫描器名")
     val scanner: String? = null,
-    @ApiModelProperty("扫描方案id")
+    @get:Schema(title = "扫描方案id")
     @JsonAlias("id")
     val planId: String? = null,
-    @ApiModelProperty("扫描文件匹配规则")
+    @get:Schema(title = "扫描文件匹配规则")
     val rule: Rule? = null,
-    @ApiModelProperty("是否强制扫描，为true时无论是否存在扫描结果都会执行扫描")
+    @get:Schema(title = "是否强制扫描，为true时无论是否存在扫描结果都会执行扫描")
     val force: Boolean = false,
-    @ApiModelProperty("任务元数据")
+    @get:Schema(title = "任务元数据")
     val metadata: List<TaskMetadata> = emptyList()
 )

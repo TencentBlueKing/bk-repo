@@ -39,8 +39,8 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -51,24 +51,24 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("分析结果忽略规则")
+@Tag(name = "分析结果忽略规则")
 @RestController
 @RequestMapping("/api/filter/rules")
 @Principal(PrincipalType.ADMIN)
 class SystemFilterRuleController(private val filterRuleService: FilterRuleService) {
-    @ApiOperation("增加规则")
+    @Operation(summary = "增加规则")
     @PostMapping
     fun addSystemRule(@RequestBody request: UpdateFilterRuleRequest): Response<FilterRule> {
         return ResponseBuilder.success(filterRuleService.create(request))
     }
 
-    @ApiOperation("更新规则")
+    @Operation(summary = "更新规则")
     @PutMapping("/{ruleId}")
     fun updateSystemRule(@RequestBody request: UpdateFilterRuleRequest): Response<FilterRule> {
         return ResponseBuilder.success(filterRuleService.update(request))
     }
 
-    @ApiOperation("删除规则")
+    @Operation(summary = "删除规则")
     @DeleteMapping("/{ruleId}")
     fun deleteSystemRule(
         @PathVariable("ruleId") ruleId: String
@@ -77,7 +77,7 @@ class SystemFilterRuleController(private val filterRuleService: FilterRuleServic
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("分页获取规则")
+    @Operation(summary = "分页获取规则")
     @GetMapping
     fun listSystemRules(
         @RequestParam(required = false) pageNumber: Int = DEFAULT_PAGE_NUMBER,

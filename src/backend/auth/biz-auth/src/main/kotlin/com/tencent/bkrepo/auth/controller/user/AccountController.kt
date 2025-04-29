@@ -32,20 +32,20 @@
 package com.tencent.bkrepo.auth.controller.user
 
 import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
+import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.pojo.account.Account
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
 import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.token.CredentialSet
-import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.service.AccountService
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -64,7 +64,7 @@ class AccountController @Autowired constructor(
     permissionService: PermissionService
 ) : OpenResource(permissionService) {
 
-    @ApiOperation("查询所有账号")
+    @Operation(summary = "查询所有账号")
     @GetMapping("/list")
     @LogOperate(type = "ACCOUNT_LIST")
     fun listAccount(): Response<List<Account>> {
@@ -74,7 +74,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(accountList)
     }
 
-    @ApiOperation("查询拥有的账号")
+    @Operation(summary = "查询拥有的账号")
     @GetMapping("/own/list")
     fun listOwnAccount(): Response<List<Account>> {
         preCheckPlatformPermission()
@@ -82,7 +82,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(accountService.listOwnAccount(userId))
     }
 
-    @ApiOperation("查询已授权账号")
+    @Operation(summary = "查询已授权账号")
     @GetMapping("/authorized/list")
     @PutMapping("/update")
     fun listAuthorizedAccount(): Response<List<Account>> {
@@ -91,7 +91,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(accountService.listAuthorizedAccount(userId))
     }
 
-    @ApiOperation("根据appId查询账号")
+    @Operation(summary = "根据appId查询账号")
     @GetMapping("/detail/{appId}")
     fun getAccountDetail(@PathVariable appId: String): Response<Account> {
         preCheckPlatformPermission()
@@ -99,7 +99,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(accountService.findAccountByAppId(appId, userId))
     }
 
-    @ApiOperation("创建账号")
+    @Operation(summary = "创建账号")
     @PostMapping("/create")
     @LogOperate(type = "ACCOUNT_CREATE")
     fun createAccount(@RequestBody request: CreateAccountRequest): Response<Account> {
@@ -109,7 +109,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(accountService.createAccount(request, owner))
     }
 
-    @ApiOperation("更新账号")
+    @Operation(summary = "更新账号")
     @PutMapping("/update")
     @LogOperate(type = "ACCOUNT_UPDATE")
     fun updateAccount(@RequestBody request: UpdateAccountRequest): Response<Boolean> {
@@ -120,7 +120,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    @ApiOperation("删除账号")
+    @Operation(summary = "删除账号")
     @DeleteMapping("/delete/{appId}")
     @LogOperate(type = "ACCOUNT_DELETE")
     fun deleteAccount(@PathVariable appId: String): Response<Boolean> {
@@ -130,7 +130,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    @ApiOperation("卸载账号")
+    @Operation(summary = "卸载账号")
     @DeleteMapping("/uninstall/{appId}")
     fun uninstallAccount(@PathVariable appId: String): Response<Boolean> {
         preCheckPlatformPermission()
@@ -139,7 +139,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    @ApiOperation("获取账户下的ak/sk对")
+    @Operation(summary = "获取账户下的ak/sk对")
     @GetMapping("/credential/list/{appId}")
     fun getCredential(@PathVariable appId: String): Response<List<CredentialSet>> {
         preCheckPlatformPermission()
@@ -148,7 +148,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(credential)
     }
 
-    @ApiOperation("创建ak/sk对")
+    @Operation(summary = "创建ak/sk对")
     @PostMapping("/credential/{appId}")
     @LogOperate(type = "KEYS_CREATE")
     fun createCredential(
@@ -161,7 +161,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    @ApiOperation("删除ak/sk对")
+    @Operation(summary = "删除ak/sk对")
     @DeleteMapping("/credential/{appId}/{accesskey}")
     @LogOperate(type = "KEYS_DELETE")
     fun deleteCredential(@PathVariable appId: String, @PathVariable accesskey: String): Response<Boolean> {
@@ -171,7 +171,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
-    @ApiOperation("更新ak/sk对状态")
+    @Operation(summary = "更新ak/sk对状态")
     @PutMapping("/credential/{appId}/{accesskey}/{status}")
     @LogOperate(type = "KEYS_UPDATE")
     fun updateCredential(
@@ -185,7 +185,7 @@ class AccountController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    @ApiOperation("校验ak/sk")
+    @Operation(summary = "校验ak/sk")
     @GetMapping("/credential/{accesskey}/{secretkey}")
     fun checkCredential(@PathVariable accesskey: String, @PathVariable secretkey: String): Response<String?> {
         preCheckPlatformPermission()

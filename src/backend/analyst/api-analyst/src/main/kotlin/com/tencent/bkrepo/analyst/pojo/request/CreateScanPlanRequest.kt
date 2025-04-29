@@ -28,24 +28,24 @@
 package com.tencent.bkrepo.analyst.pojo.request
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("创建扫描方案请求")
+
+@Schema(title = "创建扫描方案请求")
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CreateScanPlanRequest(
-    @ApiModelProperty("项目ID")
+    @get:Schema(title = "项目ID")
     val projectId: String,
-    @ApiModelProperty("方案名称")
+    @get:Schema(title = "方案名称")
     val name: String,
-    @ApiModelProperty("方案类型")
+    @get:Schema(title = "方案类型")
     val type: String,
-    @ApiModelProperty("扫描类型")
+    @get:Schema(title = "扫描类型")
     val scanTypes: List<String> = emptyList(),
-    @ApiModelProperty("使用的扫描器")
+    @get:Schema(title = "使用的扫描器")
     val scanner: String = "default",
-    @ApiModelProperty("描述")
+    @get:Schema(title = "描述")
     val description: String = "",
-    @ApiModelProperty("是否自动扫描")
+    @get:Schema(title = "是否自动扫描")
     val autoScan: Boolean = false
 )
