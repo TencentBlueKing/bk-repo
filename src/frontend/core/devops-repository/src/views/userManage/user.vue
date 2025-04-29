@@ -42,8 +42,8 @@
             </template>
             <bk-table-column :label="$t('account')" prop="userId"></bk-table-column>
             <bk-table-column :label="$t('chineseName')" prop="name">
-                <template #default="{ row }">
-                    <bk-user-display-name :user-id="row.name"></bk-user-display-name>
+                <template #default="{ row, $index }">
+                    <bk-user-display-name :ref="'displayName' + $index" :user-id="row.name"></bk-user-display-name>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('email')" prop="email">
@@ -66,10 +66,10 @@
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
-                <template #default="{ row }">
+                <template #default="{ row, $index }">
                     <operation-list
                         :list="[
-                            { label: $t('edit'), clickEvent: () => showEditUser(row) },
+                            { label: $t('edit'), clickEvent: () => showEditUser(row, $index) },
                             { label: $t('resetPassword'), clickEvent: () => resetUserPwd(row) },
                             { label: $t('createAccessToken'), clickEvent: () => createAccessToken(row) },
                             { label: $t('delete'), clickEvent: () => deleteUserHandler(row) }
@@ -387,7 +387,8 @@
                     this.editUserDialog.loading = false
                 })
             },
-            showEditUser (row) {
+            async showEditUser (row, index) {
+                const displayName = await this.$refs['displayName' + index].getDisplayName()
                 this.$refs.editUserDialog && this.$refs.editUserDialog.clearError()
                 this.editUserDialog = {
                     show: true,
@@ -401,6 +402,7 @@
                     asstUsers: [],
                     ...row
                 }
+                this.editUserDialog.name = displayName
             },
             deleteUserHandler (row) {
                 this.$confirm({
