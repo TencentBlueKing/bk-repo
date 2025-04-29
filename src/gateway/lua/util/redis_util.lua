@@ -1,7 +1,7 @@
 --[[
 Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
 
-Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
 
 BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
 
@@ -17,35 +17,49 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ]]
 
-string = require("string")
-math = require("math")
-json = require("cjson.safe")
-uuid = require("resty.jit-uuid")
-resolver = require("resty.dns.resolver")
-ck = require("resty.cookie")
-http = require("resty.http")
-stringUtil = require("util.string_util")
-logUtil = require("util.log_util")
-redisUtil = require("util.redis_util")
-md5 = require("resty.md5")
-arrayUtil = require("util.array_util")
-cookieUtil = require("util.cookie_util")
-urlUtil = require("util.url_util")
-oauthUtil = require("util.oauth_util")
-hostUtil = require("util.host_util")
+local redis, err = require("resty.redis")
+_M = {}
 
-math.randomseed(os.time())
-uuid.seed()
+local redisConfig = config.redis
 
-local handle = io.popen("/sbin/ifconfig eth1 | grep 'inet ' | awk '{print $2}'")
-local ip = handle:read("*a")
-handle:close()
-internal_ip = ip
+function _M:new()
+    if redisConfig == nil then
+        ngx.log(ngx.ERR, "redis config is null")
+        return nil
+    end
+    if not redis then
+        ngx.log(ngx.ERR, "redis require error:", err)
+        return nil
+    end
+    local red, err = redis:new()
+    if not red then
+        ngx.log(ngx.ERR, "red new error:", res, err)
+        return nil
+    end
+    red:set_timeout(2000) -- 2 second
+    local redis_host = redisConfig['host']
+    local redis_port = redisConfig['port']
+    if not redis_host or not redis_port then
+        ngx.log(ngx.ERR, "redis config is empty")
+        return nil
+    end
+    local res, err = red:connect(redis_host, redis_port, {
+        backlog = redisConfig['backlog'],
+        ssl = redisConfig['ssl'],
+        pool_size = redisConfig['pool_size']
+    })
+    if not res then
+        ngx.log(ngx.ERR, "red connect error:", redis_host, ",", redis_port, " ", err)
+        return nil
+    end
+    if redisConfig['pass'] ~= nil then
+        res, err = red:auth(redisConfig['pass'])
+        if not res then
+            ngx.log(ngx.ERR, "red auth error:", err)
+            return nil
+        end
+    end
+    return red
+end
 
-local ok_table = {
-  status = 0,
-  data = true
-}
-
-response_ok = json.encode(ok_table)
-
+return _M

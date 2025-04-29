@@ -144,8 +144,125 @@ function _M:get_addr(service_name)
     end
 
     -- return ip,port address
+    -- 检查当前服务是否在需要带宽判断的服务列表中
+    -- ip带宽检查逻辑
+    local service_with_bandwidth_check = config.service_with_bandwidth_check
+    if string.find(service_with_bandwidth_check or "", service_name) then
+        -- 使用共享内存缓存带宽检查结果
+        local bw_cache = ngx.shared.bw_cache_store
+        local cache_key = "bw:" .. service_name
+        local cached_result = bw_cache:get(cache_key)
+
+        -- 如果缓存存在且未过期
+        if cached_result then
+            -- 获取缓存IP列表
+            local cached_ip_list = string.split(cached_result, ",")
+            -- 与当前可用IP列表取交集,避免ip已经失效
+            local valid_ips = {}
+            for _, cached_ip in ipairs(cached_ip_list) do
+                for _, current_ip in ipairs(ips) do
+                    if cached_ip == current_ip then
+                        table.insert(valid_ips, cached_ip)
+                        break
+                    end
+                end
+            end
+
+            -- 如果交集不为空，随机返回一个
+            if #valid_ips > 0 then
+                return valid_ips[math.random(#valid_ips)] .. ":" .. port
+            end
+            ngx.log(ngx.WARN, "all cached IPs are invalid")
+        end
+
+        -- 执行带宽检查获取符合条件的IP列表
+        local service_key = service_prefix .. service_name
+        local min_bw_instances, err = self:get_min_bandwidth_instances(service_key, ips)
+        -- 如果获取到符合条件的IP列表
+        if min_bw_instances and #min_bw_instances > 0 then
+            -- 将整个IP列表存入缓存，用逗号分隔
+            bw_cache:set(cache_key, table.concat(min_bw_instances, ","), 10)
+            -- 随机返回列表中的一个IP
+            return min_bw_instances[math.random(#min_bw_instances)] .. ":" .. port
+        end
+        ngx.log(ngx.WARN, "bandwidth check failed，err : ", err or "unknown error")
+    end
+    -- 2. Redis获取失败时回退到随机选择
+    ngx.log(ngx.WARN, "use default ways")
     return ips[math.random(table.getn(ips))] .. ":" .. port
 
+end
+
+--[[
+根据带宽数据选择最优实例
+@param service_name 服务名称
+@param ips 查询得到的IP列表
+@param port 服务端口
+@return 最优实例列表(ips)或nil, 错误信息
+]]
+function _M:get_min_bandwidth_instances(service_name, ips)
+    -- Redis键定义
+    local service_key = "bw:service:" .. service_name
+    local sorted_key = service_key .. ":sorted"
+    local active_threshold = 300 -- 5分钟活跃阈值
+    -- 从redis获取
+    local red, err = redisUtil:new()
+    if not red then
+        return nil, "host_util failed to new redis: " .. (err or "unknown error")
+    end
+    -- 1. 尝试从Redis获取最小带宽实例
+    local ok, redis_ips = pcall(function()
+        -- 使用Lua脚本原子性查询
+        local script = [[
+            local service_key = KEYS[1]
+            local sorted_key = KEYS[2]
+            local current_time = tonumber(ARGV[1])
+            local active_sec = tonumber(ARGV[2])
+
+            -- 先获取实例总数
+            local total = redis.call('ZCARD', sorted_key)
+            -- 动态调整查询数量：不超过实例总数且最多10个
+            local limit = math.min(total, 10)
+
+            -- 获取最小带宽的活跃实例
+            local candidates = redis.call('ZRANGE', sorted_key, 0, limit-1)
+            local result = {}
+
+            for _, ip in ipairs(candidates) do
+                local ts = redis.call('HGET', service_key, ip..':ts')
+                if ts and (current_time - tonumber(ts)) < active_sec then
+                    table.insert(result, ip)
+                end
+            end
+            return result
+        ]]
+
+        return red:eval(script, 2, service_key, sorted_key,
+                        tostring(os.time()), tostring(active_threshold))
+    end)
+
+    -- 2. 处理Redis查询异常
+    if not ok or not redis_ips or #redis_ips == 0 then
+        return nil, "Redis query failed or no active instances"
+    end
+
+    -- 3. 取Redis和默认方式查出的ip记录的交集
+    local valid_instances = {}
+    for _, redis_ip in ipairs(redis_ips) do
+        for _, c_ip in ipairs(ips) do
+            if redis_ip == c_ip then
+                table.insert(valid_instances, redis_ip)
+                break
+            end
+        end
+    end
+
+    -- 4. 返回结果
+    if #valid_instances > 0 then
+        return valid_instances
+    end
+
+    return nil, "no valid instances"
 end
 
 return _M
