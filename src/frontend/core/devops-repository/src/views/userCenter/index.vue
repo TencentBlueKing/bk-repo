@@ -6,7 +6,8 @@
                     <bk-form-item v-for="item in formItem" :key="item.key" :label="item.label">
                         <div v-if="!editItem.key || editItem.key !== item.key" class="flex-align-center">
                             <span v-if="item.key !== 'name'">{{ transPrivacy(userInfo[item.key], item.label)}}</span>
-                            <bk-user-display-name v-else :user-id="userInfo['name']"></bk-user-display-name>
+                            <bk-user-display-name v-else-if="multiMode" ref="displayName" :user-id="userInfo['name']"></bk-user-display-name>
+                            <span v-else>{{ transPrivacy(userInfo[item.key], item.label)}}</span>
                             <bk-button
                                 class="ml20 flex-align-center"
                                 v-if="!editItem.key"
@@ -69,7 +70,8 @@
                     value: ''
                 },
                 tabName: 'user',
-                ciMode: MODE_CONFIG === 'ci'
+                ciMode: MODE_CONFIG === 'ci',
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
             }
         },
         computed: {
@@ -81,7 +83,15 @@
                 'editUser',
                 'getUserInfo'
             ]),
-            editUserInfo (item) {
+            async editUserInfo (item) {
+                if (item.key === 'name' && this.multiMode) {
+                    const displayName = this.$refs.displayName[0].innerText
+                    this.editItem = {
+                        key: item.key,
+                        value: displayName
+                    }
+                    return
+                }
                 this.editItem = {
                     key: item.key,
                     value: this.userInfo[item.key]

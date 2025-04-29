@@ -70,7 +70,8 @@
             </bk-table-column>
             <bk-table-column :label="$t('createdBy')" width="90">
                 <template #default="{ row }">
-                    <bk-user-display-name :user-id="userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy"></bk-user-display-name>
+                    <bk-user-display-name v-if="multiMode" :user-id="userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy"></bk-user-display-name>
+                    <span v-else> {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}</span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
@@ -146,7 +147,8 @@
                 fullRepoList: [],
                 sortType: [],
                 showIamDenyDialog: false,
-                showData: {}
+                showData: {},
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
             }
         },
         computed: {

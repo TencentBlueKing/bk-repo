@@ -43,7 +43,8 @@
             <bk-table-column :label="$t('account')" prop="userId"></bk-table-column>
             <bk-table-column :label="$t('chineseName')" prop="name">
                 <template #default="{ row, $index }">
-                    <bk-user-display-name :ref="'displayName' + $index" :user-id="row.name"></bk-user-display-name>
+                    <bk-user-display-name v-if="multiMode" :ref="'displayName' + $index" :user-id="row.name"></bk-user-display-name>
+                    <span v-else>{{ row.name }}</span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('email')" prop="email">
@@ -157,6 +158,7 @@
                     limit: 20,
                     limitList: [10, 20, 40]
                 },
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true',
                 editUserDialog: {
                     show: false,
                     loading: false,
@@ -388,7 +390,6 @@
                 })
             },
             async showEditUser (row, index) {
-                const displayName = await this.$refs['displayName' + index].getDisplayName()
                 this.$refs.editUserDialog && this.$refs.editUserDialog.clearError()
                 this.editUserDialog = {
                     show: true,
@@ -402,7 +403,10 @@
                     asstUsers: [],
                     ...row
                 }
-                this.editUserDialog.name = displayName
+                if (this.multiMode) {
+                    const displayName = await this.$refs['displayName' + index].getDisplayName()
+                    this.editUserDialog.name = displayName
+                }
             },
             deleteUserHandler (row) {
                 this.$confirm({
