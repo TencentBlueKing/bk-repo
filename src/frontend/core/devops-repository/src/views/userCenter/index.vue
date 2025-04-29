@@ -6,7 +6,7 @@
                     <bk-form-item v-for="item in formItem" :key="item.key" :label="item.label">
                         <div v-if="!editItem.key || editItem.key !== item.key" class="flex-align-center">
                             <span v-if="item.key !== 'name'">{{ transPrivacy(userInfo[item.key], item.label)}}</span>
-                            <bk-user-display-name v-else :user-id="userInfo['name']"></bk-user-display-name>
+                            <bk-user-display-name v-else ref="displayName" :user-id="userInfo['name']"></bk-user-display-name>
                             <bk-button
                                 class="ml20 flex-align-center"
                                 v-if="!editItem.key"
@@ -81,7 +81,15 @@
                 'editUser',
                 'getUserInfo'
             ]),
-            editUserInfo (item) {
+            async editUserInfo (item) {
+                if (item.key === 'name') {
+                    const displayName = this.$refs.displayName[0].innerText
+                    this.editItem = {
+                        key: item.key,
+                        value: displayName
+                    }
+                    return
+                }
                 this.editItem = {
                     key: item.key,
                     value: this.userInfo[item.key]
