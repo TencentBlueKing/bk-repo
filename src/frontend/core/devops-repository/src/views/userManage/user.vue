@@ -41,7 +41,11 @@
                 <empty-data :is-loading="isLoading" :search="Boolean(isSearching)"></empty-data>
             </template>
             <bk-table-column :label="$t('account')" prop="userId"></bk-table-column>
-            <bk-table-column :label="$t('chineseName')" prop="name"></bk-table-column>
+            <bk-table-column :label="$t('chineseName')" prop="name">
+                <template #default="{ row }">
+                    <bk-user-display-name :user-id="row.name"></bk-user-display-name>
+                </template>
+            </bk-table-column>
             <bk-table-column :label="$t('email')" prop="email">
                 <template #default="{ row }">{{ transEmail(row.email) }}</template>
             </bk-table-column>
