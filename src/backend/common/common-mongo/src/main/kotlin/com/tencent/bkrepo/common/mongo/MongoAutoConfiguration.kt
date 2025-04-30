@@ -31,12 +31,6 @@
 
 package com.tencent.bkrepo.common.mongo
 
-import com.mongodb.Block
-import com.mongodb.ReadConcern
-import com.mongodb.ReadPreference
-import com.mongodb.WriteConcern
-import com.mongodb.connection.ConnectionPoolSettings
-import com.mongodb.connection.SocketSettings
 import com.tencent.bkrepo.common.mongo.dao.util.MongoSslUtils
 import com.tencent.bkrepo.common.mongo.properties.MongoSslProperties
 import org.slf4j.LoggerFactory
@@ -57,7 +51,6 @@ import org.springframework.data.mongodb.core.convert.MappingMongoConverter
 import org.springframework.data.mongodb.core.convert.MongoConverter
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext
-import java.util.concurrent.TimeUnit
 
 /**
  * mongodb 4.0+开始支持事物，但springboot data mongo为了兼容老版本不出错，默认不开启事物
