@@ -69,7 +69,7 @@
         // 存放文档中心的url
         var DOC_URL = '__BK_REPO_DOCS_FQDN__'|| 'https://bk.tencent.com/docs'
         // displayName的网关URL
-        var API_BASE_URL = ''
+        var API_BASE_URL = '__BK_HTTP_SCHEMA__://bkapi.' + PAAS_SERVICE_URL.split("://")[1] + '/api/bk-user-web/prod'
         // 是否开启多租户模式
         var BK_REPO_ENABLE_MULTI_TENANT_MODE = '__BK_REPO_ENABLE_MULTI_TENANT_MODE__' || 'false'
 
