@@ -4,7 +4,6 @@ import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.common.notify.api.NotifyService
 import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.weworkbot.TextMessage
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotMessage
