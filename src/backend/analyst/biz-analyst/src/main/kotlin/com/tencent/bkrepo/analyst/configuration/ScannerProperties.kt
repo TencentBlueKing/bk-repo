@@ -99,6 +99,10 @@ data class ScannerProperties(
      * 扫描结果报告保留时间，为0时表示不清理
      */
     var reportKeepDuration: Duration = Duration.ofDays(0L),
+    /**
+     * 扫描结果中来源于不同组件的相同漏洞ID和许可证ID是否仅计数1次
+     */
+    var uniqueCounting: Boolean = false,
 ) {
     companion object {
         /**
