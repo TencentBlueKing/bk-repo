@@ -2,34 +2,28 @@ package com.tencent.bkrepo.job.batch.task.other
 
 import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.common.notify.api.NotifyService
-import com.tencent.bkrepo.auth.pojo.ApiResponse
 import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.weworkbot.TextMessage
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotMessage
-import com.tencent.bkrepo.job.BATCH_SIZE
-import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
+import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.CheckUserStatusJobProperties
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.time.LocalDateTime
 import java.util.Collections
 import java.util.concurrent.TimeUnit
+import kotlin.reflect.KClass
 
 /**
  * 用户在职状态检查
@@ -37,112 +31,85 @@ import java.util.concurrent.TimeUnit
 @Component
 @EnableConfigurationProperties(CheckUserStatusJobProperties::class)
 class CheckUserStatusJob(
-    val properties: CheckUserStatusJobProperties,
-    private val mongoTemplate: MongoTemplate,
+    private val properties: CheckUserStatusJobProperties,
     private val notifyService: NotifyService
-) : DefaultContextJob(properties) {
+) : MongoDbBatchJob<CheckUserStatusJob.User, JobContext>(properties) {
 
-    override fun doStart0(jobContext: JobContext) {
-        logger.info("Starting employee status check task...")
+    private val inactiveUsers = Collections.synchronizedList(mutableListOf<User>())
 
-        if (!checkUserStatusJobProperties()) return
-
-        val inactiveUsers = Collections.synchronizedList(mutableListOf<TUser>())
-        val totalProcessed = processUsersInBatches(inactiveUsers)
-
-        logger.info("Check completed, total processed $totalProcessed users, " +
-                "found ${inactiveUsers.size} inactive employees")
-
-        if (inactiveUsers.isNotEmpty()) {
-            sendWechatMessage(inactiveUsers)
-            jobContext.success.addAndGet(inactiveUsers.size.toLong())
-        }
-        jobContext.total.addAndGet(totalProcessed.toLong())
-    }
+    override fun collectionNames(): List<String> = listOf(COLLECTION_NAME_USER)
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
-    private fun processUsersInBatches(inactiveUsers: MutableList<TUser>): Int {
-        val criteria = Criteria.where(TUser::locked.name).`is`(false)
-
-        mongoTemplate.stream(
-            Query(criteria),
-            TUser::class.java,
-            COLLECTION_NAME_USER
-        ).use { cursor ->
-            runBlocking {
-                val jobs = mutableListOf<Deferred<Unit>>()
-                var totalProcessed = 0
-                cursor.forEach { user: TUser ->
-                    jobs.add(processSingleUserAsync(user, inactiveUsers))
-                    if (jobs.size >= BATCH_SIZE) {
-                        jobs.awaitAll()
-                        totalProcessed += jobs.size
-                        jobs.clear()
-                    }
-                }
-                // 处理最后一批不足BATCH_SIZE的任务
-                if (jobs.isNotEmpty()) {
-                    jobs.awaitAll()
-                    totalProcessed += jobs.size
-                }
-                logger.info("All unlocked user accounts processed, total $totalProcessed users")
-                totalProcessed // 返回处理的总用户数
-            }.let { return it }
-        }
+    override fun doStart0(jobContext: JobContext) {
+        if (!checkProperties()) return
+        super.doStart0(jobContext)
+        sendWechatMessage(inactiveUsers)
     }
 
-    private suspend fun processSingleUserAsync(user: TUser, inactiveUsers: MutableList<TUser>) = coroutineScope {
-        async(Dispatchers.IO) {
-            try {
-                if (!checkUserStatus(user.userId)) {
-                    synchronized(inactiveUsers) {
-                        inactiveUsers.add(user)
-                    }
-                }
-            } catch (e: Exception) {
-                logger.error("Failed to check status for user: ${user.userId}", e)
-            }
-        }
+    override fun buildQuery(): Query {
+        return Query.query(Criteria.where(TUser::locked.name).`is`(false))
     }
+
+    override fun run(row: User, collectionName: String, context: JobContext) {
+        if (checkUserStatus(row.userId))
+            inactiveUsers.add(row)
+    }
+
+    override fun mapToEntity(row: Map<String, Any?>): User {
+        return User(
+            userId = row[User::userId.name].toString(),
+            name = row[User::name.name]?.toString(),
+            email = row[User::email.name]?.toString(),
+            lastModifiedDate = TimeUtils.parseMongoDateTimeStr(row[User::lastModifiedDate.name].toString())
+        )
+    }
+
+    override fun entityClass(): KClass<User> = User::class
+
+    override fun createJobContext(): JobContext = JobContext()
+
+    data class User(
+        val userId: String,
+        val name: String?,
+        val email: String?,
+        val lastModifiedDate: LocalDateTime? = null
+    )
 
     private fun checkUserStatus(userId: String): Boolean {
-        val request = buildCheckUserRequest(userId)
-        try{
+        return try {
+            // 构建请求
+            val normalizedUrl = properties.checkUserUrl
+                .trim()
+                .removeSuffix("/")
+
+            val request = Request.Builder()
+                .url("$normalizedUrl?login_name=$userId")
+                .addHeader("X-Bkapi-Authorization",
+                    JsonUtils.objectMapper.writeValueAsString(mapOf("access_token" to properties.bkAccessToken))
+                        .replace("\\s".toRegex(), ""))
+                .get()
+                .build()
+
+            // 执行请求并解析
             val response = HttpUtils.doRequest(okHttpClient, request, RETRY_COUNT)
-            return parseActiveStatus(response)
+            val json = JsonUtils.objectMapper.readTree(response.content)
+
+            // 解析状态
+            when {
+                json.get("data").isEmpty -> {
+                    throw RuntimeException(json.get("message").toString())
+                }
+                json.get("data").get("StatusId").asText() in setOf("1", "3") -> false
+                else -> true
+            }
         } catch (e: Exception) {
-            logger.warn("Failed to check status for user: $userId", e)
-            return false
+            logger.warn("Failed to check status for user: $userId", e.message)
+            throw e
         }
     }
 
-    private fun buildCheckUserRequest(userId: String): Request {
-        val authHeader = mapOf(
-            "access_token" to properties.bkAccessToken
-        ).toJsonString().replace("\\s".toRegex(), "")
-
-        return Request.Builder()
-            .url("${properties.checkUserUrl}?login_name=$userId")
-            .addHeader("X-Bkapi-Authorization", authHeader)
-            .get()
-            .build()
-    }
-
-    private fun parseActiveStatus(response: ApiResponse): Boolean {
-        val jsonNode = JsonUtils.objectMapper.readTree(response.content)
-        val data = jsonNode.get("data")
-        if (data.isEmpty) {
-            logger.error("Empty response body for user status check, response meassage: "
-                    + jsonNode.get("message").toString())
-            return true
-        }
-        val statusId = data.get("StatusId").asText()
-        // 有效状态ID为1（在职）和3（试用）
-        return statusId in setOf("1", "3")
-    }
-
-    private fun sendWechatMessage(inactiveUsers: List<TUser>) {
+    private fun sendWechatMessage(inactiveUsers: List<User>) {
         if (inactiveUsers.isEmpty()) return
 
         val receivers = properties.receivers
@@ -163,7 +130,7 @@ class CheckUserStatusJob(
         }
     }
 
-    private fun checkUserStatusJobProperties(): Boolean {
+    private fun checkProperties(): Boolean {
         val missingFields = mutableListOf<String>().apply {
             if (properties.checkUserUrl.isEmpty()) add("checkUserUrl")
             if (properties.checkBotKey.isEmpty()) add("checkBotKey")
