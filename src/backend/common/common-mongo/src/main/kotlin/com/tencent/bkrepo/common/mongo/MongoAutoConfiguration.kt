@@ -111,26 +111,8 @@ class MongoAutoConfiguration {
 
     @Bean
     fun mongoClientCustomizer(mongoSslProperties: MongoSslProperties): MongoClientSettingsBuilderCustomizer {
-        logger.info("Init MongoClientSettingsBuilderCustomizer")
-        val socketSettings = Block<SocketSettings.Builder> { builder ->
-            builder.connectTimeout(15, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-        }
-
-        val connectionPoolSettings = Block<ConnectionPoolSettings.Builder> { builder ->
-            builder.minSize(200).maxSize(500)
-                .maxConnectionLifeTime(0, TimeUnit.SECONDS)
-                .maxConnectionIdleTime(0, TimeUnit.SECONDS)
-        }
-
+        logger.info("Init MongoSSLConfiguration")
         return MongoClientSettingsBuilderCustomizer { clientSettingsBuilder ->
-            clientSettingsBuilder
-                .writeConcern(WriteConcern.W1)
-                .readConcern(ReadConcern.LOCAL)
-                .readPreference(ReadPreference.primaryPreferred())
-                .applyToSocketSettings(socketSettings)
-                .applyToConnectionPoolSettings(connectionPoolSettings)
-
             // 根据配置文件判断是否开启ssl
             if (mongoSslProperties.enabled) {
                 clientSettingsBuilder.applyToSslSettings { ssl ->

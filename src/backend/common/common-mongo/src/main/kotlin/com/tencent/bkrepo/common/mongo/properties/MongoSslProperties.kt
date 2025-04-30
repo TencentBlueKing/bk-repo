@@ -4,7 +4,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 
 @ConfigurationProperties(prefix = "tls.mongodb")
-@ConstructorBinding
 data class MongoSslProperties(
     /**
      * 连接mongo是否启用ssl
