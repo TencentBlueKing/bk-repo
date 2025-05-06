@@ -68,6 +68,11 @@
         var RELEASE_MODE = '__BK_REPO_RELEASE_MODE__' || 'community'
         // 存放文档中心的url
         var DOC_URL = '__BK_REPO_DOCS_FQDN__'|| 'https://bk.tencent.com/docs'
+        // displayName的网关URL
+        var API_BASE_URL =  (/^https?/.test('__BK_REPO_PAAS_FQDN__') ? 'https://bkapi.' : 'http://bkapi.')
+                            + ('__BK_REPO_PAAS_FQDN__').split("://")[1] + '/api/bk-user-web/prod'
+        // 是否开启多租户模式
+        var BK_REPO_ENABLE_MULTI_TENANT_MODE = '__BK_REPO_ENABLE_MULTI_TENANT_MODE__' || 'false'
 
     </script>
     <script>
