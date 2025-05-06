@@ -33,17 +33,12 @@
                     :name="option.name">
                 </bk-option>
                 <div slot="extension" style="cursor: pointer;" class="flex-align-center">
-                    <div @click="createProject" class="hover-extent">
+                    <div @click="createProject" class="hover-extent" style="width: 45%">
                         <i class="bk-icon icon-plus-circle"></i>
                         {{$t('createProject')}}
-                        <bk-divider direction="vertical"></bk-divider>
                     </div>
-                    <div @click="joinProject">
-                        <img width="16" height="16" style="float: left;margin-top: 7px;margin-right: 3px" src="/ui/project-add.svg" />
-                        {{$t('joinProject')}}
-                        <bk-divider direction="vertical"></bk-divider>
-                    </div>
-                    <div @click="manageProject">
+                    <bk-divider direction="vertical"></bk-divider>
+                    <div style="width: 45%" @click="manageProject">
                         <i class="bk-icon icon-apps mr5"></i>
                         {{$t('manageProject')}}
                     </div>
