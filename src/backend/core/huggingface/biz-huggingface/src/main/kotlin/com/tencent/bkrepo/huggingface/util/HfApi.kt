@@ -62,7 +62,7 @@ class HfApi(
         fun modelInfo(endpoint: String, token: String, repoId: String): ModelInfo {
             val url = "$endpoint/api/models/$repoId"
             val request = Request.Builder().url(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 .build()
             httpClient.newCall(request).execute().use {
                 throwExceptionWhenFailed(it)
@@ -73,7 +73,7 @@ class HfApi(
         fun datasetInfo(endpoint: String, token: String, repoId: String): DatasetInfo {
             val url = "$endpoint/api/datasets/$repoId"
             val request = Request.Builder().url(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 .build()
             httpClient.newCall(request).execute().use {
                 throwExceptionWhenFailed(it)
@@ -85,7 +85,7 @@ class HfApi(
             val url = "$endpoint$artifactUri"
             val method = HttpContextHolder.getRequestOrNull()?.method
             val request = Request.Builder().url(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 .method(method ?: HttpMethod.GET.name, null)
                 .build()
             val response = httpClient.newCall(request).execute()
@@ -96,7 +96,7 @@ class HfApi(
         fun head(endpoint: String, token: String, artifactUri: String): Response {
             val url = "$endpoint$artifactUri"
             val request = Request.Builder().url(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 .head()
                 .build()
             val response = httpClient.newCall(request).execute()
