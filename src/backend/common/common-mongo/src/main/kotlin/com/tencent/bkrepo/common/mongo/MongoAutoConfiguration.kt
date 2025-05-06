@@ -31,8 +31,13 @@
 
 package com.tencent.bkrepo.common.mongo
 
+import com.tencent.bkrepo.common.mongo.dao.util.MongoSslUtils
+import com.tencent.bkrepo.common.mongo.properties.MongoSslProperties
+import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.autoconfigure.mongo.MongoClientSettingsBuilderCustomizer
 import org.springframework.boot.autoconfigure.mongo.MongoProperties
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
@@ -53,6 +58,7 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext
  */
 @Configuration
 @PropertySource("classpath:common-mongo.properties")
+@EnableConfigurationProperties(MongoSslProperties::class)
 class MongoAutoConfiguration {
 
     @Bean
@@ -94,5 +100,37 @@ class MongoAutoConfiguration {
     @Primary
     fun mongoTemplate(factory: MongoDatabaseFactory, converter: MongoConverter?): MongoTemplate {
         return MongoTemplate(factory, converter)
+    }
+
+    @Bean
+    fun mongoClientCustomizer(mongoSslProperties: MongoSslProperties): MongoClientSettingsBuilderCustomizer {
+        logger.info("Init MongoSSLConfiguration")
+        return MongoClientSettingsBuilderCustomizer { clientSettingsBuilder ->
+            // 根据配置文件判断是否开启ssl
+            if (mongoSslProperties.enabled) {
+                clientSettingsBuilder.applyToSslSettings { ssl ->
+                    ssl.enabled(true)
+                    ssl.invalidHostNameAllowed(mongoSslProperties.invalidHostnameAllowed)
+
+                    try {
+                        // 根据配置判断使用单向还是双向TLS
+                        if (mongoSslProperties.isMutualTlsConfigured()) {
+                            logger.info("Detected client certificate configuration - enabling mutual TLS")
+                            ssl.context(MongoSslUtils.createMutualTlsSslContext(mongoSslProperties))
+                        } else {
+                            logger.info("Using one-way TLS configuration")
+                            ssl.context(MongoSslUtils.createOnewayTlsSslContext(mongoSslProperties))
+                        }
+                    } catch (e: Exception) {
+                        logger.error("Failed to configure MongoDB TLS context", e)
+                        throw RuntimeException("Failed to configure MongoDB TLS context", e)
+                    }
+                }
+            }
+        }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(MongoAutoConfiguration::class.java)
     }
 }
