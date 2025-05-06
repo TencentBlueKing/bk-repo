@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.huggingface.util
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.ACCEPT_ENCODING
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
@@ -86,6 +87,9 @@ class HfApi(
             val method = HttpContextHolder.getRequestOrNull()?.method
             val request = Request.Builder().url(url)
                 .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
+                // https://github.com/square/okhttp/issues/259#issuecomment-22056176
+                // 使用默认gzip编码时，Content-Length可能被okhttp剥离
+                .header(ACCEPT_ENCODING, "identity")
                 .method(method ?: HttpMethod.GET.name, null)
                 .build()
             val response = httpClient.newCall(request).execute()
