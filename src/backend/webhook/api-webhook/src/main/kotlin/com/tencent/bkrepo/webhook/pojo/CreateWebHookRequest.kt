@@ -31,22 +31,22 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.metadata.annotation.Sensitive
 import com.tencent.bkrepo.common.metadata.handler.MaskPartMapValue
 import com.tencent.bkrepo.webhook.constant.AssociationType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("创建WebHook请求")
+
+@Schema(title = "创建WebHook请求")
 data class CreateWebHookRequest(
-    @ApiModelProperty("回调地址")
+    @get:Schema(title = "回调地址")
     val url: String,
-    @ApiModelProperty("自定义请求头")
+    @get:Schema(title = "自定义请求头")
     @Sensitive(handler = MaskPartMapValue::class)
     val headers: Map<String, String> = emptyMap(),
-    @ApiModelProperty("触发事件")
+    @get:Schema(title = "触发事件")
     val triggers: List<EventType>,
-    @ApiModelProperty("关联对象类型")
+    @get:Schema(title = "关联对象类型")
     val associationType: AssociationType,
-    @ApiModelProperty("关联对象id")
+    @get:Schema(title = "关联对象id")
     val associationId: String = "",
-    @ApiModelProperty("事件资源key正则模式")
+    @get:Schema(title = "事件资源key正则模式")
     val resourceKeyPattern: String? = null
 )

@@ -38,8 +38,8 @@ import com.tencent.bkrepo.opdata.pojo.plugin.PluginDetail
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginListOption
 import com.tencent.bkrepo.opdata.pojo.plugin.PluginUpdateRequest
 import com.tencent.bkrepo.opdata.service.PluginService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -49,7 +49,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("插件服务接口")
+@Tag(name = "插件服务接口")
 @RestController
 @RequestMapping("/api/plugin")
 @Principal(PrincipalType.ADMIN)
@@ -57,14 +57,14 @@ class PluginController(
     private val pluginService: PluginService
 ) {
 
-    @ApiOperation("插件列表")
+    @Operation(summary = "插件列表")
     @GetMapping
     @LogOperate(type = "PLUGIN_LIST")
     fun list(option: PluginListOption): Response<Page<PluginDetail>> {
         return ResponseBuilder.success(pluginService.list(option))
     }
 
-    @ApiOperation("创建插件")
+    @Operation(summary = "创建插件")
     @PostMapping
     @LogOperate(type = "PLUGIN_CREATE")
     fun create(@RequestBody request: PluginCreateRequest): Response<Void> {
@@ -72,7 +72,7 @@ class PluginController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("更新插件")
+    @Operation(summary = "更新插件")
     @PutMapping
     @LogOperate(type = "PLUGIN_UPDATE")
     fun update(@RequestBody request: PluginUpdateRequest): Response<Void> {
@@ -80,7 +80,7 @@ class PluginController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("删除插件")
+    @Operation(summary = "删除插件")
     @DeleteMapping("/{pluginId}")
     @LogOperate(type = "PLUGIN_DELETE")
     fun delete(@PathVariable pluginId: String): Response<Void> {
@@ -88,7 +88,7 @@ class PluginController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("加载插件")
+    @Operation(summary = "加载插件")
     @PostMapping("/load/{pluginId}")
     @LogOperate(type = "PLUGIN_LOAD")
     fun load(
@@ -99,7 +99,7 @@ class PluginController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("卸载插件")
+    @Operation(summary = "卸载插件")
     @DeleteMapping("/unload/{pluginId}")
     @LogOperate(type = "PLUGIN_UNLOAD")
     fun unload(
