@@ -35,5 +35,6 @@ import org.springframework.context.annotation.Configuration
     OpProperties::class,
     OpEmptyFolderStatJobProperties::class,
     OpProjectMetricsProperties::class,
+    OpServerLogProperties::class
 )
 class OpConfiguration

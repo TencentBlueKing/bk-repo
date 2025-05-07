@@ -168,13 +168,14 @@
                     </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedBy')" width="150" show-overflow-tooltip>
                         <template #default="{ row }">
-                            {{ userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy }}
+                            <bk-user-display-name v-if="multiMode" :user-id="userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy"></bk-user-display-name>
+                            <span v-else> {{ userList[row.lastModifiedBy] ? userList[row.lastModifiedBy].name : row.lastModifiedBy }}</span>
                         </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('createdBy')" width="150" show-overflow-tooltip>
                         <template #default="{ row }">
-                            {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
-                        </template>
+                            <bk-user-display-name v-if="multiMode" :user-id="userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy"></bk-user-display-name>
+                            <span v-else> {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}</span>                        </template>
                     </bk-table-column>
                     <bk-table-column :label="$t('operation')" width="100">
                         <template #default="{ row }">
@@ -329,7 +330,8 @@
                 timer: null,
                 showMultiDelete: false,
                 selectedAll: false,
-                selectCount: 0
+                selectCount: 0,
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
             }
         },
         computed: {

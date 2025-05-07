@@ -31,6 +31,7 @@ import com.tencent.bkrepo.archive.ArchiveStatus
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.ARCHIVE_FILE_COLLECTION
@@ -48,6 +49,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.time.LocalDateTime
 import kotlin.reflect.KClass
 
 /**
@@ -65,6 +67,7 @@ class ArchivedNodeCompleteJob(
     private val archiveClient: ArchiveClient,
     private val nodeService: NodeService,
     private val storageService: StorageService,
+    private val storageProperties: StorageProperties,
 ) : MongoDbBatchJob<ArchivedNodeRestoreJob.ArchiveFile, NodeContext>(properties) {
 
     override fun createJobContext(): NodeContext {
@@ -83,12 +86,26 @@ class ArchivedNodeCompleteJob(
 
     override fun run(row: ArchivedNodeRestoreJob.ArchiveFile, collectionName: String, context: NodeContext) {
         with(row) {
-            listNode(sha256, storageCredentialsKey).forEach {
-                val repo = RepositoryCommonUtils.getRepositoryDetail(it.projectId, it.repoName)
-                archiveNode(it.projectId, it.repoName, it.fullPath, sha256, repo.storageCredentials)
+            val now = LocalDateTime.now()
+            var shouldDeleteStorage = true
+            val nodes = listNode(sha256, storageCredentialsKey)
+            for (node in nodes) {
+                val accessInterval = node.lastAccessDate?.let { Duration.between(it, now) }
+                if (accessInterval != null && accessInterval < properties.minAccessInterval) {
+                    logger.info("node[$node] was accessed recently, skip mark as archived")
+                    // 存在开始归档后又被访问的同sha256制品保留原存储，此时可能导致冗余存储
+                    shouldDeleteStorage = false
+                    continue
+                }
+                archiveNode(node.projectId, node.repoName, node.fullPath)
                 context.count.incrementAndGet()
-                context.size.addAndGet(it.size)
-                logger.info("Success to archive node[$it].")
+                context.size.addAndGet(node.size)
+                logger.info("Success to archive node[$node].")
+            }
+            if (shouldDeleteStorage) {
+                // 删除原存储
+                storageService.delete(sha256, getStorageCredentials(storageCredentialsKey)!!)
+                logger.info("success delete file[$sha256]] in storage[$storageCredentialsKey]")
             }
             val archiveFileRequest = ArchiveFileRequest(
                 sha256 = sha256,
@@ -113,13 +130,15 @@ class ArchivedNodeCompleteJob(
         return ArchivedNodeRestoreJob.ArchiveFile::class
     }
 
-    private fun archiveNode(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        sha256: String,
-        storageCredentials: StorageCredentials?,
-    ) {
+    private fun getStorageCredentials(key: String?): StorageCredentials? {
+        return if (key == null) {
+            storageProperties.defaultStorageCredentials()
+        } else {
+            RepositoryCommonUtils.getStorageCredentials(key)
+        }
+    }
+
+    private fun archiveNode(projectId: String, repoName: String, fullPath: String) {
         val nodeArchiveRequest = NodeArchiveRequest(
             projectId = projectId,
             repoName = repoName,
@@ -127,8 +146,6 @@ class ArchivedNodeCompleteJob(
             operator = SYSTEM_USER,
         )
         nodeService.archiveNode(nodeArchiveRequest)
-        // 删除原存储
-        storageService.delete(sha256, storageCredentials)
     }
 
     private fun listNode(sha256: String, storageCredentialsKey: String?): List<NodeCommonUtils.Node> {

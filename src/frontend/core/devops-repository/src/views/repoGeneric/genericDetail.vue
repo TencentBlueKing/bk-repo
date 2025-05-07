@@ -14,7 +14,8 @@
                                 v-for="{ name, label, value } in detailInfoMap"
                                 :key="name">
                                 <label>{{ label }}：</label>
-                                <span class="flex-1 text-overflow" :title="value">{{ value }}</span>
+                                <bk-user-display-name v-if="multiMode && (name === 'createdBy' || name === 'lastModifiedBy')" :user-id="value"></bk-user-display-name>
+                                <span v-else class="flex-1 text-overflow" :title="value">{{ value }}</span>
                             </div>
                         </div>
                         <div v-if="!detailSlider.folder" class="version-base-info base-info-checksums display-block" data-title="Checksums" v-bkloading="{ isLoading: detailSlider.loading }">
@@ -140,7 +141,8 @@
                 },
                 showIamDenyDialog: false,
                 showData: {},
-                hasErr: false
+                hasErr: false,
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
             }
         },
         computed: {
