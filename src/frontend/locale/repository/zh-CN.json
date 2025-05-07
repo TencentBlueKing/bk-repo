@@ -923,8 +923,8 @@
     "latestSyncData": "最后同步 {0}",
     "totalProxyCount": "共计{0}个代理",
     "connectionTest": "连通性测试",
-    "yes": "是",
-    "no": "否",
+    "Yes": "是",
+    "No": "否",
     "itsmTip": "该操作需要审批，申请单已提交，请审批通过后刷新页面",
     "viewApproval": "查看审批",
     "shareUser": "分享人",
@@ -939,5 +939,7 @@
     "waitUpload": "等待上传中",
     "reason": "原因",
     "forbidMsg": "禁用后，不可下载",
-    "forbidTitle": "禁用：{0}"
+    "forbidTitle": "禁用：{0}",
+    "lastDownloadBy": "最近下载人",
+    "lastDownloadDate": "下载时间"
 }

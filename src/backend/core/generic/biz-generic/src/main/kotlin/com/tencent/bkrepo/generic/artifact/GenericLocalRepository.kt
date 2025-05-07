@@ -295,6 +295,9 @@ class GenericLocalRepository(
         // 文件默认下载，设置Content-Dispostition响应头
         // preview == true时不设置Content-Dispostition响应头
         val preview = context.request.getParameter(PARAM_PREVIEW)?.toBoolean()
+        if (preview == true) {
+            context.request.setAttribute(PARAM_PREVIEW, true)
+        }
         context.useDisposition = preview == null || preview == false
         if (context.repo.name == REPORT) {
             context.useDisposition = false
