@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
@@ -40,13 +41,16 @@ import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
 import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
 import com.tencent.bkrepo.huggingface.pojo.RepoSibling
+import com.tencent.bkrepo.huggingface.service.HfCommonService
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.springframework.stereotype.Component
 
 @Component
-class HuggingfaceLocalRepository : LocalRepository() {
+class HuggingfaceLocalRepository(
+    private val hfCommonService: HfCommonService,
+) : LocalRepository() {
 
     override fun onUpload(context: ArtifactUploadContext) {
         with(context) {
@@ -144,7 +148,10 @@ class HuggingfaceLocalRepository : LocalRepository() {
             }
         }
     }
-    
+
+    override fun buildDownloadRecord(context: ArtifactDownloadContext, artifactResource: ArtifactResource) =
+        hfCommonService.buildDownloadRecord(context)
+
     private fun convert(nodes: List<NodeInfo>, basePath: String): List<RepoSibling> {
         return nodes.map { RepoSibling(
             rfilename = it.fullPath.removePrefix(basePath),
