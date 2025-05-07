@@ -46,6 +46,7 @@ import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_PREFIX
 import com.tencent.bkrepo.cargo.pojo.index.IndexConfiguration
+import com.tencent.bkrepo.cargo.service.impl.CommonService
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -65,7 +66,9 @@ import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 @Component
-class CargoRemoteRepository : RemoteRepository() {
+class CargoRemoteRepository(
+    private val commonService: CommonService,
+) : RemoteRepository() {
 
     private val downloadHostCache = CacheBuilder.newBuilder().maximumSize(100)
         .expireAfterWrite(60, TimeUnit.MINUTES).build<String, String>()
@@ -209,6 +212,11 @@ class CargoRemoteRepository : RemoteRepository() {
         logger.info("on remote query response...")
         return parseSearchResponse(response)
     }
+
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ) = commonService.buildDownloadRecord(context.userId, context.artifactInfo as CargoArtifactInfo)
 
     private fun parseConfigResponse(response: Response): IndexConfiguration? {
         return response.body?.byteStream().use {

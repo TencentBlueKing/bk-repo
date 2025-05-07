@@ -226,17 +226,7 @@ class CargoLocalRepository(
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): PackageDownloadRecord? {
-        with(context.artifactInfo as CargoArtifactInfo) {
-            if (crateName.isNullOrEmpty() || crateVersion.isNullOrEmpty()) {
-                return null
-            }
-            return PackageDownloadRecord(
-                context.projectId, context.repoName, PackageKeys.ofCargo(crateName), crateVersion
-            )
-        }
-
-    }
+    ) = commonService.buildDownloadRecord(context.userId, context.artifactInfo as CargoArtifactInfo)
 
     override fun remove(context: ArtifactRemoveContext) {
         commonService.removeCargoRelatedNode(context)
