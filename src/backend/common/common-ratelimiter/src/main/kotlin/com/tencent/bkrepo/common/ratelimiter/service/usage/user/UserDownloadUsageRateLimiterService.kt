@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.ratelimiter.service.usage.user
 
+import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
@@ -38,6 +39,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRa
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -47,7 +49,7 @@ class UserDownloadUsageRateLimiterService(
     taskScheduler: ThreadPoolTaskScheduler,
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterMetrics: RateLimiterMetrics,
-    redisTemplate: RedisTemplate<String, String>? = null,
+    redisTemplate: RedisTemplate<String, String>,
     rateLimiterConfigService: RateLimiterConfigService
 ) : UserUploadUsageRateLimiterService(
     taskScheduler,
@@ -80,5 +82,10 @@ class UserDownloadUsageRateLimiterService(
 
     override fun generateKey(resource: String, resourceLimit: ResourceLimit): String {
         return KEY_PREFIX + "UserDownloadUsage:$resource"
+    }
+
+    companion object {
+        private lateinit var rateLimiterCache: ConcurrentHashMap<String, RateLimiter>
+        private lateinit var rateLimitRule: RateLimitRule
     }
 }

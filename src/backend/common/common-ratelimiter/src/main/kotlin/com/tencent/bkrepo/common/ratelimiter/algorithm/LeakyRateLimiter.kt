@@ -67,6 +67,10 @@ class LeakyRateLimiter(
         // 非redis类实现不需要处理
     }
 
+    override fun getLimitPerSecond(): Long {
+        return (rate * capacity).toLong()
+    }
+
     private fun allow(permits: Long): Boolean {
         if (water == 0L) {
             lastLeakTime = System.currentTimeMillis()
