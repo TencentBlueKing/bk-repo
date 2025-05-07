@@ -29,41 +29,40 @@ package com.tencent.bkrepo.job.separation.pojo.task
 
 import com.tencent.bkrepo.job.separation.model.TSeparationTask
 import com.tencent.bkrepo.job.separation.pojo.SeparationContent
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("数据降冷任务")
+@Schema(title = "数据降冷任务")
 data class SeparationTask(
-    @ApiModelProperty("ID")
+    @get:Schema(title = "ID")
     val id: String? = null,
-    @ApiModelProperty("创建人")
+    @get:Schema(title = "创建人")
     val createdBy: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: LocalDateTime,
-    @ApiModelProperty("最后修改人")
+    @get:Schema(title = "最后修改人")
     val lastModifiedBy: String,
-    @ApiModelProperty("最后修改时间")
+    @get:Schema(title = "最后修改时间")
     val lastModifiedDate: LocalDateTime,
-    @ApiModelProperty("降冷临界时间")
+    @get:Schema(title = "降冷临界时间")
     val separationDate: LocalDateTime,
-    @ApiModelProperty("任务开始执行的时间")
+    @get:Schema(title = "任务开始执行的时间")
     val startDate: LocalDateTime? = null,
-    @ApiModelProperty("任务结束执行的时间")
+    @get:Schema(title = "任务结束执行的时间")
     val endDate: LocalDateTime? = null,
-    @ApiModelProperty("已降冷成功的制品数")
+    @get:Schema(title = "已降冷成功的制品数")
     val successCount: Long = 0,
-    @ApiModelProperty("降冷失败的制品数")
+    @get:Schema(title = "降冷失败的制品数")
     val failedCount: Long = 0,
-    @ApiModelProperty("跳过的制品数")
+    @get:Schema(title = "跳过的制品数")
     val skippedCount: Long = 0,
-    @ApiModelProperty("降冷任务所属项目")
+    @get:Schema(title = "降冷任务所属项目")
     val projectId: String,
-    @ApiModelProperty("降冷项目所属仓库")
+    @get:Schema(title = "降冷项目所属仓库")
     val repoName: String,
-    @ApiModelProperty("任务状态")
+    @get:Schema(title = "任务状态")
     val state: String,
-    @ApiModelProperty("任务内容")
+    @get:Schema(title = "任务内容")
     val content: SeparationContent,
 ) {
     companion object {

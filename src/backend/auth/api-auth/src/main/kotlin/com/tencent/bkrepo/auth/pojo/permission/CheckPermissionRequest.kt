@@ -32,9 +32,9 @@
 package com.tencent.bkrepo.auth.pojo.permission
 
 import com.tencent.bkrepo.auth.pojo.ResourceBaseRequest
-import io.swagger.annotations.ApiModel
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("校验权限请求")
+@Schema(title = "校验权限请求")
 data class CheckPermissionRequest(
     val uid: String,
     override var resourceType: String,

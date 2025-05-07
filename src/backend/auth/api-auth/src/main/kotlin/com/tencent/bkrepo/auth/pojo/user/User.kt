@@ -32,34 +32,33 @@
 package com.tencent.bkrepo.auth.pojo.user
 
 import com.tencent.bkrepo.auth.pojo.token.Token
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("用户信息")
+@Schema(title = "用户信息")
 data class User(
-    @ApiModelProperty("用户ID")
+    @get:Schema(title = "用户ID")
     val userId: String,
-    @ApiModelProperty("用户名")
+    @get:Schema(title = "用户名")
     val name: String,
-    @ApiModelProperty("用户密码")
+    @get:Schema(title = "用户密码")
     var pwd: String? = null,
-    @ApiModelProperty("是否是管理员")
+    @get:Schema(title = "是否是管理员")
     val admin: Boolean = false,
-    @ApiModelProperty("是否锁定")
+    @get:Schema(title = "是否锁定")
     val locked: Boolean = false,
-    @ApiModelProperty("用户token")
+    @get:Schema(title = "用户token")
     val tokens: List<Token> = emptyList(),
-    @ApiModelProperty("所属角色")
+    @get:Schema(title = "所属角色")
     val roles: List<String> = emptyList(),
-    @ApiModelProperty("关联用户")
+    @get:Schema(title = "关联用户")
     val asstUsers: List<String> = emptyList(),
-    @ApiModelProperty("群组账号")
+    @get:Schema(title = "群组账号")
     val group: Boolean = false,
-    @ApiModelProperty("邮箱")
+    @get:Schema(title = "邮箱")
     val email: String? = null,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: LocalDateTime? = null,
-    @ApiModelProperty("最近跟新时间")
+    @get:Schema(title = "最近跟新时间")
     val lastModifiedDate: LocalDateTime? = null
 )

@@ -27,45 +27,45 @@
 
 package com.tencent.bkrepo.analyst.pojo.response
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("扫描方案信息")
+
+@Schema(title = "扫描方案信息")
 data class ScanPlanInfo(
-    @ApiModelProperty("方案id")
+    @get:Schema(title = "方案id")
     val id: String,
-    @ApiModelProperty("方案名")
+    @get:Schema(title = "方案名")
     val name: String?,
-    @ApiModelProperty("方案类型")
+    @get:Schema(title = "方案类型")
     val planType: String,
-    @ApiModelProperty("扫描类型")
+    @get:Schema(title = "扫描类型")
     val scanTypes: List<String>,
-    @ApiModelProperty("projectId")
+    @get:Schema(title = "projectId")
     val projectId: String,
-    @ApiModelProperty("方案状态")
+    @get:Schema(title = "方案状态")
     val status: String,
-    @ApiModelProperty("累计扫描制品数")
+    @get:Schema(title = "累计扫描制品数")
     val artifactCount: Long = 0,
-    @ApiModelProperty("严重漏洞数")
+    @get:Schema(title = "严重漏洞数")
     val critical: Long = 0,
-    @ApiModelProperty("高危漏洞数")
+    @get:Schema(title = "高危漏洞数")
     val high: Long = 0,
-    @ApiModelProperty("中危漏洞数")
+    @get:Schema(title = "中危漏洞数")
     val medium: Long = 0,
-    @ApiModelProperty("低危漏洞数")
+    @get:Schema(title = "低危漏洞数")
     val low: Long = 0,
-    @ApiModelProperty("漏洞总数")
+    @get:Schema(title = "漏洞总数")
     val total: Long = 0,
-    @ApiModelProperty("创建者")
+    @get:Schema(title = "创建者")
     val createdBy: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: String,
-    @ApiModelProperty("修改者")
+    @get:Schema(title = "修改者")
     val lastModifiedBy: String,
-    @ApiModelProperty("修改时间")
+    @get:Schema(title = "修改时间")
     val lastModifiedDate: String,
-    @ApiModelProperty("最后扫描时间")
+    @get:Schema(title = "最后扫描时间")
     val lastScanDate: String?,
-    @ApiModelProperty("是否只读")
+    @get:Schema(title = "是否只读")
     val readOnly: Boolean = false
 )

@@ -31,27 +31,27 @@ import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api(tags = ["SERVICE_OAUTHAUTHORIZATION"], description = "服务-Oauth授权接口")
+@Tag(name = "SERVICE_OAUTHAUTHORIZATION", description = "服务-Oauth授权接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceOauthAuthorizationResource")
 @RequestMapping(AUTH_SERVICE_OAUTH_PREFIX)
 interface ServiceOauthAuthorizationClient {
 
-    @ApiOperation("获取oauth token信息")
+    @Operation(summary = "获取oauth token信息")
     @GetMapping("/token")
     fun getToken(
         @RequestParam accessToken: String
     ): Response<OauthToken?>
 
-    @ApiOperation("验证oauth token")
+    @Operation(summary = "验证oauth token")
     @GetMapping("/token/validate")
     fun validateToken(
         @RequestParam accessToken: String

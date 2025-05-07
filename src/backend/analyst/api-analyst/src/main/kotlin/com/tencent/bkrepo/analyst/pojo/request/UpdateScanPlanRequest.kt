@@ -29,20 +29,21 @@ package com.tencent.bkrepo.analyst.pojo.request
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.tencent.bkrepo.common.query.model.Rule
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class UpdateScanPlanRequest(
-    @ApiModelProperty("方案ID")
+    @get:Schema(title = "方案ID")
     val id: String? = null,
-    @ApiModelProperty("项目ID")
+    @get:Schema(title = "项目ID")
     val projectId: String? = null,
-    @ApiModelProperty("方案名称")
+    @get:Schema(title = "方案名称")
     val name: String? = null,
-    @ApiModelProperty("描述")
+    @get:Schema(title = "描述")
     val description: String? = null,
-    @ApiModelProperty("是否自动扫描")
+    @get:Schema(title = "是否自动扫描")
     val scanOnNewArtifact: Boolean? = null,
-    @ApiModelProperty("自动扫描规则，包含仓库和制品规则")
+    @get:Schema(title = "自动扫描规则，包含仓库和制品规则")
     val rule: Rule? = null
 )

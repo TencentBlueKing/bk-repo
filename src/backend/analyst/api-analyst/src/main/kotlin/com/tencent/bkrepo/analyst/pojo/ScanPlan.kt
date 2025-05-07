@@ -29,42 +29,42 @@ package com.tencent.bkrepo.analyst.pojo
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.tencent.bkrepo.common.query.model.Rule
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@ApiModel("扫描方案")
+@Schema(title = "扫描方案")
 data class ScanPlan(
-    @ApiModelProperty("方案ID")
+    @get:Schema(title = "方案ID")
     var id: String? = null,
-    @ApiModelProperty("项目ID")
+    @get:Schema(title = "项目ID")
     var projectId: String? = null,
-    @ApiModelProperty("方案名称")
+    @get:Schema(title = "方案名称")
     var name: String? = null,
-    @ApiModelProperty("方案类型")
+    @get:Schema(title = "方案类型")
     var type: String? = null,
-    @ApiModelProperty("扫描类型")
+    @get:Schema(title = "扫描类型")
     var scanTypes: List<String>? = null,
-    @ApiModelProperty("使用的扫描器")
+    @get:Schema(title = "使用的扫描器")
     var scanner: String? = null,
-    @ApiModelProperty("方案描述")
+    @get:Schema(title = "方案描述")
     var description: String? = null,
-    @ApiModelProperty("是否有新制品上传时自动扫描")
+    @get:Schema(title = "是否有新制品上传时自动扫描")
     var scanOnNewArtifact: Boolean? = null,
-    @ApiModelProperty("自动扫描仓库")
+    @get:Schema(title = "自动扫描仓库")
     var repoNames: List<String>? = null,
-    @ApiModelProperty("自动扫描规则")
+    @get:Schema(title = "自动扫描规则")
     var rule: Rule? = null,
-    @ApiModelProperty("质量规则")
+    @get:Schema(title = "质量规则")
     var scanQuality: Map<String, Any>? = null,
-    @ApiModelProperty("创建者")
+    @get:Schema(title = "创建者")
     var createdBy: String? = null,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     var createdDate: String? = null,
-    @ApiModelProperty("修改者")
+    @get:Schema(title = "修改者")
     var lastModifiedBy: String? = null,
-    @ApiModelProperty("修改时间")
+    @get:Schema(title = "修改时间")
     var lastModifiedDate: String? = null,
-    @ApiModelProperty("是否只读")
+    @get:Schema(title = "是否只读")
     var readOnly: Boolean? = null
 )

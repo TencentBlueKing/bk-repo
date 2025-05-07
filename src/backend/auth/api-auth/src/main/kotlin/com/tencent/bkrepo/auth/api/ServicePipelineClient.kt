@@ -34,38 +34,38 @@ package com.tencent.bkrepo.auth.api
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_PERMISSION_PREFIX
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api(tags = ["SERVICE_PERMISSION"], description = "服务-权限接口")
+@Tag(name = "SERVICE_PERMISSION", description = "服务-权限接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServicePipelineResource")
 @RequestMapping(AUTH_SERVICE_PERMISSION_PREFIX)
 interface ServicePipelineClient {
 
-    @ApiOperation("获取有权限的流水线")
+    @Operation(summary = "获取有权限的流水线")
     @GetMapping("/pipeline/listPermissionedPipelines")
     fun listPermissionedPipelines(
-        @ApiParam(value = "用户ID", required = true)
+        @Parameter(name = "用户ID", required = true)
         @RequestParam uid: String,
-        @ApiParam(value = "项目ID", required = true)
+        @Parameter(name = "项目ID", required = true)
         @RequestParam projectId: String
     ): Response<List<String>>
 
-    @ApiOperation("是否有流水线访问权限")
+    @Operation(summary = "是否有流水线访问权限")
     @GetMapping("/pipeline/hasPermission")
     fun hasPermission(
-        @ApiParam(value = "用户ID", required = true)
+        @Parameter(name = "用户ID", required = true)
         @RequestParam uid: String,
-        @ApiParam(value = "项目ID", required = true)
+        @Parameter(name = "项目ID", required = true)
         @RequestParam projectId: String,
-        @ApiParam(value = "流水线ID", required = true)
+        @Parameter(name = "流水线ID", required = true)
         @RequestParam pipelineId: String
     ): Response<Boolean>
 }

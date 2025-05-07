@@ -27,21 +27,21 @@
 
 package com.tencent.bkrepo.analyst.pojo.response
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("扫描器基本信息")
+
+@Schema(title = "扫描器基本信息")
 data class ScannerBase(
-    @ApiModelProperty("扫描器名")
+    @get:Schema(title = "扫描器名")
     val name: String,
-    @ApiModelProperty("扫描器类型")
+    @get:Schema(title = "扫描器类型")
     val type: String,
-    @ApiModelProperty("扫描器描述信息")
+    @get:Schema(title = "扫描器描述信息")
     val description: String,
-    @ApiModelProperty("支持扫描的文件名后缀")
+    @get:Schema(title = "支持扫描的文件名后缀")
     val supportFileNameExt: List<String>,
-    @ApiModelProperty("支持扫描的包类型")
+    @get:Schema(title = "支持扫描的包类型")
     val supportPackageTypes: List<String>,
-    @ApiModelProperty("支持扫描的类型，如许可扫描、漏洞扫描")
+    @get:Schema(title = "支持扫描的类型，如许可扫描、漏洞扫描")
     val supportScanTypes: List<String>
 )
