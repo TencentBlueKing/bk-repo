@@ -16,6 +16,7 @@
                 <span class="ml5">Artifact Hub</span>
             </a> -->
             <bk-select
+                v-if="showProjectSelect"
                 ref="porjectSelect"
                 class="ml20 bkre-project-select"
                 :value="projectId"
@@ -146,7 +147,8 @@
                         name: 'openSource',
                         id: 'openSource'
                     }
-                ]
+                ],
+                showProjectSelect: true
             }
         },
         computed: {
@@ -155,14 +157,21 @@
                 return this.$route.params.projectId
             }
         },
-        created () {
-            this.language = cookies.get('blueking_language') || 'zh-cn'
-            this.curLang = this.icons.find(item => item.id === this.language) || { id: 'zh-cn', icon: 'chinese' }
-            this.$nextTick(() => {
-                if (this.language !== 'zh-cn') {
-                    this.$refs.porjectSelect.$el.style.width = '400px'
+        watch: {
+            '$route' (to, from) {
+                if (to.name === 'filePreview' || to.name === 'outsideFilePreview') {
+                    this.showProjectSelect = false
+                } else {
+                    this.showProjectSelect = true
                 }
-            })
+                this.language = cookies.get('blueking_language') || 'zh-cn'
+                this.curLang = this.icons.find(item => item.id === this.language) || { id: 'zh-cn', icon: 'chinese' }
+                if (this.language !== 'zh-cn') {
+                    this.$refs.porjectSelect.$el.style.width = '380px'
+                } else {
+                    this.$refs.porjectSelect.$el.style.width = '300px'
+                }
+            }
         },
         methods: {
             ...mapActions(['checkPM', 'getPermissionUrl']),
