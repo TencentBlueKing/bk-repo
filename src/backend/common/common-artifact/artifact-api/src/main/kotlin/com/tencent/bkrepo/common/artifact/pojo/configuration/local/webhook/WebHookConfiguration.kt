@@ -31,11 +31,11 @@
 
 package com.tencent.bkrepo.common.artifact.pojo.configuration.local.webhook
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("WebHook配置")
+
+@Schema(title = "WebHook配置")
 data class WebHookConfiguration(
-    @ApiModelProperty("WebHook配置列表", required = false)
+    @get:Schema(title = "WebHook配置列表", required = false)
     val webHookList: List<WebHookSetting> = emptyList()
 )

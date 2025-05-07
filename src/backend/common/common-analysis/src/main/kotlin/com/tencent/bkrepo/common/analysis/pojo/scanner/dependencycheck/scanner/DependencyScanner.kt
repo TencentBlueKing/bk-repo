@@ -28,13 +28,13 @@
 package com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("DependencyCheck扫描器配置")
+
+@Schema(title = "DependencyCheck扫描器配置")
 class DependencyScanner(
     override val name: String,
-    @ApiModelProperty("扫描器版本")
+    @get:Schema(title = "扫描器版本")
     override val version: String
 ) : Scanner(name, TYPE, version) {
     companion object {

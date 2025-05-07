@@ -29,13 +29,13 @@ package com.tencent.bkrepo.repository.pojo.credendials
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.UserRequest
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("存储凭据更新请求")
+
+@Schema(title = "存储凭据更新请求")
 data class StorageCredentialsUpdateRequest(
-    @ApiModelProperty("更新的存储凭据内容")
+    @get:Schema(title = "更新的存储凭据内容")
     val credentials: StorageCredentials,
-    @ApiModelProperty(hidden = true)
+    @get:Schema(hidden = true)
     var key: String? = null
 ) : UserRequest

@@ -34,58 +34,58 @@ package com.tencent.bkrepo.repository.pojo.node
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_PACKAGE_NAME
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_PACKAGE_VERSION
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 节点详细信息
  */
-@ApiModel("节点详细信息")
+@Schema(title = "节点详细信息")
 data class NodeDetail(
-    @ApiModelProperty("节点基本信息")
+    @get:Schema(title = "节点基本信息")
     @Deprecated("冗余信息，nodeInfo信息已包含在NodeDetail字段中，nodeInfo将来会删除")
     val nodeInfo: NodeInfo,
 
-    @ApiModelProperty("创建者")
+    @get:Schema(title = "创建者")
     val createdBy: String = nodeInfo.createdBy,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: String = nodeInfo.createdDate,
-    @ApiModelProperty("修改者")
+    @get:Schema(title = "修改者")
     val lastModifiedBy: String = nodeInfo.lastModifiedBy,
-    @ApiModelProperty("修改时间")
+    @get:Schema(title = "修改时间")
     val lastModifiedDate: String = nodeInfo.lastModifiedDate,
-    @ApiModelProperty("访问时间")
+    @get:Schema(title = "访问时间")
     val lastAccessDate: String? = nodeInfo.lastAccessDate,
 
-    @ApiModelProperty("是否为文件夹")
+    @get:Schema(title = "是否为文件夹")
     val folder: Boolean = nodeInfo.folder,
-    @ApiModelProperty("路径")
+    @get:Schema(title = "路径")
     val path: String = nodeInfo.path,
-    @ApiModelProperty("资源名称")
+    @get:Schema(title = "资源名称")
     val name: String = nodeInfo.name,
-    @ApiModelProperty("完整路径")
+    @get:Schema(title = "完整路径")
     val fullPath: String = nodeInfo.fullPath,
-    @ApiModelProperty("文件大小，单位byte")
+    @get:Schema(title = "文件大小，单位byte")
     val size: Long = nodeInfo.size,
-    @ApiModelProperty("文件节点个数")
+    @get:Schema(title = "文件节点个数")
     val nodeNum: Long? = nodeInfo.nodeNum,
-    @ApiModelProperty("文件sha256")
+    @get:Schema(title = "文件sha256")
     val sha256: String? = nodeInfo.sha256,
-    @ApiModelProperty("文件md5")
+    @get:Schema(title = "文件md5")
     val md5: String? = nodeInfo.md5,
-    @ApiModelProperty("元数据")
+    @get:Schema(title = "元数据")
     val metadata: Map<String, Any> = nodeInfo.metadata.orEmpty(),
-    @ApiModelProperty("元数据")
+    @get:Schema(title = "元数据")
     val nodeMetadata: List<MetadataModel> = nodeInfo.nodeMetadata.orEmpty(),
-    @ApiModelProperty("所属项目id")
+    @get:Schema(title = "所属项目id")
     val projectId: String = nodeInfo.projectId,
-    @ApiModelProperty("所属仓库名称")
+    @get:Schema(title = "所属仓库名称")
     val repoName: String = nodeInfo.repoName,
-    @ApiModelProperty("集群信息")
+    @get:Schema(title = "集群信息")
     val clusterNames: Set<String>? = nodeInfo.clusterNames,
-    @ApiModelProperty("是否归档")
+    @get:Schema(title = "是否归档")
     val archived: Boolean? = nodeInfo.archived,
-    @ApiModelProperty("是否压缩")
+    @get:Schema(title = "是否压缩")
     val compressed: Boolean? = nodeInfo.compressed,
 ) {
     /**

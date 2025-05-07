@@ -34,27 +34,27 @@ package com.tencent.bkrepo.repository.pojo.metadata
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 创建/更新元数据请求
  */
-@ApiModel("创建或更新元数据请求")
+@Schema(title = "创建或更新元数据请求")
 data class MetadataSaveRequest(
-    @ApiModelProperty("项目id", required = true)
+    @get:Schema(title = "项目id", required = true)
     override val projectId: String,
-    @ApiModelProperty("仓库名称", required = true)
+    @get:Schema(title = "仓库名称", required = true)
     override val repoName: String,
-    @ApiModelProperty("节点完整路径", required = true)
+    @get:Schema(title = "节点完整路径", required = true)
     override val fullPath: String,
-    @ApiModelProperty("元数据key-value数据", required = true)
+    @get:Schema(title = "元数据key-value数据", required = true)
     @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("nodeMetadata"))
     val metadata: Map<String, Any>? = null,
-    @ApiModelProperty("需要创建或更新的元数据", required = true)
+    @get:Schema(title = "需要创建或更新的元数据", required = true)
     val nodeMetadata: List<MetadataModel>? = null,
-    @ApiModelProperty("是否替换元数据，删除原有元数据再新增元数据", required = false)
+    @get:Schema(title = "是否替换元数据，删除原有元数据再新增元数据", required = false)
     val replace: Boolean = false,
-    @ApiModelProperty("操作用户")
+    @get:Schema(title = "操作用户")
     override val operator: String = SYSTEM_USER
 ) : NodeRequest, ServiceRequest
