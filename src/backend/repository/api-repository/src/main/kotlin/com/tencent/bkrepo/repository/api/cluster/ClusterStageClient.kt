@@ -34,7 +34,7 @@ package com.tencent.bkrepo.repository.api.cluster
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
@@ -46,7 +46,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @RequestMapping("/cluster/stage")
 interface ClusterStageClient {
 
-    @ApiOperation("制品晋级")
+    @Operation(summary = "制品晋级")
     @PostMapping("/upgrade")
     fun upgrade(@RequestBody request: StageUpgradeRequest): Response<Void>
 }

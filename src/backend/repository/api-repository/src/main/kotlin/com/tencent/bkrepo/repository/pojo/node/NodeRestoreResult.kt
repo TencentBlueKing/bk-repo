@@ -31,17 +31,18 @@
 
 package com.tencent.bkrepo.repository.pojo.node
 
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 节点恢复结果
  */
 data class NodeRestoreResult(
     val fullPath: String,
-    @ApiModelProperty("实际恢复的节点数量，包含了conflictCount")
+    @get:Schema(title = "实际恢复的节点数量，包含了conflictCount")
     val restoreCount: Long = 0L,
-    @ApiModelProperty("发生冲突并跳过的节点数量")
+    @get:Schema(title = "发生冲突并跳过的节点数量")
     val skipCount: Long = 0L,
-    @ApiModelProperty("发生冲突并覆盖的节点数量")
+    @get:Schema(title = "发生冲突并覆盖的节点数量")
     val conflictCount: Long = 0L
 )
