@@ -104,7 +104,7 @@ class MavenRemoteRepository(
             val response = try {
                 httpClient.newCall(request).execute()
             } catch (e: Exception) {
-                logger.error("An error occurred while sending request $downloadUrl", e)
+                logger.warn("An error occurred while sending request $downloadUrl", e)
                 null
             }
             return if (response != null && checkResponse(response)) {
@@ -231,6 +231,10 @@ class MavenRemoteRepository(
         artifactResource: ArtifactResource,
         throughput: Throughput,
     ) {
+        super.onDownloadSuccess(context, artifactResource, throughput)
+        if (!shouldCache(context)) {
+            return
+        }
         val isArtifact = context.getBooleanAttribute("isArtifact") ?: false
         logger.info("Current downloaded file is artifact: $isArtifact")
         if (isArtifact) {
@@ -239,7 +243,6 @@ class MavenRemoteRepository(
             createMavenVersion(context, mavenGavc, context.artifactInfo.getArtifactFullPath(), size)
         }
         logger.info("Prepare to create maven metadata....")
-        super.onDownloadSuccess(context, artifactResource, throughput)
     }
 
     // maven 客户端下载统计
