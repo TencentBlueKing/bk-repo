@@ -236,13 +236,11 @@ class MavenRemoteRepository(
             return
         }
         val isArtifact = context.getBooleanAttribute("isArtifact") ?: false
-        logger.info("Current downloaded file is artifact: $isArtifact")
         if (isArtifact) {
             val size = artifactResource.getTotalSize()
             val mavenGavc = (context.artifactInfo as MavenArtifactInfo).toMavenGAVC()
             createMavenVersion(context, mavenGavc, context.artifactInfo.getArtifactFullPath(), size)
         }
-        logger.info("Prepare to create maven metadata....")
     }
 
     // maven 客户端下载统计
@@ -272,6 +270,7 @@ class MavenRemoteRepository(
         fullPath: String,
         size: Long,
     ) {
+        logger.info("create maven version: $mavenGAVC with fullPath: $fullPath")
         val metadata: MutableMap<String, String> = mutableMapOf(
             "groupId" to mavenGAVC.groupId,
             "artifactId" to mavenGAVC.artifactId,
