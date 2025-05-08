@@ -485,11 +485,11 @@ class MavenLocalRepository(
             val originalFullPath = artifactInfo.getArtifactFullPath()
             val node = try {
                 getNodeInfoForDownload(context)
-            } catch (e: MavenArtifactNotFoundException) {
+            } catch (ignore: MavenArtifactNotFoundException) {
                 sendSeparationRecoveryEvent(
                     artifactInfo.projectId, artifactInfo.repoName, originalFullPath, context.repo.type.name
                 )
-                throw e
+                return null
             }
             if (node == null) {
                 sendSeparationRecoveryEvent(
