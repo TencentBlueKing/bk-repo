@@ -31,16 +31,15 @@
 
 package com.tencent.bkrepo.composer.util.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("composer 'package.json'文件中节点")
+@Schema(title = "composer 'package.json'文件中节点")
 data class ComposerArtifact(
-    @ApiModelProperty("composer package name")
+    @get:Schema(title = "composer package name")
     val name: String,
-    @ApiModelProperty("composer package version")
+    @get:Schema(title = "composer package version")
     val version: String,
-    @ApiModelProperty("composer package content")
+    @get:Schema(title = "composer package content")
     // 保存到 package.json 索引中的内容
     val json: String
 )

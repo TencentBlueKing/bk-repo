@@ -50,9 +50,9 @@ import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
 import com.tencent.bkrepo.helm.pojo.user.PackageVersionInfo
 import com.tencent.bkrepo.helm.service.ChartManipulationService
 import com.tencent.bkrepo.helm.service.ChartRepositoryService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -61,7 +61,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Suppress("MVCPathVariableInspection")
-@Api("helm产品接口")
+@Tag(name = "helm产品接口")
 @RestController
 @RequestMapping("/ext")
 class UserHelmController(
@@ -69,15 +69,15 @@ class UserHelmController(
     private val chartRepositoryService: ChartRepositoryService
 ) {
 
-    @ApiOperation("查询包的版本详情")
+    @Operation(summary = "查询包的版本详情")
     @GetMapping(HELM_VERSION_DETAIL)
     fun detailVersion(
         @RequestAttribute
         userId: String,
         @ArtifactPathVariable artifactInfo: HelmArtifactInfo,
-        @ApiParam(value = "包唯一Key", required = true)
+        @Parameter(name = "包唯一Key", required = true)
         @RequestParam packageKey: String,
-        @ApiParam(value = "包版本", required = true)
+        @Parameter(name = "包版本", required = true)
         @RequestParam version: String
     ): Response<PackageVersionInfo> {
         return ResponseBuilder.success(chartRepositoryService.detailVersion(userId, artifactInfo, packageKey, version))
@@ -100,12 +100,12 @@ class UserHelmController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
     )
-    @ApiOperation("删除仓库下的包")
+    @Operation(summary = "删除仓库下的包")
     @DeleteMapping(CHART_PACKAGE_DELETE_URL)
     fun deletePackage(
         @RequestAttribute userId: String,
         artifactInfo: HelmDeleteArtifactInfo,
-        @ApiParam(value = "包唯一key", required = true)
+        @Parameter(name = "包唯一key", required = true)
         @RequestParam packageKey: String
     ): Response<Void> {
         chartManipulationService.deletePackage(userId, artifactInfo)
@@ -131,21 +131,21 @@ class UserHelmController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
     )
-    @ApiOperation("删除仓库下的包版本")
+    @Operation(summary = "删除仓库下的包版本")
     @DeleteMapping(CHART_VERSION_DELETE_URL)
     fun deleteVersion(
         @RequestAttribute userId: String,
         artifactInfo: HelmDeleteArtifactInfo,
-        @ApiParam(value = "包唯一key", required = true)
+        @Parameter(name = "包唯一key", required = true)
         @RequestParam packageKey: String,
-        @ApiParam(value = "包版本", required = true)
+        @Parameter(name = "包版本", required = true)
         @RequestParam version: String
     ): Response<Void> {
         chartManipulationService.deleteVersion(userId, artifactInfo)
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("获取helm域名地址")
+    @Operation(summary = "获取helm域名地址")
     @GetMapping("/address")
     fun getRegistryDomain(): Response<HelmDomainInfo> {
         return ResponseBuilder.success(chartRepositoryService.getRegistryDomain())

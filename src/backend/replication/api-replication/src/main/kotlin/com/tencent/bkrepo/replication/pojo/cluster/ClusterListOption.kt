@@ -30,17 +30,17 @@ package com.tencent.bkrepo.replication.pojo.cluster
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("节点列表选项")
+
+@Schema(title = "节点列表选项")
 class ClusterListOption(
-    @ApiModelProperty("当前页")
+    @get:Schema(title = "当前页")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("分页大小")
+    @get:Schema(title = "分页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE,
-    @ApiModelProperty("节点名称, 根据该字段模糊搜索")
+    @get:Schema(title = "节点名称, 根据该字段模糊搜索")
     val name: String? = null,
-    @ApiModelProperty("节点类型")
+    @get:Schema(title = "节点类型")
     val type: ClusterNodeType? = null
 )

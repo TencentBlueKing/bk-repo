@@ -32,8 +32,6 @@
 dependencies {
     api("io.swagger.core.v3:swagger-annotations")
     api("io.swagger.core.v3:swagger-models")
-    api("io.swagger:swagger-annotations")
-    api("io.swagger:swagger-models")
     api("com.fasterxml.jackson.module:jackson-module-kotlin")
     api("com.fasterxml.jackson.datatype:jackson-datatype-jdk8")
     api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")

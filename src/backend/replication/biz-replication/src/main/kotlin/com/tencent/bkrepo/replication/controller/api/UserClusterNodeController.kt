@@ -38,8 +38,8 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -50,7 +50,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("集群节点用户接口")
+@Tag(name = "集群节点用户接口")
 @RestController
 @RequestMapping("/api/cluster")
 @Principal(PrincipalType.ADMIN)
@@ -58,31 +58,31 @@ class UserClusterNodeController(
     private val clusterNodeService: ClusterNodeService
 ) {
 
-    @ApiOperation("根据id查询节点详情")
+    @Operation(summary = "根据id查询节点详情")
     @GetMapping("/info/{id}")
     fun getByClusterId(@PathVariable id: String): Response<ClusterNodeInfo?> {
         return ResponseBuilder.success(clusterNodeService.getByClusterId(id))
     }
 
-    @ApiOperation("根据name查询节点详情")
+    @Operation(summary = "根据name查询节点详情")
     @GetMapping("/info")
     fun getByClusterName(@RequestParam name: String): Response<ClusterNodeInfo?> {
         return ResponseBuilder.success(clusterNodeService.getByClusterName(name))
     }
 
-    @ApiOperation("获取中心节点")
+    @Operation(summary = "获取中心节点")
     @GetMapping("/info/center")
     fun queryCenterNode(): Response<ClusterNodeInfo> {
         return ResponseBuilder.success(clusterNodeService.getCenterNode())
     }
 
-    @ApiOperation("查询边缘节点列表")
+    @Operation(summary = "查询边缘节点列表")
     @GetMapping("/list/edge")
     fun listEdgeNodes(): Response<List<ClusterNodeInfo>> {
         return ResponseBuilder.success(clusterNodeService.listEdgeNodes())
     }
 
-    @ApiOperation("查询所有的集群节点")
+    @Operation(summary = "查询所有的集群节点")
     @GetMapping("/list")
     fun listClusterNodes(
         name: String? = null,
@@ -91,7 +91,7 @@ class UserClusterNodeController(
         return ResponseBuilder.success(clusterNodeService.listClusterNodes(name, type))
     }
 
-    @ApiOperation("查询所有的集群节点")
+    @Operation(summary = "查询所有的集群节点")
     @GetMapping("/page")
     fun listClusterNodesPage(
         option: ClusterListOption
@@ -99,7 +99,7 @@ class UserClusterNodeController(
         return ResponseBuilder.success(clusterNodeService.listClusterNodesPage(option))
     }
 
-    @ApiOperation("根据名称判断集群节点是否存在")
+    @Operation(summary = "根据名称判断集群节点是否存在")
     @GetMapping("/exist")
     fun existClusterName(
         @RequestParam name: String
@@ -107,7 +107,7 @@ class UserClusterNodeController(
         return ResponseBuilder.success(clusterNodeService.existClusterName(name))
     }
 
-    @ApiOperation("创建集群节点")
+    @Operation(summary = "创建集群节点")
     @PostMapping("/create")
     fun create(
         @RequestAttribute userId: String,
@@ -117,7 +117,7 @@ class UserClusterNodeController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("更新集群节点")
+    @Operation(summary = "更新集群节点")
     @PostMapping("/update")
     fun update(
         @RequestBody request: ClusterNodeUpdateRequest
@@ -125,7 +125,7 @@ class UserClusterNodeController(
         return ResponseBuilder.success(clusterNodeService.update(request))
     }
 
-    @ApiOperation("根据id删除集群节点")
+    @Operation(summary = "根据id删除集群节点")
     @DeleteMapping("/delete/{id}")
     fun deleteClusterNode(
         @PathVariable id: String
@@ -134,7 +134,7 @@ class UserClusterNodeController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("测试集群间通信")
+    @Operation(summary = "测试集群间通信")
     @PostMapping("/tryConnect")
     fun tryConnect(
         @RequestParam name: String
