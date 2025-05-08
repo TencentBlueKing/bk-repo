@@ -34,8 +34,8 @@ package com.tencent.bkrepo.repository.api
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
@@ -52,16 +52,16 @@ import org.springframework.web.bind.annotation.RequestParam
 @Deprecated("replace by ProxyChannelService")
 interface ProxyChannelClient {
 
-    @ApiOperation("查询代理源信息")
+    @Operation(summary = "查询代理源信息")
     @GetMapping("/{projectId}/{repoName}")
     fun getByUniqueId(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "type", required = true)
+        @Parameter(name = "type", required = true)
         @RequestParam repoType: String,
-        @ApiParam(value = "name", required = true)
+        @Parameter(name = "name", required = true)
         @RequestParam name: String
     ): Response<ProxyChannelInfo?>
 }

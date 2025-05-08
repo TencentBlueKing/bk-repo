@@ -22,7 +22,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.internal.sse.RealEventSource
@@ -170,7 +170,7 @@ open class HttpBkSyncCall(
                 .addQueryParameter("action", UPLOAD_ACTION).build()
             val request = Request.Builder()
                 .url(reportUrl)
-                .put(RequestBody.create(null, ByteArray(0)))
+                .put(ByteArray(0).toRequestBody(null))
                 .build()
             val response = client.newCall(request).execute()
             response.use {
@@ -229,7 +229,7 @@ open class HttpBkSyncCall(
     private fun uploadNewSignFile(request: UploadRequest, signData: ByteArray) {
         with(request) {
             logger.info("Start upload sign file.")
-            val signFileBody = RequestBody.create(APPLICATION_OCTET_STREAM.toMediaType(), signData)
+            val signFileBody = signData.toRequestBody(APPLICATION_OCTET_STREAM.toMediaType())
             val uploadUrl = newFileSignUrl.toHttpUrlOrNull()!!.newBuilder().addQueryParameter(
                 QUERY_PARAM_MD5, headers[HEADER_MD5]
             ).build()
@@ -308,7 +308,7 @@ open class HttpBkSyncCall(
                 }
             }
             logger.info("Start upload delta file.")
-            val body = RequestBody.create(APPLICATION_OCTET_STREAM.toMediaType(), deltaFile)
+            val body = deltaFile.asRequestBody(APPLICATION_OCTET_STREAM.toMediaType())
             val patchRequest = Request.Builder()
                 .url(deltaUrl)
                 .headers(headers)
@@ -370,7 +370,7 @@ open class HttpBkSyncCall(
         val request = context.request
         with(request) {
             logger.info("Start use generic upload.")
-            val body = RequestBody.create(APPLICATION_OCTET_STREAM.toMediaType(), file)
+            val body = file.asRequestBody(APPLICATION_OCTET_STREAM.toMediaType())
             val commonRequest = Request.Builder()
                 .url(genericUrl)
                 .put(body)

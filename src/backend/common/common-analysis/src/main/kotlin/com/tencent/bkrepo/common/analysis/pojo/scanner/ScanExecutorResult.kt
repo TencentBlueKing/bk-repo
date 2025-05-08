@@ -40,9 +40,9 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExec
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
-@ApiModel("扫描结果")
+import io.swagger.v3.oas.annotations.media.Schema
+
+@Schema(title = "扫描结果")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = ArrowheadScanExecutorResult::class, name = ArrowheadScanner.TYPE),
@@ -52,9 +52,9 @@ import io.swagger.annotations.ApiModelProperty
     JsonSubTypes.Type(value = StandardScanExecutorResult::class, name = StandardScanner.TYPE)
 )
 open class ScanExecutorResult(
-    @ApiModelProperty("扫描执行状态")
+    @get:Schema(title = "扫描执行状态")
     open val scanStatus: String,
-    @ApiModelProperty("扫描器类型")
+    @get:Schema(title = "扫描器类型")
     val type: String
 ) {
     /**

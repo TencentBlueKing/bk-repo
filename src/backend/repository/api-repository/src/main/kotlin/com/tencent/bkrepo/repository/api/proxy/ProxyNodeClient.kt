@@ -33,9 +33,9 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -44,12 +44,12 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api("节点服务接口")
+@Tag(name = "节点服务接口")
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProxyNodeClient", primary = false)
 @RequestMapping("/proxy/node")
 interface ProxyNodeClient {
 
-    @ApiOperation("根据路径查看节点详情")
+    @Operation(summary = "根据路径查看节点详情")
     @GetMapping("/detail/{projectId}/{repoName}")
     fun getNodeDetail(
         @PathVariable projectId: String,
@@ -57,28 +57,28 @@ interface ProxyNodeClient {
         @RequestParam fullPath: String
     ): Response<NodeDetail?>
 
-    @ApiOperation("创建节点")
+    @Operation(summary = "创建节点")
     @PostMapping("/create")
     fun createNode(@RequestBody nodeCreateRequest: NodeCreateRequest): Response<NodeDetail>
 
-    @ApiOperation("列表查询指定目录下所有节点")
+    @Operation(summary = "列表查询指定目录下所有节点")
     @GetMapping("/list/{projectId}/{repoName}")
     fun listNode(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "所属目录", required = true)
+        @Parameter(name = "所属目录", required = true)
         @RequestParam path: String,
-        @ApiParam(value = "是否包含目录", required = false, defaultValue = "true")
+        @Parameter(name = "是否包含目录", required = false)
         @RequestParam includeFolder: Boolean = true,
-        @ApiParam(value = "是否深度查询文件", required = false, defaultValue = "false")
+        @Parameter(name = "是否深度查询文件", required = false)
         @RequestParam deep: Boolean = false,
-        @ApiParam(value = "是否包含元数据", required = false, defaultValue = "false")
+        @Parameter(name = "是否包含元数据", required = false)
         @RequestParam includeMetadata: Boolean = false
     ): Response<List<NodeInfo>>
 
-    @ApiOperation("更新节点访问时间")
+    @Operation(summary = "更新节点访问时间")
     @PostMapping("/update/access/")
     fun updateNodeAccessDate(@RequestBody nodeUpdateAccessDateRequest: NodeUpdateAccessDateRequest): Response<Void>
 

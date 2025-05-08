@@ -27,17 +27,17 @@
 
 package com.tencent.bkrepo.common.notify.api.weworkbot
 
-import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
 import com.tencent.bkrepo.common.metadata.annotation.Sensitive
 import com.tencent.bkrepo.common.metadata.handler.MaskPartString
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("企业微信机器人")
+
+@Schema(title = "企业微信机器人")
 data class WeworkBotChannelCredential(
     override var name: String = "",
     override var default: Boolean = false,
-    @ApiModelProperty("企业微信机器人Key，可以从企业微信机器人的Webhook中获取")
+    @get:Schema(title = "企业微信机器人Key，可以从企业微信机器人的Webhook中获取")
     @Sensitive(handler = MaskPartString::class)
     var key: String
 ) : NotifyChannelCredential(name, type, default) {

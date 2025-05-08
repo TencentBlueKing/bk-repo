@@ -31,48 +31,47 @@
 
 package com.tencent.bkrepo.repository.pojo.packages
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
 /**
  * 包总览信息
  */
-@ApiModel("包总览信息")
+@Schema(title = "包总览信息")
 data class PackageSummary(
-    @ApiModelProperty("id")
+    @get:Schema(title = "id")
     val id: String,
-    @ApiModelProperty("创建者")
+    @get:Schema(title = "创建者")
     val createdBy: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: LocalDateTime,
-    @ApiModelProperty("修改者")
+    @get:Schema(title = "修改者")
     val lastModifiedBy: String,
-    @ApiModelProperty("修改时间")
+    @get:Schema(title = "修改时间")
     val lastModifiedDate: LocalDateTime,
 
-    @ApiModelProperty("所属项目id")
+    @get:Schema(title = "所属项目id")
     val projectId: String,
-    @ApiModelProperty("所属仓库名称")
+    @get:Schema(title = "所属仓库名称")
     val repoName: String,
-    @ApiModelProperty("包名称")
+    @get:Schema(title = "包名称")
     val name: String,
-    @ApiModelProperty("包唯一key")
+    @get:Schema(title = "包唯一key")
     val key: String,
-    @ApiModelProperty("包类型")
+    @get:Schema(title = "包类型")
     var type: PackageType,
-    @ApiModelProperty("最新版名称")
+    @get:Schema(title = "最新版名称")
     val latest: String,
-    @ApiModelProperty("下载次数")
+    @get:Schema(title = "下载次数")
     val downloads: Long,
-    @ApiModelProperty("版本数量")
+    @get:Schema(title = "版本数量")
     var versions: Long,
-    @ApiModelProperty("包简要描述")
+    @get:Schema(title = "包简要描述")
     var description: String? = null,
-    @ApiModelProperty("版本标签")
+    @get:Schema(title = "版本标签")
     val versionTag: Map<String, String>,
-    @ApiModelProperty("扩展字段")
+    @get:Schema(title = "扩展字段")
     val extension: Map<String, Any>,
-    @ApiModelProperty("历史版本")
+    @get:Schema(title = "历史版本")
     val historyVersion: Set<String>
 )

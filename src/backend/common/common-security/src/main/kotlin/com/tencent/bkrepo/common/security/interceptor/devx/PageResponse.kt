@@ -27,17 +27,18 @@
 
 package com.tencent.bkrepo.common.security.interceptor.devx
 
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class PageResponse<out T>(
-    @ApiModelProperty("记录条数")
+    @get:Schema(title = "记录条数")
     val count: Long,
-    @ApiModelProperty("页码(从1页开始)")
+    @get:Schema(title = "页码(从1页开始)")
     val page: Int,
-    @ApiModelProperty("每页多少条")
+    @get:Schema(title = "每页多少条")
     val pageSize: Int,
-    @ApiModelProperty("总页数")
+    @get:Schema(title = "总页数")
     val totalPages: Long,
-    @ApiModelProperty("数据列表")
+    @get:Schema(title = "数据列表")
     val records: List<T>
 )

@@ -29,13 +29,13 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.trivy
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.normalizedLevel
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("trivy扫描器扫描结果")
+
+@Schema(title = "trivy扫描器扫描结果")
 data class TrivyScanExecutorResult(
     override val scanStatus: String,
-    @ApiModelProperty("cve审计结果")
+    @get:Schema(title = "cve审计结果")
     val vulnerabilityItems: List<VulnerabilityItem>
 ) : ScanExecutorResult(scanStatus, TrivyScanner.TYPE) {
     override fun normalizeResult() {
