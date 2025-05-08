@@ -248,7 +248,7 @@ class MavenServiceImpl(
         when (context.artifactInfo) {
             is MavenDeleteArtifactInfo -> {
                 deletePackage(
-                    artifactInfo = context.artifactInfo,
+                    artifactInfo = context.artifactInfo as MavenDeleteArtifactInfo,
                     userId = context.userId,
                     storageCredentials = context.storageCredentials,
                     remote = remote
@@ -357,7 +357,7 @@ class MavenServiceImpl(
         artifactInfo: MavenDeleteArtifactInfo,
         userId: String,
         storageCredentials: StorageCredentials?,
-        remote: Boolean = false
+        remote: Boolean = false,
     ) {
         with(artifactInfo) {
             logger.info("Will prepare to delete package [$packageName|$version] in repo ${getRepoIdentify()}")
@@ -376,17 +376,17 @@ class MavenServiceImpl(
                 )
                 nodeService.deleteNode(request)
             } else {
-                packageService.findVersionByName(projectId, repoName, packageName, version)?.let {
-                    removeVersion(artifactInfo, it, userId)
-                    // 需要更新对应的metadata.xml文件
-                    if (remote) return
-                    updatePackageMetadata(
-                        artifactInfo = artifactInfo,
-                        version = version,
-                        storageCredentials = storageCredentials,
-                        userId = userId
-                    )
-                } ?: throw VersionNotFoundException(version)
+                val packageVersion = packageService.findVersionByName(projectId, repoName, packageName, version)
+                    ?: throw VersionNotFoundException(version)
+                removeVersion(artifactInfo, packageVersion, userId)
+                // 需要更新对应的metadata.xml文件
+                if (remote) return
+                updatePackageMetadata(
+                    artifactInfo = artifactInfo,
+                    version = version,
+                    storageCredentials = storageCredentials,
+                    userId = userId
+                )
             }
         }
     }
