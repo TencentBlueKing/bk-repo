@@ -95,22 +95,31 @@ class MavenRemoteRepository(
      * 如果远程下载失败则改为使用缓存
      */
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        return if ((context.artifactInfo as MavenArtifactInfo).isMetadata()) {
-            val remoteConfiguration = context.getRemoteConfiguration()
-            val httpClient = createHttpClient(remoteConfiguration)
-            val downloadUrl = createRemoteDownloadUrl(context)
-            val request = Request.Builder().url(downloadUrl).build()
-            logger.info("Remote download url: $downloadUrl, network config: ${remoteConfiguration.network}")
-            val response = try {
-                httpClient.newCall(request).execute()
-            } catch (e: Exception) {
-                logger.warn("An error occurred while sending request $downloadUrl", e)
-                null
-            }
-            return if (response != null && checkResponse(response)) {
-                onDownloadResponse(context, response)
-            } else getCacheArtifactResource(context)
-        } else super.onDownload(context)
+        val artifactInfo = context.artifactInfo as MavenArtifactInfo
+        if (!artifactInfo.isMetadata()) {
+            return super.onDownload(context)
+        }
+
+        // 准备远程下载
+        val remoteConfiguration = context.getRemoteConfiguration()
+        val httpClient = createHttpClient(remoteConfiguration)
+        val downloadUrl = createRemoteDownloadUrl(context)
+        val request = Request.Builder().url(downloadUrl).build()
+
+        logger.info("Remote download url: $downloadUrl, network config: ${remoteConfiguration.network}")
+
+        // 尝试远程下载
+        val response = try {
+            httpClient.newCall(request).execute()
+        } catch (e: Exception) {
+            logger.warn("An error occurred while sending request $downloadUrl", e)
+            null
+        }
+
+        return when {
+            response != null && checkResponse(response) -> onDownloadResponse(context, response)
+            else -> getCacheArtifactResource(context)
+        }
     }
 
     override fun query(context: ArtifactQueryContext): MavenArtifactVersionData? {
@@ -216,6 +225,14 @@ class MavenRemoteRepository(
         val node = cacheArtifactFile(context, artifactFile)
         node?.let {
             mavenMetadataService.update(node)
+            if (shouldCache(context)) {
+                val isArtifact = context.getBooleanAttribute("isArtifact") ?: false
+                if (isArtifact) {
+                    val size = node.size
+                    val mavenGavc = (context.artifactInfo as MavenArtifactInfo).toMavenGAVC()
+                    createMavenVersion(context, mavenGavc, context.artifactInfo.getArtifactFullPath(), size)
+                }
+            }
         }
         return ArtifactResource(
             artifactStream,
@@ -224,23 +241,6 @@ class MavenRemoteRepository(
             ArtifactChannel.PROXY,
             context.useDisposition
         )
-    }
-
-    override fun onDownloadSuccess(
-        context: ArtifactDownloadContext,
-        artifactResource: ArtifactResource,
-        throughput: Throughput,
-    ) {
-        super.onDownloadSuccess(context, artifactResource, throughput)
-        if (!shouldCache(context)) {
-            return
-        }
-        val isArtifact = context.getBooleanAttribute("isArtifact") ?: false
-        if (isArtifact) {
-            val size = artifactResource.getTotalSize()
-            val mavenGavc = (context.artifactInfo as MavenArtifactInfo).toMavenGAVC()
-            createMavenVersion(context, mavenGavc, context.artifactInfo.getArtifactFullPath(), size)
-        }
     }
 
     // maven 客户端下载统计
