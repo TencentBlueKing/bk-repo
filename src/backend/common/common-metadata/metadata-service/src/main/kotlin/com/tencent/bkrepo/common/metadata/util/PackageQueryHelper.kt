@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.util
 
+import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -110,7 +111,7 @@ object PackageQueryHelper {
         return where(TPackage::projectId).isEqualTo(projectId)
             .and(TPackage::repoName).isEqualTo(repoName)
             .apply {
-                packageName?.let { and(TPackage::name).regex("^$packageName", "i") }
+                packageName?.let { and(TPackage::name).regex("^${EscapeUtils.escapeRegex(packageName)}", "i") }
             }
     }
 
