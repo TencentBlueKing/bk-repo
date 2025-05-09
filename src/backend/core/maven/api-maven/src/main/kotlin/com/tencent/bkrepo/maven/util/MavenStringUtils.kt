@@ -33,6 +33,7 @@ import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
 import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
 import com.tencent.bkrepo.maven.constants.SNAPSHOT_SUFFIX
 import com.tencent.bkrepo.maven.constants.TIMESTAMP_FORMAT
+import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.enum.MavenMessageCode
 import com.tencent.bkrepo.maven.enum.SnapshotBehaviorType
 import com.tencent.bkrepo.maven.exception.MavenArtifactFormatException
@@ -99,6 +100,18 @@ object MavenStringUtils {
             return !suffix.contains(SNAPSHOT_SUFFIX) && !suffix.startsWith(MAVEN_METADATA_FILE_NAME)
         }
         return false
+    }
+
+    fun String.isSnapshotMetadataUri(): Boolean {
+        return this.endsWith(MAVEN_METADATA_FILE_NAME) && this.isSnapshotUri()
+    }
+
+    fun String.checksumType(): HashType? {
+        return HashType.values().firstOrNull { this.endsWith(".${it.ext}") }
+    }
+
+    fun String.isSnapshotMetadataChecksumUri(): Boolean {
+        return this.checksumType() != null && this.substringBeforeLast(".").isSnapshotMetadataUri()
     }
 
     /**
