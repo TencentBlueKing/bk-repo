@@ -44,8 +44,8 @@ object AuthenticationUtil {
             val params = wwwAuthenticate.split("\",")
             params.forEach {
                 val param = it.split(Regex("="),2)
-                val name = param.first()
-                val value = param.last().replace("\"", "")
+                val name = param.first().trim()
+                val value = param.last().trim().replace("\"", "")
                 map[name] = value
             }
             AuthenticationProperty(
