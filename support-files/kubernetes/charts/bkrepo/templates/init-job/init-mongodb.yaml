@@ -66,5 +66,21 @@ spec:
               value: {{ .Values.gateway.secretKey }}
             - name: BK_REPO_ENABLE_MULTI_TENANT_MODE
               value: {{ default "false" .Values.gateway.enableMultiTenantMode | quote }}
+            - name: BK_REPO_ENABLE_MONGODB_TLS
+              value: {{ default "false" .Values.tls.mongodb.enabled | quote }}
+            - name: BK_REPO_MONGODB_TLS_PATH
+              value: /data/certs/mongodb/{{ .Values.tls.mongodb.certPemFilename }}
+          volumeMounts:
+            {{- if .Values.tls.mongodb.enabled  }}
+            - name: mongodb-ca
+              mountPath: /data/certs/mongodb
+              readOnly: true
+            {{- end }}
+      volumes:
+        {{- if .Values.tls.mongodb.enabled }}
+        - name: mongodb-ca
+          secret:
+            secretName: {{ .Values.tls.mongodb.existingSecret }}
+        {{- end }}
       restartPolicy: OnFailure
   {{- end }}

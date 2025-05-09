@@ -103,8 +103,13 @@ mongodb:
 tls:
   mongodb:
     enabled: false
-    ## 运维已经创建的secret
+    ## 运维已经创建的secret，用作mongo客户端连接做init
+    existingPemSecret: ""
+    ## pem文件名
+    certPemFilename: ca.pem
+    ## 运维已经创建的secret，用作java程序
     existingSecret: ""
+    ## jks文件名与密码
     certJksFilename: ca.jks
     trustStorePassword: password
     ## 双向tls认证配置
