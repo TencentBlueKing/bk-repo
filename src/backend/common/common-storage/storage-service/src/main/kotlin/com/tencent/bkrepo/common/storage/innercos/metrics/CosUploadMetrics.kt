@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component
 @Component
 class CosUploadMetrics : MeterBinder {
 
-    override fun bindTo(p0: MeterRegistry) {
+    override fun bindTo(meterRegistry: MeterRegistry) {
         Companion.meterRegistry = meterRegistry
     }
 

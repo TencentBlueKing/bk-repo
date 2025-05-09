@@ -99,7 +99,8 @@ class InstanceBandWidthMetrics(
                 "upload bandwidth: $currentUploadBandwidth, download bandwidth: $currentDownloadBandwidth, " +
                 "cos async upload bandwidth: $currentCosAsyncUploadBandwidth"
         )
-        val total = currentUploadBandwidth + currentDownloadBandwidth + currentCosAsyncUploadBandwidth
+        val total = (currentUploadBandwidth + currentDownloadBandwidth + currentCosAsyncUploadBandwidth) /
+            DATA_REFRESH_DELAY
         val elapsedTime = measureTimeMillis {
             recordBandwidth(instance, serviceName, total.toLong())
         }
