@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMetrics
 import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
@@ -48,6 +49,7 @@ import org.springframework.context.annotation.Import
     ArtifactMetrics::class,
     ArtifactWebMvcTagsContributor::class,
     ArtifactCacheMetrics::class,
+    InstanceBandWidthMetrics::class,
 )
 @EnableConfigurationProperties(ArtifactMetricsProperties::class)
 class ArtifactMetricsConfiguration {

@@ -1,0 +1,184 @@
+/*
+ * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
+ *
+ * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ *
+ * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
+ *
+ * A copy of the MIT License is included in this file.
+ *
+ *
+ * Terms of the MIT License:
+ * ---------------------------------------------------
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of
+ * the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+ * LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+ * NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+package com.tencent.bkrepo.common.artifact.metrics.bandwidth
+
+import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADING_SIZE
+import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_SIZE
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadMetrics.Companion.COS_ASYNC_UPLOADING_SIZE
+import io.micrometer.core.instrument.Counter
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.data.redis.core.script.DefaultRedisScript
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import org.springframework.stereotype.Component
+import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
+
+/**
+ *  每个服务实例统计下当前上传/下载带宽, 然后存入redis
+ */
+@Component
+class InstanceBandWidthMetrics(
+    private val redisTemplate: RedisTemplate<String, String>,
+    private val taskScheduler: ThreadPoolTaskScheduler,
+) {
+
+    @Value(INSTANCE_IP)
+    private lateinit var instance: String
+
+    @Value(SERVICE_NAME)
+    private lateinit var serviceName: String
+
+    @Volatile
+    private var prevDownloadingMetrics: Double = 0.0
+
+    @Volatile
+    private var prevUploadingMetrics: Double = 0.0
+
+    @Volatile
+    private var prevCosAsyncUploadingMetrics: Double = 0.0
+
+
+    init {
+        taskScheduler.scheduleWithFixedDelay(this::refreshBandWidthData, DATA_REFRESH_DELAY)
+    }
+
+    fun refreshBandWidthData() {
+        try {
+            storeBandWidth()
+        } catch (e: Exception) {
+            logger.warn("refresh bandwidth data failed", e)
+        }
+    }
+
+    fun storeBandWidth() {
+        val downloadingNow = (ArtifactMetrics.meterRegistry.meters.firstOrNull {
+            it.id.name == ARTIFACT_DOWNLOADING_SIZE
+        } as? Counter)?.count() ?: 0.0
+        val uploadingNow = (ArtifactMetrics.meterRegistry.meters.firstOrNull {
+            it.id.name == ARTIFACT_UPLOADING_SIZE
+        } as? Counter)?.count() ?: 0.0
+        val cosAsyncUploadingNow = (ArtifactMetrics.meterRegistry.meters.firstOrNull {
+            it.id.name == COS_ASYNC_UPLOADING_SIZE
+        } as? Counter)?.count() ?: 0.0
+
+        val currentDownloadBandwidth = downloadingNow - prevDownloadingMetrics
+        val currentUploadBandwidth = uploadingNow - prevUploadingMetrics
+        val currentCosAsyncUploadBandwidth = cosAsyncUploadingNow - prevCosAsyncUploadingMetrics
+
+        logger.debug(
+            "instance ip: $instance, service name: $serviceName, " +
+                "upload bandwidth: $currentUploadBandwidth, download bandwidth: $currentDownloadBandwidth, " +
+                "cos async upload bandwidth: $currentCosAsyncUploadBandwidth"
+        )
+        val total = (currentUploadBandwidth + currentDownloadBandwidth + currentCosAsyncUploadBandwidth) /
+            DATA_REFRESH_DELAY
+        val elapsedTime = measureTimeMillis {
+            recordBandwidth(instance, serviceName, total.toLong())
+        }
+        logger.debug("bandwidth record saved, elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
+        prevDownloadingMetrics = downloadingNow
+        prevUploadingMetrics = uploadingNow
+        prevCosAsyncUploadingMetrics = cosAsyncUploadingNow
+    }
+
+    fun recordBandwidth(instanceIp: String, serviceName: String, total: Long) {
+        val script = DefaultRedisScript(UPDATE_SCRIPT, Long::class.java)
+        redisTemplate.execute(
+            script,
+            listOf(
+                "$SERVICE_PREFIX$serviceName",
+                "$INSTANCE_PREFIX$instanceIp$SERVICE_SUFFIX",
+                INSTANCE_BANDWIDTH
+            ),
+            instanceIp,
+            total.toString(),
+            (System.currentTimeMillis() / 1000).toString(),
+            (DATA_EXPIRE_HOURS * 3600).toString()
+        )
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(InstanceBandWidthMetrics::class.java)
+        private const val SERVICE_NAME = "\${service.prefix:}\${spring.application.name}\${service.suffix:}"
+        private const val INSTANCE_IP = "\${spring.cloud.client.ip-address}"
+        private const val DATA_EXPIRE_HOURS = 1L
+        private const val DATA_REFRESH_DELAY: Long = 10 * 1000 // 10s刷新一次
+
+
+        // Redis键设计
+        const val SERVICE_PREFIX = "bw:service:"
+        const val INSTANCE_PREFIX = "bw:instance:"
+        const val INSTANCE_BANDWIDTH = "bw:instance:total_bandwidth"
+
+        const val SERVICE_SUFFIX = ":services"
+
+        // Lua脚本保证原子性更新
+        private val UPDATE_SCRIPT = """
+        -- 参数定义
+        local serviceKey = KEYS[1]    -- 服务主键: bw:service:{serviceName}
+        local instanceServiceKey = KEYS[2] -- 主机服务键: bw:instance:{ip}:services
+        local instanceTotalKey = KEYS[3]   -- 主机总带宽键: bw:instance:total_bandwidth
+        local nodeIp = ARGV[1]         -- 实例IP
+        local bandwidth = tonumber(ARGV[2])  -- 总带宽
+        local timestamp = tonumber(ARGV[3]) -- 时间戳
+        local expireSeconds = tonumber(ARGV[4]) -- 过期时间
+        
+        -- 1. 更新主机上该服务的带宽和时间戳
+        redis.call('HSET', instanceServiceKey, serviceKey, bandwidth)
+        redis.call('HSET', instanceServiceKey, serviceKey..":ts", timestamp)  -- 新增时间戳记录
+
+        -- 2. 重新计算主机总带宽
+        local services = redis.call('HGETALL', instanceServiceKey)
+        local total = 0
+        for i = 1, #services, 2 do
+            if not string.match(services[i], ":ts$") then  -- 跳过时间戳键
+                total = total + tonumber(services[i+1])
+            end
+        end
+        
+        -- 3. 更新主机总带宽排序集合
+        redis.call('ZADD', instanceTotalKey, total, nodeIp)
+        
+        -- 4. 将主机添加到服务的instance集合中
+        redis.call('SADD', serviceKey, nodeIp)
+        
+        -- 5. 设置各键的过期时间
+        redis.call('EXPIRE', serviceKey, expireSeconds)
+        redis.call('EXPIRE', instanceServiceKey, expireSeconds)
+        redis.call('EXPIRE', instanceTotalKey, expireSeconds)
+        
+        -- 6. 返回主机当前总带宽
+        return total
+    """.trimIndent()
+    }
+
+}
