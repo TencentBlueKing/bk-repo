@@ -203,7 +203,7 @@ end
 function _M:get_min_bandwidth_instances(service_name, ips)
     -- Redis键定义
     local service_key = "bw:service:" .. service_name
-    local sorted_key = service_key .. ":sorted"
+    local instance_total_key = "bw:instance:total_bandwidth"     -- 主机总带宽排序集合
     local active_threshold = 300 -- 5分钟活跃阈值
     -- 从redis获取
     local red, err = redisUtil:new()
@@ -214,30 +214,59 @@ function _M:get_min_bandwidth_instances(service_name, ips)
     local ok, redis_ips = pcall(function()
         -- 使用Lua脚本原子性查询
         local script = [[
-            local service_key = KEYS[1]
-            local sorted_key = KEYS[2]
+            local service_key = KEYS[1]       -- 服务主机集合键
+            local instance_total_key = KEYS[2]    -- 主机总带宽排序键
             local current_time = tonumber(ARGV[1])
             local active_sec = tonumber(ARGV[2])
 
-            -- 先获取实例总数
-            local total = redis.call('ZCARD', sorted_key)
-            -- 动态调整查询数量：不超过实例总数且最多10个
-            local limit = math.min(total, 10)
+            -- 获取服务对应的所有主机
+            local service_instances = redis.call('SMEMBERS', service_key)
+            if #service_instances == 0 then
+                return {}
+            end
 
-            -- 获取最小带宽的活跃实例
-            local candidates = redis.call('ZRANGE', sorted_key, 0, limit-1)
+            -- 获取所有服务实例的带宽并排序
+            local instances_with_bandwidth = {}
+            for _, ip in ipairs(service_instances) do
+                -- 获取主机总带宽
+                local bandwidth = redis.call('ZSCORE', instance_total_key, ip)
+                if bandwidth then
+                    -- 检查主机上该服务的最后更新时间
+                    local instance_service_key = "bw:instance:"..ip..":services"
+                    local ts = redis.call('HGET', instance_service_key, service_key..":ts")
+                    if ts and (current_time - tonumber(ts)) < active_sec then
+                        table.insert(instances_with_bandwidth, {
+                            ip = ip,
+                            bandwidth = tonumber(bandwidth)
+                        })
+                    end
+                end
+            end
+
+            -- 按带宽从小到大排序
+            table.sort(instances_with_bandwidth, function(a, b)
+                return a.bandwidth < b.bandwidth
+            end)
+
+            -- 计算需要返回的实例数量：总数的1/4，最小2个
             local result = {}
-
-            for _, ip in ipairs(candidates) do
-                local ts = redis.call('HGET', service_key, ip..':ts')
-                if ts and (current_time - tonumber(ts)) < active_sec then
-                    table.insert(result, ip)
+            local total_instances = #instances_with_bandwidth
+            if total_instances < 2 then
+                -- 如果实例数不足2个，直接返回空表或所有实例
+                for i = 1, total_instances do
+                    table.insert(result, instances_with_bandwidth[i].ip)
+                end
+            else
+                local limit = math.max(math.floor(total_instances / 4), 2)
+                limit = math.min(limit, total_instances)
+                for i = 1, limit do
+                    table.insert(result, instances_with_bandwidth[i].ip)
                 end
             end
             return result
         ]]
 
-        return red:eval(script, 2, service_key, sorted_key,
+        return red:eval(script, 2, service_key, instance_total_key,
                         tostring(os.time()), tostring(active_threshold))
     end)
 

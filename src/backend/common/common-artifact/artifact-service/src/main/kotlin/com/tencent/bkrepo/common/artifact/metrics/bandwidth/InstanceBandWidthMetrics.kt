@@ -51,7 +51,7 @@ class InstanceBandWidthMetrics(
 ) {
 
     @Value(INSTANCE_IP)
-    private lateinit var host: String
+    private lateinit var instance: String
 
     @Value(SERVICE_NAME)
     private lateinit var serviceName: String
@@ -84,11 +84,11 @@ class InstanceBandWidthMetrics(
         val currentDownloadBandwidth = downloadingNow - prevDownloadingMetrics
         val currentUploadBandwidth = uploadingNow - prevUploadingMetrics
         logger.debug(
-            "instance ip: $host, service name: $serviceName, " +
+            "instance ip: $instance, service name: $serviceName, " +
                 "upload bandwidth: $currentUploadBandwidth, download bandwidth: $currentDownloadBandwidth"
         )
         val elapsedTime = measureTimeMillis {
-            recordBandwidth(host, serviceName, currentUploadBandwidth.toLong(), currentDownloadBandwidth.toLong())
+            recordBandwidth(instance, serviceName, currentUploadBandwidth.toLong(), currentDownloadBandwidth.toLong())
         }
         logger.debug("bandwidth record saved, elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
         prevDownloadingMetrics = downloadingNow
@@ -100,9 +100,9 @@ class InstanceBandWidthMetrics(
         redisTemplate.execute(
             script,
             listOf(
-                "$SERVICE_BANDWIDTH_PREFIX$serviceName",
-                "$SERVICE_BANDWIDTH_PREFIX$serviceName$SERVICE_NODES_SUFFIX",
-                "$SERVICE_BANDWIDTH_PREFIX$serviceName$SERVICE_SORTED_SUFFIX"
+                "$SERVICE_PREFIX$serviceName",
+                "$INSTANCE_PREFIX$instanceIp$SERVICE_SUFFIX",
+                INSTANCE_BANDWIDTH
             ),
             instanceIp,
             upload.toString(),
@@ -121,55 +121,51 @@ class InstanceBandWidthMetrics(
 
 
         // Redis键设计
-        const val SERVICE_BANDWIDTH_PREFIX = "bw:service:"        // 主键前缀
-        const val SERVICE_NODES_SUFFIX = ":nodes"                 // 服务节点集合后缀
-        const val SERVICE_SORTED_SUFFIX = ":sorted"               // 排序集合后缀
+        const val SERVICE_PREFIX = "bw:service:"
+        const val INSTANCE_PREFIX = "bw:instance:"
+        const val INSTANCE_BANDWIDTH = "bw:instance:total_bandwidth"
+
+        const val SERVICE_SUFFIX = ":services"
 
         // Lua脚本保证原子性更新
         private val UPDATE_SCRIPT = """
         -- 参数定义
-        local serviceKey = KEYS[1]    -- 服务主键
-        local nodesKey = KEYS[2]      -- 节点集合键
-        local sortedKey = KEYS[3]     -- 排序集合键
-        local nodeIp = ARGV[1]    -- 实例ip
+        local serviceKey = KEYS[1]    -- 服务主键: bw:service:{serviceName}
+        local instanceServiceKey = KEYS[2] -- 主机服务键: bw:instance:{ip}:services
+        local instanceTotalKey = KEYS[3]   -- 主机总带宽键: bw:instance:total_bandwidth
+        local nodeIp = ARGV[1]         -- 实例IP
         local upload = tonumber(ARGV[2])  -- 上传带宽
         local download = tonumber(ARGV[3])  -- 下载带宽
-        local total = upload + download  -- 总带宽
-        local timestamp = tonumber(ARGV[4])     -- 时间戳
-        local expireSeconds = tonumber(ARGV[5])  -- 过期时间
+        local timestamp = tonumber(ARGV[3]) -- 时间戳
+        local expireSeconds = tonumber(ARGV[4]) -- 过期时间
         
-        -- 更新节点数据
-        redis.call('HSET', serviceKey, nodeIp..':upload', upload)
-        redis.call('HSET', serviceKey, nodeIp..':download', download)
-        redis.call('HSET', serviceKey, nodeIp..':total', total)
-        redis.call('HSET', serviceKey, nodeIp..':ts', timestamp)  -- 时间戳
-        
-        -- 维护节点索引
-        redis.call('SADD', nodesKey, nodeIp)
-        redis.call('ZADD', sortedKey, total, nodeIp)  -- 按总带宽排序
-        
-        -- 清理过期节点(超过失效时间未更新的节点)
-        local expiredNodes = {}
-        local allNodes = redis.call('SMEMBERS', nodesKey)
-        for _, ip in ipairs(allNodes) do
-            local ts = redis.call('HGET', serviceKey, ip..':ts')
-            if not ts or (timestamp - tonumber(ts)) > expireSeconds then
-                table.insert(expiredNodes, ip)
+        local bandwidth = upload + download  -- 总带宽
+        -- 1. 更新主机上该服务的带宽和时间戳
+        redis.call('HSET', instanceServiceKey, serviceKey, bandwidth)
+        redis.call('HSET', instanceServiceKey, serviceKey..":ts", timestamp)  -- 新增时间戳记录
+
+        -- 2. 重新计算主机总带宽
+        local services = redis.call('HGETALL', instanceServiceKey)
+        local total = 0
+        for i = 1, #services, 2 do
+            if not string.match(services[i], ":ts$") then  -- 跳过时间戳键
+                total = total + tonumber(services[i+1])
             end
         end
         
-           -- 批量删除过期节点
-        if #expiredNodes > 0 then
-            redis.call('SREM', nodesKey, unpack(expiredNodes))
-            redis.call('ZREM', sortedKey, unpack(expiredNodes))
-        end
+        -- 3. 更新主机总带宽排序集合
+        redis.call('ZADD', instanceTotalKey, total, nodeIp)
         
-        -- 设置过期时间
+        -- 4. 将主机添加到服务的instance集合中
+        redis.call('SADD', serviceKey, nodeIp)
+        
+        -- 5. 设置各键的过期时间
         redis.call('EXPIRE', serviceKey, expireSeconds)
-        redis.call('EXPIRE', nodesKey, expireSeconds)
-        redis.call('EXPIRE', sortedKey, expireSeconds)
+        redis.call('EXPIRE', instanceServiceKey, expireSeconds)
+        redis.call('EXPIRE', instanceTotalKey, expireSeconds)
         
-        return 1
+        -- 6. 返回主机当前总带宽
+        return total
     """.trimIndent()
     }
 
