@@ -23,8 +23,6 @@ data class MongoSslProperties(
      */
     var trustStoreType: String = "JKS",
 
-    var invalidHostnameAllowed: Boolean = false,
-
     /**
      * 客户端的证书地址，文件形式
      */
@@ -36,15 +34,16 @@ data class MongoSslProperties(
     var keyStorePassword: String? = null,
 
     /**
-     * 客户端证书存储类型，默认JKS
+     * 客户端证书存储类型，默认PKCS12
      */
-    var keyStoreType: String = "JKS",
+    var keyStoreType: String = "PKCS12",
 
     /**
-     * 客户端密钥
+     * 是否校验主机名
      */
-    var keyPassword: String? = null,
-) {
+    var verifyHostname: Boolean = false,
+
+    ) {
     fun isMutualTlsConfigured(): Boolean {
         return !keyStore.isNullOrBlank()
     }

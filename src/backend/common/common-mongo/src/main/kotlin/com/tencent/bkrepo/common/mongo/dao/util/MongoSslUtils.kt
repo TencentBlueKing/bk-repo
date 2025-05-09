@@ -65,7 +65,7 @@ object MongoSslUtils {
         }
 
         return KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()).apply {
-            init(keyStore, sslProps.keyPassword?.toCharArray())
+            init(keyStore, sslProps.keyStorePassword?.toCharArray())
         }.keyManagers
     }
 
