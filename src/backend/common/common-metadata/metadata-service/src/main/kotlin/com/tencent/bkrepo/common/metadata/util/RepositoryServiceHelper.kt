@@ -53,6 +53,8 @@ class RepositoryServiceHelper(
         const val REPO_DESC_MAX_LENGTH = 200
         private const val SETTING_CLIENT_URL = "clientUrl"
         private lateinit var repositoryProperties: RepositoryProperties
+        private const val CLEAN_UP_STRATEGY = "cleanupStrategy"
+        private const val TEN_YEARS = 365 * 10
 
         fun convertToDetail(
             tRepository: TRepository?,
@@ -294,6 +296,25 @@ class RepositoryServiceHelper(
                 is VirtualConfiguration -> category == RepositoryCategory.VIRTUAL
                 else -> false
             }
+        }
+
+        /**
+         * 检查清理策略的时间是否正常(保存时间day不可超过10年，不得小于0)
+         */
+        fun checkCleanStrategy(configuration: RepositoryConfiguration?): Boolean {
+            if (configuration == null) {
+                return true
+            }
+            val cleanupStrategyMap = configuration.getSetting<Map<String, Any>>(CLEAN_UP_STRATEGY)
+            cleanupStrategyMap?.let {
+                val cleanupType = it.get("cleanupType") as? String
+                val cleanupValue = it.get("cleanupValue") as? String ?: return true
+                val targetValue = cleanupValue.toInt()
+                if (cleanupType.equals("retentionDays") && (targetValue > TEN_YEARS || targetValue < 0)) {
+                    return false
+                }
+            }
+            return true
         }
 
         fun buildListPermissionRepoQuery(
