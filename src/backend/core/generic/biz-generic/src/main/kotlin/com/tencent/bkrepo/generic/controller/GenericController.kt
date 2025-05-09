@@ -58,6 +58,8 @@ import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
@@ -280,7 +282,7 @@ class GenericController(
         compressedFileService.previewCompressedFile(artifactInfo, filePath)
     }
 
-    @Permission(ResourceType.NODE, PermissionAction.READ)
+    @Principal(type = PrincipalType.GENERAL)
     @GetMapping("/allow/download/$GENERIC_MAPPING_URI")
     fun allowDownload(
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
