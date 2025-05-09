@@ -43,7 +43,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
-import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
 import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
