@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.component.manager.standard
 
 import com.tencent.bkrepo.analyst.component.manager.ScannerConverter
 import com.tencent.bkrepo.analyst.component.manager.ScannerConverter.Companion.OVERVIEW_KEY_SENSITIVE_TOTAL
+import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
 import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ArtifactLicensesDetailRequest
@@ -57,7 +58,10 @@ import org.springframework.stereotype.Component
 import java.util.Locale
 
 @Component("${StandardScanner.TYPE}Converter")
-class StandardConverter(private val licenseService: SpdxLicenseService) : ScannerConverter {
+class StandardConverter(
+    private val licenseService: SpdxLicenseService,
+    private val scannerProperties: ScannerProperties,
+) : ScannerConverter {
     @Suppress("UNCHECKED_CAST")
     override fun convertLicenseResult(result: Any): Page<FileLicensesResultDetail> {
         result as Page<LicenseResult>
@@ -140,6 +144,26 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
         val overview = HashMap<String, Long>()
 
         // security统计
+        convertSecurityOverview(overview, securityResults, filterRule)
+
+        // sensitive统计
+        sensitiveResults?.let {
+            overview[OVERVIEW_KEY_SENSITIVE_TOTAL] = it.size.toLong()
+        }
+
+        // license统计
+        if (!licenseResults.isNullOrEmpty()) {
+            convertLicenseOverview(overview, licenseResults, filterRule)
+        }
+        return overview
+    }
+
+    private fun convertSecurityOverview(
+        overview: HashMap<String, Long>,
+        securityResults: List<SecurityResult>?,
+        filterRule: MergedFilterRule?,
+    ) {
+        val countedVulIds = mutableSetOf<String>()
         securityResults?.forEach { securityResult ->
             val severityLevel = Level.valueOf(securityResult.severity.uppercase(Locale.getDefault())).level
             val shouldIgnore = filterRule?.shouldIgnore(
@@ -149,27 +173,33 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
                 securityResult.pkgVersions,
                 severityLevel
             )
-            if (shouldIgnore != true) {
+            if (shouldIgnore != true && (!scannerProperties.uniqueCounting || securityResult.vulId !in countedVulIds)) {
                 val key = CveOverviewKey.overviewKeyOf(securityResult.severity)
                 overview[key] = overview.getOrDefault(key, 0L) + 1
+                countedVulIds.add(securityResult.vulId)
             }
         }
+    }
 
-        // sensitive统计
-        sensitiveResults?.let {
-            overview[OVERVIEW_KEY_SENSITIVE_TOTAL] = it.size.toLong()
-        }
-
-        // license统计
-        if (licenseResults.isNullOrEmpty()) {
-            return overview
-        }
-
+    private fun convertLicenseOverview(
+        overview: HashMap<String, Long>,
+        licenseResults: List<LicenseResult>,
+        filterRule: MergedFilterRule?,
+    ) {
+        val countedLicenses = mutableSetOf<String>()
         val licenseIds = licenseResults.map { it.licenseName.lowercase(Locale.getDefault()) }.distinct()
         val licensesInfo = licenseService.listLicenseByIds(licenseIds).mapKeys { it.key.lowercase(Locale.getDefault()) }
 
-        overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = licenseResults.size.toLong()
+        overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] =
+            if (scannerProperties.uniqueCounting) licenseIds.size.toLong() else licenseResults.size.toLong()
+
         for (licenseResult in licenseResults) {
+            if (scannerProperties.uniqueCounting && licenseResult.licenseName in countedLicenses) {
+                continue
+            } else {
+                countedLicenses.add(licenseResult.licenseName)
+            }
+
             if (filterRule?.shouldIgnore(licenseResult.licenseName) == true) {
                 val total = overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] as Long
                 overview[LicenseOverviewKey.overviewKeyOf(TOTAL)] = total - 1
@@ -190,6 +220,5 @@ class StandardConverter(private val licenseService: SpdxLicenseService) : Scanne
                 incLicenseOverview(overview, LicenseNature.UN_COMPLIANCE.natureName)
             }
         }
-        return overview
     }
 }
