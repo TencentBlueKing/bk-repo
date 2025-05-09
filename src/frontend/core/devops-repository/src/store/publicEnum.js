@@ -14,7 +14,8 @@ export const repoEnum = [
     { label: 'Nuget', value: 'nuget' },
     { label: 'S3', value: 's3' },
     { label: 'Conan', value: 'conan' },
-    { label: 'Ohpm', value: 'ohpm' }
+    { label: 'Ohpm', value: 'ohpm' },
+    { label: 'Cargo', value: 'cargo' }
 ]
 
 export const ciDisableRepoEnum = [
