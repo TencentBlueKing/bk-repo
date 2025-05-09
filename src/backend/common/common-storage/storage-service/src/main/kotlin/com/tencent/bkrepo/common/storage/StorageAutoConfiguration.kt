@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
+import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadMetrics
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.common.storage.s3.S3Storage
@@ -69,6 +70,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Import(
     StorageUtils::class,
     StorageCacheIndexConfiguration::class,
+    CosUploadMetrics::class,
 )
 class StorageAutoConfiguration {
 

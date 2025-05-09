@@ -29,34 +29,34 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.request
+package com.tencent.bkrepo.common.storage.innercos.metrics
 
-import com.tencent.bkrepo.common.artifact.stream.BoundedInputStream
-import com.tencent.bkrepo.common.storage.innercos.PARAMETER_PART_NUMBER
-import com.tencent.bkrepo.common.storage.innercos.PARAMETER_UPLOAD_ID
-import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.CONTENT_LENGTH
-import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
-import com.tencent.bkrepo.common.storage.innercos.http.InputStreamRequestBody
-import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadRecordAbleInputStream
-import okhttp3.RequestBody
-import java.io.InputStream
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.MeterBinder
+import org.springframework.stereotype.Component
 
-data class StreamUploadPartRequest(
-    val key: String,
-    val uploadId: String,
-    val partNumber: Int,
-    val partSize: Long,
-    val inputStream: InputStream
-) : CosRequest(HttpMethod.PUT, key) {
+@Suppress("LateinitUsage")
+@Component
+class CosUploadMetrics : MeterBinder {
 
-    init {
-        parameters[PARAMETER_UPLOAD_ID] = uploadId
-        parameters[PARAMETER_PART_NUMBER] = partNumber.toString()
-        headers[CONTENT_LENGTH] = partSize.toString()
+    override fun bindTo(p0: MeterRegistry) {
+        Companion.meterRegistry = meterRegistry
     }
 
-    override fun buildRequestBody(): RequestBody {
-        val inputStream = CosUploadRecordAbleInputStream(BoundedInputStream(inputStream, partSize))
-        return InputStreamRequestBody(inputStream, partSize)
+    companion object {
+        lateinit var meterRegistry: MeterRegistry
+        private const val BYTES = "bytes"
+        const val COS_ASYNC_UPLOADING_SIZE = "cos.async.uploading.size"
+        private const val COS_ASYNC_UPLOADING_SIZE_DESC = "cos异步上传大小"
+
+        fun getUploadingCounter(): Counter {
+            return Counter.builder(COS_ASYNC_UPLOADING_SIZE)
+                .description(COS_ASYNC_UPLOADING_SIZE_DESC)
+                .baseUnit(BYTES)
+                .register(meterRegistry)
+        }
+
     }
+
 }

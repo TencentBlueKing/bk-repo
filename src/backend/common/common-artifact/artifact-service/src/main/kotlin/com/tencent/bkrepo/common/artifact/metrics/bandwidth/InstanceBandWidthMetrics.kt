@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADING_SIZE
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_SIZE
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadMetrics.Companion.COS_ASYNC_UPLOADING_SIZE
 import io.micrometer.core.instrument.Counter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -62,6 +63,10 @@ class InstanceBandWidthMetrics(
     @Volatile
     private var prevUploadingMetrics: Double = 0.0
 
+    @Volatile
+    private var prevCosAsyncUploadingMetrics: Double = 0.0
+
+
     init {
         taskScheduler.scheduleWithFixedDelay(this::refreshBandWidthData, DATA_REFRESH_DELAY)
     }
@@ -81,21 +86,30 @@ class InstanceBandWidthMetrics(
         val uploadingNow = (ArtifactMetrics.meterRegistry.meters.firstOrNull {
             it.id.name == ARTIFACT_UPLOADING_SIZE
         } as? Counter)?.count() ?: 0.0
+        val cosAsyncUploadingNow = (ArtifactMetrics.meterRegistry.meters.firstOrNull {
+            it.id.name == COS_ASYNC_UPLOADING_SIZE
+        } as? Counter)?.count() ?: 0.0
+
         val currentDownloadBandwidth = downloadingNow - prevDownloadingMetrics
         val currentUploadBandwidth = uploadingNow - prevUploadingMetrics
+        val currentCosAsyncUploadBandwidth = cosAsyncUploadingNow - prevCosAsyncUploadingMetrics
+
         logger.debug(
             "instance ip: $instance, service name: $serviceName, " +
-                "upload bandwidth: $currentUploadBandwidth, download bandwidth: $currentDownloadBandwidth"
+                "upload bandwidth: $currentUploadBandwidth, download bandwidth: $currentDownloadBandwidth, " +
+                "cos async upload bandwidth: $currentCosAsyncUploadBandwidth"
         )
+        val total = currentUploadBandwidth + currentDownloadBandwidth + currentCosAsyncUploadBandwidth
         val elapsedTime = measureTimeMillis {
-            recordBandwidth(instance, serviceName, currentUploadBandwidth.toLong(), currentDownloadBandwidth.toLong())
+            recordBandwidth(instance, serviceName, total.toLong())
         }
         logger.debug("bandwidth record saved, elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
         prevDownloadingMetrics = downloadingNow
         prevUploadingMetrics = uploadingNow
+        prevCosAsyncUploadingMetrics = cosAsyncUploadingNow
     }
 
-    fun recordBandwidth(instanceIp: String, serviceName: String, upload: Long, download: Long) {
+    fun recordBandwidth(instanceIp: String, serviceName: String, total: Long) {
         val script = DefaultRedisScript(UPDATE_SCRIPT, Long::class.java)
         redisTemplate.execute(
             script,
@@ -105,8 +119,7 @@ class InstanceBandWidthMetrics(
                 INSTANCE_BANDWIDTH
             ),
             instanceIp,
-            upload.toString(),
-            download.toString(),
+            total.toString(),
             (System.currentTimeMillis() / 1000).toString(),
             (DATA_EXPIRE_HOURS * 3600).toString()
         )
@@ -134,12 +147,10 @@ class InstanceBandWidthMetrics(
         local instanceServiceKey = KEYS[2] -- 主机服务键: bw:instance:{ip}:services
         local instanceTotalKey = KEYS[3]   -- 主机总带宽键: bw:instance:total_bandwidth
         local nodeIp = ARGV[1]         -- 实例IP
-        local upload = tonumber(ARGV[2])  -- 上传带宽
-        local download = tonumber(ARGV[3])  -- 下载带宽
+        local bandwidth = tonumber(ARGV[2])  -- 总带宽
         local timestamp = tonumber(ARGV[3]) -- 时间戳
         local expireSeconds = tonumber(ARGV[4]) -- 过期时间
         
-        local bandwidth = upload + download  -- 总带宽
         -- 1. 更新主机上该服务的带宽和时间戳
         redis.call('HSET', instanceServiceKey, serviceKey, bandwidth)
         redis.call('HSET', instanceServiceKey, serviceKey..":ts", timestamp)  -- 新增时间戳记录

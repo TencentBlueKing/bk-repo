@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.CONTENT
 import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.STORAGE_CLASS
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.common.storage.innercos.http.InputStreamRequestBody
+import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadRecordAbleInputStream
 import okhttp3.RequestBody
 import java.io.InputStream
 
@@ -51,6 +52,6 @@ data class PutObjectRequest(
     }
 
     override fun buildRequestBody(): RequestBody {
-        return InputStreamRequestBody(inputStream, length)
+        return InputStreamRequestBody(CosUploadRecordAbleInputStream(inputStream), length)
     }
 }
