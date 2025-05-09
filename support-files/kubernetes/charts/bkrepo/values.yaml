@@ -106,12 +106,12 @@ tls:
     ## 运维已经创建的secret，用作mongo客户端连接做init
     existingPemSecret: ""
     ## pem文件名
-    certPemFilename: ca.pem
+    certPemFilename: "ca.pem"
     ## 运维已经创建的secret，用作java程序
     existingSecret: ""
     ## jks文件名与密码
-    certJksFilename: ca.jks
-    trustStorePassword: password
+    certJksFilename: "ca.jks"
+    trustStorePassword: ""
     ## 双向tls认证配置
     ## 密钥库类型：支持PKCS12、JKS，默认PKCS12
     keyStoreType: "PKCS12"
