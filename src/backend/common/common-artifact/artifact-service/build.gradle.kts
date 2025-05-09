@@ -33,7 +33,7 @@ dependencies {
     api(project(":repository:api-repository"))
     api(project(":auth:api-auth"))
     api(project(":replication:api-replication"))
-    api(project(":fs:api-fs-server"))
+    api(project(":driver:api-driver"))
     api(project(":router-controller:api-router-controller"))
     api(project(":archive:api-archive"))
     api(project(":common:common-service:service-servlet"))

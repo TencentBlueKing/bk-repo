@@ -26,7 +26,7 @@
  */
 
 dependencies {
-    implementation(project(":fs:api-fs-server"))
+    implementation(project(":driver:api-driver"))
     implementation(project(":common:common-stream"))
     implementation(project(":common:common-metrics-push")) {
         exclude(module = "service-servlet")
