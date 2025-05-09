@@ -80,7 +80,7 @@ spec:
         {{- if .Values.tls.mongodb.enabled }}
         - name: mongodb-ca
           secret:
-            secretName: {{ .Values.tls.mongodb.existingSecret }}
+            secretName: {{ .Values.tls.mongodb.existingPemSecret }}
         {{- end }}
       restartPolicy: OnFailure
   {{- end }}
