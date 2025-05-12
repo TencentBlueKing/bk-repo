@@ -137,6 +137,7 @@ class OpServiceService @Autowired constructor(
             "$serviceKey:cos_async_upload",
             "$serviceKey:ts"
         )
+        redisTemplate.opsForHash<String, String>().delete(instanceServiceKey)
         redisTemplate.opsForHash<String, String>().delete(instanceServiceKey, *fieldsToDelete.toTypedArray())
 
         // 3. 如果 IP 不再关联任何服务，从主机总带宽中移除
