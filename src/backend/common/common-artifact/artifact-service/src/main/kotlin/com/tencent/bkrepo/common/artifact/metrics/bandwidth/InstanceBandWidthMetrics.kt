@@ -112,8 +112,8 @@ class InstanceBandWidthMetrics(
     }
 
     fun recordBandwidth(instanceIp: String, serviceName: String, upload: Long, download: Long, cosAsyncUpload: Long) {
-        val script = DefaultRedisScript(UPDATE_SCRIPT, Long::class.java)
-        redisTemplate.execute(
+        val script = DefaultRedisScript(UPDATE_SCRIPT, List::class.java)
+        val result = redisTemplate.execute(
             script,
             listOf(
                 "$SERVICE_PREFIX$serviceName",
@@ -127,6 +127,7 @@ class InstanceBandWidthMetrics(
             (System.currentTimeMillis() / 1000).toString(),
             (DATA_EXPIRE_HOURS * 3600).toString()
         )
+        logger.info("result: $result")
     }
 
     companion object {
@@ -178,14 +179,14 @@ class InstanceBandWidthMetrics(
         
         -- 4. 将主机添加到服务的instance集合中
         redis.call('SADD', serviceKey, nodeIp)
-        
+        local ipList = redis.call('SMEMBERS', serviceKey)
         -- 5. 设置各键的过期时间
         redis.call('EXPIRE', serviceKey, expireSeconds)
         redis.call('EXPIRE', instanceServiceKey, expireSeconds)
         redis.call('EXPIRE', instanceTotalKey, expireSeconds)
         
         -- 6. 返回主机当前总带宽
-        return total
+        return {total, ipList, services}
     """.trimIndent()
     }
 
