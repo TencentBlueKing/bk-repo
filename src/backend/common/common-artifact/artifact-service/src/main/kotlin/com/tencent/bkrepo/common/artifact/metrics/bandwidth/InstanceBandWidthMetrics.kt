@@ -193,7 +193,7 @@ class InstanceBandWidthMetrics(
         redis.call('EXPIRE', instanceTotalKey, expireSeconds)
         
         -- 6. 返回主机当前总带宽
-        return {total, ipList, services}
+        return {total, ipList, instanceServiceKey, services}
     """.trimIndent()
     }
 

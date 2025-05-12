@@ -131,13 +131,12 @@ class OpServiceService @Autowired constructor(
 
         // 2. 删除 IP 哈希表中服务名的所有带宽字段
         val fieldsToDelete = listOf(
-            "$serviceKey",
+            serviceKey,
             "$serviceKey:upload",
             "$serviceKey:download",
             "$serviceKey:cos_async_upload",
             "$serviceKey:ts"
         )
-        redisTemplate.opsForHash<String, String>().delete(instanceServiceKey)
         redisTemplate.opsForHash<String, String>().delete(instanceServiceKey, *fieldsToDelete.toTypedArray())
 
         // 3. 如果 IP 不再关联任何服务，从主机总带宽中移除
