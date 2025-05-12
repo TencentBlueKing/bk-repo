@@ -26,8 +26,11 @@
  */
 dependencies {
     implementation(project(":job:api-job"))
+    implementation(project(":auth:biz-auth"))
     implementation(project(":common:common-service:service-servlet"))
     implementation(project(":common:common-job"))
+    implementation(project(":common:common-notify:notify-api"))
+    implementation(project(":common:common-notify:notify-service"))
     implementation(project(":common:common-security"))
     implementation(project(":common:common-storage:storage-service"))
     implementation(project(":common:common-stream"))
