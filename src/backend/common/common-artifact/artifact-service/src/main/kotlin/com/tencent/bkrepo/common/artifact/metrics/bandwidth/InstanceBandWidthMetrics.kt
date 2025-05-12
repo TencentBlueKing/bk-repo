@@ -90,19 +90,20 @@ class InstanceBandWidthMetrics(
             it.id.name == COS_ASYNC_UPLOADING_SIZE
         } as? Counter)?.count() ?: 0.0
 
-        val currentDownloadBandwidth = downloadingNow - prevDownloadingMetrics
-        val currentUploadBandwidth = uploadingNow - prevUploadingMetrics
-        val currentCosAsyncUploadBandwidth = cosAsyncUploadingNow - prevCosAsyncUploadingMetrics
+        val currentDownloadBandwidth = (downloadingNow - prevDownloadingMetrics) / DATA_REFRESH_DELAY
+        val currentUploadBandwidth = (uploadingNow - prevUploadingMetrics) / DATA_REFRESH_DELAY
+        val currentCosAsyncUploadBandwidth = (cosAsyncUploadingNow - prevCosAsyncUploadingMetrics) / DATA_REFRESH_DELAY
 
         logger.debug(
             "instance ip: $instance, service name: $serviceName, " +
                 "upload bandwidth: $currentUploadBandwidth, download bandwidth: $currentDownloadBandwidth, " +
                 "cos async upload bandwidth: $currentCosAsyncUploadBandwidth"
         )
-        val total = (currentUploadBandwidth + currentDownloadBandwidth + currentCosAsyncUploadBandwidth) /
-            DATA_REFRESH_DELAY
         val elapsedTime = measureTimeMillis {
-            recordBandwidth(instance, serviceName, total.toLong())
+            recordBandwidth(
+                instance, serviceName, currentUploadBandwidth.toLong(),
+                currentDownloadBandwidth.toLong(), currentCosAsyncUploadBandwidth.toLong()
+            )
         }
         logger.debug("bandwidth record saved, elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
         prevDownloadingMetrics = downloadingNow
@@ -110,7 +111,7 @@ class InstanceBandWidthMetrics(
         prevCosAsyncUploadingMetrics = cosAsyncUploadingNow
     }
 
-    fun recordBandwidth(instanceIp: String, serviceName: String, total: Long) {
+    fun recordBandwidth(instanceIp: String, serviceName: String, upload: Long, download: Long, cosAsyncUpload: Long) {
         val script = DefaultRedisScript(UPDATE_SCRIPT, Long::class.java)
         redisTemplate.execute(
             script,
@@ -120,7 +121,9 @@ class InstanceBandWidthMetrics(
                 INSTANCE_BANDWIDTH
             ),
             instanceIp,
-            total.toString(),
+            upload.toString(),
+            download.toString(),
+            cosAsyncUpload.toString(),
             (System.currentTimeMillis() / 1000).toString(),
             (DATA_EXPIRE_HOURS * 3600).toString()
         )
@@ -135,9 +138,9 @@ class InstanceBandWidthMetrics(
 
 
         // Redis键设计
-        const val SERVICE_PREFIX = "bw:service:"
-        const val INSTANCE_PREFIX = "bw:instance:"
-        const val INSTANCE_BANDWIDTH = "bw:instance:total_bandwidth"
+        val SERVICE_PREFIX = "bw:service:"
+        val INSTANCE_PREFIX = "bw:instance:"
+        val INSTANCE_BANDWIDTH = "bw:instance:total_bandwidth"
 
         const val SERVICE_SUFFIX = ":services"
 
@@ -148,13 +151,18 @@ class InstanceBandWidthMetrics(
         local instanceServiceKey = KEYS[2] -- 主机服务键: bw:instance:{ip}:services
         local instanceTotalKey = KEYS[3]   -- 主机总带宽键: bw:instance:total_bandwidth
         local nodeIp = ARGV[1]         -- 实例IP
-        local bandwidth = tonumber(ARGV[2])  -- 总带宽
-        local timestamp = tonumber(ARGV[3]) -- 时间戳
-        local expireSeconds = tonumber(ARGV[4]) -- 过期时间
+        local upload = tonumber(ARGV[2])  -- 上传带宽
+        local download = tonumber(ARGV[3])  -- 下载带宽
+        local cosAsyncUpload = tonumber(ARGV[4])  -- 异步上传带宽
+        local timestamp = tonumber(ARGV[5]) -- 时间戳
+        local expireSeconds = tonumber(ARGV[6]) -- 过期时间
+        
         
         -- 1. 更新主机上该服务的带宽和时间戳
-        redis.call('HSET', instanceServiceKey, serviceKey, bandwidth)
         redis.call('HSET', instanceServiceKey, serviceKey..":ts", timestamp)  -- 新增时间戳记录
+        redis.call('HSET', instanceServiceKey, serviceKey..":upload", upload)  
+        redis.call('HSET', instanceServiceKey, serviceKey..":download", download)  
+        redis.call('HSET', instanceServiceKey, serviceKey..":cos_async_upload", cosAsyncUpload)  
 
         -- 2. 重新计算主机总带宽
         local services = redis.call('HGETALL', instanceServiceKey)

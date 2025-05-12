@@ -31,11 +31,14 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder.success
+import com.tencent.bkrepo.opdata.pojo.bandwidth.BandwidthInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.service.OpServiceService
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -102,4 +105,28 @@ class OpServiceController @Autowired constructor(
     ): Response<InstanceInfo> {
         return success(opServiceService.changeInstanceStatus(serviceName, instanceId, false))
     }
+
+
+    /**
+     * 获取服务当前带宽大小
+     */
+    @GetMapping("/{serviceName}/bandwidth")
+    @LogOperate(type = "SERVICE_INSTANCE_bandwidth_LIST")
+    fun serviceBandwidth(@PathVariable("serviceName") serviceName: String): Response<List<BandwidthInfo>> {
+        return ResponseBuilder.success(opServiceService.serviceBandwidth(serviceName))
+    }
+
+    /**
+     * 根据服务和ip删除对应存储的带宽数据
+     */
+    @DeleteMapping("/{serviceName}/bandwidth/{hostIp}/delete")
+    @LogOperate(type = "SERVICE_INSTANCE_UP")
+    fun deleteBandwidthDataByServiceAndIp(
+        @PathVariable serviceName: String,
+        @PathVariable hostIp: String
+    ): Response<Void> {
+        opServiceService.deleteDataByServiceAndIp(serviceName, hostIp)
+        return ResponseBuilder.success()
+    }
+
 }
