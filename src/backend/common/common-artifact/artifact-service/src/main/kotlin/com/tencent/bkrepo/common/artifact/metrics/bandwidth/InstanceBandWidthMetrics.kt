@@ -89,10 +89,17 @@ class InstanceBandWidthMetrics(
         val cosAsyncUploadingNow = (ArtifactMetrics.meterRegistry.meters.firstOrNull {
             it.id.name == COS_ASYNC_UPLOADING_SIZE
         } as? Counter)?.count() ?: 0.0
-
-        val currentDownloadBandwidth = (downloadingNow - prevDownloadingMetrics) / DATA_REFRESH_DELAY
-        val currentUploadBandwidth = (uploadingNow - prevUploadingMetrics) / DATA_REFRESH_DELAY
-        val currentCosAsyncUploadBandwidth = (cosAsyncUploadingNow - prevCosAsyncUploadingMetrics) / DATA_REFRESH_DELAY
+        logger.debug(
+            "instance ip: $instance, service name: $serviceName, " +
+                "downloadingNow: $downloadingNow, uploadingNow: $uploadingNow, " +
+                "cosAsyncUploadingNow: $cosAsyncUploadingNow"
+        )
+        val currentDownloadBandwidth =
+            (downloadingNow - prevDownloadingMetrics).coerceAtLeast(0.0) / DATA_REFRESH_DELAY
+        val currentUploadBandwidth =
+            (uploadingNow - prevUploadingMetrics).coerceAtLeast(0.0) / DATA_REFRESH_DELAY
+        val currentCosAsyncUploadBandwidth =
+            (cosAsyncUploadingNow - prevCosAsyncUploadingMetrics).coerceAtLeast(0.0) / DATA_REFRESH_DELAY
 
         logger.debug(
             "instance ip: $instance, service name: $serviceName, " +
