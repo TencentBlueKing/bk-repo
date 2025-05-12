@@ -138,9 +138,9 @@ class InstanceBandWidthMetrics(
 
 
         // Redis键设计
-        val SERVICE_PREFIX = "bw:service:"
-        val INSTANCE_PREFIX = "bw:instance:"
-        val INSTANCE_BANDWIDTH = "bw:instance:total_bandwidth"
+        const val SERVICE_PREFIX = "bw:service:"
+        const val INSTANCE_PREFIX = "bw:instance:"
+        const val INSTANCE_BANDWIDTH = "bw:instance:total_bandwidth"
 
         const val SERVICE_SUFFIX = ":services"
 
