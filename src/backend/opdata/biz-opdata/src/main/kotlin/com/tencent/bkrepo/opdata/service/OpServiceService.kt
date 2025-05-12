@@ -131,6 +131,7 @@ class OpServiceService @Autowired constructor(
 
         // 2. 删除 IP 哈希表中服务名的所有带宽字段
         val fieldsToDelete = listOf(
+            "$serviceKey",
             "$serviceKey:upload",
             "$serviceKey:download",
             "$serviceKey:cos_async_upload",
