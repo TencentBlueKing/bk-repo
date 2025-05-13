@@ -28,16 +28,16 @@
 package com.tencent.bkrepo.common.stream.binder.file
 
 import com.tencent.bkrepo.common.stream.binder.file.config.FileBinderProperties
-import java.io.File
 import org.slf4j.LoggerFactory
 import org.springframework.cloud.stream.provisioning.ProducerDestination
 import org.springframework.integration.handler.AbstractMessageHandler
 import org.springframework.messaging.Message
-import org.springframework.util.Base64Utils
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption.APPEND
 import java.nio.file.StandardOpenOption.CREATE
+import java.util.Base64
 
 class FileMessageHandler(
     fileBinderProperties: FileBinderProperties,
@@ -56,7 +56,7 @@ class FileMessageHandler(
             return
         }
         val bytes = message.payload as ByteArray
-        val content = (Base64Utils.encodeToString(bytes) + System.lineSeparator()).toByteArray()
+        val content = (Base64.getEncoder().encodeToString(bytes) + System.lineSeparator()).toByteArray()
         Files.write(Paths.get(file), content, CREATE, APPEND)
     }
 
