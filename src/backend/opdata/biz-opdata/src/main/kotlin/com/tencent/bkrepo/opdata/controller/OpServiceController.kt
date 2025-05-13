@@ -111,7 +111,7 @@ class OpServiceController @Autowired constructor(
      * 获取服务当前带宽大小
      */
     @GetMapping("/{serviceName}/bandwidth")
-    @LogOperate(type = "SERVICE_INSTANCE_bandwidth_LIST")
+    @LogOperate(type = "SERVICE_INSTANCE_BANDWIDTH_LIST")
     fun serviceBandwidth(@PathVariable("serviceName") serviceName: String): Response<List<BandwidthInfo>> {
         return ResponseBuilder.success(opServiceService.serviceBandwidth(serviceName))
     }
@@ -129,4 +129,12 @@ class OpServiceController @Autowired constructor(
         return ResponseBuilder.success()
     }
 
+    /**
+     * 根据发服务获取带宽最小的ip列表
+     */
+    @GetMapping("/{serviceName}/bandwidth/ips")
+    @LogOperate(type = "SERVICE_INSTANCE_BANDWIDTH_IP_LIST")
+    fun serviceBandwidthIps(@PathVariable("serviceName") serviceName: String): Response<List<String>> {
+        return ResponseBuilder.success(opServiceService.serviceBandwidthIps(serviceName))
+    }
 }
