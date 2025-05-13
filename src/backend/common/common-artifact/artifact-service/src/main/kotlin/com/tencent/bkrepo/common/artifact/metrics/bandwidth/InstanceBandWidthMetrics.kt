@@ -120,11 +120,12 @@ class InstanceBandWidthMetrics(
 
     fun recordBandwidth(instanceIp: String, serviceName: String, upload: Long, download: Long, cosAsyncUpload: Long) {
         val script = DefaultRedisScript(InstanceBandwidthScript.instanceBandwidthScript, List::class.java)
+        val host = instanceIp.replace(".", "_")
         val result = redisTemplate.execute(
             script,
             listOf(
                 "$SERVICE_PREFIX$serviceName",
-                "$INSTANCE_PREFIX$instanceIp$SERVICE_SUFFIX",
+                "$INSTANCE_PREFIX$host$SERVICE_SUFFIX",
                 INSTANCE_BANDWIDTH
             ),
             instanceIp,
