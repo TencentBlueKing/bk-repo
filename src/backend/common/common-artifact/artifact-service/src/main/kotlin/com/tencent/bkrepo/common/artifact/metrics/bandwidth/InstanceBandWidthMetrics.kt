@@ -119,7 +119,7 @@ class InstanceBandWidthMetrics(
     }
 
     fun recordBandwidth(instanceIp: String, serviceName: String, upload: Long, download: Long, cosAsyncUpload: Long) {
-        val script = DefaultRedisScript(UPDATE_SCRIPT, List::class.java)
+        val script = DefaultRedisScript(InstanceBandwidthScript.instanceBandwidthScript, List::class.java)
         val result = redisTemplate.execute(
             script,
             listOf(
@@ -151,43 +151,6 @@ class InstanceBandWidthMetrics(
         const val INSTANCE_BANDWIDTH = "bw:instance:total_bandwidth"
 
         const val SERVICE_SUFFIX = ":services"
-
-        // Lua脚本保证原子性更新
-        private val UPDATE_SCRIPT = """
-            local serviceKey = KEYS[1]    
-            local instanceServiceKey = KEYS[2]
-            local instanceTotalKey = KEYS[3]  
-            local nodeIp = ARGV[1]         
-            local upload = tonumber(ARGV[2])  
-            local download = tonumber(ARGV[3]) 
-            local cosAsyncUpload = tonumber(ARGV[4]) 
-            local timestamp = tonumber(ARGV[5]) 
-            local expireSeconds = tonumber(ARGV[6]) 
-            
-            
-            local setTs = redis.call('HSET', instanceServiceKey, serviceKey..":ts", timestamp)  
-            local setupload = redis.call('HSET', instanceServiceKey, serviceKey..":upload", upload)  
-            local setdownload = redis.call('HSET', instanceServiceKey, serviceKey..":download", download)  
-            local setcos_async_upload = redis.call('HSET', instanceServiceKey, serviceKey..":cos_async_upload", cosAsyncUpload)  
-        
-            local services = redis.call('HGETALL', instanceServiceKey)
-            local total = 0
-            for i = 1, #services, 2 do
-                if not string.match(services[i], ":ts$") then  
-                    total = total + tonumber(services[i+1])
-                end
-            end
-            
-            local zaddtotal = redis.call('ZADD', instanceTotalKey, total, nodeIp)
-            
-            local saddip = redis.call('SADD', serviceKey, nodeIp)
-            local ipList = redis.call('SMEMBERS', serviceKey)
-            redis.call('EXPIRE', serviceKey, expireSeconds)
-            redis.call('EXPIRE', instanceServiceKey, expireSeconds)
-            redis.call('EXPIRE', instanceTotalKey, expireSeconds)
-            
-            return {total, setTs, setupload, setdownload, setcos_async_upload, services, zaddtotal, saddip, ipList, expireSeconds}
-        """.trimIndent()
     }
 
 }
