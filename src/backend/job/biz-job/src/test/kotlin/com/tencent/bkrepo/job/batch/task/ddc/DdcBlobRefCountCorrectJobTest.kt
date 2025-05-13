@@ -14,11 +14,11 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @DisplayName("DDC Blob引用数量校正测试")
 @DataMongoTest
@@ -26,16 +26,16 @@ class DdcBlobRefCountCorrectJobTest @Autowired constructor(
     private val blobRefCountCorrectJob: DdcBlobRefCountCorrectJob,
     private val mongoTemplate: MongoTemplate,
 ) : JobBaseTest() {
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
-    @MockBean
+    @MockitoBean
     private lateinit var nodeService: NodeService
 
-    @MockBean
+    @MockitoBean
     private lateinit var migrateService: MigrateRepoStorageService
 
-    @MockBean
+    @MockitoBean
     private lateinit var separateTaskService: SeparationTaskService
 
     @Autowired

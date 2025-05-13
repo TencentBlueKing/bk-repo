@@ -48,6 +48,8 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
@@ -55,8 +57,6 @@ import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * 云研发源ip拦截器，只允许项目的云桌面ip通过
@@ -75,9 +75,9 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         .build(object : CacheLoader<String, Set<String>>() {
             override fun load(key: String): Set<String> {
                 return listIpFromProject(key) +
-                        listCvmIpFromProject(key) +
-                        listIpFromProps(key) +
-                        listIpFromProjects(key)
+                    listCvmIpFromProject(key) +
+                    listIpFromProps(key) +
+                    listIpFromProjects(key)
             }
 
             override fun reload(key: String, oldValue: Set<String>): ListenableFuture<Set<String>> {
@@ -153,7 +153,7 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
         return ips
     }
 
-    private fun listIpFromProjects(projectId: String): Set<String>{
+    private fun listIpFromProjects(projectId: String): Set<String> {
         val projectIdList = devXProperties.projectWhiteList[projectId] ?: emptySet()
         val ips = HashSet<String>()
         projectIdList.forEach {

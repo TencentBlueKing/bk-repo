@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.pypi.artifact.url
 
+import jakarta.servlet.http.HttpServletRequest
 import org.apache.commons.lang3.StringUtils
-import javax.servlet.http.HttpServletRequest
 
 /**
  */

@@ -45,8 +45,8 @@ import com.tencent.bkrepo.oci.constant.OCI_API_SUFFIX
 import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
 import com.tencent.bkrepo.oci.util.TimeUtil
 import io.undertow.servlet.spec.HttpServletRequestImpl
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 

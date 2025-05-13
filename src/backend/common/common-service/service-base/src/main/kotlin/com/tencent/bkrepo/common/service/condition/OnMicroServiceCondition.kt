@@ -31,13 +31,14 @@
 
 package com.tencent.bkrepo.common.service.condition
 
+import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.condition.AllNestedConditions
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
-import org.springframework.cloud.client.SpringCloudApplication
 import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase
 
+// TODO 框架升级
 class OnMicroServiceCondition : AllNestedConditions(ConfigurationPhase.REGISTER_BEAN) {
 
-    @ConditionalOnClass(SpringCloudApplication::class)
+    @ConditionalOnClass(SpringBootApplication::class)
     internal class FoundClass
 }

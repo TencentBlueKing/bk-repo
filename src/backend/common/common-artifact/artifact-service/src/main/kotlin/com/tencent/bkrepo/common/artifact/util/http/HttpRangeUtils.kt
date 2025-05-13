@@ -32,10 +32,10 @@
 package com.tencent.bkrepo.common.artifact.util.http
 
 import com.tencent.bkrepo.common.artifact.stream.Range
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import java.util.regex.Pattern
-import javax.servlet.http.HttpServletRequest
 
 /**
  * Http Range请求工具类

@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.service.util
 
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 object CookieUtils {
     fun getCookieValue(request: HttpServletRequest, name: String): String? {

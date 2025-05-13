@@ -19,6 +19,8 @@ import com.tencent.bkrepo.job.config.properties.ArchivedNodeCompleteJobPropertie
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.createNode
+import io.mockk.every
+import io.mockk.mockkObject
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -29,11 +31,10 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -47,37 +48,38 @@ class ArchivedNodeCompleteJobTest @Autowired constructor(
     private val properties: ArchivedNodeCompleteJobProperties,
 ) : JobBaseTest() {
 
-    @MockBean
+    @MockitoBean
     private lateinit var archiveClient: ArchiveClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var nodeService: NodeService
 
-    @MockBean
+    @MockitoBean
     private lateinit var storageService: StorageService
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
-    @MockBean
+    @MockitoBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
-    @MockBean
+    @MockitoBean
     lateinit var repositoryService: RepositoryService
 
-    @MockBean
+    @MockitoBean
     lateinit var storageCredentialService: StorageCredentialService
 
     @BeforeAll
     fun beforeAll() {
         // mock
         val storageCredentials = FileSystemCredentials(key = UT_STORAGE_CREDENTIALS_KEY)
-        whenever(repositoryService.getRepoDetail(anyString(), anyString(), anyOrNull()))
-            .thenReturn(MigrateTestUtils.buildRepo(storageCredentials = storageCredentials))
-        whenever(storageCredentialService.findByKey(anyOrNull())).thenReturn(storageCredentials)
         NodeCommonUtils.mongoTemplate = mongoTemplate
         NodeCommonUtils.migrateRepoStorageService = migrateRepoStorageService
-        RepositoryCommonUtils.updateService(repositoryService, storageCredentialService)
+        mockkObject(RepositoryCommonUtils)
+        every { RepositoryCommonUtils.getRepositoryDetail(any(), any(), anyNullable()) }
+            .returns(MigrateTestUtils.buildRepo(storageCredentials = storageCredentials))
+        every { RepositoryCommonUtils.getStorageCredentials(anyNullable()) }
+            .returns(storageCredentials)
     }
 
     @Test

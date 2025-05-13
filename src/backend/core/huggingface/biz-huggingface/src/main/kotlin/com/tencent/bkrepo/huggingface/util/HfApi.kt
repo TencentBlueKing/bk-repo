@@ -95,7 +95,7 @@ class HfApi(
                 // https://github.com/square/okhttp/issues/259#issuecomment-22056176
                 // 使用默认gzip编码时，Content-Length可能被okhttp剥离
                 .header(ACCEPT_ENCODING, "identity")
-                .method(method ?: HttpMethod.GET.name, null)
+                .method(method ?: HttpMethod.GET.name(), null)
                 .build()
             val response = httpClient.newCall(request).execute()
             throwExceptionWhenFailed(response)

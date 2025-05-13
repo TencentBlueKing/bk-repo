@@ -41,8 +41,8 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 临时token账号认证

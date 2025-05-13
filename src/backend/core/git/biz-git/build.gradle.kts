@@ -34,5 +34,6 @@ dependencies {
     api(project(":common:common-job"))
     implementation("org.eclipse.jgit:org.eclipse.jgit.http.server")
     testImplementation("org.eclipse.jgit:org.eclipse.jgit.junit")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }

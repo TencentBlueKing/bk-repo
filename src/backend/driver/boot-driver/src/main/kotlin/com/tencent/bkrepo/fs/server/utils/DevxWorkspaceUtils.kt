@@ -55,7 +55,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.core.publisher.toMono
+import reactor.kotlin.core.publisher.toMono
 import reactor.netty.http.client.HttpClient
 import reactor.netty.http.client.PrematureCloseException
 import reactor.netty.resources.ConnectionProvider
@@ -142,8 +142,9 @@ class DevxWorkspaceUtils(
                 listIpFromProject(projectId),
                 listIpFromProps(projectId),
                 listCvmIpFromProject(projectId),
-                listIpFromProjects(projectId))
-                .map { it.t1 + it.t2 + it.t3 + it.t4}
+                listIpFromProjects(projectId)
+            )
+                .map { it.t1 + it.t2 + it.t3 + it.t4 }
         }
 
         private fun listIpFromProject(projectId: String): Mono<Set<String>> {

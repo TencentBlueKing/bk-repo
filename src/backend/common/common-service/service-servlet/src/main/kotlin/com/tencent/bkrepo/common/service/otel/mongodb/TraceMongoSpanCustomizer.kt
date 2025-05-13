@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.service.otel.mongodb
 
 import com.mongodb.event.CommandStartedEvent
-import org.springframework.cloud.sleuth.Span
+import io.micrometer.tracing.Span
 
 interface TraceMongoSpanCustomizer {
 

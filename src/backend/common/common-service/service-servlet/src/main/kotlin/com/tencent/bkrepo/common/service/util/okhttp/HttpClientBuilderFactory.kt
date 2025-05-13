@@ -30,13 +30,8 @@ package com.tencent.bkrepo.common.service.util.okhttp
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationTrustManager
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.trustAllHostname
-import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
-import okhttp3.internal.threadFactory
 import org.springframework.beans.factory.BeanFactory
-import org.springframework.cloud.sleuth.instrument.async.TraceableExecutorService
-import java.util.concurrent.SynchronousQueue
-import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
@@ -80,21 +75,21 @@ object HttpClientBuilderFactory {
                 }
 
                 writeTimeout(0, TimeUnit.MILLISECONDS)
-
-                beanFactory?.let {
-                    val traceableExecutorService = TraceableExecutorService(
-                        beanFactory,
-                        ThreadPoolExecutor(
-                            0,
-                            Int.MAX_VALUE,
-                            60L,
-                            TimeUnit.SECONDS,
-                            SynchronousQueue(),
-                            threadFactory("OkHttp Dispatcher", false),
-                        ),
-                    )
-                    dispatcher(Dispatcher(traceableExecutorService))
-                }
+                // TODO 框架升级
+//                beanFactory?.let {
+//                    val traceableExecutorService = TraceableExecutorService(
+//                        beanFactory,
+//                        ThreadPoolExecutor(
+//                            0,
+//                            Int.MAX_VALUE,
+//                            60L,
+//                            TimeUnit.SECONDS,
+//                            SynchronousQueue(),
+//                            threadFactory("OkHttp Dispatcher", false),
+//                        ),
+//                    )
+//                    dispatcher(Dispatcher(traceableExecutorService))
+//                }
             }
     }
 }

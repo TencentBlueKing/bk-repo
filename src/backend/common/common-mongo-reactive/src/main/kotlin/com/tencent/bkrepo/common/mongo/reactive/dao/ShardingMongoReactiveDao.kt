@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.api.mongo.ShardingKey
 import com.tencent.bkrepo.common.mongo.util.MongoIndexResolver
 import com.tencent.bkrepo.common.mongo.util.ShardingUtils
+import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.reactor.awaitSingle
 import org.apache.commons.lang3.reflect.FieldUtils
 import org.bson.Document
@@ -47,7 +48,6 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.index.IndexDefinition
 import org.springframework.data.mongodb.core.query.Query
 import java.lang.reflect.Field
-import javax.annotation.PostConstruct
 
 abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
 

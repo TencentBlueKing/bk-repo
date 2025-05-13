@@ -28,29 +28,29 @@
 package com.tencent.bkrepo.common.service.otel.util
 
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import io.micrometer.tracing.SpanNamer
+import io.micrometer.tracing.Tracer
 import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.SpanNamer
-import org.springframework.cloud.sleuth.Tracer
-import org.springframework.cloud.sleuth.instrument.async.TraceCallable
-import org.springframework.cloud.sleuth.instrument.async.TraceRunnable
 import java.util.concurrent.Callable
 
 object AsyncUtils {
+    // TODO 框架升级
     fun Runnable.trace(): Runnable {
         return try {
             val tracer = SpringContextUtils.getBean<Tracer>()
             val spanNamer = SpringContextUtils.getBean<SpanNamer>()
-            TraceRunnable(tracer, spanNamer, this)
+            this
         } catch (_: BeansException) {
             this
         }
     }
 
+    // TODO 框架升级
     fun <T> Callable<T>.trace(): Callable<T> {
         return try {
             val tracer = SpringContextUtils.getBean<Tracer>()
             val spanNamer = SpringContextUtils.getBean<SpanNamer>()
-            TraceCallable(tracer, spanNamer, this)
+            this
         } catch (_: BeansException) {
             this
         }

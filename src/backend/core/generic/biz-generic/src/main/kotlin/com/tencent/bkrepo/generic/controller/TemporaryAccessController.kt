@@ -286,7 +286,7 @@ class TemporaryAccessController(
         temporaryAccessService.uploadArtifact(artifactInfo, artifactFile)
 
         // TODO 如果PUT请求没有发起，token如何让其失效
-        if (HttpContextHolder.getRequest().method == HttpMethod.PUT.name) {
+        if (HttpContextHolder.getRequest().method == HttpMethod.PUT.name()) {
             temporaryAccessService.decrementPermits(tokenInfo)
         }
     }
