@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.common.service.servlet
 
+import jakarta.servlet.ReadListener
+import jakarta.servlet.ServletInputStream
 import java.io.ByteArrayInputStream
-import javax.servlet.ReadListener
-import javax.servlet.ServletInputStream
 
 /**
  * 基于数组的缓存ServletInputStream

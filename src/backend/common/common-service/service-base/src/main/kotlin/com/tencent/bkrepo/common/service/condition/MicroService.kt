@@ -31,7 +31,8 @@
 
 package com.tencent.bkrepo.common.service.condition
 
-import org.springframework.cloud.client.SpringCloudApplication
+import org.springframework.boot.autoconfigure.SpringBootApplication
 
-@SpringCloudApplication
+// TODO 框架升级
+@SpringBootApplication
 annotation class MicroService
