@@ -51,7 +51,7 @@ class RedisAutoConfiguration {
     @Bean
     fun redisOperation(@Autowired factory: RedisConnectionFactory): RedisOperation {
         val template = RedisTemplate<String, String>()
-        template.setConnectionFactory(factory)
+        template.connectionFactory = factory
         template.keySerializer = StringRedisSerializer()
         template.valueSerializer = StringRedisSerializer()
         template.afterPropertiesSet()

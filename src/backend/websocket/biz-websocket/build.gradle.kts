@@ -34,7 +34,7 @@ dependencies {
     api(project(":common:common-service"))
     api(project(":common:common-artifact:artifact-service"))
     implementation("org.springframework.boot:spring-boot-starter-websocket")
-    implementation("javax.websocket:javax.websocket-api")
+    implementation("jakarta.websocket:jakarta.websocket-api")
     implementation("io.undertow:undertow-servlet")
     implementation("io.undertow:undertow-websockets-jsr")
 }

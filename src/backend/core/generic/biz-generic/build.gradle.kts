@@ -37,6 +37,7 @@ dependencies {
     implementation(project(":analyst:metadata-analyst"))
     implementation(project(":common:common-artifact:artifact-cache"))
     testImplementation("org.mockito.kotlin:mockito-kotlin")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
     testImplementation("io.mockk:mockk")
 }

@@ -41,10 +41,10 @@ import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.ratelimiter.utils.RateLimiterBuilder
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.util.concurrent.ConcurrentHashMap
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 上传带宽限流器实现, 针对project/repo进行限流

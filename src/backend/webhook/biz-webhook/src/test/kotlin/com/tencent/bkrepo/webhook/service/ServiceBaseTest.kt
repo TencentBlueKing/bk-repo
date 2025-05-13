@@ -38,10 +38,10 @@ import com.tencent.bkrepo.webhook.metrics.WebHookMetrics
 import com.tencent.bkrepo.webhook.payload.EventPayloadFactory
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @Import(
     WebHookDao::class,
@@ -57,11 +57,11 @@ import org.springframework.test.context.TestPropertySource
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 open class ServiceBaseTest {
 
-    @MockBean
+    @MockitoBean
     lateinit var permissionManager: PermissionManager
 
 
-    @MockBean
+    @MockitoBean
     lateinit var servicePermissionClient: ServicePermissionClient
 
     fun initMock() {
