@@ -39,16 +39,16 @@ import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.util.AntPathMatcher
-import org.springframework.web.servlet.handler.HandlerInterceptorAdapter
+import org.springframework.web.servlet.HandlerInterceptor
 import java.util.Base64
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 class ActuatorAuthInterceptor(
     private val authenticationManager: AuthenticationManager,
     private val principalManager: PrincipalManager
-) : HandlerInterceptorAdapter() {
+) : HandlerInterceptor {
 
     private val antPathMatcher = AntPathMatcher()
 

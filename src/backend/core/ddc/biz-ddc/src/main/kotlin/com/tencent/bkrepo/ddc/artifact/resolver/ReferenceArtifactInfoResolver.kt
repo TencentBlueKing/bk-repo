@@ -34,9 +34,9 @@ import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARI
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_REF_ID
 import com.tencent.bkrepo.ddc.controller.LegacyReferencesController.Companion.LEGACY_PREFIX
 import com.tencent.bkrepo.ddc.pojo.RefKey
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(ReferenceArtifactInfo::class)

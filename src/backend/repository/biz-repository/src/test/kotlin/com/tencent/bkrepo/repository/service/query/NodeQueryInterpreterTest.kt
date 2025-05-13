@@ -31,37 +31,37 @@
 
 package com.tencent.bkrepo.repository.service.query
 
-import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.common.metadata.search.common.LocalDatetimeRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.node.NodeQueryInterpreter
-import com.tencent.bkrepo.repository.service.ServiceBaseTest
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
+import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
+import com.tencent.bkrepo.repository.service.ServiceBaseTest
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @DisplayName("节点自定义查询解释器测试")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DataMongoTest
 class NodeQueryInterpreterTest : ServiceBaseTest() {
 
-    @MockBean
+    @MockitoBean
     lateinit var repositoryService: RepositoryService
 
-    @MockBean
+    @MockitoBean
     private lateinit var repoNameRuleInterceptor: RepoNameRuleInterceptor
 
-    @MockBean
+    @MockitoBean
     private lateinit var repoTypeRuleInterceptor: RepoTypeRuleInterceptor
 
-    @MockBean
+    @MockitoBean
     private lateinit var localDateTimeRuleInterceptor: LocalDatetimeRuleInterceptor
 
     @BeforeAll
