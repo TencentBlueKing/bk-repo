@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.storage.innercos.PARAMETER_UPLOAD_ID
 import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.CONTENT_LENGTH
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.common.storage.innercos.http.InputStreamRequestBody
+import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadRecordAbleInputStream
 import okhttp3.RequestBody
 import java.io.File
 
@@ -46,7 +47,7 @@ data class UploadPartRequest(
     val partNumber: Int,
     val partSize: Long,
     val file: File,
-    val fileOffset: Long
+    val fileOffset: Long,
 ) : CosRequest(HttpMethod.PUT, key) {
 
     init {
@@ -56,7 +57,9 @@ data class UploadPartRequest(
     }
 
     override fun buildRequestBody(): RequestBody {
-        val inputStream = BoundedInputStream(file.inputStream().apply { skip(fileOffset) }, partSize)
+        val inputStream = CosUploadRecordAbleInputStream(
+            BoundedInputStream(file.inputStream().apply { skip(fileOffset) }, partSize)
+        )
         return InputStreamRequestBody(inputStream, partSize)
     }
 }
