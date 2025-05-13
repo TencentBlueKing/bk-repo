@@ -156,15 +156,19 @@ function _M:get_addr(service_name)
         -- 如果缓存存在且未过期
         if cached_result then
             -- 获取缓存IP列表
-            local cached_ip_list = string.split(cached_result, ",")
+            local cached_ip_list = {}
+            for ip in string.gmatch(cached_result, "([^,]+)") do
+                table.insert(cached_ip_list, ip)
+            end
+
             -- 与当前可用IP列表取交集,避免ip已经失效
             local valid_ips = {}
+            local ip_set = {}
+            for _, ip in ipairs(ips) do ip_set[ip] = true end
+
             for _, cached_ip in ipairs(cached_ip_list) do
-                for _, current_ip in ipairs(ips) do
-                    if cached_ip == current_ip then
-                        table.insert(valid_ips, cached_ip)
-                        break
-                    end
+                if ip_set[cached_ip] then
+                    table.insert(valid_ips, cached_ip)
                 end
             end
 
@@ -188,7 +192,6 @@ function _M:get_addr(service_name)
         ngx.log(ngx.WARN, "bandwidth check failed，err : ", err or "unknown error")
     end
     -- 2. Redis获取失败时回退到随机选择
-    ngx.log(ngx.WARN, "use default ways")
     return ips[math.random(table.getn(ips))] .. ":" .. port
 
 end
@@ -231,7 +234,7 @@ function _M:get_min_bandwidth_instances(service_name, ips)
     local current_time = os.time()
     for _, ip in ipairs(service_instances) do
         if bandwidths[ip] then
-            local ts_key = "bw:instance:"..ip..":services:"..service_name..":ts"
+            local ts_key = service_key..":ts"
             local ts = red:hget("bw:instance:"..ip..":services", ts_key)
             if ts and (current_time - tonumber(ts)) < 300 then
                 table.insert(active_instances, {
