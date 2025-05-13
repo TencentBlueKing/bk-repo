@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD_UUID
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletResponse
 
 object ChunkedRequestUtil {
     /**
