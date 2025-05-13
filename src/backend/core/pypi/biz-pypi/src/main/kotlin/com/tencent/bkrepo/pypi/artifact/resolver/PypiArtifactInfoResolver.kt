@@ -34,8 +34,8 @@ package com.tencent.bkrepo.pypi.artifact.resolver
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(PypiArtifactInfo::class)

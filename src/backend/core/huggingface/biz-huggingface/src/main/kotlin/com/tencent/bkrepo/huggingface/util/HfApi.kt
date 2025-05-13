@@ -86,7 +86,7 @@ class HfApi(
             val method = HttpContextHolder.getRequestOrNull()?.method
             val request = Request.Builder().url(url)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
-                .method(method ?: HttpMethod.GET.name, null)
+                .method(method ?: HttpMethod.GET.name(), null)
                 .build()
             val response = httpClient.newCall(request).execute()
             throwExceptionWhenFailed(response)

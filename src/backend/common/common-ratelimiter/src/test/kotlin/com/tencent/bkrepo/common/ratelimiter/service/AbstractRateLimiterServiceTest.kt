@@ -51,9 +51,9 @@ import com.tencent.bkrepo.common.ratelimiter.utils.RateLimiterBuilder
 import io.micrometer.core.instrument.MeterRegistry
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestInstance
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.mock.web.MockHttpServletRequest
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.Duration
 
 
@@ -67,10 +67,10 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
     lateinit var rateLimiterMetrics: RateLimiterMetrics
     lateinit var rateLimiterConfigService: RateLimiterConfigService
 
-    @MockBean
+    @MockitoBean
     private lateinit var meterRegistry: MeterRegistry
 
-    @MockBean
+    @MockitoBean
     private lateinit var rateLimitRepository: RateLimitRepository
 
     fun init() {

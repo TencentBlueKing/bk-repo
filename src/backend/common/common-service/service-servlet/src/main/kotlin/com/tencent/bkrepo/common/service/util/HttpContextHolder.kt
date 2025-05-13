@@ -34,11 +34,11 @@ package com.tencent.bkrepo.common.service.util
 import com.tencent.bkrepo.common.api.constant.CLIENT_ADDRESS
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import java.util.StringTokenizer
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 object HttpContextHolder {
     fun getRequest(): HttpServletRequest {
