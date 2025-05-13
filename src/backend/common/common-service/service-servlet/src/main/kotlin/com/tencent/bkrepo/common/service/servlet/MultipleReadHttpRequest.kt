@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.common.service.servlet
 
 import com.tencent.bkrepo.common.api.stream.LimitByteArrayOutputStream
+import jakarta.servlet.ServletInputStream
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequestWrapper
 import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
 import java.io.InputStreamReader
-import javax.servlet.ServletInputStream
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletRequestWrapper
 
 /**
  * 支持多次读取的请求

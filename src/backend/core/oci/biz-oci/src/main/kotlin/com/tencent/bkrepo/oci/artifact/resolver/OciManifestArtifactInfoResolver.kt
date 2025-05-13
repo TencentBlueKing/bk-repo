@@ -39,9 +39,9 @@ import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.oci.constant.USER_API_PREFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.digest.OciDigest
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(OciManifestArtifactInfo::class)
@@ -62,6 +62,7 @@ class OciManifestArtifactInfoResolver : ArtifactInfoResolver {
                 val packageName = artifactUrl.removeSuffix("/$reference")
                 OciManifestArtifactInfo(projectId, repoName, packageName, "", reference, false)
             }
+
             else -> {
                 val packageName = requestUrl.substringBeforeLast("/manifests").removePrefix("/v2/$projectId/$repoName/")
                 val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
