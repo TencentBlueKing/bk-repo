@@ -90,6 +90,7 @@ class KubernetesDeploymentDispatcher(
     }
 
     private fun createOrScaleDeployment(runningTaskCount: Int): V1Deployment {
+        logger.info("creating deployment[${executionCluster.name}]")
         val targetReplicas = targetReplicas(runningTaskCount)
 
         // 创建deployment
@@ -155,8 +156,10 @@ class KubernetesDeploymentDispatcher(
         return lock.withLock {
             var deployment = getDeployment()
             if (deployment == null) {
+                logger.info("try to create deployment[${executionCluster.name}]")
                 deployment = createDeployment(k8sProps, scanner, targetReplicas)
             } else {
+                logger.info("try to scale deployment[${executionCluster.name}]")
                 doScale(deployment, targetReplicas)
             }
             deployment
