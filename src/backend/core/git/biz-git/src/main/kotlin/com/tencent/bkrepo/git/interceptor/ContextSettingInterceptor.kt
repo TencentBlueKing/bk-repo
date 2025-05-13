@@ -4,8 +4,8 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.git.context.DfsDataReaders
 import com.tencent.bkrepo.git.context.DfsDataReadersHolder
 import com.tencent.bkrepo.git.context.UserHolder
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.web.servlet.HandlerInterceptor
 
 /**

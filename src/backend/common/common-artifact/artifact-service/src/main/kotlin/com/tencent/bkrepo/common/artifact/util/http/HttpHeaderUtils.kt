@@ -34,7 +34,7 @@ import org.springframework.boot.web.server.MimeMappings
 import org.springframework.web.util.UriUtils
 
 object HttpHeaderUtils {
-    private val mimeMappings = MimeMappings(MimeMappings.DEFAULT).apply {
+    private val mimeMappings = MimeMappings.DEFAULT.apply {
         add("yaml", MediaTypes.APPLICATION_YAML)
         add("tgz", MediaTypes.APPLICATION_TGZ)
         add("ico", MediaTypes.APPLICATION_ICO)

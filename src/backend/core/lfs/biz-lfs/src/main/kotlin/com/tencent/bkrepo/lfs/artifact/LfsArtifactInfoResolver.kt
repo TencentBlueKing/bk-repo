@@ -31,8 +31,8 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.lfs.utils.OidUtils
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(LfsArtifactInfo::class)
