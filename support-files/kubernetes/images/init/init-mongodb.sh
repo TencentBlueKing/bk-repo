@@ -10,12 +10,17 @@ secret_key=$BK_REPO_SECRETKEY
 multi_tenant=$BK_REPO_ENABLE_MULTI_TENANT_MODE
 tls_enable=$BK_REPO_ENABLE_MONGODB_TLS
 tls_path=$BK_REPO_MONGODB_TLS_PATH
+client_cert_path=$BK_REPO_MONGODB_CLIENT_CERT_PATH
 bcs_access_key=$BK_REPO_BCS_ACCESSKEY
 bcs_secret_key=$BK_REPO_BCS_SECRETKEY
 
 mongo_args="--ipv6"
 if [ "$tls_enable" = "true" ] ; then
-    mongo_args="$mongo_args --tls --tlsCAFile $tls_path --tlsAllowInvalidHostnames"
+    if [ "$client_pem_path" = "" ]; then
+        mongo_args="$mongo_args --tls --tlsCAFile $tls_path --tlsAllowInvalidHostnames"
+      else
+        mongo_args="$mongo_args --tls --tlsCAFile $tls_path --tlsCertificateKeyFile $client_cert_path --tlsAllowInvalidHostnames"
+    fi
 fi
 
 if [ "$access_key" != "" ] && [ "$secret_key" != "" ]; then

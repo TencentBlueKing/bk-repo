@@ -105,6 +105,8 @@ tls:
     enabled: false
     ## 运维已经创建的secret，用作mongo客户端连接做init
     existingPemSecret: ""
+    ## 客户端证书，包含key
+    clientCertPemFilename: ""
     ## pem文件名
     certPemFilename: "ca.pem"
     ## 运维已经创建的secret，用作java程序

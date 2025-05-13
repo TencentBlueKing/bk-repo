@@ -70,6 +70,8 @@ spec:
               value: {{ default "false" .Values.tls.mongodb.enabled | quote }}
             - name: BK_REPO_MONGODB_TLS_PATH
               value: /data/certs/mongodb/{{ .Values.tls.mongodb.certPemFilename }}
+            - name: BK_REPO_MONGODB_CLIENT_CERT_PATH
+              value: /data/certs/mongodb/{{ .Values.tls.mongodb.clientCertPemFilename }}
           volumeMounts:
             {{- if .Values.tls.mongodb.enabled  }}
             - name: mongodb-ca
