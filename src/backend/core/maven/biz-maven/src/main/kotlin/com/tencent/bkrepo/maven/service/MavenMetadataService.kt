@@ -9,6 +9,7 @@ import com.tencent.bkrepo.maven.pojo.MavenMetadataSearchPojo
 import com.tencent.bkrepo.maven.pojo.MavenVersion
 import com.tencent.bkrepo.maven.pojo.metadata.MavenMetadataRequest
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.Logger
@@ -26,18 +27,34 @@ import java.time.format.DateTimeFormatter
 @Service
 @Conditional(DefaultCondition::class)
 class MavenMetadataService(
-    private val mavenMetadataDao: MavenMetadataDao
+    private val mavenMetadataDao: MavenMetadataDao,
 ) {
 
     protected val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyyMMdd.HHmmss")
 
-    fun update(node: NodeCreateRequest) {
+
+    fun update(node: NodeDetail) = updateMetadata(node.projectId, node.repoName, node.nodeMetadata, node.fullPath)
+
+
+    fun update(node: NodeCreateRequest) =
+        updateMetadata(node.projectId, node.repoName, node.nodeMetadata, node.fullPath)
+
+    private fun updateMetadata(
+        projectId: String,
+        repoName: String,
+        metadata: List<MetadataModel>? = null,
+        fullPath: String,
+    ) {
         val (criteria, mavenVersion) = nodeCriteria(
-            projectId = node.projectId,
-            repoName = node.repoName,
-            metadata = node.nodeMetadata?.associate { Pair(it.key, it.value) },
-            fullPath = node.fullPath
+            projectId = projectId,
+            repoName = repoName,
+            metadata = metadata?.associate { it.key to it.value },
+            fullPath = fullPath
         )
+        updateMetadata(criteria, mavenVersion)
+    }
+
+    private fun updateMetadata(criteria: Criteria?, mavenVersion: MavenVersion?) {
         if (criteria == null || mavenVersion == null) return
         val query = Query(criteria)
         val update = Update().set(TMavenMetadataRecord::timestamp.name, mavenVersion.timestamp)
@@ -61,7 +78,7 @@ class MavenMetadataService(
         projectId: String,
         repoName: String,
         metadata: Map<String, Any>? = null,
-        fullPath: String
+        fullPath: String,
     ): Pair<Criteria?, MavenVersion?> {
         if (validateMetaData(metadata)) return Pair(null, null)
         val groupId = metadata?.get("groupId") as String

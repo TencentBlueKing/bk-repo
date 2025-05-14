@@ -11,7 +11,14 @@ enum class MavenMessageCode(private val key: String) : MessageCode {
     MAVEN_REQUEST_FORBIDDEN("maven.request.forbidden"),
     MAVEN_PROPERTIES_MISSING("maven.properties.missing"),
     MAVEN_ARTIFACT_DELETE("maven.artifact.delete"),
-    MAVEN_ARTIFACT_UPLOAD("maven.artifact.upload")
+    MAVEN_ARTIFACT_UPLOAD("maven.artifact.upload"),
+    FILE_RESOLVE_FAILED("file.resolve.failed"),
+    PARAMETER_CONTAINS_INVALID("parameter.contains.invalid"),
+    PARAMETER_EXPECT("parameter.expect"),
+    MAVEN_ARTIFACT_COVER_FORBIDDEN("maven.artifact.cover.forbidden"),
+    MAVEN_ARTIFACT_DELETE_FORBIDDEN("maven.artifact.delete.forbidden"),
+    MAVEN_VERSION_NOT_FOUND("maven.version.not.found"),
+    MAVEN_VERSION_RESOLVE_FAILED("maven.version.resolve.failed")
     ;
 
     override fun getBusinessCode() = ordinal + 1
