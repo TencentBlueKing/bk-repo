@@ -941,5 +941,6 @@
     "forbidMsg": "禁用后，不可下载",
     "forbidTitle": "禁用：{0}",
     "cargoCreditGuideSubTitle1":"1、编辑 Cargo 主目录下的配置文件（例如/.cargo/config.toml）",
-    "cargoCreditGuideSubTitle2":"2、请将以下部分添加到 Cargo 主目录下的凭据文件（例如/.cargo/credentials.toml）"
+    "cargoCreditGuideSubTitle2":"2、请将以下部分添加到 Cargo 主目录下的凭据文件（例如/.cargo/credentials.toml）",
+    "cargoPullGuideSubTitle": "请在项目目录的命令行执行以下命令进行拉取:"
 }

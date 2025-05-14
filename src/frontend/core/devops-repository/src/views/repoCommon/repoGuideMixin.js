@@ -1369,7 +1369,7 @@ export default {
                             codeList: [
                                 '[registry]\n' + 'default = "bkrepo"' + '\n\n'
                                 + '[registries.bkrepo]\n' + `index = "sparse+${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
-                                + '\n' + `credential-provider = "cargo:token"`
+                                + '\n' + 'credential-provider = "cargo:token"'
                             ]
                         },
                         {
@@ -1388,7 +1388,7 @@ export default {
                         {
                             subTitle: this.$t('pushGuideSubTitle'),
                             codeList: [
-                                `cargo publish --registry bkrepo`
+                                'cargo publish --registry bkrepo'
                             ]
                         }
                     ]
@@ -1412,9 +1412,10 @@ export default {
                     ],
                     main: [
                         {
-                            subTitle: this.$t('helmPullGuideSubTitle'),
+                            subTitle: this.$t('cargoPullGuideSubTitle'),
                             codeList: [
-                                `cargo install --registry bkrepo ${this.dependInputValue1 || this.packageName} --version ${this.dependInputValue2 || this.versionLabel}`
+                                `cargo add ${this.dependInputValue1 || this.packageName}@version ${this.dependInputValue2 || this.versionLabel}`,
+                                'cargo fetch'
                             ]
                         }
                     ]
@@ -1441,9 +1442,10 @@ export default {
                             ]
                         },
                         {
-                            subTitle: this.$t('helmPullGuideSubTitle'),
+                            subTitle: this.$t('cargoPullGuideSubTitle'),
                             codeList: [
-                                `cargo install --registry bkrepo ${this.packageName} --version ${this.versionLabel}`
+                                `cargo add ${this.packageName}@${this.versionLabel}`,
+                                'cargo fetch'
                             ]
                         }
                     ]
