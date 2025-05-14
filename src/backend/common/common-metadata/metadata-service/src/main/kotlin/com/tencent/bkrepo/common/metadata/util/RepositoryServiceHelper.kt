@@ -309,8 +309,8 @@ class RepositoryServiceHelper(
             cleanupStrategyMap?.let {
                 val cleanupType = it.get("cleanupType") as? String
                 val cleanupValue = it.get("cleanupValue") as? String ?: return true
-                val targetValue = cleanupValue.toIntOrNull()
-                if (cleanupType.equals("retentionDays") && targetValue != null && (targetValue > TEN_YEARS || targetValue < 0)) {
+                val targetValue = cleanupValue.toIntOrNull() ?: return true
+                if (cleanupType.equals("retentionDays") && (targetValue > TEN_YEARS || targetValue < 0)) {
                     return false
                 }
             }
