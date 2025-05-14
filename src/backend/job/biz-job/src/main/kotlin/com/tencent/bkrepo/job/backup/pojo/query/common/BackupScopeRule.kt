@@ -28,13 +28,14 @@
 package com.tencent.bkrepo.job.backup.pojo.query.common
 
 import com.tencent.bkrepo.common.query.enums.OperationType
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class BackupScopeRule(
-    @ApiModelProperty("字段名")
+    @get:Schema(title = "字段名")
     val field: String,
-    @ApiModelProperty("值")
+    @get:Schema(title = "值")
     val value: Any,
-    @ApiModelProperty("操作类型")
+    @get:Schema(title = "操作类型")
     val operation: OperationType = OperationType.DEFAULT
 )

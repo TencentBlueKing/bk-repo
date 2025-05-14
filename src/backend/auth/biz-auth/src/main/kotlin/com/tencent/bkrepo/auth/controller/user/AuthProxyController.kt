@@ -35,8 +35,8 @@ import com.tencent.bkrepo.auth.service.ProxyService
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -45,20 +45,20 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("Proxy管理接口")
+@Tag(name = "Proxy管理接口")
 @RestController
 @RequestMapping("/api/proxy")
 class AuthProxyController(
     private val proxyService: ProxyService
 ) {
 
-    @ApiOperation("创建Proxy")
+    @Operation(summary = "创建Proxy")
     @PostMapping("/create")
     fun create(@RequestBody request: ProxyCreateRequest): Response<ProxyInfo> {
         return ResponseBuilder.success(proxyService.create(request))
     }
 
-    @ApiOperation("查询Proxy信息")
+    @Operation(summary = "查询Proxy信息")
     @GetMapping("/info/{projectId}/{name}")
     fun info(
         @PathVariable projectId: String,
@@ -67,7 +67,7 @@ class AuthProxyController(
         return ResponseBuilder.success(proxyService.getInfo(projectId, name))
     }
 
-    @ApiOperation("分页查询Proxy信息")
+    @Operation(summary = "分页查询Proxy信息")
     @GetMapping("/page/info/{projectId}")
     fun page(
         @PathVariable projectId: String,
@@ -76,13 +76,13 @@ class AuthProxyController(
         return ResponseBuilder.success(proxyService.page(projectId, proxyListOption))
     }
 
-    @ApiOperation("更新Proxy")
+    @Operation(summary = "更新Proxy")
     @PostMapping("/update")
     fun update(@RequestBody request: ProxyUpdateRequest): Response<ProxyInfo> {
         return ResponseBuilder.success(proxyService.update(request))
     }
 
-    @ApiOperation("删除Proxy")
+    @Operation(summary = "删除Proxy")
     @DeleteMapping("/delete/{projectId}/{name}")
     fun delete(
         @PathVariable projectId: String,

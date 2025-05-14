@@ -31,13 +31,13 @@
 
 package com.tencent.bkrepo.auth.pojo.user
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("用户信息")
+
+@Schema(title = "用户信息")
 data class UserResult(
-    @ApiModelProperty("用户ID")
+    @get:Schema(title = "用户ID")
     val userId: String,
-    @ApiModelProperty("用户名")
+    @get:Schema(title = "用户名")
     val name: String
 )

@@ -51,7 +51,8 @@
             </bk-table-column>
             <bk-table-column :label="$t('createdBy')">
                 <template #default="{ row }">
-                    {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
+                    <bk-user-display-name v-if="multiMode" :user-id="userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy"></bk-user-display-name>
+                    <span v-else> {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}</span>
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('bkPermissionGeneration')" show-overflow-tooltip v-if="iamStatus">
@@ -97,7 +98,8 @@
                 direction: this.$route.query.direction || 'DESC',
                 filterProjectList: [],
                 property: 'createdDate',
-                iamStatus: false
+                iamStatus: false,
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true'
             }
         },
         computed: {

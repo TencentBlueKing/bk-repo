@@ -30,38 +30,38 @@ package com.tencent.bkrepo.auth.pojo.account
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.token.CredentialSet
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 import java.time.LocalDateTime
 
-@ApiModel("账号信息")
+@Schema(title = "账号信息")
 data class Account(
-    @ApiModelProperty("id")
+    @get:Schema(title = "id")
     val id: String,
-    @ApiModelProperty("appId")
+    @get:Schema(title = "appId")
     val appId: String,
-    @ApiModelProperty("locked状态")
+    @get:Schema(title = "locked状态")
     val locked: Boolean,
-    @ApiModelProperty("认证ak/sk对")
+    @get:Schema(title = "认证ak/sk对")
     val credentials: List<CredentialSet>,
-    @ApiModelProperty("应用所有人")
+    @get:Schema(title = "应用所有人")
     val owner: String?,
-    @ApiModelProperty("授权方式")
+    @get:Schema(title = "授权方式")
     var authorizationGrantTypes: Set<AuthorizationGrantType>,
-    @ApiModelProperty("主页地址")
+    @get:Schema(title = "主页地址")
     var homepageUrl: String?,
-    @ApiModelProperty("回调地址")
+    @get:Schema(title = "回调地址")
     var redirectUri: String?,
-    @ApiModelProperty("图标地址")
+    @get:Schema(title = "图标地址")
     var avatarUrl: String?,
-    @ApiModelProperty("权限类型")
+    @get:Schema(title = "权限类型")
     var scope: Set<ResourceType>?,
-    @ApiModelProperty("权限范围")
+    @get:Schema(title = "权限范围")
     var scopeDesc: List<ScopeRule>?,
-    @ApiModelProperty("描述信息")
+    @get:Schema(title = "描述信息")
     var description: String?,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     var createdDate: LocalDateTime?,
-    @ApiModelProperty("最后修改时间")
+    @get:Schema(title = "最后修改时间")
     var lastModifiedDate: LocalDateTime?
 )

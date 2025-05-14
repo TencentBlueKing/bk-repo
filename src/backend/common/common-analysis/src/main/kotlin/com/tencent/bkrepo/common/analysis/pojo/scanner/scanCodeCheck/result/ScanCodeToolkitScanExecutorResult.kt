@@ -29,12 +29,12 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.result
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("scancode_toolkit扫描器扫描结果")
+
+@Schema(title = "scancode_toolkit扫描器扫描结果")
 data class ScanCodeToolkitScanExecutorResult(
     override val scanStatus: String,
-    @ApiModelProperty("结果")
+    @get:Schema(title = "结果")
     val scancodeItem: Set<ScancodeItem>
 ) : ScanExecutorResult(scanStatus, ScancodeToolkitScanner.TYPE)

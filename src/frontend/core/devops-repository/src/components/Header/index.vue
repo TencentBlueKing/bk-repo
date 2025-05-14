@@ -16,6 +16,7 @@
                 <span class="ml5">Artifact Hub</span>
             </a> -->
             <bk-select
+                v-if="showProjectSelect"
                 ref="porjectSelect"
                 class="ml20 bkre-project-select"
                 :value="projectId"
@@ -33,17 +34,12 @@
                     :name="option.name">
                 </bk-option>
                 <div slot="extension" style="cursor: pointer;" class="flex-align-center">
-                    <div @click="createProject" class="hover-extent">
+                    <div @click="createProject" class="hover-extent" style="width: 45%">
                         <i class="bk-icon icon-plus-circle"></i>
                         {{$t('createProject')}}
-                        <bk-divider direction="vertical"></bk-divider>
                     </div>
-                    <div @click="joinProject">
-                        <img width="16" height="16" style="float: left;margin-top: 7px;margin-right: 3px" src="/ui/project-add.svg" />
-                        {{$t('joinProject')}}
-                        <bk-divider direction="vertical"></bk-divider>
-                    </div>
-                    <div @click="manageProject">
+                    <bk-divider direction="vertical"></bk-divider>
+                    <div style="width: 45%" @click="manageProject">
                         <i class="bk-icon icon-apps mr5"></i>
                         {{$t('manageProject')}}
                     </div>
@@ -151,7 +147,8 @@
                         name: 'openSource',
                         id: 'openSource'
                     }
-                ]
+                ],
+                showProjectSelect: true
             }
         },
         computed: {
@@ -160,14 +157,21 @@
                 return this.$route.params.projectId
             }
         },
-        created () {
-            this.language = cookies.get('blueking_language') || 'zh-cn'
-            this.curLang = this.icons.find(item => item.id === this.language) || { id: 'zh-cn', icon: 'chinese' }
-            this.$nextTick(() => {
-                if (this.language !== 'zh-cn') {
-                    this.$refs.porjectSelect.$el.style.width = '400px'
+        watch: {
+            '$route' (to, from) {
+                if (to.name === 'filePreview' || to.name === 'outsideFilePreview') {
+                    this.showProjectSelect = false
+                } else {
+                    this.showProjectSelect = true
                 }
-            })
+                this.language = cookies.get('blueking_language') || 'zh-cn'
+                this.curLang = this.icons.find(item => item.id === this.language) || { id: 'zh-cn', icon: 'chinese' }
+                if (this.language !== 'zh-cn') {
+                    this.$refs.porjectSelect.$el.style.width = '380px'
+                } else {
+                    this.$refs.porjectSelect.$el.style.width = '300px'
+                }
+            }
         },
         methods: {
             ...mapActions(['checkPM', 'getPermissionUrl']),

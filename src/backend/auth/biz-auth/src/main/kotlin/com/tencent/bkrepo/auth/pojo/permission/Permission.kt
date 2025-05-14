@@ -31,10 +31,10 @@
 
 package com.tencent.bkrepo.auth.pojo.permission
 
-import io.swagger.annotations.ApiModel
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("权限")
+@Schema(title = "权限")
 data class Permission(
     val id: String? = null,
     val resourceType: String,

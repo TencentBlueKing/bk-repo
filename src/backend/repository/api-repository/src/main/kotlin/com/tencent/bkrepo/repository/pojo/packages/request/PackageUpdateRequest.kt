@@ -31,23 +31,24 @@
 
 package com.tencent.bkrepo.repository.pojo.packages.request
 
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class PackageUpdateRequest(
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String,
-    @ApiModelProperty("仓库名称")
+    @get:Schema(title = "仓库名称")
     val repoName: String,
-    @ApiModelProperty("包唯一标识符")
+    @get:Schema(title = "包唯一标识符")
     val packageKey: String,
-    @ApiModelProperty("包名称")
+    @get:Schema(title = "包名称")
     val name: String? = null,
-    @ApiModelProperty("包key")
+    @get:Schema(title = "包key")
     val key: String? = null,
-    @ApiModelProperty("包简要描述")
+    @get:Schema(title = "包简要描述")
     val description: String? = null,
-    @ApiModelProperty("包版本标签")
+    @get:Schema(title = "包版本标签")
     val versionTag: Map<String, String>? = null,
-    @ApiModelProperty("包扩展字段")
+    @get:Schema(title = "包扩展字段")
     val extension: Map<String, Any>? = null
 )

@@ -31,11 +31,10 @@
 
 package com.tencent.bkrepo.helm.pojo
 
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@Api("helm error 包装返回模型")
+@Schema(title = "helm error 包装返回模型")
 data class HelmErrorResponse(
-    @ApiModelProperty("错误信息")
+    @get:Schema(title = "错误信息")
     val error: String?
 )

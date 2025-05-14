@@ -34,11 +34,11 @@ package com.tencent.bkrepo.repository.controller.user
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.packages.StageService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
-import com.tencent.bkrepo.common.metadata.service.packages.StageService
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -56,7 +56,7 @@ class UserStageController(
     private val stageService: StageService
 ) {
 
-    @ApiOperation("查询制品状态")
+    @Operation(summary = "查询制品状态")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/{projectId}/{repoName}")
     fun query(
@@ -68,7 +68,7 @@ class UserStageController(
         return ResponseBuilder.success(stageService.query(projectId, repoName, packageKey, version))
     }
 
-    @ApiOperation("制品晋级")
+    @Operation(summary = "制品晋级")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @PostMapping("/upgrade/{projectId}/{repoName}")
     fun upgrade(

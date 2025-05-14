@@ -94,8 +94,8 @@ class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
         return findAndModify(query, update, FindAndModifyOptions().returnNew(true), TMigrateFailedNode::class.java)
     }
 
-    fun existsFailedNode(projectId: String, repoName: String, fullPath: String? = null): Boolean {
-        val criteria = buildCriteria(projectId, repoName, fullPath)
+    fun existsFailedNode(projectId: String, repoName: String): Boolean {
+        val criteria = buildCriteria(projectId, repoName)
         return exists(Query(criteria))
     }
 
@@ -114,27 +114,36 @@ class MigrateFailedNodeDao : SimpleMongoDao<TMigrateFailedNode>() {
         return exists(Query(criteria))
     }
 
-    fun resetMigrating(projectId: String, repoName: String, fullPath: String) {
-        val criteria = buildCriteria(projectId, repoName, fullPath)
-        updateFirst(Query(criteria), Update.update(TMigrateFailedNode::migrating.name, false))
+    fun resetMigrating(failedNodeId: String) {
+        updateFirst(
+            Query(Criteria.where(ID).isEqualTo(failedNodeId)),
+            Update.update(TMigrateFailedNode::migrating.name, false)
+        )
     }
 
-    fun resetRetryCount(projectId: String, repoName: String, fullPath: String?): UpdateResult {
-        val criteria = buildCriteria(projectId, repoName, fullPath)
+    fun resetRetryCount(projectId: String, repoName: String): UpdateResult {
         val update = Update.update(TMigrateFailedNode::retryTimes.name, 0)
-        return updateMulti(Query(criteria), update)
+        return updateMulti(Query(buildCriteria(projectId, repoName)), update)
     }
 
-    fun remove(projectId: String, repoName: String, fullPath: String?): DeleteResult {
-        val criteria = buildCriteria(projectId, repoName, fullPath)
+    fun resetRetryCount(failedNodeId: String?): UpdateResult {
+        val update = Update.update(TMigrateFailedNode::retryTimes.name, 0)
+        return updateFirst(Query(Criteria.where(ID).isEqualTo(failedNodeId)), update)
+    }
+
+    fun remove(projectId: String, repoName: String): DeleteResult {
+        val criteria = buildCriteria(projectId, repoName)
         return remove(Query(criteria))
     }
 
-    private fun buildCriteria(projectId: String, repoName: String, fullPath: String? = null): Criteria {
+    fun remove(failedNodeId: String): DeleteResult {
+        return remove(Query(Criteria.where(ID).isEqualTo(failedNodeId)))
+    }
+
+    private fun buildCriteria(projectId: String, repoName: String): Criteria {
         val criteria = Criteria
             .where(TMigrateFailedNode::projectId.name).isEqualTo(projectId)
             .and(TMigrateFailedNode::repoName.name).isEqualTo(repoName)
-        fullPath?.let { criteria.and(TMigrateFailedNode::fullPath.name).isEqualTo(it) }
         return criteria
     }
 

@@ -29,15 +29,15 @@ package com.tencent.bkrepo.replication.pojo.record
 
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("执行记录和任务信息")
+
+@Schema(title = "执行记录和任务信息")
 data class ReplicaTaskRecordInfo(
-    @ApiModelProperty("同步对象类型")
+    @get:Schema(title = "同步对象类型")
     val replicaObjectType: ReplicaObjectType,
-    @ApiModelProperty("同步类型")
+    @get:Schema(title = "同步类型")
     val replicaType: ReplicaType,
-    @ApiModelProperty("执行记录信息")
+    @get:Schema(title = "执行记录信息")
     val record: ReplicaRecordInfo
 )

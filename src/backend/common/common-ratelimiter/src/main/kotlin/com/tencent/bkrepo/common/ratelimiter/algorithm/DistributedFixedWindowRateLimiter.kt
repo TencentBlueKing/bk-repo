@@ -73,6 +73,10 @@ class DistributedFixedWindowRateLimiter(
         redisTemplate.delete(key)
     }
 
+    override fun getLimitPerSecond(): Long {
+        return limit / duration.seconds
+    }
+
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(DistributedFixedWindowRateLimiter::class.java)
     }

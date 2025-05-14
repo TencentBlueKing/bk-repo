@@ -58,7 +58,7 @@ object Versions {
     const val XStream = "1.4.19"
     const val DockerJava = "3.2.13"
     const val Mockk = "1.12.2"
-    const val Swagger = "1.6.2"
+    const val Swagger = "2.2.28"
     const val SleuthOtel = "1.1.4"
     const val KubernetesClient = "11.0.2"
     const val ReactiveFeign = "3.2.6"

@@ -54,7 +54,10 @@
                 <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('operator')" show-overflow-tooltip>
-                <template #default="{ row }"> {{ userList[row.userId] ? userList[row.userId].name : row.userId }}</template>
+                <template #default="{ row }">
+                    <bk-user-display-name v-if="multiMode" :user-id="userList[row.userId] ? userList[row.userId].name : row.userId"></bk-user-display-name>
+                    <span v-else> {{ userList[row.userId] ? userList[row.userId].name : row.userId }}</span>
+                </template>
             </bk-table-column>
             <bk-table-column :label="$t('event')" show-overflow-tooltip>
                 <template #default="{ row }">{{ row.operate }}</template>
@@ -108,6 +111,7 @@
                     time: [zeroTime(before(7)), nowTime.toDate()]
                 },
                 auditList: [],
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true',
                 pagination: {
                     count: 0,
                     current: 1,

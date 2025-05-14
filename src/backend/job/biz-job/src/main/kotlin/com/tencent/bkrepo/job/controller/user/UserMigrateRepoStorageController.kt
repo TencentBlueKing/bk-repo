@@ -79,18 +79,18 @@ class UserMigrateRepoStorageController(
     fun removeFailedNode(
         @RequestParam projectId: String,
         @RequestParam repoName: String,
-        @RequestParam(required = false) fullPath: String? = null
+        @RequestParam(required = false) failedNodeId: String? = null
     ) {
-        migrateFailedNodeService.removeFailedNode(projectId, repoName, fullPath)
+        migrateFailedNodeService.removeFailedNode(projectId, repoName, failedNodeId)
     }
 
     @PostMapping("/failed/node/reset")
     fun resetFailedNodeRetryCount(
         @RequestParam projectId: String,
         @RequestParam repoName: String,
-        @RequestParam(required = false) fullPath: String? = null
+        @RequestParam(required = false) failedNodeId: String? = null
     ) {
-        migrateFailedNodeService.resetRetryCount(projectId, repoName, fullPath)
+        migrateFailedNodeService.resetRetryCount(projectId, repoName, failedNodeId)
     }
 
     @PostMapping("/failed/node/autofix")

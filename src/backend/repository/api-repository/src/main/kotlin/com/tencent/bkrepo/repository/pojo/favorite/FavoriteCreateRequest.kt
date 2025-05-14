@@ -31,20 +31,21 @@
 
 package com.tencent.bkrepo.repository.pojo.favorite
 
-import io.swagger.annotations.ApiModelProperty
+
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
 data class FavoriteCreateRequest(
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String,
-    @ApiModelProperty("仓库Name")
+    @get:Schema(title = "仓库Name")
     val repoName: String,
-    @ApiModelProperty("文件夹路径")
+    @get:Schema(title = "文件夹路径")
     val path: String,
-    @ApiModelProperty("收藏用户")
+    @get:Schema(title = "收藏用户")
     val userId: String,
-    @ApiModelProperty("收藏时间")
+    @get:Schema(title = "收藏时间")
     val createdDate: LocalDateTime,
-    @ApiModelProperty("类型")
+    @get:Schema(title = "类型")
     val type: FavoriteType
 )

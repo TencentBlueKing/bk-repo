@@ -85,6 +85,10 @@ class DistributedLeakyRateLimiter(
         }
     }
 
+    override fun getLimitPerSecond(): Long {
+        return permitsPerSecond.toLong()
+    }
+
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(DistributedLeakyRateLimiter::class.java)
     }

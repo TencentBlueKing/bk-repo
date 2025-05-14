@@ -27,15 +27,15 @@
 
 package com.tencent.bkrepo.analyst.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("文件扫描状态")
+
+@Schema(title = "文件扫描状态")
 data class ArtifactScanStatus(
-    @ApiModelProperty("文件sha256")
+    @get:Schema(title = "文件sha256")
     val sha256: String,
-    @ApiModelProperty("文件路径")
+    @get:Schema(title = "文件路径")
     val fullPath: String,
-    @ApiModelProperty("文件扫描状态")
+    @get:Schema(title = "文件扫描状态")
     val status: String
 )
