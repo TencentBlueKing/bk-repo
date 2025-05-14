@@ -48,7 +48,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
-import org.springframework.data.redis.core.script.DefaultRedisScript
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
 
@@ -121,24 +120,55 @@ class OpServiceService @Autowired constructor(
         }
     }
 
-    fun serviceBandwidthIps(serviceName: String): List<String> {
-        return try {
-            val script = DefaultRedisScript(SCRIPT, List::class.java)
-            val result = redisTemplate.execute(
-                script,
-                listOf(
-                    "$SERVICE_PREFIX$serviceName",
-                    INSTANCE_BANDWIDTH,
-                ),
-                (System.currentTimeMillis() / 1000).toString(),
-                "300"
-            )
-            logger.info("result: $result")
-            result as? List<String> ?: emptyList()
-        } catch (e: Exception) {
-            emptyList()
+    fun serviceBandwidthIps(serviceName: String, activeSeconds: Long = 300, returnAll: Boolean = false): List<String> {
+        // 构造 Redis 键
+        val serviceKey = "$SERVICE_PREFIX$serviceName"
+        val instanceTotalKey = INSTANCE_BANDWIDTH
+        val currentTime = System.currentTimeMillis() / 1000
+
+        // 1. 获取服务所有实例
+        val serviceInstances = redisTemplate.opsForSet().members(serviceKey) ?: return emptyList()
+        if (serviceInstances.isEmpty()) {
+            return emptyList()
+        }
+
+        // 2. 获取实例带宽并检查活跃状态
+        val instancesWithBandwidth = mutableListOf<InstanceBandwidthInfo>()
+        for (ip in serviceInstances) {
+            // 获取主机总带宽
+            val bandwidth = redisTemplate.opsForZSet().score(instanceTotalKey, ip) ?: continue
+
+            // 检查最后更新时间
+            val instanceServiceKey = "$INSTANCE_PREFIX$ip$SERVICE_SUFFIX"
+            val tsKey = "$serviceKey$TS_SUFFIX"
+            val timestamp = redisTemplate.opsForHash<String, String>().get(instanceServiceKey, tsKey)
+
+            if (timestamp != null && (currentTime - timestamp.toLong()) < activeSeconds) {
+                instancesWithBandwidth.add(InstanceBandwidthInfo(ip, bandwidth))
+            }
+        }
+
+        // 3. 按带宽排序（从小到大）
+        instancesWithBandwidth.sortBy { it.bandwidth }
+
+        return if (returnAll) {
+             instancesWithBandwidth.map { it.ip }
+        } else {
+            // 4. 计算返回数量（总数的1/4，最少2个）
+            when {
+                instancesWithBandwidth.size < 2 -> instancesWithBandwidth.map { it.ip }
+                else -> {
+                    val limit = maxOf(instancesWithBandwidth.size / 4, 2)
+                    instancesWithBandwidth.take(limit).map { it.ip }
+                }
+            }
         }
     }
+
+    private data class InstanceBandwidthInfo(
+        val ip: String,
+        val bandwidth: Double,
+    )
 
     /**
      * 根据服务名和 IP 删除相关数据
@@ -219,58 +249,5 @@ class OpServiceService @Autowired constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(OpServiceService::class.java)
-
-        private const val SCRIPT = """
-            local service_key = KEYS[1]       -- 服务主机集合键
-            local instance_total_key = KEYS[2]    -- 主机总带宽排序键
-            local current_time = tonumber(ARGV[1])
-            local active_sec = tonumber(ARGV[2])
-
-            -- 获取服务对应的所有主机
-            local service_instances = redis.call('SMEMBERS', service_key)
-            if #service_instances == 0 then
-                return {}
-            end
-
-            -- 获取所有服务实例的带宽并排序
-            local instances_with_bandwidth = {}
-            for _, ip in ipairs(service_instances) do
-                -- 获取主机总带宽
-                local bandwidth = redis.call('ZSCORE', instance_total_key, ip)
-                if bandwidth then
-                    -- 检查主机上该服务的最后更新时间
-                    local instance_service_key = "bw:instance:"..ip..":services"
-                    local ts = redis.call('HGET', instance_service_key, service_key..":ts")
-                    if ts and (current_time - tonumber(ts)) < active_sec then
-                        table.insert(instances_with_bandwidth, {
-                            ip = ip,
-                            bandwidth = tonumber(bandwidth)
-                        })
-                    end
-                end
-            end
-
-            -- 按带宽从小到大排序
-            table.sort(instances_with_bandwidth, function(a, b)
-                return a.bandwidth < b.bandwidth
-            end)
-
-            -- 计算需要返回的实例数量：总数的1/4，最小2个
-            local result = {}
-            local total_instances = #instances_with_bandwidth
-            if total_instances < 2 then
-                -- 如果实例数不足2个，直接返回空表或所有实例
-                for i = 1, total_instances do
-                    table.insert(result, instances_with_bandwidth[i].ip)
-                end
-            else
-                local limit = math.max(math.floor(total_instances / 4), 2)
-                limit = math.min(limit, total_instances)
-                for i = 1, limit do
-                    table.insert(result, instances_with_bandwidth[i].ip)
-                end
-            end
-            return result
-            """
     }
 }

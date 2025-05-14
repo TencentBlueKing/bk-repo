@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder.success
 import com.tencent.bkrepo.opdata.pojo.bandwidth.BandwidthInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
@@ -43,6 +42,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -52,7 +52,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/services")
 @Principal(PrincipalType.ADMIN)
 class OpServiceController @Autowired constructor(
-    private val opServiceService: OpServiceService
+    private val opServiceService: OpServiceService,
 ) {
 
     /**
@@ -77,7 +77,7 @@ class OpServiceController @Autowired constructor(
     @LogOperate(type = "SERVICE_INSTANCE")
     fun instance(
         @PathVariable serviceName: String,
-        @PathVariable instanceId: String
+        @PathVariable instanceId: String,
     ): Response<InstanceInfo> {
         return success(opServiceService.instance(serviceName, instanceId))
     }
@@ -89,7 +89,7 @@ class OpServiceController @Autowired constructor(
     @LogOperate(type = "SERVICE_INSTANCE_DOWN")
     fun downInstance(
         @PathVariable serviceName: String,
-        @PathVariable instanceId: String
+        @PathVariable instanceId: String,
     ): Response<InstanceInfo> {
         return success(opServiceService.changeInstanceStatus(serviceName, instanceId, true))
     }
@@ -101,7 +101,7 @@ class OpServiceController @Autowired constructor(
     @LogOperate(type = "SERVICE_INSTANCE_UP")
     fun upInstance(
         @PathVariable serviceName: String,
-        @PathVariable instanceId: String
+        @PathVariable instanceId: String,
     ): Response<InstanceInfo> {
         return success(opServiceService.changeInstanceStatus(serviceName, instanceId, false))
     }
@@ -113,7 +113,7 @@ class OpServiceController @Autowired constructor(
     @GetMapping("/{serviceName}/bandwidth")
     @LogOperate(type = "SERVICE_INSTANCE_BANDWIDTH_LIST")
     fun serviceBandwidth(@PathVariable("serviceName") serviceName: String): Response<List<BandwidthInfo>> {
-        return ResponseBuilder.success(opServiceService.serviceBandwidth(serviceName))
+        return success(opServiceService.serviceBandwidth(serviceName))
     }
 
     /**
@@ -123,10 +123,10 @@ class OpServiceController @Autowired constructor(
     @LogOperate(type = "SERVICE_INSTANCE_UP")
     fun deleteBandwidthDataByServiceAndIp(
         @PathVariable serviceName: String,
-        @PathVariable hostIp: String
+        @PathVariable hostIp: String,
     ): Response<Void> {
         opServiceService.deleteDataByServiceAndIp(serviceName, hostIp)
-        return ResponseBuilder.success()
+        return success()
     }
 
     /**
@@ -134,7 +134,13 @@ class OpServiceController @Autowired constructor(
      */
     @GetMapping("/{serviceName}/bandwidth/ips")
     @LogOperate(type = "SERVICE_INSTANCE_BANDWIDTH_IP_LIST")
-    fun serviceBandwidthIps(@PathVariable("serviceName") serviceName: String): Response<List<String>> {
-        return ResponseBuilder.success(opServiceService.serviceBandwidthIps(serviceName))
+    fun serviceBandwidthIps(
+        @PathVariable("serviceName") serviceName: String,
+        @RequestParam(required = false, defaultValue = "300")
+        activeSeconds: Long = 300,
+        @RequestParam(required = false, defaultValue = "false")
+        returnAll: Boolean = false,
+    ): Response<List<String>> {
+        return success(opServiceService.serviceBandwidthIps(serviceName, activeSeconds, returnAll))
     }
 }
