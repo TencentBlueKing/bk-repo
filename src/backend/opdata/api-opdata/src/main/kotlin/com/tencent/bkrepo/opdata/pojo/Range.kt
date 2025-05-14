@@ -31,13 +31,14 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class Range(
-    @ApiModelProperty("from")
+    @get:Schema(title = "from")
     val from: String,
-    @ApiModelProperty("to")
+    @get:Schema(title = "to")
     val to: String,
-    @ApiModelProperty("raw")
+    @get:Schema(title = "raw")
     val raw: Raw
 )

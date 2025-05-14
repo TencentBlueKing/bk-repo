@@ -31,17 +31,17 @@
 
 package com.tencent.bkrepo.repository.pojo.metadata
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 创建/更新元数据请求
  */
-@ApiModel("创建或更新元数据请求")
+@Schema(title = "创建或更新元数据请求")
 data class UserMetadataSaveRequest(
-    @ApiModelProperty("元数据key-value数据")
+    @get:Schema(title = "元数据key-value数据")
     @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("nodeMetadata"))
     val metadata: Map<String, String>? = null,
-    @ApiModelProperty("元数据")
+    @get:Schema(title = "元数据")
     val nodeMetadata: List<MetadataModel>? = null
 )

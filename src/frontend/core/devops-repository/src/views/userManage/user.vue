@@ -41,7 +41,12 @@
                 <empty-data :is-loading="isLoading" :search="Boolean(isSearching)"></empty-data>
             </template>
             <bk-table-column :label="$t('account')" prop="userId"></bk-table-column>
-            <bk-table-column :label="$t('chineseName')" prop="name"></bk-table-column>
+            <bk-table-column :label="$t('chineseName')" prop="name">
+                <template #default="{ row, $index }">
+                    <bk-user-display-name v-if="multiMode" :ref="'displayName' + $index" :user-id="row.name"></bk-user-display-name>
+                    <span v-else>{{ row.name }}</span>
+                </template>
+            </bk-table-column>
             <bk-table-column :label="$t('email')" prop="email">
                 <template #default="{ row }">{{ transEmail(row.email) }}</template>
             </bk-table-column>
@@ -62,10 +67,10 @@
                 </template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
-                <template #default="{ row }">
+                <template #default="{ row, $index }">
                     <operation-list
                         :list="[
-                            { label: $t('edit'), clickEvent: () => showEditUser(row) },
+                            { label: $t('edit'), clickEvent: () => showEditUser(row, $index) },
                             { label: $t('resetPassword'), clickEvent: () => resetUserPwd(row) },
                             { label: $t('createAccessToken'), clickEvent: () => createAccessToken(row) },
                             { label: $t('delete'), clickEvent: () => deleteUserHandler(row) }
@@ -153,6 +158,7 @@
                     limit: 20,
                     limitList: [10, 20, 40]
                 },
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true',
                 editUserDialog: {
                     show: false,
                     loading: false,
@@ -383,7 +389,7 @@
                     this.editUserDialog.loading = false
                 })
             },
-            showEditUser (row) {
+            async showEditUser (row, index) {
                 this.$refs.editUserDialog && this.$refs.editUserDialog.clearError()
                 this.editUserDialog = {
                     show: true,
@@ -396,6 +402,10 @@
                     group: false,
                     asstUsers: [],
                     ...row
+                }
+                if (this.multiMode) {
+                    const displayName = await this.$refs['displayName' + index].getDisplayName()
+                    this.editUserDialog.name = displayName
                 }
             },
             deleteUserHandler (row) {

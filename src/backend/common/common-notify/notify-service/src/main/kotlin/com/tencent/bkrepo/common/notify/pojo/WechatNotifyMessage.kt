@@ -33,9 +33,9 @@ package com.tencent.bkrepo.common.notify.pojo
 
 import com.tencent.bkrepo.common.notify.pojo.enums.EnumNotifyPriority
 import com.tencent.bkrepo.common.notify.pojo.enums.EnumNotifySource
-import io.swagger.annotations.ApiModel
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("微信消息")
+@Schema(title = "微信消息")
 open class WechatNotifyMessage(
     var receivers: MutableSet<String> = mutableSetOf(),
     var body: String = "",

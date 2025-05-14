@@ -33,8 +33,8 @@ package com.tencent.bkrepo.helm.api
 
 import com.tencent.bkrepo.common.api.constant.HELM_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -46,27 +46,27 @@ import org.springframework.web.bind.annotation.RequestParam
 /**
  * helm代理仓库刷新接口
  */
-@Api("helm代理仓库刷新接口")
+@Tag(name = "helm代理仓库刷新接口")
 @Primary
 @FeignClient(HELM_SERVICE_NAME, contextId = "HelmClient")
 @RequestMapping("/service/index")
 interface HelmClient {
 
-    @ApiOperation("刷新对应代理仓库的index文件以及package信息")
+    @Operation(summary = "刷新对应代理仓库的index文件以及package信息")
     @PostMapping("/{projectId}/{repoName}/refresh")
     fun refreshIndexYamlAndPackage(
         @PathVariable projectId: String,
         @PathVariable repoName: String
     ): Response<Void>
 
-    @ApiOperation("初始化代理仓库的index文件以及package信息")
+    @Operation(summary = "初始化代理仓库的index文件以及package信息")
     @PostMapping("/{projectId}/{repoName}/init")
     fun initIndexAndPackage(
         @PathVariable projectId: String,
         @PathVariable repoName: String
     ): Response<Void>
 
-    @ApiOperation("当仓库有版本replication时，刷新index文件")
+    @Operation(summary = "当仓库有版本replication时，刷新index文件")
     @PostMapping("/{projectId}/{repoName}/replication")
     fun refreshIndexForReplication(
         @PathVariable projectId: String,
@@ -76,7 +76,7 @@ interface HelmClient {
         @RequestParam packageVersion: String,
     ): Response<Void>
 
-    @ApiOperation("删除仓库下的包版本")
+    @Operation(summary = "删除仓库下的包版本")
     @DeleteMapping("version/delete/{projectId}/{repoName}")
     fun deleteVersion(
         @PathVariable projectId: String,
@@ -85,7 +85,7 @@ interface HelmClient {
         @RequestParam version: String
     ): Response<Void>
 
-    @ApiOperation("更新对应节点元数据")
+    @Operation(summary = "更新对应节点元数据")
     @PostMapping("/{projectId}/{repoName}/metaDate/regenerate")
     fun metadataRefresh(
         @PathVariable projectId: String,

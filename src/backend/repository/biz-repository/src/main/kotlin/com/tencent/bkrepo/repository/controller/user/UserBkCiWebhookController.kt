@@ -34,7 +34,7 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.repository.pojo.webhook.BkCiDevXEnabledPayload
 import com.tencent.bkrepo.repository.service.webhook.BkciWebhookListener
-import io.swagger.annotations.Api
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.apache.commons.codec.digest.HmacUtils
 import org.slf4j.LoggerFactory
@@ -46,7 +46,7 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("用于监听蓝盾事件")
+@Tag(name = "用于监听蓝盾事件")
 @RestController
 @RequestMapping("/api/webhook/receiver/bkci")
 class UserBkCiWebhookController(

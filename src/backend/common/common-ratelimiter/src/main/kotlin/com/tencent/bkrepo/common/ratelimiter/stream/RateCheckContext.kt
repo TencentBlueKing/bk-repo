@@ -27,14 +27,15 @@
 
 package com.tencent.bkrepo.common.ratelimiter.stream
 
-import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
+import com.tencent.bkrepo.common.ratelimiter.config.BandwidthProperties
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 
 data class RateCheckContext(
-    var rateLimiter: RateLimiter,
-    var latency: Long,
-    var waitRound: Int,
-    var limitPerSecond: Long,
+    var resInfo: ResInfo,
+    var resourceLimit: ResourceLimit,
+    var limitKey: String,
     var rangeLength: Long? = null,
     var dryRun: Boolean = false,
-    var permitsOnce: Long = 1024 * 1024,
+    var bandwidthProperties: BandwidthProperties = BandwidthProperties()
 )

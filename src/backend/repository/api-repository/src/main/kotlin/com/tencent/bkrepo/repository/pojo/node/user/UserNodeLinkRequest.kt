@@ -30,25 +30,25 @@ package com.tencent.bkrepo.repository.pojo.node.user
 import com.tencent.bkrepo.repository.pojo.UserRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("创建链接节点请求")
+
+@Schema(title = "创建链接节点请求")
 data class UserNodeLinkRequest(
-    @ApiModelProperty("所属项目", required = true)
+    @get:Schema(title = "所属项目", required = true)
     override val projectId: String,
-    @ApiModelProperty("仓库名称", required = true)
+    @get:Schema(title = "仓库名称", required = true)
     override val repoName: String,
-    @ApiModelProperty("完整路径", required = true)
+    @get:Schema(title = "完整路径", required = true)
     override val fullPath: String,
-    @ApiModelProperty("目标节点所属项目", required = false)
+    @get:Schema(title = "目标节点所属项目", required = false)
     val targetProjectId: String,
-    @ApiModelProperty("目标节点仓库名称", required = false)
+    @get:Schema(title = "目标节点仓库名称", required = false)
     val targetRepoName: String,
-    @ApiModelProperty("目标节点完整路径", required = false)
+    @get:Schema(title = "目标节点完整路径", required = false)
     val targetFullPath: String,
-    @ApiModelProperty("是否覆盖")
+    @get:Schema(title = "是否覆盖")
     val overwrite: Boolean = false,
-    @ApiModelProperty("元数据信息")
+    @get:Schema(title = "元数据信息")
     val nodeMetadata: List<MetadataModel>? = null,
 ) : NodeRequest, UserRequest

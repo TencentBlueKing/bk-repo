@@ -29,19 +29,19 @@ package com.tencent.bkrepo.analyst.pojo.request
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.tencent.bkrepo.analyst.pojo.request.dependencecheck.DependencyLoadResultArguments
+import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ScancodeToolkitResultArguments
+import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
+import com.tencent.bkrepo.analyst.pojo.request.trivy.TrivyLoadResultArguments
 import com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead.ArrowheadScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner.ScancodeToolkitScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.trivy.TrivyScanner
-import com.tencent.bkrepo.analyst.pojo.request.dependencecheck.DependencyLoadResultArguments
-import com.tencent.bkrepo.analyst.pojo.request.scancodetoolkit.ScancodeToolkitResultArguments
-import com.tencent.bkrepo.analyst.pojo.request.standard.StandardLoadResultArguments
-import com.tencent.bkrepo.analyst.pojo.request.trivy.TrivyLoadResultArguments
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("加载制品扫描结果时的参数")
+
+@Schema(title = "加载制品扫描结果时的参数")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = ArrowheadLoadResultArguments::class, name = ArrowheadScanner.TYPE),
@@ -51,6 +51,6 @@ import io.swagger.annotations.ApiModelProperty
     JsonSubTypes.Type(value = StandardLoadResultArguments::class, name = StandardScanner.TYPE)
 )
 open class LoadResultArguments(
-    @ApiModelProperty("扫描器类型")
+    @get:Schema(title = "扫描器类型")
     val type: String
 )

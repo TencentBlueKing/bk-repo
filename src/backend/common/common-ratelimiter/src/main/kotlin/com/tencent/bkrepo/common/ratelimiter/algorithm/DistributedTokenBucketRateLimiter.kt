@@ -85,6 +85,10 @@ class DistributedTokenBucketRateLimiter(
         }
     }
 
+    override fun getLimitPerSecond(): Long {
+        return permitsPerSecond.toLong()
+    }
+
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(DistributedTokenBucketRateLimiter::class.java)
     }

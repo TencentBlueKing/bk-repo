@@ -27,32 +27,32 @@
 
 package com.tencent.bkrepo.analyst.pojo.response
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("制品许可详细信息")
+
+@Schema(title = "制品许可详细信息")
 data class FileLicensesResultDetail(
-    @ApiModelProperty("许可id")
+    @get:Schema(title = "许可id")
     val licenseId: String,
-    @ApiModelProperty("许可全称")
+    @get:Schema(title = "许可全称")
     val fullName: String,
-    @ApiModelProperty("风险等级")
+    @get:Schema(title = "风险等级")
     val riskLevel: String?,
-    @ApiModelProperty("合规性")
+    @get:Schema(title = "合规性")
     val compliance: Boolean?,
-    @ApiModelProperty("OSI认证")
+    @get:Schema(title = "OSI认证")
     val isOsiApproved: Boolean?,
-    @ApiModelProperty("是否 FSF 认证免费")
+    @get:Schema(title = "是否 FSF 认证免费")
     val isFsfLibre: Boolean?,
-    @ApiModelProperty("是否推荐使用")
+    @get:Schema(title = "是否推荐使用")
     @Deprecated("兼容旧接口，前端调整后移除该字段", replaceWith = ReplaceWith("deprecated?.not()"))
     val recommended: Boolean?,
-    @ApiModelProperty("是否已弃用")
+    @get:Schema(title = "是否已弃用")
     val deprecated: Boolean?,
-    @ApiModelProperty("依赖路径")
+    @get:Schema(title = "依赖路径")
     val dependentPath: String,
-    @ApiModelProperty("描述")
+    @get:Schema(title = "描述")
     val description: String,
-    @ApiModelProperty("所属依赖")
+    @get:Schema(title = "所属依赖")
     val pkgName: String? = null
 )

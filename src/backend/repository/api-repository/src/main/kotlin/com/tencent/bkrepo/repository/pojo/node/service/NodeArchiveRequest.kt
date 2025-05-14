@@ -2,15 +2,16 @@ package com.tencent.bkrepo.repository.pojo.node.service
 
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class NodeArchiveRequest(
-    @ApiModelProperty("所属项目", required = true)
+    @get:Schema(title = "所属项目", required = true)
     override val projectId: String,
-    @ApiModelProperty("仓库名称", required = true)
+    @get:Schema(title = "仓库名称", required = true)
     override val repoName: String,
-    @ApiModelProperty("节点完整路径", required = true)
+    @get:Schema(title = "节点完整路径", required = true)
     override val fullPath: String,
-    @ApiModelProperty("操作用户", required = true)
+    @get:Schema(title = "操作用户", required = true)
     override val operator: String,
 ) : NodeRequest, ServiceRequest

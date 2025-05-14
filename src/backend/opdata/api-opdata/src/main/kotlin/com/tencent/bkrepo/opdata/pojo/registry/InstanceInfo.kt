@@ -28,22 +28,22 @@
 package com.tencent.bkrepo.opdata.pojo.registry
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("服务实例信息")
+
+@Schema(title = "服务实例信息")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class InstanceInfo(
-    @ApiModelProperty("实例id", required = true)
+    @get:Schema(title = "实例id", required = true)
     val id: String,
-    @ApiModelProperty("所属服务", required = true)
+    @get:Schema(title = "所属服务", required = true)
     val serviceName: String,
-    @ApiModelProperty("实例ip或域名", required = true)
+    @get:Schema(title = "实例ip或域名", required = true)
     val host: String,
-    @ApiModelProperty("实例端口", required = true)
+    @get:Schema(title = "实例端口", required = true)
     val port: Int,
-    @ApiModelProperty("实例状态", required = true)
+    @get:Schema(title = "实例状态", required = true)
     val status: InstanceStatus,
-    @ApiModelProperty("实例详情")
+    @get:Schema(title = "实例详情")
     val detail: InstanceDetail? = null
 )

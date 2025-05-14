@@ -27,57 +27,57 @@
 
 package com.tencent.bkrepo.analyst.pojo.response
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("制品扫描结果预览")
+
+@Schema(title = "制品扫描结果预览")
 data class SubtaskResultOverview(
-    @ApiModelProperty("子扫描任务id")
+    @get:Schema(title = "子扫描任务id")
     @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("subTaskId"))
     val recordId: String,
-    @ApiModelProperty("子扫描任务id")
+    @get:Schema(title = "子扫描任务id")
     val subTaskId: String,
-    @ApiModelProperty("扫描器")
+    @get:Schema(title = "扫描器")
     val scanner: String,
-    @ApiModelProperty("扫描器类型")
+    @get:Schema(title = "扫描器类型")
     val scannerType: String,
-    @ApiModelProperty("扫描类型")
+    @get:Schema(title = "扫描类型")
     val scanTypes: List<String> = emptyList(),
 
-    @ApiModelProperty("制品名")
+    @get:Schema(title = "制品名")
     val name: String,
-    @ApiModelProperty("packageKey")
+    @get:Schema(title = "packageKey")
     val packageKey: String? = null,
-    @ApiModelProperty("制品版本")
+    @get:Schema(title = "制品版本")
     val version: String? = null,
-    @ApiModelProperty("制品路径")
+    @get:Schema(title = "制品路径")
     val fullPath: String? = null,
-    @ApiModelProperty("仓库类型")
+    @get:Schema(title = "仓库类型")
     val repoType: String,
-    @ApiModelProperty("仓库名")
+    @get:Schema(title = "仓库名")
     val repoName: String,
 
-    @ApiModelProperty("最高漏洞等级")
+    @get:Schema(title = "最高漏洞等级")
     val highestLeakLevel: String? = null,
-    @ApiModelProperty("严重漏洞数")
+    @get:Schema(title = "严重漏洞数")
     val critical: Long = 0,
-    @ApiModelProperty("高危漏洞数")
+    @get:Schema(title = "高危漏洞数")
     val high: Long = 0,
-    @ApiModelProperty("中危漏洞数")
+    @get:Schema(title = "中危漏洞数")
     val medium: Long = 0,
-    @ApiModelProperty("低危漏洞数")
+    @get:Schema(title = "低危漏洞数")
     val low: Long = 0,
-    @ApiModelProperty("漏洞总数")
+    @get:Schema(title = "漏洞总数")
     val total: Long = 0,
-    @ApiModelProperty("完成时间")
+    @get:Schema(title = "完成时间")
     val finishTime: String?,
 
-    @ApiModelProperty("是否通过质量规则")
+    @get:Schema(title = "是否通过质量规则")
     val qualityRedLine: Boolean? = null,
-    @ApiModelProperty("扫描时方案的质量规则")
+    @get:Schema(title = "扫描时方案的质量规则")
     val scanQuality: Map<String, Any>? = null,
-    @ApiModelProperty("扫描时长")
+    @get:Schema(title = "扫描时长")
     val duration: Long,
-    @ApiModelProperty("扫描状态")
+    @get:Schema(title = "扫描状态")
     val scanStatus: String
 )

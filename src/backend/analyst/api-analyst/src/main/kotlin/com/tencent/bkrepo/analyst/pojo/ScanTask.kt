@@ -28,58 +28,58 @@
 package com.tencent.bkrepo.analyst.pojo
 
 import com.tencent.bkrepo.common.query.model.Rule
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("扫描任务信息")
+
+@Schema(title = "扫描任务信息")
 data class ScanTask(
-    @ApiModelProperty("扫描任务名")
+    @get:Schema(title = "扫描任务名")
     val name: String? = null,
-    @ApiModelProperty("任务id")
+    @get:Schema(title = "任务id")
     val taskId: String,
-    @ApiModelProperty("项目id，只扫描单个项目时有值")
+    @get:Schema(title = "项目id，只扫描单个项目时有值")
     val projectId: String?,
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectIds: Set<String>,
-    @ApiModelProperty("触发者")
+    @get:Schema(title = "触发者")
     val createdBy: String,
-    @ApiModelProperty("最后修改时间")
+    @get:Schema(title = "最后修改时间")
     val lastModifiedDateTime: String,
-    @ApiModelProperty("任务触发时间")
+    @get:Schema(title = "任务触发时间")
     val triggerDateTime: String,
-    @ApiModelProperty("任务开始执行时间")
+    @get:Schema(title = "任务开始执行时间")
     val startDateTime: String?,
-    @ApiModelProperty("任务执行结束时间")
+    @get:Schema(title = "任务执行结束时间")
     val finishedDateTime: String?,
-    @ApiModelProperty("触发方式")
+    @get:Schema(title = "触发方式")
     val triggerType: String,
-    @ApiModelProperty("任务状态")
+    @get:Schema(title = "任务状态")
     val status: String,
-    @ApiModelProperty("扫描方案")
+    @get:Schema(title = "扫描方案")
     val scanPlan: ScanPlan?,
-    @ApiModelProperty("扫描文件匹配规则")
+    @get:Schema(title = "扫描文件匹配规则")
     val rule: Rule?,
-    @ApiModelProperty("计划扫描文件总数")
+    @get:Schema(title = "计划扫描文件总数")
     val total: Long,
-    @ApiModelProperty("扫描中的文件总数")
+    @get:Schema(title = "扫描中的文件总数")
     val scanning: Long,
-    @ApiModelProperty("扫描失败的文件总数")
+    @get:Schema(title = "扫描失败的文件总数")
     val failed: Long,
-    @ApiModelProperty("已扫描文件总数")
+    @get:Schema(title = "已扫描文件总数")
     val scanned: Long,
-    @ApiModelProperty("通过质量规则的文件总数")
+    @get:Schema(title = "通过质量规则的文件总数")
     val passed: Long,
-    @ApiModelProperty("使用的扫描器")
+    @get:Schema(title = "使用的扫描器")
     val scanner: String,
-    @ApiModelProperty("扫描器类型")
+    @get:Schema(title = "扫描器类型")
     val scannerType: String,
-    @ApiModelProperty("扫描器版本")
+    @get:Schema(title = "扫描器版本")
     val scannerVersion: String,
-    @ApiModelProperty("扫描结果统计数据")
+    @get:Schema(title = "扫描结果统计数据")
     val scanResultOverview: Map<String, Long>?,
-    @ApiModelProperty("是否强制扫描")
+    @get:Schema(title = "是否强制扫描")
     val force: Boolean = false,
-    @ApiModelProperty("扫描任务元数据")
+    @get:Schema(title = "扫描任务元数据")
     val metadata: List<TaskMetadata>
 ) {
     fun isGlobal() = metadata.any { it.key == TaskMetadata.TASK_METADATA_GLOBAL && it.value == "true" }

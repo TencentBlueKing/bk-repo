@@ -30,21 +30,21 @@ package com.tencent.bkrepo.repository.controller.user
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.metadata.pojo.file.FileReference
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Api("文件引用接口")
+@Tag(name = "文件引用接口")
 @Principal(PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/api/references")
@@ -52,7 +52,7 @@ class UserFileReferenceController(
     private val fileReferenceService: FileReferenceService,
     private val repositoryService: RepositoryService
 ) {
-    @ApiOperation("获取文件引用信息")
+    @Operation(summary = "获取文件引用信息")
     @GetMapping("/{sha256}")
     fun getFileReference(
         @RequestParam("projectId", required = false) projectId: String? = null,

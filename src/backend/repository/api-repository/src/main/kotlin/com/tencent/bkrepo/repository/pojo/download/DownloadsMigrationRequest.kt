@@ -31,24 +31,24 @@
 
 package com.tencent.bkrepo.repository.pojo.download
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 import java.time.LocalDate
 
-@ApiModel("包下载记录迁移请求")
+@Schema(title = "包下载记录迁移请求")
 data class DownloadsMigrationRequest(
-    @ApiModelProperty("所属项目", required = true)
+    @get:Schema(title = "所属项目", required = true)
     val projectId: String,
-    @ApiModelProperty("仓库名称", required = true)
+    @get:Schema(title = "仓库名称", required = true)
     val repoName: String,
-    @ApiModelProperty("包唯一key", required = true)
+    @get:Schema(title = "包唯一key", required = true)
     val packageKey: String,
-    @ApiModelProperty("包名称", required = true)
+    @get:Schema(title = "包名称", required = true)
     val packageName: String,
-    @ApiModelProperty("包版本", required = true)
+    @get:Schema(title = "包版本", required = true)
     val packageVersion: String,
-    @ApiModelProperty("日期", required = true)
+    @get:Schema(title = "日期", required = true)
     val date: LocalDate,
-    @ApiModelProperty("下载数量", required = true)
+    @get:Schema(title = "下载数量", required = true)
     val count: Long
 )

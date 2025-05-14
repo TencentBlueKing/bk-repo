@@ -31,27 +31,26 @@
 
 package com.tencent.bkrepo.repository.pojo.node
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
 /**
  * 节点删除点
  */
-@ApiModel("节点删除点")
+@Schema(title = "节点删除点")
 data class NodeDeletedPoint(
-    @ApiModelProperty("记录id")
+    @get:Schema(title = "记录id")
     val id: Long,
-    @ApiModelProperty("完整路径")
+    @get:Schema(title = "完整路径")
     val fullPath: String,
-    @ApiModelProperty("文件大小，单位byte")
+    @get:Schema(title = "文件大小，单位byte")
     val size: Long,
-    @ApiModelProperty("文件sha256")
+    @get:Schema(title = "文件sha256")
     val sha256: String? = null,
-    @ApiModelProperty("元数据")
+    @get:Schema(title = "元数据")
     val metadata: Map<String, Any>,
-    @ApiModelProperty("删除用户")
+    @get:Schema(title = "删除用户")
     val deletedBy: String,
-    @ApiModelProperty("删除时间")
+    @get:Schema(title = "删除时间")
     val deletedTime: LocalDateTime
 )

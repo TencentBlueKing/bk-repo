@@ -78,6 +78,10 @@ class SlidingWindowRateLimiter(
         // 非redis类实现不需要处理
     }
 
+    override fun getLimitPerSecond(): Long {
+        return limit / duration.seconds
+    }
+
     private fun allow(permits: Long): Boolean {
         val currentTimeMillis = System.currentTimeMillis()
         // 1. 计算当前时间窗口

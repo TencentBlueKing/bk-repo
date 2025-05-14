@@ -39,9 +39,9 @@ import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
@@ -57,7 +57,7 @@ import org.springframework.web.client.RestTemplate
 import java.util.Base64
 
 
-@Api("代理源用户接口")
+@Tag(name = "代理源用户接口")
 @RestController
 @RequestMapping("/api/proxy-channel")
 class UserProxyChannelController(
@@ -65,16 +65,16 @@ class UserProxyChannelController(
 ) {
     private val restTemplate = RestTemplate()
 
-    @ApiOperation("查询代理源信息")
+    @Operation(summary = "查询代理源信息")
     @GetMapping("/{projectId}/{repoName}")
     fun getByUniqueId(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "type", required = true)
+        @Parameter(name = "type", required = true)
         @RequestParam repoType: String,
-        @ApiParam(value = "name", required = true)
+        @Parameter(name = "name", required = true)
         @RequestParam name: String
     ): Response<ProxyChannelInfo?> {
         val repoType = try {
@@ -92,7 +92,7 @@ class UserProxyChannelController(
         )
     }
 
-    @ApiOperation("查询代理源是否有效")
+    @Operation(summary = "查询代理源是否有效")
     @PostMapping("/check")
     fun checkProxyValid(
         @RequestBody checkParam: CheckParam
@@ -132,14 +132,14 @@ class UserProxyChannelController(
         }
     }
 
-    @ApiOperation("查询仓库的代理源信息")
+    @Operation(summary = "查询仓库的代理源信息")
     @GetMapping("/{type}/{projectId}/{repoName}")
     fun listByRepo(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "type", required = true)
+        @Parameter(name = "type", required = true)
         @PathVariable type: String
     ): Response<List<ProxyChannelInfo>> {
         val repoType = try {

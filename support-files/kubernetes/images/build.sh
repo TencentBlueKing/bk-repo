@@ -61,10 +61,15 @@ warning () {
     EXITCODE=$((EXITCODE + 1))
 }
 
+core_service=("helm" "oci" "rpm" "npm" "maven" "pypi" "conan" "nuget" "generic" "cargo" "s3" "huggingface" "lfs"
+             "git" "svn" "composer" "ddc")
+
 build_backend () {
     log "构建${SERVICE}镜像..."
     if [[ $SERVICE == "fs-server" ]];then
         $BACKEND_DIR/gradlew -p $BACKEND_DIR :fs:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
+    elif [[ " ${core_service[@]} " == *" $SERVICE "* ]];then
+        $BACKEND_DIR/gradlew -p $BACKEND_DIR :core:$SERVICE:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
     else
         $BACKEND_DIR/gradlew -p $BACKEND_DIR :$SERVICE:boot-$SERVICE:build -P'devops.assemblyMode'=k8s -x test
     fi

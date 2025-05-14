@@ -31,15 +31,14 @@
 
 package com.tencent.bkrepo.oci.pojo.response
 
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@Api("Oci error 包装返回模型")
+@Schema(title = "Oci error 包装返回模型")
 data class OciErrorResponse(
-    @ApiModelProperty("错误提示")
+    @get:Schema(title = "错误提示")
     val message: String?,
-    @ApiModelProperty("编码")
+    @get:Schema(title = "编码")
     val code: Any?,
-    @ApiModelProperty("详情")
+    @get:Schema(title = "详情")
     val detail: String?
 )

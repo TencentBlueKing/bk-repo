@@ -61,12 +61,6 @@ class KubernetesDeploymentDispatcher(
     }
 
     override fun clean(subtask: SubScanTask, subtaskStatus: String): Boolean {
-        val runningTaskCount = subScanTaskDao.countTaskByStatusIn(RUNNING_STATUS, executionCluster.name).toInt()
-        if (runningTaskCount > 0) {
-            // 尝试减少deployment的副本数量
-            scale(targetReplicas(runningTaskCount))
-        }
-
         deleteDeploymentIfNoTask()
         return true
     }
@@ -96,6 +90,7 @@ class KubernetesDeploymentDispatcher(
     }
 
     private fun createOrScaleDeployment(runningTaskCount: Int): V1Deployment {
+        logger.info("creating deployment[${executionCluster.name}]")
         val targetReplicas = targetReplicas(runningTaskCount)
 
         // 创建deployment
@@ -108,12 +103,6 @@ class KubernetesDeploymentDispatcher(
             throw e
         }
         return deployment
-    }
-
-    private fun scale(targetReplicas: Int) {
-        lock.withLock {
-            getDeployment()?.let { doScale(it, targetReplicas) }
-        }
     }
 
     private fun doScale(deployment: V1Deployment, targetReplicas: Int) {
@@ -167,8 +156,10 @@ class KubernetesDeploymentDispatcher(
         return lock.withLock {
             var deployment = getDeployment()
             if (deployment == null) {
+                logger.info("try to create deployment[${executionCluster.name}]")
                 deployment = createDeployment(k8sProps, scanner, targetReplicas)
             } else {
+                logger.info("try to scale deployment[${executionCluster.name}]")
                 doScale(deployment, targetReplicas)
             }
             deployment

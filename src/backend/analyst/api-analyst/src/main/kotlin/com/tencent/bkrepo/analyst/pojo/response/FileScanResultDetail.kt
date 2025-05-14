@@ -28,16 +28,16 @@
 package com.tencent.bkrepo.analyst.pojo.response
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("文件详细扫描结果")
+
+@Schema(title = "文件详细扫描结果")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class FileScanResultDetail(
-    @ApiModelProperty("当前扫描状态")
+    @get:Schema(title = "当前扫描状态")
     val status: String,
-    @ApiModelProperty("文件sha256")
+    @get:Schema(title = "文件sha256")
     val sha256: String,
-    @ApiModelProperty("扫描报告详情")
+    @get:Schema(title = "扫描报告详情")
     val detail: Any?
 )

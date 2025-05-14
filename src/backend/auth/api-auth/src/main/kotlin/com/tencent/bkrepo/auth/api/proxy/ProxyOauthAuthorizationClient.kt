@@ -30,27 +30,27 @@ package com.tencent.bkrepo.auth.api.proxy
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api(tags = ["PROXY_OAUTHAUTHORIZATION"], description = "Proxy Oauth授权接口")
+@Tag(name = "PROXY_OAUTHAUTHORIZATION", description = "Proxy Oauth授权接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ProxyOauthAuthorizationClient")
 @RequestMapping("/proxy/oauth")
 interface ProxyOauthAuthorizationClient {
 
-    @ApiOperation("获取oauth token信息")
+    @Operation(summary = "获取oauth token信息")
     @GetMapping("/token")
     fun getToken(
         @RequestParam accessToken: String
     ): Response<OauthToken?>
 
-    @ApiOperation("验证oauth token")
+    @Operation(summary = "验证oauth token")
     @GetMapping("/token/validate")
     fun validateToken(
         @RequestParam accessToken: String
