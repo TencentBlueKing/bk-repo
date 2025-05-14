@@ -36,7 +36,7 @@ dependencies {
     api(project(":common:common-bksync"))
     api(project(":common:common-storage:storage-api"))
     api(project(":common:common-artifact:artifact-api"))
-
+    api("io.micrometer:micrometer-core")
     api("commons-codec:commons-codec")
     api("commons-io:commons-io")
     implementation("org.springframework.retry:spring-retry")
@@ -47,7 +47,6 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
     implementation("com.tencent.polaris:polaris-discovery-factory")
     implementation("com.tencent.bk.sdk:crypto-java-sdk")
-    compileOnly("io.micrometer:micrometer-core")
     compileOnly("org.springframework.boot:spring-boot-starter-data-redis")
     testImplementation(project(":common:common-redis"))
     testImplementation("it.ozimov:embedded-redis:${Versions.EmbeddedRedis}") {
