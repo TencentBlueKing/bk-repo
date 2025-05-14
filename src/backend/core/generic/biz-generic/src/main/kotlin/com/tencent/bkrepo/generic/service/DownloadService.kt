@@ -121,7 +121,7 @@ class DownloadService(
             DOWNLOAD_SOURCE,
             if (fromApp) DownloadInterceptorType.MOBILE else DownloadInterceptorType.WEB
         )
-        val context = ArtifactDownloadContext()
+        val context = ArtifactDownloadContext(repo = ArtifactContextHolder.getRepoDetail())
         val nodeDetail = nodeService.getNodeDetail(artifactInfo)
             ?: throw NodeNotFoundException(artifactInfo.getArtifactFullPath())
         context.getInterceptors().forEach { it.intercept(nodeDetail.projectId, nodeDetail) }

@@ -55,10 +55,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.ToolOutput
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.VersionPaths
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import java.time.LocalDateTime
-
-val fileLocator = HashFileLocator()
 
 fun buildScanPlan(now: LocalDateTime = LocalDateTime.now(), overview: Map<String, Long>) = TScanPlan(
     id = UT_PLAN_ID,
@@ -122,7 +119,7 @@ fun buildArchiveSubScanTask(
     projectId = PROJECT_ID,
     repoName = REPO,
     repoType = RepositoryType.GENERIC.name,
-    fullPath = fileLocator.locate(sha256),
+    fullPath = sha256,
     artifactName = "demo-1.0.0.jar",
     status = SubScanTaskStatus.SUCCESS.name,
     executedTimes = 1,
@@ -151,7 +148,7 @@ fun buildSubScanTask(taskId: String, sha256: String, now: LocalDateTime = LocalD
     projectId = PROJECT_ID,
     repoName = REPO,
     repoType = RepositoryType.GENERIC.name,
-    fullPath = fileLocator.locate(sha256),
+    fullPath = sha256,
     artifactName = "demo-1.0.0.jar",
     status = SubScanTaskStatus.SUCCESS.name,
     executedTimes = 1,

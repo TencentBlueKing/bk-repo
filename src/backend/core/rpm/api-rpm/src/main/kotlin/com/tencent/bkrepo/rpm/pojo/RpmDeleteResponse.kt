@@ -31,17 +31,16 @@
 
 package com.tencent.bkrepo.rpm.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("Rpm 仓库delete失败时返回信息")
+@Schema(title = "Rpm 仓库delete失败时返回信息")
 data class RpmDeleteResponse(
-    @ApiModelProperty("项目")
+    @get:Schema(title = "项目")
     val projectId: String,
-    @ApiModelProperty("仓库")
+    @get:Schema(title = "仓库")
     val repoName: String,
-    @ApiModelProperty("构件uri")
+    @get:Schema(title = "构件uri")
     val artifactUri: String,
-    @ApiModelProperty("失败原因")
+    @get:Schema(title = "失败原因")
     val description: String
 )

@@ -31,23 +31,23 @@
 
 package com.tencent.bkrepo.preview.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 预览信息
  */
-@ApiModel("预览信息")
+@Schema(title = "预览信息")
 data class PreviewInfo (
-    @ApiModelProperty("文件名称")
+    @get:Schema(title = "文件名称")
     var fileName: String? = null,
-    @ApiModelProperty("文件类型")
+    @get:Schema(title = "文件类型")
     var fileType: String? = null,
-    @ApiModelProperty("文件后缀")
+    @get:Schema(title = "文件后缀")
     var suffix: String? = null,
     // 文件展示模板，如officeweb、ppt等
-    @ApiModelProperty("文件展示模板")
+    @get:Schema(title = "文件展示模板")
     var fileTemplate: String? = null,
-    @ApiModelProperty("水印")
+    @get:Schema(title = "水印")
     var watermark: Watermark? = null,
 )

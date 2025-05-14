@@ -35,35 +35,35 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.npm.artifact.NpmArtifactInfo
 import com.tencent.bkrepo.npm.pojo.fixtool.DateTimeFormatResponse
-import com.tencent.bkrepo.npm.pojo.fixtool.PackageMetadataFixResponse
 import com.tencent.bkrepo.npm.pojo.fixtool.PackageManagerResponse
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import com.tencent.bkrepo.npm.pojo.fixtool.PackageMetadataFixResponse
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 
-@Api("npm修复工具")
+@Tag(name = "npm修复工具")
 interface NpmFixToolResource {
 
-    @ApiOperation("修复时间格式工具")
+    @Operation(summary = "修复时间格式工具")
     @GetMapping("/{projectId}/{repoName}/fixDateFormat")
     fun fixDateFormat(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo,
         pkgName: String
     ): DateTimeFormatResponse
 
-    @ApiOperation("修复package管理功能")
+    @Operation(summary = "修复package管理功能")
     @GetMapping("/ext/package/populate")
     fun fixPackageManager(): List<PackageManagerResponse>
 
-    @ApiOperation("修复历史数据dist对象中增加packageSize字段")
+    @Operation(summary = "修复历史数据dist对象中增加packageSize字段")
     @GetMapping("/{projectId}/{repoName}/fixPackageSizeField")
     fun fixPackageSizeField(
         @ArtifactPathVariable artifactInfo: NpmArtifactInfo
     ): PackageMetadataFixResponse
 
-    @ApiOperation("修复package.json文件内容与包版本列表不一致的问题")
+    @Operation(summary = "修复package.json文件内容与包版本列表不一致的问题")
     @PostMapping("/{projectId}/{repoName}/{name}/correction")
     fun inconsistentCorrectionData(
         artifactInfo: NpmArtifactInfo,
