@@ -50,9 +50,12 @@ data class NodeInfo(
     val lastModifiedBy: String,
     @get:Schema(title = "修改时间")
     val lastModifiedDate: String,
+    @get:Schema(title = "下载人")
+    var lastDownloadBy: String? = null,
+    @get:Schema(title = "下载时间")
+    var lastDownloadDate: String? = null,
     @get:Schema(title = "访问时间")
     val lastAccessDate: String? = null,
-
     @get:Schema(title = "是否为文件夹")
     val folder: Boolean,
     @get:Schema(title = "路径")
