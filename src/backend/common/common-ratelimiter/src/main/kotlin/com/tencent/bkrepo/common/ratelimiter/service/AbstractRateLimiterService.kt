@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.MonitorRateLimiterInterceptorAdaptor
+import com.tencent.bkrepo.common.ratelimiter.interceptor.ProjectWhitelistRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorChain
 import com.tencent.bkrepo.common.ratelimiter.interceptor.TargetRateLimiterInterceptorAdaptor
@@ -97,6 +98,7 @@ abstract class AbstractRateLimiterService(
     val interceptorChain: RateLimiterInterceptorChain =
         RateLimiterInterceptorChain(
             mutableListOf(
+                ProjectWhitelistRateLimiterInterceptorAdaptor(rateLimiterProperties),
                 MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics),
                 TargetRateLimiterInterceptorAdaptor(rateLimiterConfigService)
             )
