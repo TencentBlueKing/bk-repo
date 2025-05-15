@@ -18,7 +18,7 @@ const request = axios.create({
 request.interceptors.request.use(config => {
     const param = window.repositoryVue.$router.currentRoute.params?.projectId
     if (param) {
-        config.headers['X-DEVOPS-PROJECT-ID'] = param
+        config.headers['X-BKREPO-PROJECT-ID'] = param
     }
     return config
 })
