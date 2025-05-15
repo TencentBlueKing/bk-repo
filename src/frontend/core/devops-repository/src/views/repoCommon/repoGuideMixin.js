@@ -1414,7 +1414,7 @@ export default {
                         {
                             subTitle: this.$t('cargoPullGuideSubTitle'),
                             codeList: [
-                                `cargo add ${this.dependInputValue1 || this.packageName}@version ${this.dependInputValue2 || this.versionLabel}`,
+                                `cargo add ${this.dependInputValue1 || this.packageName}@${this.dependInputValue2 || this.versionLabel}`,
                                 'cargo fetch'
                             ]
                         }
@@ -1431,7 +1431,7 @@ export default {
                             codeList: [
                                 '[registry]\n' + 'default = "bkrepo"' + '\n\n'
                                 + '[registries.bkrepo]\n' + `index = "sparse+${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
-                                + '\n' + `credential-provider = "cargo:token"`
+                                + '\n' + 'credential-provider = "cargo:token"'
                             ]
                         },
                         {
