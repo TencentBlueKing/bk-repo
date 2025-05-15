@@ -31,11 +31,11 @@
 
 package com.tencent.bkrepo.oci.pojo.response
 
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
 data class OciTagResult(
-    @ApiModelProperty("totalRecords")
+    @get:Schema(title = "totalRecords")
     val totalRecords: Long,
-    @ApiModelProperty("records")
+    @get:Schema(title = "records")
     val records: List<OciTag>
 )

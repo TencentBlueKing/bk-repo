@@ -1,4 +1,4 @@
-## 制品库文件系统服务器（BkRepoFS）
+## 制品库文件系统服务器（BkRepo-Driver）
 使用Spring WebFlux和Kotlin coroutines实现的Reactive的服务器。NIO服务器我们选择的是Netty，因为其使用广泛。
 
 ## roadmap

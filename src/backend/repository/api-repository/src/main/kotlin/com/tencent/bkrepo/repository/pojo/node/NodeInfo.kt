@@ -33,65 +33,64 @@ package com.tencent.bkrepo.repository.pojo.node
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 节点信息
  */
-@ApiModel("节点信息")
+@Schema(title = "节点信息")
 data class NodeInfo(
     var id: String? = null,
-    @ApiModelProperty("创建者")
+    @get:Schema(title = "创建者")
     val createdBy: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: String,
-    @ApiModelProperty("修改者")
+    @get:Schema(title = "修改者")
     val lastModifiedBy: String,
-    @ApiModelProperty("修改时间")
+    @get:Schema(title = "修改时间")
     val lastModifiedDate: String,
-    @ApiModelProperty("下载人")
+    @get:Schema(title = "下载人")
     var lastDownloadBy: String? = null,
-    @ApiModelProperty("下载时间")
+    @get:Schema(title = "下载时间")
     var lastDownloadDate: String? = null,
-    @ApiModelProperty("访问时间")
+    @get:Schema(title = "访问时间")
     val lastAccessDate: String? = null,
-
-    @ApiModelProperty("是否为文件夹")
+    @get:Schema(title = "是否为文件夹")
     val folder: Boolean,
-    @ApiModelProperty("路径")
+    @get:Schema(title = "路径")
     val path: String,
-    @ApiModelProperty("资源名称")
+    @get:Schema(title = "资源名称")
     val name: String,
-    @ApiModelProperty("完整路径")
+    @get:Schema(title = "完整路径")
     val fullPath: String,
-    @ApiModelProperty("文件大小，单位byte")
+    @get:Schema(title = "文件大小，单位byte")
     val size: Long,
-    @ApiModelProperty("文件节点个数")
+    @get:Schema(title = "文件节点个数")
     val nodeNum: Long? = null,
-    @ApiModelProperty("文件sha256")
+    @get:Schema(title = "文件sha256")
     val sha256: String? = null,
-    @ApiModelProperty("文件md5")
+    @get:Schema(title = "文件md5")
     val md5: String? = null,
-    @ApiModelProperty("元数据")
+    @get:Schema(title = "元数据")
     val metadata: Map<String, Any>? = null,
-    @ApiModelProperty("元数据信息")
+    @get:Schema(title = "元数据信息")
     val nodeMetadata: List<MetadataModel>? = null,
-    @ApiModelProperty("所属项目id")
+    @get:Schema(title = "所属项目id")
     val projectId: String,
-    @ApiModelProperty("所属仓库名称")
+    @get:Schema(title = "所属仓库名称")
     val repoName: String,
-    @ApiModelProperty("拷贝的源存储key")
+    @get:Schema(title = "拷贝的源存储key")
     val copyFromCredentialsKey: String? = null,
-    @ApiModelProperty("拷贝的目标存储key")
+    @get:Schema(title = "拷贝的目标存储key")
     val copyIntoCredentialsKey: String? = null,
-    @ApiModelProperty("删除时间")
+    @get:Schema(title = "删除时间")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val deleted: String? = null,
-    @ApiModelProperty("集群信息")
+    @get:Schema(title = "集群信息")
     val clusterNames: Set<String>? = null,
-    @ApiModelProperty("是否归档")
+    @get:Schema(title = "是否归档")
     val archived: Boolean? = null,
-    @ApiModelProperty("是否压缩")
+    @get:Schema(title = "是否压缩")
     val compressed: Boolean? = null,
 )

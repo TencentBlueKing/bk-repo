@@ -30,7 +30,7 @@ package com.tencent.bkrepo.conan.api
 import com.tencent.bkrepo.common.api.constant.MAVEN_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.conan.pojo.metadata.ConanMetadataRequest
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -40,11 +40,11 @@ import org.springframework.web.bind.annotation.RequestParam
 @FeignClient(MAVEN_SERVICE_NAME, contextId = "ConanMetadataClient")
 @RequestMapping("/cluster/metadata")
 interface ConanMetadataClient {
-    @ApiOperation("存储conan版本元数据")
+    @Operation(summary = "存储conan版本元数据")
     @PostMapping("/update")
     fun storeMetadata(@RequestBody request: ConanMetadataRequest): Response<Void>
 
-    @ApiOperation("删除conan版本元数据")
+    @Operation(summary = "删除conan版本元数据")
     @PostMapping("/delete")
     fun delete(
         @RequestParam projectId: String,

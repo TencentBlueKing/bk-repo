@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.ratelimiter.repository.RateLimitRepository
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
+import com.tencent.bkrepo.common.ratelimiter.utils.RateLimiterBuilder
 import io.micrometer.core.instrument.MeterRegistry
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestInstance
@@ -92,8 +93,9 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
         val resourceLimit = (rateLimiterService as AbstractRateLimiterService).rateLimitRule?.getRateLimitRule(resInfo)
         Assertions.assertNotNull(resourceLimit)
         // 测试固定窗口本地算法生成
-        var rateLimiter = (rateLimiterService as AbstractRateLimiterService)
-            .createAlgorithmOfRateLimiter(resource, resourceLimit!!.resourceLimit)
+        var rateLimiter = RateLimiterBuilder.createAlgorithmOfRateLimiter(
+            resource, resourceLimit!!.resourceLimit, redisTemplate
+        )
         Assertions.assertInstanceOf(
             FixedWindowRateLimiter::class.java,
             rateLimiter
@@ -104,7 +106,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
             limitDimension = LimitDimension.URL.name, limit = 1,
             duration = Duration.ofSeconds(1), scope = WorkScope.GLOBAL.name
         )
-        rateLimiter = (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l1)
+        rateLimiter = RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l1, redisTemplate)
         Assertions.assertInstanceOf(
             DistributedFixedWindowRateLimiter::class.java,
             rateLimiter
@@ -116,18 +118,18 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
             duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
         Assertions.assertThrows(InvalidResourceException::class.java) {
-            (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l2)
+            RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l2, redisTemplate)
         }
         // 测试滑动窗口本地算法生成
         l2.limit = 1
-        rateLimiter = (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l2)
+        rateLimiter = RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l2, redisTemplate)
         Assertions.assertInstanceOf(
             SlidingWindowRateLimiter::class.java,
             rateLimiter
         )
         // 测试滑动窗口分布式算法生成
         l2.scope = WorkScope.GLOBAL.name
-        rateLimiter = (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l2)
+        rateLimiter = RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l2, redisTemplate)
         Assertions.assertInstanceOf(
             DistributedSlidingWindowRateLimiter::class.java,
             rateLimiter
@@ -139,7 +141,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
             duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
         Assertions.assertThrows(InvalidResourceException::class.java) {
-            (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l3)
+            RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l3, redisTemplate)
         }
         //测试 capacity 不合规的场景
         val l4 = ResourceLimit(
@@ -148,22 +150,22 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
             duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
         Assertions.assertThrows(InvalidResourceException::class.java) {
-            (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l4)
+            RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l4, redisTemplate)
         }
         l4.capacity = -2
         Assertions.assertThrows(InvalidResourceException::class.java) {
-            (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l4)
+            RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l4, redisTemplate)
         }
         // 测试漏桶本地算法生成
         l4.capacity = 5
-        rateLimiter = (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l4)
+        rateLimiter = RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l4, redisTemplate)
         Assertions.assertInstanceOf(
             LeakyRateLimiter::class.java,
             rateLimiter
         )
         // 测试漏桶分布式算法生成
         l4.scope = WorkScope.GLOBAL.name
-        rateLimiter = (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l4)
+        rateLimiter = RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l4, redisTemplate)
         Assertions.assertInstanceOf(
             DistributedLeakyRateLimiter::class.java,
             rateLimiter
@@ -174,14 +176,14 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
             limitDimension = LimitDimension.URL.name, limit = 1, capacity = 5,
             duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
         )
-        rateLimiter = (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l5)
+        rateLimiter = RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l5, redisTemplate)
         Assertions.assertInstanceOf(
             TokenBucketRateLimiter::class.java,
             rateLimiter
         )
         // 测试令牌桶分布式算法生成
         l5.scope = WorkScope.GLOBAL.name
-        rateLimiter = (rateLimiterService as AbstractRateLimiterService).createAlgorithmOfRateLimiter(resource, l5)
+        rateLimiter = RateLimiterBuilder.createAlgorithmOfRateLimiter(resource, l5, redisTemplate)
         Assertions.assertInstanceOf(
             DistributedTokenBucketRateLimiter::class.java,
             rateLimiter
@@ -220,7 +222,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
 
 
     open fun getResLimitInfoTest() {
-        val resourceLimit = (rateLimiterService as AbstractRateLimiterService).getResLimitInfo(request)
+        val resourceLimit = (rateLimiterService as AbstractRateLimiterService).getResLimitInfoAndResInfo(request).first
         Assertions.assertNotNull(resourceLimit)
         assertEqualsLimitInfo(resourceLimit!!.resourceLimit, rateLimiterProperties.rules.first())
     }
@@ -247,7 +249,7 @@ open class AbstractRateLimiterServiceTest : DistributedTest() {
 
 
     open fun rateLimitCatchTest() {
-        val resourceLimit = (rateLimiterService as AbstractRateLimiterService).getResLimitInfo(request)
+        val resourceLimit = (rateLimiterService as AbstractRateLimiterService).getResLimitInfoAndResInfo(request).first
         Assertions.assertNotNull(resourceLimit)
         val rateLimiter = (rateLimiterService as AbstractRateLimiterService)
             .getAlgorithmOfRateLimiter(resourceLimit!!.resource, resourceLimit.resourceLimit)

@@ -32,36 +32,36 @@
 package com.tencent.bkrepo.repository.pojo.packages.request
 
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
 data class PopulatedPackageVersion(
-    @ApiModelProperty("创建者")
+    @get:Schema(title = "创建者")
     val createdBy: String,
-    @ApiModelProperty("创建时间")
+    @get:Schema(title = "创建时间")
     val createdDate: LocalDateTime,
-    @ApiModelProperty("修改者")
+    @get:Schema(title = "修改者")
     val lastModifiedBy: String,
-    @ApiModelProperty("修改时间")
+    @get:Schema(title = "修改时间")
     val lastModifiedDate: LocalDateTime,
 
-    @ApiModelProperty("版本名称")
+    @get:Schema(title = "版本名称")
     val name: String,
-    @ApiModelProperty("版本大小")
+    @get:Schema(title = "版本大小")
     val size: Long,
-    @ApiModelProperty("下载次数")
+    @get:Schema(title = "下载次数")
     var downloads: Long,
-    @ApiModelProperty("版本描述文件路径")
+    @get:Schema(title = "版本描述文件路径")
     var manifestPath: String? = null,
-    @ApiModelProperty("版本内容文件路径")
+    @get:Schema(title = "版本内容文件路径")
     var artifactPath: String? = null,
-    @ApiModelProperty("版本构件阶段")
+    @get:Schema(title = "版本构件阶段")
     val stageTag: List<String>? = null,
-    @ApiModelProperty("版本元数据")
+    @get:Schema(title = "版本元数据")
     @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("packageMetadata"))
     val metadata: Map<String, Any>? = null,
-    @ApiModelProperty("版本元数据")
+    @get:Schema(title = "版本元数据")
     val packageMetadata: List<MetadataModel>? = null,
-    @ApiModelProperty("扩展字段")
+    @get:Schema(title = "扩展字段")
     val extension: Map<String, Any>? = null
 )

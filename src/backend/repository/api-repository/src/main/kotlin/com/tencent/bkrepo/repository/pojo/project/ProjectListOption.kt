@@ -27,21 +27,21 @@
 
 package com.tencent.bkrepo.repository.pojo.project
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("项目列表选项")
+
+@Schema(title = "项目列表选项")
 data class ProjectListOption(
-    @ApiModelProperty("当前页")
+    @get:Schema(title = "当前页")
     val pageNumber: Int?,
-    @ApiModelProperty("分页大小")
+    @get:Schema(title = "分页大小")
     val pageSize: Int?,
-    @ApiModelProperty("项目名列表")
+    @get:Schema(title = "项目名列表")
     val names: List<String>?,
-    @ApiModelProperty("项目展示名列表")
+    @get:Schema(title = "项目展示名列表")
     val displayNames: List<String>?,
-    @ApiModelProperty("排序字段")
+    @get:Schema(title = "排序字段")
     val sortProperty: List<String>?,
-    @ApiModelProperty("排序方向")
+    @get:Schema(title = "排序方向")
     val direction: List<String>?
 )

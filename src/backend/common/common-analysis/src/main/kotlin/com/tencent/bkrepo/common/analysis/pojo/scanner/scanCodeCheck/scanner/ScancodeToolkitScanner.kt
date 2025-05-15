@@ -28,34 +28,34 @@
 package com.tencent.bkrepo.common.analysis.pojo.scanner.scanCodeCheck.scanner
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("scancode_toolkit(licenses扫描)扫描器配置")
+
+@Schema(title = "scancode_toolkit(licenses扫描)扫描器配置")
 class ScancodeToolkitScanner(
     override val name: String,
-    @ApiModelProperty("扫描器版本")
+    @get:Schema(title = "扫描器版本")
     override val version: String,
-    @ApiModelProperty("使用的容器镜像")
+    @get:Schema(title = "使用的容器镜像")
     val container: ScancodeToolkitDockerImage
 ) : Scanner(name, TYPE, version) {
     companion object {
         const val TYPE = "scancodeToolkit"
     }
 
-    @ApiModel("容器镜像配置")
+    @Schema(title = "容器镜像配置")
     data class ScancodeToolkitDockerImage(
-        @ApiModelProperty("使用的镜像名和版本")
+        @get:Schema(title = "使用的镜像名和版本")
         val image: String,
-        @ApiModelProperty("docker仓库用户")
+        @get:Schema(title = "docker仓库用户")
         val dockerRegistryUsername: String?,
-        @ApiModelProperty("docker仓库密码")
+        @get:Schema(title = "docker仓库密码")
         val dockerRegistryPassword: String?,
-        @ApiModelProperty("容器内的工作目录")
+        @get:Schema(title = "容器内的工作目录")
         val workDir: String = "/data",
-        @ApiModelProperty("输入目录，相对于workDir的路径")
+        @get:Schema(title = "输入目录，相对于workDir的路径")
         val inputDir: String = "/package",
-        @ApiModelProperty("输出目录，相对于workDir的路径")
+        @get:Schema(title = "输出目录，相对于workDir的路径")
         val outputDir: String = "/output"
     )
 }

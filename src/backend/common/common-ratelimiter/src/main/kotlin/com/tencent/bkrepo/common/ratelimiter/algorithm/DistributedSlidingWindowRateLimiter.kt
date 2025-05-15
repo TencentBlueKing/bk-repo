@@ -88,6 +88,10 @@ class DistributedSlidingWindowRateLimiter(
         }
     }
 
+    override fun getLimitPerSecond(): Long {
+        return limit / duration.seconds
+    }
+
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(DistributedSlidingWindowRateLimiter::class.java)
     }

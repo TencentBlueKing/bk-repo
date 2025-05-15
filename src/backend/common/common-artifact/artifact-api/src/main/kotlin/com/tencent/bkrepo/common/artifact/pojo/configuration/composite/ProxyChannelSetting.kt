@@ -31,24 +31,24 @@
 
 package com.tencent.bkrepo.common.artifact.pojo.configuration.composite
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 代理源
  */
-@ApiModel("代理源设置")
+@Schema(title = "代理源设置")
 data class ProxyChannelSetting(
-    @ApiModelProperty("是否为公有源", required = true)
+    @get:Schema(title = "是否为公有源", required = true)
     val public: Boolean,
-    @ApiModelProperty("名称", required = true)
+    @get:Schema(title = "名称", required = true)
     val name: String,
-    @ApiModelProperty("地址", required = true)
+    @get:Schema(title = "地址", required = true)
     val url: String,
-    @ApiModelProperty("鉴权凭据key", required = false)
+    @get:Schema(title = "鉴权凭据key", required = false)
     val credentialKey: String? = null,
-    @ApiModelProperty("代理源认证用户名", required = false)
+    @get:Schema(title = "代理源认证用户名", required = false)
     val username: String? = null,
-    @ApiModelProperty("代理源认证密码", required = false)
+    @get:Schema(title = "代理源认证密码", required = false)
     var password: String? = null
 )

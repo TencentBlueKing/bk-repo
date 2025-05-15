@@ -30,55 +30,54 @@ package com.tencent.bkrepo.replication.pojo.cluster
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
 /**
  * 集群节点信息
  */
-@ApiModel("集群节点信息")
+@Schema(title = "集群节点信息")
 data class ClusterNodeInfo(
-    @ApiModelProperty("集群id")
+    @get:Schema(title = "集群id")
     val id: String?,
-    @ApiModelProperty("集群名称")
+    @get:Schema(title = "集群名称")
     val name: String,
-    @ApiModelProperty("集群节点类型")
+    @get:Schema(title = "集群节点类型")
     val status: ClusterNodeStatus,
-    @ApiModelProperty("集群状态为非健康时显示失败原因")
+    @get:Schema(title = "集群状态为非健康时显示失败原因")
     val errorReason: String?,
-    @ApiModelProperty("集群节点类型")
+    @get:Schema(title = "集群节点类型")
     val type: ClusterNodeType,
-    @ApiModelProperty("集群地址")
+    @get:Schema(title = "集群地址")
     val url: String,
-    @ApiModelProperty("集群访问用户名，独立集群需要此字段")
+    @get:Schema(title = "集群访问用户名，独立集群需要此字段")
     val username: String?,
-    @ApiModelProperty("集群访问密码，独立集群需要此字段")
+    @get:Schema(title = "集群访问密码，独立集群需要此字段")
     @JsonIgnore
     val password: String?,
-    @ApiModelProperty("集群的证书，独立集群需要此字段")
+    @get:Schema(title = "集群的证书，独立集群需要此字段")
     val certificate: String?,
-    @ApiModelProperty("集群appId", required = false)
+    @get:Schema(title = "集群appId", required = false)
     var appId: String? = null,
-    @ApiModelProperty("集群访问凭证", required = false)
+    @get:Schema(title = "集群访问凭证", required = false)
     var accessKey: String? = null,
-    @ApiModelProperty("集群密钥", required = false)
+    @get:Schema(title = "集群密钥", required = false)
     @JsonIgnore
     var secretKey: String? = null,
-    @ApiModelProperty("udp端口", required = false)
+    @get:Schema(title = "udp端口", required = false)
     var udpPort: Int? = null,
-    @ApiModelProperty("创建者")
+    @get:Schema(title = "创建者")
     val createdBy: String,
-    @ApiModelProperty("集群额外信息")
+    @get:Schema(title = "集群额外信息")
     var extension: Map<String, Any>? = null,
-    @ApiModelProperty("创建日期")
+    @get:Schema(title = "创建日期")
     val createdDate: String,
-    @ApiModelProperty("上次修改者")
+    @get:Schema(title = "上次修改者")
     val lastModifiedBy: String,
-    @ApiModelProperty("上次修改日期")
+    @get:Schema(title = "上次修改日期")
     val lastModifiedDate: String,
-    @ApiModelProperty("节点连通性检测方式")
+    @get:Schema(title = "节点连通性检测方式")
     val detectType: DetectType?,
-    @ApiModelProperty("最近上报心跳时间")
+    @get:Schema(title = "最近上报心跳时间")
     val lastReportTime: LocalDateTime?
 )

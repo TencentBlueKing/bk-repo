@@ -33,4 +33,6 @@ interface RateLimiter {
 
     fun removeCacheLimit(key: String)
 
+    fun getLimitPerSecond(): Long
+
 }

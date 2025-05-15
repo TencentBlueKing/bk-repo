@@ -31,21 +31,21 @@ import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 
-@Api("同步任务服务操作接口")
+@Tag(name = "同步任务服务操作接口")
 @Primary
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "ReplicaTaskClient")
 @RequestMapping("/service/task")
 interface ReplicaTaskClient {
 
-    @ApiOperation("创建任务")
+    @Operation(summary = "创建任务")
     @PostMapping("/create")
     fun create(@RequestBody request: ReplicaTaskCreateRequest): Response<ReplicaTaskInfo>
 

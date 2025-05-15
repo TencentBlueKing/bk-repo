@@ -32,23 +32,23 @@
 package com.tencent.bkrepo.repository.pojo.project
 
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("创建项目请求")
+
+@Schema(title = "创建项目请求")
 data class ProjectCreateRequest(
-    @ApiModelProperty("项目名", required = true)
+    @get:Schema(title = "项目名", required = true)
     override var name: String,
-    @ApiModelProperty("显示名", required = true)
+    @get:Schema(title = "显示名", required = true)
     val displayName: String,
-    @ApiModelProperty("描述", required = true)
+    @get:Schema(title = "描述", required = true)
     val description: String? = null,
-    @ApiModelProperty("创建权限", required = false)
+    @get:Schema(title = "创建权限", required = false)
     val createPermission: Boolean = true,
-    @ApiModelProperty("操作用户", required = false)
+    @get:Schema(title = "操作用户", required = false)
     val operator: String = SYSTEM_USER,
-    @ApiModelProperty("项目元数据", required = false)
+    @get:Schema(title = "项目元数据", required = false)
     val metadata: List<ProjectMetadata> = emptyList(),
-    @ApiModelProperty("项目新建仓库默认使用的存储", required = false)
+    @get:Schema(title = "项目新建仓库默认使用的存储", required = false)
     val credentialsKey: String? = null,
 ) : ProjectRequest

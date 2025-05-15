@@ -28,27 +28,27 @@
 package com.tencent.bkrepo.repository.pojo.packages.request
 
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
 data class PackageCreateRequest(
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String,
-    @ApiModelProperty("仓库名称")
+    @get:Schema(title = "仓库名称")
     val repoName: String,
-    @ApiModelProperty("包名称")
+    @get:Schema(title = "包名称")
     val packageName: String,
-    @ApiModelProperty("包唯一标识符")
+    @get:Schema(title = "包唯一标识符")
     val packageKey: String,
-    @ApiModelProperty("包类型")
+    @get:Schema(title = "包类型")
     val packageType: PackageType,
-    @ApiModelProperty("包简要描述")
+    @get:Schema(title = "包简要描述")
     val packageDescription: String? = null,
-    @ApiModelProperty("包扩展字段")
+    @get:Schema(title = "包扩展字段")
     val packageExtension: Map<String, Any>? = null,
-    @ApiModelProperty("标签")
+    @get:Schema(title = "标签")
     val tags: List<String>? = null,
-    @ApiModelProperty("是否允许覆盖")
+    @get:Schema(title = "是否允许覆盖")
     val overwrite: Boolean = false,
-    @ApiModelProperty("创建人")
+    @get:Schema(title = "创建人")
     val createdBy: String,
 )

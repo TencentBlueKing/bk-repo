@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -54,7 +54,7 @@ class UserBkiamv3AuthController {
     @Autowired
     private var bkIamV3Service: BkIamV3Service? = null
 
-    @ApiOperation("生成无权限申请url")
+    @Operation(summary = "生成无权限申请url")
     @PostMapping("/bkiamv3/permission/url")
     fun queryProject(
         @RequestBody request: CheckPermissionRequest
@@ -69,7 +69,7 @@ class UserBkiamv3AuthController {
         return ResponseBuilder.success(result)
     }
 
-    @ApiOperation("判断蓝鲸权限是否开启")
+    @Operation(summary = "判断蓝鲸权限是否开启")
     @GetMapping("/bkiamv3/status")
     fun bkiamv3Status(): Response<Boolean> {
         val result = bkIamV3Service?.let {
@@ -78,7 +78,7 @@ class UserBkiamv3AuthController {
         return ResponseBuilder.success(result)
     }
 
-    @ApiOperation("在权限中心生成对应项目以及其下所有仓库的管理权限")
+    @Operation(summary = "在权限中心生成对应项目以及其下所有仓库的管理权限")
     @PostMapping("/bkiamv3/project/refresh/{projectId}")
     @Principal(PrincipalType.ADMIN)
     fun refreshProject(
@@ -91,7 +91,7 @@ class UserBkiamv3AuthController {
         return ResponseBuilder.success(result)
     }
 
-    @ApiOperation("删除生成的管理员空间")
+    @Operation(summary = "删除生成的管理员空间")
     @DeleteMapping("/bkiamv3/manager/delete")
     @Principal(PrincipalType.ADMIN)
     fun deleteProjectManager(

@@ -31,46 +31,45 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("同步任务执行记录详情")
+@Schema(title = "同步任务执行记录详情")
 data class ReplicaRecordDetail(
-    @ApiModelProperty("详情id")
+    @get:Schema(title = "详情id")
     var id: String,
-    @ApiModelProperty("记录id")
+    @get:Schema(title = "记录id")
     var recordId: String,
-    @ApiModelProperty("本地集群名称")
+    @get:Schema(title = "本地集群名称")
     var localCluster: String,
-    @ApiModelProperty("远程集群名称")
+    @get:Schema(title = "远程集群名称")
     var remoteCluster: String,
-    @ApiModelProperty("本地仓库名称")
+    @get:Schema(title = "本地仓库名称")
     var localRepoName: String,
-    @ApiModelProperty("仓库类型")
+    @get:Schema(title = "仓库类型")
     val repoType: RepositoryType,
-    @ApiModelProperty("包限制")
+    @get:Schema(title = "包限制")
     var packageConstraint: PackageConstraint? = null,
-    @ApiModelProperty("路径名称")
+    @get:Schema(title = "路径名称")
     var pathConstraint: PathConstraint? = null,
-    @ApiModelProperty("制品名称")
+    @get:Schema(title = "制品名称")
     var artifactName: String? = null,
-    @ApiModelProperty("包版本")
+    @get:Schema(title = "包版本")
     var version: String? = null,
-    @ApiModelProperty("冲突策略")
+    @get:Schema(title = "冲突策略")
     var conflictStrategy: ConflictStrategy? = null,
-    @ApiModelProperty("制品大小")
+    @get:Schema(title = "制品大小")
     var size: Long? = null,
-    @ApiModelProperty("制品sha256")
+    @get:Schema(title = "制品sha256")
     var sha256: String? = null,
-    @ApiModelProperty("运行状态")
+    @get:Schema(title = "运行状态")
     var status: ExecutionStatus,
-    @ApiModelProperty("同步进度")
+    @get:Schema(title = "同步进度")
     var progress: ReplicaProgress,
-    @ApiModelProperty("开始时间")
+    @get:Schema(title = "开始时间")
     var startTime: LocalDateTime,
-    @ApiModelProperty("结束时间")
+    @get:Schema(title = "结束时间")
     var endTime: LocalDateTime? = null,
-    @ApiModelProperty("错误原因，未执行或执行成功则为null")
+    @get:Schema(title = "错误原因，未执行或执行成功则为null")
     var errorReason: String? = null
 )

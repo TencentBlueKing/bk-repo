@@ -40,12 +40,7 @@ data class RateLimiterProperties(
     var cacheCapacity: Long = 1024L,
     // 限流配置
     var rules: List<ResourceLimit> = mutableListOf(),
-    // 等待时间，单位毫秒
-    var latency: Long = 70,
-    // 重试次数
-    var waitRound: Int = 5,
-    // 针对读流的请求，避免频繁去请求，每次申请固定大小
-    var permitsOnce: Long = 1024 * 1024,
     // 只对指定url进行从request body解析项目仓库信息
-    var specialUrls: List<String> = emptyList()
+    var specialUrls: List<String> = emptyList(),
+    var bandwidthProperties: BandwidthProperties = BandwidthProperties()
 )

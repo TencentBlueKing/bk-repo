@@ -44,14 +44,14 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.pypi.artifact.PypiArtifactInfo
 import com.tencent.bkrepo.pypi.service.PypiWebService
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-@Api("pypi产品接口")
+@Tag(name = "pypi产品接口")
 @RestController
 @RequestMapping("/ext")
 class PypiWebResourceController(
@@ -75,7 +75,7 @@ class PypiWebResourceController(
         scopeId = "#pypiArtifactInfo?.projectId",
         content = ActionAuditContent.REPO_PACKAGE_DELETE_CONTENT
     )
-    @ApiOperation("pypi包删除接口")
+    @Operation(summary = "pypi包删除接口")
     @DeleteMapping(PypiArtifactInfo.PYPI_EXT_PACKAGE_DELETE)
     fun deletePackage(pypiArtifactInfo: PypiArtifactInfo, packageKey: String): Response<Void> {
         pypiWebService.deletePackage(pypiArtifactInfo, packageKey)
@@ -101,7 +101,7 @@ class PypiWebResourceController(
         scopeId = "#pypiArtifactInfo?.projectId",
         content = ActionAuditContent.REPO_PACKAGE_VERSION_DELETE_CONTENT
     )
-    @ApiOperation("pypi版本删除接口")
+    @Operation(summary = "pypi版本删除接口")
     @DeleteMapping(PypiArtifactInfo.PYPI_EXT_VERSION_DELETE)
     fun deleteVersion(
         pypiArtifactInfo: PypiArtifactInfo,
@@ -113,7 +113,7 @@ class PypiWebResourceController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("pypi版本详情接口")
+    @Operation(summary = "pypi版本详情接口")
     @GetMapping(PypiArtifactInfo.PYPI_EXT_DETAIL)
     fun artifactDetail(
         pypiArtifactInfo: PypiArtifactInfo,
@@ -123,7 +123,7 @@ class PypiWebResourceController(
         return ResponseBuilder.success(pypiWebService.artifactDetail(pypiArtifactInfo, packageKey, version))
     }
 
-    @ApiOperation("pypi包版本列表接口")
+    @Operation(summary = "pypi包版本列表接口")
     @GetMapping(PypiArtifactInfo.PYPI_EXT_PACKAGE_LIST)
     fun versionListPage(
         pypiArtifactInfo: PypiArtifactInfo,

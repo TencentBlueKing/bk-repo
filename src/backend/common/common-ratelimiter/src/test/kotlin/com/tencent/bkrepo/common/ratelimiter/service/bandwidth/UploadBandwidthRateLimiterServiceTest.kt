@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateL
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterServiceTest
-import java.time.Duration
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -45,6 +44,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
+import java.time.Duration
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
@@ -239,13 +239,11 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
             permits = 1,
             circuitBreakerPerSecond = DataSize.ofBytes(0)
         )
-        Assertions.assertThrows(OverloadException::class.java) {
-            (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
-                request = request,
-                permits = 10000,
-                circuitBreakerPerSecond = DataSize.ofBytes(0)
-            )
-        }
+        (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
+            request = request,
+            permits = 10000,
+            circuitBreakerPerSecond = DataSize.ofBytes(0)
+        )
         Assertions.assertThrows(OverloadException::class.java) {
             (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthRateLimit(
                 request = request,
@@ -276,7 +274,8 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
 
     @Test
     fun bandwidthLimitHandlerTest() {
-        val resourceLimit = (rateLimiterService as UploadBandwidthRateLimiterService).getResLimitInfo(request)
+        val resourceLimit =
+            (rateLimiterService as UploadBandwidthRateLimiterService).getResLimitInfoAndResInfo(request).first
         Assertions.assertNotNull(resourceLimit)
         assertEqualsLimitInfo(resourceLimit!!.resourceLimit, rateLimiterProperties.rules.first())
         val rateLimiter = (rateLimiterService as UploadBandwidthRateLimiterService)
@@ -286,7 +285,7 @@ class UploadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest() {
             (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthLimitHandler(rateLimiter, 1)
         )
         Assertions.assertEquals(
-            false,
+            true,
             (rateLimiterService as UploadBandwidthRateLimiterService).bandwidthLimitHandler(rateLimiter, 100)
         )
     }

@@ -113,15 +113,21 @@ class UploadService(
                 artifactUri = StringPool.ROOT
             )
             copyBaseRevision(revision, artifactInfo)
+            val commitLfsFiles = mutableListOf<CommitLfsFile>()
             val header = castType<CommitHeader>(requests.find { it.key == COMMIT_OP_HEADER }!!.value)
             requests.forEach {
                 when (it.key) {
                     COMMIT_OP_FILE -> storeNode(artifactInfo, castType<CommitFile>(it.value))
-                    COMMIT_OP_LFS -> moveOrCopyNode(artifactInfo, header, castType<CommitLfsFile>(it.value))
+                    COMMIT_OP_LFS -> {
+                        val commitLfsFile = castType<CommitLfsFile>(it.value)
+                        moveOrCopyNode(artifactInfo, header, commitLfsFile)
+                        commitLfsFiles.add(commitLfsFile)
+                    }
                     COMMIT_OP_DEL_FILE -> deleteNode(artifactInfo, castType<CommitDeletedFile>(it.value).path)
                     COMMIT_OP_DEL_FOLDER -> deleteNode(artifactInfo, castType<CommitDeletedFolder>(it.value).path)
                 }
             }
+            deleteLfsFiles(artifactInfo, commitLfsFiles)
             createPackageVersion(header, sha1)
             return CommitResponse(true, sha1, "$type/$repoId/commit/$sha1")
         }
@@ -151,6 +157,18 @@ class UploadService(
             createdBy = SecurityUtils.getUserId(),
         )
         packageService.createPackageVersion(packageVersionCreateRequest)
+    }
+
+    private fun deleteLfsFiles(artifactInfo: HuggingfaceArtifactInfo, files: List<CommitLfsFile>) {
+        files.forEach { file ->
+            val nodeDeleteRequest = NodeDeleteRequest(
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fullPath = "/${artifactInfo.getRepoId()}/lfs/${file.oid}",
+                operator = SecurityUtils.getUserId()
+            )
+            nodeService.deleteNode(nodeDeleteRequest)
+        }
     }
 
     private inline fun <reified T> castType(value: Any): T {
@@ -205,7 +223,7 @@ class UploadService(
                     overwrite = true,
                     operator = SecurityUtils.getUserId()
                 )
-                val nodeDetail = nodeService.moveNode(nodeMoveRequest)
+                val nodeDetail = nodeService.copyNode(nodeMoveRequest)
                 val metadataSaveRequest = MetadataSaveRequest(
                     projectId = nodeDetail.projectId,
                     repoName = nodeDetail.repoName,

@@ -35,6 +35,8 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.service.packages.PackageStatisticsService
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -43,10 +45,8 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
-import com.tencent.bkrepo.common.metadata.service.packages.PackageService
-import com.tencent.bkrepo.common.metadata.service.packages.PackageStatisticsService
 import com.tencent.bkrepo.repository.service.packages.PackageDownloadService
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -67,7 +67,7 @@ class UserPackageController(
     private val packageStatisticsService: PackageStatisticsService
 ) {
 
-    @ApiOperation("分页查询包")
+    @Operation(summary = "分页查询包")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/package/page/{projectId}/{repoName}")
     fun listPackagePage(
@@ -79,7 +79,7 @@ class UserPackageController(
         return ResponseBuilder.success(pageResult)
     }
 
-    @ApiOperation("分页查询版本")
+    @Operation(summary = "分页查询版本")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/version/page/{projectId}/{repoName}")
     fun listVersionPage(
@@ -92,7 +92,7 @@ class UserPackageController(
         return ResponseBuilder.success(pageResult)
     }
 
-    @ApiOperation("查询所有版本")
+    @Operation(summary = "查询所有版本")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @PostMapping("/version/list/{projectId}/{repoName}")
     fun listAllVersion(
@@ -105,7 +105,7 @@ class UserPackageController(
         return ResponseBuilder.success(versions)
     }
 
-    @ApiOperation("查询包信息")
+    @Operation(summary = "查询包信息")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/package/info/{projectId}/{repoName}")
     fun findPackageByKey(
@@ -116,7 +116,7 @@ class UserPackageController(
         return ResponseBuilder.success(packageService.findPackageByKey(projectId, repoName, packageKey))
     }
 
-    @ApiOperation("删除包")
+    @Operation(summary = "删除包")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @DeleteMapping("/package/delete/{projectId}/{repoName}")
     fun deletePackage(
@@ -128,7 +128,7 @@ class UserPackageController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("删除版本")
+    @Operation(summary = "删除版本")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @DeleteMapping("/version/delete/{projectId}/{repoName}")
     fun deleteVersion(
@@ -142,7 +142,7 @@ class UserPackageController(
         return ResponseBuilder.success()
     }
 
-    @ApiOperation("搜索包")
+    @Operation(summary = "搜索包")
     @PostMapping("/package/search")
     fun searchPackage(
         @RequestBody queryModel: QueryModel
@@ -150,7 +150,7 @@ class UserPackageController(
         return ResponseBuilder.success(packageService.searchPackage(queryModel))
     }
 
-    @ApiOperation("下载版本")
+    @Operation(summary = "下载版本")
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     @GetMapping("/version/download/{projectId}/{repoName}")
     fun downloadVersion(
@@ -162,7 +162,7 @@ class UserPackageController(
         packageDownloadService.downloadVersion(projectId, repoName, packageKey, version)
     }
 
-    @ApiOperation("仓库 包数量 总览")
+    @Operation(summary = "仓库 包数量 总览")
     @GetMapping("/package/search/overview")
     fun packageOverview(
         @RequestParam repoType: String,

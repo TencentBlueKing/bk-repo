@@ -35,26 +35,26 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.rpm.artifact.RpmArtifactInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api("Rpm 产品-web接口")
+@Tag(name = "Rpm 产品-web接口")
 @RequestMapping("/ext")
 interface RpmWebResource {
 
-    @ApiOperation("rpm 包删除接口")
+    @Operation(summary = "rpm 包删除接口")
     @DeleteMapping(RpmArtifactInfo.RPM_EXT_PACKAGE_DELETE)
     fun deletePackage(
         @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
         @RequestParam packageKey: String
     ): Response<Void>
 
-    @ApiOperation("rpm 版本删除接口")
+    @Operation(summary = "rpm 版本删除接口")
     @DeleteMapping(RpmArtifactInfo.RPM_EXT_VERSION_DELETE)
     fun deleteVersion(
         @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
@@ -62,7 +62,7 @@ interface RpmWebResource {
         @RequestParam version: String?
     ): Response<Void>
 
-    @ApiOperation("rpm 版本详情接口")
+    @Operation(summary = "rpm 版本详情接口")
     @GetMapping(RpmArtifactInfo.RPM_EXT_DETAIL)
     fun artifactDetail(
         @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
@@ -73,9 +73,9 @@ interface RpmWebResource {
     @GetMapping(RpmArtifactInfo.RPM_EXT_LIST)
     fun list(
         @ArtifactPathVariable rpmArtifactInfo: RpmArtifactInfo,
-        @ApiParam(value = "当前页", required = true, defaultValue = "0")
+        @Parameter(name = "当前页", required = true)
         @RequestParam page: Int = 0,
-        @ApiParam(value = "分页大小", required = true, defaultValue = "20")
+        @Parameter(name = "分页大小", required = true)
         @RequestParam size: Int = 20
     ): Response<Page<String>>
 }

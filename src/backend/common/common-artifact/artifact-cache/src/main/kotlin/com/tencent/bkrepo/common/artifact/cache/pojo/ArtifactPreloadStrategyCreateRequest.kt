@@ -28,25 +28,25 @@
 package com.tencent.bkrepo.common.artifact.cache.pojo
 
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("预加载策略创建请求")
+
+@Schema(title = "预加载策略创建请求")
 data class ArtifactPreloadStrategyCreateRequest(
-    @ApiModelProperty("策略所属项目")
+    @get:Schema(title = "策略所属项目")
     val projectId: String,
-    @ApiModelProperty("策略所属仓库")
+    @get:Schema(title = "策略所属仓库")
     val repoName: String,
-    @ApiModelProperty("文件路径正则，匹配成功才会执行预加载")
+    @get:Schema(title = "文件路径正则，匹配成功才会执行预加载")
     val fullPathRegex: String,
-    @ApiModelProperty("仅加载大于指定大小的文件")
+    @get:Schema(title = "仅加载大于指定大小的文件")
     val minSize: Long,
-    @ApiModelProperty("限制只对最近一段时间内创建的制品执行预加载")
+    @get:Schema(title = "限制只对最近一段时间内创建的制品执行预加载")
     val recentSeconds: Long,
-    @ApiModelProperty("预加载执行时间")
+    @get:Schema(title = "预加载执行时间")
     val preloadCron: String? = null,
-    @ApiModelProperty("策略类型")
+    @get:Schema(title = "策略类型")
     val type: String = PreloadStrategyType.CUSTOM.name,
-    @ApiModelProperty("操作人")
+    @get:Schema(title = "操作人")
     val operator: String = SYSTEM_USER,
 )

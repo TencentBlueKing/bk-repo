@@ -29,13 +29,13 @@ package com.tencent.bkrepo.repository.api.proxy
 
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import io.swagger.annotations.Api
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@Api("文件引用服务接口")
+@Tag(name = "文件引用服务接口")
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "ProxyFileReferenceClient", primary = false)
 @RequestMapping("/proxy/fileReference")
 interface ProxyFileReferenceClient {

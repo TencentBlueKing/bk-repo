@@ -38,18 +38,8 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedFixedWindowRateLimiter
-import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedLeakyRateLimiter
-import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedSlidingWindowRateLimiter
-import com.tencent.bkrepo.common.ratelimiter.algorithm.DistributedTokenBucketRateLimiter
-import com.tencent.bkrepo.common.ratelimiter.algorithm.FixedWindowRateLimiter
-import com.tencent.bkrepo.common.ratelimiter.algorithm.LeakyRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
-import com.tencent.bkrepo.common.ratelimiter.algorithm.SlidingWindowRateLimiter
-import com.tencent.bkrepo.common.ratelimiter.algorithm.TokenBucketRateLimiter
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
-import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
-import com.tencent.bkrepo.common.ratelimiter.enums.WorkScope
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.MonitorRateLimiterInterceptorAdaptor
@@ -72,9 +62,8 @@ import com.tencent.bkrepo.common.ratelimiter.rule.usage.UploadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserDownloadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserUploadUsageRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
+import com.tencent.bkrepo.common.ratelimiter.utils.RateLimiterBuilder
 import com.tencent.bkrepo.common.service.servlet.MultipleReadHttpRequest
-import java.util.concurrent.ConcurrentHashMap
-import javax.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -84,6 +73,8 @@ import org.springframework.http.MediaType
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
+import java.util.concurrent.ConcurrentHashMap
+import javax.servlet.http.HttpServletRequest
 
 /**
  * 限流器抽象实现
@@ -92,7 +83,7 @@ abstract class AbstractRateLimiterService(
     private val taskScheduler: ThreadPoolTaskScheduler,
     val rateLimiterProperties: RateLimiterProperties,
     private val rateLimiterMetrics: RateLimiterMetrics,
-    private val redisTemplate: RedisTemplate<String, String>? = null,
+    val redisTemplate: RedisTemplate<String, String>,
     private val rateLimiterConfigService: RateLimiterConfigService,
 ) : RateLimiterService {
 
@@ -101,7 +92,7 @@ abstract class AbstractRateLimiterService(
 
 
     // 资源对应限限流算法缓存
-    private var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
+    var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
     val interceptorChain: RateLimiterInterceptorChain =
         RateLimiterInterceptorChain(
@@ -119,30 +110,31 @@ abstract class AbstractRateLimiterService(
 
     init {
         taskScheduler.scheduleWithFixedDelay(this::refreshRateLimitRule, rateLimiterProperties.refreshDuration * 1000)
+        initCompanion()
     }
+
+
+    open fun initCompanion() = Unit
 
     /**
      * 获取对应资源限流规则配置
      */
-    fun getResLimitInfo(request: HttpServletRequest): ResLimitInfo? {
+    fun getResLimitInfoAndResInfo(request: HttpServletRequest): Pair<ResLimitInfo?, ResInfo?> {
         if (!rateLimiterProperties.enabled) {
-            return null
+            return Pair(null, null)
         }
-        val resLimitInfo = try {
+        return try {
+            // 构建资源信息
             val resInfo = ResInfo(
                 resource = buildResource(request),
                 extraResource = buildExtraResource(request)
             )
-            rateLimitRule?.getRateLimitRule(resInfo)
+            Pair(rateLimitRule?.getRateLimitRule(resInfo), resInfo)
         } catch (e: InvalidResourceException) {
+            // 记录无效资源配置警告日志
             logger.warn("Config is invalid for request ${request.requestURI}, e: ${e.message}")
-            null
+            Pair(null, null)
         }
-
-        if (resLimitInfo == null) {
-            return null
-        }
-        return resLimitInfo
     }
 
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {
@@ -151,7 +143,7 @@ abstract class AbstractRateLimiterService(
         }
         if (ignoreRequest(request)) return
         if (rateLimitRule == null || rateLimitRule!!.isEmpty()) return
-        val resLimitInfo = getResLimitInfo(request) ?: return
+        val resLimitInfo = getResLimitInfoAndResInfo(request).first ?: return
         rateLimitCatch(
             request = request,
             resLimitInfo = resLimitInfo,
@@ -208,44 +200,14 @@ abstract class AbstractRateLimiterService(
         return false
     }
 
-    /**
-     * 根据资源和限流规则生成对应限流算法
-     */
-    open fun createAlgorithmOfRateLimiter(resource: String, resourceLimit: ResourceLimit): RateLimiter {
-        if (resourceLimit.limit < 0) {
-            throw InvalidResourceException("config limit is ${resourceLimit.limit}")
-        }
-        return when (resourceLimit.algo) {
-            Algorithms.FIXED_WINDOW.name -> {
-                buildFixedWindowRateLimiter(resource, resourceLimit)
-            }
-
-            Algorithms.TOKEN_BUCKET.name -> {
-                buildTokenBucketRateLimiter(resource, resourceLimit)
-            }
-
-            Algorithms.SLIDING_WINDOW.name -> {
-                buildSlidingWindowRateLimiter(resource, resourceLimit)
-            }
-
-            Algorithms.LEAKY_BUCKET.name -> {
-                buildLeakyRateLimiter(resource, resourceLimit)
-            }
-
-            else -> {
-                throw InvalidResourceException("config algo is ${resourceLimit.algo}")
-            }
-        }
-    }
-
     fun getRepoInfoFromAttribute(request: HttpServletRequest): Pair<String?, String?> {
         var projectId: String? = null
         var repoName: String? = null
         try {
             projectId = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
-                    as Map<*, *>)["projectId"] as String?
+                as Map<*, *>)["projectId"] as String?
             repoName = ((request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE))
-                    as Map<*, *>)["repoName"] as String?
+                as Map<*, *>)["repoName"] as String?
         } catch (ignore: Exception) {
         }
         if (projectId.isNullOrEmpty()) {
@@ -357,8 +319,12 @@ abstract class AbstractRateLimiterService(
         rateLimitRule = usageRules
         clearLimiterCache()
         currentRuleHashCode = newRuleHashCode
+        initCompanionRateLimitRule()
         logger.info("rules in ${this.javaClass.simpleName} for request has been refreshed!")
     }
+
+    open fun initCompanionRateLimitRule() = Unit
+
 
     private fun getRuleClass(): RateLimitRule? {
         return when (getRateLimitRuleClass()) {
@@ -432,7 +398,7 @@ abstract class AbstractRateLimiterService(
             pass = action(rateLimiter, realPermits)
             if (!pass) {
                 val msg = "${resLimitInfo.resource} has exceeded max rate limit: " +
-                        "${resLimitInfo.resourceLimit.limit} /${resLimitInfo.resourceLimit.duration}"
+                    "${resLimitInfo.resourceLimit.limit} /${resLimitInfo.resourceLimit.duration}"
                 if (rateLimiterProperties.dryRun) {
                     logger.warn(msg)
                 } else {
@@ -444,7 +410,7 @@ abstract class AbstractRateLimiterService(
         } catch (e: AcquireLockFailedException) {
             logger.warn(
                 "acquire lock failed for ${resLimitInfo.resource}" +
-                        " with ${resLimitInfo.resourceLimit}, e: ${e.message}"
+                    " with ${resLimitInfo.resourceLimit}, e: ${e.message}"
             )
             exception = e
         } catch (e: InvalidResourceException) {
@@ -465,15 +431,9 @@ abstract class AbstractRateLimiterService(
         resource: String, resourceLimit: ResourceLimit
     ): RateLimiter {
         val limitKey = generateKey(resource, resourceLimit)
-        var rateLimiter = rateLimiterCache[limitKey]
-        if (rateLimiter == null) {
-            val newRateLimiter = createAlgorithmOfRateLimiter(limitKey, resourceLimit)
-            rateLimiter = rateLimiterCache.putIfAbsent(limitKey, newRateLimiter)
-            if (rateLimiter == null) {
-                rateLimiter = newRateLimiter
-            }
-        }
-        return rateLimiter
+        return RateLimiterBuilder.getAlgorithmOfRateLimiter(
+            limitKey, resourceLimit, redisTemplate, rateLimiterCache
+        )
     }
 
     /**
@@ -488,66 +448,6 @@ abstract class AbstractRateLimiterService(
         if (circuitBreakerPerSecond >= permitsPerSecond) {
             throw OverloadException(
                 "The circuit breaker is activated when too many download requests are made to the service!"
-            )
-        }
-    }
-
-    private fun buildFixedWindowRateLimiter(
-        resource: String,
-        resourceLimit: ResourceLimit,
-    ): RateLimiter {
-        return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            FixedWindowRateLimiter(resourceLimit.limit, resourceLimit.duration)
-        } else {
-            DistributedFixedWindowRateLimiter(
-                resource, resourceLimit.limit, resourceLimit.duration, redisTemplate!!
-            )
-        }
-    }
-
-    private fun buildTokenBucketRateLimiter(
-        resource: String,
-        resourceLimit: ResourceLimit,
-    ): RateLimiter {
-        val permitsPerSecond = (resourceLimit.limit / resourceLimit.duration.seconds.toDouble())
-        return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            TokenBucketRateLimiter(permitsPerSecond)
-        } else {
-            if (resourceLimit.capacity == null || resourceLimit.capacity!! <= 0) {
-                throw InvalidResourceException("Resource limit config $resourceLimit is illegal")
-            }
-            DistributedTokenBucketRateLimiter(
-                resource, permitsPerSecond, resourceLimit.capacity!!, redisTemplate!!
-            )
-        }
-    }
-
-    private fun buildSlidingWindowRateLimiter(
-        resource: String,
-        resourceLimit: ResourceLimit,
-    ): RateLimiter {
-        return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            SlidingWindowRateLimiter(resourceLimit.limit, resourceLimit.duration)
-        } else {
-            DistributedSlidingWindowRateLimiter(
-                resource, resourceLimit.limit, resourceLimit.duration, redisTemplate!!
-            )
-        }
-    }
-
-    private fun buildLeakyRateLimiter(
-        resource: String,
-        resourceLimit: ResourceLimit,
-    ): RateLimiter {
-        if (resourceLimit.capacity == null || resourceLimit.capacity!! <= 0) {
-            throw InvalidResourceException("Resource limit config $resourceLimit is illegal")
-        }
-        val rate = resourceLimit.limit / resourceLimit.duration.seconds.toDouble()
-        return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            LeakyRateLimiter(rate, resourceLimit.capacity!!)
-        } else {
-            DistributedLeakyRateLimiter(
-                resource, rate, resourceLimit.capacity!!, redisTemplate!!
             )
         }
     }

@@ -51,7 +51,7 @@ class UserUrlRateLimiterService(
     taskScheduler: ThreadPoolTaskScheduler,
     rateLimiterProperties: RateLimiterProperties,
     rateLimiterMetrics: RateLimiterMetrics,
-    redisTemplate: RedisTemplate<String, String>? = null,
+    redisTemplate: RedisTemplate<String, String>,
     rateLimiterConfigService: RateLimiterConfigService,
 ) : AbstractRateLimiterService(
     taskScheduler,

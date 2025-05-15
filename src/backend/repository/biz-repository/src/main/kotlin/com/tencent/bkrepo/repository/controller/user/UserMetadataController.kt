@@ -54,8 +54,8 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataSaveRequest
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
@@ -67,7 +67,7 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * 元数据接口实现类
  */
-@Api("节点元数据用户接口")
+@Tag(name = "节点元数据用户接口")
 @RestController
 @RequestMapping("/api/metadata")
 class UserMetadataController(
@@ -91,7 +91,7 @@ class UserMetadataController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_METADATA_VIEW_CONTENT
     )
-    @ApiOperation("查询元数据列表")
+    @Operation(summary = "查询元数据列表")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping(DEFAULT_MAPPING_URI)
     fun listMetadata(
@@ -120,7 +120,7 @@ class UserMetadataController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_METADATA_EDIT_CONTENT
     )
-    @ApiOperation("创建/更新元数据列表")
+    @Operation(summary = "创建/更新元数据列表")
     @Permission(type = ResourceType.NODE, action = PermissionAction.WRITE)
     @PostMapping(DEFAULT_MAPPING_URI)
     fun save(
@@ -160,7 +160,7 @@ class UserMetadataController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_METADATA_FORBID_CONTENT
     )
-    @ApiOperation("创建/更新禁用元数据")
+    @Operation(summary = "创建/更新禁用元数据")
     @Permission(type = ResourceType.REPO, action = PermissionAction.UPDATE)
     @PostMapping("/forbid$DEFAULT_MAPPING_URI")
     fun forbidMetadata(
@@ -198,7 +198,7 @@ class UserMetadataController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_METADATA_DELETE_CONTENT
     )
-    @ApiOperation("删除元数据")
+    @Operation(summary = "删除元数据")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping(DEFAULT_MAPPING_URI)
     fun delete(

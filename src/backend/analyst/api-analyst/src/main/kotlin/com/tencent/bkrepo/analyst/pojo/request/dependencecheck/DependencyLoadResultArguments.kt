@@ -28,17 +28,17 @@
 package com.tencent.bkrepo.analyst.pojo.request.dependencecheck
 
 import com.tencent.bkrepo.analyst.pojo.request.LoadResultArguments
-import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.analysis.pojo.scanner.dependencycheck.scanner.DependencyScanner
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import com.tencent.bkrepo.common.query.model.PageLimit
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("DependencyCheck扫描结果拉取参数")
+
+@Schema(title = "DependencyCheck扫描结果拉取参数")
 data class DependencyLoadResultArguments(
-    @ApiModelProperty("需要的cve列表")
+    @get:Schema(title = "需要的cve列表")
     val vulIds: List<String> = emptyList(),
-    @ApiModelProperty("需要的漏洞严重性等级列表")
+    @get:Schema(title = "需要的漏洞严重性等级列表")
     val vulnerabilityLevels: List<String> = emptyList(),
-    @ApiModelProperty("分页参数")
+    @get:Schema(title = "分页参数")
     val pageLimit: PageLimit = PageLimit()
 ) : LoadResultArguments(DependencyScanner.TYPE)
