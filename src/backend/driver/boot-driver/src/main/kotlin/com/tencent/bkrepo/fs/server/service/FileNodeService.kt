@@ -35,7 +35,9 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.storage.CoStorageManager
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import org.springframework.stereotype.Service
 
+@Service
 class FileNodeService(
     private val blockNodeService: RBlockNodeService,
     private val coStorageManager: CoStorageManager

@@ -27,31 +27,7 @@
 
 package com.tencent.bkrepo.fs.server.config
 
-import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
-import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.service.ServiceBeansInitializer
-import com.tencent.bkrepo.fs.server.RepositoryCache
-import com.tencent.bkrepo.fs.server.filter.ActuatorAuthFilter
-import com.tencent.bkrepo.fs.server.filter.ArtifactFileCleanupFilterFunction
-import com.tencent.bkrepo.fs.server.filter.AuthHandlerFilterFunction
-import com.tencent.bkrepo.fs.server.filter.DevXAccessFilter
-import com.tencent.bkrepo.fs.server.filter.PermissionFilterFunction
-import com.tencent.bkrepo.fs.server.filter.ReactiveRequestContextFilter
-import com.tencent.bkrepo.fs.server.handler.ClientHandler
-import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
-import com.tencent.bkrepo.fs.server.handler.LoginHandler
-import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
-import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
-import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
-import com.tencent.bkrepo.fs.server.service.ClientService
-import com.tencent.bkrepo.fs.server.service.FileNodeService
-import com.tencent.bkrepo.fs.server.service.FileOperationService
-import com.tencent.bkrepo.fs.server.service.PermissionService
-import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
-import com.tencent.bkrepo.fs.server.storage.CoStorageManager
-import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
-import com.tencent.bkrepo.fs.server.utils.IoaUtils
-import com.tencent.bkrepo.fs.server.utils.SecurityManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -59,38 +35,12 @@ import org.springframework.context.support.GenericApplicationContext
 import org.springframework.context.support.beans
 
 val beans = beans {
-    bean<NodeOperationsHandler>()
-    bean<FileOperationsHandler>()
-    bean<FsNodeHandler>()
-    bean<LoginHandler>()
-    bean<ClientHandler>()
-    bean<PermissionService>()
-    bean<AuthHandlerFilterFunction>()
-    bean<RepositoryCache>()
-    bean<ServerMetrics>()
-    bean<ActuatorAuthFilter>()
-    bean<ReactiveRequestContextFilter>()
-    bean<CoArtifactFileFactory>()
-    bean<CoStorageManager>()
-    bean<ArtifactFileCleanupFilterFunction>()
-    bean<FileNodeService>()
-    bean<FileOperationService>()
-    bean<ClientService>()
-    bean<SecurityManager>()
-    bean<JwtAuthProperties>()
-    bean<DevXAccessFilter>()
-    bean<DevXProperties>()
-    bean<PermissionFilterFunction>()
-    bean<DevxWorkspaceUtils>()
-    bean<IoaUtils>()
-    bean {
-        RouteConfiguration(ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref(), ref()).router()
-    }
     bean {
         CoroutineScope(Dispatchers.IO + SupervisorJob())
     }
 }
 
+// TODO 框架升级
 class BeansInitializer : ServiceBeansInitializer() {
     override fun initialize(applicationContext: GenericApplicationContext) {
         super.initialize(applicationContext)
