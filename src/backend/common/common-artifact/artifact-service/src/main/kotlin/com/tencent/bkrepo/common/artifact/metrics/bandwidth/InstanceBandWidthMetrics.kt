@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_SIZE
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadMetrics.Companion.COS_ASYNC_UPLOADING_SIZE
 import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -80,18 +81,19 @@ class InstanceBandWidthMetrics(
     }
 
     fun storeBandWidth() {
-        // 由于同时存在Prometheus和influxdb指标监控，会导致counter类型变成CompositeCounter，
+        // 由于同时存在Prometheus和influxdb，会导致counter类型变成CompositeCounter，
         // CompositeCounter类型存在个bug，会在获取count()值时可能会变成0
         // https://github.com/micrometer-metrics/micrometer/issues/1441
-        val prometheusMeterRegistry = (ArtifactMetrics.meterRegistry as PrometheusMeterRegistry)
-        val downloadingNow = (prometheusMeterRegistry.meters.firstOrNull {
+        // 安全获取 Prometheus 注册表
+        val realMeterRegistry = getPrometheusRegistry() ?: return
+        val downloadingNow = (realMeterRegistry.meters.firstOrNull {
             it.id.name == ARTIFACT_DOWNLOADING_SIZE
         } as? Counter)?.count() ?: 0.0
 
-        val uploadingNow = (prometheusMeterRegistry.meters.firstOrNull {
+        val uploadingNow = (realMeterRegistry.meters.firstOrNull {
             it.id.name == ARTIFACT_UPLOADING_SIZE
         } as? Counter)?.count() ?: 0.0
-        val cosAsyncUploadingNow = (prometheusMeterRegistry.meters.firstOrNull {
+        val cosAsyncUploadingNow = (realMeterRegistry.meters.firstOrNull {
             it.id.name == COS_ASYNC_UPLOADING_SIZE
         } as? Counter)?.count() ?: 0.0
         logger.debug(
@@ -121,6 +123,17 @@ class InstanceBandWidthMetrics(
         prevDownloadingMetrics = downloadingNow
         prevUploadingMetrics = uploadingNow
         prevCosAsyncUploadingMetrics = cosAsyncUploadingNow
+    }
+
+    fun getPrometheusRegistry(): PrometheusMeterRegistry? {
+        return when (val registry = ArtifactMetrics.meterRegistry) {
+            is CompositeMeterRegistry -> registry.registries
+                .filterIsInstance<PrometheusMeterRegistry>()
+                .firstOrNull()
+
+            is PrometheusMeterRegistry -> registry
+            else -> null
+        }
     }
 
     fun store2Redis(instanceIp: String, serviceName: String, upload: Double, download: Double, cosAsyncUpload: Double) {
