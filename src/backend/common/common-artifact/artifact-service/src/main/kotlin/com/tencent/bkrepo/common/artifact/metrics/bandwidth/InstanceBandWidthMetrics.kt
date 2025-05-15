@@ -123,11 +123,11 @@ class InstanceBandWidthMetrics(
         val instanceServiceKey = "$INSTANCE_PREFIX$instanceIp$SERVICE_SUFFIX"
         val instanceTotalKey = INSTANCE_BANDWIDTH
         val expireSeconds = DATA_EXPIRE_HOURS * 3600
-        val currentTimestamp = (System.currentTimeMillis() / 1000).toString()
+        val currentTimestamp = System.currentTimeMillis() / 1000
         // 1. 使用管道批量更新带宽数据和时间戳
         redisTemplate.executePipelined { connection ->
             val hashOps = redisTemplate.opsForHash<String, String>()
-            hashOps.put(instanceServiceKey, "$serviceKey$TS_SUFFIX", currentTimestamp)
+            hashOps.put(instanceServiceKey, "$serviceKey$TS_SUFFIX", currentTimestamp.toString())
             hashOps.put(instanceServiceKey, "$serviceKey$UPLOAD_SUFFIX", upload.toString())
             hashOps.put(instanceServiceKey, "$serviceKey$DOWNLOAD_SUFFIX", download.toString())
             hashOps.put(instanceServiceKey, "$serviceKey$COS_ASYNC_UPLOAD_SUFFIX", cosAsyncUpload.toString())
@@ -140,6 +140,12 @@ class InstanceBandWidthMetrics(
         services.forEach { (field, value) ->
             if (!field.endsWith(TS_SUFFIX)) {
                 total += value.toDoubleOrNull() ?: 0.0
+                // 检查服务是否活跃（5分钟内）
+                val tsKey = field.substringBeforeLast(':') + TS_SUFFIX
+                val timestamp = services[tsKey]?.toLongOrNull() ?: 0L
+                if ((currentTimestamp - timestamp) < 300) { // 5分钟阈值
+                    total += value.toDoubleOrNull() ?: 0.0
+                }
             }
         }
 
