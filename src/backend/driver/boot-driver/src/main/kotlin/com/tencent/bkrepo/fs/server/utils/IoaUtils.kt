@@ -45,6 +45,7 @@ import io.netty.resolver.dns.DnsNameResolverBuilder
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.server.ServerRequest
 import reactor.netty.http.client.HttpClient
@@ -53,6 +54,7 @@ import java.net.InetAddress
 import java.time.Duration
 import kotlin.random.Random
 
+@Component
 class IoaUtils(
     ioaProperties: IoaProperties
 ) {

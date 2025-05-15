@@ -31,6 +31,7 @@ import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.metadata.service.repo.RRepositoryService
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
 
 /**
@@ -38,6 +39,7 @@ import java.util.concurrent.TimeUnit
  *
  * 因为仓库需要通过请求获取，并且一般情况下没有变化，所以这里进行缓存
  * */
+@Component
 class RepositoryCache(
     repositoryService: RRepositoryService
 ) {
