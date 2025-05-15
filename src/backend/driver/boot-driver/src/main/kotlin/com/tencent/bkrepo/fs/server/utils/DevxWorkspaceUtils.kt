@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
@@ -65,6 +66,7 @@ import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.stream.Collectors
 
+@Component
 class DevxWorkspaceUtils(
     devXProperties: DevXProperties
 ) {

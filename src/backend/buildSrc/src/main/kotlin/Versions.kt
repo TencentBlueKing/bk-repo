@@ -58,7 +58,6 @@ object Versions {
     const val DockerJava = "3.4.0"
     const val Mockk = "1.14.2"
     const val Swagger = "2.2.28"
-    const val SleuthOtel = "1.1.4"
     const val KubernetesClient = "11.0.2"
     const val ReactiveFeign = "4.2.1"
     const val Jasypt = "3.0.5"

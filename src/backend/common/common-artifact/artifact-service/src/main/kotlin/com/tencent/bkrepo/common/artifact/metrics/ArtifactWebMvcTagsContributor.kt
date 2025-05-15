@@ -32,6 +32,7 @@ import org.springframework.http.server.observation.ServerRequestObservationConve
 /**
  * 为请求增加额外的tag
  * */
+// TODO 框架升级
 class ArtifactWebMvcTagsContributor(private val artifactMetricsProperties: ArtifactMetricsProperties) :
     ServerRequestObservationConvention {
 

@@ -38,7 +38,9 @@ import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.RepositoryCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.springframework.stereotype.Component
 
+@Component
 class CoStorageManager(
     private val blockNodeService: RBlockNodeService,
     private val storageService: StorageService

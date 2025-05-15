@@ -55,10 +55,12 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+@Service
 class ClientService(
     private val clientRepository: ClientRepository,
     private val dailyClientRepository: DailyClientRepository,
