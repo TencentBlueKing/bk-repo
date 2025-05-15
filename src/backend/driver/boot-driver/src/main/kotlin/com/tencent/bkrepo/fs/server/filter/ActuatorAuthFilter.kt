@@ -29,11 +29,12 @@ package com.tencent.bkrepo.fs.server.filter
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
+import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.fs.server.filterAndAwait
 import kotlinx.coroutines.reactor.awaitSingle
+import org.springframework.stereotype.Component
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilterChain
@@ -41,6 +42,7 @@ import org.springframework.web.server.WebFilterChain
 /**
  * 处理Actuator Endpoint的认证。
  * */
+@Component
 class ActuatorAuthFilter(private val rAuthClient: RAuthClient) : CoWebFilter {
 
     private val antPathMatcher = AntPathMatcher()

@@ -54,6 +54,7 @@ import org.springframework.core.io.buffer.DefaultDataBufferFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ZeroCopyHttpOutputMessage
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
@@ -67,6 +68,7 @@ import java.net.URI
  *
  * 处理文件操作请求
  * */
+@Component
 class FileOperationsHandler(
     private val fileOperationService: FileOperationService,
     private val nodeService: RNodeService
