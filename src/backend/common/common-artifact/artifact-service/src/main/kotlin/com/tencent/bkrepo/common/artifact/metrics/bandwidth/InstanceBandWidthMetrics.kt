@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_SIZE
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadMetrics.Companion.COS_ASYNC_UPLOADING_SIZE
 import io.micrometer.core.instrument.Counter
+import io.micrometer.prometheus.PrometheusMeterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.redis.core.RedisTemplate
@@ -79,13 +80,18 @@ class InstanceBandWidthMetrics(
     }
 
     fun storeBandWidth() {
-        val downloadingNow = (ArtifactMetrics.meterRegistry.meters.firstOrNull {
+        // 由于同时存在Prometheus和influxdb指标监控，会导致counter类型变成CompositeCounter，
+        // CompositeCounter类型存在个bug，会在获取count()值时可能会变成0
+        // https://github.com/micrometer-metrics/micrometer/issues/1441
+        val prometheusMeterRegistry = (ArtifactMetrics.meterRegistry as PrometheusMeterRegistry)
+        val downloadingNow = (prometheusMeterRegistry.meters.firstOrNull {
             it.id.name == ARTIFACT_DOWNLOADING_SIZE
         } as? Counter)?.count() ?: 0.0
-        val uploadingNow = (ArtifactMetrics.meterRegistry.meters.firstOrNull {
+
+        val uploadingNow = (prometheusMeterRegistry.meters.firstOrNull {
             it.id.name == ARTIFACT_UPLOADING_SIZE
         } as? Counter)?.count() ?: 0.0
-        val cosAsyncUploadingNow = (ArtifactMetrics.meterRegistry.meters.firstOrNull {
+        val cosAsyncUploadingNow = (prometheusMeterRegistry.meters.firstOrNull {
             it.id.name == COS_ASYNC_UPLOADING_SIZE
         } as? Counter)?.count() ?: 0.0
         logger.debug(
