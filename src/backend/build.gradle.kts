@@ -47,7 +47,6 @@ allprojects {
         applyMavenExclusions(false)
 
         imports {
-            mavenBom("org.springframework.cloud:spring-cloud-sleuth-otel-dependencies:${Versions.SleuthOtel}")
             // 升级devops boot版本后，stream启动报错。参考https://github.com/spring-cloud/spring-cloud-function/issues/940
 //            mavenBom("org.springframework.cloud:spring-cloud-function-dependencies:${Versions.SpringCloudFunction}")
         }
@@ -82,6 +81,8 @@ allprojects {
             dependency("com.tencent.devops:devops-schedule-model-mongodb:${Versions.DevopsBootSNAPSHOT}")
             dependency("com.tencent.devops:devops-schedule-worker:${Versions.DevopsBootSNAPSHOT}")
             dependency("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x:${Versions.EmbeddedMongo}")
+            // pulsar-client中依赖的版本太旧，和otel trace中的版本冲突
+            dependency("io.opentelemetry:opentelemetry-api-incubator:1.43.0-alpha")
         }
     }
 
