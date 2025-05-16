@@ -29,28 +29,34 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(fileTree(mapOf("dir" to "lib", "include" to listOf("*.jar"))))
+package com.tencent.bkrepo.common.storage.innercos.metrics
 
-    api(project(":common:common-api"))
-    api(project(":common:common-bksync"))
-    api(project(":common:common-storage:storage-api"))
-    api(project(":common:common-artifact:artifact-api"))
-    api("io.micrometer:micrometer-core")
-    api("commons-codec:commons-codec")
-    api("commons-io:commons-io")
-    implementation("org.springframework.retry:spring-retry")
-    implementation("org.springframework.boot:spring-boot-starter-aop")
-    implementation("com.google.guava:guava")
-    implementation("com.amazonaws:aws-java-sdk-s3")
-    implementation("com.squareup.okhttp3:okhttp")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
-    implementation("com.tencent.polaris:polaris-discovery-factory")
-    implementation("com.tencent.bk.sdk:crypto-java-sdk")
-    compileOnly("org.springframework.boot:spring-boot-starter-data-redis")
-    testImplementation(project(":common:common-redis"))
-    testImplementation("it.ozimov:embedded-redis:${Versions.EmbeddedRedis}") {
-        exclude("org.slf4j", "slf4j-simple")
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.MeterBinder
+import org.springframework.stereotype.Component
+
+@Suppress("LateinitUsage")
+@Component
+class CosUploadMetrics : MeterBinder {
+
+    override fun bindTo(meterRegistry: MeterRegistry) {
+        Companion.meterRegistry = meterRegistry
     }
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
+
+    companion object {
+        lateinit var meterRegistry: MeterRegistry
+        private const val BYTES = "bytes"
+        const val COS_ASYNC_UPLOADING_SIZE = "cos.async.uploading.size"
+        private const val COS_ASYNC_UPLOADING_SIZE_DESC = "cos异步上传大小"
+
+        fun getUploadingCounter(): Counter {
+            return Counter.builder(COS_ASYNC_UPLOADING_SIZE)
+                .description(COS_ASYNC_UPLOADING_SIZE_DESC)
+                .baseUnit(BYTES)
+                .register(meterRegistry)
+        }
+
+    }
+
 }
