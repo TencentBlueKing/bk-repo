@@ -40,23 +40,15 @@ import com.tencent.bkrepo.huggingface.pojo.ModelInfo
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.BeanFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 
 @Component
-class HfApi(
-    private val beanFactory: BeanFactory,
-) {
-
-    init {
-        Companion.beanFactory = beanFactory
-    }
+class HfApi {
 
     companion object {
-        private lateinit var beanFactory: BeanFactory
         private val httpClient by lazy {
-            HttpClientBuilderFactory.create(beanFactory = beanFactory)
+            HttpClientBuilderFactory.create()
                 .addInterceptor(RedirectInterceptor())
                 .followRedirects(false).build()
         }
