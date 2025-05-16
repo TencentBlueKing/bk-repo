@@ -28,18 +28,12 @@
 import com.tencent.devops.utils.findPropertyOrNull
 import java.util.Locale.getDefault
 
-val otelExporterEnabled: String? by project
 dependencies {
     api("com.tencent.devops:devops-boot-starter-service")
     api("com.tencent.devops:devops-boot-starter-circuitbreaker")
     api("io.github.resilience4j:resilience4j-bulkhead")
     api("io.micrometer:micrometer-registry-influx")
     api("com.google.guava:guava")
-
-    // 默认不添加otel exporter
-    if (otelExporterEnabled.toBoolean()) {
-        implementation("io.opentelemetry:opentelemetry-exporter-otlp")
-    }
 
     api("cn.hutool:hutool-crypto:${Versions.HutoolCrypto}")
     compileOnly(project(":common:common-mongo"))
