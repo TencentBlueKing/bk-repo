@@ -42,15 +42,13 @@ import com.tencent.devops.api.pojo.Response
 import okhttp3.Request
 import okio.IOException
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.BeanFactory
 import java.util.concurrent.TimeUnit
 
 open class CIPermissionManager(
-    beanFactory: BeanFactory,
     private val ciPermissionProperties: CIPermissionProperties
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create(beanFactory = beanFactory)
+    private val httpClient = HttpClientBuilderFactory.create()
         .connectTimeout(10L, TimeUnit.SECONDS)
         .readTimeout(10L, TimeUnit.SECONDS)
         .build()

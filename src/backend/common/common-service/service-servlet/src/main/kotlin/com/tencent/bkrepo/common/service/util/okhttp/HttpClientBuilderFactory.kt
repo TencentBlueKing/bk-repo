@@ -27,11 +27,15 @@
 
 package com.tencent.bkrepo.common.service.util.okhttp
 
+import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationTrustManager
 import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.trustAllHostname
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
-import org.springframework.beans.factory.BeanFactory
+import okhttp3.internal.threadFactory
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 /**
@@ -54,7 +58,6 @@ object HttpClientBuilderFactory {
     fun create(
         certificate: String? = null,
         neverReadTimeout: Boolean = false,
-        beanFactory: BeanFactory? = null,
         closeTimeout: Long = 0,
     ): OkHttpClient.Builder {
         return defaultClient.newBuilder()
@@ -75,21 +78,11 @@ object HttpClientBuilderFactory {
                 }
 
                 writeTimeout(0, TimeUnit.MILLISECONDS)
-                // TODO 框架升级
-//                beanFactory?.let {
-//                    val traceableExecutorService = TraceableExecutorService(
-//                        beanFactory,
-//                        ThreadPoolExecutor(
-//                            0,
-//                            Int.MAX_VALUE,
-//                            60L,
-//                            TimeUnit.SECONDS,
-//                            SynchronousQueue(),
-//                            threadFactory("OkHttp Dispatcher", false),
-//                        ),
-//                    )
-//                    dispatcher(Dispatcher(traceableExecutorService))
-//                }
+                val executorService = ThreadPoolExecutor(
+                    0, Int.MAX_VALUE, 60, TimeUnit.SECONDS,
+                    SynchronousQueue(), threadFactory("Okhttp Client Dispatcher", false)
+                ).trace()
+                dispatcher(Dispatcher(executorService))
             }
     }
 }

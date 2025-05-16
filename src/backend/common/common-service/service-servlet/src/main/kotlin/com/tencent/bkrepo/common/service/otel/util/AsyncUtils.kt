@@ -27,32 +27,32 @@
 
 package com.tencent.bkrepo.common.service.otel.util
 
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import io.micrometer.tracing.SpanNamer
-import io.micrometer.tracing.Tracer
-import org.springframework.beans.BeansException
+import io.micrometer.context.ContextExecutorService
+import io.micrometer.context.ContextSnapshotFactory
 import java.util.concurrent.Callable
+import java.util.concurrent.ExecutorService
 
 object AsyncUtils {
-    // TODO 框架升级
+
+    private val contextSnapshotFactory = ContextSnapshotFactory.builder().build()
+
     fun Runnable.trace(): Runnable {
         return try {
-            val tracer = SpringContextUtils.getBean<Tracer>()
-            val spanNamer = SpringContextUtils.getBean<SpanNamer>()
-            this
-        } catch (_: BeansException) {
+            contextSnapshotFactory.captureAll().wrap(this)
+        } catch (_: Exception) {
             this
         }
     }
 
-    // TODO 框架升级
     fun <T> Callable<T>.trace(): Callable<T> {
         return try {
-            val tracer = SpringContextUtils.getBean<Tracer>()
-            val spanNamer = SpringContextUtils.getBean<SpanNamer>()
-            this
-        } catch (_: BeansException) {
+            contextSnapshotFactory.captureAll().wrap(this)
+        } catch (_: Exception) {
             this
         }
+    }
+
+    fun ExecutorService.trace(): ExecutorService {
+        return ContextExecutorService.wrap(this, contextSnapshotFactory::captureAll)
     }
 }

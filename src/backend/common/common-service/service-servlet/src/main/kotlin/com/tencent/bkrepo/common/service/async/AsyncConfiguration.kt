@@ -35,6 +35,7 @@ import org.springframework.boot.task.ThreadPoolTaskExecutorCustomizer
 import org.springframework.boot.task.ThreadPoolTaskSchedulerCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.task.support.ContextPropagatingTaskDecorator
 import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.annotation.EnableScheduling
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
@@ -49,6 +50,7 @@ class AsyncConfiguration {
     fun taskExecutorCustomizer(): ThreadPoolTaskExecutorCustomizer {
         return ThreadPoolTaskExecutorCustomizer {
             it.setRejectedExecutionHandler(CallerRunsPolicy())
+            it.setTaskDecorator(ContextPropagatingTaskDecorator())
         }
     }
 
@@ -56,6 +58,7 @@ class AsyncConfiguration {
     fun taskSchedulerCustomizer(): ThreadPoolTaskSchedulerCustomizer {
         return ThreadPoolTaskSchedulerCustomizer {
             it.setRejectedExecutionHandler(CallerRunsPolicy())
+            it.setTaskDecorator(ContextPropagatingTaskDecorator())
         }
     }
 }
