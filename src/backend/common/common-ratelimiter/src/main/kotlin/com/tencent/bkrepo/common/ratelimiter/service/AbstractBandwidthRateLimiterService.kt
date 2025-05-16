@@ -123,6 +123,7 @@ abstract class AbstractBandwidthRateLimiterService(
         permits: Long,
         circuitBreakerPerSecond: DataSize,
     ) {
+        whiteListCheck(request)
         val resLimitInfo = getResLimitInfoAndResInfo(request).first ?: return
         rateLimitCatch(
             request = request,
