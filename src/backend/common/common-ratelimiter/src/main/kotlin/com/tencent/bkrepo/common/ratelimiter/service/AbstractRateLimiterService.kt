@@ -43,7 +43,6 @@ import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.MonitorRateLimiterInterceptorAdaptor
-import com.tencent.bkrepo.common.ratelimiter.interceptor.ProjectWhitelistRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorChain
 import com.tencent.bkrepo.common.ratelimiter.interceptor.TargetRateLimiterInterceptorAdaptor
@@ -74,6 +73,7 @@ import org.springframework.http.MediaType
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
+import org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE
 import java.util.concurrent.ConcurrentHashMap
 import javax.servlet.http.HttpServletRequest
 
@@ -98,7 +98,6 @@ abstract class AbstractRateLimiterService(
     val interceptorChain: RateLimiterInterceptorChain =
         RateLimiterInterceptorChain(
             mutableListOf(
-                ProjectWhitelistRateLimiterInterceptorAdaptor(rateLimiterProperties),
                 MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics),
                 TargetRateLimiterInterceptorAdaptor(rateLimiterConfigService)
             )
@@ -139,10 +138,33 @@ abstract class AbstractRateLimiterService(
         }
     }
 
+    fun whiteListCheck(request: HttpServletRequest) {
+        if (!rateLimiterProperties.projectWhiteListEnabled) {
+            return
+        }
+        try {
+            val (projectId, _) = getRepoInfoFromAttribute(request)
+            if (isInWhiteList(projectId!!)) {
+                logger.debug("Project [$projectId] is in whitelist, skipping rate limit")
+                return
+            }
+        } catch (e: InvalidResourceException) {
+            // 检查url是否在忽略列表中
+            if (rateLimiterProperties.specialUrlsIgnoreProjectWhiteList.contains(
+                    request.getAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE)
+                )) {
+                logger.debug("Request url is in ignore url list, skipping rate limit")
+                return
+            }
+        }
+        throw OverloadException("Project or url is not in whitelist!")
+    }
+
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {
         if (!rateLimiterProperties.enabled) {
             return
         }
+        whiteListCheck(request)
         if (ignoreRequest(request)) return
         if (rateLimitRule == null || rateLimitRule!!.isEmpty()) return
         val resLimitInfo = getResLimitInfoAndResInfo(request).first ?: return
@@ -385,7 +407,7 @@ abstract class AbstractRateLimiterService(
         resLimitInfo: ResLimitInfo,
         applyPermits: Long? = null,
         circuitBreakerPerSecond: Long? = null,
-        action: (RateLimiter, Long) -> Boolean
+        action: (RateLimiter, Long) -> Boolean,
     ) {
         var exception: Exception? = null
         var pass = false
@@ -430,7 +452,7 @@ abstract class AbstractRateLimiterService(
      * 获取对应限流算法实现
      */
     fun getAlgorithmOfRateLimiter(
-        resource: String, resourceLimit: ResourceLimit
+        resource: String, resourceLimit: ResourceLimit,
     ): RateLimiter {
         val limitKey = generateKey(resource, resourceLimit)
         return RateLimiterBuilder.getAlgorithmOfRateLimiter(
@@ -452,6 +474,29 @@ abstract class AbstractRateLimiterService(
                 "The circuit breaker is activated when too many download requests are made to the service!"
             )
         }
+    }
+
+    private fun isInWhiteList(projectId: String): Boolean {
+        return rateLimiterProperties.projectWhiteList.any { pattern ->
+            when {
+                isPotentialRegex(pattern) -> {
+                    try {
+                        val regex = Regex(pattern.replace("*", ".*"))
+                        regex.matches(projectId)
+                    } catch (e: Exception) {
+                        logger.warn("Invalid regex pattern [$pattern] in project whitelist")
+                        false
+                    }
+                }
+
+                else -> pattern == projectId
+            }
+        }
+    }
+
+    private fun isPotentialRegex(pattern: String): Boolean {
+        val regexChars = setOf('*', '$', '^', '+', '?', '.', '|', '(', ')', '[', ']', '{', '}')
+        return pattern.any { it in regexChars }
     }
 
     companion object {
