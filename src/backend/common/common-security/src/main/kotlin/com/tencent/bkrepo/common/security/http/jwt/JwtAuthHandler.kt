@@ -44,7 +44,7 @@ import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 open class JwtAuthHandler(
     jwtAuthProperties: JwtAuthProperties,

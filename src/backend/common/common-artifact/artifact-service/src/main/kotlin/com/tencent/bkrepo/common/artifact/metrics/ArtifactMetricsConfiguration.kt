@@ -46,7 +46,7 @@ import org.springframework.context.annotation.Import
 @Configuration
 @Import(
     ArtifactMetrics::class,
-    ArtifactWebMvcTagsContributor::class,
+//    ArtifactWebMvcTagsContributor::class,
     ArtifactCacheMetrics::class,
 )
 @EnableConfigurationProperties(ArtifactMetricsProperties::class)

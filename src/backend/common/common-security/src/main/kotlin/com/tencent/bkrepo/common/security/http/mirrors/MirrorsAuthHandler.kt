@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.security.http.basic.BasicAuthCredentials
 import com.tencent.bkrepo.common.security.http.basic.BasicAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 /**
  * 针对软件源的专有认证方式

@@ -17,13 +17,13 @@ import com.tencent.bkrepo.git.constant.PATH_SYNC
 import com.tencent.bkrepo.git.constant.X_DEVOPS_BUILD_ID
 import com.tencent.bkrepo.git.constant.X_DEVOPS_PIPELINE_ID
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
 import java.util.Locale
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 class GitRepoInterceptor : HandlerInterceptor {
 

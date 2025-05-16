@@ -27,15 +27,15 @@
 
 package com.tencent.bkrepo.common.ratelimiter.algorithm
 
+import jakarta.annotation.PostConstruct
+import jakarta.annotation.PreDestroy
 import org.springframework.boot.test.context.TestConfiguration
 import redis.embedded.RedisServer
-import javax.annotation.PostConstruct
-import javax.annotation.PreDestroy
 
 
 @TestConfiguration
 class RedisTestConfiguration {
-    private val redisServer = RedisServer.builder().build()
+    private val redisServer = RedisServer.builder().setting("maxheap 256MB").build()
 
     @PostConstruct
     fun postConstruct() {

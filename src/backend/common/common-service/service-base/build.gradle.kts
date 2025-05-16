@@ -35,7 +35,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson")
 
     api("org.springframework.boot:spring-boot-starter-actuator")
-    api("org.springframework.cloud:spring-cloud-starter-sleuth") {
-        exclude("org.springframework.cloud", "spring-cloud-sleuth-brave")
-    }
+    api("io.micrometer:micrometer-tracing-bridge-otel")
+    api("io.github.openfeign:feign-micrometer")
+    api("io.opentelemetry:opentelemetry-exporter-otlp")
 }
