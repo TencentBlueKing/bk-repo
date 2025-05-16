@@ -158,7 +158,6 @@ class InstanceBandWidthMetrics(
         var total = 0.0
         services.forEach { (field, value) ->
             if (!field.endsWith(TS_SUFFIX)) {
-                total += value.toDoubleOrNull() ?: 0.0
                 // 检查服务是否活跃（5分钟内）
                 val tsKey = field.substringBeforeLast(':') + TS_SUFFIX
                 val timestamp = services[tsKey]?.toLongOrNull() ?: 0L
