@@ -46,27 +46,12 @@ if service_name == "" then
 end
 
 -- 根据路由表转发
-local headers = ngx.req.get_headers()
-local bkrepo_project_id = stringUtil:getValue(headers["x-bkrepo-project-id"])
-local devops_project_id = stringUtil:getValue(headers["x-devops-project-id"])
-
--- 优先判断 X-BKREPO-PROJECT-ID 的值
-local projectId
-if bkrepo_project_id and bkrepo_project_id ~= "" then
-    projectId = bkrepo_project_id
-else
-    if devops_project_id and devops_project_id ~= "" then
-        projectId = devops_project_id
-    end
+local router_target = hostUtil:get_target_by_project()
+if router_target then
+    ngx.var.target = router_target .. "/" .. service_name
+    return
 end
 
-if projectId and config.project_router and config.router_domain then
-    local env = config.project_router[projectId]
-    if env and config.router_domain[env] then
-        ngx.var.target = config.router_domain[env] .. "/" .. service_name
-        return
-    end
-end
 
 -- 哪些endpoint与method开放访问 --
 local security_paths = config.security_paths
