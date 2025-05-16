@@ -103,15 +103,26 @@ mongodb:
 tls:
   mongodb:
     enabled: false
-    ## 运维已经创建的secret
+    ## 运维已经创建的secret，用作mongo客户端连接做init
+    existingPemSecret: ""
+    ## 客户端证书，包含key
+    clientCertPemFilename: ""
+    ## pem文件名
+    certPemFilename: "ca.pem"
+    ## 运维已经创建的secret，用作java程序
     existingSecret: ""
-    certJksFilename: ca.jks
-    trustStorePassword: password
-    ## 双向tls认证时必须提供
-    keyStore: ""
+    ## jks文件名与密码
+    certJksFilename: "ca.jks"
+    trustStorePassword: ""
+    ## 双向tls认证配置
+    ## 密钥库类型：支持PKCS12、JKS，默认PKCS12
+    keyStoreType: "PKCS12"
+    ## 密钥库文件名称（与Secret中的Key一致）
+    keyStoreFilename: ""
+    ## 密钥库密码
     keyStorePassword: ""
-    keyStoreType: ""
-    keyPassword: ""
+    ## 是否校验主机名
+    verifyHostname: false
 
 ## 如果mongodb.enabled为false，bkrepo将使用下面的参数连接外部mongodb
 externalMongodb:
