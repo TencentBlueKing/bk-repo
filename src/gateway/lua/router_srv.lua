@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 local allow_services = { "auth", "repository", "generic", "docker", "oci", "maven", "job",
                          "helm", "pypi", "opdata", "rpm", "s3", "git", "npm", "fs-server", "analyst",
                          "replication", "git", "nuget", "composer", "media", "ddc", "conan", "job-schedule",
-                         "websocket", "preview", "huggingface" ,"driver" }
+                         "websocket", "preview", "huggingface", "driver" }
 local service_name = ngx.var.service
 
 if not arrayUtil:isInArray(service_name, allow_services) then
@@ -45,7 +45,15 @@ if service_name == "" then
     return
 end
 
--- 访问限制api --
+-- 根据路由表转发
+local router_target = hostUtil:get_target_by_project()
+if router_target then
+    ngx.var.target = router_target .. "/" .. service_name
+    return
+end
+
+
+-- 哪些endpoint与method开放访问 --
 local security_paths = config.security_paths
 if security_paths ~= nil and #security_paths ~= 0 then
     local is_secure = false
@@ -54,7 +62,7 @@ if security_paths ~= nil and #security_paths ~= 0 then
     for _, item in ipairs(security_paths) do
         local pathPattern = "/web/" .. service_name .. item.path
         if service_name == "fs-server" then
-             pathPattern = "/web/fs%-server" .. item.path
+            pathPattern = "/web/fs%-server" .. item.path
         end
         if string.find(path, "^" .. pathPattern) ~= nil and service_name == item.service and method == item.method then
             is_secure = true
@@ -66,18 +74,6 @@ if security_paths ~= nil and #security_paths ~= 0 then
     end
 end
 
--- 访问限制的工具
-local access_util = nil
-
--- 限制访问频率
-if access_util then
-    local access_result, err = access_util:isAccess()
-    if not access_result then
-        ngx.log(ngx.STDERR, "request excess!")
-        ngx.exit(503)
-        return
-    end
-end
 
 -- 哪些服务需要转到容器中 --
 local service_in_container = config.service_in_container
