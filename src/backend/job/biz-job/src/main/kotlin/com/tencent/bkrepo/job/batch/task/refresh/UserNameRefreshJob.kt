@@ -61,8 +61,6 @@ class UserNameRefreshJob (
 
     data class PersonInfo(
         val bk_username: String,
-        val login_name: String,
-        val full_name: String,
         val display_name: String
     )
 
@@ -111,7 +109,8 @@ class UserNameRefreshJob (
 
     private fun headerStr(): String {
         return mapOf(
-            "bk_token" to userinfoRefreshJobProperties.bkToken
+            "bk_app_code" to userinfoRefreshJobProperties.appCode,
+            "bk_app_secret" to userinfoRefreshJobProperties.appSecret
         ).toJsonString().replace("\\s".toRegex(), "")
     }
 

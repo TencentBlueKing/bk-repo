@@ -31,8 +31,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("job.username-refresh")
 class UserNameRefreshJobProperties(
-    override var cron: String = "0 */5 * * * ?",
+    override var cron: String = "0 */1 * * * ?",
     var displayNameBaseUrl: String = "",
-    var getDisplayNameApi: String = "/api/v3/open-web/tenant/users/-/display_info",
-    var bkToken: String = ""
+    var getDisplayNameApi: String = "/api/v3/open/tenant/users/-/display_info/",
+    var appCode: String = "",
+    var appSecret: String = ""
 ) : MongodbJobProperties()
