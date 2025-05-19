@@ -1,4 +1,5 @@
 import { mapState, mapActions } from 'vuex'
+import { Base64 } from 'js-base64'
 const guideMap = {
     rds: 'helm'
 }
@@ -53,6 +54,9 @@ export default {
         },
         accessToken () {
             return this.dependAccessTokenValue || '<PERSONAL_ACCESS_TOKEN>'
+        },
+        base64AccessToken () {
+            return this.dependAccessTokenValue ? Base64.encode(this.userName + ":" + this.dependAccessTokenValue): '<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>'
         },
         packageFullPath () {
             return this.$route.query.packageFullPath || '/<RPM_FILE_NAME>'
@@ -1348,6 +1352,100 @@ export default {
                             subTitle: this.$t('npmDownloadGuideSubTitle2'),
                             codeList: [
                                 `ohpm install ${this.packageName}@${this.versionLabel} --registry ${this.domain.ohpm}/${this.projectId}/${this.repoName}/`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        cargoGuide () {
+            return [
+                {
+                    title: this.$t('setCredentials'),
+                    optionType: 'setCredentials',
+                    main: [
+                        {
+                            subTitle: this.$t('cargoCreditGuideSubTitle1'),
+                            codeList: [
+                                '[registry]\n' + 'default = "bkrepo"' + '\n\n'
+                                + '[registries.bkrepo]\n' + `index = "sparse+${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
+                                + '\n' + 'credential-provider = "cargo:token"'
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('cargoCreditGuideSubTitle2'),
+                            codeList: [
+                                '[registries.bkrepo]'
+                                + '\n' + `token = "Basic ${this.base64AccessToken}"`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('push'),
+                    optionType: 'push',
+                    main: [
+                        {
+                            subTitle: this.$t('pushGuideSubTitle'),
+                            codeList: [
+                                'cargo publish --registry bkrepo'
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('pull'),
+                    optionType: 'pull',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1', // vux中存储的变量名
+                            label: this.$t('artifactName'), // 输入框左侧label文案
+                            placeholder: this.$t('artifactNamePlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1' // vuex中mutations中的方法名
+                        },
+                        {
+                            key: 'dependInputValue2', // vux中存储的变量名
+                            label: this.$t('artifactVersion'), // 输入框左侧label文案
+                            placeholder: this.$t('packageVersionPlaceholder'), // 输入框提示文案
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2' // vuex中mutations中的方法名
+                        }
+                    ],
+                    main: [
+                        {
+                            subTitle: this.$t('cargoPullGuideSubTitle'),
+                            codeList: [
+                                `cargo add ${this.dependInputValue1 || this.packageName}@${this.dependInputValue2 || this.versionLabel}`,
+                                'cargo fetch'
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        cargoInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: this.$t('cargoCreditGuideSubTitle1'),
+                            codeList: [
+                                '[registry]\n' + 'default = "bkrepo"' + '\n\n'
+                                + '[registries.bkrepo]\n' + `index = "sparse+${this.domain.cargo}/${this.projectId}/${this.repoName}/index/"`
+                                + '\n' + 'credential-provider = "cargo:token"'
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('cargoCreditGuideSubTitle2'),
+                            codeList: [
+                                '[registries.bkrepo]'
+                                + '\n' + `token = "Basic ${this.userName}:${this.accessToken} (convert to base64)"`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('cargoPullGuideSubTitle'),
+                            codeList: [
+                                `cargo add ${this.packageName}@${this.versionLabel}`,
+                                'cargo fetch'
                             ]
                         }
                     ]
