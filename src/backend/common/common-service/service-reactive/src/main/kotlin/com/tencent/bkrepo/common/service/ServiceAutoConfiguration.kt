@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 Tencent.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,25 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.config
+package com.tencent.bkrepo.common.service
 
-import com.tencent.bkrepo.common.service.ServiceBeansInitializer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import org.springframework.context.support.GenericApplicationContext
-import org.springframework.context.support.beans
+import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration
+import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
+import com.tencent.bkrepo.common.service.feign.ErrorCodeDecoder
+import com.tencent.bkrepo.common.service.feign.RClientConfiguration
+import com.tencent.bkrepo.common.service.log.NettyWebServerAccessLogCustomizer
+import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
+import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.devops.service.config.ServiceProperties
+import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Import
 
-val beans = beans {
-    bean {
-        CoroutineScope(Dispatchers.IO + SupervisorJob())
-    }
-}
-
-// TODO 框架升级
-class BeansInitializer : ServiceBeansInitializer() {
-    override fun initialize(applicationContext: GenericApplicationContext) {
-        super.initialize(applicationContext)
-        beans.initialize(applicationContext)
-    }
-}
+@AutoConfiguration
+@Import(
+    MessageSourceConfiguration::class,
+    GlobalExceptionHandler::class,
+    ActuatorConfiguration::class,
+    ErrorCodeDecoder::class,
+    NettyWebServerAccessLogCustomizer::class,
+    RClientConfiguration::class,
+    SpringContextUtils::class,
+)
+@EnableConfigurationProperties(ServiceProperties::class)
+class ServiceAutoConfiguration
