@@ -31,5 +31,8 @@ data class MetadataLabelRequest(
     val projectId: String,
     val labelKey: String,
     val labelColorMap: Map<String, String>,
-    val display: Boolean?
+    val enumType: Boolean?,
+    val display: Boolean?,
+    val category: String?,
+    val description: String?,
 )

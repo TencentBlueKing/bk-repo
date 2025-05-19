@@ -32,7 +32,11 @@ import java.time.LocalDateTime
 data class MetadataLabelDetail(
     val labelKey: String,
     val labelColorMap: Map<String, String>,
+    val enumType: Boolean,
     val display: Boolean,
+    val category: String?,
+    val system: Boolean,
+    val description: String,
     val createdBy: String,
     val createdDate: LocalDateTime,
     val lastModifiedBy: String,

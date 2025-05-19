@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.metadata.model
 
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
@@ -38,7 +38,10 @@ data class TMetadataLabel(
     val projectId: String,
     val labelKey: String,
     var labelColorMap: Map<String, String>,
+    var enumType: Boolean?,
     var display: Boolean?,
+    var category: String?,
+    var description: String?,
     val createdBy: String,
     val createdDate: LocalDateTime,
     var lastModifiedBy: String,

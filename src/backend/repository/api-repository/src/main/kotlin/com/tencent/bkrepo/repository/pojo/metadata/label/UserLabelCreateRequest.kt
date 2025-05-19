@@ -30,5 +30,8 @@ package com.tencent.bkrepo.repository.pojo.metadata.label
 data class UserLabelCreateRequest(
     val labelKey: String,
     val labelColorMap: Map<String, String>,
-    val display: Boolean = true
+    val enumType: Boolean = false,
+    val display: Boolean = true,
+    val category: String? = null,
+    val description: String? = null,
 )
