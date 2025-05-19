@@ -48,6 +48,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
+import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
 
 /**
  * 元数据工具类
@@ -84,14 +85,20 @@ object MetadataUtils {
         return metadataList?.associate { it.key to it.value }.orEmpty()
     }
 
-    fun toList(metadataList: List<TMetadata>?): List<MetadataModel> {
+    fun toList(
+        metadataList: List<TMetadata>?,
+        metadataLabels: List<MetadataLabelDetail> = emptyList()
+    ): List<MetadataModel> {
         return metadataList?.map {
             MetadataModel(
                 key = it.key,
                 value = it.value,
                 system = it.system,
                 description = it.description,
-                link = it.link
+                link = it.link,
+                color = metadataLabels.find {
+                    label -> label.labelKey == it.key && label.enableColorConfig && label.display
+                }?.labelColorMap?.get(it.value)
             )
         }.orEmpty()
     }
@@ -149,7 +156,10 @@ object MetadataUtils {
             .associate { it.getValue("key").toString() to it.getValue("value") }
     }
 
-    fun convertToMetadataModel(metadataList: List<Map<String, Any>>): List<MetadataModel> {
+    fun convertToMetadataModel(
+        metadataList: List<Map<String, Any>>,
+        metadataLabels: List<MetadataLabelDetail>
+    ): List<MetadataModel> {
         return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
             .map {
                 val key = it.getValue(TMetadata::key.name).toString()
@@ -157,7 +167,17 @@ object MetadataUtils {
                 val system = it[TMetadata::system.name] as Boolean? ?: false
                 val description = it[TMetadata::description.name]?.toString()
                 val link = it[TMetadata::link.name]?.toString()
-                MetadataModel(key = key, value = value, system = system, description = description, link = link)
+                val color = metadataLabels.find {
+                    label -> label.labelKey == key && label.enableColorConfig && label.display
+                }?.labelColorMap?.get(value)
+                MetadataModel(
+                    key = key,
+                    value = value,
+                    system = system,
+                    description = description,
+                    link = link,
+                    color = color
+                )
             }
     }
 
