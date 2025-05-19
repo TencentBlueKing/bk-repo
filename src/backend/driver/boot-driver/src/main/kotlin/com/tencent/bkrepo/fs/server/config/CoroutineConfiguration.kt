@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 Tencent.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,33 +25,19 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service
+package com.tencent.bkrepo.fs.server.config
 
-import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration
-import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
-import com.tencent.bkrepo.common.service.feign.ErrorCodeDecoder
-import com.tencent.bkrepo.common.service.feign.RClientConfiguration
-import com.tencent.bkrepo.common.service.log.NettyWebServerAccessLogCustomizer
-import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.devops.service.config.ServiceProperties
-import org.springframework.context.ApplicationContextInitializer
-import org.springframework.context.support.GenericApplicationContext
-import org.springframework.context.support.beans
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-val beans = beans {
-    bean<ServiceProperties>()
-    bean<MessageSourceConfiguration>()
-    bean<SpringContextUtils>()
-    bean<GlobalExceptionHandler>()
-    bean<ActuatorConfiguration>()
-    bean<ErrorCodeDecoder>()
-    bean<NettyWebServerAccessLogCustomizer>()
-    bean<RClientConfiguration>()
-}
+@Configuration
+class CoroutineConfiguration {
 
-open class ServiceBeansInitializer : ApplicationContextInitializer<GenericApplicationContext> {
-    override fun initialize(applicationContext: GenericApplicationContext) {
-        beans.initialize(applicationContext)
+    @Bean
+    fun coroutineScope(): CoroutineScope {
+        return CoroutineScope(Dispatchers.IO + SupervisorJob())
     }
 }
