@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.metadata.model
 
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
@@ -38,7 +38,11 @@ data class TMetadataLabel(
     val projectId: String,
     val labelKey: String,
     var labelColorMap: Map<String, String>,
+    var enumType: Boolean?,
+    var enableColorConfig: Boolean?,
     var display: Boolean?,
+    var category: String?,
+    var description: String?,
     val createdBy: String,
     val createdDate: LocalDateTime,
     var lastModifiedBy: String,

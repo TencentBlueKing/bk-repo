@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeServiceImpl
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
@@ -90,6 +91,7 @@ class CenterNodeServiceImpl(
     override val projectService: ProjectService,
     val clusterProperties: ClusterProperties,
     val archiveClient: ArchiveClient,
+    override val metadataLabelCacheService: MetadataLabelCacheService
 ) : NodeServiceImpl(
     nodeDao,
     repositoryDao,
@@ -104,6 +106,7 @@ class CenterNodeServiceImpl(
     blockNodeService,
     projectService,
     archiveClient,
+    metadataLabelCacheService,
 ) {
 
     override fun checkRepo(projectId: String, repoName: String): TRepository {
