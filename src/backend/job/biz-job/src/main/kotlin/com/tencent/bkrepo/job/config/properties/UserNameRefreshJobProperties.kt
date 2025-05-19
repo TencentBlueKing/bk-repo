@@ -31,7 +31,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("job.username-refresh")
 class UserNameRefreshJobProperties(
-    override var cron: String = "0 */1 * * * ?",
+    override var cron: String = "0 */5 * * * ?",
     var displayNameBaseUrl: String = "",
     var getDisplayNameApi: String = "/api/v3/open/tenant/users/-/display_info/",
     var appCode: String = "",
