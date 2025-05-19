@@ -30,12 +30,9 @@ package com.tencent.bkrepo.fs.server
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.scheduling.annotation.EnableScheduling
-import reactivefeign.spring.config.EnableReactiveFeignClients
 
 @SpringBootApplication
 @EnableScheduling
-// TODO 框架升级
-@EnableReactiveFeignClients(basePackages = ["com.tencent.bkrepo"])
 class FileSystemServerApplication
 
 fun main(args: Array<String>) {
