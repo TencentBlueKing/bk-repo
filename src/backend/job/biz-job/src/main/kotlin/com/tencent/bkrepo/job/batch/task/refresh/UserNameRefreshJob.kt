@@ -117,11 +117,19 @@ class UserNameRefreshJob (
 
     private fun swapNames(responseContent: String, origin: List<UserInfoRecord>): List<UserInfoRecord> {
         try {
+            val result = mutableListOf<UserInfoRecord>()
             val res = JsonUtils.objectMapper.readValue(responseContent, QueryResult::class.java)
             res.data.forEach { personInfo ->
-                origin.find { it.name == personInfo.bk_username }?.name = personInfo.display_name
+                val matchRecord = origin.find { it.name == personInfo.bk_username }
+                if (matchRecord != null) {
+                    result.add(UserInfoRecord(
+                        userId = matchRecord.userId,
+                        name = personInfo.display_name
+                    ))
+                }
             }
-            return origin
+            if (result.isEmpty()) return emptyList()
+            return result
         } catch (e: Exception) {
             logger.error("Response conversion failed", e)
             return emptyList()
