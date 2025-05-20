@@ -35,7 +35,7 @@ import redis.embedded.RedisServer
 
 @TestConfiguration
 class TestRedisConfiguration {
-    private val redisServer = RedisServer.builder().setting("maxheap 256MB").build()
+    private val redisServer = RedisServer()
 
     @PostConstruct
     fun postConstruct() {
