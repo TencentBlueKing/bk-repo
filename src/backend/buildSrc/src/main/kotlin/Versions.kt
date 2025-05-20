@@ -47,7 +47,7 @@ object Versions {
     const val OKhttp = "4.12.0"
     const val Polaris = "1.5.2"
     const val CommonsText = "1.9"
-    const val EmbeddedRedis = "0.7.3"
+    const val EmbeddedRedis = "1.4.3"
     const val JMH = "0.5.3"
     const val HutoolCrypto = "5.5.4"
     const val JSR311API = "1.1.1"
