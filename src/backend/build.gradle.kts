@@ -109,6 +109,11 @@ allprojects {
 
     tasks.test {
         jvmArgs = listOf("--add-opens=java.base/java.nio=ALL-UNNAMED")
+        testLogging {
+            events("passed", "skipped", "failed")
+            showStackTraces = true
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
     }
 
     if (isBootProject(this)) {
