@@ -127,7 +127,6 @@ class UserNameRefreshJob (
                     ))
                 }
             }
-            if (result.isEmpty()) return emptyList()
             return result
         } catch (e: Exception) {
             logger.error("Response conversion failed", e)
