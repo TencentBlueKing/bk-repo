@@ -222,6 +222,9 @@
             isSearching () {
                 const { user, admin } = this.$route.query
                 return user || admin
+            },
+            projectId () {
+                return this.$route.params.projectId
             }
         },
         created () {
@@ -352,7 +355,7 @@
                             theme: 'success',
                             message: this.$t('userImport') + this.$t('success')
                         })
-                        this.getRepoUserList()
+                        this.getRepoUserList({ projectId: this.projectId })
                         this.handlerPaginationChange()
                     }).finally(() => {
                         this.isLoading = false
@@ -383,7 +386,7 @@
                     })
                     this.editUserDialog.show = false
                     this.editUserDialog.userId === this.userInfo.username && this.getUserInfo({ userId: this.userInfo.username })
-                    this.getRepoUserList()
+                    this.getRepoUserList({ projectId: this.projectId })
                     this.getUserListHandler()
                 }).finally(() => {
                     this.editUserDialog.loading = false
@@ -418,7 +421,7 @@
                     message: this.$t('deleteUserTitle', [displayName]),
                     confirmFn: () => {
                         return this.deleteUser(row.userId).then(() => {
-                            this.getRepoUserList()
+                            this.getRepoUserList({ projectId: this.projectId })
                             this.getUserListHandler()
                             this.$bkMessage({
                                 theme: 'success',

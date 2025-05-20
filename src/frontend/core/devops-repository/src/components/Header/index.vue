@@ -174,8 +174,9 @@
             }
         },
         methods: {
-            ...mapActions(['checkPM', 'getPermissionUrl']),
+            ...mapActions(['checkPM', 'getPermissionUrl', 'getRepoUserList']),
             changeProject (projectId) {
+                this.getRepoUserList({ projectId: projectId })
                 localStorage.setItem('projectId', projectId)
                 if (this.projectId === projectId) return
                 this.checkPM({ projectId })
