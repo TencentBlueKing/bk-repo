@@ -35,11 +35,18 @@ pluginManagement {
     repositories {
         if (System.getenv("GITHUB_WORKFLOW") == null) {
             // TODO 框架升级  调试完后删除
-            mavenLocal()
+//            mavenLocal()
             maven(url = "https://mirrors.tencent.com/nexus/repository/gradle-plugins/")
             maven(url = "https://mirrors.tencent.com/nexus/repository/maven-public")
             maven(url = "https://repo.spring.io/milestone")
         } else {
+            maven {
+                name = "MavenSnapshot"
+                url = java.net.URI("https://oss.sonatype.org/content/repositories/snapshots/")
+                mavenContent {
+                    snapshotsOnly()
+                }
+            }
             mavenCentral()
             maven(url = "https://repo.spring.io/milestone")
             gradlePluginPortal()
