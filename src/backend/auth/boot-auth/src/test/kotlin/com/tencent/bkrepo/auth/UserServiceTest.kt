@@ -134,12 +134,13 @@ class UserServiceTest {
         // 创建角色
         val roleId = createRole()!!
         val rids = listOf(roleId)
-        var listUser = userService.listUser(rids)
+        val tenantId = null
+        var listUser = userService.listUser(rids, tenantId)
         Assertions.assertTrue(listUser.size >= 0)
         // 创建用户关联角色
         userService.createUser(createUserRequest())
         userService.addUserToRole(userId, roleId)
-        listUser = userService.listUser(rids)
+        listUser = userService.listUser(rids, tenantId)
         Assertions.assertEquals(listUser.size, 1)
     }
 

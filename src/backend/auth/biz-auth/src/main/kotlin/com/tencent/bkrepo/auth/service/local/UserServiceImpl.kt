@@ -172,11 +172,11 @@ class UserServiceImpl constructor(
         return true
     }
 
-    override fun listUser(rids: List<String>): List<User> {
+    override fun listUser(rids: List<String>, tenantId: String?): List<User> {
         logger.debug("list user rids : [$rids]")
         return if (rids.isEmpty()) {
             // 排除被锁定的用户
-            userDao.getUserNotLocked().map { UserRequestUtil.convToUser(it) }
+            userDao.getUserNotLocked(tenantId).map { UserRequestUtil.convToUser(it) }
         } else {
             userDao.findAllByRolesIn(rids).map { UserRequestUtil.convToUser(it) }
         }
@@ -231,6 +231,24 @@ class UserServiceImpl constructor(
         logger.info("create token userId : [$userId]")
         val token = UserRequestUtil.generateToken()
         return addUserToken(userId, token, null)
+    }
+
+    override fun createOrUpdateUser(userId: String, name: String, tenantId: String?) {
+        logger.info("create or update user : [$userId, $name , $userId]")
+        if (!userHelper.isUserExist(userId)) {
+            val userName = name.ifEmpty { userId }
+            val createRequest = CreateUserRequest(userId = userId, name = userName, tenantId = tenantId)
+            createUser(createRequest)
+        } else {
+            val updateUserRequest = UpdateUserRequest(name = userId)
+            if (name.isNotEmpty()) {
+                updateUserRequest.name = name
+            }
+            tenantId?.let {
+                updateUserRequest.tenantId = tenantId
+            }
+            updateUserById(userId, updateUserRequest)
+        }
     }
 
     override fun addUserToken(userId: String, name: String, expiredAt: String?): Token? {

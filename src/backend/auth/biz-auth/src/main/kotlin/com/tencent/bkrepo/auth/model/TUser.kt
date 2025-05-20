@@ -64,5 +64,10 @@ data class TUser(
     var accounts: List<String>? = emptyList(),
     val source: UserSource = UserSource.REPO,
     val createdDate: LocalDateTime? = LocalDateTime.now(),
-    val lastModifiedDate: LocalDateTime? = LocalDateTime.now()
+    val lastModifiedDate: LocalDateTime? = LocalDateTime.now(),
+
+    /**
+     * 多租户相关配置
+     */
+    var tenantId: String? = null
 )

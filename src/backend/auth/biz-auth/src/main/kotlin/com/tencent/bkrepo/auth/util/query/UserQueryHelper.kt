@@ -17,8 +17,17 @@ object UserQueryHelper {
         return query(criteria)
     }
 
-    fun filterNotLockedUser(): Query {
-        return Query(Criteria(TUser::locked.name).`is`(false))
+    fun filterNotLockedUser(tenantId: String?): Query {
+        val query = Query(Criteria(TUser::locked.name).`is`(false))
+        tenantId?.let {
+            query.addCriteria(
+                Criteria().orOperator(
+                    Criteria.where(TUser::tenantId.name).`is`(tenantId),
+                    Criteria.where(TUser::tenantId.name).exists(false)
+                )
+            )
+        }
+        return query
     }
 
     fun getUserById(userId: String): Query {

@@ -53,6 +53,7 @@ import com.tencent.bkrepo.auth.util.RequestUtil.buildRepoAdminRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
@@ -61,6 +62,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import org.bouncycastle.crypto.CryptoException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -84,6 +86,7 @@ class UserController @Autowired constructor(
     private val userService: UserService,
     private val roleService: RoleService,
     private val jwtProperties: JwtAuthProperties,
+    private val projectService: ProjectService,
     permissionService: PermissionService
 ) : OpenResource(permissionService) {
 
@@ -127,11 +130,19 @@ class UserController @Autowired constructor(
 
     @Operation(summary = "用户列表")
     @GetMapping("/list")
-    fun listUser(@RequestBody rids: List<String>?): Response<List<UserResult>> {
+    fun listUser(
+        @Parameter(name = "项目ID")
+        @RequestParam projectId: String?,
+        @RequestBody rids: List<String>?
+    ): Response<List<UserResult>> {
         if (rids != null && rids.isNotEmpty()) {
             preCheckUserAdmin()
         }
-        val result = userService.listUser(rids.orEmpty()).map {
+        var tenantId: String? = null
+        projectId?.let {
+            tenantId = projectService.getProjectInfo(projectId)?.tenantId
+        }
+        val result = userService.listUser(rids.orEmpty(), tenantId).map {
             UserResult(it.userId, it.name)
         }
         return ResponseBuilder.success(result)
@@ -277,6 +288,9 @@ class UserController @Autowired constructor(
             "displayName" to name,
             "tenantId" to tenantId.orEmpty()
         )
+        bkUserId?.let {
+            userService.createOrUpdateUser(bkUserId, name, tenantId)
+        }
         return ResponseBuilder.success(result)
     }
 

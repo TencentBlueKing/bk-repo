@@ -86,7 +86,8 @@ object UserRequestUtil {
             email = request.email,
             phone = request.phone,
             createdDate = LocalDateTime.now(),
-            lastModifiedDate = LocalDateTime.now()
+            lastModifiedDate = LocalDateTime.now(),
+            tenantId = request.tenantId
         )
     }
 

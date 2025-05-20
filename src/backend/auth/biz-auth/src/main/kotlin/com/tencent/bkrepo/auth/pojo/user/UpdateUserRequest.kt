@@ -31,7 +31,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 
 data class UpdateUserRequest(
     @get:Schema(title = "用户名")
-    val name: String? = null,
+    var name: String? = null,
     @get:Schema(title = "密码")
     val pwd: String? = null,
     @get:Schema(title = "绑定用户")
@@ -43,5 +43,7 @@ data class UpdateUserRequest(
     @get:Schema(title = "联系电话")
     val phone: String? = null,
     @get:Schema(title = "是否管理员")
-    val admin: Boolean? = null
+    val admin: Boolean? = null,
+    @get:Schema(title = "租户ID")
+    var tenantId: String? = null
 )

@@ -57,6 +57,10 @@ class UserHelper constructor(
         }
     }
 
+    fun isUserExist(userId: String): Boolean {
+        return userDao.findFirstByUserId(userId) != null
+    }
+
     fun checkUserRoleBind(userId: String, roleId: String): Boolean {
         userDao.findFirstByUserIdAndRoles(userId, roleId) ?: run {
             logger.warn("user [$userId,$roleId]  not exist.")
