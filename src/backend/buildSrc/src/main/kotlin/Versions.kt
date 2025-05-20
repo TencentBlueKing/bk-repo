@@ -44,7 +44,7 @@ object Versions {
     const val JavaSemver = "0.9.0"
     const val CommonsCompress = "1.21"
     const val CommonsIO = "2.11.0"
-    const val OKhttp = "4.9.0"
+    const val OKhttp = "4.12.0"
     const val Polaris = "1.5.2"
     const val CommonsText = "1.9"
     const val EmbeddedRedis = "0.7.3"
