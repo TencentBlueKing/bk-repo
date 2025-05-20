@@ -71,9 +71,9 @@
                     <operation-list
                         :list="[
                             { label: $t('edit'), clickEvent: () => showEditUser(row, $index) },
-                            { label: $t('resetPassword'), clickEvent: () => resetUserPwd(row) },
+                            { label: $t('resetPassword'), clickEvent: () => resetUserPwd(row, $index) },
                             { label: $t('createAccessToken'), clickEvent: () => createAccessToken(row) },
-                            { label: $t('delete'), clickEvent: () => deleteUserHandler(row) }
+                            { label: $t('delete'), clickEvent: () => deleteUserHandler(row, $index) }
                         ]"></operation-list>
                 </template>
             </bk-table-column>
@@ -408,10 +408,14 @@
                     this.editUserDialog.name = displayName
                 }
             },
-            deleteUserHandler (row) {
+            async deleteUserHandler (row, index) {
+                let displayName = row.name
+                if (this.multiMode) {
+                    displayName = await this.$refs['displayName' + index].getDisplayName()
+                }
                 this.$confirm({
                     theme: 'danger',
-                    message: this.$t('deleteUserTitle', [row.name]),
+                    message: this.$t('deleteUserTitle', [displayName]),
                     confirmFn: () => {
                         return this.deleteUser(row.userId).then(() => {
                             this.getRepoUserList()
@@ -424,10 +428,14 @@
                     }
                 })
             },
-            resetUserPwd (row) {
+            async resetUserPwd (row, index) {
+                let displayName = row.name
+                if (this.multiMode) {
+                    displayName = await this.$refs['displayName' + index].getDisplayName()
+                }
                 this.$confirm({
                     theme: 'danger',
-                    message: this.$t('resetUserMsg', { 0: row.name }),
+                    message: this.$t('resetUserMsg', { 0: displayName }),
                     confirmFn: () => {
                         return this.resetPwd(row.userId).then(() => {
                             this.$bkMessage({

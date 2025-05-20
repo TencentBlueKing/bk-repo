@@ -21,7 +21,10 @@
                 <template #default="{ row }">{{formatDate(row.createdDate)}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('associatedUser')">
-                <template #default="{ row }">{{row.asstUsers.toLocaleString()}}</template>
+                <template #default="{ row }">
+                    <bk-user-display-name v-if="multiMode" :user-id="row.asstUsers.toLocaleString()"></bk-user-display-name>
+                    <span v-else> {{ row.asstUsers.toLocaleString() }}</span>
+                </template>
             </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
@@ -53,7 +56,9 @@
                     </bk-input>
                 </bk-form-item>
                 <bk-form-item v-if="editUserDialog.group" :required="true" property="asstUsers" :label="$t('associatedUser')">
+                    <bk-user-display-name v-if="multiMode" :user-id="editUserDialog.asstUsers.toLocaleString()"></bk-user-display-name>
                     <bk-tag-input
+                        v-else
                         v-model="editUserDialog.asstUsers"
                         :placeholder="$t('enterPlaceHolder')"
                         trigger="focus"
@@ -96,6 +101,7 @@
                     asstUsers: [],
                     projectId: this.$route.params.projectId
                 },
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true',
                 rules: {
                     userId: [
                         {

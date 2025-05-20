@@ -75,5 +75,10 @@ data:
         trustStore: /data/certs/mongodb/{{ .Values.tls.mongodb.certJksFilename }}
         trustStorePassword: {{ .Values.tls.mongodb.trustStorePassword }}
         trustStoreType: JKS
-        invalidHostnameAllowed: true
+        {{- if .Values.tls.mongodb.keyStoreFilename }}
+        keyStore: /data/certs/mongodb/{{ .Values.tls.mongodb.keyStoreFilename }}
+        keyStorePassword: {{ .Values.tls.mongodb.keyStorePassword }}
+        keyStoreType: {{ .Values.tls.mongodb.keyStoreType }}
+        {{- end }}
+        verifyHostname: {{ .Values.tls.mongodb.verifyHostname }}
     {{- end }}
