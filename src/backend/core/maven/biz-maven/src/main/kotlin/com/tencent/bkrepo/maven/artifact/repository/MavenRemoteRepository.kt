@@ -73,7 +73,9 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import okhttp3.Request
 import okhttp3.Response
+import org.apache.commons.lang3.StringUtils
 import org.apache.maven.artifact.repository.metadata.io.xpp3.MetadataXpp3Reader
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -195,6 +197,14 @@ class MavenRemoteRepository(
             var packaging = matcher.group(2)
             val fileSuffix = packaging
             logger.info("Downloaded File's type is $fileSuffix")
+            if (packaging == "pom") {
+                val mavenPomModel = artifactFile.getInputStream().use { MavenXpp3Reader().read(it) }
+                val verNotBlank = StringUtils.isNotBlank(mavenPomModel.version)
+                val isPom = mavenPomModel.packaging.equals("pom", ignoreCase = true)
+                if (!verNotBlank || !isPom) {
+                    packaging = mavenPomModel.packaging
+                }
+            }
             val isArtifact = (packaging == fileSuffix)
             logger.info("current downloaded file is artifact: $isArtifact")
             context.putAttribute("isArtifact", isArtifact)
