@@ -35,7 +35,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(value = ["spring.sleuth.enabled"], matchIfMissing = true)
+@ConditionalOnProperty(value = ["management.tracing.enabled"], matchIfMissing = true)
 @ConditionalOnClass(OtelTracer::class, MongoClientImpl::class)
 class OtelMongoConfiguration {
 
