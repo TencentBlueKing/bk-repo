@@ -34,7 +34,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
 
 @Configuration
-@ConditionalOnProperty(value = ["spring.sleuth.enabled"], matchIfMissing = true)
+@ConditionalOnProperty(value = ["management.tracing.enabled"], matchIfMissing = true)
 class OtelWebConfiguration {
 
     @Bean
@@ -45,41 +45,4 @@ class OtelWebConfiguration {
         registrationBean.addUrlPatterns("/*")
         return registrationBean
     }
-
-    // TODO 框架升级
-//    @Bean
-//    @ConditionalOnMissingBean
-//    fun otelBatchSpanProcessorProvider(otelProcessorProperties: OtelProcessorProperties): SpanProcessorProvider {
-//        return object : SpanProcessorProvider {
-//            override fun toSpanProcessor(spanExporter: SpanExporter): SpanProcessor {
-//                val builder = BatchSpanProcessor.builder(spanExporter)
-//                setBuilderProperties(otelProcessorProperties, builder)
-//                return builder.build()
-//            }
-//
-//            fun setBuilderProperties(
-//                otelProcessorProperties: OtelProcessorProperties,
-//                builder: BatchSpanProcessorBuilder
-//            ) {
-//                if (otelProcessorProperties.batch.exporterTimeout != null) {
-//                    builder.setExporterTimeout(
-//                        otelProcessorProperties.batch.exporterTimeout,
-//                        TimeUnit.MILLISECONDS
-//                    )
-//                }
-//                if (otelProcessorProperties.batch.maxExportBatchSize != null) {
-//                    builder.setMaxExportBatchSize(otelProcessorProperties.batch.maxExportBatchSize)
-//                }
-//                if (otelProcessorProperties.batch.maxQueueSize != null) {
-//                    builder.setMaxQueueSize(otelProcessorProperties.batch.maxQueueSize)
-//                }
-//                if (otelProcessorProperties.batch.scheduleDelay != null) {
-//                    builder.setScheduleDelay(
-//                        otelProcessorProperties.batch.scheduleDelay,
-//                        TimeUnit.MILLISECONDS
-//                    )
-//                }
-//            }
-//        }
-//    }
 }
