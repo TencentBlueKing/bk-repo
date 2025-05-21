@@ -28,8 +28,11 @@
 package com.tencent.bkrepo.maven.service
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
 
@@ -67,4 +70,17 @@ interface MavenService {
      * 根据ave获取对应node信息
      */
     fun searchJar(request: MavenJarSearchRequest): MavenJarInfoResponse
+
+    fun remove(context: ArtifactRemoveContext, remote: Boolean = false)
+
+    /**
+     * [artifactPath] maven-metadata.xml 父文件夹
+     * 在指定构件路径下，服务生成 快照版本下的maven-metadata.xml,
+     */
+    fun verifyMetadataContent(context: ArtifactContext, artifactPath: String? = null)
+
+    /**
+     * 生成对应checksum文件
+     */
+    fun verifyPath(context: ArtifactContext, fullPath: String, hashType: HashType? = null)
 }

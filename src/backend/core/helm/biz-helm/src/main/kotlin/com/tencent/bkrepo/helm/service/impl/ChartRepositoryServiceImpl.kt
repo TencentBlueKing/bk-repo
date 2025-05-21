@@ -209,13 +209,7 @@ class ChartRepositoryServiceImpl(
     private fun downloadIndex(artifactInfo: HelmArtifactInfo) {
         // 创建仓库后，index.yaml文件时没有生成的，需要生成默认的
         if (!exist(artifactInfo.projectId, artifactInfo.repoName, HelmUtils.getIndexCacheYamlFullPath())) {
-            val (artifactFile, nodeCreateRequest) = ObjectBuilderUtil.buildFileAndNodeCreateRequest(
-                indexYamlMetadata = HelmUtils.initIndexYamlMetadata(),
-                projectId = artifactInfo.projectId,
-                repoName = artifactInfo.repoName,
-                operator = SecurityUtils.getUserId()
-            )
-            uploadIndexYamlMetadata(artifactFile, nodeCreateRequest)
+            regenerateIndex(artifactInfo, false)
         }
         downloadIndexYaml()
     }
