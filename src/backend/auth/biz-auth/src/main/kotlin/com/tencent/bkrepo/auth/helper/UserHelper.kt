@@ -42,7 +42,9 @@ import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.TENANT_ID
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.slf4j.LoggerFactory
 
 class UserHelper constructor(
@@ -59,6 +61,10 @@ class UserHelper constructor(
 
     fun isUserExist(userId: String): Boolean {
         return userDao.findFirstByUserId(userId) != null
+    }
+
+    fun getTenantId(): String? {
+        return HttpContextHolder.getRequestOrNull()?.getHeader(TENANT_ID)
     }
 
     fun checkUserRoleBind(userId: String, roleId: String): Boolean {

@@ -111,7 +111,9 @@ class UserServiceImpl constructor(
         } else {
             DataDigestUtils.md5FromStr(request.pwd!!)
         }
-        val userRequest = UserRequestUtil.convToTUser(request, hashPwd)
+        val tenantIdFromHeader = userHelper.getTenantId()
+        val tenantId = if (tenantIdFromHeader.isNullOrEmpty()) request.tenantId else tenantIdFromHeader
+        val userRequest = UserRequestUtil.convToTUser(request, hashPwd, tenantId)
         try {
             userDao.insert(userRequest)
         } catch (ignore: DuplicateKeyException) {
@@ -234,7 +236,7 @@ class UserServiceImpl constructor(
     }
 
     override fun createOrUpdateUser(userId: String, name: String, tenantId: String?) {
-        logger.info("create or update user : [$userId, $name , $userId]")
+        logger.info("create or update user : [$userId,$name,$tenantId]")
         if (!userHelper.isUserExist(userId)) {
             val userName = name.ifEmpty { userId }
             val createRequest = CreateUserRequest(userId = userId, name = userName, tenantId = tenantId)
