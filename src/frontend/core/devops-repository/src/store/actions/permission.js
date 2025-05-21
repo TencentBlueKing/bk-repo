@@ -75,13 +75,12 @@ export default {
         })
     },
     // 项目下用户列表
-    getProjectUserList (_, { projectId, isAdmin }) {
+    getProjectUserList (_, { projectId }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/user/list/project`,
+            `${authPrefix}/user/list`,
             {
                 params: {
-                    projectId: projectId,
-                    isAdmin: isAdmin
+                    projectId
                 }
             }
         )
