@@ -23,7 +23,7 @@ object UserQueryHelper {
             query.addCriteria(
                 Criteria().orOperator(
                     Criteria.where(TUser::tenantId.name).`is`(tenantId),
-                    Criteria.where(TUser::tenantId.name).exists(false)
+                    Criteria.where(TUser::tenantId.name).`is`(null)
                 )
             )
         }
