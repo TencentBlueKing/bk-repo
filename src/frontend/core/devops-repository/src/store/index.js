@@ -98,14 +98,6 @@ const storeObject = {
                 }
             }
         },
-        CLEAN_USER_LIST (state) {
-            state.userList = {
-                anonymous: {
-                    id: 'anonymous',
-                    name: '/'
-                }
-            }
-        },
         SET_USER_INFO (state, data) {
             state.userInfo = {
                 ...state.userInfo,

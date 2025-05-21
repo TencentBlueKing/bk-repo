@@ -60,16 +60,10 @@ export default {
         )
     },
     // 查询所有用户
-    getRepoUserList ({ commit }, { projectId }) {
+    getRepoUserList ({ commit }) {
         return Vue.prototype.$ajax.get(
-            `${authPrefix}/user/list`,
-            {
-                params: {
-                    projectId
-                }
-            }
+            `${authPrefix}/user/list`
         ).then(res => {
-            commit('CLEAN_USER_LIST')
             const data = res.reduce((target, item) => {
                 target[item.userId] = {
                     id: item.userId,

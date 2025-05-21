@@ -355,7 +355,7 @@
                             theme: 'success',
                             message: this.$t('userImport') + this.$t('success')
                         })
-                        this.getRepoUserList({ projectId: this.projectId })
+                        this.getRepoUserList()
                         this.handlerPaginationChange()
                     }).finally(() => {
                         this.isLoading = false

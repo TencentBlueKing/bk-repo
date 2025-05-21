@@ -57,7 +57,7 @@
                 // 查询路由,取项目名称后半截。
                 const target = location.pathname.split(urlProjectId)[1] || ''
                 const specTargetMatch = target !== '' ? ((target.match(/\/([^\/]+)\//)) || [])[1] : ''
-                Promise.all([this.ajaxUserInfo(), this.getProjectList()]).then(([userInfo]) => {
+                Promise.all([this.ajaxUserInfo(), this.getProjectList(), this.getRepoUserList()]).then(([userInfo]) => {
                     this.$store.commit('SET_CREATING', false)
                     if (!this.ciMode && !this.projectList.length) {
                         if (userInfo.admin) {
@@ -106,7 +106,6 @@
                         } else {
                             projectId = (this.projectList[0] || {}).id
                         }
-                        this.getRepoUserList({ projectId: projectId })
                         localStorage.setItem('projectId', projectId)
 
                         projectId && projectId !== urlProjectId && this.$router.replace({
