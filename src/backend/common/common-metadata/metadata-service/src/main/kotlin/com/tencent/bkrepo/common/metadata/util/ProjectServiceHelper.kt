@@ -81,7 +81,8 @@ object ProjectServiceHelper {
                 lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 metadata = it.metadata,
                 credentialsKey = it.credentialsKey,
-                rbacFlag = rbacFlag
+                rbacFlag = rbacFlag,
+                tenantId = it.tenantId
             )
         }
     }

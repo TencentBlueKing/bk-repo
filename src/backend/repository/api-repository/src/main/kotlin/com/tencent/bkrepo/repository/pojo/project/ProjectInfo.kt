@@ -56,4 +56,6 @@ data class ProjectInfo(
     val metadata: List<ProjectMetadata> = emptyList(),
     @get:Schema(title = "项目新建仓库默认使用的存储")
     val credentialsKey: String? = null,
+    @get:Schema(title = "租户ID")
+    val tenantId: String?,
 )

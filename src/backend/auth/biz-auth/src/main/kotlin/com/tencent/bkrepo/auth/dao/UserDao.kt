@@ -69,8 +69,8 @@ class UserDao : SimpleMongoDao<TUser>() {
         this.upsert(query, update)
     }
 
-    fun getUserNotLocked(): List<TUser> {
-        val query = UserQueryHelper.filterNotLockedUser()
+    fun getUserNotLocked(tenantId: String?): List<TUser> {
+        val query = UserQueryHelper.filterNotLockedUser(tenantId)
         return this.find(query)
     }
 
