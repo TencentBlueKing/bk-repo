@@ -35,6 +35,9 @@ object UserUpdateHelper {
         request.admin?.let {
             update.set(TUser::admin.name, request.admin)
         }
+        request.tenantId?.let {
+            update.set(TUser::tenantId.name, request.tenantId)
+        }
         if (request.asstUsers.isNotEmpty()) {
             update.set(TUser::asstUsers.name, request.asstUsers)
         }
