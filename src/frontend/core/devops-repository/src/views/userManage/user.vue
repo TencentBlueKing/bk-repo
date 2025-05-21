@@ -222,9 +222,6 @@
             isSearching () {
                 const { user, admin } = this.$route.query
                 return user || admin
-            },
-            projectId () {
-                return this.$route.params.projectId
             }
         },
         created () {
@@ -386,7 +383,7 @@
                     })
                     this.editUserDialog.show = false
                     this.editUserDialog.userId === this.userInfo.username && this.getUserInfo({ userId: this.userInfo.username })
-                    this.getRepoUserList({ projectId: this.projectId })
+                    this.getRepoUserList()
                     this.getUserListHandler()
                 }).finally(() => {
                     this.editUserDialog.loading = false
@@ -421,7 +418,7 @@
                     message: this.$t('deleteUserTitle', [displayName]),
                     confirmFn: () => {
                         return this.deleteUser(row.userId).then(() => {
-                            this.getRepoUserList({ projectId: this.projectId })
+                            this.getRepoUserList()
                             this.getUserListHandler()
                             this.$bkMessage({
                                 theme: 'success',
