@@ -49,7 +49,12 @@ interface RRepositoryService {
      * @param name 仓库名称
      * @param type 仓库类型
      */
-    suspend fun getRepoInfo(projectId: String, name: String, type: String? = null): RepositoryInfo?
+    suspend fun getRepoInfo(
+        projectId: String,
+        name: String,
+        type: String? = null,
+        returnDecrypt: Boolean = false,
+    ): RepositoryInfo?
 
     /**
      * 查询仓库详情，不存在返回null
@@ -58,7 +63,12 @@ interface RRepositoryService {
      * @param name 仓库名称
      * @param type 仓库类型
      */
-    suspend fun getRepoDetail(projectId: String, name: String, type: String? = null): RepositoryDetail?
+    suspend fun getRepoDetail(
+        projectId: String,
+        name: String,
+        type: String? = null,
+        returnDecrypt: Boolean = false,
+    ): RepositoryDetail?
 
     /**
      * 查询项目[projectId]下的所有仓库
@@ -68,6 +78,7 @@ interface RRepositoryService {
         name: String? = null,
         type: String? = null,
         display: Boolean? = null,
+        returnDecrypt: Boolean = false,
     ): List<RepositoryInfo>
 
     /**
@@ -85,6 +96,7 @@ interface RRepositoryService {
         pageSize: Int,
         name: String? = null,
         type: String? = null,
+        returnDecrypt: Boolean = false,
     ): Page<RepositoryInfo>
 
     /**
@@ -98,6 +110,7 @@ interface RRepositoryService {
         userId: String,
         projectId: String,
         option: RepoListOption,
+        returnDecrypt: Boolean = false,
     ): List<RepositoryInfo>
 
     /**
@@ -112,6 +125,7 @@ interface RRepositoryService {
         pageNumber: Int,
         pageSize: Int,
         option: RepoListOption,
+        returnDecrypt: Boolean = false,
     ): Page<RepositoryInfo>
 
     /**
@@ -142,7 +156,7 @@ interface RRepositoryService {
     /**
      * 根据请求[repoCreateRequest]创建仓库
      */
-    suspend fun createRepo(repoCreateRequest: RepoCreateRequest): RepositoryDetail
+    suspend fun createRepo(repoCreateRequest: RepoCreateRequest, returnDecrypt: Boolean = false): RepositoryDetail
 
     /**
      * 根据请求[repoUpdateRequest]更新仓库
