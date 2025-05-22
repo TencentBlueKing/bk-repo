@@ -130,58 +130,6 @@ object BkIamV3Utils {
         return ActionTypeMapping.lookup(resourceTyp, action).id()
     }
 
-    fun getProjects(content: ExpressionDTO): List<String> {
-
-        if (content.field != "project.id") {
-            when(content.operator) {
-                ExpressionOperationEnum.ANY,
-                ExpressionOperationEnum.OR,
-                ExpressionOperationEnum.AND,
-                ExpressionOperationEnum.START_WITH -> {
-                }
-                else -> return emptyList()
-            }
-        }
-        val projectList = mutableListOf<String>()
-        when (content.operator) {
-            ExpressionOperationEnum.START_WITH -> getProjectFromExpression(content)?.let {projectList.add(it) }
-            ExpressionOperationEnum.ANY -> projectList.add("*")
-            ExpressionOperationEnum.EQUAL -> projectList.add(content.value.toString())
-            ExpressionOperationEnum.IN -> projectList.addAll(StringUtils.obj2List(content.value.toString()))
-            ExpressionOperationEnum.OR, ExpressionOperationEnum.AND -> content.content.forEach {
-                projectList.addAll(getProjects(it))
-            }
-            else -> {
-            }
-        }
-        return projectList
-    }
-
-    // 无content怎么处理 一层怎么处理,二层怎么处理。 默认只有两层。
-    fun getResourceInstance(expression: ExpressionDTO, projectId: String, resourceType: String): Set<String> {
-        val instantList = mutableSetOf<String>()
-        if (expression.content.isNullOrEmpty()) {
-            instantList.addAll(getInstanceByField(expression, projectId, resourceType))
-        } else {
-            instantList.addAll(getInstanceByContent(expression.content, expression, projectId, resourceType))
-        }
-        return instantList
-    }
-
-    private fun getInstanceByContent(
-        childExpression: List<ExpressionDTO>,
-        parentExpression: ExpressionDTO,
-        projectId: String,
-        resourceType: String
-    ): Set<String> {
-        return getInstanceByContent(
-            childExpression = childExpression,
-            projectId = projectId,
-            resourceType = resourceType,
-            type = parentExpression.operator
-        )
-    }
-
     private fun getInstanceByContent(
         childExpression: List<ExpressionDTO>,
         projectId: String,
@@ -284,35 +232,6 @@ object BkIamV3Utils {
         return null
     }
 
-    private fun getInstanceByField(expression: ExpressionDTO, projectId: String, resourceType: String): Set<String> {
-        val instanceList = mutableSetOf<String>()
-        val value = expression.value
-
-        // 如果权限为整个项目, 直接返回
-        if (expression.value == projectId && expression.operator == ExpressionOperationEnum.EQUAL) {
-            instanceList.add("*")
-            return instanceList
-        }
-
-        if (!checkField(expression.field, resourceType)) {
-            return emptySet()
-        }
-
-        when (expression.operator) {
-            ExpressionOperationEnum.ANY -> instanceList.add("*")
-            ExpressionOperationEnum.EQUAL -> instanceList.add(value.toString())
-            ExpressionOperationEnum.IN -> instanceList.addAll(StringUtils.obj2List(value.toString()))
-            ExpressionOperationEnum.START_WITH -> {
-                instanceList.addAll(checkProject(projectId, expression).second)
-            }
-            else -> {
-            }
-        }
-
-        return instanceList
-    }
-
-
     private fun checkProject(projectId: String, expression: ExpressionDTO): Pair<Boolean, Set<String>> {
         val instanceList = mutableSetOf<String>()
         val values = expression.value.toString().split(",")
@@ -324,12 +243,6 @@ object BkIamV3Utils {
         }
         instanceList.add("*")
         return Pair(true, instanceList)
-    }
-
-    private fun getProjectFromExpression(expression: ExpressionDTO): String? {
-        val values = expression.value.toString().split(",")
-        if (values[0] != "/project") return null
-        return values[1].substringBefore("/")
     }
 
     private fun checkField(field: String, resourceType: String): Boolean {
