@@ -91,6 +91,8 @@ allprojects {
                 entry("mongodb-driver-core")
                 entry("mongodb-driver-reactivestreams")
             }
+            // redis server版本过低，主动降级
+            dependency("io.lettuce:lettuce-core:6.3.2.RELEASE")
         }
     }
 
