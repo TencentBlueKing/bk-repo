@@ -83,6 +83,14 @@ allprojects {
             dependency("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x:${Versions.EmbeddedMongo}")
             // pulsar-client中依赖的版本太旧，和otel trace中的版本冲突
             dependency("io.opentelemetry:opentelemetry-api-incubator:1.43.0-alpha")
+            // mongodb server版本过低，主动降级驱动
+            dependencySet("org.mongodb:5.1.4") {
+                entry("bson")
+                entry("bson-record-codec")
+                entry("mongodb-driver-sync")
+                entry("mongodb-driver-core")
+                entry("mongodb-driver-reactivestreams")
+            }
         }
     }
 
