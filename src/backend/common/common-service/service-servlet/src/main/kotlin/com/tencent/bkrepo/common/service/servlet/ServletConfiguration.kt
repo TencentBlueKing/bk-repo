@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 Tencent.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,31 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service
+package com.tencent.bkrepo.common.service.servlet
 
-import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration
-import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
-import com.tencent.bkrepo.common.service.feign.ErrorCodeDecoder
-import com.tencent.bkrepo.common.service.feign.RClientConfiguration
-import com.tencent.bkrepo.common.service.filter.FilterConfiguration
-import com.tencent.bkrepo.common.service.log.NettyWebServerAccessLogCustomizer
-import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.devops.service.config.ServiceProperties
-import org.springframework.boot.autoconfigure.AutoConfiguration
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Import
+import org.springframework.beans.factory.annotation.Configurable
+import org.springframework.context.annotation.Bean
+import org.springframework.web.filter.UrlHandlerFilter
 
-@AutoConfiguration
-@Import(
-    MessageSourceConfiguration::class,
-    GlobalExceptionHandler::class,
-    ActuatorConfiguration::class,
-    ErrorCodeDecoder::class,
-    NettyWebServerAccessLogCustomizer::class,
-    RClientConfiguration::class,
-    SpringContextUtils::class,
-    FilterConfiguration::class,
-)
-@EnableConfigurationProperties(ServiceProperties::class)
-class ServiceAutoConfiguration
+@Configurable
+class ServletConfiguration {
+
+    /**
+     * https://docs.openrewrite.org/recipes/java/spring/boot3/addroutetrailingslash
+     * https://docs.spring.io/spring-framework/reference/web/webmvc/filters.html#filters.url-handler
+     */
+    @Bean
+    fun urlHandlerFilter(): UrlHandlerFilter {
+        return UrlHandlerFilter
+            // will wrap the request to "/admin/user/account/" and make it as "/admin/user/account"
+            .trailingSlashHandler("/**").wrapRequest()
+            .build();
+    }
+}
