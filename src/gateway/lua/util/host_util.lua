@@ -153,6 +153,7 @@ function _M:get_target_by_project()
     local headers = ngx.req.get_headers()
     local bkrepo_project_id = stringUtil:getValue(headers["x-bkrepo-project-id"])
     local devops_project_id = stringUtil:getValue(headers["x-devops-project-id"])
+    local devops_project_id_uri = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-project-id"]
 
     -- 优先判断 X-BKREPO-PROJECT-ID 的值
     local projectId
@@ -161,6 +162,9 @@ function _M:get_target_by_project()
     else
         if devops_project_id and devops_project_id ~= "" then
             projectId = devops_project_id
+        end
+        if devops_project_id_uri and devops_project_id_uri ~= "" then
+            projectId = devops_project_id_uri
         end
     end
 
