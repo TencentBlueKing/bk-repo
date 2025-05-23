@@ -62,7 +62,7 @@ class CustomMetricsPushAutoConfiguration {
     private lateinit var serviceName: String
 
     @Bean
-    @ConditionalOnProperty(value = ["management.metrics.export.prometheus.pushgateway.enabled"])
+    @ConditionalOnProperty(value = ["management.prometheus.metrics.export.pushgateway.enabled"])
     fun prometheusPushGatewayManager(
         collectorRegistry: CollectorRegistry?,
         prometheusProperties: PrometheusProperties,
