@@ -135,8 +135,9 @@ data class MergedFilterRule(
         return includeRule.isEmpty() && ignoreRule.isEmpty() && minSeverityLevel == null
     }
 
-    private fun match(set: Set<String>?, item: String?): Boolean {
-        return set?.isEmpty() == true || !set.isNullOrEmpty() && item in set
+    private fun match(set: Set<String>?, item: String?, ignoreCase: Boolean = true): Boolean {
+        return set?.isEmpty() == true ||
+                !set.isNullOrEmpty() && set.any { it.equals(item, ignoreCase = ignoreCase) }
     }
 
     companion object {

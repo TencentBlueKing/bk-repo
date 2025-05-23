@@ -99,7 +99,8 @@
                 },
                 roleList: {},
                 admins: [],
-                users: []
+                users: [],
+                currentProjectUser: []
             }
         },
         computed: {
@@ -139,9 +140,26 @@
                 'getRoleList',
                 'getProjectPermission',
                 'setUserPermission',
-                'setRolePermission'
+                'setRolePermission',
+                'getProjectUserList'
             ]),
             initProjectConfig () {
+                this.getProjectUserList({ projectId: this.currentProject.id }).then(data => {
+                    const res = data.reduce((target, item) => {
+                        target[item.userId] = {
+                            id: item.userId,
+                            name: item.name
+                        }
+                        return target
+                    }, {})
+                    this.currentProjectUser = {
+                        ...res,
+                        anonymous: {
+                            id: 'anonymous',
+                            name: '/'
+                        }
+                    }
+                })
                 this.getProjectPermission({ projectId: this.currentProject.id }).then(data => {
                     const manage = data.find(p => p.permName === 'project_manage_permission') || {}
                     const view = data.find(p => p.permName === 'project_view_permission') || {}
@@ -165,7 +183,7 @@
                 })
             },
             selectList (tab) {
-                const usersWithoutAnonymous = Object.values(this.userList).filter(v => v.id !== 'anonymous')
+                const usersWithoutAnonymous = Object.values(this.currentProjectUser).filter(v => v.id !== 'anonymous')
                 let final = usersWithoutAnonymous
                 if ((tab.items instanceof Array) && tab.items.length !== 0) {
                     final = usersWithoutAnonymous.filter(v => !~tab.items.findIndex(w => w === v.id))
