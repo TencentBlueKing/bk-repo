@@ -41,9 +41,9 @@ import com.tencent.bkrepo.s3.constant.AWS4_AUTH_PREFIX
 import com.tencent.bkrepo.s3.constant.S3HttpHeaders
 import com.tencent.bkrepo.s3.constant.SIGN_NOT_MATCH
 import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
-import javax.servlet.http.HttpServletRequest
 
 /**
  * AWS4 Http 认证方式
@@ -100,7 +100,7 @@ class AWS4AuthHandler(
             requestDate = request.getHeader(S3HttpHeaders.X_AMZ_DATE) ?: "",
             contentHash = request.getHeader(S3HttpHeaders.X_AMZ_CONTENT_SHA256) ?: "",
 //            uri = request.requestURI.split("?").toTypedArray()[0],
-            uri = "/$applicationName"+request.requestURI.split("?").toTypedArray()[0],
+            uri = "/$applicationName" + request.requestURI.split("?").toTypedArray()[0],
             host = request.getHeader(HttpHeaders.HOST) ?: "",
             queryString = request.queryString ?: "",
             method = request.method
@@ -110,7 +110,7 @@ class AWS4AuthHandler(
     /**
      * 提取请求路径中的resource,即bucket后面的部分, /a/b/c/d -> /c/d
      */
-    private fun getRequestResource(request: HttpServletRequest): String{
+    private fun getRequestResource(request: HttpServletRequest): String {
         val path = request.requestURI.split("?").toTypedArray()[0]
         val components = path.trim('/').split('/')
         return when {

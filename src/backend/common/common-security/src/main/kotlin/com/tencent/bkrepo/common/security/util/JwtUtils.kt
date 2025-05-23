@@ -81,7 +81,7 @@ object JwtUtils {
         IllegalArgumentException::class
     )
     fun validateToken(signingKey: Key, token: String): Jws<Claims> {
-        return Jwts.parserBuilder().setSigningKey(signingKey).build().parseClaimsJws(token)
+        return Jwts.parser().setSigningKey(signingKey).build().parseClaimsJws(token)
     }
 
     fun createSigningKey(secretKey: String): Key {

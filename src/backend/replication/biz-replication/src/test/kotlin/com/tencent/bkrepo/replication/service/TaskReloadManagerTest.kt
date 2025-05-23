@@ -57,9 +57,9 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 @DataMongoTest(properties = ["logging.level.com.tencent=DEBUG"])
@@ -77,10 +77,10 @@ import java.time.LocalDateTime
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 private class TaskReloadManagerTest {
 
-    @MockBean
+    @MockitoBean
     private lateinit var replicaRecordService: ReplicaRecordService
 
-    @MockBean
+    @MockitoBean
     private lateinit var clusterNodeService: ClusterNodeService
 
     @Autowired
@@ -89,7 +89,7 @@ private class TaskReloadManagerTest {
     @Autowired
     private lateinit var replicaTaskDao: ReplicaTaskDao
 
-    @MockBean
+    @MockitoBean
     private lateinit var scheduledReplicaJobExecutor: ScheduledReplicaJobExecutor
 
     @BeforeAll
@@ -104,7 +104,7 @@ private class TaskReloadManagerTest {
         replicaTaskDao.remove(Query())
     }
 
-//    @Test
+    //    @Test
     fun `should execute immediately`() {
         val task = createTask(ReplicaType.SCHEDULED, ExecutionPlan(executeImmediately = true))
         Assertions.assertEquals(
@@ -116,7 +116,7 @@ private class TaskReloadManagerTest {
         verify(scheduledReplicaJobExecutor, times(1)).execute(task.id)
     }
 
-//    @Test
+    //    @Test
     fun `should execute at specific time`() {
         val executeTime = LocalDateTime.now().plusSeconds(10)
         val executionPlan = ExecutionPlan(executeImmediately = false, executeTime = executeTime)
@@ -127,7 +127,7 @@ private class TaskReloadManagerTest {
         verify(scheduledReplicaJobExecutor, times(1)).execute(task.id)
     }
 
-//    @Test
+    //    @Test
     fun `should not execute after delete task`() {
         val executeTime = LocalDateTime.now().plusSeconds(25)
         val executionPlan = ExecutionPlan(executeImmediately = false, executeTime = executeTime)
@@ -138,7 +138,7 @@ private class TaskReloadManagerTest {
         verify(scheduledReplicaJobExecutor, times(0)).execute(task.id)
     }
 
-//    @Test
+    //    @Test
     fun `should execute repeat by cron expression`() {
         val cronExpression = "0/1 * * * * ?"
         val executionPlan = ExecutionPlan(executeImmediately = false, cronExpression = cronExpression)

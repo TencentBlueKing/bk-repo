@@ -38,6 +38,13 @@ pluginManagement {
             maven(url = "https://mirrors.tencent.com/nexus/repository/maven-public")
             maven(url = "https://repo.spring.io/milestone")
         } else {
+            maven {
+                name = "MavenSnapshot"
+                url = java.net.URI("https://oss.sonatype.org/content/repositories/snapshots/")
+                mavenContent {
+                    snapshotsOnly()
+                }
+            }
             mavenCentral()
             maven(url = "https://repo.spring.io/milestone")
             gradlePluginPortal()

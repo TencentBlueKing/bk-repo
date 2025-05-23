@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.job.schedule
 
 import org.slf4j.LoggerFactory
-import org.springframework.boot.task.TaskSchedulerBuilder
+import org.springframework.boot.task.ThreadPoolTaskSchedulerBuilder
 import org.springframework.scheduling.config.CronTask
 import org.springframework.scheduling.config.FixedDelayTask
 import org.springframework.scheduling.config.FixedRateTask
@@ -39,7 +39,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar
  * Spring调度任务注册
  * */
 class SpringScheduleJobRegistrar(
-    private val builder: TaskSchedulerBuilder,
+    private val builder: ThreadPoolTaskSchedulerBuilder,
 ) : JobRegistrar {
     private var initial = false
     lateinit var taskRegistrar: ScheduledTaskRegistrar
