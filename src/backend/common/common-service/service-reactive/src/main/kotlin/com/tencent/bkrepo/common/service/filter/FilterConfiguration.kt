@@ -25,31 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service
+package com.tencent.bkrepo.common.service.filter
 
-import com.tencent.bkrepo.common.service.actuator.ActuatorConfiguration
-import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
-import com.tencent.bkrepo.common.service.feign.ErrorCodeDecoder
-import com.tencent.bkrepo.common.service.feign.RClientConfiguration
-import com.tencent.bkrepo.common.service.filter.FilterConfiguration
-import com.tencent.bkrepo.common.service.log.NettyWebServerAccessLogCustomizer
-import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.devops.service.config.ServiceProperties
-import org.springframework.boot.autoconfigure.AutoConfiguration
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.web.filter.reactive.UrlHandlerFilter
 
-@AutoConfiguration
-@Import(
-    MessageSourceConfiguration::class,
-    GlobalExceptionHandler::class,
-    ActuatorConfiguration::class,
-    ErrorCodeDecoder::class,
-    NettyWebServerAccessLogCustomizer::class,
-    RClientConfiguration::class,
-    SpringContextUtils::class,
-    FilterConfiguration::class,
-)
-@EnableConfigurationProperties(ServiceProperties::class)
-class ServiceAutoConfiguration
+@Configuration
+class FilterConfiguration {
+
+    /**
+     * https://docs.openrewrite.org/recipes/java/spring/boot3/addroutetrailingslash
+     * https://docs.spring.io/spring-framework/reference/web/webflux/reactive-spring.html#filters.url-handler
+     */
+    @Bean
+    fun urlHandlerFilter(): UrlHandlerFilter {
+        return UrlHandlerFilter.trailingSlashHandler("/**").mutateRequest().build()
+    }
+}
