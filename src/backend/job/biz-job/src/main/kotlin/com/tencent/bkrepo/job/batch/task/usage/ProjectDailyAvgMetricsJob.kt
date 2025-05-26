@@ -33,7 +33,7 @@ import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ProjectDailyAvgMetricsJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetricsDailyAvgRecord
-import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate

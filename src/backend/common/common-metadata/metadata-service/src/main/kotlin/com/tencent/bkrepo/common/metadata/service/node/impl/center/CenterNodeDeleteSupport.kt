@@ -36,8 +36,8 @@ import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.metadata.model.TNode
-import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDeleteResult
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeDeleteSupport
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria

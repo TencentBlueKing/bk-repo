@@ -59,7 +59,7 @@ import com.tencent.bkrepo.job.separation.model.TSeparationTask
 import com.tencent.bkrepo.job.separation.pojo.SeparationContent
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query

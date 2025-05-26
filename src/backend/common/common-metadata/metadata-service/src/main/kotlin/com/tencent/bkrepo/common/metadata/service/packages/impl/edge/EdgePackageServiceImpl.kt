@@ -28,18 +28,19 @@
 package com.tencent.bkrepo.common.metadata.service.packages.impl.edge
 
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgePackageCondition
-import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.repository.api.cluster.ClusterPackageClient
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.common.metadata.service.packages.impl.PackageServiceImpl
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgePackageCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.repository.api.cluster.ClusterPackageClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Service
@@ -53,12 +54,14 @@ class EdgePackageServiceImpl(
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
     packageSearchInterpreter: PackageSearchInterpreter,
-    clusterProperties: ClusterProperties
+    clusterProperties: ClusterProperties,
+    repositoryProperties: RepositoryProperties,
 ) : PackageServiceImpl(
     repositoryDao,
     packageDao,
     packageVersionDao,
-    packageSearchInterpreter
+    packageSearchInterpreter,
+    repositoryProperties
 ) {
 
     private val centerPackageClient: ClusterPackageClient by lazy {
@@ -87,13 +90,26 @@ class EdgePackageServiceImpl(
         versionName: String,
         realIpAddress: String?,
         contentPath: String?,
+        operator: String?,
+        cleanRequest: Boolean,
     ) {
-        centerPackageClient.deleteVersion(projectId, repoName, packageKey, versionName, realIpAddress, contentPath)
-        super.deleteVersion(projectId, repoName, packageKey, versionName, realIpAddress, contentPath)
+        centerPackageClient.deleteVersion(
+            projectId, repoName, packageKey, versionName, realIpAddress, contentPath, operator
+        )
+        super.deleteVersion(
+            projectId, repoName, packageKey, versionName, realIpAddress, contentPath, operator, cleanRequest
+        )
     }
 
-    override fun deletePackage(projectId: String, repoName: String, packageKey: String, realIpAddress: String?) {
-        centerPackageClient.deletePackage(projectId, repoName, packageKey, realIpAddress)
-        super.deletePackage(projectId, repoName, packageKey, realIpAddress)
+    override fun deletePackage(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        realIpAddress: String?,
+        operator: String?,
+        cleanRequest: Boolean,
+    ) {
+        centerPackageClient.deletePackage(projectId, repoName, packageKey, realIpAddress, operator)
+        super.deletePackage(projectId, repoName, packageKey, realIpAddress, operator, cleanRequest)
     }
 }

@@ -36,14 +36,14 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.PackageClient
-import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
-import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageListOption
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageSummary
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.VersionListOption
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import org.springframework.web.bind.annotation.RestController
 
@@ -95,9 +95,10 @@ class PackageController(
         projectId: String,
         repoName: String,
         packageKey: String,
-        realIpAddress: String?
+        realIpAddress: String?,
+        operator: String?
     ): Response<Void> {
-        packageService.deletePackage(projectId, repoName, packageKey, realIpAddress)
+        packageService.deletePackage(projectId, repoName, packageKey, realIpAddress, operator)
         return ResponseBuilder.success()
     }
 
@@ -108,8 +109,9 @@ class PackageController(
         version: String,
         realIpAddress: String?,
         contentPath: String?,
+        operator: String?
     ): Response<Void> {
-        packageService.deleteVersion(projectId, repoName, packageKey, version, realIpAddress, contentPath)
+        packageService.deleteVersion(projectId, repoName, packageKey, version, realIpAddress, contentPath, operator)
         return ResponseBuilder.success()
     }
 

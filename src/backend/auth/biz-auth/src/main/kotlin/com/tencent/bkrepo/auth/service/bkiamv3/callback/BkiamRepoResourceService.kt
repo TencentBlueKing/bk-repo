@@ -35,8 +35,8 @@ import com.tencent.bk.sdk.iam.dto.callback.response.InstanceInfoDTO
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.service.bkiamv3.BkiamV3BaseService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.common.metadata.pojo.project.RepoRangeQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryInfo
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component

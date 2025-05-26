@@ -38,8 +38,7 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
-import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
+import com.tencent.bkrepo.common.metadata.pojo.stage.StageUpgradeRequest
 import com.tencent.bkrepo.common.metadata.service.packages.StageService
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -64,8 +63,8 @@ class StageServiceImpl(
         with(request) {
             val packageVersion = findPackageVersion(projectId, repoName, packageKey, version)
             try {
-                val oldStage = ArtifactStageEnum.ofTagOrDefault(packageVersion.stageTag.lastOrNull())
-                val newStage = ArtifactStageEnum.ofTagOrNull(newTag).let { oldStage.upgrade(it) }
+                val oldStage = com.tencent.bkrepo.common.metadata.pojo.stage.ArtifactStageEnum.ofTagOrDefault(packageVersion.stageTag.lastOrNull())
+                val newStage = com.tencent.bkrepo.common.metadata.pojo.stage.ArtifactStageEnum.ofTagOrNull(newTag).let { oldStage.upgrade(it) }
                 val newStageTag = packageVersion.stageTag.toMutableList().apply { add(newStage.tag) }
                 packageVersion.stageTag = newStageTag
                 packageVersion.lastModifiedDate = LocalDateTime.now()

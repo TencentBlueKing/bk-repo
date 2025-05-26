@@ -58,7 +58,7 @@ import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPA
 import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPARATION_PACKAGE_KEY_IDX_DEF
 import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPARATION_PACKAGE_NAME_IDX
 import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPARATION_PACKAGE_NAME_IDX_DEF
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageType
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document

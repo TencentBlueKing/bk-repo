@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.service.packages
 
-import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
+import com.tencent.bkrepo.common.metadata.pojo.dependent.PackageDependentsRelation
 
 interface PackageDependentsService {
 

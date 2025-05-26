@@ -51,13 +51,13 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
-import com.tencent.bkrepo.repository.pojo.list.HeaderItem
-import com.tencent.bkrepo.repository.pojo.list.RowItem
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.common.metadata.pojo.list.HeaderItem
+import com.tencent.bkrepo.common.metadata.pojo.list.RowItem
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListViewItem
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryInfo
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 

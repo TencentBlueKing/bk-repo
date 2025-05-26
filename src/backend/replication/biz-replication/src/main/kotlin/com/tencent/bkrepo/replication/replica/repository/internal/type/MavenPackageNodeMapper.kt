@@ -30,9 +30,9 @@ package com.tencent.bkrepo.replication.replica.repository.internal.type
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageSummary
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 

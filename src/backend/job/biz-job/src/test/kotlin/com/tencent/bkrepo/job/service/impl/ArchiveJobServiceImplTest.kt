@@ -9,7 +9,7 @@ import com.tencent.bkrepo.job.batch.task.archive.IdleNodeArchiveJob
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.model.TNode
 import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.constant.EXPIRED_DELETED_NODE
 import com.tencent.bkrepo.common.artifact.constant.FORBID_REASON
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
@@ -40,12 +41,13 @@ import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_PROJECT
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
+import com.tencent.bkrepo.common.artifact.constant.ROOT_DELETED_NODE
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
-import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.ForbidType
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 
 /**
  * 元数据工具类
@@ -62,6 +64,8 @@ object MetadataUtils {
         METADATA_KEY_LINK_PROJECT,
         METADATA_KEY_LINK_REPO,
         METADATA_KEY_LINK_FULL_PATH,
+        ROOT_DELETED_NODE,
+        EXPIRED_DELETED_NODE
     )
 
     /**
@@ -181,6 +185,11 @@ object MetadataUtils {
             }
             .toMutableList()
     }
+
+    fun buildRecycleBinMetadata() = TMetadata(key = ROOT_DELETED_NODE, value = true, system = true)
+
+    fun buildExpiredDeletedNodeMetadata() =
+        TMetadata(key = EXPIRED_DELETED_NODE, value = true, system = true)
 
     private fun checkReservedKey(key: String, system: Boolean = false) {
         if (key in RESERVED_KEY && !system) {

@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.metadata.service.node
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
+import com.tencent.bkrepo.common.metadata.pojo.software.ProjectPackageOverview
 
 /**
  * 节点自定义查询服务接口

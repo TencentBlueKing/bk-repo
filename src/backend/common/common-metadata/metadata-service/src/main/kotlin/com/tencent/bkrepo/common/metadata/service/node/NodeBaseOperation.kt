@@ -34,13 +34,13 @@ package com.tencent.bkrepo.common.metadata.service.node
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeLinkRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUpdateAccessDateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUpdateRequest
 
 /**
  * 节点CRUD基本操作接口

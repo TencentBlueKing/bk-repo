@@ -45,7 +45,7 @@ import com.tencent.bkrepo.helm.pojo.artifact.HelmDeleteArtifactInfo
 import com.tencent.bkrepo.helm.service.ChartManipulationService
 import com.tencent.bkrepo.helm.service.FixToolService
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import org.springframework.web.bind.annotation.RestController
 
 @RestController

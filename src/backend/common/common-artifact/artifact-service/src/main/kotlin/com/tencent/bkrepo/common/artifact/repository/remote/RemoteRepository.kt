@@ -57,9 +57,9 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod.HEAD
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import okhttp3.Headers
 import okhttp3.OkHttpClient
 import okhttp3.Request

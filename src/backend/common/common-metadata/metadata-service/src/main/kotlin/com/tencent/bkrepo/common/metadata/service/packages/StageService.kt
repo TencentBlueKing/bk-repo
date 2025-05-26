@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.service.packages
 
-import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
+import com.tencent.bkrepo.common.metadata.pojo.stage.StageUpgradeRequest
 
 /**
  * 包版本晋级服务接口

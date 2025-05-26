@@ -34,8 +34,8 @@ import com.tencent.bkrepo.replication.replica.repository.internal.type.HelmPacka
 import com.tencent.bkrepo.replication.replica.repository.internal.type.MavenPackageNodeMapper
 import com.tencent.bkrepo.replication.replica.repository.internal.type.NpmPackageNodeMapper
 import com.tencent.bkrepo.replication.replica.repository.internal.type.PackageNodeMapper
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageSummary
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
 
 /**
  * 包和节点的映射关系

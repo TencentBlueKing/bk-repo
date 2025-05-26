@@ -70,7 +70,7 @@ import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
 import com.tencent.bkrepo.lfs.pojo.LfsObject
 import com.tencent.bkrepo.lfs.utils.OidUtils
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request

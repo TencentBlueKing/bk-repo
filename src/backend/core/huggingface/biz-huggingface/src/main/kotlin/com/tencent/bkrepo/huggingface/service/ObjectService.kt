@@ -49,7 +49,7 @@ import com.tencent.bkrepo.lfs.pojo.ActionDetail
 import com.tencent.bkrepo.lfs.pojo.BatchRequest
 import com.tencent.bkrepo.lfs.pojo.BatchResponse
 import com.tencent.bkrepo.lfs.pojo.LfsObject
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import org.springframework.stereotype.Service
 
 @Service

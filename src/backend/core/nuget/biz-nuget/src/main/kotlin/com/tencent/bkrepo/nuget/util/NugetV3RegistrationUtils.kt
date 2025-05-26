@@ -18,8 +18,8 @@ import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationItem
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.index.RegistrationPageItem
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.leaf.RegistrationLeaf
 import com.tencent.bkrepo.nuget.pojo.v3.metadata.page.RegistrationPage
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageSummary
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI

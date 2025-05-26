@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.service.metadata
 
-import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.packages.PackageMetadataSaveRequest
 
 /**
  * 包元数据服务接口

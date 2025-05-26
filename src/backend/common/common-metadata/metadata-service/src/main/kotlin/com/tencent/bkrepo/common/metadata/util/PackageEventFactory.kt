@@ -4,9 +4,9 @@ import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionDownloadEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionUpdatedEvent
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageType
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionUpdateRequest
 
 /**
  * 包版本事件构造类

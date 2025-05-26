@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.cache.pojo
 
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import io.swagger.v3.oas.annotations.media.Schema
 
 

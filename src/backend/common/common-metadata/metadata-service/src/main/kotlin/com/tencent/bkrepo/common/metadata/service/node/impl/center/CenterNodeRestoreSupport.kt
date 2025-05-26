@@ -45,6 +45,7 @@ class CenterNodeRestoreSupport(
 
     override fun resolveConflict(context: RestoreContext, node: TNode) {
         val fullPath = node.fullPath
+        val operator = context.operator
         val existNode = nodeDao.findNode(context.projectId, context.repoName, fullPath)
         if (node.deleted == null || existNode != null) {
             when (context.conflictStrategy) {
@@ -55,7 +56,7 @@ class CenterNodeRestoreSupport(
                 ConflictStrategy.OVERWRITE -> {
                     existNode?.let { ClusterUtils.checkIsSrcCluster(it.clusterNames) }
                     val query = NodeQueryHelper.nodeQuery(context.projectId, context.repoName, fullPath)
-                    nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(context.operator))
+                    nodeDao.updateFirst(query, NodeQueryHelper.nodeDeleteUpdate(operator))
                     context.conflictCount += 1
                 }
                 ConflictStrategy.FAILED -> throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
@@ -67,6 +68,6 @@ class CenterNodeRestoreSupport(
             fullPath = fullPath,
             deleted = context.deletedTime
         )
-        context.restoreCount += nodeDao.updateFirst(query, NodeQueryHelper.nodeRestoreUpdate()).modifiedCount
+        context.restoreCount += nodeDao.updateFirst(query, NodeQueryHelper.nodeRestoreUpdate(operator)).modifiedCount
     }
 }

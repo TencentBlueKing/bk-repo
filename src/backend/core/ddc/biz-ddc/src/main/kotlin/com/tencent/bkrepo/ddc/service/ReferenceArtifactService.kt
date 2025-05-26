@@ -62,7 +62,7 @@ import com.tencent.bkrepo.ddc.utils.BlakeUtils
 import com.tencent.bkrepo.ddc.utils.BlakeUtils.hex
 import com.tencent.bkrepo.ddc.utils.DdcUtils
 import com.tencent.bkrepo.ddc.utils.writeBool
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor

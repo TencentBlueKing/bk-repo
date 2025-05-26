@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDependentsDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
-import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
+import com.tencent.bkrepo.common.metadata.pojo.dependent.PackageDependentsRelation
 import com.tencent.bkrepo.common.metadata.service.packages.PackageDependentsService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

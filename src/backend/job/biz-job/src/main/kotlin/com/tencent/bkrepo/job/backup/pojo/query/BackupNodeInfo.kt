@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.job.backup.pojo.query
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 import java.time.LocalDateTime
 
 data class BackupNodeInfo(

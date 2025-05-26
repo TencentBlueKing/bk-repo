@@ -48,7 +48,7 @@ import com.tencent.bkrepo.pypi.constants.REMOTE_HTML_CACHE_FULL_PATH
 import com.tencent.bkrepo.pypi.constants.XML_RPC_URI
 import com.tencent.bkrepo.pypi.exception.PypiRemoteSearchException
 import com.tencent.bkrepo.pypi.util.XmlUtils.readXml
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull

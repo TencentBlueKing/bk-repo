@@ -16,7 +16,7 @@ import com.tencent.bkrepo.common.metadata.util.PackageEventFactory
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.service.packages.PackageDownloadService
 import org.springframework.stereotype.Service
 

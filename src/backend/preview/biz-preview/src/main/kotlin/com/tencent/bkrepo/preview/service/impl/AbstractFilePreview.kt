@@ -46,7 +46,7 @@ import com.tencent.bkrepo.preview.service.FileTransferService
 import com.tencent.bkrepo.preview.service.cache.impl.PreviewFileCacheServiceImpl
 import com.tencent.bkrepo.preview.utils.EncodingDetects
 import com.tencent.bkrepo.preview.utils.FileUtils
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import org.apache.commons.codec.binary.Base64
 import org.slf4j.LoggerFactory
 import org.springframework.web.util.HtmlUtils

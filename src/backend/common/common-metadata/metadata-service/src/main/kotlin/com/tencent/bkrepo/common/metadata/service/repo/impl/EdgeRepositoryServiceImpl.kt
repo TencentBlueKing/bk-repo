@@ -42,10 +42,10 @@ import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.api.cluster.ClusterRepositoryClient
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service

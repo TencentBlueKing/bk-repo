@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.metadata.service.node
 
-import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRestoreRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeArchiveRestoreRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeArchiveRequest
 
 /**
  * 节点归档操作

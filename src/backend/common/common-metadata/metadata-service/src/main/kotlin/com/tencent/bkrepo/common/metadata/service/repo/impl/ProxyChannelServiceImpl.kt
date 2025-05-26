@@ -34,10 +34,10 @@ import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.metadata.util.ProxyChannelQueryHelper.convert
 import com.tencent.bkrepo.common.metadata.util.ProxyChannelQueryHelper.convertToTProxyChannel
 import com.tencent.bkrepo.common.metadata.util.ProxyChannelQueryHelper.encryptPassword
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.proxy.ProxyChannelCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.proxy.ProxyChannelDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.proxy.ProxyChannelInfo
+import com.tencent.bkrepo.common.metadata.pojo.proxy.ProxyChannelUpdateRequest
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime

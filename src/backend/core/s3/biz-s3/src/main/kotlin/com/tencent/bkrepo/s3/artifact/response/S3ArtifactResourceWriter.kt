@@ -43,7 +43,7 @@ import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
 import com.tencent.bkrepo.s3.constant.DEFAULT_ENCODING
 import com.tencent.bkrepo.s3.constant.S3HttpHeaders

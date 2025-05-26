@@ -33,9 +33,9 @@ package com.tencent.bkrepo.common.metadata.dao.packages
 
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
@@ -77,10 +77,20 @@ class PackageDao : SimpleMongoDao<TPackage>() {
         return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
     }
 
-    fun deleteByKey(projectId: String, repoName: String, key: String) {
+    fun deleteByKey(projectId: String, repoName: String, key: String, operator: String, recycle: Boolean) {
         if (key.isNotBlank()) {
-            this.remove(PackageQueryHelper.packageQuery(projectId, repoName, key))
+            this.updateFirst(
+                PackageQueryHelper.packageQuery(projectId, repoName, key),
+                PackageQueryHelper.packageDeleteUpdate(operator, recycle)
+            )
         }
+    }
+
+    fun deleteById(packageId: String, operator: String, recycle: Boolean) {
+        this.updateFirst(
+            PackageQueryHelper.packageQuery(packageId),
+            PackageQueryHelper.packageDeleteUpdate(operator, recycle)
+        )
     }
 
     fun addClusterByKey(projectId: String, repoName: String, key: String, clusterName: String): UpdateResult? {

@@ -35,7 +35,7 @@ import com.tencent.bkrepo.common.metadata.model.TPackage.Companion.PACKAGE_KEY_I
 import com.tencent.bkrepo.common.metadata.model.TPackage.Companion.PACKAGE_KEY_IDX_DEF
 import com.tencent.bkrepo.common.metadata.model.TPackage.Companion.PACKAGE_NAME_IDX
 import com.tencent.bkrepo.common.metadata.model.TPackage.Companion.PACKAGE_NAME_IDX_DEF
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageType
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -68,8 +68,10 @@ data class TPackage(
     var versionTag: Map<String, String>? = null,
     var extension: Map<String, Any>? = null,
     var historyVersion: Set<String> = emptySet(),
-    var clusterNames: Set<String>? = null
-): ClusterResource {
+    var clusterNames: Set<String>? = null,
+    var metadata: MutableList<TMetadata>? = null,
+    var deleted: LocalDateTime? = null,
+    ): ClusterResource {
 
     override fun readClusterNames(): Set<String>? {
         return this.clusterNames
@@ -83,6 +85,6 @@ data class TPackage(
         const val PACKAGE_NAME_IDX = "package_name_idx"
         const val PACKAGE_KEY_IDX = "package_key_idx"
         const val PACKAGE_NAME_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'name': 1}"
-        const val PACKAGE_KEY_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'key': 1}"
+        const val PACKAGE_KEY_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'key': 1, 'deleted': 1}"
     }
 }

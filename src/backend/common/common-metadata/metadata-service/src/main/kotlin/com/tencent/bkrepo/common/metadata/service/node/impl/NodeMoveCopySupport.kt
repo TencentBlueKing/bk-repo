@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
+import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TNode
@@ -56,11 +57,14 @@ import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils.buildExpiredDeletedNodeMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 
 /**
  * 节点移动/拷贝接口实现
@@ -156,7 +160,11 @@ open class NodeMoveCopySupport(
             // 因为分表所以不能直接更新src节点，必须创建新的并删除旧的
             if (move) {
                 val query = NodeQueryHelper.nodeQuery(node.projectId, node.repoName, node.fullPath)
-                val update = NodeQueryHelper.nodeDeleteUpdate(operator)
+                var update = NodeQueryHelper.nodeDeleteUpdate(operator)
+                if (nodeBaseService.repositoryProperties.recycleBinEnabled) {
+                    // 移动后被标记删除的原始节点直接转为可被清理状态，不放入回收站
+                    update = update.push(TNode::metadata.name, buildExpiredDeletedNodeMetadata())
+                }
                 if (!node.folder) {
                     quotaService.decreaseUsedVolume(node.projectId, node.repoName, node.size)
                 }
@@ -185,6 +193,16 @@ open class NodeMoveCopySupport(
                     existNode.projectId, existNode.repoName, existNode.fullPath, operator
                 )
                 quotaService.decreaseUsedVolume(existNode.projectId, existNode.repoName, existNode.size)
+                if (nodeBaseService.repositoryProperties.recycleBinEnabled) {
+                    // 被覆盖的节点直接转为可被清理状态，不放入回收站
+                    val query = Query(
+                        where(TNode::projectId).isEqualTo(existNode.projectId).and(ID).isEqualTo(existNode.id!!)
+                    )
+                    val update = NodeQueryHelper.nodeDeleteUpdate(operator).push(
+                        TNode::metadata.name, buildExpiredDeletedNodeMetadata()
+                    )
+                    nodeDao.updateFirst(query, update)
+                }
             }
         }
     }

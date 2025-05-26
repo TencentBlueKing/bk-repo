@@ -32,8 +32,8 @@ import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.standalone.RemoteReplicator
 import com.tencent.bkrepo.replication.service.EdgeReplicaTaskRecordService
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageSummary
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Component
 import java.time.temporal.ChronoUnit

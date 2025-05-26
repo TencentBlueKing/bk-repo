@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.opdata.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.metadata.annotation.LogOperate
+import com.tencent.bkrepo.common.api.annotation.LogOperate
 import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
 import com.tencent.bkrepo.common.notify.service.NotifyChannelCredentialService
 import com.tencent.bkrepo.common.security.permission.Principal

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.metadata.interceptor.impl
 
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
 
 class PackageMetadataInterceptor(rules: Map<String, Any>) : MetadataInterceptor<PackageVersion>(rules) {
     override fun artifactMetadata(artifact: PackageVersion) = artifact.metadata

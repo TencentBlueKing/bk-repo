@@ -187,6 +187,14 @@ const val METADATA_KEY_LINK_FULL_PATH = "targetFullPath"
  */
 const val SHA256_STR_LENGTH = 64
 
+// 删除节点操作的顶层节点，在回收站显示
+const val ROOT_DELETED_NODE = "_root_deleted_node"
+// 跳过节点保留时间删除
+const val EXPIRED_DELETED_NODE = "_expired_deleted_node"
+
+
+const val SHA256 = "sha256"
+const val MD5 = "md5"
 /**
  * 下载请求参数，用于指示从远程仓库下载时是否读取缓存
  */

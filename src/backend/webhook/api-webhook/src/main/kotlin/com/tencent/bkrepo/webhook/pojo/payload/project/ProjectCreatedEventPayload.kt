@@ -29,7 +29,7 @@ package com.tencent.bkrepo.webhook.pojo.payload.project
 
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
 import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
 
 data class ProjectCreatedEventPayload(

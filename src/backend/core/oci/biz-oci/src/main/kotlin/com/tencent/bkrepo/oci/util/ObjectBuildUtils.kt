@@ -39,16 +39,16 @@ import com.tencent.bkrepo.oci.constant.IMAGE_VERSION
 import com.tencent.bkrepo.oci.constant.MEDIA_TYPE
 import com.tencent.bkrepo.oci.pojo.artifact.OciManifestArtifactInfo
 import com.tencent.bkrepo.oci.pojo.user.BasicInfo
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.packages.PackageMetadataSaveRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageType
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionUpdateRequest
 
 object ObjectBuildUtils {
 

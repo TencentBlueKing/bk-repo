@@ -32,9 +32,9 @@
 package com.tencent.bkrepo.common.metadata.dao.packages
 
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Update
@@ -59,23 +59,34 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
         return this.findOne(PackageQueryHelper.versionQuery(packageId, name = name))
     }
 
-    fun deleteByPackageId(packageId: String) {
-        this.remove(PackageQueryHelper.versionQuery(packageId))
+    fun deleteByPackageId(packageId: String, operator: String, recycle: Boolean) {
+        this.updateMulti(
+            PackageQueryHelper.versionQuery(packageId),
+            PackageQueryHelper.packageVersionDeleteUpdate(operator, recycle)
+        )
     }
 
     /**
      * PackageVersion的clusterName只有一个值时，可根据[packageId]与[clusterName]删除所有关联的PackageVersion
      */
-    fun deleteByPackageIdAndClusterName(packageId: String, clusterName: String) {
-        this.remove(PackageQueryHelper.clusterNameQuery(packageId, clusterName))
+    fun deleteByPackageIdAndClusterName(packageId: String, clusterName: String, operator: String, recycle: Boolean) {
+        this.updateMulti(
+            PackageQueryHelper.clusterNameQuery(packageId, clusterName),
+            PackageQueryHelper.packageVersionDeleteUpdate(operator, recycle)
+        )
     }
 
     /**
      * 版本下的多个制品都删除时，再删除版本
      */
-    fun deleteByNameAndPath(packageId: String, name: String, path: String?): Boolean {
+    fun deleteByNameAndPath(
+        packageId: String, name: String, path: String?, operator: String, recycle: Boolean,
+    ): Boolean {
         if (path == null) {
-            this.remove(PackageQueryHelper.versionQuery(packageId, name = name))
+            this.updateFirst(
+                PackageQueryHelper.versionQuery(packageId, name = name),
+                PackageQueryHelper.packageVersionDeleteUpdate(operator, recycle)
+            )
             return true
         } else {
             val query = PackageQueryHelper.versionQuery(packageId, name = name)
@@ -84,7 +95,7 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
             option.returnNew(true)
             val tPackageVersion = this.findAndModify(query, update, option, TPackageVersion::class.java) ?: return true
             if (tPackageVersion.artifactPaths.isNullOrEmpty()) {
-                this.remove(query)
+                this.updateFirst(query, PackageQueryHelper.packageVersionDeleteUpdate(operator, recycle))
                 return true
             }
             return false

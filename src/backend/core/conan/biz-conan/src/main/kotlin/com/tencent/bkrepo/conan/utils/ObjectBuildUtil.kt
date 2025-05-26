@@ -57,11 +57,11 @@ import com.tencent.bkrepo.conan.utils.ConanPathUtils.buildReferenceWithoutVersio
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getRecipeRevisionsFile
 import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToUtcTime
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageType
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
 import java.time.LocalDateTime
 import javax.servlet.http.HttpServletResponse
 

@@ -28,13 +28,13 @@
 package com.tencent.bkrepo.common.metadata.service.project
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
-import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
-import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
-import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
-import com.tencent.bkrepo.repository.pojo.project.ProjectUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectListOption
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetricsInfo
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectRangeQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectSearchOption
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectUpdateRequest
 
 /**
  * 项目服务接口

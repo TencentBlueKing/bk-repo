@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.common.notify.api.weworkbot
 
-import com.tencent.bkrepo.common.metadata.annotation.Sensitive
-import com.tencent.bkrepo.common.metadata.handler.MaskPartString
+import com.tencent.bkrepo.common.api.annotation.Sensitive
+import com.tencent.bkrepo.common.api.handler.MaskPartString
 import com.tencent.bkrepo.common.notify.api.NotifyChannelCredential
 import io.swagger.v3.oas.annotations.media.Schema
 

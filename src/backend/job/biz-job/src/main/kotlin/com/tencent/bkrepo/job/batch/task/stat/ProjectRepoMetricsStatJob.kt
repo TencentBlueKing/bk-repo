@@ -44,7 +44,7 @@ import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.ProjectRepoMetricsStatJobProperties
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
-import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria

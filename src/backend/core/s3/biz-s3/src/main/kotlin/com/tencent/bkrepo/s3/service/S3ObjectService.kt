@@ -52,7 +52,6 @@ import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_DOWNLOAD_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
-import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.generic.configuration.AutoIndexRepositorySettings
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
@@ -60,11 +59,11 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.s3.artifact.S3ArtifactInfo
 import com.tencent.bkrepo.s3.constant.NO_SUCH_ACCESS
@@ -273,12 +272,14 @@ class S3ObjectService(
 
     fun deleteObject(artifactInfo: S3ArtifactInfo) {
         with(artifactInfo) {
-            nodeService.deleteNode(NodeDeleteRequest(
+            nodeService.deleteNode(
+                NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = getArtifactFullPath(),
                 operator = SecurityUtils.getUserId()
-            ))
+            )
+            )
         }
     }
 

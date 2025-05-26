@@ -44,8 +44,8 @@ import com.tencent.bkrepo.common.metadata.interceptor.impl.WebInterceptor
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
 
 class DownloadInterceptorFactory(

@@ -43,12 +43,12 @@ import com.tencent.bkrepo.huggingface.pojo.RepoDeleteRequest
 import com.tencent.bkrepo.huggingface.pojo.RepoMoveRequest
 import com.tencent.bkrepo.huggingface.pojo.RepoUpdateRequest
 import com.tencent.bkrepo.huggingface.pojo.RepoUrl
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageType
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 

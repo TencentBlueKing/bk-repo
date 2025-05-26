@@ -68,9 +68,9 @@ import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getRecipeRevisionsFile
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.joinString
 import com.tencent.bkrepo.conan.utils.TimeFormatUtil.convertToUtcTime
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
 import java.time.LocalDateTime
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.metadata.service.node
 
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCompressedRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUnCompressedRequest
 
 /**
  * 节点压缩操作

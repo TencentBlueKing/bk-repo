@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.metadata.model
 
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.api.mongo.ShardingKey
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import com.tencent.bkrepo.common.metadata.constant.SHARDING_COUNT
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 
@@ -50,5 +50,5 @@ data class TFileReference(
     @ShardingKey(count = SHARDING_COUNT)
     var sha256: String,
     var credentialsKey: String? = null,
-    var count: Long
+    var count: Long,
 )

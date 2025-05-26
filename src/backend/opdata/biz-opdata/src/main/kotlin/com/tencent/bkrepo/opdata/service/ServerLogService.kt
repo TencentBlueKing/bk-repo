@@ -12,7 +12,7 @@ import com.tencent.bkrepo.common.service.log.LogType
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.opdata.config.OpServerLogProperties
 import com.tencent.bkrepo.opdata.pojo.log.LogDataConfig
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.cloud.client.ServiceInstance

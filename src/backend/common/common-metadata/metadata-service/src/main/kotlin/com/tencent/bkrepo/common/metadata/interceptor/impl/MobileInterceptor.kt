@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.metadata.interceptor.impl
 
 import com.tencent.bkrepo.common.metadata.interceptor.CompositeDownloadInterceptor
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 
 /**
  * 移动端下载拦截器

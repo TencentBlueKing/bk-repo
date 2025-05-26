@@ -2,7 +2,7 @@ package com.tencent.bkrepo.repository.service.repo
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryInfo
 
 interface SoftwareRepositoryService {
 

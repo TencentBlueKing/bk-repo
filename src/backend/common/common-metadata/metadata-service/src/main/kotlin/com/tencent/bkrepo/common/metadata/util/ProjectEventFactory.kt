@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.common.artifact.event.project.ProjectCreatedEvent
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
 
 /**
  * 项目事件构造类

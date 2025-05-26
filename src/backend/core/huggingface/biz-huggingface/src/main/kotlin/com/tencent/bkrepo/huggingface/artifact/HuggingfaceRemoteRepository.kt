@@ -41,8 +41,8 @@ import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_DATASET
 import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
 import com.tencent.bkrepo.huggingface.util.HfApi
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageType
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
 import okhttp3.Headers
 import org.springframework.stereotype.Component
 

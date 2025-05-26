@@ -47,7 +47,7 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.permission.Permission
-import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.rpm.FILELISTS_XML
 import com.tencent.bkrepo.rpm.OTHERS_XML
 import com.tencent.bkrepo.rpm.PRIMARY_XML

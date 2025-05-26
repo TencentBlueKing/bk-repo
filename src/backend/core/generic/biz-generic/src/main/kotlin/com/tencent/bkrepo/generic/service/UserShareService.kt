@@ -52,8 +52,8 @@ import com.tencent.bkrepo.generic.pojo.share.UserShareGenUrlRequest
 import com.tencent.bkrepo.generic.pojo.share.UserShareRecordCreateRequest
 import com.tencent.bkrepo.generic.pojo.share.UserShareRecordInfo
 import com.tencent.bkrepo.generic.pojo.share.UserShareUrls
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime

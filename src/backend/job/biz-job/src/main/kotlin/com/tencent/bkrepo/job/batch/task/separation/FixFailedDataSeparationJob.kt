@@ -52,7 +52,7 @@ import com.tencent.bkrepo.job.separation.pojo.query.PackageInfo
 import com.tencent.bkrepo.job.separation.pojo.query.PackageVersionInfo
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate

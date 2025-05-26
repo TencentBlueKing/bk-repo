@@ -32,16 +32,17 @@
 package com.tencent.bkrepo.common.metadata.service.packages
 
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageListOption
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageSummary
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.VersionListOption
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionUpdateRequest
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
 
 /**
  * 包服务类接口
@@ -58,7 +59,7 @@ interface PackageService {
     fun findPackageByKey(
         projectId: String,
         repoName: String,
-        packageKey: String
+        packageKey: String,
     ): PackageSummary?
 
     /**
@@ -73,7 +74,7 @@ interface PackageService {
         projectId: String,
         repoName: String,
         packageKey: String,
-        versionName: String
+        versionName: String,
     ): PackageVersion?
 
     /**
@@ -88,7 +89,7 @@ interface PackageService {
         projectId: String,
         repoName: String,
         packageKey: String,
-        tag: String
+        tag: String,
     ): String?
 
     /**
@@ -97,7 +98,7 @@ interface PackageService {
     fun findLatestBySemVer(
         projectId: String,
         repoName: String,
-        packageKey: String
+        packageKey: String,
     ): PackageVersion?
 
     /**
@@ -110,7 +111,7 @@ interface PackageService {
     fun listPackagePage(
         projectId: String,
         repoName: String,
-        option: PackageListOption
+        option: PackageListOption,
     ): Page<PackageSummary>
 
     /**
@@ -133,7 +134,7 @@ interface PackageService {
         projectId: String,
         repoName: String,
         packageKey: String,
-        option: VersionListOption
+        option: VersionListOption,
     ): Page<PackageVersion>
 
     /**
@@ -148,7 +149,7 @@ interface PackageService {
         projectId: String,
         repoName: String,
         packageKey: String,
-        option: VersionListOption
+        option: VersionListOption,
     ): List<PackageVersion>
 
     /**
@@ -180,7 +181,9 @@ interface PackageService {
         projectId: String,
         repoName: String,
         packageKey: String,
-        realIpAddress: String? = null
+        realIpAddress: String? = null,
+        operator: String? = SYSTEM_USER,
+        cleanRequest: Boolean = false,
     )
 
     /**
@@ -191,6 +194,8 @@ interface PackageService {
      * @param packageKey 包唯一标识
      * @param versionName 版本名称
      * @param contentPath 版本文件路径
+     * @param operator 操作人
+     * @param cleanRequest 是否是仓库清理请求
      */
     fun deleteVersion(
         projectId: String,
@@ -199,6 +204,8 @@ interface PackageService {
         versionName: String,
         realIpAddress: String? = null,
         contentPath: String? = null,
+        operator: String? = SYSTEM_USER,
+        cleanRequest: Boolean = false,
     )
 
     /**
@@ -207,7 +214,9 @@ interface PackageService {
      * @param projectId 项目id
      * @param repoName 仓库名称
      */
-    fun deleteAllPackage(projectId: String, repoName: String)
+    fun deleteAllPackage(
+        projectId: String, repoName: String, cleanRequest: Boolean = false, operator: String? = SYSTEM_USER,
+    )
 
     /**
      * 更新包
@@ -245,7 +254,7 @@ interface PackageService {
         projectId: String,
         repoName: String,
         packageKey: String,
-        packageVersionList: List<String>
+        packageVersionList: List<String>,
     ): List<String>
 
     /**

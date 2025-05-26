@@ -48,10 +48,10 @@ import com.tencent.bkrepo.generic.enum.GenericAction
 import com.tencent.bkrepo.generic.model.TSignFile
 import com.tencent.bkrepo.generic.pojo.bkbase.QueryRequest
 import com.tencent.bkrepo.generic.pojo.bkbase.QueryResponse
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody

@@ -28,10 +28,10 @@
 package com.tencent.bkrepo.common.metadata.service.repo
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelDeleteRequest
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.proxy.ProxyChannelCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.proxy.ProxyChannelDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.proxy.ProxyChannelInfo
+import com.tencent.bkrepo.common.metadata.pojo.proxy.ProxyChannelUpdateRequest
 
 /**
  * 代理源服务接口

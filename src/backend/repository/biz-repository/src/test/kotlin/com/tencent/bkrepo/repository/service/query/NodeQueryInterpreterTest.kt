@@ -33,7 +33,7 @@ package com.tencent.bkrepo.repository.service.query
 
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
+import com.tencent.bkrepo.common.metadata.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.common.metadata.search.common.LocalDatetimeRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.RepoTypeRuleInterceptor

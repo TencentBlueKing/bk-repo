@@ -35,14 +35,14 @@ import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
-import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageListOption
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageSummary
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.VersionListOption
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionUpdateRequest
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
@@ -107,7 +107,8 @@ interface PackageClient {
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
-        @RequestParam realIpAddress: String? = null
+        @RequestParam realIpAddress: String? = null,
+        @RequestParam operator: String? = null
     ): Response<Void>
 
     @Operation(summary = "删除版本")
@@ -119,6 +120,7 @@ interface PackageClient {
         @RequestParam version: String,
         @RequestParam realIpAddress: String? = null,
         @RequestParam contentPath: String? = null,
+        @RequestParam operator: String? = null
     ): Response<Void>
 
     @Operation(summary = "更新包")

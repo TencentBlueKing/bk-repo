@@ -34,8 +34,8 @@ package com.tencent.bkrepo.repository.controller.service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.MetadataClient
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import org.springframework.web.bind.annotation.RestController
 

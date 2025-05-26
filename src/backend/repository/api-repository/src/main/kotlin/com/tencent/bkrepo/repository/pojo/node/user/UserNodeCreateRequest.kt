@@ -31,9 +31,9 @@
 
 package com.tencent.bkrepo.repository.pojo.node.user
 
-import com.tencent.bkrepo.repository.pojo.AuditableRequest
-import com.tencent.bkrepo.repository.pojo.UserRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRequest
+import com.tencent.bkrepo.common.metadata.pojo.AuditableRequest
+import com.tencent.bkrepo.common.metadata.pojo.UserRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRequest
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
@@ -65,5 +65,5 @@ data class UserNodeCreateRequest(
     override val createdBy: String? = null,
     override val createdDate: LocalDateTime? = null,
     override val lastModifiedBy: String? = null,
-    override val lastModifiedDate: LocalDateTime? = null
+    override val lastModifiedDate: LocalDateTime? = null,
 ) : NodeRequest, UserRequest, AuditableRequest

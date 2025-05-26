@@ -36,8 +36,8 @@ import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEven
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
-import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDeleteResult
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria

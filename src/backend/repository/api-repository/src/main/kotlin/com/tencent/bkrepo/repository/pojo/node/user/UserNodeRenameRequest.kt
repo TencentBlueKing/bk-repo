@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.repository.pojo.node.user
 
-import com.tencent.bkrepo.repository.pojo.UserRequest
-import com.tencent.bkrepo.repository.pojo.node.NodeRequest
+import com.tencent.bkrepo.common.metadata.pojo.UserRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRequest
 import io.swagger.v3.oas.annotations.media.Schema
 
 
@@ -48,5 +48,5 @@ data class UserNodeRenameRequest(
     @get:Schema(title = "节点完整路径", required = true)
     override val fullPath: String,
     @get:Schema(title = "节点新完整路径", required = true)
-    val newFullPath: String
+    val newFullPath: String,
 ) : NodeRequest, UserRequest

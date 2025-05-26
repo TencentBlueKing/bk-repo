@@ -32,8 +32,8 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.metadata.model.TProxyChannel
 import com.tencent.bkrepo.common.security.util.RsaUtils
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelCreateRequest
-import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
+import com.tencent.bkrepo.common.metadata.pojo.proxy.ProxyChannelCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.proxy.ProxyChannelInfo
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo

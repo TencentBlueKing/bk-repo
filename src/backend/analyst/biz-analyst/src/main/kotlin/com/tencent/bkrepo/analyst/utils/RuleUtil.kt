@@ -29,7 +29,7 @@ package com.tencent.bkrepo.analyst.utils
 
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 
 object RuleUtil {
     fun getProjectIds(rule: Rule?): List<String> {

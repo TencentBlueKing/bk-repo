@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.metadata.interceptor.impl
 
 import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptor
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import org.springframework.util.AntPathMatcher
 
 /**

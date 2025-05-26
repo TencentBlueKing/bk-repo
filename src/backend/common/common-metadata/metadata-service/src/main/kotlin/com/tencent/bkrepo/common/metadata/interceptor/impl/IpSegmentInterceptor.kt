@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.config.DownloadInterceptorProperties
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 
 /**
  * IP段下载拦截器

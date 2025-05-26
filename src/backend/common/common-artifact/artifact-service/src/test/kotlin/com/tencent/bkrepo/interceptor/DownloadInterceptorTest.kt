@@ -36,10 +36,10 @@ import com.tencent.bkrepo.common.metadata.interceptor.impl.FilenameInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.NodeForbiddenStatusInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.NodeMetadataInterceptor
 import com.tencent.bkrepo.common.metadata.interceptor.impl.WebInterceptor
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow

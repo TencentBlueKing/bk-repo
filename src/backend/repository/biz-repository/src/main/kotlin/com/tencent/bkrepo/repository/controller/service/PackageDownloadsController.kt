@@ -34,11 +34,11 @@ package com.tencent.bkrepo.repository.controller.service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.PackageDownloadsClient
-import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
-import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.download.DetailsQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.common.metadata.pojo.download.PackageDownloadsDetails
+import com.tencent.bkrepo.common.metadata.pojo.download.PackageDownloadsSummary
+import com.tencent.bkrepo.common.metadata.pojo.download.SummaryQueryRequest
 import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService
 import org.springframework.web.bind.annotation.RestController
 

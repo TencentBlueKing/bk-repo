@@ -31,12 +31,12 @@
 
 package com.tencent.bkrepo.common.metadata.service.packages
 
-import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
-import com.tencent.bkrepo.repository.pojo.download.DownloadsMigrationRequest
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
-import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.download.DetailsQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.download.DownloadsMigrationRequest
+import com.tencent.bkrepo.common.metadata.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.common.metadata.pojo.download.PackageDownloadsDetails
+import com.tencent.bkrepo.common.metadata.pojo.download.PackageDownloadsSummary
+import com.tencent.bkrepo.common.metadata.pojo.download.SummaryQueryRequest
 
 interface PackageDownloadsService {
 

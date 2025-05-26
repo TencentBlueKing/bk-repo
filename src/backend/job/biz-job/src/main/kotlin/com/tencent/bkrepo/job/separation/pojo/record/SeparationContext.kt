@@ -30,7 +30,7 @@ package com.tencent.bkrepo.job.separation.pojo.record
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.job.separation.model.TSeparationTask
 import com.tencent.bkrepo.job.separation.pojo.SeparationArtifactType
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import java.time.LocalDateTime
 
 class SeparationContext(

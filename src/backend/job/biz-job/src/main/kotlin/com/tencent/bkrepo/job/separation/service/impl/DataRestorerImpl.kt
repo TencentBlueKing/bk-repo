@@ -53,7 +53,7 @@ import com.tencent.bkrepo.job.separation.service.DataRestorer
 import com.tencent.bkrepo.job.separation.service.impl.repo.RepoSpecialSeparationMappings
 import com.tencent.bkrepo.job.separation.util.SeparationQueryHelper
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest

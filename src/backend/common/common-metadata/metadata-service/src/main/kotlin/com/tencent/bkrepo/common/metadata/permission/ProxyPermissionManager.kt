@@ -42,7 +42,7 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthProperties
 import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryInfo
 
 class ProxyPermissionManager(
     projectService: ProjectService,

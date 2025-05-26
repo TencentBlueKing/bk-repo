@@ -40,8 +40,8 @@ import com.tencent.bkrepo.common.metadata.dao.packages.PackageDownloadsDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
-import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.common.metadata.pojo.download.DetailsQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageServiceTest.Companion.buildCreateRequest
 import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService

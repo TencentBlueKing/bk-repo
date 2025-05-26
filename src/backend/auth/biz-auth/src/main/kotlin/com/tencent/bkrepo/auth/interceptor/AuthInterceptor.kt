@@ -65,7 +65,7 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.service.util.HttpSigner
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.slf4j.LoggerFactory
 import org.springframework.web.servlet.HandlerInterceptor

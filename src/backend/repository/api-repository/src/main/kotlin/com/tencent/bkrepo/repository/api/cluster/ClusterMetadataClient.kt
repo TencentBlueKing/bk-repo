@@ -29,8 +29,8 @@ package com.tencent.bkrepo.repository.api.cluster
 
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataSaveRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient

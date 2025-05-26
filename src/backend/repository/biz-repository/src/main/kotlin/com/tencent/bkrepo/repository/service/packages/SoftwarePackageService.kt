@@ -3,7 +3,7 @@ package com.tencent.bkrepo.repository.service.packages
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
+import com.tencent.bkrepo.common.metadata.pojo.software.ProjectPackageOverview
 
 interface SoftwarePackageService {
     /**

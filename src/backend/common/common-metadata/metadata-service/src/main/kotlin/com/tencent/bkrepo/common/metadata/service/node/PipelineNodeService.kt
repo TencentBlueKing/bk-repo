@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.metadata.service.node
 
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
 
 interface PipelineNodeService {
     /**

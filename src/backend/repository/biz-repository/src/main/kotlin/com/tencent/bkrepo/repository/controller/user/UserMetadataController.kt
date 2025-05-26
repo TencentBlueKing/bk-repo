@@ -50,8 +50,8 @@ import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.UserMetadataSaveRequest
 import io.swagger.v3.oas.annotations.Operation

@@ -34,9 +34,9 @@ package com.tencent.bkrepo.common.metadata.service.node
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
-import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDeletedPoint
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreResult
 
 /**
  * 节点恢复接口

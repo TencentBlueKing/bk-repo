@@ -30,8 +30,8 @@ package com.tencent.bkrepo.repository.controller.proxy
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.proxy.ProxyRepositoryClient
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryInfo
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.springframework.web.bind.annotation.RestController
 

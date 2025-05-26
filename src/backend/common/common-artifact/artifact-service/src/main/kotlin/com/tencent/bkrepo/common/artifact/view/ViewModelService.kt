@@ -36,10 +36,10 @@ import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.UNIX_SEPARATOR
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.repository.pojo.list.HeaderItem
-import com.tencent.bkrepo.repository.pojo.list.ListViewObject
-import com.tencent.bkrepo.repository.pojo.list.RowItem
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.list.HeaderItem
+import com.tencent.bkrepo.common.metadata.pojo.list.ListViewObject
+import com.tencent.bkrepo.common.metadata.pojo.list.RowItem
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import org.apache.commons.text.StringEscapeUtils
 import java.io.PrintWriter
 import java.net.URLEncoder.encode

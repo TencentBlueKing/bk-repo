@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.common.analysis.pojo.scanner.arrowhead
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.metadata.annotation.Sensitive
-import com.tencent.bkrepo.common.metadata.handler.MaskPartString
+import com.tencent.bkrepo.common.api.annotation.Sensitive
+import com.tencent.bkrepo.common.api.handler.MaskPartString
 import io.swagger.v3.oas.annotations.media.Schema
 
 

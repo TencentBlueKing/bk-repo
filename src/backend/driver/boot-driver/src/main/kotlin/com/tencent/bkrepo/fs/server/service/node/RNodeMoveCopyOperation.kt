@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.fs.server.service.node
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeMoveCopyRequest
 
 /**
  * 节点移动/拷贝接口

@@ -30,7 +30,7 @@ package com.tencent.bkrepo.helm.listener.consumer
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionUpdatedEvent
 import com.tencent.bkrepo.helm.listener.base.RemoteEventJobExecutor
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageType
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 

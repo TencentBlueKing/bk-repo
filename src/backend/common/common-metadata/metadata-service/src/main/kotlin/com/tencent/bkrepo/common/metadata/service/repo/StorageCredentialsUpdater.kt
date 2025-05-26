@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.metadata.service.repo
 
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.credendials.StorageCredentialsUpdateRequest
 
 interface StorageCredentialsUpdater {
     /**

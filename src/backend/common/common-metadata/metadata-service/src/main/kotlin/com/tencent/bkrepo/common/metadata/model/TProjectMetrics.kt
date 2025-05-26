@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.model
 
-import com.tencent.bkrepo.repository.pojo.repo.RepoMetricsInfo
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoMetricsInfo
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 

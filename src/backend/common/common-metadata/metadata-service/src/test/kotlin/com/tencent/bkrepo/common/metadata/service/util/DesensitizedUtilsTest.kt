@@ -28,8 +28,8 @@
 package com.tencent.bkrepo.common.metadata.service.util
 
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.metadata.annotation.Sensitive
-import com.tencent.bkrepo.common.metadata.handler.MaskString
+import com.tencent.bkrepo.common.api.annotation.Sensitive
+import com.tencent.bkrepo.common.api.handler.MaskString
 import com.tencent.bkrepo.common.metadata.util.DesensitizedUtils
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

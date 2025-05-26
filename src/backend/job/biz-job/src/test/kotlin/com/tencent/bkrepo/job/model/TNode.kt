@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.job.model
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 import org.springframework.data.mongodb.core.index.TextIndexDefinition.TextIndexDefinitionBuilder
 import java.time.LocalDateTime
 

@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.fs.server.service.node
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDeleteResult
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
 
 /**
  * 节点删除接口

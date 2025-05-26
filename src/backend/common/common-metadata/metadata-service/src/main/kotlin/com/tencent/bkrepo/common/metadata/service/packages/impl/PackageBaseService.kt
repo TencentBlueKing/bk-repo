@@ -38,10 +38,10 @@ import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import com.tencent.bkrepo.common.metadata.util.version.SemVersion
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PopulatedPackageVersion
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import java.time.LocalDateTime
@@ -106,6 +106,7 @@ abstract class PackageBaseService(
             downloads = 0,
             versions = 0,
             description = packageDescription,
+            metadata = MetadataUtils.compatibleConvertAndCheck(null, metadata)
         )
     }
 
@@ -126,6 +127,7 @@ abstract class PackageBaseService(
             extension = packageExtension.orEmpty(),
             description = packageDescription,
             historyVersion = mutableSetOf(versionName),
+            metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata)
         )
     }
 
@@ -144,7 +146,8 @@ abstract class PackageBaseService(
             downloads = 0,
             versions = 0,
             versionTag = versionTag.orEmpty(),
-            extension = extension.orEmpty()
+            extension = extension.orEmpty(),
+            metadata = MetadataUtils.compatibleConvertAndCheck(null, metadata),
         )
     }
 

@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.auth.pojo.externalPermission
 
-import com.tencent.bkrepo.common.metadata.annotation.Sensitive
-import com.tencent.bkrepo.common.metadata.handler.MaskPartMapValue
+import com.tencent.bkrepo.common.api.annotation.Sensitive
+import com.tencent.bkrepo.common.api.handler.MaskPartMapValue
 import io.swagger.v3.oas.annotations.media.Schema
 
 

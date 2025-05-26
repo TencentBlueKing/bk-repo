@@ -24,7 +24,7 @@ class ResourceClearServiceImpl(
         if (forced) {
             logger.info("Force clear repository [$projectId/$repoName] by [$operator]")
             if (supportPackage) {
-                packageService.deleteAllPackage(projectId, repoName)
+                packageService.deleteAllPackage(projectId, repoName, operator = operator)
             }
         } else {
             // 当仓库类型支持包管理，仓库下没有包时视为空仓库，删除仓库下所有节点

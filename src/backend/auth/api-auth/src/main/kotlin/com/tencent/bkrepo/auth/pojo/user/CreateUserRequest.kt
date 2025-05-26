@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.auth.pojo.user
 
-import com.tencent.bkrepo.common.metadata.annotation.Sensitive
-import com.tencent.bkrepo.common.metadata.handler.MaskString
+import com.tencent.bkrepo.common.api.annotation.Sensitive
+import com.tencent.bkrepo.common.api.handler.MaskString
 import io.swagger.v3.oas.annotations.media.Schema
 
 

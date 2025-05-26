@@ -35,8 +35,8 @@ import com.tencent.bkrepo.common.metadata.model.TStorageCredentials
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialsUpdater
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.credendials.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.credendials.StorageCredentialsUpdateRequest
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 

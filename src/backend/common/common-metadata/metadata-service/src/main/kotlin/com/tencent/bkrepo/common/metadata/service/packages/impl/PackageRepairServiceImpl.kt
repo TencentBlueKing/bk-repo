@@ -7,7 +7,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
-import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import com.tencent.bkrepo.common.metadata.pojo.packages.VersionListOption
 import com.tencent.bkrepo.common.metadata.service.packages.PackageRepairService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper

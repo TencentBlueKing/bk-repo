@@ -34,7 +34,7 @@ import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterStageClient
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
-import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
+import com.tencent.bkrepo.common.metadata.pojo.stage.StageUpgradeRequest
 import com.tencent.bkrepo.common.metadata.service.packages.impl.StageServiceImpl
 import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Primary

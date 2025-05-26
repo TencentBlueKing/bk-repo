@@ -30,10 +30,7 @@ package com.tencent.bkrepo.common.metadata.service.packages.impl.center
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.metadata.util.ClusterUtils
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
-import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterPackageCondition
+import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
@@ -41,11 +38,15 @@ import com.tencent.bkrepo.common.metadata.model.ClusterResource
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.model.TRepository
-import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.common.metadata.service.packages.impl.PackageServiceImpl
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterPackageCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackagePopulateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PopulatedPackageVersion
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Primary
@@ -63,12 +64,14 @@ class CenterPackageServiceImpl(
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
     packageSearchInterpreter: PackageSearchInterpreter,
-    private val clusterProperties: ClusterProperties
+    private val clusterProperties: ClusterProperties,
+    repositoryProperties: RepositoryProperties,
 ) : PackageServiceImpl(
     repositoryDao,
     packageDao,
     packageVersionDao,
     packageSearchInterpreter,
+    repositoryProperties,
 ) {
     override fun buildPackage(request: PackageVersionCreateRequest): TPackage {
         return super.buildPackage(request).also { addSrcClusterToResource(it) }
@@ -106,7 +109,7 @@ class CenterPackageServiceImpl(
 
     override fun buildPackageVersion(
         populatedPackageVersion: PopulatedPackageVersion,
-        packageId: String
+        packageId: String,
     ): TPackageVersion {
         return super.buildPackageVersion(populatedPackageVersion, packageId).also { addSrcClusterToResource(it) }
     }
@@ -133,18 +136,27 @@ class CenterPackageServiceImpl(
         ClusterUtils.checkIsSrcCluster(clusterResource.readClusterNames())
     }
 
-    override fun deletePackage(projectId: String, repoName: String, packageKey: String, realIpAddress: String?) {
+    override fun deletePackage(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        realIpAddress: String?,
+        operator: String?,
+        cleanRequest: Boolean
+    ) {
         val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
         val srcCluster = srcCluster()
 
         if (ClusterUtils.isUniqueSrcCluster(tPackage.clusterNames)) {
             // 是Package唯一的cluster时可以直接删除
-            super.deletePackage(projectId, repoName, packageKey, realIpAddress)
+            super.deletePackage(projectId, repoName, packageKey, realIpAddress, operator, cleanRequest)
         } else if (ClusterUtils.containsSrcCluster(tPackage.clusterNames)) {
             // Package包含cluster，但不是Package的唯一cluster时只能清理单个cluster的值
             packageDao.removeClusterByKey(projectId, repoName, packageKey, srcCluster)
             // 因为目前packageVersion只会属于一个cluster,所以此处可以直接删除与该cluster关联的所有packageVersion
-            packageVersionDao.deleteByPackageIdAndClusterName(tPackage.id!!, srcCluster)
+            packageVersionDao.deleteByPackageIdAndClusterName(
+                tPackage.id!!, srcCluster, operator!!, repositoryProperties.recycleBinEnabled
+            )
             logger.info("Remove package [$projectId/$repoName/$packageKey] cluster[$srcCluster] success")
         } else {
             // Package不包含cluster时候直接报错

@@ -41,8 +41,8 @@ import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterProjectClient
 import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
 import com.tencent.bkrepo.common.metadata.dao.project.ProjectMetricsDao
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.project.ProjectInfo
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service

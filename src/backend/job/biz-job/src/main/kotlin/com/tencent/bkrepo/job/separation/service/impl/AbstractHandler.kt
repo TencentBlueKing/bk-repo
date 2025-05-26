@@ -42,7 +42,7 @@ import com.tencent.bkrepo.job.separation.pojo.record.SeparationProgress
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.job.separation.util.SeparationUtils.getFileReferenceCollectionName
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.MongoTemplate

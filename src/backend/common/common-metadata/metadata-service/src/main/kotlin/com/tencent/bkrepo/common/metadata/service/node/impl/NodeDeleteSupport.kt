@@ -35,12 +35,13 @@ import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
-import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDeleteResult
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildNodeCleanEvent
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -227,12 +229,14 @@ open class NodeDeleteSupport(
         var deletedNum = 0L
         var deletedSize = 0L
         val deleteTime = LocalDateTime.now()
+        var existFullPaths: List<String>? = null
         val resourceKey = if (fullPaths == null) {
             "/$projectId/$repoName"
         } else if (fullPaths.size == 1) {
             "/$projectId/$repoName${fullPaths[0]}"
         } else {
-            "/$projectId/$repoName$fullPaths"
+            existFullPaths = nodeBaseService.listExistFullPath(projectId, repoName, fullPaths)
+            "/$projectId/$repoName$existFullPaths"
         }
         try {
             val updateResult = nodeDao.updateMulti(query, NodeQueryHelper.nodeDeleteUpdate(operator, deleteTime))
@@ -249,6 +253,19 @@ open class NodeDeleteSupport(
                 }
                 deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
                 quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
+            }
+            if (fullPaths != null && nodeBaseService.repositoryProperties.recycleBinEnabled) {
+                val update = Update().push(TNode::metadata.name, MetadataUtils.buildRecycleBinMetadata())
+                // 仅删除操作直接选中的节点在回收站显示，子节点不显示
+                if (fullPaths.size == 1) {
+                    nodeDao.updateFirst(
+                        NodeQueryHelper.nodeDeletedPointQuery(projectId, repoName, fullPaths[0], deleteTime), update
+                    )
+                } else {
+                    nodeDao.updateMulti(
+                        NodeQueryHelper.nodeQuery(projectId, repoName, existFullPaths!!, deleteTime), update
+                    )
+                }
             }
             fullPaths?.forEach { fullPath ->
                 if (routerControllerProperties.enabled) {

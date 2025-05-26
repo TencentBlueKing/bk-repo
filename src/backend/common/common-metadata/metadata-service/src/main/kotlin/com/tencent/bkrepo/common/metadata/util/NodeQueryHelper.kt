@@ -30,15 +30,19 @@ package com.tencent.bkrepo.common.metadata.util
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.artifact.constant.EXPIRED_DELETED_NODE
+import com.tencent.bkrepo.common.artifact.constant.ROOT_DELETED_NODE
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.escapeRegex
+import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.query.enums.OperationType
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -66,11 +70,31 @@ object NodeQueryHelper {
         return Query(criteria)
     }
 
-    fun nodeQuery(projectId: String, repoName: String, fullPath: List<String>): Query {
+    // 查找节点及该节点下的所有子节点
+    fun nodeTreeCriteria(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        deletedTime: LocalDateTime? = null
+    ): Criteria {
+        val normalizedFullPath = normalizeFullPath(fullPath)
+        val normalizedPath = toPath(normalizedFullPath)
+        val escapedPath = escapeRegex(normalizedPath)
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::deleted).isEqualTo(deletedTime)
+            .orOperator(
+                where(TNode::fullPath).regex("^$escapedPath"),
+                where(TNode::fullPath).isEqualTo(normalizedFullPath)
+            )
+        return criteria
+    }
+
+    fun nodeQuery(projectId: String, repoName: String, fullPath: List<String>, deleted: LocalDateTime? = null): Query {
         val criteria = where(TNode::projectId).isEqualTo(projectId)
             .and(TNode::repoName).isEqualTo(repoName)
             .and(TNode::fullPath).inValues(fullPath)
-            .and(TNode::deleted).isEqualTo(null)
+            .and(TNode::deleted).isEqualTo(deleted)
         return Query(criteria)
     }
 
@@ -224,8 +248,21 @@ object NodeQueryHelper {
         return Query(criteria)
     }
 
-    fun nodeRestoreUpdate(): Update {
+    /**
+     * 查询所有被删除节点
+     */
+    fun nodeDeletedQuery(projectId: String, repoName: String): Query {
+        val criteria = where(TNode::projectId).isEqualTo(projectId)
+            .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::deleted).ne(null)
+        return Query(criteria)
+    }
+
+    fun nodeRestoreUpdate(operator: String): Update {
         return Update().unset(TNode::deleted.name)
+            .set(TNode::lastModifiedBy.name, operator)
+            .set(TNode::lastModifiedDate.name, LocalDateTime.now())
+            .pull(TNode::metadata.name, Query(where(TMetadata::key).inValues(ROOT_DELETED_NODE, EXPIRED_DELETED_NODE)))
     }
 
     fun nodePathUpdate(path: String, name: String, operator: String): Update {

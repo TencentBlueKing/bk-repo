@@ -33,8 +33,8 @@ import com.tencent.bkrepo.replication.replica.repository.remote.base.PushClient
 import com.tencent.bkrepo.replication.replica.repository.remote.type.helm.HelmArtifactPushClient
 import com.tencent.bkrepo.replication.replica.repository.remote.type.oci.OciArtifactPushClient
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageSummary
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
 
 /**
  * 制品和对应仓库推送实现的映射关系

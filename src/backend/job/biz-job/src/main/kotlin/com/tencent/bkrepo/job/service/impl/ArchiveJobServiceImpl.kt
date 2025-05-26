@@ -18,8 +18,8 @@ import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
 import com.tencent.bkrepo.job.service.ArchiveJobService
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query

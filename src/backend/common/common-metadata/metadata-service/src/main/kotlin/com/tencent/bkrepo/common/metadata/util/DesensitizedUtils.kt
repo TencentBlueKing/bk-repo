@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.common.metadata.util
 
-import com.tencent.bkrepo.common.metadata.annotation.Sensitive
-import com.tencent.bkrepo.common.metadata.handler.SensitiveHandler
+import com.tencent.bkrepo.common.api.annotation.Sensitive
+import com.tencent.bkrepo.common.api.handler.SensitiveHandler
 import org.springframework.beans.BeanUtils
 import org.springframework.core.DefaultParameterNameDiscoverer
 import org.springframework.core.ParameterNameDiscoverer

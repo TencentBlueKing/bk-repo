@@ -28,14 +28,14 @@
 package com.tencent.bkrepo.common.metadata.service.repo
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
-import com.tencent.bkrepo.repository.pojo.project.RepoRangeQueryRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
-import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.common.metadata.pojo.project.RepoRangeQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoListOption
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryInfo
 
 /**
  * 仓库服务接口

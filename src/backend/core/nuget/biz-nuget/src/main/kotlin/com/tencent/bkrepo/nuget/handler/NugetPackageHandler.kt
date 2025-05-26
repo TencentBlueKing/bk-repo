@@ -19,9 +19,9 @@ import com.tencent.bkrepo.nuget.pojo.nuspec.FrameworkAssembly
 import com.tencent.bkrepo.nuget.pojo.nuspec.Reference
 import com.tencent.bkrepo.nuget.pojo.nuspec.ReferenceGroup
 import com.tencent.bkrepo.nuget.util.NugetV3RegistrationUtils
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageType
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired

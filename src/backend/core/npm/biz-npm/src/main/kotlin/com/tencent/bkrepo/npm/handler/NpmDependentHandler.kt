@@ -38,7 +38,7 @@ import com.tencent.bkrepo.npm.model.metadata.NpmVersionMetadata
 import com.tencent.bkrepo.npm.pojo.enums.NpmOperationAction
 import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.NpmUtils.packageKey
-import com.tencent.bkrepo.repository.pojo.dependent.PackageDependentsRelation
+import com.tencent.bkrepo.common.metadata.pojo.dependent.PackageDependentsRelation
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Async

@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.conan.pojo
 
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "conan版本详情页返回包装模型")

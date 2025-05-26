@@ -33,9 +33,9 @@ package com.tencent.bkrepo.repository.api.cluster
 
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageVersionUpdateRequest
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
@@ -64,7 +64,8 @@ interface ClusterPackageClient {
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestParam packageKey: String,
-        @RequestParam realIpAddress: String? = null
+        @RequestParam realIpAddress: String? = null,
+        @RequestParam operator: String? = null
     ): Response<Void>
 
     @Operation(summary = "删除版本")
@@ -76,6 +77,7 @@ interface ClusterPackageClient {
         @RequestParam version: String,
         @RequestParam realIpAddress: String? = null,
         @RequestParam contentPath: String? = null,
+        @RequestParam operator: String? = null
     ): Response<Void>
 
     @Operation(summary = "更新包")

@@ -29,7 +29,7 @@ package com.tencent.bkrepo.webhook.pojo.payload.repo
 
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryInfo
 
 data class RepoUpdatedEventPayload(
     override val user: UserInfo,

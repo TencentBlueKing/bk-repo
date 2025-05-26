@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.metadata.aop
 
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
-import com.tencent.bkrepo.common.metadata.annotation.LogOperate
+import com.tencent.bkrepo.common.api.annotation.LogOperate
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.pojo.log.OperateLog
 import com.tencent.bkrepo.common.metadata.util.DesensitizedUtils.convertMethodArgsToMap

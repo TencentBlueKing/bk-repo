@@ -39,7 +39,7 @@ import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.repo.RQuotaService
 import com.tencent.bkrepo.common.metadata.util.QuotaHelper
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper
-import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoQuotaInfo
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Service

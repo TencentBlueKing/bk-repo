@@ -61,5 +61,7 @@ data class RepositoryProperties(
     /**
      * 是否返回真实项目启用禁用状态
      */
-    var returnEnabled: Boolean = true
+    var returnEnabled: Boolean = true,
+    // 是否开启回收站功能
+    var recycleBinEnabled: Boolean = false,
 )

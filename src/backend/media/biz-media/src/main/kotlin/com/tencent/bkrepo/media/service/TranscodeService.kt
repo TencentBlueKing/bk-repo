@@ -17,7 +17,7 @@ import com.tencent.bkrepo.media.config.MediaProperties
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import com.tencent.bkrepo.media.stream.TranscodeHelper
 import com.tencent.bkrepo.media.stream.TranscodeParam
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataSaveRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 

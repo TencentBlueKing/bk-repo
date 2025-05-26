@@ -48,7 +48,7 @@ import com.tencent.bkrepo.generic.model.TUserShareRecord
 import com.tencent.bkrepo.generic.pojo.share.DevxManagerResponse
 import com.tencent.bkrepo.generic.pojo.share.UserShareApprovalInfo
 import com.tencent.bkrepo.generic.pojo.share.WorkspaceFile
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
 import com.tencent.devops.api.pojo.Response
 import okhttp3.OkHttpClient
 import okhttp3.Request

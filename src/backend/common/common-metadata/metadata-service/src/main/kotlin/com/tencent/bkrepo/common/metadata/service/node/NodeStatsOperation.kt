@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.common.metadata.service.node
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeSizeInfo
 import org.springframework.data.mongodb.core.query.Criteria
 import java.time.LocalDateTime
 
@@ -49,7 +49,7 @@ interface NodeStatsOperation {
     /**
      * 清理前的计算大小
      */
-    fun computeSizeBeforeClean(artifact: ArtifactInfo, before: LocalDateTime):NodeSizeInfo
+    fun computeSizeBeforeClean(artifact: ArtifactInfo, before: LocalDateTime): NodeSizeInfo
 
     /**
      * 查询文件节点数量

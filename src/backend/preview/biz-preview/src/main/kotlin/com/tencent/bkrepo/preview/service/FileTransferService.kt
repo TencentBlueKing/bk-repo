@@ -53,7 +53,7 @@ import com.tencent.bkrepo.preview.pojo.DownloadResult
 import com.tencent.bkrepo.preview.pojo.FileAttribute
 import com.tencent.bkrepo.preview.pojo.cache.PreviewFileCacheInfo
 import com.tencent.bkrepo.preview.utils.DownloadUtils
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
 import javax.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import java.io.File
@@ -125,7 +125,7 @@ class FileTransferService(
         return result
     }
 
-    fun upload(fileAttribute: FileAttribute, sourcePath: String): NodeDetail{
+    fun upload(fileAttribute: FileAttribute, sourcePath: String): NodeDetail {
         val file = File(sourcePath)
         require(file.exists()) { "The file does not exist, $sourcePath" }
         // 准备要上传的信息,如果是bkrepo文件，预览文件保存在原仓库，否则保存在自定义仓库中

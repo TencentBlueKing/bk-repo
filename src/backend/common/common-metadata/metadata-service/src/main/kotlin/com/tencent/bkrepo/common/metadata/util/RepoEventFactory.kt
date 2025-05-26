@@ -3,9 +3,9 @@ package com.tencent.bkrepo.common.metadata.util
 import com.tencent.bkrepo.common.artifact.event.repo.RepoCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoUpdatedEvent
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoDeleteRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoUpdateRequest
 
 /**
  * 仓库事件构造类

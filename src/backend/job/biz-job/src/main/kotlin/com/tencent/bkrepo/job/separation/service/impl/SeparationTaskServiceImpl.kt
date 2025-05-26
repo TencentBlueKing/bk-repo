@@ -47,7 +47,7 @@ import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask.Companion.toDt
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
 import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.MongoTemplate

@@ -4,8 +4,8 @@ import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
-import com.tencent.bkrepo.repository.pojo.software.CountResult
-import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
+import com.tencent.bkrepo.common.metadata.pojo.software.CountResult
+import com.tencent.bkrepo.common.metadata.pojo.software.ProjectPackageOverview
 import com.tencent.bkrepo.common.metadata.service.packages.PackageStatisticsService
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.aggregation.Aggregation

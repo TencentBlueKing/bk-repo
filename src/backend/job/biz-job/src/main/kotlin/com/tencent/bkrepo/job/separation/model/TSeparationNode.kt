@@ -64,7 +64,7 @@ import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARAT
 import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_PATH_IDX_DEF
 import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_SHA256_IDX
 import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_SHA256_IDX_DEF
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime

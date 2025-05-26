@@ -34,8 +34,8 @@ package com.tencent.bkrepo.generic.service
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.generic.pojo.FileInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
 import org.springframework.stereotype.Service
 
 /**

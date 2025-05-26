@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.git.listener
 
 import com.tencent.bkrepo.git.internal.storage.CodeRepository
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 
 data class SyncRepositoryEvent(
     val repositoryDetail: RepositoryDetail,

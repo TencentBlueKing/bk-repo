@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.fs.server.service.node
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeSizeInfo
 import org.springframework.data.mongodb.core.query.Criteria
 
 /**

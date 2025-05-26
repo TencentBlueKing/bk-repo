@@ -46,8 +46,8 @@ import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsCreateRequest
-import com.tencent.bkrepo.repository.pojo.credendials.StorageCredentialsUpdateRequest
+import com.tencent.bkrepo.common.metadata.pojo.credendials.StorageCredentialsCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.credendials.StorageCredentialsUpdateRequest
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

@@ -2,8 +2,8 @@ package com.tencent.bkrepo.common.metadata.service.node.impl
 
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCompressedRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCompressedRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeCompressOperation
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import org.slf4j.LoggerFactory

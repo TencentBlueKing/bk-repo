@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.software
 
-import com.tencent.bkrepo.repository.pojo.packages.PackageType
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageType
 import java.time.LocalDateTime
 
 data class PackageDetail(

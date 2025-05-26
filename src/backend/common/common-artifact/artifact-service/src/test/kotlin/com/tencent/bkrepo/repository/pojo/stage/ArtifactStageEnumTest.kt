@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.stage
 
+import com.tencent.bkrepo.common.metadata.pojo.stage.ArtifactStageEnum
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

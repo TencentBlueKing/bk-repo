@@ -31,5 +31,4 @@
 
 dependencies {
     implementation(project(":common:common-api"))
-    implementation(project(":common:common-metadata:metadata-api"))
 }

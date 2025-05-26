@@ -41,8 +41,8 @@ import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
-import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
+import com.tencent.bkrepo.common.metadata.pojo.stage.ArtifactStageEnum
+import com.tencent.bkrepo.common.metadata.pojo.stage.StageUpgradeRequest
 import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageServiceTest.Companion.buildCreateRequest
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService

@@ -30,7 +30,7 @@ package com.tencent.bkrepo.fs.server
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.metadata.service.repo.RRepositoryService
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import java.util.concurrent.TimeUnit
 
 /**

@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.service.repo
 
-import com.tencent.bkrepo.repository.pojo.repo.RepoQuotaInfo
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoQuotaInfo
 
 /**
  * 仓库配额服务接口

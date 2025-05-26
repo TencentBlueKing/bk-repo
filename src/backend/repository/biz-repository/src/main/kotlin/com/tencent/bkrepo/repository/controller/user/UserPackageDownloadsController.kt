@@ -36,10 +36,10 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.packages.PackageDownloadsService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.repository.pojo.download.DetailsQueryRequest
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsDetails
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadsSummary
-import com.tencent.bkrepo.repository.pojo.download.SummaryQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.download.DetailsQueryRequest
+import com.tencent.bkrepo.common.metadata.pojo.download.PackageDownloadsDetails
+import com.tencent.bkrepo.common.metadata.pojo.download.PackageDownloadsSummary
+import com.tencent.bkrepo.common.metadata.pojo.download.SummaryQueryRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.PostMapping

@@ -55,7 +55,7 @@ import com.tencent.bkrepo.replication.replica.replicator.standalone.ClusterRepli
 import com.tencent.bkrepo.replication.replica.replicator.standalone.EdgeNodeReplicator
 import com.tencent.bkrepo.replication.replica.replicator.standalone.RemoteReplicator
 import com.tencent.bkrepo.replication.util.OkHttpClientPool
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 import okhttp3.OkHttpClient
 import org.slf4j.LoggerFactory
 import java.time.Duration

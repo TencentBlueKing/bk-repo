@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.fs.server.service.node
 
-import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeRenameRequest
 
 /**
  * 节点重命名接口

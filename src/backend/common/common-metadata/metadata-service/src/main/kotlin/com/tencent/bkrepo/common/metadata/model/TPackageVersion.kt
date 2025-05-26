@@ -72,8 +72,9 @@ data class TPackageVersion(
      * PackageVersion 所在区域
      * 由于比较版本间内容是否相似成本较高，不支持不同区域相同PackageVersion，所以目前clusterNames只会有一个值
      */
-    var clusterNames: Set<String>? = null
-): ClusterResource {
+    var clusterNames: Set<String>? = null,
+    var deleted: LocalDateTime? = null,
+    ): ClusterResource {
     override fun readClusterNames(): Set<String>? {
         return this.clusterNames
     }
@@ -87,7 +88,7 @@ data class TPackageVersion(
         const val VERSION_METADATA_IDX = "version_metadata_idx"
         const val VERSION_TAGS_IDX = "version_tags_idx"
 
-        const val VERSION_NAME_IDX_DEF = "{'packageId': 1, 'name': 1}"
+        const val VERSION_NAME_IDX_DEF = "{'packageId': 1, 'name': 1, 'deleted': 1}"
         const val VERSION_METADATA_IDX_DEF = "{'packageId': 1, 'metadata': 1}"
         const val VERSION_TAGS_IDX_DEF = "{'packageId': 1, 'tags': 1}"
     }

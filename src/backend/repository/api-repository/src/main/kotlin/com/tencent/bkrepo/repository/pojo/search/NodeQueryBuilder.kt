@@ -33,7 +33,7 @@ package com.tencent.bkrepo.repository.pojo.search
 
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.repository.constant.SystemMetadata
-import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
+import com.tencent.bkrepo.common.metadata.pojo.stage.ArtifactStageEnum
 
 /**
  * 节点自定义查询构造器

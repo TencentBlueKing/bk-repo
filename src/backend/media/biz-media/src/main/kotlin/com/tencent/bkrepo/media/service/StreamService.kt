@@ -24,8 +24,8 @@ import com.tencent.bkrepo.media.stream.RemuxRecordingListener
 import com.tencent.bkrepo.media.stream.StreamManger
 import com.tencent.bkrepo.media.stream.StreamMode
 import com.tencent.bkrepo.media.stream.TranscodeConfig
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service

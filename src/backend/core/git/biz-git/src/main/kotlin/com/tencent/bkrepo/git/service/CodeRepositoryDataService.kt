@@ -23,8 +23,8 @@ import com.tencent.bkrepo.git.internal.storage.DfsReadableChannel
 import com.tencent.bkrepo.git.internal.storage.RepositoryDataService
 import com.tencent.bkrepo.git.model.TDfsPackDescription
 import com.tencent.bkrepo.git.repository.DfsPackDescriptionRepository
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeCreateRequest
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
 import org.eclipse.jgit.internal.storage.dfs.DfsObjDatabase
 import org.eclipse.jgit.internal.storage.dfs.DfsOutputStream
 import org.eclipse.jgit.internal.storage.dfs.DfsPackDescription

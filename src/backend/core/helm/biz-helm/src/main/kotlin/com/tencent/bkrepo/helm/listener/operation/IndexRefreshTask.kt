@@ -32,7 +32,7 @@ import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.service.impl.AbstractChartService
 import com.tencent.bkrepo.helm.utils.ObjectBuilderUtil.buildFileAndNodeCreateRequest
 import com.tencent.bkrepo.helm.utils.TimeFormatUtil
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.util.StopWatch

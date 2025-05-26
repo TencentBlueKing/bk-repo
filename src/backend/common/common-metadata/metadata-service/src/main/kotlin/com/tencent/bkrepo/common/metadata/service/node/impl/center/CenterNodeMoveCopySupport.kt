@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.isEdgeRequest
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.MoveCopyContext
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo

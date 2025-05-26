@@ -37,8 +37,8 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeSizeInfo
 import org.springframework.data.mongodb.core.aggregation.Aggregation.group
 import org.springframework.data.mongodb.core.aggregation.Aggregation.match
 import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation
@@ -101,7 +101,7 @@ open class RNodeStatsSupport(
     /**
      * 计算大小
      */
-    private suspend fun accurateSizeCalculate(criteria: Criteria, criteriaWithOutFolder: Criteria):NodeSizeInfo {
+    private suspend fun accurateSizeCalculate(criteria: Criteria, criteriaWithOutFolder: Criteria): NodeSizeInfo {
         val count = nodeDao.count(Query(criteria))
         val countWithOutFolder = nodeDao.count(Query(criteriaWithOutFolder))
         val size = aggregateComputeSize(criteriaWithOutFolder)

@@ -30,7 +30,7 @@ package com.tencent.bkrepo.generic.artifact.context
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.query.model.QueryModel
-import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.common.metadata.pojo.repo.RepositoryDetail
 
 class GenericArtifactSearchContext(
     repo: RepositoryDetail? = null,

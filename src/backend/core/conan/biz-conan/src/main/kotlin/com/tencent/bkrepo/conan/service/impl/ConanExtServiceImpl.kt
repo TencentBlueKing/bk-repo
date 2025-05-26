@@ -49,10 +49,10 @@ import com.tencent.bkrepo.conan.utils.ConanPathUtils.getPackageRevisionsFile
 import com.tencent.bkrepo.conan.utils.ConanPathUtils.getRecipeRevisionsFile
 import com.tencent.bkrepo.conan.utils.ObjectBuildUtil.toConanFileReference
 import com.tencent.bkrepo.conan.utils.TimeFormatUtil
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
-import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
-import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageListOption
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.VersionListOption
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
