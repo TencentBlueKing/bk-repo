@@ -34,7 +34,7 @@ package com.tencent.bkrepo.common.security.service
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
-import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
+import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import feign.RequestInterceptor
@@ -48,7 +48,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 @Configuration
 @EnableConfigurationProperties(ServiceAuthProperties::class)
 @Import(ServiceAuthManager::class)
-@ConditionalOnMicroService
+@ConditionalOnNotAssembly
 class ServiceAuthConfiguration {
 
     @Bean
