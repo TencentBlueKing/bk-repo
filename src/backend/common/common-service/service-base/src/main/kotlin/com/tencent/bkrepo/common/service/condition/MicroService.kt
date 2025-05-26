@@ -34,6 +34,5 @@ package com.tencent.bkrepo.common.service.condition
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.pulsar.PulsarAutoConfiguration
 
-// TODO 框架升级
 @SpringBootApplication(exclude = [PulsarAutoConfiguration::class])
 annotation class MicroService
