@@ -48,6 +48,4 @@ dependencies {
     api(project(":common:common-service:service-base"))
     api("org.springframework.boot:spring-boot-starter-aop")
     api("org.springframework.boot:spring-boot-actuator-autoconfigure")
-    // TODO 框架升级 调试使用
-    runtimeOnly("org.springframework.boot:spring-boot-properties-migrator")
 }
