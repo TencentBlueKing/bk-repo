@@ -54,6 +54,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException
 import org.springframework.web.context.request.async.DeferredResult
+import org.springframework.web.servlet.NoHandlerFoundException
 
 /**
  * 全局统一异常处理
@@ -161,6 +162,16 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
             HttpContextHolder.getResponse().contentType = MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
             return response(exception)
         }
+    }
+
+    @ExceptionHandler(NoHandlerFoundException::class)
+    fun handleException(exception: NoHandlerFoundException): Response<Void> {
+        val errorCodeException = ErrorCodeException(
+            status = HttpStatus.NOT_FOUND,
+            messageCode = CommonMessageCode.REQUEST_URL_NOT_FOUND,
+            params = arrayOf(exception.requestURL)
+        )
+        return response(errorCodeException)
     }
 
     @ExceptionHandler(Exception::class)
