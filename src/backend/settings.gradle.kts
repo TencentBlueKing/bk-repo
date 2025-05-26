@@ -33,18 +33,20 @@ rootProject.name = "bk-repo-backend"
 
 pluginManagement {
     repositories {
+        val snapshotsRepo = maven {
+            name = "MavenSnapshot"
+            url = java.net.URI("https://oss.sonatype.org/content/repositories/snapshots/")
+            mavenContent {
+                snapshotsOnly()
+            }
+        }
         if (System.getenv("GITHUB_WORKFLOW") == null) {
+            snapshotsRepo
             maven(url = "https://mirrors.tencent.com/nexus/repository/gradle-plugins/")
             maven(url = "https://mirrors.tencent.com/nexus/repository/maven-public")
             maven(url = "https://repo.spring.io/milestone")
         } else {
-            maven {
-                name = "MavenSnapshot"
-                url = java.net.URI("https://oss.sonatype.org/content/repositories/snapshots/")
-                mavenContent {
-                    snapshotsOnly()
-                }
-            }
+            snapshotsRepo
             mavenCentral()
             maven(url = "https://repo.spring.io/milestone")
             gradlePluginPortal()
