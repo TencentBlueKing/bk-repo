@@ -27,37 +27,46 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import io.micrometer.common.KeyValue
+import io.micrometer.common.KeyValues
+import io.micrometer.observation.Observation
+import jakarta.servlet.http.HttpServletRequest
+import org.springframework.http.server.observation.ServerRequestObservationContext
 import org.springframework.http.server.observation.ServerRequestObservationConvention
 
 /**
  * 为请求增加额外的tag
  * */
-// TODO 框架升级
-class ArtifactWebMvcTagsContributor(private val artifactMetricsProperties: ArtifactMetricsProperties) :
-    ServerRequestObservationConvention {
+class ArtifactWebMvcTagsContributor(
+    private val artifactMetricsProperties: ArtifactMetricsProperties
+) : ServerRequestObservationConvention {
 
+    override fun getName(): String = "http.server.requests"
 
-//
-//
-//    override fun getTags(
-//        request: HttpServletRequest,
-//        response: HttpServletResponse,
-//        handler: Any?,
-//        exception: Throwable?
-//    ): Iterable<Tag> {
-//        // 添加project,添加repo
-//        val artifactInfo = ArtifactContextHolder.getArtifactInfo(request) ?: return TagUtils.tagOfProjectAndRepo(
-//            StringPool.UNKNOWN,
-//            StringPool.UNKNOWN
-//        )
-//        return TagUtils.tagOfProjectAndRepo(
-//            artifactInfo.projectId,
-//            artifactInfo.repoName,
-//            artifactMetricsProperties.includeRepositories
-//        )
-//    }
-//
-//    override fun getLongRequestTags(request: HttpServletRequest, handler: Any): Iterable<Tag> {
-//        return emptyList()
-//    }
+    override fun getLowCardinalityKeyValues(context: ServerRequestObservationContext): KeyValues {
+        val request = context.carrier as HttpServletRequest
+
+        val artifactInfo = ArtifactContextHolder.getArtifactInfo(request)
+        val tags = if (artifactInfo == null) {
+            TagUtils.tagOfProjectAndRepo(StringPool.UNKNOWN, StringPool.UNKNOWN)
+        } else {
+            TagUtils.tagOfProjectAndRepo(
+                artifactInfo.projectId,
+                artifactInfo.repoName,
+                artifactMetricsProperties.includeRepositories
+            )
+        }
+        val keyValues = tags.map { KeyValue.of(it.key, it.value) }
+        return KeyValues.of(keyValues)
+    }
+
+    override fun getHighCardinalityKeyValues(context: ServerRequestObservationContext): KeyValues {
+        return KeyValues.empty()
+    }
+
+    override fun supportsContext(context: Observation.Context): Boolean {
+        return context is ServerRequestObservationContext
+    }
 }
