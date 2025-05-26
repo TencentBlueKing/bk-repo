@@ -59,6 +59,13 @@ function _M:new()
             return nil
         end
     end
+    if redisConfig['database'] ~= nil then
+        res, err = red:select(redisConfig['database'])
+        if not res then
+            ngx.log(ngx.ERR, "red select error:", err)
+            return nil
+        end
+    end
     return red
 end
 

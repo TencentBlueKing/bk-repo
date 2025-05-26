@@ -264,6 +264,9 @@ function _M:get_min_bandwidth_instances(service_name, ips)
         end
     end
 
+    --- 将redis连接放回pool中
+    red:set_keepalive(config.redis.max_idle_time, config.redis.pool_size)
+
     return #result > 0 and result or nil
 end
 

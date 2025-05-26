@@ -188,7 +188,7 @@ class InstanceBandWidthMetrics(
         private const val SERVICE_NAME = "\${service.prefix:}\${spring.application.name}\${service.suffix:}"
         private const val INSTANCE_IP = "\${spring.cloud.client.ip-address}"
         private const val DATA_EXPIRE_HOURS = 1L
-        private const val DATA_REFRESH_DELAY: Long = 10 // 10s刷新一次
+        private const val DATA_REFRESH_DELAY: Long = 1 // 1s刷新一次
 
 
         // Redis键设计

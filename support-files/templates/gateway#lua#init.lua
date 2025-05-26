@@ -59,8 +59,19 @@ config = {
   mobileSiteToken = "__BK_CI_MOBILE_SITE_TOKEN__",
   security_paths = {
   },
+  redis = {
+    host = "__BK_REPO_REDIS_HOST__",
+    port = "__BK_REPO_REDIS_PORT__",
+    pass = "__BK_REPO_REDIS_PASSWORD__",
+    backlog = "__BK_REPO_REDIS_BACKLOG__",
+    ssl = "__BK_REPO_REDIS_SSL__",
+    pool_size = "__BK_REPO_REDIS_POOL_SIZE__",
+    database = "__BK_REPO_REDIS_DATABASE__",
+    max_idle_time = "__BK_REPO_REDIS_MAX_IDLE_TIME__",
+  },
   service_in_container = "__BK_REPO_SERVICE_IN_CONTAINER__",
   service_in_local = "__BK_REPO_SERVICE_IN_LOCAL__",
+  service_with_bandwidth_check = "__BK_REPO_SERVICE_WITH_BANDWIDTH_CHECK__",
   container_url = "__BK_REPO_URL_CONTAINER__",
   enable_multi_tenant_mode = "__BK_REPO_ENABLE_MULTI_TENANT_MODE__",
   op_tenant_id = "__BK_REPO_OP_TENANT_ID__"
