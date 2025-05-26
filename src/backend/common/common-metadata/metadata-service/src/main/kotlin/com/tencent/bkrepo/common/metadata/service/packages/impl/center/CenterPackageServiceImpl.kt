@@ -154,9 +154,8 @@ class CenterPackageServiceImpl(
             // Package包含cluster，但不是Package的唯一cluster时只能清理单个cluster的值
             packageDao.removeClusterByKey(projectId, repoName, packageKey, srcCluster)
             // 因为目前packageVersion只会属于一个cluster,所以此处可以直接删除与该cluster关联的所有packageVersion
-            packageVersionDao.deleteByPackageIdAndClusterName(
-                tPackage.id!!, srcCluster, operator!!, repositoryProperties.recycleBinEnabled
-            )
+            val recycle = repositoryProperties.recycleBinEnabled && !cleanRequest
+            packageVersionDao.deleteByPackageIdAndClusterName(tPackage.id!!, srcCluster, operator!!,recycle)
             logger.info("Remove package [$projectId/$repoName/$packageKey] cluster[$srcCluster] success")
         } else {
             // Package不包含cluster时候直接报错

@@ -64,8 +64,8 @@ class LogOperateAspect(private val operateLogService: OperateLogService) {
     private val bufferRefreshLock = ReentrantReadWriteLock()
 
     @Around(
-        "@within(com.tencent.bkrepo.common.metadata.annotation.LogOperate) " +
-            "|| @annotation(com.tencent.bkrepo.common.metadata.annotation.LogOperate)"
+        "@within(com.tencent.bkrepo.common.api.annotation.LogOperate) " +
+            "|| @annotation(com.tencent.bkrepo.common.api.annotation.LogOperate)"
     )
     @Suppress("TooGenericExceptionCaught")
     fun around(joinPoint: ProceedingJoinPoint): Any? {

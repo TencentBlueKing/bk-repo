@@ -267,8 +267,9 @@ class PackageServiceImpl(
         cleanRequest: Boolean,
     ) {
         val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
-        packageVersionDao.deleteByPackageId(tPackage.id!!, operator!!, repositoryProperties.recycleBinEnabled)
-        packageDao.deleteByKey(projectId, repoName, packageKey, operator, repositoryProperties.recycleBinEnabled)
+        val recycle = repositoryProperties.recycleBinEnabled && !cleanRequest
+        packageVersionDao.deleteByPackageId(tPackage.id!!, operator!!, recycle)
+        packageDao.deleteByKey(projectId, repoName, packageKey, operator, recycle)
         publishEvent(
             PackageEventFactory.buildDeletedEvent(
                 projectId = projectId,

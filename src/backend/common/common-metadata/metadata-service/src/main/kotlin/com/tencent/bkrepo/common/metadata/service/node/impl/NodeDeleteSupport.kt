@@ -224,7 +224,8 @@ open class NodeDeleteSupport(
         projectId: String,
         repoName: String,
         fullPaths: List<String>? = null,
-        decreaseVolume: Boolean = true
+        decreaseVolume: Boolean = true,
+        cleanRequest: Boolean = false,
     ): NodeDeleteResult {
         var deletedNum = 0L
         var deletedSize = 0L
