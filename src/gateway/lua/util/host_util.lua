@@ -270,4 +270,33 @@ function _M:get_min_bandwidth_instances(service_name, ips)
     return #result > 0 and result or nil
 end
 
+--[[根据路由表获取转发域名]]
+function _M:get_target_by_project()
+    local headers = ngx.req.get_headers()
+    local bkrepo_project_id = stringUtil:getValue(headers["x-bkrepo-project-id"])
+    local devops_project_id = stringUtil:getValue(headers["x-devops-project-id"])
+    local devops_project_id_uri = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-project-id"]
+
+    -- 优先判断 X-BKREPO-PROJECT-ID 的值
+    local projectId
+    if bkrepo_project_id and bkrepo_project_id ~= "" then
+        projectId = bkrepo_project_id
+    else
+        if devops_project_id and devops_project_id ~= "" then
+            projectId = devops_project_id
+        end
+        if devops_project_id_uri and devops_project_id_uri ~= "" then
+            projectId = devops_project_id_uri
+        end
+    end
+
+    if projectId and config.project_router and config.router_domain then
+        local env = config.project_router[projectId]
+        if env and config.router_domain[env] then
+            return config.router_domain[env]
+        end
+    end
+    return nil
+end
+
 return _M
