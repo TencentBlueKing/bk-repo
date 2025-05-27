@@ -44,7 +44,6 @@ import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.oci.constant.OCI_API_SUFFIX
 import com.tencent.bkrepo.oci.constant.OCI_FILTER_ENDPOINT
 import com.tencent.bkrepo.oci.util.TimeUtil
-import io.undertow.servlet.spec.HttpServletRequestImpl
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
@@ -90,9 +89,8 @@ class OciLoginAuthHandler(
         authenticationException: AuthenticationException
     ) {
         try {
-            val params = (request as HttpServletRequestImpl).queryParameters
             // 从scope中解析对应的projectId与repoName, scope=repository:XXX/XXX/php:pull
-            val scope = params?.get("scope")?.first ?: throw authenticationException
+            val scope = request.getParameterValues("scope")?.firstOrNull() ?: throw authenticationException
             val scopeValues = scope.split(":")
             val values = scopeValues[1].split("/")
             val repositoryId = RepositoryId(values[0], values[1])

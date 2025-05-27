@@ -34,7 +34,6 @@ package com.tencent.bkrepo.composer.artifact
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import io.undertow.servlet.spec.HttpServletRequestImpl
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 
@@ -49,8 +48,6 @@ class ComposerArtifactInfoResolver : ArtifactInfoResolver {
     ): ArtifactInfo {
         // 包名
         val uri = request.servletPath.removePrefix("/$projectId/$repoName")
-        // 用户设置的参数
-        val parameters = (request as HttpServletRequestImpl).exchange.pathParameters
         return ComposerArtifactInfo(projectId, repoName, uri)
     }
 }
