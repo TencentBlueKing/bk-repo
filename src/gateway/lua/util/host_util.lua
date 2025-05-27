@@ -144,8 +144,130 @@ function _M:get_addr(service_name)
     end
 
     -- return ip,port address
+    -- 检查当前服务是否在需要带宽判断的服务列表中
+    -- ip带宽检查逻辑
+    local service_with_bandwidth_check = config.service_with_bandwidth_check
+    if string.find(service_with_bandwidth_check or "", service_name) then
+        -- 使用共享内存缓存带宽检查结果
+        local bw_cache = ngx.shared.bw_cache_store
+        local cache_key = "bw:" .. service_name
+        local cached_result = bw_cache:get(cache_key)
+
+        -- 如果缓存存在且未过期
+        if cached_result then
+            -- 获取缓存IP列表
+            local cached_ip_list = {}
+            for ip in string.gmatch(cached_result, "([^,]+)") do
+                table.insert(cached_ip_list, ip)
+            end
+
+            -- 与当前可用IP列表取交集,避免ip已经失效
+            local valid_ips = {}
+            local ip_set = {}
+            for _, ip in ipairs(ips) do ip_set[ip] = true end
+
+            for _, cached_ip in ipairs(cached_ip_list) do
+                if ip_set[cached_ip] then
+                    table.insert(valid_ips, cached_ip)
+                end
+            end
+
+            -- 如果交集不为空，随机返回一个
+            if #valid_ips > 0 then
+                return valid_ips[math.random(#valid_ips)] .. ":" .. port
+            end
+            ngx.log(ngx.WARN, "all cached IPs are invalid")
+        end
+
+        -- 执行带宽检查获取符合条件的IP列表
+        local service_key = service_prefix .. service_name
+        local min_bw_instances, err = self:get_min_bandwidth_instances(service_key, ips)
+        -- 如果获取到符合条件的IP列表
+        if min_bw_instances and #min_bw_instances > 0 then
+            -- 将整个IP列表存入缓存，用逗号分隔
+            bw_cache:set(cache_key, table.concat(min_bw_instances, ","), 10)
+            -- 随机返回列表中的一个IP
+            return min_bw_instances[math.random(#min_bw_instances)] .. ":" .. port
+        end
+        ngx.log(ngx.WARN, "bandwidth check failed，err : ", err or "unknown error")
+    end
+    -- 2. Redis获取失败时回退到随机选择
     return ips[math.random(table.getn(ips))] .. ":" .. port
 
+end
+
+--[[
+根据带宽数据选择最优实例
+@param service_name 服务名称
+@param ips 查询得到的IP列表
+@param port 服务端口
+@return 最优实例列表(ips)或nil, 错误信息
+]]
+function _M:get_min_bandwidth_instances(service_name, ips)
+    -- Redis键定义
+    local active_threshold = 300 -- 5分钟活跃阈值
+    -- 从redis获取
+    local red, err = redisUtil:new()
+    if not red then
+        return nil, "host_util failed to new redis: " .. (err or "unknown error")
+    end
+
+    -- 1. 获取服务实例列表（单次Redis调用）
+    local service_key = "bw:service:" .. service_name
+    local service_instances, err = red:smembers(service_key)
+    if not service_instances then
+        return nil, "failed to get service instances: " .. (err or "unknown error")
+    end
+
+    -- 2. 获取实例带宽数据（批量获取）
+    local instance_total_key = "bw:instance:total_bandwidth"
+    local bandwidths = {}
+    for _, ip in ipairs(service_instances) do
+        local bw = red:zscore(instance_total_key, ip)
+        if bw then
+            bandwidths[ip] = tonumber(bw)
+        end
+    end
+
+    -- 3. 过滤活跃实例（5分钟阈值）
+    local active_instances = {}
+    local current_time = os.time()
+    for _, ip in ipairs(service_instances) do
+        if bandwidths[ip] then
+            local ts_key = service_key..":ts"
+            local ts = red:hget("bw:instance:"..ip..":services", ts_key)
+            if ts and (current_time - tonumber(ts)) < 300 then
+                table.insert(active_instances, {
+                    ip = ip,
+                    bandwidth = bandwidths[ip]
+                })
+            end
+        end
+    end
+
+    -- 4. 排序并选择最优实例
+    table.sort(active_instances, function(a, b)
+        return a.bandwidth < b.bandwidth
+    end)
+
+    -- 5. 返回与输入IP列表的交集
+    local result = {}
+    local ip_set = {}
+    for _, ip in ipairs(ips) do ip_set[ip] = true end
+
+    for _, instance in ipairs(active_instances) do
+        if ip_set[instance.ip] then
+            table.insert(result, instance.ip)
+            if #result >= math.max(2, #active_instances/4) then
+                break
+            end
+        end
+    end
+
+    --- 将redis连接放回pool中
+    red:set_keepalive(config.redis.max_idle_time, config.redis.pool_size)
+
+    return #result > 0 and result or nil
 end
 
 return _M
