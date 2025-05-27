@@ -31,16 +31,15 @@
 
 package com.tencent.bkrepo.cargo.pojo
 
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@Api("cargo error 包装返回模型")
+@Schema(title = "cargo error 包装返回模型")
 data class CargoErrorResponse(
-    @ApiModelProperty("错误信息")
+    @get:Schema(title = "错误信息")
     val errors: List<CargoErrorDetail>?
 )
 
 data class CargoErrorDetail(
-    @ApiModelProperty("错误信息详情")
+    @get:Schema(title = "错误信息详情")
     val detail: String?
 )

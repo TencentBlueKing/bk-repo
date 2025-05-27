@@ -38,7 +38,7 @@ import com.tencent.bkrepo.helm.pojo.artifact.HelmArtifactInfo
 import com.tencent.bkrepo.helm.pojo.fixtool.DateTimeRepairResponse
 import com.tencent.bkrepo.helm.pojo.fixtool.PackageManagerResponse
 import com.tencent.bkrepo.helm.service.FixToolService
-import io.swagger.annotations.ApiOperation
+import io.swagger.v3.oas.annotations.Operation
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -48,13 +48,13 @@ import org.springframework.web.bind.annotation.RestController
 class HelmFixToolController(
     private val fixToolService: FixToolService
 ) {
-    @ApiOperation("修复package管理功能")
+    @Operation(summary = "修复package管理功能")
     @GetMapping("/ext/package/populate")
     fun fixPackageVersion(): List<PackageManagerResponse> {
         return fixToolService.fixPackageVersion()
     }
 
-    @ApiOperation("修复index.yaml文件中的制品包创建时间问题")
+    @Operation(summary = "修复index.yaml文件中的制品包创建时间问题")
     @GetMapping("/ext/repairDateFormat")
     fun repairPackageCreatedDate(): Response<List<DateTimeRepairResponse>> {
         return ResponseBuilder.success(fixToolService.repairPackageCreatedDate())

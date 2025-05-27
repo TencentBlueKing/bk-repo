@@ -29,17 +29,18 @@ package com.tencent.bkrepo.common.metadata.pojo.project
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class ProjectUsageStatisticsListOption(
-    @ApiModelProperty("项目ID")
+    @get:Schema(title = "项目ID")
     val projectId: String? = null,
-    @ApiModelProperty("开始时间，包含")
+    @get:Schema(title = "开始时间，包含")
     val start: Long? = null,
-    @ApiModelProperty("结束时间，不包含")
+    @get:Schema(title = "结束时间，不包含")
     val end: Long? = null,
-    @ApiModelProperty("分页数")
+    @get:Schema(title = "分页数")
     val pageNumber: Int = DEFAULT_PAGE_NUMBER,
-    @ApiModelProperty("分页大小")
+    @get:Schema(title = "分页大小")
     val pageSize: Int = DEFAULT_PAGE_SIZE,
 )

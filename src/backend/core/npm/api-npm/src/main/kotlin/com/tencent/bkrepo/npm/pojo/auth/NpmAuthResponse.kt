@@ -32,16 +32,15 @@
 package com.tencent.bkrepo.npm.pojo.auth
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("npm auth返回包装模型")
+@Schema(title = "npm auth返回包装模型")
 data class NpmAuthResponse<out T>(
-    @ApiModelProperty("返回状态")
+    @get:Schema(title = "返回状态")
     val ok: Boolean,
-    @ApiModelProperty("用户ID")
+    @get:Schema(title = "用户ID")
     val id: String? = null,
-    @ApiModelProperty("数据")
+    @get:Schema(title = "数据")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val token: T? = null
 ) {

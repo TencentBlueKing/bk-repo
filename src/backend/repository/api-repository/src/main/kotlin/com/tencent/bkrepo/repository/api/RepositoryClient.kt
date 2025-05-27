@@ -42,9 +42,9 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
 import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -57,71 +57,71 @@ import org.springframework.web.bind.annotation.RequestParam
 /**
  * 仓库服务接口
  */
-@Api("仓库服务接口")
+@Tag(name = "仓库服务接口")
 @FeignClient(REPOSITORY_SERVICE_NAME, contextId = "RepositoryClient", primary = false)
 @RequestMapping("/service/repo")
 @Deprecated("replace with RepositoryService")
 interface RepositoryClient {
 
-    @ApiOperation("查询仓库信息")
+    @Operation(summary = "查询仓库信息")
     @GetMapping("/info/{projectId}/{repoName}")
     fun getRepoInfo(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String
     ): Response<RepositoryInfo?>
 
-    @ApiOperation("查询仓库详情")
+    @Operation(summary = "查询仓库详情")
     @GetMapping("/detail/{projectId}/{repoName}")
     fun getRepoDetail(
-        @ApiParam(value = "所属项目", required = true)
+        @Parameter(name = "所属项目", required = true)
         @PathVariable projectId: String,
-        @ApiParam(value = "仓库名称", required = true)
+        @Parameter(name = "仓库名称", required = true)
         @PathVariable repoName: String,
-        @ApiParam(value = "仓库类型", required = true)
+        @Parameter(name = "仓库类型", required = true)
         @RequestParam type: String? = null
     ): Response<RepositoryDetail?>
 
-    @ApiOperation("列表查询项目所有仓库")
+    @Operation(summary = "列表查询项目所有仓库")
     @GetMapping("/list/{projectId}")
     fun listRepo(
-        @ApiParam(value = "项目id", required = true)
+        @Parameter(name = "项目id", required = true)
         @PathVariable projectId: String,
-        @ApiParam("仓库名称", required = false)
+        @Parameter(name = "仓库名称", required = false)
         @RequestParam name: String? = null,
-        @ApiParam("仓库类型", required = false)
+        @Parameter(name = "仓库类型", required = false)
         @RequestParam type: String? = null
     ): Response<List<RepositoryInfo>>
 
-    @ApiOperation("仓库分页查询")
+    @Operation(summary = "仓库分页查询")
     @PostMapping("/rangeQuery")
     fun rangeQuery(@RequestBody request: RepoRangeQueryRequest): Response<Page<RepositoryInfo?>>
 
-    @ApiOperation("创建仓库")
+    @Operation(summary = "创建仓库")
     @PostMapping("/create")
     fun createRepo(@RequestBody request: RepoCreateRequest): Response<RepositoryDetail>
 
-    @ApiOperation("修改仓库")
+    @Operation(summary = "修改仓库")
     @PostMapping("/update")
     fun updateRepo(@RequestBody request: RepoUpdateRequest): Response<Void>
 
-    @ApiOperation("删除仓库")
+    @Operation(summary = "删除仓库")
     @DeleteMapping("/delete")
     fun deleteRepo(@RequestBody request: RepoDeleteRequest): Response<Void>
 
-    @ApiOperation("分页查询指定类型仓库")
+    @Operation(summary = "分页查询指定类型仓库")
     @GetMapping("/page/repoType/{page}/{size}/{repoType}")
     fun pageByType(
-        @ApiParam(value = "当前页", required = true, example = "0")
+        @Parameter(name = "当前页", required = true, example = "0")
         @PathVariable page: Int,
-        @ApiParam(value = "分页大小", required = true, example = "20")
+        @Parameter(name = "分页大小", required = true, example = "20")
         @PathVariable size: Int,
-        @ApiParam(value = "仓库类型", required = true)
+        @Parameter(name = "仓库类型", required = true)
         @PathVariable repoType: String
     ): Response<Page<RepositoryDetail>>
 
-    @ApiOperation("查询项目下的有权限的仓库列表")
+    @Operation(summary = "查询项目下的有权限的仓库列表")
     @PostMapping("/permission/{userId}/{projectId}")
     fun listPermissionRepo(
         @PathVariable userId: String,
@@ -129,14 +129,14 @@ interface RepositoryClient {
         @RequestBody option: RepoListOption
     ): Response<List<RepositoryInfo>>
 
-    @ApiOperation("查询仓库大小信息")
+    @Operation(summary = "查询仓库大小信息")
     @GetMapping("/stat/{projectId}/{repoName}")
     fun statRepo(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
     ): Response<NodeSizeInfo>
 
-    @ApiOperation("更新仓库存储")
+    @Operation(summary = "更新仓库存储")
     @PostMapping("/update/storage/{projectId}/{repoName}")
     fun updateStorageCredentialsKey(
         @PathVariable projectId: String,
@@ -144,7 +144,7 @@ interface RepositoryClient {
         @RequestParam storageCredentialsKey: String?
     ): Response<Void>
 
-    @ApiOperation("重置仓库旧存储")
+    @Operation(summary = "重置仓库旧存储")
     @PostMapping("/unset/storage/{projectId}/{repoName}")
     fun unsetOldStorageCredentialsKey(
         @PathVariable projectId: String,

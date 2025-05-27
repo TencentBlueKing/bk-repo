@@ -30,10 +30,11 @@ package com.tencent.bkrepo.common.analysis.pojo.scanner.standard
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.normalizedLevel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class StandardScanExecutorResult(
-    @ApiModelProperty("工具分析结果")
+    @get:Schema(title = "工具分析结果")
     val output: ToolOutput? = null,
     override val scanStatus: String = output?.status ?: SubScanTaskStatus.FAILED.name
 ) : ScanExecutorResult(scanStatus, StandardScanner.TYPE) {

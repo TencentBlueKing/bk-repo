@@ -31,15 +31,14 @@
 
 package com.tencent.bkrepo.pypi.util.pojo
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("pypi info")
+@Schema(title = "pypi info")
 data class PypiInfo(
-    @ApiModelProperty("name")
+    @get:Schema(title = "name")
     val name: String,
-    @ApiModelProperty("version")
+    @get:Schema(title = "version")
     val version: String,
-    @ApiModelProperty("summary")
+    @get:Schema(title = "summary")
     val summary: String
 )

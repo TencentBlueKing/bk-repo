@@ -101,7 +101,10 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             val response = httpClient.newCall(request).execute()
             return if (checkResponse(response)) {
                 onDownloadResponse(context, response)
-            } else null
+            } else {
+                response.close()
+                null
+            }
         }
     }
 
@@ -197,7 +200,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         context: ArtifactDownloadContext,
         response: Response,
         useDisposition: Boolean = false,
-        syncCache: Boolean = true
+        syncCache: Boolean = true,
     ): ArtifactResource {
         return if (syncCache) {
             syncCacheResponse(response, context, useDisposition)
@@ -209,7 +212,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     private fun syncCacheResponse(
         response: Response,
         context: ArtifactDownloadContext,
-        useDisposition: Boolean
+        useDisposition: Boolean,
     ): ArtifactResource {
         val artifactFile = createTempFile(response.body!!)
         val size = artifactFile.getSize()
@@ -227,7 +230,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     private fun asyncCacheResponse(
         response: Response,
         context: ArtifactDownloadContext,
-        useDisposition: Boolean
+        useDisposition: Boolean,
     ): ArtifactResource {
         if (response.header(HttpHeaders.TRANSFER_ENCODING) == "chunked") {
             throw ErrorCodeException(PARAMETER_INVALID, "Transfer-Encoding: chunked was not supported")
@@ -297,7 +300,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     open fun safeSearchParents(
         repositoryDetail: RepositoryDetail,
-        artifactInfo: ArtifactInfo
+        artifactInfo: ArtifactInfo,
     ): List<Any> {
         return emptyList()
     }
@@ -366,7 +369,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     protected fun createHttpClient(
         configuration: RemoteConfiguration,
         addInterceptor: Boolean = true,
-        followRedirect: Boolean = false
+        followRedirect: Boolean = false,
     ): OkHttpClient {
         return buildOkHttpClient(configuration, addInterceptor, followRedirect).build()
     }

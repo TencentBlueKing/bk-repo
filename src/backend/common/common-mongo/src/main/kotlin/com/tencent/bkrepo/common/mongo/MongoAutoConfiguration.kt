@@ -110,7 +110,7 @@ class MongoAutoConfiguration {
             if (mongoSslProperties.enabled) {
                 clientSettingsBuilder.applyToSslSettings { ssl ->
                     ssl.enabled(true)
-                    ssl.invalidHostNameAllowed(mongoSslProperties.invalidHostnameAllowed)
+                    ssl.invalidHostNameAllowed(!mongoSslProperties.verifyHostname)
 
                     try {
                         // 根据配置判断使用单向还是双向TLS

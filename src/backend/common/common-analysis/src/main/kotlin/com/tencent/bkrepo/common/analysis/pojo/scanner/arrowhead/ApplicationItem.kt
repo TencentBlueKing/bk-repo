@@ -31,25 +31,25 @@ import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.normalizedLevel
 import com.tencent.bkrepo.common.analysis.pojo.scanner.utils.removeRootDirPath
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ApiModel("应用依赖组件信息")
+
+@Schema(title = "应用依赖组件信息")
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class ApplicationItem(
-    @ApiModelProperty("组件路径")
+    @get:Schema(title = "组件路径")
     @JsonAlias("FilePath")
     val path: String,
 
-    @ApiModelProperty("组件名")
+    @get:Schema(title = "组件名")
     @JsonAlias("LibraryName")
     val component: String,
 
-    @ApiModelProperty("组件版本")
+    @get:Schema(title = "组件版本")
     @JsonAlias("LibraryVersion")
     val version: String,
 
-    @ApiModelProperty("证书详情")
+    @get:Schema(title = "证书详情")
     @JsonAlias("license")
     val license: License? = null
 ) {

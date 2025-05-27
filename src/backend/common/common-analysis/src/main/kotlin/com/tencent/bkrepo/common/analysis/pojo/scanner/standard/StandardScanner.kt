@@ -31,25 +31,25 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.api.constant.CharPool.COLON
 import com.tencent.bkrepo.common.metadata.annotation.Sensitive
 import com.tencent.bkrepo.common.metadata.handler.MaskPartString
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 /**
  * 标准扫描器，后续可逐步替换掉其他扫描器实现，移除其余扫描器代码
  */
-@ApiModel("标准扫描器配置")
+@Schema(title = "标准扫描器配置")
 class StandardScanner(
     override val name: String,
-    @ApiModelProperty("扫描器镜像")
+    @get:Schema(title = "扫描器镜像")
     val image: String,
-    @ApiModelProperty("docker仓库用户")
+    @get:Schema(title = "docker仓库用户")
     val dockerRegistryUsername: String?,
-    @ApiModelProperty("docker仓库密码")
+    @get:Schema(title = "docker仓库密码")
     val dockerRegistryPassword: String?,
-    @ApiModelProperty("扫描器容器启动CMD")
+    @get:Schema(title = "扫描器容器启动CMD")
     val cmd: String,
     override val version: String = image.substring(image.lastIndexOf(COLON) + 1, image.length),
-    @ApiModelProperty("扫描器参数")
+    @get:Schema(title = "扫描器参数")
     val args: List<Argument> = emptyList(),
 ) : Scanner(name, TYPE, version) {
     companion object {
@@ -60,16 +60,16 @@ class StandardScanner(
         const val ARG_KEY_MAX_TIME = "maxTime"
     }
 
-    @ApiModel("扫描器参数")
+    @Schema(title = "扫描器参数")
     data class Argument(
-        @ApiModelProperty("参数类型")
+        @get:Schema(title = "参数类型")
         val type: String,
-        @ApiModelProperty("参数名")
+        @get:Schema(title = "参数名")
         val key: String,
-        @ApiModelProperty("参数值")
+        @get:Schema(title = "参数值")
         @Sensitive(handler = MaskPartString::class)
         val value: String? = null,
-        @ApiModelProperty("描述")
+        @get:Schema(title = "描述")
         val des: String = ""
     ) {
         companion object {

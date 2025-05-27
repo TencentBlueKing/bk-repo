@@ -53,6 +53,9 @@ import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
+import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -63,7 +66,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
 import com.tencent.bkrepo.repository.pojo.node.NodeSizeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRestoreRequest
@@ -80,11 +82,9 @@ import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
-import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
-import com.tencent.bkrepo.common.metadata.service.node.NodeService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -98,7 +98,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
 import javax.validation.constraints.Size
 
-@Api("节点用户接口")
+@Tag(name = "节点用户接口")
 @RestController
 @RequestMapping("/api/node")
 class UserNodeController(
@@ -124,7 +124,7 @@ class UserNodeController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_VIEW_CONTENT
     )
-    @ApiOperation("根据路径查看节点详情")
+    @Operation(summary = "根据路径查看节点详情")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/detail/$DEFAULT_MAPPING_URI")
     fun getNodeDetail(
@@ -153,7 +153,7 @@ class UserNodeController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_CREATE_CONTENT
     )
-    @ApiOperation("创建文件夹")
+    @Operation(summary = "创建文件夹")
     @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
     @PostMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/mkdir/$DEFAULT_MAPPING_URI")
     fun mkdir(
@@ -192,7 +192,7 @@ class UserNodeController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_DELETE_CONTENT
     )
-    @ApiOperation("删除节点")
+    @Operation(summary = "删除节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping(DEFAULT_MAPPING_URI/* Deprecated */, "/delete/$DEFAULT_MAPPING_URI")
     fun deleteNode(
@@ -228,7 +228,7 @@ class UserNodeController(
         scopeId = "#projectId",
         content = ActionAuditContent.NODE_DELETE_CONTENT
     )
-    @ApiOperation("批量删除节点")
+    @Operation(summary = "批量删除节点")
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     @DeleteMapping("/batch/{projectId}/{repoName}")
     fun deleteNodes(
@@ -249,7 +249,7 @@ class UserNodeController(
         return ResponseBuilder.success(nodeService.deleteNodes(nodesDeleteRequest))
     }
 
-    @ApiOperation("统计批量删除节点数")
+    @Operation(summary = "统计批量删除节点数")
     @Permission(type = ResourceType.REPO, action = PermissionAction.DELETE)
     @PostMapping("/batch/{projectId}/{repoName}")
     fun countBatchDeleteNode(
@@ -290,7 +290,7 @@ class UserNodeController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_CLEAN_CONTENT
     )
-    @ApiOperation("清理最后访问时间早于{date}的文件节点")
+    @Operation(summary = "清理最后访问时间早于{date}的文件节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.DELETE)
     @DeleteMapping("/clean/$DEFAULT_MAPPING_URI")
     fun deleteNodeLastModifiedBeforeDate(
@@ -311,7 +311,7 @@ class UserNodeController(
         )
     }
 
-    @ApiOperation("创建链接节点")
+    @Operation(summary = "创建链接节点")
     @PostMapping("/link")
     fun link(
         @RequestAttribute userId: String,
@@ -356,7 +356,7 @@ class UserNodeController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_EXPIRES_EDIT_CONTENT
     )
-    @ApiOperation("更新节点")
+    @Operation(summary = "更新节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.UPDATE)
     @PostMapping("/update/$DEFAULT_MAPPING_URI")
     fun updateNode(
@@ -395,7 +395,7 @@ class UserNodeController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_RENAME_CONTENT
     )
-    @ApiOperation("重命名节点")
+    @Operation(summary = "重命名节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.UPDATE)
     @PostMapping("/rename/$DEFAULT_MAPPING_URI")
     fun renameNode(
@@ -419,7 +419,7 @@ class UserNodeController(
     }
 
     @Deprecated("/rename/{projectId}/{repoName}/**")
-    @ApiOperation("重命名节点")
+    @Operation(summary = "重命名节点")
     @PostMapping("/rename")
     fun renameNode(
         @RequestAttribute userId: String,
@@ -464,7 +464,7 @@ class UserNodeController(
         scopeId = "#request?.srcProjectId",
         content = ActionAuditContent.NODE_MOVE_CONTENT
     )
-    @ApiOperation("移动节点")
+    @Operation(summary = "移动节点")
     @PostMapping("/move")
     fun moveNode(
         @RequestAttribute userId: String,
@@ -511,7 +511,7 @@ class UserNodeController(
         scopeId = "#request?.srcProjectId",
         content = ActionAuditContent.NODE_COPY_CONTENT
     )
-    @ApiOperation("复制节点")
+    @Operation(summary = "复制节点")
     @PostMapping("/copy")
     fun copyNode(
         @RequestAttribute userId: String,
@@ -535,7 +535,7 @@ class UserNodeController(
         }
     }
 
-    @ApiOperation("查询节点大小信息")
+    @Operation(summary = "查询节点大小信息")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/size/$DEFAULT_MAPPING_URI")
     fun computeSize(artifactInfo: ArtifactInfo): Response<NodeSizeInfo> {
@@ -543,7 +543,7 @@ class UserNodeController(
         return ResponseBuilder.success(nodeSizeInfo)
     }
 
-    @ApiOperation("查询时间早于{date}的节点大小信息")
+    @Operation(summary = "查询时间早于{date}的节点大小信息")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/calculate/$DEFAULT_MAPPING_URI")
     fun computeSizeBefore(
@@ -556,7 +556,7 @@ class UserNodeController(
         return ResponseBuilder.success(nodeSizeInfo)
     }
 
-    @ApiOperation("分页查询节点")
+    @Operation(summary = "分页查询节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/page/$DEFAULT_MAPPING_URI")
     fun listPageNode(
@@ -567,7 +567,7 @@ class UserNodeController(
         return ResponseBuilder.success(nodePage)
     }
 
-    @ApiOperation("按sha256分页查询节点")
+    @Operation(summary = "按sha256分页查询节点")
     @Principal(PrincipalType.ADMIN)
     @GetMapping("/page", params = ["sha256"])
     fun listPageNodeBySha256(
@@ -579,7 +579,7 @@ class UserNodeController(
             .let { ResponseBuilder.success(it) }
     }
 
-    @ApiOperation("查询节点删除点")
+    @Operation(summary = "查询节点删除点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
     @GetMapping("/list-deleted/$DEFAULT_MAPPING_URI")
     fun listDeletedPoint(artifactInfo: ArtifactInfo): Response<List<NodeDeletedPoint>> {
@@ -604,7 +604,7 @@ class UserNodeController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_RESTORE_CONTENT
     )
-    @ApiOperation("恢复被删除节点")
+    @Operation(summary = "恢复被删除节点")
     @Permission(type = ResourceType.NODE, action = PermissionAction.WRITE)
     @PostMapping("/restore/$DEFAULT_MAPPING_URI")
     fun restoreNode(
@@ -615,34 +615,34 @@ class UserNodeController(
         return ResponseBuilder.success(nodeService.restoreNode(artifactInfo, nodeRestoreOption))
     }
 
-    @ApiOperation("自定义查询节点，如不关注总记录数请使用queryWithoutCount")
+    @Operation(summary = "自定义查询节点，如不关注总记录数请使用queryWithoutCount")
     @PostMapping("/search")
     fun search(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 
     @Deprecated("replace with search")
-    @ApiOperation("自定义查询节点")
+    @Operation(summary = "自定义查询节点")
     @PostMapping("/query")
     fun query(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
     }
 
-    @ApiOperation("自定义查询节点，不计算总记录数")
+    @Operation(summary = "自定义查询节点，不计算总记录数")
     @PostMapping("/queryWithoutCount")
     fun queryWithoutCount(@RequestBody queryModel: QueryModel): Response<Page<Map<String, Any?>>> {
         return ResponseBuilder.success(nodeSearchService.searchWithoutCount(queryModel))
     }
 
-    @ApiOperation("仓库 包数量 总览")
+    @Operation(summary = "仓库 包数量 总览")
     @GetMapping("/search/overview")
     fun nodeGlobalSearchOverview(
         @RequestAttribute userId: String,
         @RequestParam projectId: String,
-        @ApiParam(value = "文件名", required = true)
+        @Parameter(name = "文件名", required = true)
         @RequestParam
         name: String,
-        @ApiParam(value = "仓库名 多个仓库以 `,` 分隔", required = false, example = "report,log")
+        @Parameter(name = "仓库名 多个仓库以 `,` 分隔", required = false, example = "report,log")
         @RequestParam
         exRepo: String?,
     ): Response<List<ProjectPackageOverview>> {
@@ -656,7 +656,7 @@ class UserNodeController(
         )
     }
 
-    @ApiOperation("恢复归档文件")
+    @Operation(summary = "恢复归档文件")
     @PostMapping("/archive/restore")
     fun restoreArchiveNode(
         @RequestAttribute userId: String,

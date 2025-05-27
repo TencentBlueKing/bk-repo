@@ -32,56 +32,55 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDateTime
 
-@ApiModel("同步任务信息")
+@Schema(title = "同步任务信息")
 data class ReplicaTaskInfo(
-    @ApiModelProperty("任务id，全局唯一")
+    @get:Schema(title = "任务id，全局唯一")
     val id: String,
-    @ApiModelProperty("任务key，全局唯一")
+    @get:Schema(title = "任务key，全局唯一")
     val key: String,
-    @ApiModelProperty("任务名称，允许重复")
+    @get:Schema(title = "任务名称，允许重复")
     val name: String,
-    @ApiModelProperty("所属项目")
+    @get:Schema(title = "所属项目")
     val projectId: String,
-    @ApiModelProperty("同步对象类型", required = true)
+    @get:Schema(title = "同步对象类型", required = true)
     val replicaObjectType: ReplicaObjectType,
-    @ApiModelProperty("同步类型")
+    @get:Schema(title = "同步类型")
     val replicaType: ReplicaType,
-    @ApiModelProperty("任务设置")
+    @get:Schema(title = "任务设置")
     val setting: ReplicaSetting,
-    @ApiModelProperty("远程集群集合")
+    @get:Schema(title = "远程集群集合")
     val remoteClusters: Set<ClusterNodeName>,
-    @ApiModelProperty("任务描述")
+    @get:Schema(title = "任务描述")
     val description: String? = null,
-    @ApiModelProperty("任务状态")
+    @get:Schema(title = "任务状态")
     val status: ReplicaStatus? = null,
-    @ApiModelProperty("已同步字节数")
+    @get:Schema(title = "已同步字节数")
     var replicatedBytes: Long? = 0,
-    @ApiModelProperty("总字节数")
+    @get:Schema(title = "总字节数")
     val totalBytes: Long? = 0,
-    @ApiModelProperty("上次执行状态")
+    @get:Schema(title = "上次执行状态")
     var lastExecutionStatus: ExecutionStatus? = null,
-    @ApiModelProperty("上次执行时间")
+    @get:Schema(title = "上次执行时间")
     var lastExecutionTime: LocalDateTime? = null,
-    @ApiModelProperty("下次执行时间")
+    @get:Schema(title = "下次执行时间")
     var nextExecutionTime: LocalDateTime? = null,
-    @ApiModelProperty("执行次数")
+    @get:Schema(title = "执行次数")
     var executionTimes: Long,
-    @ApiModelProperty("是否启用")
+    @get:Schema(title = "是否启用")
     var enabled: Boolean = true,
-    @ApiModelProperty("是否记录分发日志")
+    @get:Schema(title = "是否记录分发日志")
     val record: Boolean? = null,
-    @ApiModelProperty("分发日志保留天数")
+    @get:Schema(title = "分发日志保留天数")
     val recordReserveDays: Long? = null,
-    @ApiModelProperty("创建者")
+    @get:Schema(title = "创建者")
     val createdBy: String,
-    @ApiModelProperty("创建日期")
+    @get:Schema(title = "创建日期")
     val createdDate: String,
-    @ApiModelProperty("上次修改者")
+    @get:Schema(title = "上次修改者")
     val lastModifiedBy: String,
-    @ApiModelProperty("上次修改日期")
+    @get:Schema(title = "上次修改日期")
     val lastModifiedDate: String
 )

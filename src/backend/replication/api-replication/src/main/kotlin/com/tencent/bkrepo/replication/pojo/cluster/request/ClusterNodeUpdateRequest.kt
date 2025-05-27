@@ -28,33 +28,33 @@
 package com.tencent.bkrepo.replication.pojo.cluster.request
 
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 /**
  * 更新集群节点请求
  */
-@ApiModel("更新集群节点请求")
+@Schema(title = "更新集群节点请求")
 data class ClusterNodeUpdateRequest(
-    @ApiModelProperty("添加的集群名称", required = true)
+    @get:Schema(title = "添加的集群名称", required = true)
     var name: String,
-    @ApiModelProperty("集群地址", required = false)
+    @get:Schema(title = "集群地址", required = false)
     var url: String? = null,
-    @ApiModelProperty("集群的证书", required = false)
+    @get:Schema(title = "集群的证书", required = false)
     var certificate: String? = null,
-    @ApiModelProperty("集群认证用户名", required = false)
+    @get:Schema(title = "集群认证用户名", required = false)
     var username: String? = null,
-    @ApiModelProperty("集群认证密码", required = false)
+    @get:Schema(title = "集群认证密码", required = false)
     var password: String? = null,
-    @ApiModelProperty("集群节点类型", required = true)
+    @get:Schema(title = "集群节点类型", required = true)
     var type: ClusterNodeType,
-    @ApiModelProperty("连通性检测方式", required = true)
+    @get:Schema(title = "连通性检测方式", required = true)
     var detectType: DetectType? = null,
-    @ApiModelProperty("集群appId", required = false)
+    @get:Schema(title = "集群appId", required = false)
     var appId: String? = null,
-    @ApiModelProperty("集群访问凭证", required = false)
+    @get:Schema(title = "集群访问凭证", required = false)
     var accessKey: String? = null,
-    @ApiModelProperty("集群密钥", required = false)
+    @get:Schema(title = "集群密钥", required = false)
     var secretKey: String? = null,
-    @ApiModelProperty("udp port", required = false)
+    @get:Schema(title = "udp port", required = false)
     var udpPort: Int? = null,
 )

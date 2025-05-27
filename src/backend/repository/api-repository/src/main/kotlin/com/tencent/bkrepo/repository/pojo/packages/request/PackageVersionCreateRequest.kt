@@ -33,48 +33,49 @@ package com.tencent.bkrepo.repository.pojo.packages.request
 
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
-import io.swagger.annotations.ApiModelProperty
+import io.swagger.v3.oas.annotations.media.Schema
+
 
 data class PackageVersionCreateRequest(
-    @ApiModelProperty("项目id")
+    @get:Schema(title = "项目id")
     val projectId: String,
-    @ApiModelProperty("仓库名称")
+    @get:Schema(title = "仓库名称")
     val repoName: String,
-    @ApiModelProperty("包名称")
+    @get:Schema(title = "包名称")
     val packageName: String,
-    @ApiModelProperty("包唯一标识符")
+    @get:Schema(title = "包唯一标识符")
     val packageKey: String,
-    @ApiModelProperty("包类型")
+    @get:Schema(title = "包类型")
     val packageType: PackageType,
-    @ApiModelProperty("包简要描述")
+    @get:Schema(title = "包简要描述")
     val packageDescription: String? = null,
-    @ApiModelProperty("包版本标签")
+    @get:Schema(title = "包版本标签")
     val versionTag: Map<String, String>? = null,
-    @ApiModelProperty("包扩展字段")
+    @get:Schema(title = "包扩展字段")
     val packageExtension: Map<String, Any>? = null,
-    @ApiModelProperty("版本名称")
+    @get:Schema(title = "版本名称")
     val versionName: String,
-    @ApiModelProperty("版本大小")
+    @get:Schema(title = "版本大小")
     val size: Long,
-    @ApiModelProperty("版本描述文件路径")
+    @get:Schema(title = "版本描述文件路径")
     var manifestPath: String? = null,
-    @ApiModelProperty("版本内容文件路径")
+    @get:Schema(title = "版本内容文件路径")
     var artifactPath: String? = null,
-    @ApiModelProperty("版本构件阶段")
+    @get:Schema(title = "版本构件阶段")
     val stageTag: List<String>? = null,
-    @ApiModelProperty("版本元数据")
+    @get:Schema(title = "版本元数据")
     @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("packageMetadata"))
     val metadata: Map<String, Any>? = null,
-    @ApiModelProperty("版本元数据")
+    @get:Schema(title = "版本元数据")
     val packageMetadata: List<MetadataModel>? = null,
-    @ApiModelProperty("标签")
+    @get:Schema(title = "标签")
     val tags: List<String>? = null,
-    @ApiModelProperty("版本扩展字段")
+    @get:Schema(title = "版本扩展字段")
     val extension: Map<String, Any>? = null,
-    @ApiModelProperty("是否允许覆盖")
+    @get:Schema(title = "是否允许覆盖")
     val overwrite: Boolean = false,
-    @ApiModelProperty("创建人")
+    @get:Schema(title = "创建人")
     val createdBy: String,
-    @ApiModelProperty("同版本是否包含多个制品")
+    @get:Schema(title = "同版本是否包含多个制品")
     val multiArtifact: Boolean = false
 )
