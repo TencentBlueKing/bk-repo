@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.oci.pojo.artifact.OciBlobArtifactInfo
-import io.undertow.servlet.spec.HttpServletRequestImpl
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
@@ -64,10 +63,9 @@ class OciBlobArtifactInfoResolver : ArtifactInfoResolver {
         }
         // 解析UUID
         val uuid = attributes["uuid"]?.toString()?.trim()
-        val params = (request as HttpServletRequestImpl).queryParameters
         // 解析mount
-        val mount = params?.get("mount")?.first
-        val from = params?.get("from")?.first
+        val mount = request.getParameterValues("mount")?.firstOrNull()
+        val from = request.getParameterValues("from")?.firstOrNull()
         return OciBlobArtifactInfo(projectId, repoName, packageName, "", digest, uuid, mount, from)
     }
 
