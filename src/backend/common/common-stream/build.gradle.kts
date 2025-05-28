@@ -27,7 +27,6 @@
 
 dependencies {
     api(project(":common:common-artifact:artifact-api"))
-    api(project(":repository:api-repository"))
     api("com.tencent.devops:devops-pulsar")
     api("commons-io:commons-io")
     api("org.springframework.cloud:spring-cloud-starter-stream-kafka")

@@ -29,7 +29,6 @@
 
 dependencies {
     api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
     api(project(":common:common-job"))
     api(project(":common:common-fdtp"))
     api(project(":common:common-artifact:artifact-service"))

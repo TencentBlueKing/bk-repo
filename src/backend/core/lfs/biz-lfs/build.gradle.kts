@@ -32,5 +32,4 @@
 dependencies {
     implementation(project(":core:lfs:api-lfs"))
     implementation(project(":common:common-artifact:artifact-service"))
-    implementation(project(":repository:api-repository"))
 }

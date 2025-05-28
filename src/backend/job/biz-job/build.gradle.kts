@@ -37,7 +37,6 @@ dependencies {
     implementation(project(":common:common-artifact:artifact-service"))
     implementation(project(":common:common-artifact:artifact-cache"))
     implementation(project(":common:common-lock"))
-    implementation(project(":repository:api-repository"))
     implementation(project(":core:helm:api-helm"))
     implementation(project(":core:oci:api-oci"))
     implementation(project(":core:maven:api-maven"))

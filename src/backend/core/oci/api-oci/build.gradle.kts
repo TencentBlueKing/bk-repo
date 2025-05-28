@@ -30,7 +30,6 @@
  */
 
 dependencies {
-    api(project(":repository:api-repository"))
     implementation(project(":common:common-api"))
     api(project(":common:common-artifact:artifact-service"))
     implementation(project(":common:common-artifact:artifact-api"))
