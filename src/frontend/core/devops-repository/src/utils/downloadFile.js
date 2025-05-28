@@ -47,24 +47,7 @@ export function customizeDownloadFile (projectId, repoName, fullPaths) {
             console.log('获取不到文件名称')
         }
     }).catch((e) => {
-        // 下载文件报错，此时后端返回的数据类型应该是 json
-        if (e.response.data.type === 'application/json') {
-            const reader = new FileReader()
-            reader.readAsText(e.response.data, 'utf-8')
-            reader.addEventListener('loadend', function () {
-                const errorData = JSON.parse(reader.result)
-                vm.$bkMessage({
-                    message: errorData.message,
-                    theme: 'error'
-                })
-            })
-        } else {
-            // 后端返回的数据类型不是 json
-            vm.$bkMessage({
-                message: vm.$t('batchDownloadBackTypeErrorInfo'),
-                theme: 'error'
-            })
-        }
+        errorHandler(e, 'batch')
     })
 }
 
@@ -101,5 +84,33 @@ export function downloadFile (url) {
             window.URL.revokeObjectURL(blobUrl)
             document.body.removeChild(link)
         }
+    }).catch((e) => {
+        errorHandler(e, 'single')
     })
+}
+
+function errorHandler (e, type) {
+    const vm = window.repositoryVue
+    // 下载文件报错，此时后端返回的数据类型应该是 json
+    if (e.response.data.type === 'application/json') {
+        const reader = new FileReader()
+        reader.readAsText(e.response.data, 'utf-8')
+        reader.addEventListener('loadend', function () {
+            const errorData = JSON.parse(reader.result)
+            vm.$bkMessage({
+                message: errorData.message,
+                theme: 'error'
+            })
+        })
+    } else if (type === 'batch') {
+        vm.$bkMessage({
+            message: vm.$t('batchDownloadBackTypeErrorInfo'),
+            theme: 'error'
+        })
+    } else {
+        vm.$bkMessage({
+            message: vm.$t('downloadBackTypeErrorInfo'),
+            theme: 'error'
+        })
+    }
 }
