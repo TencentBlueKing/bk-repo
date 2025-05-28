@@ -52,6 +52,7 @@ import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Primary
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
+import java.time.LocalDateTime
 
 /**
  * CommitEdge组网方式的Center节点Package管理服务
@@ -155,7 +156,10 @@ class CenterPackageServiceImpl(
             packageDao.removeClusterByKey(projectId, repoName, packageKey, srcCluster)
             // 因为目前packageVersion只会属于一个cluster,所以此处可以直接删除与该cluster关联的所有packageVersion
             val recycle = repositoryProperties.recycleBinEnabled && !cleanRequest
-            packageVersionDao.deleteByPackageIdAndClusterName(tPackage.id!!, srcCluster, operator!!,recycle)
+            val deleteTime: LocalDateTime = LocalDateTime.now()
+            packageVersionDao.deleteByPackageIdAndClusterName(
+                tPackage.id!!, srcCluster, operator!!, recycle, deleteTime
+            )
             logger.info("Remove package [$projectId/$repoName/$packageKey] cluster[$srcCluster] success")
         } else {
             // Package不包含cluster时候直接报错

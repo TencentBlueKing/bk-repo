@@ -179,7 +179,9 @@ open class NodeDeleteSupport(
         val criteria = NodeQueryHelper.nodeListCriteria(projectId, repoName, path, option)
             .andOperator(timeCriteria)
         val query = Query(criteria)
-        val nodeDeleteResult = delete(query, operator, criteria, projectId, repoName, decreaseVolume = decreaseVolume)
+        val nodeDeleteResult = delete(
+            query, operator, criteria, projectId, repoName, decreaseVolume = decreaseVolume, cleanRequest = true
+        )
         publishEvent(
             buildNodeCleanEvent(
                 projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString()
@@ -255,7 +257,8 @@ open class NodeDeleteSupport(
                 deletedSize = nodeBaseService.aggregateComputeSize(deletedCriteria)
                 quotaService.decreaseUsedVolume(projectId, repoName, deletedSize)
             }
-            if (fullPaths != null && nodeBaseService.repositoryProperties.recycleBinEnabled) {
+            val recycle = !cleanRequest && nodeBaseService.repositoryProperties.recycleBinEnabled
+            if (fullPaths != null && recycle) {
                 val update = Update().push(TNode::metadata.name, MetadataUtils.buildRecycleBinMetadata())
                 // 仅删除操作直接选中的节点在回收站显示，子节点不显示
                 if (fullPaths.size == 1) {

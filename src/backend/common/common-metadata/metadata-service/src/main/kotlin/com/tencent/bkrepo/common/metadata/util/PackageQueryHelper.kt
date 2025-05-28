@@ -122,7 +122,7 @@ object PackageQueryHelper {
 
 
     fun packageDeleteUpdate(
-        operator: String, recycle: Boolean, deleteTime: LocalDateTime = LocalDateTime.now(),
+        operator: String, recycle: Boolean, deleteTime: LocalDateTime,
     ): Update {
         return Update()
             .set(TPackage::deleted.name, deleteTime)
@@ -137,7 +137,7 @@ object PackageQueryHelper {
 
 
     fun packageVersionDeleteUpdate(
-        operator: String, recycle: Boolean, deleteTime: LocalDateTime = LocalDateTime.now(),
+        operator: String, recycle: Boolean, deleteTime: LocalDateTime,
     ): Update {
         return Update()
             .set(TPackageVersion::deleted.name, deleteTime)

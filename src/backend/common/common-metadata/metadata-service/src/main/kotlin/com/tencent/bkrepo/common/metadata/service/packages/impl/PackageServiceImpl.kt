@@ -267,9 +267,10 @@ class PackageServiceImpl(
         cleanRequest: Boolean,
     ) {
         val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
+        val deleteTime: LocalDateTime = LocalDateTime.now()
         val recycle = repositoryProperties.recycleBinEnabled && !cleanRequest
-        packageVersionDao.deleteByPackageId(tPackage.id!!, operator!!, recycle)
-        packageDao.deleteByKey(projectId, repoName, packageKey, operator, recycle)
+        packageVersionDao.deleteByPackageId(tPackage.id!!, operator!!, recycle, deleteTime)
+        packageDao.deleteByKey(projectId, repoName, packageKey, operator, recycle, deleteTime)
         publishEvent(
             PackageEventFactory.buildDeletedEvent(
                 projectId = projectId,
@@ -298,16 +299,17 @@ class PackageServiceImpl(
         var tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
         val packageId = tPackage.id!!
         val tPackageVersion = packageVersionDao.findByName(packageId, versionName) ?: return
+        val deleteTime: LocalDateTime = LocalDateTime.now()
         val recycle = repositoryProperties.recycleBinEnabled && !cleanRequest
         checkCluster(tPackageVersion)
         val deleted = packageVersionDao.deleteByNameAndPath(
-            packageId, tPackageVersion.name, contentPath, operator!!, recycle
+            packageId, tPackageVersion.name, contentPath, operator!!, recycle, deleteTime
         )
         if (deleted) {
             tPackage = packageDao.decreaseVersions(packageId) ?: return
         }
         if (tPackage.versions <= 0L) {
-            packageDao.deleteById(packageId, operator, recycle)
+            packageDao.deleteById(packageId, operator, recycle, deleteTime)
             logger.info("Delete package [$projectId/$repoName/$packageKey-$versionName] because no version exist")
         } else {
             if (deleted && tPackage.latest == tPackageVersion.name) {

@@ -33,9 +33,11 @@ package com.tencent.bkrepo.common.metadata.service.packages
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.pojo.packages.PackageDeleteResult
 import com.tencent.bkrepo.common.metadata.pojo.packages.PackageListOption
 import com.tencent.bkrepo.common.metadata.pojo.packages.PackageSummary
 import com.tencent.bkrepo.common.metadata.pojo.packages.PackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.packages.VersionDeleteResult
 import com.tencent.bkrepo.common.metadata.pojo.packages.VersionListOption
 import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackageCreateRequest
 import com.tencent.bkrepo.common.metadata.pojo.packages.request.PackagePopulateRequest
@@ -184,7 +186,7 @@ interface PackageService {
         realIpAddress: String? = null,
         operator: String? = SYSTEM_USER,
         cleanRequest: Boolean = false,
-    )
+    ): VersionDeleteResult
 
     /**
      * 删除包版本
@@ -206,7 +208,7 @@ interface PackageService {
         contentPath: String? = null,
         operator: String? = SYSTEM_USER,
         cleanRequest: Boolean = false,
-    )
+    ): VersionDeleteResult
 
     /**
      * 删除所有包

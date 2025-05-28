@@ -43,6 +43,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 /**
  * 包数据访问层
@@ -77,19 +78,26 @@ class PackageDao : SimpleMongoDao<TPackage>() {
         return this.findOne(PackageQueryHelper.packageQuery(projectId, repoName, key))
     }
 
-    fun deleteByKey(projectId: String, repoName: String, key: String, operator: String, recycle: Boolean) {
+    fun deleteByKey(
+        projectId: String,
+        repoName: String,
+        key: String,
+        operator: String,
+        recycle: Boolean,
+        deleteTime: LocalDateTime,
+    ) {
         if (key.isNotBlank()) {
             this.updateFirst(
                 PackageQueryHelper.packageQuery(projectId, repoName, key),
-                PackageQueryHelper.packageDeleteUpdate(operator, recycle)
+                PackageQueryHelper.packageDeleteUpdate(operator, recycle, deleteTime)
             )
         }
     }
 
-    fun deleteById(packageId: String, operator: String, recycle: Boolean) {
+    fun deleteById(packageId: String, operator: String, recycle: Boolean, deleteTime: LocalDateTime,) {
         this.updateFirst(
             PackageQueryHelper.packageQuery(packageId),
-            PackageQueryHelper.packageDeleteUpdate(operator, recycle)
+            PackageQueryHelper.packageDeleteUpdate(operator, recycle, deleteTime)
         )
     }
 
