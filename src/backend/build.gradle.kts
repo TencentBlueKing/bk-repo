@@ -84,7 +84,7 @@ allprojects {
             // pulsar-client中依赖的版本太旧，和otel trace中的版本冲突
             dependency("io.opentelemetry:opentelemetry-api-incubator:1.43.0-alpha")
             // mongodb server版本过低，主动降级驱动
-            dependencySet("org.mongodb:5.1.4") {
+            dependencySet("org.mongodb:4.11.5") {
                 entry("bson")
                 entry("bson-record-codec")
                 entry("mongodb-driver-sync")
