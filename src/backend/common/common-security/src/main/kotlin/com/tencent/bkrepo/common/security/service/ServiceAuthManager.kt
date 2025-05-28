@@ -37,9 +37,13 @@ import com.tencent.bkrepo.common.security.util.JwtUtils
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import org.slf4j.LoggerFactory
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.stereotype.Component
 import java.time.Duration
 import kotlin.concurrent.thread
 
+@Component
+@EnableConfigurationProperties(ServiceAuthProperties::class)
 class ServiceAuthManager(
     properties: ServiceAuthProperties,
 ) {
