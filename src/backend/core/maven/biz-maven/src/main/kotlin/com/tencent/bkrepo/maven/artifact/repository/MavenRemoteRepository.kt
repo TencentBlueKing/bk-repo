@@ -57,7 +57,6 @@ import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.service.MavenMetadataService
 import com.tencent.bkrepo.maven.service.MavenService
-import com.tencent.bkrepo.maven.util.DigestUtils
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
 import com.tencent.bkrepo.maven.util.MavenStringUtils.checksumType
