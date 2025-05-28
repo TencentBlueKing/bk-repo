@@ -45,35 +45,28 @@ if service_name == "" then
     return
 end
 
--- 根据路由表转发
-local router_target = hostUtil:get_target_by_project()
-if router_target then
+-- 异常故障转移
+if config.env and healthUtil:get_cluster_health_status(config.env) then
+    local back_target = healthUtil:get_target_by_random(config.env)
+    if back_target ~= nil then
+        ngx.var.target = back_target .. "/" .. service_name
+        return
+    end
+end
+
+-- 路由表转发
+local env, router_target = hostUtil:get_target_by_project()
+if router_target and healthUtil:get_cluster_health_status(env) then
     ngx.var.target = router_target .. "/" .. service_name
     return
 end
 
 
--- 哪些endpoint与method开放访问 --
-local security_paths = config.security_paths
-if security_paths ~= nil and #security_paths ~= 0 then
-    local is_secure = false
-    local method = ngx.req.get_method()
-    local path = ngx.var.uri
-    for _, item in ipairs(security_paths) do
-        local pathPattern = "/web/" .. service_name .. item.path
-        if service_name == "fs-server" then
-            pathPattern = "/web/fs%-server" .. item.path
-        end
-        if string.find(path, "^" .. pathPattern) ~= nil and service_name == item.service and method == item.method then
-            is_secure = true
-        end
-    end
-    if is_secure == false then
-        ngx.exit(422)
-        return
-    end
+-- 校验endpoint与method开放访问 --
+if healthUtil:check_path() == false then
+    ngx.exit(422)
+    return
 end
-
 
 -- 哪些服务需要转到容器中 --
 local service_in_container = config.service_in_container
