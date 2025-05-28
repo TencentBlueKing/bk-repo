@@ -45,11 +45,6 @@ allprojects {
 
     dependencyManagement {
         applyMavenExclusions(false)
-
-        imports {
-            // 升级devops boot版本后，stream启动报错。参考https://github.com/spring-cloud/spring-cloud-function/issues/940
-//            mavenBom("org.springframework.cloud:spring-cloud-function-dependencies:${Versions.SpringCloudFunction}")
-        }
         dependencies {
             dependency("com.github.zafarkhaja:java-semver:${Versions.JavaSemver}")
             dependency("net.javacrumbs.shedlock:shedlock-spring:${Versions.Shedlock}")
@@ -84,7 +79,7 @@ allprojects {
             // pulsar-client中依赖的版本太旧，和otel trace中的版本冲突
             dependency("io.opentelemetry:opentelemetry-api-incubator:1.43.0-alpha")
             // mongodb server版本过低，主动降级驱动
-            dependencySet("org.mongodb:4.11.5") {
+            dependencySet("org.mongodb:5.1.4") {
                 entry("bson")
                 entry("bson-record-codec")
                 entry("mongodb-driver-sync")
