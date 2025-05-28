@@ -71,6 +71,7 @@ import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
 import com.tencent.bkrepo.maven.service.MavenMetadataService
 import com.tencent.bkrepo.maven.service.MavenService
+import com.tencent.bkrepo.maven.util.DigestUtils
 import com.tencent.bkrepo.maven.util.MavenConfiguration.toMavenRepoConf
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenMetadataUtils.deleteVersioning
@@ -80,6 +81,7 @@ import com.tencent.bkrepo.maven.util.MavenUtil
 import com.tencent.bkrepo.maven.util.MavenUtil.checksumType
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.NodeListViewItem
@@ -308,6 +310,24 @@ class MavenServiceImpl(
         updateArtifactCheckSum(context, node, typeArray)
     }
 
+    override fun createNodeMetaData(artifactFile: ArtifactFile): List<MetadataModel> {
+        val md5 = artifactFile.getFileMd5()
+        val sha1 = artifactFile.getFileSha1()
+        val sha256 = artifactFile.getFileSha256()
+        val sha512 = artifactFile.getInputStream().use {
+            val bytes = it.readBytes()
+            DigestUtils.sha512(bytes, 0, bytes.size)
+        }
+        return mutableMapOf(
+            HashType.MD5.ext to md5,
+            HashType.SHA1.ext to sha1,
+            HashType.SHA256.ext to sha256,
+            HashType.SHA512.ext to sha512
+        ).map {
+            MetadataModel(key = it.key, value = it.value)
+        }.toMutableList()
+    }
+
     private fun updateMetadata(fullPath: String, metadataArtifact: ArtifactFile) {
         val uploadContext = ArtifactUploadContext(metadataArtifact)
         val metadataNode = buildNodeCreateRequest(uploadContext, fullPath)
@@ -326,7 +346,8 @@ class MavenServiceImpl(
             sha256 = context.getArtifactSha256(),
             md5 = context.getArtifactMd5(),
             operator = context.userId,
-            overwrite = true
+            overwrite = true,
+            nodeMetadata = createNodeMetaData(context.getArtifactFile())
         )
     }
 

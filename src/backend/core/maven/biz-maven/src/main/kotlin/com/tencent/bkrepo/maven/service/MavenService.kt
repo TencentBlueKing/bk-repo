@@ -35,6 +35,7 @@ import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
 import com.tencent.bkrepo.maven.enum.HashType
 import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 
 interface MavenService {
 
@@ -83,4 +84,9 @@ interface MavenService {
      * 生成对应checksum文件
      */
     fun verifyPath(context: ArtifactContext, fullPath: String, hashType: HashType? = null)
+
+    /**
+     * 根据文件生成对应的hashtype元数据
+     */
+    fun createNodeMetaData(artifactFile: ArtifactFile): List<MetadataModel>
 }
