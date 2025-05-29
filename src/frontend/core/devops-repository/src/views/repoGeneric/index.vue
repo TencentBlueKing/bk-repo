@@ -250,7 +250,7 @@
     import { getIconName } from '@repository/store/publicEnum'
     import { convertFileSize, debounce, formatDate, routeBase } from '@repository/utils'
     import { beforeMonths, beforeYears } from '@repository/utils/date'
-    import { customizeDownloadFile } from '@repository/utils/downloadFile'
+    import { customizeDownloadFile, downloadFile } from '@repository/utils/downloadFile'
     import metadataTag from '@repository/views/repoCommon/metadataTag'
     import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
@@ -1048,10 +1048,7 @@
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 this.$ajax.head(url).then(() => {
-                    window.open(
-                        '/web' + url,
-                        '_self'
-                    )
+                    downloadFile(url)
                 }).catch(e => {
                     if (e.status === 451) {
                         this.$refs.loading.isShow = true
@@ -1110,10 +1107,7 @@
                         clearInterval(this.timer)
                         this.timer = null
                         this.$refs.loading.isShow = false
-                        window.open(
-                            '/web' + url,
-                            '_self'
-                        )
+                        downloadFile(url)
                     }).catch(e => {
                         if (e.status === 451) {
                             this.$refs.loading.isShow = true

@@ -793,6 +793,7 @@
     "batchDownload":"批量下载",
     "noFilenameErrorInfo":"抱歉，服务器获取文件名称异常，请稍后重试",
     "batchDownloadBackTypeErrorInfo":"批量下载文件失败，请稍后重试",
+    "downloadBackTypeErrorInfo":"下载文件失败，请稍后重试",
     "batchDownloadingInfo":"您批量选中的文件正在进行下载中，请稍候...",
     "errorPlanNameTips":"请输入 2-32 位字符的计划名称",
     "noBusinessTip": "无业务权限",
