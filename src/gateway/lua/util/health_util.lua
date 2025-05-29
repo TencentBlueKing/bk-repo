@@ -61,7 +61,7 @@ function _M:get_cluster_health_status(tag)
     cluster_status:set(key, cluster_cache_status, 60)
     red:set_keepalive(config.redis.max_idle_time, config.redis.pool_size)
   end
-  return cluster_cache_status ~= "down"
+  return cluster_cache_status == "up"
 end
 
 return _M
