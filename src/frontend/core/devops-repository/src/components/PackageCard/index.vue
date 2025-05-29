@@ -53,6 +53,7 @@
     import { mapGetters } from 'vuex'
     import { convertFileSize, formatDate } from '@repository/utils'
     import { getIconName } from '@repository/store/publicEnum'
+    import { downloadFile } from '@repository/utils/downloadFile'
     export default {
         name: 'packageCard',
         components: { OperationList, ScanTag, forbidTag },
@@ -89,10 +90,7 @@
             download () {
                 const url = `/generic/${this.cardData.projectId}/${this.cardData.repoName}/${this.cardData.fullPath}?download=true`
                 this.$ajax.head(url).then(() => {
-                    window.open(
-                        '/web' + url,
-                        '_self'
-                    )
+                    downloadFile(url)
                 }).catch(e => {
                     const message = e.status === 403 ? this.$t('fileDownloadError', [this.$route.params.projectId]) : this.$t('fileError')
                     this.$bkMessage({
