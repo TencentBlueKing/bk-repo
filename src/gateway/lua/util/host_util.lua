@@ -286,7 +286,7 @@ function _M:get_target_by_project()
     if bkrepo_project_id and bkrepo_project_id ~= "" then
         projectId = bkrepo_project_id
     else
-        if devops_project_id and devops_project_id ~= "" then
+        if devops_project_id and devops_project_id ~= "" and not stringUtil:startswith(ngx.var.request_uri, "/generic/ext/bkstore/atom") then
             projectId = devops_project_id
         end
         if devops_project_id_uri and devops_project_id_uri ~= "" then
