@@ -27,15 +27,12 @@
 
 package com.tencent.bkrepo.opdata.config
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-@Configuration
-@EnableConfigurationProperties(
-    OpProperties::class,
-    OpEmptyFolderStatJobProperties::class,
-    OpProjectMetricsProperties::class,
-    OpServerLogProperties::class,
-    OpArchiveOrGcProperties::class
+@ConfigurationProperties("op.archive-or-gc")
+data class OpArchiveOrGcProperties(
+    val gcEnabled: Boolean = false,
+    val archiveEnabled: Boolean = false,
+    val archiveProjects: MutableList<String> = ArrayList(),
+    val gcProjects: MutableList<String> = ArrayList(),
 )
-class OpConfiguration
