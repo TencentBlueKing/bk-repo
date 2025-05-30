@@ -76,7 +76,7 @@ class InstanceBandWidthMetrics(
         try {
             storeBandWidth()
         } catch (e: Exception) {
-            logger.warn("refresh bandwidth data failed", e)
+            logger.warn("refresh bandwidth data failed, error: ${e.message}")
         }
     }
 
