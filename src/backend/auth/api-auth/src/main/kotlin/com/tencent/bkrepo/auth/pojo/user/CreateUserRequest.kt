@@ -54,5 +54,7 @@ data class CreateUserRequest(
     @get:Schema(title = "邮箱")
     val email: String? = null,
     @get:Schema(title = "联系电话")
-    val phone: String? = null
+    val phone: String? = null,
+    @get:Schema(title = "租户ID")
+    val tenantId: String? = null
 )
