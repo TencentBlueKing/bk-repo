@@ -31,8 +31,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties("op.archive-or-gc")
 data class OpArchiveOrGcProperties(
-    val gcEnabled: Boolean = false,
-    val archiveEnabled: Boolean = false,
-    val archiveProjects: MutableList<String> = ArrayList(),
-    val gcProjects: MutableList<String> = ArrayList(),
+    var gcEnabled: Boolean = false,
+    var archiveEnabled: Boolean = false,
+    var archiveProjects: MutableList<String> = ArrayList(),
+    var gcProjects: MutableList<String> = ArrayList(),
 )
