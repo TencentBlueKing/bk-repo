@@ -54,12 +54,11 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.config.RateLimitProperties
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
-import javax.servlet.http.HttpServletRequest
-import kotlin.collections.set
 
 @Suppress("LateinitUsage", "LongParameterList", "TooManyFunctions") // 静态成员通过init构造函数初始化
 class ArtifactContextHolder(
