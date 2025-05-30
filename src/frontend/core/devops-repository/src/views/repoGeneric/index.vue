@@ -1048,7 +1048,10 @@
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 this.$ajax.head(url).then(() => {
-                    downloadFile(url)
+                    window.open(
+                        '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
+                        '_self'
+                    )
                 }).catch(e => {
                     if (e.status === 451) {
                         this.$refs.loading.isShow = true
@@ -1107,7 +1110,10 @@
                         clearInterval(this.timer)
                         this.timer = null
                         this.$refs.loading.isShow = false
-                        downloadFile(url)
+                        window.open(
+                            '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
+                            '_self'
+                        )
                     }).catch(e => {
                         if (e.status === 451) {
                             this.$refs.loading.isShow = true
