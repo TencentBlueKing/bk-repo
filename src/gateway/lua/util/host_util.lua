@@ -164,7 +164,9 @@ function _M:get_addr(service_name)
             -- 与当前可用IP列表取交集,避免ip已经失效
             local valid_ips = {}
             local ip_set = {}
-            for _, ip in ipairs(ips) do ip_set[ip] = true end
+            for _, ip in ipairs(ips) do
+                ip_set[ip] = true
+            end
 
             for _, cached_ip in ipairs(cached_ip_list) do
                 if ip_set[cached_ip] then
@@ -234,8 +236,8 @@ function _M:get_min_bandwidth_instances(service_name, ips)
     local current_time = os.time()
     for _, ip in ipairs(service_instances) do
         if bandwidths[ip] then
-            local ts_key = service_key..":ts"
-            local ts = red:hget("bw:instance:"..ip..":services", ts_key)
+            local ts_key = service_key .. ":ts"
+            local ts = red:hget("bw:instance:" .. ip .. ":services", ts_key)
             if ts and (current_time - tonumber(ts)) < 300 then
                 table.insert(active_instances, {
                     ip = ip,
@@ -253,12 +255,14 @@ function _M:get_min_bandwidth_instances(service_name, ips)
     -- 5. 返回与输入IP列表的交集
     local result = {}
     local ip_set = {}
-    for _, ip in ipairs(ips) do ip_set[ip] = true end
+    for _, ip in ipairs(ips) do
+        ip_set[ip] = true
+    end
 
     for _, instance in ipairs(active_instances) do
         if ip_set[instance.ip] then
             table.insert(result, instance.ip)
-            if #result >= math.max(2, #active_instances/4) then
+            if #result >= math.max(2, #active_instances / 4) then
                 break
             end
         end
@@ -276,24 +280,40 @@ function _M:get_target_by_project()
     local bkrepo_project_id = stringUtil:getValue(headers["x-bkrepo-project-id"])
     local devops_project_id = stringUtil:getValue(headers["x-devops-project-id"])
     local devops_project_id_uri = urlUtil:parseUrl(ngx.var.request_uri)["x-devops-project-id"]
-
+    local bkrepo_project_id_uri = urlUtil:parseUrl(ngx.var.request_uri)["x-bkrepo-project-id"]
     -- 优先判断 X-BKREPO-PROJECT-ID 的值
     local projectId
     if bkrepo_project_id and bkrepo_project_id ~= "" then
         projectId = bkrepo_project_id
     else
-        if devops_project_id and devops_project_id ~= "" then
+        if devops_project_id and devops_project_id ~= "" and not stringUtil:startswith(ngx.var.request_uri, "/generic/ext/bkstore/atom") then
             projectId = devops_project_id
         end
         if devops_project_id_uri and devops_project_id_uri ~= "" then
             projectId = devops_project_id_uri
+        end
+        if bkrepo_project_id_uri and bkrepo_project_id_uri ~= "" then
+            projectId = bkrepo_project_id_uri
         end
     end
 
     if projectId and config.project_router and config.router_domain then
         local env = config.project_router[projectId]
         if env and config.router_domain[env] then
-            return config.router_domain[env]
+            return env, config.router_domain[env]
+        end
+    end
+    return nil, nil
+end
+
+--[[随机获取路由]]
+function _M:get_target_by_random(env)
+    if config.router_domain == nil or next(config.router_domain) then
+        return nil
+    end
+    for k, v in pairs(config.router_domain) do
+        if k ~= env and v ~= nil then
+            return v
         end
     end
     return nil
