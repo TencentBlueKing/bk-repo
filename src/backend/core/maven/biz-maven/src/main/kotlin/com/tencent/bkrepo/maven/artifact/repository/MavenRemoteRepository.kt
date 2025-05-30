@@ -57,7 +57,6 @@ import com.tencent.bkrepo.maven.pojo.MavenArtifactVersionData
 import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.service.MavenMetadataService
 import com.tencent.bkrepo.maven.service.MavenService
-import com.tencent.bkrepo.maven.util.DigestUtils
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
 import com.tencent.bkrepo.maven.util.MavenStringUtils.checksumType
@@ -319,7 +318,7 @@ class MavenRemoteRepository(
         val fullPath = context.artifactInfo.getArtifactFullPath()
         if (packaging != null || fullPath.endsWith(MAVEN_METADATA_FILE_NAME)) {
             val metadata = nodeCreateRequest.nodeMetadata?.toMutableList() ?: mutableListOf()
-            createNodeMetaData(artifactFile).forEach { metadata.add(it) }
+            mavenService.createNodeMetaData(artifactFile).forEach { metadata.add(it) }
             if (packaging != null) {
                 val mavenGavc = (context.artifactInfo as MavenArtifactInfo).toMavenGAVC()
                 metadata.add(MetadataModel(key = "packaging", value = packaging))
@@ -339,24 +338,6 @@ class MavenRemoteRepository(
             return nodeCreateRequest.copy(nodeMetadata = metadata)
         }
         return nodeCreateRequest
-    }
-
-    private fun createNodeMetaData(artifactFile: ArtifactFile): List<MetadataModel> {
-        val md5 = artifactFile.getFileMd5()
-        val sha1 = artifactFile.getFileSha1()
-        val sha256 = artifactFile.getFileSha256()
-        val sha512 = artifactFile.getInputStream().use {
-            val bytes = it.readBytes()
-            DigestUtils.sha512(bytes, 0, bytes.size)
-        }
-        return mutableMapOf(
-            HashType.MD5.ext to md5,
-            HashType.SHA1.ext to sha1,
-            HashType.SHA256.ext to sha256,
-            HashType.SHA512.ext to sha512
-        ).map {
-            MetadataModel(key = it.key, value = it.value)
-        }.toMutableList()
     }
 
 

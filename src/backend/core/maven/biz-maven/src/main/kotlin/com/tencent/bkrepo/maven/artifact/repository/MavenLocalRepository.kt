@@ -78,7 +78,6 @@ import com.tencent.bkrepo.maven.pojo.MavenRepoConf
 import com.tencent.bkrepo.maven.pojo.response.MavenArtifactResponse
 import com.tencent.bkrepo.maven.service.MavenMetadataService
 import com.tencent.bkrepo.maven.service.MavenService
-import com.tencent.bkrepo.maven.util.DigestUtils
 import com.tencent.bkrepo.maven.util.MavenConfiguration.toMavenRepoConf
 import com.tencent.bkrepo.maven.util.MavenConfiguration.versionBehaviorConflict
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
@@ -126,7 +125,7 @@ class MavenLocalRepository(
         val request = super.buildNodeCreateRequest(context)
         return request.copy(
             overwrite = true,
-            nodeMetadata = createNodeMetaData(context)
+            nodeMetadata = mavenService.createNodeMetaData(context.getArtifactFile())
         )
     }
 
@@ -141,29 +140,10 @@ class MavenLocalRepository(
         return request.copy(
             fullPath = combineUrl,
             overwrite = true,
-            nodeMetadata = createNodeMetaData(context)
+            nodeMetadata = mavenService.createNodeMetaData(context.getArtifactFile())
         )
     }
 
-    private fun createNodeMetaData(context: ArtifactUploadContext): List<MetadataModel> {
-        with(context) {
-            val md5 = getArtifactMd5()
-            val sha1 = getArtifactSha1()
-            val sha256 = getArtifactSha256()
-            val sha512 = getArtifactFile().getInputStream().use {
-                val bytes = it.readBytes()
-                DigestUtils.sha512(bytes, 0, bytes.size)
-            }
-            return mutableMapOf(
-                HashType.MD5.ext to md5,
-                HashType.SHA1.ext to sha1,
-                HashType.SHA256.ext to sha256,
-                HashType.SHA512.ext to sha512
-            ).map {
-                MetadataModel(key = it.key, value = it.value)
-            }.toMutableList()
-        }
-    }
 
     /**
      * 对请求参数和仓库SnapshotVersionBehavior的设置做判断，如果行为不一致生成新的url
