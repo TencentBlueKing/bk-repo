@@ -82,7 +82,6 @@
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
     import Loading from '@repository/components/Loading/loading'
-    import { downloadFile } from '@repository/utils/downloadFile'
     export default {
         name: 'commonPackageDetail',
         components: { Loading, OperationList, InfiniteScroll, VersionDetail, commonFormDialog, iamDenyDialog },
@@ -311,7 +310,10 @@
                 if (this.repoType === 'docker') return
                 const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${encodeURIComponent(row.name)}&download=true`
                 this.$ajax.head(url).then(() => {
-                    downloadFile(url)
+                    window.open(
+                        '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
+                        '_self'
+                    )
                 }).catch(e => {
                     if (e.status === 451) {
                         this.$refs.loading.isShow = true
@@ -337,7 +339,10 @@
                         clearInterval(this.timer)
                         this.timer = null
                         this.$refs.loading.isShow = false
-                        downloadFile(url)
+                        window.open(
+                            '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
+                            '_self'
+                        )
                     }).catch(e => {
                         if (e.status === 451) {
                             this.$refs.loading.isShow = true

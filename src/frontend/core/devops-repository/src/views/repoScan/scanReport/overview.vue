@@ -64,7 +64,6 @@
     import { SCAN_TYPE_LICENSE, SCAN_TYPE_SECURITY } from '../../../store/publicEnum'
     import moment from 'moment'
     import { before, zeroTime } from '@repository/utils/date'
-    import { downloadFile } from '@repository/utils/downloadFile'
     const nowTime = moment()
     export default {
         props: {
@@ -237,8 +236,8 @@
                     position: 'bottom-right',
                     theme: 'success'
                 })
-                const url = `/analyst/api/scan/plan/export?${params.toString()}`
-                downloadFile(url)
+                const url = `/web/analyst/api/scan/plan/export?${params.toString()}&x-bkrepo-project-id=${this.scanPlan.projectId}`
+                window.open(url, '_self')
             }
         }
     }

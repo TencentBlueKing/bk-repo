@@ -123,7 +123,6 @@
     import { mapActions } from 'vuex'
     import { FILTER_RULE_IGNORE, leakLevelEnum } from '@repository/store/publicEnum'
     import CreateOrUpdateIgnoreRuleDialog from '../scanConfig/createOrUpdateIgnoreRuleDialog'
-    import { downloadFile } from '@repository/utils/downloadFile'
     export default {
         name: 'leak',
         components: { CreateOrUpdateIgnoreRuleDialog },
@@ -217,8 +216,8 @@
                     position: 'bottom-right',
                     theme: 'success'
                 })
-                const url = `/analyst/api/scan/export/artifact/leak/${this.projectId}/${this.subtaskOverview.recordId}`
-                downloadFile(url)
+                const url = `/web/analyst/api/scan/export/artifact/leak/${this.projectId}/${this.subtaskOverview.recordId}?x-bkrepo-project-id=${this.scanPlan.projectId}`
+                window.open(url, '_self')
             }
         }
     }
