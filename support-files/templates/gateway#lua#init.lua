@@ -66,8 +66,7 @@ config = {
     database = "__BK_REPO_REDIS_DATABASE__",
     pool_size = 5,                     -- 连接池的大小
     max_idle_time = 600000,            -- 保留在连接池的时间
-    backlog = 100,                     -- 连接等待队列
-    ssl = false
+    backlog = 100                     -- 连接等待队列
   },
   service_in_container = "__BK_REPO_SERVICE_IN_CONTAINER__",
   service_in_local = "__BK_REPO_SERVICE_IN_LOCAL__",

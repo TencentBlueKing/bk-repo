@@ -61,6 +61,14 @@ spec:
           resources: {{- toYaml .Values.gateway.resources | nindent 12 }}
           {{- end }}
           env:
+            - name: BK_REPO_REDIS_HOST
+              value: {{ .Values.redis.host }}
+            - name: BK_REPO_REDIS_PORT
+              value: {{ .Values.redis.port }}
+            - name: BK_REPO_REDIS_ADMIN_PASSWORD
+              value: {{ .Values.redis.password }}
+            - name: BK_REPO_REDIS_DATABASE
+              value: {{ .Values.redis.database }}
             - name: NAMESPACE
               value: {{ .Release.Namespace }}
             - name: BK_REPO_SERVICE_PREFIX
