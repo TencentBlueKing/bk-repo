@@ -13,11 +13,9 @@ metadata:
 data:
   application.yml: |-
     logging:
-      config: classpath:logback-config.xml
+      config: classpath:logback-spring.xml
       path: /data/workspace/logs
     spring:
-      sleuth:
-        enabled: true
       data:
         mongodb:
           uri: {{ include "bkrepo.mongodbUri" . }}
