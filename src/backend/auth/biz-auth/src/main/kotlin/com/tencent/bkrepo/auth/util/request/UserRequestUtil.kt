@@ -72,7 +72,7 @@ object UserRequestUtil {
         )
     }
 
-    fun convToTUser(request: CreateUserRequest, hashPwd: String): TUser {
+    fun convToTUser(request: CreateUserRequest, hashPwd: String, tenantId: String?): TUser {
         return TUser(
             userId = request.userId,
             name = request.name,
@@ -86,7 +86,8 @@ object UserRequestUtil {
             email = request.email,
             phone = request.phone,
             createdDate = LocalDateTime.now(),
-            lastModifiedDate = LocalDateTime.now()
+            lastModifiedDate = LocalDateTime.now(),
+            tenantId = tenantId
         )
     }
 

@@ -51,7 +51,7 @@ interface UserService {
 
     fun createUserToRepo(request: CreateUserToRepoRequest): Boolean
 
-    fun listUser(rids: List<String>): List<User>
+    fun listUser(rids: List<String>, tenantId: String?): List<User>
 
     fun deleteById(userId: String): Boolean
 
@@ -66,6 +66,8 @@ interface UserService {
     fun removeUserFromRoleBatch(idList: List<String>, roleId: String): Boolean
 
     fun createToken(userId: String): Token?
+
+    fun createOrUpdateUser(userId: String, name: String, tenantId: String?)
 
     fun addUserToken(userId: String, name: String, expiredAt: String?): Token?
 
