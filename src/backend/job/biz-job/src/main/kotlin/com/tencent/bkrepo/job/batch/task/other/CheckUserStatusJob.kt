@@ -33,6 +33,7 @@ class CheckUserStatusJob(
 ) : MongoDbBatchJob<CheckUserStatusJob.User, JobContext>(properties) {
 
     private val inactiveUsers = Collections.synchronizedList(mutableListOf<User>())
+    private val failedUsers = Collections.synchronizedList(mutableListOf<User>())
 
     override fun collectionNames(): List<String> = listOf(COLLECTION_NAME_USER)
 
@@ -41,9 +42,11 @@ class CheckUserStatusJob(
     override fun doStart0(jobContext: JobContext) {
         if (!checkProperties()) return
         inactiveUsers.clear()
+        failedUsers.clear()
         super.doStart0(jobContext)
         sendWechatMessage(inactiveUsers)
         inactiveUsers.clear()
+        failedUsers.clear()
     }
 
     override fun buildQuery(): Query {
@@ -51,8 +54,13 @@ class CheckUserStatusJob(
     }
 
     override fun run(row: User, collectionName: String, context: JobContext) {
-        if (checkUserStatus(row.userId))
-            inactiveUsers.add(row)
+        try {
+            if (checkUserStatus(row.userId)) {
+                inactiveUsers.add(row)
+            }
+        } catch (e: Exception) {
+            failedUsers.add(row)
+        }
     }
 
     override fun mapToEntity(row: Map<String, Any?>): User {
@@ -77,7 +85,7 @@ class CheckUserStatusJob(
         val lastModifiedDate: LocalDateTime? = null
     )
 
-    private fun checkUserStatus(userId: String): Boolean {
+    fun checkUserStatus(userId: String): Boolean {
         return try {
             // 构建请求
             val normalizedUrl = properties.checkUserUrl
@@ -105,29 +113,39 @@ class CheckUserStatusJob(
                 else -> true
             }
         } catch (e: Exception) {
-            logger.warn("Failed to check status for user: $userId", e.message)
+            logger.warn("Job[${getJobName()}]: failed to check status for user: $userId", e.message)
             throw e
         }
     }
 
     private fun sendWechatMessage(inactiveUsers: List<User>) {
-        if (inactiveUsers.isEmpty()) return
+        if (inactiveUsers.isEmpty() && failedUsers.isEmpty()) return
 
         val receivers = properties.receivers
         val body = buildString {
-            append("发现 ${inactiveUsers.size} 名离职用户：\n")
-            inactiveUsers.joinTo(this, "\n") { user ->
-                "ID: ${user.userId}, 姓名: ${user.name}, " +
-                        "邮箱: ${user.email ?: "无"}, 最后活跃: ${user.lastModifiedDate ?: "无记录"}"
+            if (inactiveUsers.isNotEmpty()) {
+                append("发现 ${inactiveUsers.size} 名离职用户：\n")
+                inactiveUsers.joinTo(this, "\n") { user ->
+                    "ID: ${user.userId}, 姓名: ${user.name}, " +
+                            "邮箱: ${user.email ?: "无"}, 最后活跃: ${user.lastModifiedDate ?: "无记录"}"
+                }
+            }
+
+            if (failedUsers.isNotEmpty()) {
+                if (isNotEmpty()) append("\n\n")
+                append("发现 ${failedUsers.size} 名用户检查失败：\n")
+                failedUsers.joinTo(this, "\n") { user ->
+                    "ID: ${user.userId}, 姓名: ${user.name}"
+                }
             }
         }
 
         try {
             val credential = WeworkBotChannelCredential(key = properties.checkBotKey)
             notifyService.send(WeworkBotMessage(TextMessage(body), receivers), credential)
-            logger.info("Sent wechat notification to ${receivers.joinToString()}")
+            logger.info("Job[${getJobName()}]: sent wechat notification to ${receivers.joinToString()}")
         } catch (e: Exception) {
-            logger.error("Failed to send wechat notification", e)
+            logger.error("Job[${getJobName()}]: failed to send wechat notification", e)
         }
     }
 
@@ -140,7 +158,7 @@ class CheckUserStatusJob(
         }
 
         if (missingFields.isNotEmpty()) {
-            logger.error("Missing required fields for CheckUserStatusJob: ${missingFields.joinToString()}")
+            logger.error("Job[${getJobName()}]: missing required fields for CheckUserStatusJob: ${missingFields.joinToString()}")
             return false
         }
         return true
@@ -156,9 +174,9 @@ class CheckUserStatusJob(
             }
         } catch (e: Exception) {
             if (retryCount > 0) {
-                logger.warn("http request error, cause: ${e.message}")
+                logger.warn("Job[${getJobName()}]: http request error, cause: ${e.message}")
             } else {
-                logger.error("http request error ", e)
+                logger.error("Job[${getJobName()}]: http request error ", e)
             }
         }
         if (retryCount > 0) {
