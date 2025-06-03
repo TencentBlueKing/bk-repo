@@ -31,6 +31,10 @@
 
 package com.tencent.bkrepo.opdata.model
 
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.opdata.config.OpArchiveOrGcProperties
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -46,6 +50,7 @@ import java.util.concurrent.atomic.AtomicLong
 @Service
 class ArchiveInfoModel @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
+    private val opArchiveOrGcProperties: OpArchiveOrGcProperties,
 ) {
 
     private var archiveInfo: Map<String, Array<Long>> = emptyMap()
@@ -61,30 +66,49 @@ class ArchiveInfoModel @Autowired constructor(
     }
 
     @Scheduled(cron = "0 0 4 * * ?")
+    @SchedulerLock(name = "ArchiveInfoStatJob", lockAtMostFor = "PT24H")
     fun refresh() {
+        if (!opArchiveOrGcProperties.archiveEnabled) return
         archiveInfo = stat()
     }
 
     private fun stat(): Map<String, Array<Long>> {
         logger.info("Start update archive metrics.")
-        // 遍历节点表
+        val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
         val criteria = Criteria.where("archived").isEqualTo(true)
             .and("deleted").isEqualTo(null)
-        val query = Query(criteria)
-        val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
-        GcInfoModel.forEachCollectionAsync {
-            val nodes = mongoTemplate.find<Node>(query, it)
-            for (node in nodes) {
-                val repo = "${node.projectId}/${node.repoName}"
-                // array info: [archiveNum,archiveSize]
-                val longs = statistics.getOrPut(repo) { arrayOf(AtomicLong(), AtomicLong()) }
-                longs[0].incrementAndGet()
-                longs[1].addAndGet(node.size)
+
+        if (opArchiveOrGcProperties.archiveProjects.isEmpty()) {
+            // 处理所有项目的归档数据
+            val query = Query(criteria)
+            // 遍历节点表
+            GcInfoModel.forEachCollectionAsync { collection ->
+                mongoTemplate.find<Node>(query, collection).forEach { node ->
+                    updateStatistics(statistics, node)
+                }
+            }
+        } else {
+            // 处理指定项目的归档数据
+            opArchiveOrGcProperties.archiveProjects.forEach { project ->
+                val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
+                val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
+                mongoTemplate.find<Node>(query, collectionName).forEach { node ->
+                    updateStatistics(statistics, node)
+                }
             }
         }
+
         statistics[SUM] = GcInfoModel.reduce(statistics)
         logger.info("Update archive metrics successful.")
         return statistics.mapValues { arrayOf(it.value[0].get(), it.value[1].get()) }
+    }
+
+    private fun updateStatistics(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, node: Node) {
+        val repo = "${node.projectId}/${node.repoName}"
+        // 数组信息: [归档文件数量, 归档文件总大小]
+        val counts = statistics.getOrPut(repo) { arrayOf(AtomicLong(), AtomicLong()) }
+        counts[0].incrementAndGet()
+        counts[1].addAndGet(node.size)
     }
 
     data class Node(
