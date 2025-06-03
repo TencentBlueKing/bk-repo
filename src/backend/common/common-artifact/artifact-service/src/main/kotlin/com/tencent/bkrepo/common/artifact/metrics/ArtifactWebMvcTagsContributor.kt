@@ -33,19 +33,18 @@ import io.micrometer.common.KeyValue
 import io.micrometer.common.KeyValues
 import io.micrometer.observation.Observation
 import jakarta.servlet.http.HttpServletRequest
+import org.springframework.http.server.observation.DefaultServerRequestObservationConvention
 import org.springframework.http.server.observation.ServerRequestObservationContext
-import org.springframework.http.server.observation.ServerRequestObservationConvention
 
 /**
  * 为请求增加额外的tag
  * */
 class ArtifactWebMvcTagsContributor(
     private val artifactMetricsProperties: ArtifactMetricsProperties
-) : ServerRequestObservationConvention {
-
-    override fun getName(): String = "http.server.requests"
+) : DefaultServerRequestObservationConvention() {
 
     override fun getLowCardinalityKeyValues(context: ServerRequestObservationContext): KeyValues {
+        val keyValues = super.getLowCardinalityKeyValues(context)
         val request = context.carrier as HttpServletRequest
 
         val artifactInfo = ArtifactContextHolder.getArtifactInfo(request)
@@ -58,12 +57,11 @@ class ArtifactWebMvcTagsContributor(
                 artifactMetricsProperties.includeRepositories
             )
         }
-        val keyValues = tags.map { KeyValue.of(it.key, it.value) }
-        return KeyValues.of(keyValues)
+        return keyValues.and(tags.map { KeyValue.of(it.key, it.value) })
     }
 
     override fun getHighCardinalityKeyValues(context: ServerRequestObservationContext): KeyValues {
-        return KeyValues.empty()
+        return super.getHighCardinalityKeyValues(context)
     }
 
     override fun supportsContext(context: Observation.Context): Boolean {
