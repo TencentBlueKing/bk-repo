@@ -1,8 +1,6 @@
 package com.tencent.bkrepo.job.batch.task.other
 
-import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.common.notify.api.NotifyService
-import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.notify.api.weworkbot.TextMessage
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
@@ -42,12 +40,14 @@ class CheckUserStatusJob(
 
     override fun doStart0(jobContext: JobContext) {
         if (!checkProperties()) return
+        inactiveUsers.clear()
         super.doStart0(jobContext)
         sendWechatMessage(inactiveUsers)
+        inactiveUsers.clear()
     }
 
     override fun buildQuery(): Query {
-        return Query.query(Criteria.where(TUser::locked.name).`is`(false))
+        return Query.query(Criteria.where(User::locked.name).`is`(false))
     }
 
     override fun run(row: User, collectionName: String, context: JobContext) {
@@ -60,6 +60,7 @@ class CheckUserStatusJob(
             userId = row[User::userId.name].toString(),
             name = row[User::name.name]?.toString(),
             email = row[User::email.name]?.toString(),
+            locked = row[User::locked.name]?.toString()?.toBoolean() ?: false,
             lastModifiedDate = TimeUtils.parseMongoDateTimeStr(row[User::lastModifiedDate.name].toString())
         )
     }
@@ -72,6 +73,7 @@ class CheckUserStatusJob(
         val userId: String,
         val name: String?,
         val email: String?,
+        val locked: Boolean = false,
         val lastModifiedDate: LocalDateTime? = null
     )
 
@@ -91,8 +93,8 @@ class CheckUserStatusJob(
                 .build()
 
             // 执行请求并解析
-            val response = HttpUtils.doRequest(okHttpClient, request, RETRY_COUNT)
-            val json = JsonUtils.objectMapper.readTree(response.content)
+            val responseContent = doRequest(okHttpClient, request, RETRY_COUNT)
+            val json = JsonUtils.objectMapper.readTree(responseContent)
 
             // 解析状态
             when {
@@ -144,8 +146,30 @@ class CheckUserStatusJob(
         return true
     }
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
+    private fun doRequest(okHttpClient: OkHttpClient, request: Request, retryCount: Int = 0): String {
+        try {
+            okHttpClient.newBuilder().build().newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw RuntimeException("check user status report request error ，code: ${response.code}")
+                }
+                return response.body!!.string()
+            }
+        } catch (e: Exception) {
+            if (retryCount > 0) {
+                logger.warn("http request error, cause: ${e.message}")
+            } else {
+                logger.error("http request error ", e)
+            }
+        }
+        if (retryCount > 0) {
+            Thread.sleep(500)
+            return doRequest(okHttpClient, request, retryCount - 1)
+        } else {
+            throw RuntimeException("http request error")
+        }
+    }
+
+    private val okHttpClient = OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS).build()
 
