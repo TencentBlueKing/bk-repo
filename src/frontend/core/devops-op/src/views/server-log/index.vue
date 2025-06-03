@@ -78,7 +78,7 @@ export default {
     }
   },
   watch: {
-    logName (val) {
+    logName(val) {
       this.text = ''
       this.startPosition = 0
       this.editor.setValue('')
@@ -96,7 +96,7 @@ export default {
         this.pause()
       }
     },
-    node () {
+    node() {
       this.text = ''
       this.editor.setValue('')
       this.startPosition = 0
@@ -107,10 +107,10 @@ export default {
       }
     }
   },
-  mounted () {
+  mounted() {
     this.init()
   },
-  created () {
+  created() {
     getLogConfig().then(res => {
       this.logOptions = res.data.logs
       this.timeLimit = res.data.refreshRateMillis / 1000
@@ -120,7 +120,7 @@ export default {
     })
   },
   methods: {
-    init () {
+    init() {
       this.editor = monaco.editor.create(document.getElementById('editor'), {
         value: this.text, // 编辑器初始显示文字
         language: 'javascript', // 语言
@@ -133,7 +133,7 @@ export default {
         lineNumbers: 'on' // 隐藏控制行号
       })
     },
-    serviceChanged () {
+    serviceChanged() {
       this.text = ''
       this.node = ''
       this.editor.setValue('')
@@ -146,7 +146,7 @@ export default {
       }
       this.nodeOptions = this.serviceNodeMap[this.service]
     },
-    showLog (val) {
+    showLog(val) {
       this.timeLimit = this.originTimeLimit / 1000
       getLog(val, this.node, this.startPosition).then(res => {
         if (this.text === '') {
@@ -158,12 +158,12 @@ export default {
         this.startPosition = res.data.fileSize
       })
     },
-    pause () {
+    pause() {
       clearInterval(this.timer)
       this.timer = null
       this.timeLimit = -1
     },
-    refresh () {
+    refresh() {
       if (this.timer !== null) {
         this.showLog(this.logName)
       } else if (this.logName !== '') {
@@ -172,14 +172,14 @@ export default {
         clearInterval(this.timer)
       }
     },
-    setNewTimer () {
+    setNewTimer() {
+      this.showLog(this.logName)
+      this.timer = setInterval(() => {
         this.showLog(this.logName)
-        this.timer = setInterval(() => {
-          this.showLog(this.logName)
-        }, this.originTimeLimit)
-      }
+      }, this.originTimeLimit)
     }
   }
+}
 </script>
 
 <style lang="scss" scoped>

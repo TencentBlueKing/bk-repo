@@ -46,6 +46,22 @@
           <svg-icon icon-class="arrow-up" />{{ scope.row.detail.asyncTaskActiveCount }}
         </template>
       </el-table-column>
+      <el-table-column
+        label="上传带宽"
+        prop="serviceUploadBandwidth"
+      />
+      <el-table-column
+        label="下载带宽"
+        prop="serviceDownloadBandwidth"
+      />
+      <el-table-column
+        label="异步上传带宽"
+        prop="serviceCosAsyncUploadBandwidth"
+      />
+      <el-table-column
+        label="总带宽"
+        prop="hostBandwidth"
+      />
       <el-table-column label="已加载插件">
         <template slot-scope="scope">
           <el-tag v-for="plugin in scope.row.detail.loadedPlugins" :key="plugin" style="margin-right:5px;">{{ plugin }}</el-tag>
@@ -74,7 +90,7 @@
   </div>
 </template>
 <script>
-import { down, INSTANCE_STATUS_DEREGISTER, INSTANCE_STATUS_RUNNING, instances, up } from '@/api/service'
+import { bandwidths, down, INSTANCE_STATUS_DEREGISTER, INSTANCE_STATUS_RUNNING, instances, up } from '@/api/service'
 
 export default {
   name: 'Instance',
@@ -95,6 +111,14 @@ export default {
     instances(this.serviceName).then(res => {
       this.instances = res.data
       this.loading = false
+      bandwidths(this.serviceName).then(bandwidths => {
+        if (this.instances.length > 0 && bandwidths.data.length > 0) {
+          this.instances = this.instances.map(instance => {
+            const match = bandwidths.data.find(bandwidth => bandwidth.host === instance.host)
+            return match ? { ...instance, ...match } : instance
+          })
+        }
+      })
     }).catch(() => {
       this.loading = false
     })
