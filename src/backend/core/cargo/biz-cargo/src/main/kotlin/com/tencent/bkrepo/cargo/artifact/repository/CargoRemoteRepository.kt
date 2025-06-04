@@ -108,8 +108,15 @@ class CargoRemoteRepository : RemoteRepository() {
     }
 
     private fun handleIndexFileRequest(context: ArtifactContext, remoteUrl: String): Any? {
+        require(context is ArtifactDownloadContext)
         val downloadUrl = remoteUrl.trim('/') + context.artifactInfo.getArtifactName()
-        return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
+        // 优先级：未过期缓存 > 网络请求 > 已过期缓存
+        val (cacheNode, isExpired) = getCacheInfo(context)
+            ?: return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
+        if (isExpired) {
+            executeRequest(context, downloadUrl) { response -> onResponse(context, response) }?.let { return it }
+        }
+        return loadArtifactResource(cacheNode, context)
     }
 
     private fun handleCrateFileRequest(context: ArtifactContext, remoteUrl: String): Any? {
