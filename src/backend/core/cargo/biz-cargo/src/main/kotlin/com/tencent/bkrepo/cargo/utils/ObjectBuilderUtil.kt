@@ -91,7 +91,6 @@ object ObjectBuilderUtil {
         cargoMetadata: CargoMetadata,
         size: Long,
         fullPath: String,
-        metadataList: List<MetadataModel>
     ): PackageVersionCreateRequest {
         return buildPackageVersionCreateRequest(
             projectId = projectId,
@@ -100,7 +99,6 @@ object ObjectBuilderUtil {
             version = cargoMetadata.vers,
             description = cargoMetadata.description,
             size = size,
-            metadataList = metadataList,
             fullPath = fullPath,
             userId = userId,
         )
@@ -115,7 +113,6 @@ object ObjectBuilderUtil {
         description: String? = null,
         size: Long,
         fullPath: String,
-        metadataList: List<MetadataModel> = emptyList()
     ): PackageVersionCreateRequest {
         return PackageVersionCreateRequest(
             projectId = projectId,
@@ -129,7 +126,6 @@ object ObjectBuilderUtil {
             manifestPath = null,
             artifactPath = fullPath,
             stageTag = null,
-            packageMetadata = metadataList,
             overwrite = true,
             createdBy = userId
         )
