@@ -10,4 +10,5 @@ class CheckUserStatusJobProperties(
     var checkUserUrl: String = "",
     var bkAccessToken : String = "",
     var receivers: Set<String> = emptySet(),
+    var apiRateLimit: Double = 30.0,
 ) : MongodbJobProperties()

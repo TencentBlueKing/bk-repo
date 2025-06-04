@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.job.batch.task.other
 
+import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.common.notify.api.NotifyService
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.notify.api.weworkbot.FileMessage
@@ -94,6 +95,7 @@ class CheckUserStatusJob(
     )
 
     fun checkUserStatus(userId: String): Boolean? {
+        rateLimiter.acquire() // 获取令牌
         return try {
             val normalizedUrl = properties.checkUserUrl
                 .trim()
@@ -251,7 +253,7 @@ class CheckUserStatusJob(
             }
         }
         if (retryCount > 0) {
-            Thread.sleep(500)
+            Thread.sleep(1000)
             return doRequest(okHttpClient, request, retryCount - 1)
         } else {
             throw RuntimeException("HTTP request failed after $RETRY_COUNT retries. URL: ${request.url}")
@@ -267,5 +269,8 @@ class CheckUserStatusJob(
         private const val DEFAULT_API_HOST = "https://qyapi.weixin.qq.com"
         private const val COLLECTION_NAME_USER = "user"
         private const val RETRY_COUNT = 3
+        private val rateLimiter = RateLimiter.create(
+            CheckUserStatusJobProperties().apiRateLimit.coerceAtLeast(1.0)
+        )
     }
 }
