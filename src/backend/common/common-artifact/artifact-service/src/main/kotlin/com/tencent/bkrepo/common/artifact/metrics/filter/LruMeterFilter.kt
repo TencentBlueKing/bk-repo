@@ -46,8 +46,11 @@ class LruMeterFilter(
             }
             if (pinnedChecker?.shouldPinned(eldest.key) == true) {
                 // 访问一次，避免下次还是淘汰该key
-                // 由于未淘汰，会导致lruSet大小最大为容量与保留的缓存数量之和
-                this[eldest.key]
+                get(eldest.key)
+                keys.firstOrNull { !pinnedChecker.shouldPinned(it) }?.let {
+                    registry.remove(it)
+                    remove(it)
+                }
                 return false
             }
             val removed = size > capacity

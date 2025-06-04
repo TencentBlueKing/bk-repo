@@ -58,20 +58,18 @@ class LruMeterFilterTest {
         val pinnedRepo = "blueking/pipeline"
         val properties = ArtifactMetricsProperties(pinnedRepositories = setOf(pinnedRepo))
         val pinnedChecker = RepositoryPinnedChecker(properties)
-        val lruMeterFilter = LruMeterFilter(meterNamePrefix = "id", registry = registry, capacity = 2, pinnedChecker)
+        val lruMeterFilter = LruMeterFilter(meterNamePrefix = "id", registry = registry, capacity = 3, pinnedChecker)
         registry.config().meterFilter(lruMeterFilter)
 
         val counter1 = Counter.builder("id1").tag(REPO_TAG, "blueking/custom").register(registry)
         Counter.builder("id2").tag(REPO_TAG, pinnedRepo).register(registry)
-
-        // 由于配置了保留策略，id2将不会被淘汰
-        lruMeterFilter.access(counter1.id)
-        Counter.builder("id3").register(registry)
+        val counter3 = Counter.builder("id3").register(registry)
         Assertions.assertEquals(3, registry.meters.size)
 
-        // 淘汰id1
+        // 由于配置了保留策略，id2将不会被淘汰，淘汰第二旧的id3
+        lruMeterFilter.access(counter1.id)
         Counter.builder("id4").register(registry)
         Assertions.assertEquals(3, registry.meters.size)
-        Assertions.assertEquals(false, registry.meters.contains(counter1))
+        Assertions.assertEquals(false, registry.meters.contains(counter3))
     }
 }
