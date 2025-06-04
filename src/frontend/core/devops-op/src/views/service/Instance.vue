@@ -49,19 +49,35 @@
       <el-table-column
         label="上传带宽"
         prop="serviceUploadBandwidth"
-      />
+      >
+        <template slot-scope="scope">
+          {{ convertBpsToMbps(scope.row.serviceUploadBandwidth) }}
+        </template>
+      </el-table-column>
       <el-table-column
         label="下载带宽"
         prop="serviceDownloadBandwidth"
-      />
+      >
+        <template slot-scope="scope">
+          {{ convertBpsToMbps(scope.row.serviceDownloadBandwidth) }}
+        </template>
+      </el-table-column>
       <el-table-column
         label="异步上传带宽"
         prop="serviceCosAsyncUploadBandwidth"
-      />
+      >
+        <template slot-scope="scope">
+          {{ convertBpsToMbps(scope.row.serviceCosAsyncUploadBandwidth) }}
+        </template>
+      </el-table-column>
       <el-table-column
         label="总带宽"
         prop="hostBandwidth"
-      />
+      >
+        <template slot-scope="scope">
+          {{ convertBpsToMbps(scope.row.hostBandwidth) }}
+        </template>
+      </el-table-column>
       <el-table-column label="已加载插件">
         <template slot-scope="scope">
           <el-tag v-for="plugin in scope.row.detail.loadedPlugins" :key="plugin" style="margin-right:5px;">{{ plugin }}</el-tag>
@@ -145,6 +161,9 @@ export default {
           message: '已取消'
         })
       })
+    },
+    convertBpsToMbps(data) {
+      return (data / 1000000) + '/Mbps'
     },
     changeInstanceStatusBtnName(instanceStatus) {
       switch (instanceStatus) {
