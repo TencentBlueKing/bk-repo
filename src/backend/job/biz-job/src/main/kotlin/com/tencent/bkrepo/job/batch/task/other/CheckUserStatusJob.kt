@@ -42,6 +42,16 @@ class CheckUserStatusJob(
     private val failedUsers = Collections.synchronizedList(mutableListOf<User>())
     private val jobName = getJobName()
 
+    private val okHttpClient = OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .writeTimeout(30, TimeUnit.SECONDS).build()
+
+    private val rateLimiter = RateLimiter.create(
+        properties.apiRateLimit.coerceAtLeast(1.0),
+        500L,  // 增加500ms预热时间
+        TimeUnit.MILLISECONDS
+    )
+
     override fun collectionNames(): List<String> = listOf(COLLECTION_NAME_USER)
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
@@ -95,8 +105,8 @@ class CheckUserStatusJob(
     )
 
     fun checkUserStatus(userId: String): Boolean? {
-        rateLimiter.acquire() // 获取令牌
         return try {
+            rateLimiter.acquire()
             val normalizedUrl = properties.checkUserUrl
                 .trim()
                 .removeSuffix("/")
@@ -260,17 +270,10 @@ class CheckUserStatusJob(
         }
     }
 
-    private val okHttpClient = OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(30, TimeUnit.SECONDS).build()
-
     companion object {
         private val logger = LoggerFactory.getLogger(CheckUserStatusJob::class.java)
         private const val DEFAULT_API_HOST = "https://qyapi.weixin.qq.com"
         private const val COLLECTION_NAME_USER = "user"
         private const val RETRY_COUNT = 3
-        private val rateLimiter = RateLimiter.create(
-            CheckUserStatusJobProperties().apiRateLimit.coerceAtLeast(1.0)
-        )
     }
 }
