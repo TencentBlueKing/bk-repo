@@ -41,7 +41,7 @@ class LruMeterFilter(
         }
 
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Id, Any>): Boolean {
-            if (capacity == -1) {
+            if (capacity == -1 || size <= capacity) {
                 return false
             }
             if (pinnedChecker?.shouldPinned(eldest.key) == true) {
@@ -53,11 +53,9 @@ class LruMeterFilter(
                 }
                 return false
             }
-            val removed = size > capacity
-            if (removed) {
-                registry.remove(eldest.key)
-            }
-            return removed
+
+            registry.remove(eldest.key)
+            return true
         }
     }
 
