@@ -39,6 +39,7 @@ import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
 import okhttp3.Request
 import okhttp3.Response
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
@@ -59,9 +60,11 @@ class HfApi(
                 .addInterceptor(RedirectInterceptor())
                 .followRedirects(false).build()
         }
+        private val logger = LoggerFactory.getLogger(HfApi::class.java)
 
         fun modelInfo(endpoint: String, token: String, repoId: String): ModelInfo {
             val url = "$endpoint/api/models/$repoId"
+            logger.info("fetch model info from $url")
             val request = Request.Builder().url(url)
                 .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 .build()
@@ -73,6 +76,7 @@ class HfApi(
 
         fun datasetInfo(endpoint: String, token: String, repoId: String): DatasetInfo {
             val url = "$endpoint/api/datasets/$repoId"
+            logger.info("fetch dataset info from $url")
             val request = Request.Builder().url(url)
                 .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 .build()
@@ -85,6 +89,7 @@ class HfApi(
         fun download(endpoint: String, token: String, artifactUri: String): Response {
             val url = "$endpoint$artifactUri"
             val method = HttpContextHolder.getRequestOrNull()?.method
+            logger.info("download file: $method $url")
             val request = Request.Builder().url(url)
                 .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 // https://github.com/square/okhttp/issues/259#issuecomment-22056176
@@ -99,6 +104,7 @@ class HfApi(
 
         fun head(endpoint: String, token: String, artifactUri: String): Response {
             val url = "$endpoint$artifactUri"
+            logger.info("HEAD request url: $url")
             val request = Request.Builder().url(url)
                 .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 .head()
