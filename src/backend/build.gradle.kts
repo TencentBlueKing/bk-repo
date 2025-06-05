@@ -56,7 +56,7 @@ allprojects {
             dependency("org.apache.commons:commons-compress:${Versions.CommonsCompress}:")
             dependency("commons-io:commons-io:${Versions.CommonsIO}")
             dependency("com.squareup.okhttp3:okhttp:${Versions.OKhttp}")
-            dependency("com.google.guava:guava:${Versions.Guava}")
+            dependency("com.google.protobuf:protobuf-java:${Versions.ProtobufJava}")
             dependency("com.google.protobuf:protobuf-java-util:${Versions.ProtobufJava}")
             dependency("com.tencent.polaris:polaris-discovery-factory:${Versions.Polaris}")
             dependency("org.apache.commons:commons-text:${Versions.CommonsText}")
@@ -88,6 +88,10 @@ allprojects {
             }
             // redis server版本过低，主动降级
             dependency("io.lettuce:lettuce-core:6.3.2.RELEASE")
+            // spring-boot-starter-test:3.4.0依赖版本2.5.1有cve漏洞，升级框架后可以移除
+            dependency("net.minidev:json-smart:2.5.2")
+            // spring-cloud-starter-config:4.2.0依赖版本5.4.1有cve漏洞，升级框架后可以移除
+            dependency("org.apache.httpcomponents.client5:httpclient5:5.4.4")
         }
     }
 
