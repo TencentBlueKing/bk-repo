@@ -43,7 +43,6 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -200,5 +199,6 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
 
     companion object {
         private val logger = LoggerFactory.getLogger(DevXAccessInterceptor::class.java)
+        private const val PROJECT_ID = "projectId"
     }
 }

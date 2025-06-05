@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.pojo.node.service
 
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.api.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.metadata.pojo.AuditableRequest
 import com.tencent.bkrepo.common.metadata.pojo.ServiceRequest
 import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel

@@ -31,6 +31,7 @@
 
 dependencies {
     api("io.micrometer:micrometer-registry-prometheus")
+    api(project(":common:common-query:query-api"))
     api(project(":common:common-artifact:artifact-api"))
     api(project(":common:common-redis"))
     api(project(":common:common-api"))

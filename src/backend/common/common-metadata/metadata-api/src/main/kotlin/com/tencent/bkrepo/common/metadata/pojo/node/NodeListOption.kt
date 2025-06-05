@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.metadata.pojo.node
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.api.constant.SYSTEM_USER
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "节点列表选项")

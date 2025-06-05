@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.message.MetadataMessageCode
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
@@ -54,7 +55,6 @@ import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
-import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataSaveRequest
 import org.slf4j.LoggerFactory
@@ -166,7 +166,7 @@ class MetadataServiceImpl(
             pipelineMetadataKey != null && !ciPermissionManager.whiteListRequest()
         if (illegal) {
             ciPermissionManager.throwOrLogError(
-                messageCode = RepositoryMessageCode.PIPELINE_METADATA_UPDATE_NOT_ALLOWED,
+                messageCode = MetadataMessageCode.PIPELINE_METADATA_UPDATE_NOT_ALLOWED,
                 pipelineMetadataKey!!
             )
         }

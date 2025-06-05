@@ -199,3 +199,4 @@ const val MD5 = "md5"
  * 下载请求参数，用于指示从远程仓库下载时是否读取缓存
  */
 const val FLAG_QUERY_CACHE = "queryCacheFlag"
+const val METADATA_PREFIX = "metadata."

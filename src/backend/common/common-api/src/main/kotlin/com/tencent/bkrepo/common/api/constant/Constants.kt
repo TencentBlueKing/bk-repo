@@ -183,3 +183,4 @@ const val HTTP_METHOD = "http_method"
  * 多租户相关
  */
 const val TENANT_ID = "X-Bk-Tenant-Id"
+const val SYSTEM_USER = "system"

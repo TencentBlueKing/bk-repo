@@ -27,6 +27,7 @@
 
 dependencies {
     implementation(project(":common:common-api"))
+    implementation(project(":common:common-metadata:metadata-api"))
     compileOnly("org.springframework.cloud:spring-cloud-openfeign-core")
     compileOnly("io.github.openfeign:feign-core")
     implementation("com.squareup.okhttp3:okhttp")

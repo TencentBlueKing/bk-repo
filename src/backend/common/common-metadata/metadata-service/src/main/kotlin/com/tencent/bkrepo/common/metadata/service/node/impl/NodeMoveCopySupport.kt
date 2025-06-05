@@ -38,14 +38,19 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveName
 import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
+import com.tencent.bkrepo.common.metadata.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
+import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
+import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeMoveCopyOperation
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils.buildExpiredDeletedNodeMetadata
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper
@@ -56,11 +61,6 @@ import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.preCheck
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeDetail
-import com.tencent.bkrepo.common.metadata.pojo.node.NodeListOption
-import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeMoveCopyRequest
-import com.tencent.bkrepo.common.metadata.util.MetadataUtils.buildExpiredDeletedNodeMetadata
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -70,7 +70,7 @@ import org.springframework.data.mongodb.core.query.where
  * 节点移动/拷贝接口实现
  */
 open class NodeMoveCopySupport(
-    private val nodeBaseService: NodeBaseService
+    private val nodeBaseService: NodeBaseService,
 ) : NodeMoveCopyOperation {
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
@@ -132,7 +132,7 @@ open class NodeMoveCopySupport(
         context: MoveCopyContext,
         node: TNode,
         dstPath: String,
-        dstName: String
+        dstName: String,
     ) {
         with(context) {
             val dstFullPath = combineFullPath(dstPath, dstName)
@@ -285,7 +285,7 @@ open class NodeMoveCopySupport(
     open fun buildSubNodesQuery(
         context: MoveCopyContext,
         srcRootNodePath: String,
-        listOption: NodeListOption
+        listOption: NodeListOption,
     ): Query {
         return NodeMoveCopyHelper.buildSubNodesQuery(context, srcRootNodePath, listOption)
     }

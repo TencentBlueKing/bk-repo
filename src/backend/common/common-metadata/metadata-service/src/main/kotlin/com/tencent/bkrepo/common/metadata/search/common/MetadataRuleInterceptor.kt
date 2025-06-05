@@ -31,11 +31,11 @@
 
 package com.tencent.bkrepo.common.metadata.search.common
 
+import com.tencent.bkrepo.common.artifact.constant.METADATA_PREFIX
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.repository.constant.METADATA_PREFIX
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
 import org.springframework.data.mongodb.core.query.Criteria

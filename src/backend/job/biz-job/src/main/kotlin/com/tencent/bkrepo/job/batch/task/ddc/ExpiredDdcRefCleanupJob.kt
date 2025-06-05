@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.api.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.metadata.pojo.node.service.NodeDeleteRequest
 import org.bson.types.Binary
 import org.springframework.boot.context.properties.EnableConfigurationProperties

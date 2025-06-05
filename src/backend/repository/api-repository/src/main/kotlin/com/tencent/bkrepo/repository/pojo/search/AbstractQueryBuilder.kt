@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
-import com.tencent.bkrepo.repository.constant.METADATA_PREFIX
+import com.tencent.bkrepo.common.artifact.constant.METADATA_PREFIX
 
 @Suppress("UNCHECKED_CAST")
 open class AbstractQueryBuilder<T : AbstractQueryBuilder<T>> {

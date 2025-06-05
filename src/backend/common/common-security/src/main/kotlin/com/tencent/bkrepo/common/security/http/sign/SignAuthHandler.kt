@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.security.http.sign
 
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
+import com.tencent.bkrepo.common.api.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
@@ -43,7 +44,6 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_BODY
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.springframework.web.servlet.HandlerMapping
 import javax.servlet.http.HttpServletRequest

@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfigur
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.api.constant.SYSTEM_USER
 import com.tencent.bkrepo.common.metadata.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.common.metadata.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.common.metadata.pojo.repo.RepoUpdateRequest

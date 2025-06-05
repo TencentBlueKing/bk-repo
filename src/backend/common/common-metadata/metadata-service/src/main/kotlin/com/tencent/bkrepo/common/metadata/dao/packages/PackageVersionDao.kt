@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.dao.packages
 
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
@@ -60,8 +61,10 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
         return this.findOne(PackageQueryHelper.versionQuery(packageId, name = name))
     }
 
-    fun deleteByPackageId(packageId: String, operator: String, recycle: Boolean, deleteTime: LocalDateTime,) {
-        this.updateMulti(
+    fun deleteByPackageId(
+        packageId: String, operator: String, recycle: Boolean, deleteTime: LocalDateTime
+    ): UpdateResult {
+        return this.updateMulti(
             PackageQueryHelper.versionQuery(packageId),
             PackageQueryHelper.packageVersionDeleteUpdate(operator, recycle, deleteTime)
         )

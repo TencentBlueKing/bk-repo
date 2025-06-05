@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.artifact.event.repo.RepoDeletedEvent
 import com.tencent.bkrepo.common.artifact.event.repo.RepoUpdatedEvent
 import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.api.constant.SYSTEM_USER
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Component

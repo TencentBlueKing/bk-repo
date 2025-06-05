@@ -29,8 +29,21 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":auth:api-auth"))
-    api(project(":common:common-service:service-servlet"))
-    api(project(":common:common-api"))
+package com.tencent.bkrepo.common.metadata.message
+
+import com.tencent.bkrepo.common.api.message.MessageCode
+
+/**
+ * metadata相关错误码
+ */
+enum class MetadataMessageCode(private val key: String) : MessageCode {
+    STORAGE_CREDENTIALS_IN_USE("repository.storage.credentials.inuse"),
+    STORAGE_CREDENTIALS_NOT_FOUND("repository.storage.credentials.not.found"),
+    METADATA_KEY_RESERVED("repository.metadata.key.reserved"),
+    PIPELINE_METADATA_UPDATE_NOT_ALLOWED("repository.pipleine.metadata.update.not-allowed"),
+    ;
+
+    override fun getBusinessCode() = ordinal + 1
+    override fun getKey() = key
+    override fun getModuleCode() = 28
 }

@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsProperties
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.api.constant.SYSTEM_USER
 import org.springframework.http.HttpMethod
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping

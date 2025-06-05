@@ -36,7 +36,7 @@ import java.time.LocalDateTime
 @Schema(title = "版本删除结果")
 data class VersionDeleteResult(
     @get:Schema(title = "删除版本数量")
-    val deletedNumber: Long,
+    val deletedNumber: Long = 0,
     @get:Schema(title = "删除时间")
-    val deletedTime: LocalDateTime
+    val deletedTime: LocalDateTime? = null
 )

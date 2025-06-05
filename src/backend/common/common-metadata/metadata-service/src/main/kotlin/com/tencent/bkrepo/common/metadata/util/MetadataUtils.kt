@@ -43,9 +43,9 @@ import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_PROJECT
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
 import com.tencent.bkrepo.common.artifact.constant.ROOT_DELETED_NODE
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
+import com.tencent.bkrepo.common.metadata.message.MetadataMessageCode
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.common.metadata.pojo.metadata.ForbidType
 import com.tencent.bkrepo.common.metadata.pojo.metadata.MetadataModel
 
@@ -193,7 +193,7 @@ object MetadataUtils {
 
     private fun checkReservedKey(key: String, system: Boolean = false) {
         if (key in RESERVED_KEY && !system) {
-            throw ErrorCodeException(RepositoryMessageCode.METADATA_KEY_RESERVED, key)
+            throw ErrorCodeException(MetadataMessageCode.METADATA_KEY_RESERVED, key)
         }
     }
 }

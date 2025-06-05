@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.archive.request
 
 import com.tencent.bkrepo.archive.CompressStatus
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.api.constant.SYSTEM_USER
 
 data class UpdateCompressFileStatusRequest(
     val sha256: String,

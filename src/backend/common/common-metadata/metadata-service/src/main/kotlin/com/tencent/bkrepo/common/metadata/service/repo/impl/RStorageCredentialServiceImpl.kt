@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.dao.repo.RRepositoryDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RStorageCredentialsDao
+import com.tencent.bkrepo.common.metadata.message.MetadataMessageCode
 import com.tencent.bkrepo.common.metadata.service.repo.RStorageCredentialService
 import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper
 import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion.buildStorageCredential
@@ -45,7 +46,6 @@ import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion
 import com.tencent.bkrepo.common.metadata.util.StorageCredentialHelper.Companion.convert
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
-import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.common.metadata.pojo.credendials.StorageCredentialsCreateRequest
 import com.tencent.bkrepo.common.metadata.pojo.credendials.StorageCredentialsUpdateRequest
 import org.springframework.context.annotation.Conditional
@@ -78,7 +78,7 @@ class RStorageCredentialServiceImpl(
     override suspend fun update(userId: String, request: StorageCredentialsUpdateRequest): StorageCredentials {
         requireNotNull(request.key)
         val tStorageCredentials = storageCredentialsDao.findById(request.key!!)
-            ?: throw NotFoundException(RepositoryMessageCode.STORAGE_CREDENTIALS_NOT_FOUND)
+            ?: throw NotFoundException(MetadataMessageCode.STORAGE_CREDENTIALS_NOT_FOUND)
         StorageCredentialHelper.updateCredentials(tStorageCredentials, request)
         val updatedCredentials = storageCredentialsDao.save(tStorageCredentials)
         return convert(updatedCredentials)
@@ -105,11 +105,11 @@ class RStorageCredentialServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override suspend fun delete(key: String) {
         if (!storageCredentialsDao.existsById(key)) {
-            throw NotFoundException(RepositoryMessageCode.STORAGE_CREDENTIALS_NOT_FOUND)
+            throw NotFoundException(MetadataMessageCode.STORAGE_CREDENTIALS_NOT_FOUND)
         }
         val credentialsCount = storageCredentialsDao.count()
         if (repositoryDao.existsByCredentialsKey(key) || credentialsCount <= 1) {
-            throw BadRequestException(RepositoryMessageCode.STORAGE_CREDENTIALS_IN_USE)
+            throw BadRequestException(MetadataMessageCode.STORAGE_CREDENTIALS_IN_USE)
         }
         // 可能判断完凭证未被使用后，删除凭证前，又有新增的仓库使用凭证，出现这种情况后需要修改新增仓库的凭证
         return storageCredentialsDao.deleteById(key)

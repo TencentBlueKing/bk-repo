@@ -40,7 +40,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequ
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType.PING
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType.REPORT
 import com.tencent.bkrepo.replication.service.ClusterNodeService
-import com.tencent.bkrepo.common.metadata.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.api.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner

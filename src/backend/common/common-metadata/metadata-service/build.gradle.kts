@@ -42,6 +42,7 @@ dependencies {
     api(project(":archive:api-archive"))
     api(project(":router-controller:api-router-controller"))
     api(project(":driver:api-driver"))
+    api(project(":repository:api-repository"))
 
     compileOnly(project(":common:common-mongo-reactive"))
     compileOnly(project(":common:common-mongo"))
