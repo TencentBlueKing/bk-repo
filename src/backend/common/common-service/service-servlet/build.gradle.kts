@@ -36,6 +36,7 @@ dependencies {
     api("com.google.guava:guava")
 
     api("cn.hutool:hutool-crypto:${Versions.HutoolCrypto}")
+    api("commons-codec:commons-codec")
     compileOnly(project(":common:common-mongo"))
 
     val assemblyMode = project.findPropertyOrNull("devops.assemblyMode")
