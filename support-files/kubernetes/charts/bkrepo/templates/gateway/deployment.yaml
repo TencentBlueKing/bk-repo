@@ -62,13 +62,13 @@ spec:
           {{- end }}
           env:
             - name: BK_REPO_REDIS_HOST
-              value: {{ .Values.redis.host }}
+              value: {{ .Values.redis.host | default "" | quote }}
             - name: BK_REPO_REDIS_PORT
-              value: {{ .Values.redis.port }}
+              value: {{ .Values.redis.port | default "6379" | quote }}
             - name: BK_REPO_REDIS_ADMIN_PASSWORD
-              value: {{ .Values.redis.password }}
+              value: {{ .Values.redis.password | default "" | quote }}
             - name: BK_REPO_REDIS_DATABASE
-              value: {{ .Values.redis.database }}
+              value: {{ .Values.redis.database | default "0" | quote }}
             - name: NAMESPACE
               value: {{ .Release.Namespace }}
             - name: BK_REPO_SERVICE_PREFIX
