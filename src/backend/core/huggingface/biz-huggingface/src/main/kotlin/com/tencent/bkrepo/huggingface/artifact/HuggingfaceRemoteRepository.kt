@@ -90,31 +90,20 @@ class HuggingfaceRemoteRepository : RemoteRepository() {
         headers[COMMIT_ID_HEADER.lowercase()]?.let { response.setHeader(COMMIT_ID_HEADER, it) }
     }
 
-
     override fun query(context: ArtifactQueryContext): Any? {
         val configuration = context.getRemoteConfiguration()
         val artifactInfo = context.artifactInfo as HuggingfaceArtifactInfo
-        return when (artifactInfo.type) {
+        val packageKey: String
+        val version: String
+        val info = when (artifactInfo.type) {
             REPO_TYPE_MODEL -> {
                 val modelInfo = HfApi.modelInfo(
                     endpoint = configuration.url,
                     token = configuration.credentials.password.orEmpty(),
                     repoId = artifactInfo.getRepoId()
                 )
-                val packageVersionCreateRequest = PackageVersionCreateRequest(
-                    projectId = context.projectId,
-                    repoName = context.repoName,
-                    packageName = artifactInfo.getRepoId(),
-                    packageKey = PackageKeys.ofHuggingface("model", artifactInfo.getRepoId()),
-                    packageType = PackageType.HUGGINGFACE,
-                    packageDescription = null,
-                    versionName = modelInfo.sha,
-                    size = 0,
-                    artifactPath = "${artifactInfo.getRepoId()}/resolve/${modelInfo.sha}/",
-                    createdBy = SecurityUtils.getUserId(),
-                    overwrite = true
-                )
-                packageService.createPackageVersion(packageVersionCreateRequest)
+                packageKey = PackageKeys.ofHuggingface(REPO_TYPE_MODEL, artifactInfo.getRepoId())
+                version = modelInfo.sha
                 modelInfo
             }
             REPO_TYPE_DATASET -> {
@@ -123,23 +112,30 @@ class HuggingfaceRemoteRepository : RemoteRepository() {
                     token = configuration.credentials.password.orEmpty(),
                     repoId = artifactInfo.getRepoId()
                 )
-                val packageVersionCreateRequest = PackageVersionCreateRequest(
-                    projectId = context.projectId,
-                    repoName = context.repoName,
-                    packageName = artifactInfo.getRepoId(),
-                    packageKey = PackageKeys.ofHuggingface("model", artifactInfo.getRepoId()),
-                    packageType = PackageType.HUGGINGFACE,
-                    packageDescription = null,
-                    versionName = datasetInfo.sha,
-                    size = 0,
-                    artifactPath = "${artifactInfo.getRepoId()}/resolve/${datasetInfo.sha}/",
-                    createdBy = SecurityUtils.getUserId(),
-                    overwrite = true
-                )
-                packageService.createPackageVersion(packageVersionCreateRequest)
+                packageKey = PackageKeys.ofHuggingface(REPO_TYPE_DATASET, artifactInfo.getRepoId())
+                version = datasetInfo.sha
+                datasetInfo
             }
-            else -> ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "type:${artifactInfo.type}")
+            else -> throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "type:${artifactInfo.type}")
         }
+
+        packageService.findVersionByName(context.projectId, context.repoName, packageKey, version) ?: run {
+            val packageVersionCreateRequest = PackageVersionCreateRequest(
+                projectId = context.projectId,
+                repoName = context.repoName,
+                packageName = artifactInfo.getRepoId(),
+                packageKey = packageKey,
+                packageType = PackageType.HUGGINGFACE,
+                packageDescription = null,
+                versionName = version,
+                size = 0,
+                artifactPath = "${artifactInfo.getRepoId()}/resolve/$version/",
+                createdBy = SecurityUtils.getUserId(),
+                overwrite = true
+            )
+            packageService.createPackageVersion(packageVersionCreateRequest)
+        }
+        return info
     }
 
 }
