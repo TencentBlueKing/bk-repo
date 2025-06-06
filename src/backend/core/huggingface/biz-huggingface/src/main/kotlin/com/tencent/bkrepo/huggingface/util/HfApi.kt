@@ -62,8 +62,8 @@ class HfApi(
         }
         private val logger = LoggerFactory.getLogger(HfApi::class.java)
 
-        fun modelInfo(endpoint: String, token: String, repoId: String): ModelInfo {
-            val url = "$endpoint/api/models/$repoId"
+        fun modelInfo(endpoint: String, token: String, repoId: String, revision: String?): ModelInfo {
+            val url = "$endpoint/api/models/$repoId" + revision?.let { "/revision/$it" }.orEmpty()
             logger.info("fetch model info from $url")
             val request = Request.Builder().url(url)
                 .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
@@ -74,8 +74,8 @@ class HfApi(
             }
         }
 
-        fun datasetInfo(endpoint: String, token: String, repoId: String): DatasetInfo {
-            val url = "$endpoint/api/datasets/$repoId"
+        fun datasetInfo(endpoint: String, token: String, repoId: String, revision: String?): DatasetInfo {
+            val url = "$endpoint/api/datasets/$repoId" + revision?.let { "/revision/$it" }.orEmpty()
             logger.info("fetch dataset info from $url")
             val request = Request.Builder().url(url)
                 .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }

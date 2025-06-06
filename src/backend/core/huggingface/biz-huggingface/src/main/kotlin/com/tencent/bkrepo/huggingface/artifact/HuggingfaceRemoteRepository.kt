@@ -100,7 +100,8 @@ class HuggingfaceRemoteRepository : RemoteRepository() {
                 val modelInfo = HfApi.modelInfo(
                     endpoint = configuration.url,
                     token = configuration.credentials.password.orEmpty(),
-                    repoId = artifactInfo.getRepoId()
+                    repoId = artifactInfo.getRepoId(),
+                    revision = artifactInfo.getRevision(),
                 )
                 packageKey = PackageKeys.ofHuggingface(REPO_TYPE_MODEL, artifactInfo.getRepoId())
                 version = modelInfo.sha
@@ -110,7 +111,8 @@ class HuggingfaceRemoteRepository : RemoteRepository() {
                 val datasetInfo = HfApi.datasetInfo(
                     endpoint = configuration.url,
                     token = configuration.credentials.password.orEmpty(),
-                    repoId = artifactInfo.getRepoId()
+                    repoId = artifactInfo.getRepoId(),
+                    revision = artifactInfo.getRevision(),
                 )
                 packageKey = PackageKeys.ofHuggingface(REPO_TYPE_DATASET, artifactInfo.getRepoId())
                 version = datasetInfo.sha
