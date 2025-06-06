@@ -43,10 +43,8 @@ import com.tencent.bk.sdk.iam.service.impl.TokenServiceImpl
 import com.tencent.bk.sdk.iam.service.v2.impl.V2ManagerServiceImpl
 import com.tencent.bk.sdk.iam.service.v2.impl.V2PolicyServiceImpl
 import com.tencent.bkrepo.auth.condition.MultipleAuthCondition
-import com.tencent.bkrepo.auth.service.bkiamv3.IamEsbClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
@@ -98,10 +96,7 @@ class BkiamConfiguration {
         @Autowired defaultHttpClientServiceImpl: DefaultHttpClientServiceImpl,
         @Autowired iamConfiguration: IamConfiguration
     ) = GrantServiceImpl(defaultHttpClientServiceImpl, iamConfiguration)
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun iamEsbService() = IamEsbClient()
+    
 
     // 接入V3(RBAC)
     /**
