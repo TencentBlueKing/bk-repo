@@ -166,7 +166,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
                 if (data.isEmpty()) {
                     break
                 }
-                if (concurrentLevel >= JobConcurrentLevel.ROW) {
+                if (concurrentLevel == JobConcurrentLevel.ROW) {
                     runAsync(data) { runRow(it, collectionName, context) }
                 } else {
                     data.forEach { runRow(it, collectionName, context) }
