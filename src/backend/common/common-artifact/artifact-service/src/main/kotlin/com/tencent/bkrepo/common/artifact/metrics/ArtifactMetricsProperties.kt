@@ -81,4 +81,9 @@ data class ArtifactMetricsProperties(
      * 允许上报未知项目信息
      * */
     var allowUnknownProjectExport: Boolean = false,
+
+    /**
+     * 配置在在统计流量时固定在LruMeterFilter中不被淘汰的仓库
+     */
+    var pinnedRepositories: Set<String> = emptySet(),
 )
