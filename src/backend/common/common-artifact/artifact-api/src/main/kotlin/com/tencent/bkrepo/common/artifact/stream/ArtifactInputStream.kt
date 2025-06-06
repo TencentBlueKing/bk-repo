@@ -40,7 +40,7 @@ import java.io.InputStream
  */
 open class ArtifactInputStream(
     delegate: InputStream,
-    val range: Range
+    val range: Range,
 ) : DelegateInputStream(delegate) {
 
     private val listenerList = mutableListOf<StreamReadListener>()
@@ -84,8 +84,8 @@ open class ArtifactInputStream(
     /**
      * 添加流读取监听器[listener]
      */
-    fun addListener(listener: StreamReadListener) {
-        if (range.isPartialContent()) {
+    fun addListener(listener: StreamReadListener, allowPartial: Boolean = false) {
+        if (range.isPartialContent() && !allowPartial) {
             listener.close()
             throw IllegalArgumentException("ArtifactInputStream is partial content, maybe cause data inconsistent")
         }
