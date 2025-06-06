@@ -57,6 +57,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import java.time.format.DateTimeFormatter
 
 object ObjectBuilderUtil {
 
@@ -201,10 +202,10 @@ object ObjectBuilderUtil {
                 projectId = projectId,
                 repoName = repoName,
                 downloadCount = packageVersion.downloads,
-                createdBy = createdBy,
-                createdDate = createdDate,
-                lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate
+                createdBy = packageVersion.createdBy,
+                createdDate = packageVersion.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedBy = packageVersion.lastModifiedBy,
+                lastModifiedDate = packageVersion.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
             )
         }
     }
