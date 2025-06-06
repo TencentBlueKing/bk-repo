@@ -3,6 +3,7 @@
   - [通用接口协议](common/common.md)
   - [自定义搜索协议](common/search.md)
   - [事件类型](common/event.md)
+  - [错误码](common/error-code.md)
 - **项目/仓库**
   - [项目接口](repo/project.md)
   - [仓库接口](repo/repository.md)
