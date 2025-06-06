@@ -127,6 +127,7 @@ class UserRepositoryController(
         @PathVariable
         repoName: String,
     ): Response<Boolean> {
+        permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
         return ResponseBuilder.success(repositoryService.checkExist(projectId, repoName))
     }
 
