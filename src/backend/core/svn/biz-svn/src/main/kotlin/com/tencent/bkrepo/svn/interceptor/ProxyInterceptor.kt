@@ -35,10 +35,10 @@ import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil
 import com.tencent.bkrepo.common.service.util.proxy.ProxyCallHandler
 import com.tencent.bkrepo.svn.utils.SvnProxyHelper.getRepoId
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.web.servlet.HandlerInterceptor
 import java.util.concurrent.TimeUnit
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 class ProxyInterceptor(private val proxyHandler: ProxyCallHandler) : HandlerInterceptor {
     private val client = HttpClientBuilderFactory.create()

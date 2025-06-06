@@ -28,7 +28,7 @@ import org.mockito.Mockito.isNull
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import kotlin.random.Random
 
 @DisplayName("存储对账Job测试")
@@ -39,31 +39,31 @@ class StorageReconcileJobTest @Autowired constructor(
     private val storageProperties: StorageProperties,
 ) : JobBaseTest() {
 
-    @MockBean
+    @MockitoBean
     private lateinit var routerControllerClient: RouterControllerClient
 
-    @MockBean
+    @MockitoBean
     lateinit var servicePermissionClient: ServicePermissionClient
 
-    @MockBean
+    @MockitoBean
     lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
-    @MockBean
+    @MockitoBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
-    @MockBean
+    @MockitoBean
     lateinit var messageSupplier: MessageSupplier
 
-    @MockBean
+    @MockitoBean
     lateinit var archiveClient: ArchiveClient
 
-    @MockBean
+    @MockitoBean
     lateinit var storageCredentialService: StorageCredentialService
 
-    @MockBean
+    @MockitoBean
     lateinit var fileReferenceService: FileReferenceService
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
     @Autowired
