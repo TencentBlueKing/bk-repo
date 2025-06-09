@@ -1,15 +1,19 @@
 package com.tencent.bkrepo.job.batch.task.other
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.common.notify.api.NotifyService
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.notify.api.weworkbot.FileMessage
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotMessage
-import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
+import com.tencent.bkrepo.job.batch.context.CheckUserJobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.CheckUserStatusJobProperties
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -24,7 +28,6 @@ import java.io.File
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Collections
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.KClass
 
@@ -35,11 +38,10 @@ import kotlin.reflect.KClass
 @EnableConfigurationProperties(CheckUserStatusJobProperties::class)
 class CheckUserStatusJob(
     private val properties: CheckUserStatusJobProperties,
-    private val notifyService: NotifyService
-) : MongoDbBatchJob<CheckUserStatusJob.User, JobContext>(properties) {
+    private val notifyService: NotifyService,
+    private val storageManager: StorageManager,
+) : MongoDbBatchJob<CheckUserStatusJob.User, CheckUserJobContext>(properties) {
 
-    private val inactiveUsers = Collections.synchronizedList(mutableListOf<User>())
-    private val failedUsers = Collections.synchronizedList(mutableListOf<User>())
     private val jobName = getJobName()
 
     private val okHttpClient = OkHttpClient.Builder().connectTimeout(30, TimeUnit.SECONDS)
@@ -47,7 +49,7 @@ class CheckUserStatusJob(
         .writeTimeout(30, TimeUnit.SECONDS).build()
 
     private val rateLimiter = RateLimiter.create(
-        properties.apiRateLimit.coerceAtLeast(1.0),
+        properties.apiRateLimit,
         500L,  // 增加500ms预热时间
         TimeUnit.MILLISECONDS
     )
@@ -56,29 +58,25 @@ class CheckUserStatusJob(
 
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
-    override fun doStart0(jobContext: JobContext) {
+    override fun doStart0(jobContext: CheckUserJobContext) {
         if (!checkProperties()) return
-        inactiveUsers.clear()
-        failedUsers.clear()
+        jobContext.reset()
         super.doStart0(jobContext)
-        sendWechatMessage(inactiveUsers)
-        inactiveUsers.clear()
-        failedUsers.clear()
+        sendWechatMessage(jobContext)
+        jobContext.reset()
     }
 
     override fun buildQuery(): Query {
         return Query.query(Criteria.where(User::locked.name).`is`(false))
     }
 
-    override fun run(row: User, collectionName: String, context: JobContext) {
+    override fun run(row: User, collectionName: String, context: CheckUserJobContext) {
         try {
-            when (checkUserStatus(row.userId)) {
-                true -> inactiveUsers.add(row)
-                false -> {}
-                null -> failedUsers.add(row)
+            if (checkUserStatus(row.userId)) {
+                context.inactiveUsers.add(row)
             }
         } catch (e: Exception) {
-            failedUsers.add(row)
+            context.failedUsers.add(row)
         }
     }
 
@@ -94,7 +92,7 @@ class CheckUserStatusJob(
 
     override fun entityClass(): KClass<User> = User::class
 
-    override fun createJobContext(): JobContext = JobContext()
+    override fun createJobContext(): CheckUserJobContext = CheckUserJobContext()
 
     data class User(
         val userId: String,
@@ -104,7 +102,7 @@ class CheckUserStatusJob(
         val lastModifiedDate: LocalDateTime? = null
     )
 
-    fun checkUserStatus(userId: String): Boolean? {
+    fun checkUserStatus(userId: String): Boolean {
         return try {
             rateLimiter.acquire()
             val normalizedUrl = properties.checkUserUrl
@@ -121,23 +119,13 @@ class CheckUserStatusJob(
                 .get()
                 .build()
 
-
             val responseContent = doRequest(okHttpClient, request, RETRY_COUNT)
-            val json = JsonUtils.objectMapper.readTree(responseContent)
+            val response = JsonUtils.objectMapper.readValue(responseContent, CheckResponse::class.java)
 
-            // 解析状态
             when {
-                json.get("code").asText() != "00" -> {
-                    throw RuntimeException(json.get("message").asText())
-                }
-
-                json.get("data").isEmpty -> {
-                    null
-                }
-
-                else -> {
-                    json.get("data").get("StatusId").asText() !in setOf("1", "3")
-                }
+                response.code != RESPONSE_CODE_SUCCESS -> throw RuntimeException(response.message ?: "Unknown error")
+                response.data?.statusId == null -> throw RuntimeException("User[$userId] statusId information missing")
+                else -> response.data.statusId !in setOf(STATUS_ID_ON_JOB, STATUS_ID_ON_TRIAL)
             }
         } catch (e: Exception) {
             logger.warn("Job[$jobName]: Failed to check status for user: $userId. Error: ${e.message}")
@@ -145,7 +133,9 @@ class CheckUserStatusJob(
         }
     }
 
-    private fun sendWechatMessage(inactiveUsers: List<User>) {
+    private fun sendWechatMessage(jobContext: CheckUserJobContext) {
+        val inactiveUsers = jobContext.inactiveUsers
+        val failedUsers = jobContext.failedUsers
         if (inactiveUsers.isEmpty() && failedUsers.isEmpty()) {
             logger.info("Job[$jobName]: No inactive or failed users found. Skipping notification.")
             return
@@ -270,10 +260,38 @@ class CheckUserStatusJob(
         }
     }
 
+    private fun buildNodeCreateRequest(file: ArtifactFile): NodeCreateRequest {
+        return NodeCreateRequest(
+            projectId = "blueking",
+            repoName = "generic-local",
+            folder = false,
+            fullPath = "/test/${file.getFile()?.name}",
+            size = file.getSize(),
+            sha256 = file.getFileSha256(),
+            md5 = file.getFileMd5(),
+        )
+    }
+
+    private data class CheckResponse(
+        val code: String,
+        val message: String?,
+        val data: Data? // 嵌套对象
+    ) {
+        data class Data(
+            @JsonProperty("StatusId") // 这里对应data对象内的字段
+            val statusId: String?
+        )
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(CheckUserStatusJob::class.java)
         private const val DEFAULT_API_HOST = "https://qyapi.weixin.qq.com"
         private const val COLLECTION_NAME_USER = "user"
         private const val RETRY_COUNT = 3
+        private const val RESPONSE_CODE_SUCCESS = "00"  // 接口调用成功
+
+        // 用户状态ID
+        private const val STATUS_ID_ON_JOB = "1"    // 在职状态
+        private const val STATUS_ID_ON_TRIAL = "3"  // 试用状态
     }
 }
