@@ -15,14 +15,6 @@ class CheckUserJobContext : JobContext() {
     val failedUsers = Collections.synchronizedList(mutableListOf<CheckUserStatusJob.User>())
 
     /**
-     * 重置上下文状态
-     */
-    fun reset() {
-        inactiveUsers.clear()
-        failedUsers.clear()
-    }
-
-    /**
      * 获取上下文状态摘要
      */
     override fun toString(): String {

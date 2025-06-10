@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.common.notify.api.NotifyService
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.notify.api.weworkbot.FileMessage
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotMessage
@@ -13,7 +11,6 @@ import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
 import com.tencent.bkrepo.job.batch.context.CheckUserJobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.CheckUserStatusJobProperties
-import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -39,7 +36,6 @@ import kotlin.reflect.KClass
 class CheckUserStatusJob(
     private val properties: CheckUserStatusJobProperties,
     private val notifyService: NotifyService,
-    private val storageManager: StorageManager,
 ) : MongoDbBatchJob<CheckUserStatusJob.User, CheckUserJobContext>(properties) {
 
     private val jobName = getJobName()
@@ -60,10 +56,8 @@ class CheckUserStatusJob(
 
     override fun doStart0(jobContext: CheckUserJobContext) {
         if (!checkProperties()) return
-        jobContext.reset()
         super.doStart0(jobContext)
         sendWechatMessage(jobContext)
-        jobContext.reset()
     }
 
     override fun buildQuery(): Query {
@@ -258,18 +252,6 @@ class CheckUserStatusJob(
         } else {
             throw RuntimeException("HTTP request failed after $RETRY_COUNT retries. URL: ${request.url}")
         }
-    }
-
-    private fun buildNodeCreateRequest(file: ArtifactFile): NodeCreateRequest {
-        return NodeCreateRequest(
-            projectId = "blueking",
-            repoName = "generic-local",
-            folder = false,
-            fullPath = "/test/${file.getFile()?.name}",
-            size = file.getSize(),
-            sha256 = file.getFileSha256(),
-            md5 = file.getFileMd5(),
-        )
     }
 
     private data class CheckResponse(
