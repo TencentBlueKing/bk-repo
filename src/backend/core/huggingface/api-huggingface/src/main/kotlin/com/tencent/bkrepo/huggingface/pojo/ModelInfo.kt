@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.huggingface.pojo
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
 
@@ -54,7 +55,7 @@ data class ModelInfo(
     val securityRepoStatus: Map<String, Any>?
 )
 
-
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class RepoSibling(
     val rfilename: String,
     val size: Long?,

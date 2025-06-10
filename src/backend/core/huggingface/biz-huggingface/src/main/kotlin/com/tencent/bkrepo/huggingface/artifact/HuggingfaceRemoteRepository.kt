@@ -75,10 +75,12 @@ class HuggingfaceRemoteRepository : RemoteRepository() {
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         return getCacheArtifactResource(context) ?: run {
             val configuration = context.getRemoteConfiguration()
+            val artifactInfo = context.artifactInfo as HuggingfaceArtifactInfo
             val response = HfApi.download(
                 endpoint = configuration.url,
                 token = configuration.credentials.password.orEmpty(),
-                artifactUri = context.artifactInfo.getArtifactFullPath()
+                artifactUri = context.artifactInfo.getArtifactFullPath(),
+                type = artifactInfo.type,
             )
             return onDownloadResponse(context, response, true, false)
         }

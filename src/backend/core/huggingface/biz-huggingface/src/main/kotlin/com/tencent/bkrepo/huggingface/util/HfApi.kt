@@ -86,8 +86,8 @@ class HfApi(
             }
         }
 
-        fun download(endpoint: String, token: String, artifactUri: String): Response {
-            val url = "$endpoint$artifactUri"
+        fun download(endpoint: String, token: String, artifactUri: String, type: String?): Response {
+            val url = "${endpoint.trim('/')}${type?.let { "/" + it + "s" }.orEmpty()}$artifactUri"
             val method = HttpContextHolder.getRequestOrNull()?.method
             logger.info("download file: $method $url")
             val request = Request.Builder().url(url)
