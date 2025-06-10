@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.artifact.metrics.filter.LruMeterFilter
+import com.tencent.bkrepo.common.artifact.metrics.filter.RepositoryPinnedChecker
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import io.micrometer.core.instrument.Counter
@@ -63,7 +65,9 @@ class ArtifactMetrics(
 
     override fun bindTo(meterRegistry: MeterRegistry) {
         Companion.meterRegistry = meterRegistry
-        lruMeterFilter = LruMeterFilter(METER_LIMIT_PREFIX, Companion.meterRegistry, properties.maxMeters)
+        lruMeterFilter = LruMeterFilter(
+            METER_LIMIT_PREFIX, Companion.meterRegistry, properties.maxMeters, RepositoryPinnedChecker(properties)
+        )
         Companion.meterRegistry.config().meterFilter(lruMeterFilter)
         Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadingCount) { it.get().toDouble() }
             .description(ARTIFACT_UPLOADING_COUNT_DESC)

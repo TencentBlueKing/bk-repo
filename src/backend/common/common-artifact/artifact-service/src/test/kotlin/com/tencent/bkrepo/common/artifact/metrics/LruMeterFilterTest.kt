@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.artifact.metrics.DefaultArtifactTagProvider.Companion.REPO_TAG
+import com.tencent.bkrepo.common.artifact.metrics.filter.LruMeterFilter
+import com.tencent.bkrepo.common.artifact.metrics.filter.RepositoryPinnedChecker
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.Assertions
@@ -47,5 +50,26 @@ class LruMeterFilterTest {
 
         Assertions.assertEquals(2, registry.meters.size)
         Assertions.assertEquals(false, registry.meters.contains(counter2))
+    }
+
+    @Test
+    fun testPinned() {
+        val registry = SimpleMeterRegistry()
+        val pinnedRepo = "blueking/pipeline"
+        val properties = ArtifactMetricsProperties(pinnedRepositories = setOf(pinnedRepo))
+        val pinnedChecker = RepositoryPinnedChecker(properties)
+        val lruMeterFilter = LruMeterFilter(meterNamePrefix = "id", registry = registry, capacity = 3, pinnedChecker)
+        registry.config().meterFilter(lruMeterFilter)
+
+        Counter.builder("id2").tag(REPO_TAG, pinnedRepo).register(registry)
+        val counter1 = Counter.builder("id1").tag(REPO_TAG, "blueking/custom").register(registry)
+        val counter3 = Counter.builder("id3").register(registry)
+        Assertions.assertEquals(3, registry.meters.size)
+
+        // 由于配置了pinnedChecker，id2将不会被淘汰，淘汰第二旧的id3
+        lruMeterFilter.access(counter1.id)
+        Counter.builder("id4").register(registry)
+        Assertions.assertEquals(3, registry.meters.size)
+        Assertions.assertEquals(false, registry.meters.contains(counter3))
     }
 }
