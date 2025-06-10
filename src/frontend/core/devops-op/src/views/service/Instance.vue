@@ -71,7 +71,7 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="总带宽"
+        label="实例总带宽"
         prop="hostBandwidth"
       >
         <template slot-scope="scope">
