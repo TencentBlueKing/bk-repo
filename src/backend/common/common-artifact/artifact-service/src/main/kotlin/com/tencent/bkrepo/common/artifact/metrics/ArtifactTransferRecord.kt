@@ -65,6 +65,10 @@ data class ArtifactTransferRecord(
     val agent: String,
     @Column(name = "userId")
     val userId: String,
+    @Column(name = "serverIp")
+    val serverIp: String,
+    @Column(name = "traceId")
+    val traceId: String,
 ) {
     companion object {
         const val RECEIVE = "RECEIVE"
