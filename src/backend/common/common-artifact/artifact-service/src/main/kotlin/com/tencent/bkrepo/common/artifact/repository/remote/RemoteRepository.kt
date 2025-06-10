@@ -146,7 +146,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 获取缓存的远程构件节点及过期状态
      */
-    protected fun getCacheInfo(context: ArtifactDownloadContext): Pair<NodeDetail, Boolean>? {
+    protected fun getCacheInfo(context: ArtifactContext): Pair<NodeDetail, Boolean>? {
         if (!shouldCache(context)) {
             return null
         }
@@ -159,7 +159,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 加载要返回的资源
      */
-    open fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
+    open fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactContext): ArtifactResource? {
         return storageManager.loadFullArtifactInputStream(cacheNode, context.storageCredentials)?.run {
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
@@ -182,7 +182,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     /**
      * 尝试获取缓存的远程构件节点
      */
-    open fun findCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
+    open fun findCacheNodeDetail(context: ArtifactContext): NodeDetail? {
         with(context) {
             return nodeService.getNodeDetail(artifactInfo)
         }

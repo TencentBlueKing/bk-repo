@@ -25,32 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.huggingface.constants
+package com.tencent.bkrepo.huggingface.artifact
 
-const val REPO_TYPE_MODEL = "model"
-const val REPO_TYPE_DATASET = "dataset"
+import com.tencent.bkrepo.huggingface.constants.REVISION_MAIN
 
-const val ERROR_CODE_HEADER = "X-Error-Code"
-const val ERROR_MSG_HEADER = "X-Error-Message"
+class HuggingfaceRevisionInfo(
+    projectId: String,
+    repoName: String,
+    organization: String,
+    name: String,
+    revision: String?,
+    type: String?,
+    artifactUri: String,
+) : HuggingfaceArtifactInfo(projectId, repoName, organization, name, revision, type, artifactUri) {
 
-const val COMMIT_ID_HEADER = "X-Repo-Commit"
+    override fun getArtifactFullPath(): String {
+        return "/$organization/$name/info/${getRevision()}"
+    }
 
-const val COMMIT_OP_HEADER = "header"
-const val COMMIT_OP_FILE = "file"
-const val COMMIT_OP_LFS = "lfsFile"
-const val COMMIT_OP_DEL_FILE = "deletedFile"
-const val COMMIT_OP_DEL_FOLDER = "deletedFolder"
-
-const val REGULAR_UPLOAD_MODE = "regular"
-const val LFS_UPLOAD_MODE = "lfs"
-
-const val ORGANIZATION_KEY = "organization"
-const val NAME_KEY = "name"
-const val REVISION_KEY = "revision"
-const val TYPE_KEY = "type"
-
-const val PACKAGE_KEY = "packageKey"
-const val VERSION = "version"
-
-const val BASE64_ENCODING = "base64"
-const val REVISION_MAIN = "main"
+    override fun getRevision(): String {
+        return super.getRevision() ?: REVISION_MAIN
+    }
+}
