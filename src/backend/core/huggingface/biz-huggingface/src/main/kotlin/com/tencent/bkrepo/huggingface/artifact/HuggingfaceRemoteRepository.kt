@@ -27,12 +27,17 @@
 
 package com.tencent.bkrepo.huggingface.artifact
 
+import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
+import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
+import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -44,6 +49,7 @@ import com.tencent.bkrepo.huggingface.util.HfApi
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import okhttp3.Headers
+import okhttp3.Response
 import org.springframework.stereotype.Component
 
 @Component
@@ -142,4 +148,19 @@ class HuggingfaceRemoteRepository : RemoteRepository() {
         return info
     }
 
+    override fun onEmptyResponse(
+        response: Response,
+        range: Range,
+        context: ArtifactDownloadContext,
+    ): ArtifactInputStream {
+        if (
+            response.header(HttpHeaders.CONTENT_RANGE) == null &&
+            response.header(HttpHeaders.CONTENT_LENGTH)!!.toLong() == 0L
+        ) {
+            // 通过head请求检测到空文件时，客户端将直接生成空文件而不再通过网络请求获取，此时仓库也需要生成空文件的缓存节点
+            val artifactFile = ArtifactFileFactory.build(EmptyInputStream.INSTANCE)
+            cacheArtifactFile(context, artifactFile)
+        }
+        return super.onEmptyResponse(response, range, context)
+    }
 }
