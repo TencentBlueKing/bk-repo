@@ -40,6 +40,10 @@ import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -48,9 +52,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveConte
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
-import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
-import com.tencent.bkrepo.common.artifact.audit.NODE_CREATE_ACTION
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -98,6 +99,7 @@ import com.tencent.bkrepo.npm.utils.NpmUtils
 import com.tencent.bkrepo.npm.utils.TimeUtil
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
@@ -658,6 +660,15 @@ class NpmClientServiceImpl(
         val repoName = artifactInfo.repoName
         logger.info("user [$userId] deploying npm package [$fullPath] into repo [$projectId/$repoName]")
         try {
+            // 上传前移除原有目录，避免覆盖上传后存在冗余文件
+            nodeService.deleteNode(
+                NodeDeleteRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = PathUtils.toFullPath(PathUtils.resolveParent(fullPath)),
+                    operator = userId,
+                )
+            )
             if (fullPath.endsWith(HAR_FILE_EXT)) {
                 // 保存readme,changelog文件
                 val readmeDir = NpmUtils.getReadmeDirFromTarballPath(fullPath)
