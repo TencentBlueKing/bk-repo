@@ -82,7 +82,7 @@ open class RouterControllerAspect(
         /*
         * 只重定向get请求，如果项目或者用户没有指定路由策略，则不进行重定向。
         * */
-        if (request.method != HttpMethod.GET.name || !hasPolicy(user, artifactInfo.projectId)) {
+        if (request.method != HttpMethod.GET.name() || !hasPolicy(user, artifactInfo.projectId)) {
             return proceedingJoinPoint.proceed()
         }
         with(artifactInfo) {

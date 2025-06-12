@@ -46,6 +46,8 @@ import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType.APPLICATION_OCTET_STREAM
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.reactive.HandlerMapping
@@ -61,6 +63,7 @@ import kotlin.coroutines.cancellation.CancellationException
 /**
  * 路由配置
  * */
+@Configuration
 class RouteConfiguration(
     private val nodeOperationsHandler: NodeOperationsHandler,
     private val fileOperationsHandler: FileOperationsHandler,
@@ -73,6 +76,7 @@ class RouteConfiguration(
     private val permissionFilterFunction: PermissionFilterFunction,
     private val artifactFileCleanupFilterFunction: ArtifactFileCleanupFilterFunction
 ) {
+    @Bean
     fun router() = coRouter {
         filter(authHandlerFilterFunction::filter)
         filter(devXAccessFilter::filter)

@@ -63,6 +63,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import jakarta.servlet.http.Cookie
 import org.bouncycastle.crypto.CryptoException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -78,7 +79,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.Base64
-import javax.servlet.http.Cookie
 
 @RestController
 @RequestMapping(AUTH_API_USER_PREFIX)

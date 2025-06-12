@@ -29,24 +29,24 @@ package com.tencent.bkrepo.common.artifact.resolve.response
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
-import com.tencent.bkrepo.common.storage.config.StorageProperties
-import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.util.unit.DataSize
 import java.io.IOException
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 
 abstract class AbstractArtifactResourceHandler(
@@ -85,7 +85,8 @@ abstract class AbstractArtifactResourceHandler(
     protected fun responseRateLimitCheck() {
         val rateLimitOfRepo = ArtifactContextHolder.getRateLimitOfRepo()
         if (rateLimitOfRepo.responseRateLimit != DataSize.ofBytes(-1) &&
-            rateLimitOfRepo.responseRateLimit <= storageProperties.response.circuitBreakerThreshold) {
+            rateLimitOfRepo.responseRateLimit <= storageProperties.response.circuitBreakerThreshold
+        ) {
             throw TooManyRequestsException(
                 "The circuit breaker is activated when too many download requests are made to the service!"
             )
@@ -109,7 +110,7 @@ abstract class AbstractArtifactResourceHandler(
         response: HttpServletResponse
     ): Throughput {
         val inputStream = resource.getSingleStream()
-        if (request.method == HttpMethod.HEAD.name) {
+        if (request.method == HttpMethod.HEAD.name()) {
             return Throughput.EMPTY
         }
         val length = inputStream.range.length

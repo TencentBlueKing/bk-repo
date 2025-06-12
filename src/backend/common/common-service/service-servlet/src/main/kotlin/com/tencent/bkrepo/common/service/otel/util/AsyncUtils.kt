@@ -27,32 +27,32 @@
 
 package com.tencent.bkrepo.common.service.otel.util
 
-import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.SpanNamer
-import org.springframework.cloud.sleuth.Tracer
-import org.springframework.cloud.sleuth.instrument.async.TraceCallable
-import org.springframework.cloud.sleuth.instrument.async.TraceRunnable
+import io.micrometer.context.ContextExecutorService
+import io.micrometer.context.ContextSnapshotFactory
 import java.util.concurrent.Callable
+import java.util.concurrent.ExecutorService
 
 object AsyncUtils {
+
+    private val contextSnapshotFactory = ContextSnapshotFactory.builder().build()
+
     fun Runnable.trace(): Runnable {
         return try {
-            val tracer = SpringContextUtils.getBean<Tracer>()
-            val spanNamer = SpringContextUtils.getBean<SpanNamer>()
-            TraceRunnable(tracer, spanNamer, this)
-        } catch (_: BeansException) {
+            contextSnapshotFactory.captureAll().wrap(this)
+        } catch (_: Exception) {
             this
         }
     }
 
     fun <T> Callable<T>.trace(): Callable<T> {
         return try {
-            val tracer = SpringContextUtils.getBean<Tracer>()
-            val spanNamer = SpringContextUtils.getBean<SpanNamer>()
-            TraceCallable(tracer, spanNamer, this)
-        } catch (_: BeansException) {
+            contextSnapshotFactory.captureAll().wrap(this)
+        } catch (_: Exception) {
             this
         }
+    }
+
+    fun ExecutorService.trace(): ExecutorService {
+        return ContextExecutorService.wrap(this, contextSnapshotFactory::captureAll)
     }
 }

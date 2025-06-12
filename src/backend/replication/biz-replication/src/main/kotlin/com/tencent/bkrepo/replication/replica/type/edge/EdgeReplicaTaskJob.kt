@@ -50,6 +50,7 @@ import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.executor.ManualThreadPoolExecutor
 import com.tencent.bkrepo.replication.util.OkHttpClientPool
+import jakarta.annotation.PostConstruct
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -57,7 +58,6 @@ import org.springframework.stereotype.Component
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.time.Duration
-import javax.annotation.PostConstruct
 
 @Component
 @Conditional(CommitEdgeEdgeCondition::class)
