@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
@@ -169,8 +170,9 @@ class EdgeNodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
+        source: OperationSource,
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
+        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator, source)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -259,6 +261,12 @@ class EdgeNodeServiceImpl(
 
     override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
         return NodeRestoreSupport(this).getDeletedNodeDetail(artifact)
+    }
+
+    override fun getDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime
+    ): NodeDetail? {
+        return NodeRestoreSupport(this).getDeletedNodeDetail(projectId, repoName, fullPath, deleted)
     }
 
     override fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail? {

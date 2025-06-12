@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.node.service
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.v3.oas.annotations.media.Schema
@@ -50,5 +51,7 @@ data class NodeRenameRequest(
     @get:Schema(title = "节点新完整路径", required = true)
     val newFullPath: String,
     @get:Schema(title = "操作用户", required = true)
-    override val operator: String
+    override val operator: String,
+    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
+    val source: OperationSource = OperationSource.ACTIVE,
 ) : NodeRequest, ServiceRequest

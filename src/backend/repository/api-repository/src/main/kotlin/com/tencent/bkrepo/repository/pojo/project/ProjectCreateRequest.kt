@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.project
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -51,4 +52,6 @@ data class ProjectCreateRequest(
     val metadata: List<ProjectMetadata> = emptyList(),
     @get:Schema(title = "项目新建仓库默认使用的存储", required = false)
     val credentialsKey: String? = null,
+    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
+    val source: OperationSource = OperationSource.ACTIVE,
 ) : ProjectRequest

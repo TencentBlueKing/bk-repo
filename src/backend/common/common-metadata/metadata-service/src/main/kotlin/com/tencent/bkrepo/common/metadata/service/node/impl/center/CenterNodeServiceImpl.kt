@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
@@ -195,13 +196,15 @@ class CenterNodeServiceImpl(
         projectId: String,
         repoName: String,
         fullPath: String,
-        operator: String
+        operator: String,
+        source: OperationSource,
     ): NodeDeleteResult {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteByPath(
             projectId,
             repoName,
             fullPath,
-            operator
+            operator,
+            source
         )
     }
 
@@ -267,6 +270,12 @@ class CenterNodeServiceImpl(
 
     override fun renameNode(renameRequest: NodeRenameRequest) {
         return CenterNodeRenameSupport(this, clusterProperties).renameNode(renameRequest)
+    }
+
+    override fun getDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime
+    ): NodeDetail? {
+        return CenterNodeRestoreSupport(this).getDeletedNodeDetail(projectId, repoName, fullPath, deleted)
     }
 
     override fun additionalCheck(existNode: TNode) {

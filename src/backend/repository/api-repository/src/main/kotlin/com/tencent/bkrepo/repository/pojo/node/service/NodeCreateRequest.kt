@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.node.service
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.AuditableRequest
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
@@ -74,5 +75,7 @@ data class NodeCreateRequest(
     override val lastModifiedBy: String? = null,
     override var lastModifiedDate: LocalDateTime? = null,
     @get:Schema(title = "是否SEPARATE_UPLOAD")
-    val separate: Boolean = false
+    val separate: Boolean = false,
+    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
+    val source: OperationSource = OperationSource.ACTIVE,
 ) : NodeRequest, ServiceRequest, AuditableRequest

@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
@@ -230,7 +231,9 @@ class PackageServiceImpl(
                     update.inc(TPackage::versions.name)
                     packageDao.upsert(query, update)
                     logger.info("Create package version[$newVersion] success")
-                    publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
+                    if (source != OperationSource.FEDERATE) {
+                        publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
+                    }
                 } catch (exception: DuplicateKeyException) {
                     logger.warn("Create version[$newVersion] error: [${exception.message}]")
                     oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)

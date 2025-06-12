@@ -51,36 +51,16 @@ class EventBasedReplicaJobExecutor(
     localDataManager: LocalDataManager,
     replicaService: EventBasedReplicaService,
     replicationProperties: ReplicationProperties,
-    private val replicaRecordService: ReplicaRecordService
-) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService, replicationProperties) {
-
-    /**
-     * 执行同步
-     */
-    fun execute(taskDetail: ReplicaTaskDetail, event: ArtifactEvent) {
-        if (!replicaObjectCheck(taskDetail, event)) return
-        val task = taskDetail.task
-        val taskRecord: ReplicaRecordInfo = replicaRecordService.findOrCreateLatestRecord(task.key)
-        try {
-            val results = task.remoteClusters.map { submit(taskDetail, taskRecord, it, event) }.map { it.get() }
-            val replicaOverview = getResultsSummary(results).replicaOverview
-            taskRecord.replicaOverview?.let { overview ->
-                replicaOverview.success += overview.success
-                replicaOverview.failed += overview.failed
-                replicaOverview.conflict += overview.conflict
-            }
-            replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
-            logger.info("Replica ${event.getFullResourceKey()} completed.")
-        } catch (exception: Exception) {
-            logger.error("Replica ${event.getFullResourceKey()}} failed: $exception", exception)
-        }
-    }
+    replicaRecordService: ReplicaRecordService
+) : CommonBasedReplicaJobExecutor(
+    clusterNodeService, localDataManager, replicaService, replicationProperties, replicaRecordService
+) {
 
 
     /**
      * 判断分发配置内容是否与待分发事件匹配
      */
-    private fun replicaObjectCheck(task: ReplicaTaskDetail, event: ArtifactEvent): Boolean {
+    override fun replicaObjectCheck(task: ReplicaTaskDetail, event: ArtifactEvent): Boolean {
         if (!task.task.enabled) return false
         return when (task.task.replicaObjectType) {
             ReplicaObjectType.PATH -> {

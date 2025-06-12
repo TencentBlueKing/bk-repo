@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChan
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConfiguration
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
@@ -249,13 +250,10 @@ class RepositoryServiceImpl(
                 repository.configuration = cryptoConfigurationPwd(repoConfiguration, false).toJsonString()
                 checkAndRemoveDeletedRepo(projectId, name, credentialsKey)
                 repositoryDao.insert(repository)
-                val event = buildCreatedEvent(repoCreateRequest)
-                publishEvent(event)
-                messageSupplier.delegateToSupplier(
-                    data = event,
-                    topic = event.topic,
-                    key = event.getFullResourceKey(),
-                )
+                if (source != OperationSource.FEDERATE) {
+                    val event = buildCreatedEvent(repoCreateRequest)
+                    publishEvent(event)
+                }
                 logger.info("Create repository [$repoCreateRequest] success.")
                 convertToDetail(repository)!!
             } catch (exception: DuplicateKeyException) {
@@ -296,13 +294,10 @@ class RepositoryServiceImpl(
             repository.display = display
             repositoryDao.save(repository)
         }
-        val event = buildUpdatedEvent(repoUpdateRequest)
-        publishEvent(event)
-        messageSupplier.delegateToSupplier(
-            data = event,
-            topic = event.topic,
-            key = event.getFullResourceKey(),
-        )
+        if (repoUpdateRequest.source != OperationSource.FEDERATE) {
+            val event = buildUpdatedEvent(repoUpdateRequest)
+            publishEvent(event)
+        }
         logger.info("Update repository[$repoUpdateRequest] success.")
     }
 
@@ -324,7 +319,9 @@ class RepositoryServiceImpl(
                 }
             }
         }
-        publishEvent(buildDeletedEvent(repoDeleteRequest))
+        if (repoDeleteRequest.source != OperationSource.FEDERATE) {
+            publishEvent(buildDeletedEvent(repoDeleteRequest))
+        }
         logger.info("Delete repository [$repoDeleteRequest] success.")
     }
 

@@ -31,9 +31,11 @@
 
 package com.tencent.bkrepo.repository.pojo.node.service
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.v3.oas.annotations.media.Schema
+import java.time.LocalDateTime
 
 
 /**
@@ -48,5 +50,8 @@ data class NodeDeleteRequest(
     @get:Schema(title = "节点完整路径", required = true)
     override val fullPath: String,
     @get:Schema(title = "操作用户", required = true)
-    override val operator: String
+    override val operator: String,
+    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
+    val source: OperationSource = OperationSource.ACTIVE,
+    val deletedDate: String? = null
 ) : NodeRequest, ServiceRequest

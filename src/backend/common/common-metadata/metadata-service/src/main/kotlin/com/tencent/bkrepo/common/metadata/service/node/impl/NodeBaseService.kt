@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_PROJECT
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -198,7 +199,7 @@ abstract class NodeBaseService(
             // 创建节点
             val node = buildTNode(this)
             doCreate(node, separate = separate)
-            afterCreate(repo, node)
+            afterCreate(repo, node, source)
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
             return convertToDetail(node)!!
         }
@@ -283,9 +284,9 @@ abstract class NodeBaseService(
         }
     }
 
-    private fun afterCreate(repo: TRepository, node: TNode) {
+    private fun afterCreate(repo: TRepository, node: TNode, source: OperationSource) {
         with(node) {
-            if (isGenericRepo(repo)) {
+            if (isGenericRepo(repo) && source != OperationSource.FEDERATE) {
                 publishEvent(buildCreatedEvent(node))
                 createRouter(this)
             }

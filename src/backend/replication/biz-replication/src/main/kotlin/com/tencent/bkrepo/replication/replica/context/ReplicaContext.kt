@@ -43,6 +43,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
@@ -53,6 +54,7 @@ import com.tencent.bkrepo.replication.replica.replicator.commitedge.CenterCluste
 import com.tencent.bkrepo.replication.replica.replicator.commitedge.CenterRemoteReplicator
 import com.tencent.bkrepo.replication.replica.replicator.standalone.ClusterReplicator
 import com.tencent.bkrepo.replication.replica.replicator.standalone.EdgeNodeReplicator
+import com.tencent.bkrepo.replication.replica.replicator.standalone.FederationReplicator
 import com.tencent.bkrepo.replication.replica.replicator.standalone.RemoteReplicator
 import com.tencent.bkrepo.replication.util.OkHttpClientPool
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -66,7 +68,7 @@ class ReplicaContext(
     val taskRecord: ReplicaRecordInfo,
     val localRepo: RepositoryDetail,
     val remoteCluster: ClusterNodeInfo,
-    replicationProperties: ReplicationProperties
+    replicationProperties: ReplicationProperties,
 ) {
     // 任务信息
     val task = taskDetail.task
@@ -135,7 +137,7 @@ class ReplicaContext(
                 BasicAuthInterceptor(cluster.username!!, cluster.password!!),
                 RetryInterceptor(),
                 TraceInterceptor()
-                )
+            )
         } else {
             OkHttpClientPool.getHttpClient(
                 replicationProperties.timoutCheckHosts,
@@ -146,7 +148,7 @@ class ReplicaContext(
                 SignInterceptor(cluster),
                 RetryInterceptor(),
                 TraceInterceptor()
-                )
+            )
         }
     }
 
@@ -154,16 +156,24 @@ class ReplicaContext(
         val clusterProperties = SpringContextUtils.getBean<ClusterProperties>()
         val isCommitEdgeCenterNode = clusterProperties.role == ClusterNodeType.CENTER &&
             clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
+        val isFederatedCluster = taskDetail.task.replicaType == ReplicaType.FEDERATION
         return when {
+            isFederatedCluster -> SpringContextUtils.getBean<FederationReplicator>()
+
             remoteCluster.type == ClusterNodeType.STANDALONE && isCommitEdgeCenterNode ->
                 SpringContextUtils.getBean<CenterClusterReplicator>()
+
             remoteCluster.type == ClusterNodeType.STANDALONE && !isCommitEdgeCenterNode ->
                 SpringContextUtils.getBean<ClusterReplicator>()
+
             remoteCluster.type == ClusterNodeType.EDGE -> SpringContextUtils.getBean<EdgeNodeReplicator>()
+
             remoteCluster.type == ClusterNodeType.REMOTE && isCommitEdgeCenterNode ->
                 SpringContextUtils.getBean<CenterRemoteReplicator>()
+
             remoteCluster.type == ClusterNodeType.REMOTE && !isCommitEdgeCenterNode ->
                 SpringContextUtils.getBean<RemoteReplicator>()
+
             else -> throw UnsupportedOperationException()
         }
     }

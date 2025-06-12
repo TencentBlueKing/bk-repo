@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.metadata
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
@@ -51,5 +52,7 @@ data class MetadataDeleteRequest(
     @get:Schema(title = "待删除的元数据key列表", required = true)
     val keyList: Set<String>,
     @get:Schema(title = "操作用户")
-    override val operator: String = SYSTEM_USER
+    override val operator: String = SYSTEM_USER,
+    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
+    val source: OperationSource = OperationSource.ACTIVE,
 ) : NodeRequest, ServiceRequest

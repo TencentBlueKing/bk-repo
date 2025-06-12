@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.normalizeFullPath
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
@@ -106,7 +107,9 @@ class MetadataServiceImpl(
             }
 
             nodeDao.save(node)
-            publishEvent(buildMetadataSavedEvent(request))
+            if (source != OperationSource.FEDERATE) {
+                publishEvent(buildMetadataSavedEvent(request))
+            }
             logger.info("Save metadata[$newMetadata] on node[/$projectId/$repoName$fullPath] success.")
         }
     }
@@ -148,7 +151,9 @@ class MetadataServiceImpl(
                 Query.query(where(TMetadata::key).inValues(keyList))
             )
             nodeDao.updateMulti(query, update)
-            publishEvent(buildMetadataDeletedEvent(this))
+            if (source != OperationSource.FEDERATE) {
+                publishEvent(buildMetadataDeletedEvent(this))
+            }
             logger.info("Delete metadata[$keyList] on node[/$projectId/$repoName$fullPath] success.")
         }
     }

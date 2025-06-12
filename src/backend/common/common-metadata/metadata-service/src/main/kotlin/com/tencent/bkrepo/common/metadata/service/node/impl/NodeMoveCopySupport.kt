@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.resolveParent
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.node.NodeMoveCopyOperation
@@ -106,10 +107,12 @@ open class NodeMoveCopySupport(
             } else {
                 moveCopyFile(this)
             }
-            if (move) {
-                publishEvent(NodeEventFactory.buildMovedEvent(request))
-            } else {
-                publishEvent(NodeEventFactory.buildCopiedEvent(request))
+            if (request.source != OperationSource.FEDERATE) {
+                if (move) {
+                    publishEvent(NodeEventFactory.buildMovedEvent(request))
+                } else {
+                    publishEvent(NodeEventFactory.buildCopiedEvent(request))
+                }
             }
             return convertToDetail(
                 nodeBaseService.nodeDao.findNode(

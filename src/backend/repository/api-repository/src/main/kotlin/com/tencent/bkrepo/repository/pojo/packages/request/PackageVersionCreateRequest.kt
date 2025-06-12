@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.packages.request
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import io.swagger.v3.oas.annotations.media.Schema
@@ -77,5 +78,7 @@ data class PackageVersionCreateRequest(
     @get:Schema(title = "创建人")
     val createdBy: String,
     @get:Schema(title = "同版本是否包含多个制品")
-    val multiArtifact: Boolean = false
+    val multiArtifact: Boolean = false,
+    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
+    val source: OperationSource = OperationSource.ACTIVE,
 )

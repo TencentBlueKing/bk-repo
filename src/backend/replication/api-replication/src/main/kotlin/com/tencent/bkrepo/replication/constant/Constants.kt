@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.replication.constant
 
-const val DEFAULT_VERSION = "1.0.0"
+const val DEFAULT_VERSION = "2.0.0"
 
 const val REPOSITORY = "repository"
 const val URL = "url"
@@ -58,6 +58,8 @@ const val NAME = "name"
 
 const val RETRY_COUNT = 2
 const val DELAY_IN_SECONDS: Long = 1
+
+const val FEDERATED = "federated"
 
 /**
  * metrics

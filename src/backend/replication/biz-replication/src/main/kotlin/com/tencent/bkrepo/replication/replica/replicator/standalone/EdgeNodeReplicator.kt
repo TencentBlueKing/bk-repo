@@ -150,6 +150,10 @@ class EdgeNodeReplicator(
         }
     }
 
+    override fun replicaDeletedNode(context: ReplicaContext, node: NodeInfo): Boolean {
+        return true
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(EdgeNodeReplicator::class.java)
     }

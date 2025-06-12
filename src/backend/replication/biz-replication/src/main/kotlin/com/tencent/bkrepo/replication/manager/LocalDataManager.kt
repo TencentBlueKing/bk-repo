@@ -215,6 +215,12 @@ class LocalDataManager(
         return nodeService.getDeletedNodeDetail(ArtifactInfo(projectId, repoName, fullPath)).firstOrNull()
     }
 
+    fun findDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime
+    ): NodeDetail? {
+        return nodeService.getDeletedNodeDetail(projectId, repoName, fullPath, deleted)
+    }
+
     /**
      * 查找节点
      */

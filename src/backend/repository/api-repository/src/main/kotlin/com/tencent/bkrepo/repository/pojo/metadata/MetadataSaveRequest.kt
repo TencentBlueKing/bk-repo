@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.metadata
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
@@ -56,5 +57,7 @@ data class MetadataSaveRequest(
     @get:Schema(title = "是否替换元数据，删除原有元数据再新增元数据", required = false)
     val replace: Boolean = false,
     @get:Schema(title = "操作用户")
-    override val operator: String = SYSTEM_USER
+    override val operator: String = SYSTEM_USER,
+    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
+    val source: OperationSource = OperationSource.ACTIVE,
 ) : NodeRequest, ServiceRequest

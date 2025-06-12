@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.repo
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
@@ -67,5 +68,7 @@ data class RepoCreateRequest(
     @get:Schema(title = "操作用户", required = false)
     val operator: String = SYSTEM_USER,
     @get:Schema(title = "是否展示", required = true)
-    val display: Boolean = true
+    val display: Boolean = true,
+    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
+    val source: OperationSource = OperationSource.ACTIVE,
 ) : RepoRequest

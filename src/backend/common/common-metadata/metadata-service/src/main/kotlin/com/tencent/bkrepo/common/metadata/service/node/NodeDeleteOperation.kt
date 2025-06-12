@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.service.node
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
@@ -66,7 +67,13 @@ interface NodeDeleteOperation {
     /**
      * 根据全路径删除文件或者目录
      */
-    fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String): NodeDeleteResult
+    fun deleteByPath(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String,
+        source: OperationSource = OperationSource.ACTIVE
+    ): NodeDeleteResult
 
     /**
      * 根据全路径批量删除文件或者目录

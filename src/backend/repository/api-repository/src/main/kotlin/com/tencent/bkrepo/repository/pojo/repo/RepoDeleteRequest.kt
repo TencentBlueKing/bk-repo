@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.repo
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import io.swagger.v3.oas.annotations.media.Schema
 
 
@@ -43,5 +44,7 @@ data class RepoDeleteRequest(
     @get:Schema(title = "是否强制删除（忽略存在的文件）", required = false)
     val forced: Boolean = false,
     @get:Schema(title = "操作用户", required = true)
-    val operator: String
+    val operator: String,
+    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
+    val source: OperationSource = OperationSource.ACTIVE,
 ) : RepoRequest

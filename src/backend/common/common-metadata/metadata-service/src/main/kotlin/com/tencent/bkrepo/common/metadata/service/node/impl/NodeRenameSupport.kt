@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
@@ -61,7 +62,9 @@ open class NodeRenameSupport(
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             checkNodeCluster(node)
             doRename(node, newFullPath, operator)
-            publishEvent(buildRenamedEvent(renameRequest))
+            if (source != OperationSource.FEDERATE) {
+                publishEvent(buildRenamedEvent(renameRequest))
+            }
             logger.info("Rename node [$this] success.")
         }
     }

@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.pojo.node.service
 
+import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.pojo.node.NodeRequest
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -60,7 +61,9 @@ data class NodeMoveCopyRequest(
     @get:Schema(title = "同名文件是否覆盖", required = false)
     val overwrite: Boolean = false,
     @get:Schema(title = "操作用户", required = true)
-    val operator: String
+    val operator: String,
+    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
+    val source: OperationSource = OperationSource.ACTIVE,
 ) : NodeRequest {
     override val projectId: String
         get() = srcProjectId
