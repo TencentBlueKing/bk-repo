@@ -45,7 +45,7 @@ function _M:new()
     end
     local res, err = red:connect(redis_host, redis_port, {
         backlog = redisConfig['backlog'],
-        ssl = redisConfig['ssl'],
+        ssl = false,
         pool_size = redisConfig['pool_size']
     })
     if not res then
