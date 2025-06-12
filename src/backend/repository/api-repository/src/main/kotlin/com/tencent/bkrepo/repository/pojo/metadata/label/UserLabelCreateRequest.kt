@@ -31,6 +31,7 @@ data class UserLabelCreateRequest(
     val labelKey: String,
     val labelColorMap: Map<String, String> = emptyMap(),
     val enumType: Boolean = false,
+    var enableColorConfig: Boolean = false,
     val display: Boolean = true,
     val category: String? = null,
     val description: String? = null,

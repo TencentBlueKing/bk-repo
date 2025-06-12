@@ -62,6 +62,7 @@ class MetadataLabelServiceImpl(
                 labelKey = labelKey,
                 labelColorMap = labelColorMap,
                 enumType = enumType,
+                enableColorConfig = enableColorConfig,
                 display = display,
                 category = category,
                 description = description,
@@ -84,6 +85,7 @@ class MetadataLabelServiceImpl(
             metadataLabel.labelColorMap = labelColorMap
             display?.let { metadataLabel.display = it }
             enumType?.let { metadataLabel.enumType = it }
+            enableColorConfig?.let { metadataLabel.enableColorConfig = it }
             category?.let { metadataLabel.category = it }
             description?.let { metadataLabel.description = it }
             metadataLabel.lastModifiedBy = userId

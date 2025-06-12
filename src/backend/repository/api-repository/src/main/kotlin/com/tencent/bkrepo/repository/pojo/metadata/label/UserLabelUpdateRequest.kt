@@ -31,6 +31,7 @@ data class UserLabelUpdateRequest(
     val labelColorMap: Map<String, String>,
     val display: Boolean?,
     val enumType: Boolean?,
+    val enableColorConfig: Boolean?,
     val category: String?,
     val description: String?,
 )

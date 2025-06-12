@@ -32,6 +32,7 @@ data class MetadataLabelRequest(
     val labelKey: String,
     val labelColorMap: Map<String, String>,
     val enumType: Boolean?,
+    val enableColorConfig: Boolean?,
     val display: Boolean?,
     val category: String?,
     val description: String?,

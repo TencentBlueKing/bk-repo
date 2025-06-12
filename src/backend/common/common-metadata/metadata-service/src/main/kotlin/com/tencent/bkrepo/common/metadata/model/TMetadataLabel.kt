@@ -39,6 +39,7 @@ data class TMetadataLabel(
     val labelKey: String,
     var labelColorMap: Map<String, String>,
     var enumType: Boolean?,
+    var enableColorConfig: Boolean?,
     var display: Boolean?,
     var category: String?,
     var description: String?,

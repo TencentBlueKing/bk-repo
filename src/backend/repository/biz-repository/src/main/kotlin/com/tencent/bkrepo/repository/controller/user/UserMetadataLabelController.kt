@@ -68,6 +68,7 @@ class UserMetadataLabelController(
             labelColorMap = userLabelCreateRequest.labelColorMap,
             display = userLabelCreateRequest.display,
             enumType = userLabelCreateRequest.enumType,
+            enableColorConfig = userLabelCreateRequest.enableColorConfig,
             category = userLabelCreateRequest.category,
             description = userLabelCreateRequest.description,
         )
@@ -89,6 +90,7 @@ class UserMetadataLabelController(
             labelColorMap = userLabelUpdateRequest.labelColorMap,
             display = userLabelUpdateRequest.display,
             enumType = userLabelUpdateRequest.enumType,
+            enableColorConfig = userLabelUpdateRequest.enableColorConfig,
             category = userLabelUpdateRequest.category,
             description = userLabelUpdateRequest.description,
         )
@@ -110,6 +112,7 @@ class UserMetadataLabelController(
                 labelColorMap = it.labelColorMap,
                 display = it.display,
                 enumType = it.enumType,
+                enableColorConfig = it.enableColorConfig,
                 category = it.category,
                 description = it.description,
             )
