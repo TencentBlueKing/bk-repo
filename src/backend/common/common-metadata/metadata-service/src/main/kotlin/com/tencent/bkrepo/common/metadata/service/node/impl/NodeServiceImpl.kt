@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
@@ -80,6 +81,7 @@ class NodeServiceImpl(
     override val blockNodeService: BlockNodeService,
     override val projectService: ProjectService,
     private val archiveClient: ArchiveClient,
+    override val metadataLabelCacheService: MetadataLabelCacheService
 ) : NodeBaseService(
     nodeDao,
     repositoryDao,
@@ -92,7 +94,8 @@ class NodeServiceImpl(
     routerControllerClient,
     routerControllerProperties,
     blockNodeService,
-    projectService
+    projectService,
+    metadataLabelCacheService
 ) {
 
     override fun computeSize(

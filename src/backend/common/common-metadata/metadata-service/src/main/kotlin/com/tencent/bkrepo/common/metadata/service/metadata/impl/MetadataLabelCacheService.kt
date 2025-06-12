@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,31 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.metadata
+package com.tencent.bkrepo.common.metadata.service.metadata.impl
 
-data class MetadataModel(
-    /**
-     * 元数据键
-     */
-    val key: String,
-    /**
-     * 元数据值
-     */
-    var value: Any,
-    /**
-     * 是否为系统元数据
-     */
-    val system: Boolean = false,
-    /**
-     * 元数据描述信息
-     */
-    val description: String? = null,
-    /**
-     * 元数据链接地址
-     */
-    val link: String? = null,
-    /**
-     * 元数据标签颜色
-     */
-    val color: String? = null,
-)
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataLabelService
+import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
+import org.springframework.context.annotation.Conditional
+import org.springframework.stereotype.Service
+import java.time.Duration
+
+@Service
+@Conditional(SyncCondition::class)
+class MetadataLabelCacheService(
+    private val metadataLabelService: MetadataLabelService,
+) {
+
+    private val metadataLabelCache = CacheBuilder.newBuilder()
+        .maximumSize(1000)
+        .expireAfterWrite(Duration.ofMinutes(10))
+        .build(CacheLoader.from<String, List<MetadataLabelDetail>> {
+            projectId -> metadataLabelService.listAll(projectId!!) })
+
+    fun listAll(projectId: String): List<MetadataLabelDetail> {
+        return metadataLabelCache.get(projectId)
+    }
+}
