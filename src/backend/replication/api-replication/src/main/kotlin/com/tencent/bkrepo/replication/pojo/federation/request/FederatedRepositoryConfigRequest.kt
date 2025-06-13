@@ -27,7 +27,8 @@
 
 package com.tencent.bkrepo.replication.pojo.federation.request
 
-import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.pojo.federation.FederatedClusterInfo
 import io.swagger.v3.oas.annotations.media.Schema
 
 
@@ -36,6 +37,12 @@ import io.swagger.v3.oas.annotations.media.Schema
  */
 @Schema(title = "联邦仓库配置分发请求")
 data class FederatedRepositoryConfigRequest(
+    @get:Schema(title = "项目")
+    val projectId: String,
+    @get:Schema(title = "仓库")
+    val repoName: String,
+    @get:Schema(title = "当前集群cluster")
+    val selfCluster: ClusterNodeInfo,
     @get:Schema(title = "联邦仓库集群列表")
-    val federatedClusters: List<FederatedCluster>,
+    val federatedClusters: List<FederatedClusterInfo>,
 )

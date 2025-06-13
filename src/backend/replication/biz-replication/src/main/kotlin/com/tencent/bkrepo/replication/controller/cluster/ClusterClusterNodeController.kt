@@ -30,7 +30,6 @@ package com.tencent.bkrepo.replication.controller.cluster
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import org.springframework.web.bind.annotation.RestController
@@ -43,9 +42,5 @@ class ClusterClusterNodeController(
     override fun create(userId: String, clusterNodeCreateRequest: ClusterNodeCreateRequest): Response<Void> {
         clusterNodeService.create(userId, clusterNodeCreateRequest)
         return ResponseBuilder.success()
-    }
-
-    override fun getCluster(name: String): Response<ClusterNodeInfo?> {
-        return ResponseBuilder.success(clusterNodeService.getByClusterName(name))
     }
 }

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
 
 /**
@@ -42,9 +43,9 @@ interface FederationRepositoryService {
     fun createFederationRepository(request: FederatedRepositoryCreateRequest)
 
     /**
-     * 存储联邦仓库配置
+     * 在联邦集群上创建对应集群信息以及任务存储联邦仓库配置
      */
-    fun saveFederationRepositoryConfig(request: FederatedRepositoryCreateRequest)
+    fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest)
 
     /**
      * 根据项目id和仓库名称查询相关联的联邦仓库配置

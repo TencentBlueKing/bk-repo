@@ -25,29 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.controller.service
+package com.tencent.bkrepo.replication.pojo.federation
 
-import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
-import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.replication.api.federation.FederatedRepositoryClient
-import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
-import com.tencent.bkrepo.replication.service.FederationRepositoryService
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 
-@Principal(type = PrincipalType.ADMIN)
-class FederatedRepositoryController(
-    private val federationRepositoryService: FederationRepositoryService,
-) : FederatedRepositoryClient {
-
-    override fun createFederatedConfig(request: FederatedRepositoryConfigRequest): Response<Void> {
-        federationRepositoryService.saveFederationRepositoryConfig(request)
-        return ResponseBuilder.success()
-    }
-
-    override fun deleteConfig(projectId: String, repoName: String): Response<Void> {
-        federationRepositoryService.deleteFederationRepositoryConfig(projectId, repoName)
-        return ResponseBuilder.success()
-    }
-
-}
+class FederatedClusterInfo(
+    var projectId: String,
+    var repoName: String,
+    var clusterNodeInfo: ClusterNodeInfo,
+    // 是否启用
+    var enabled: Boolean
+)

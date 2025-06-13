@@ -31,15 +31,11 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.metadata.util.version.SemVersion
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
-import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
 import com.tencent.bkrepo.replication.api.federation.FederatedRepositoryClient
-import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.dao.FederatedRepositoryDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -48,6 +44,8 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
+import com.tencent.bkrepo.replication.pojo.federation.FederatedClusterInfo
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
@@ -60,7 +58,6 @@ import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -71,9 +68,6 @@ class FederationRepositoryServiceImpl(
     private val clusterNodeService: ClusterNodeService,
     private val replicaTaskService: ReplicaTaskService,
 ) : FederationRepositoryService {
-
-    @Value("\${spring.application.version:$DEFAULT_VERSION}")
-    var version: String = DEFAULT_VERSION
 
     override fun createFederationRepository(request: FederatedRepositoryCreateRequest) {
         logger.info("Creating federation repository for project: ${request.projectId}, repo: ${request.repoName}")
@@ -94,9 +88,8 @@ class FederationRepositoryServiceImpl(
         }
     }
 
-    override fun saveFederationRepositoryConfig(request: FederatedRepositoryCreateRequest) {
-        val tFederatedRepository = buildTFederatedRepository(request)
-        federatedRepositoryDao.save(tFederatedRepository)
+    override fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest) {
+        createFederatedClusterAndSaveConfig(request)
     }
 
     override fun listFederationRepository(projectId: String, repoName: String): List<FederatedCluster> {
@@ -146,31 +139,52 @@ class FederationRepositoryServiceImpl(
             val federatedClusters = request.federatedClusters
                 .filter { it.clusterId != fed.clusterId }
                 .plus(FederatedCluster(request.projectId, request.repoName, currentCluster.id!!, true))
-            createFederatedClusterAndSyncConfig(fed.projectId, fed.repoName, clusterNode, federatedClusters)
+            // 在目标集群生成对应cluster以及对应同步task
+            syncFederationConfig(fed.projectId, fed.repoName, clusterNode, federatedClusters)
+            // 生成本地同步task
             val taskId = createOrUpdateTask(request.projectId, request.repoName, fed, clusterNode)
             taskMap[fed.clusterId] = taskId
         }
         return taskMap
     }
 
-    private fun createFederatedClusterAndSyncConfig(
+    private fun syncFederationConfig(
         projectId: String,
         repoName: String,
         clusterNode: ClusterNodeInfo,
         federatedClusters: List<FederatedCluster>,
     ) {
+        logger.info("Start to sync federation config for repo: $projectId|$repoName with cluster ${clusterNode.name}")
         val cluster = buildClusterInfo(clusterNode)
-        val artifactReplicaClient = FeignClientFactory.create<ArtifactReplicaClient>(cluster)
-        checkClusterVersion(artifactReplicaClient)
-
-        val clusterClusterNodeClient = FeignClientFactory.create<ClusterClusterNodeClient>(cluster)
-        val existCluster = getOrCreateCluster(cluster, clusterClusterNodeClient)
-
-        val fedList = buildFederatedClusterList(
-            projectId, repoName, federatedClusters, clusterClusterNodeClient
+        val federatedClusterInfos = federatedClusters.map {
+            val federatedClusterInfo = clusterNodeService.getByClusterId(it.clusterId)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, it.clusterId)
+            FederatedClusterInfo(
+                projectId = it.projectId,
+                repoName = it.repoName,
+                clusterNodeInfo = federatedClusterInfo,
+                enabled = it.enabled
+            )
+        }
+        val configRequest = FederatedRepositoryConfigRequest(
+            projectId = projectId,
+            repoName = repoName,
+            federatedClusters = federatedClusterInfos,
+            selfCluster = clusterNode
         )
-        syncFederationConfig(projectId, repoName, existCluster.id!!, fedList, cluster)
-        logger.info("Successfully synced federation config for project: $projectId, repo: $repoName")
+        val federatedRepositoryClient = FeignClientFactory.create<FederatedRepositoryClient>(cluster)
+        federatedRepositoryClient.createFederatedConfig(configRequest)
+        logger.info("Successfully synced federation config for repo: $projectId|$repoName with cluster ${cluster.name}")
+    }
+
+    fun createFederatedClusterAndSaveConfig(request: FederatedRepositoryConfigRequest) {
+        with(request) {
+            logger.info("Start to sync federation config for project: $projectId, repo: $repoName")
+            val selfCluster = getOrCreateCluster(selfCluster)
+            val fedList = buildFederatedClusterList(projectId, repoName, federatedClusters)
+            saveFederationConfig(projectId, repoName, selfCluster.id!!, fedList)
+            logger.info("Successfully synced federation config for project: $projectId, repo: $repoName")
+        }
     }
 
     private fun buildClusterInfo(clusterNode: ClusterNodeInfo): ClusterInfo {
@@ -187,32 +201,16 @@ class FederationRepositoryServiceImpl(
         )
     }
 
-    private fun checkClusterVersion(artifactReplicaClient: ArtifactReplicaClient) {
-        val currentVersion = SemVersion.parse(version)
-        val federatedClusterVersion = SemVersion.parse(artifactReplicaClient.version().data!!)
-        if (currentVersion > federatedClusterVersion) {
-            throw ErrorCodeException(
-                ReplicationMessageCode.UNSUPPORTED_CLUSTER_VERSION,
-                version,
-                artifactReplicaClient.version()
-            )
-        }
-    }
-
-    private fun getOrCreateCluster(
-        cluster: ClusterInfo,
-        clusterClusterNodeClient: ClusterClusterNodeClient,
-    ): ClusterNodeInfo {
-        val existCluster = clusterClusterNodeClient.getCluster(cluster.name!!).data
+    private fun getOrCreateCluster(cluster: ClusterNodeInfo): ClusterNodeInfo {
+        val existCluster = clusterNodeService.getByClusterName(cluster.name)
         return when {
             existCluster == null -> {
                 val clusterCreateRequest = buildClusterNodeCreateRequest(cluster)
-                clusterClusterNodeClient.create(SYSTEM_USER, clusterCreateRequest)
-                clusterClusterNodeClient.getCluster(cluster.name!!).data!!
+                clusterNodeService.create(SYSTEM_USER, clusterCreateRequest)
             }
 
             existCluster.url != cluster.url -> {
-                throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, cluster.name!!)
+                throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, cluster.name)
             }
 
             else -> existCluster
@@ -222,40 +220,31 @@ class FederationRepositoryServiceImpl(
     private fun buildFederatedClusterList(
         projectId: String,
         repoName: String,
-        federatedClusters: List<FederatedCluster>,
-        clusterClusterNodeClient: ClusterClusterNodeClient,
+        federatedClusters: List<FederatedClusterInfo>,
     ): MutableList<FederatedCluster> {
         logger.info("Starting to build federated cluster list for project: $projectId, repo: $repoName")
-        return federatedClusters.mapNotNull { fed ->
-            val fedCluster = clusterNodeService.getByClusterId(fed.clusterId)
-                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, fed.clusterId)
-            val fedClusterInfo = buildClusterInfo(fedCluster)
-            val clusterCreateRequest = buildClusterNodeCreateRequest(fedClusterInfo)
-            logger.info("Creating cluster with request: $clusterCreateRequest")
-            clusterClusterNodeClient.create(SYSTEM_USER, clusterCreateRequest)
-            val savedFedCluster = clusterClusterNodeClient.getCluster(fedClusterInfo.name!!).data
-            savedFedCluster?.let {
-                val taskId = createOrUpdateTask(projectId, repoName, fed, savedFedCluster)
-                FederatedCluster(fed.projectId, fed.repoName, it.id!!, fed.enabled, taskId)
-            }
+        return federatedClusters.mapNotNull { it ->
+            val federatedCluster = getOrCreateCluster(it.clusterNodeInfo)
+            val fed = FederatedCluster(it.projectId, it.repoName, federatedCluster.id!!, it.enabled)
+            val taskId = createOrUpdateTask(projectId, repoName, fed, federatedCluster)
+            fed.taskId = taskId
+            fed
         }.toMutableList()
     }
 
-    private fun syncFederationConfig(
+    private fun saveFederationConfig(
         projectId: String,
         repoName: String,
         clusterId: String,
         fedList: MutableList<FederatedCluster>,
-        cluster: ClusterInfo,
     ) {
-        val request = FederatedRepositoryCreateRequest(
+        val request = buildTFederatedRepository(
             projectId = projectId,
             repoName = repoName,
             clusterId = clusterId,
             federatedClusters = fedList
         )
-        val federatedRepositoryClient = FeignClientFactory.create<FederatedRepositoryClient>(cluster)
-        federatedRepositoryClient.configSync(request)
+        federatedRepositoryDao.save(request)
     }
 
     /**
@@ -283,7 +272,7 @@ class FederationRepositoryServiceImpl(
                 replicaType = ReplicaType.FEDERATION,
                 setting = ReplicaSetting(),
                 remoteClusterIds = setOf(clusterInfo.id!!),
-                enabled = true
+                enabled = federatedCluster.enabled
             )
             task = replicaTaskService.create(taskCreateRequest)
         } else {
@@ -299,6 +288,9 @@ class FederationRepositoryServiceImpl(
             )
             replicaTaskService.update(taskUpdateRequest)?.let {
                 task = it.copy()
+            }
+            if (task!!.enabled != federatedCluster.enabled) {
+                replicaTaskService.toggleStatus(task!!.key)
             }
         }
         return task!!.id
@@ -325,9 +317,9 @@ class FederationRepositoryServiceImpl(
         }
     }
 
-    private fun buildClusterNodeCreateRequest(cluster: ClusterInfo): ClusterNodeCreateRequest {
+    private fun buildClusterNodeCreateRequest(cluster: ClusterNodeInfo): ClusterNodeCreateRequest {
         return ClusterNodeCreateRequest(
-            name = cluster.name!!,
+            name = cluster.name,
             url = cluster.url,
             certificate = cluster.certificate,
             appId = cluster.appId,
@@ -375,12 +367,17 @@ class FederationRepositoryServiceImpl(
         )
     }
 
-    private fun buildTFederatedRepository(request: FederatedRepositoryCreateRequest): TFederatedRepository {
+    private fun buildTFederatedRepository(
+        projectId: String,
+        repoName: String,
+        federatedClusters: List<FederatedCluster>,
+        clusterId: String,
+    ): TFederatedRepository {
         return TFederatedRepository(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            clusterId = request.clusterId,
-            federatedClusters = request.federatedClusters,
+            projectId = projectId,
+            repoName = repoName,
+            clusterId = clusterId,
+            federatedClusters = federatedClusters,
             createdBy = SecurityUtils.getUserId(),
             createdDate = LocalDateTime.now(),
             lastModifiedBy = SecurityUtils.getUserId(),
