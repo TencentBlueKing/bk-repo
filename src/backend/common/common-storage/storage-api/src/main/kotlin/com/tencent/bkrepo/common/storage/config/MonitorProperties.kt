@@ -38,7 +38,14 @@ data class MonitorProperties(
     var enabled: Boolean = false,
     var fallbackLocation: String? = null,
     var enableTransfer: Boolean = false,
+    /**
+     * healthy状态时健康检查间隔
+     */
     var interval: Duration = Duration.ofSeconds(10),
+    /**
+     * unhealthy状态时健康检查间隔，设置较短时间可提高检查频率，尽早恢复为healthy状态，但是会频繁读写存储
+     */
+    var failedInterval: Duration = Duration.ofSeconds(5),
     var dataSize: DataSize = DataSize.ofMegabytes(1),
     var timeout: Duration = Duration.ofSeconds(5),
     var timesToRestore: Int = 5,
