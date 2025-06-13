@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
@@ -222,7 +221,7 @@ class ArtifactReplicaController(
         repoName: String,
         fullPath: String,
         compareDate: LocalDateTime,
-        source: String?
+        source: String?,
     ) {
         if (source.isNullOrEmpty()) return
         val existNode = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))

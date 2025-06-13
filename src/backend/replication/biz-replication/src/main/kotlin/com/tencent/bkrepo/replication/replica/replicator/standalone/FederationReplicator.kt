@@ -32,13 +32,11 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
-import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
 import com.tencent.bkrepo.replication.constant.FEDERATED
-import com.tencent.bkrepo.replication.constant.FEDERATED_SOURCE
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
@@ -76,7 +74,7 @@ class FederationReplicator(
     private val localDataManager: LocalDataManager,
     private val artifactReplicationHandler: ClusterArtifactReplicationHandler,
     private val replicationProperties: ReplicationProperties,
-    private val federationRepositoryService: FederationRepositoryService
+    private val federationRepositoryService: FederationRepositoryService,
 ) : Replicator {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
@@ -324,7 +322,7 @@ class FederationReplicator(
     }
 
     private fun buildMetadataSaveRequest(
-        request: NodeCreateRequest, localProjectId: String, localRepoName: String
+        request: NodeCreateRequest, localProjectId: String, localRepoName: String,
     ): MetadataSaveRequest {
         return MetadataSaveRequest(
             projectId = request.projectId,

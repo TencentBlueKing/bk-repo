@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.common.metadata.service.node
 
-import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest

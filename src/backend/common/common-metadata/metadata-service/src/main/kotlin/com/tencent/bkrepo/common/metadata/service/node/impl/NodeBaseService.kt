@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_FULL_PATH
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_PROJECT
 import com.tencent.bkrepo.common.artifact.constant.METADATA_KEY_LINK_REPO
-import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType

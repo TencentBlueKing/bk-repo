@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyChan
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.ProxyConfiguration
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
-import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService

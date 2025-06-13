@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
-import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
@@ -157,7 +156,7 @@ class EdgeNodeServiceImpl(
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
-        projectId: String, repoName: String, fullPath: String, operator: String
+        projectId: String, repoName: String, fullPath: String, operator: String,
     ) {
         return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
             projectId, repoName, fullPath, operator
@@ -191,7 +190,7 @@ class EdgeNodeServiceImpl(
         date: LocalDateTime,
         operator: String,
         path: String,
-        decreaseVolume: Boolean
+        decreaseVolume: Boolean,
     ): NodeDeleteResult {
         ignoreException(
             projectId = projectId,
@@ -208,7 +207,7 @@ class EdgeNodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
-        nodeId: String
+        nodeId: String,
     ): NodeDeleteResult {
         return NodeDeleteSupport(this).deleteNodeById(projectId, repoName, fullPath, operator, nodeId)
     }
@@ -223,7 +222,7 @@ class EdgeNodeServiceImpl(
             moveRequest.destNodeFolder = nodeDao.findNode(
                 projectId = moveRequest.destProjectId ?: moveRequest.projectId,
                 repoName = moveRequest.destRepoName ?: moveRequest.srcRepoName,
-                fullPath = moveRequest.destPath ?: moveRequest.destFullPath,
+                fullPath = moveRequest.destFullPath ?: moveRequest.destFullPath,
             )?.folder
             centerNodeClient.moveNode(moveRequest)
         }
@@ -240,7 +239,7 @@ class EdgeNodeServiceImpl(
             copyRequest.destNodeFolder = nodeDao.findNode(
                 projectId = copyRequest.destProjectId ?: copyRequest.projectId,
                 repoName = copyRequest.destRepoName ?: copyRequest.srcRepoName,
-                fullPath = copyRequest.destPath ?: copyRequest.destFullPath,
+                fullPath = copyRequest.destFullPath ?: copyRequest.destFullPath,
             )?.folder
             centerNodeClient.copyNode(copyRequest)
         }
@@ -264,7 +263,7 @@ class EdgeNodeServiceImpl(
     }
 
     override fun getDeletedNodeDetail(
-        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime,
     ): NodeDetail? {
         return NodeRestoreSupport(this).getDeletedNodeDetail(projectId, repoName, fullPath, deleted)
     }
