@@ -76,6 +76,7 @@ class FederationRepositoryServiceImpl(
     var version: String = DEFAULT_VERSION
 
     override fun createFederationRepository(request: FederatedRepositoryCreateRequest) {
+        logger.info("Creating federation repository for project: ${request.projectId}, repo: ${request.repoName}")
         paramsCheck(request)
         val currentCluster = clusterNodeService.getByClusterId(request.clusterId)
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, request.clusterId)
@@ -83,11 +84,14 @@ class FederationRepositoryServiceImpl(
             val taskMap = doFederatedRepositoryCreate(request, currentCluster)
             val tFederatedRepository = buildTFederatedRepository(request, taskMap)
             federatedRepositoryDao.save(tFederatedRepository)
+            logger.info(
+                "Successfully created federation repository for " +
+                    "project: ${request.projectId}, repo: ${request.repoName}"
+            )
         } catch (e: RemoteErrorCodeException) {
-            logger.warn("create federation repository failed, request: ${e.message}")
+            logger.warn("Failed to create federation repository, request: ${e.message}")
             throw ErrorCodeException(ReplicationMessageCode.UNSUPPORTED_CLUSTER_VERSION)
         }
-
     }
 
     override fun saveFederationRepositoryConfig(request: FederatedRepositoryCreateRequest) {
@@ -166,6 +170,7 @@ class FederationRepositoryServiceImpl(
             projectId, repoName, federatedClusters, clusterClusterNodeClient
         )
         syncFederationConfig(projectId, repoName, existCluster.id!!, fedList, cluster)
+        logger.info("Successfully synced federation config for project: $projectId, repo: $repoName")
     }
 
     private fun buildClusterInfo(clusterNode: ClusterNodeInfo): ClusterInfo {
@@ -220,11 +225,13 @@ class FederationRepositoryServiceImpl(
         federatedClusters: List<FederatedCluster>,
         clusterClusterNodeClient: ClusterClusterNodeClient,
     ): MutableList<FederatedCluster> {
+        logger.info("Starting to build federated cluster list for project: $projectId, repo: $repoName")
         return federatedClusters.mapNotNull { fed ->
             val fedCluster = clusterNodeService.getByClusterId(fed.clusterId)
                 ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, fed.clusterId)
             val fedClusterInfo = buildClusterInfo(fedCluster)
             val clusterCreateRequest = buildClusterNodeCreateRequest(fedClusterInfo)
+            logger.info("Creating cluster with request: $clusterCreateRequest")
             clusterClusterNodeClient.create(SYSTEM_USER, clusterCreateRequest)
             val savedFedCluster = clusterClusterNodeClient.getCluster(fedClusterInfo.name!!).data
             savedFedCluster?.let {
@@ -267,6 +274,7 @@ class FederationRepositoryServiceImpl(
         val taskName = FEDERATION_TASK_NAME.format(projectId, repoName, clusterInfo.name)
         var task = replicaTaskService.getByTaskName(taskName)
         if (task == null) {
+            logger.info("Creating new federation task: $taskName")
             val taskCreateRequest = ReplicaTaskCreateRequest(
                 name = taskName,
                 localProjectId = projectId,
@@ -279,6 +287,7 @@ class FederationRepositoryServiceImpl(
             )
             task = replicaTaskService.create(taskCreateRequest)
         } else {
+            logger.info("Updating existing federation task: ${task.id}")
             val taskUpdateRequest = ReplicaTaskUpdateRequest(
                 key = task.key,
                 name = task.name,
