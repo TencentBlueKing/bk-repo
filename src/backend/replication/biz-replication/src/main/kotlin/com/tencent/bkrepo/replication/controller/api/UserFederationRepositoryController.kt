@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.replication.controller.api
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
@@ -44,19 +44,20 @@ import org.springframework.web.bind.annotation.RestController
  * 联邦仓库配置接口
  */
 @Tag(name = "联邦仓库接口")
-@Principal(type = PrincipalType.ADMIN)
 @RestController
 @RequestMapping("/api/federation")
 class UserFederationRepositoryController(
     private val federationRepositoryService: FederationRepositoryService,
+    private val permissionManager: PermissionManager,
 ) {
 
 
     @Operation(summary = "创建联邦仓库")
-    @PostMapping("/create}")
+    @PostMapping("/create")
     fun federatedRepositoryCreate(
         @RequestBody requests: FederatedRepositoryCreateRequest,
     ): Response<Void> {
+        permissionManager.checkRepoPermission(PermissionAction.WRITE, requests.projectId, requests.repoName)
         federationRepositoryService.createFederationRepository(requests)
         return ResponseBuilder.success()
     }

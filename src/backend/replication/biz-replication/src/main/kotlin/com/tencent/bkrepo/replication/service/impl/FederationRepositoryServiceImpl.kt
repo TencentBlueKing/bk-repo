@@ -31,8 +31,10 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.util.version.SemVersion
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
+import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
@@ -71,15 +73,21 @@ class FederationRepositoryServiceImpl(
 ) : FederationRepositoryService {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
-    private var version: String = DEFAULT_VERSION
+    var version: String = DEFAULT_VERSION
 
     override fun createFederationRepository(request: FederatedRepositoryCreateRequest) {
         paramsCheck(request)
         val currentCluster = clusterNodeService.getByClusterId(request.clusterId)
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, request.clusterId)
-        val taskMap = doFederatedRepositoryCreate(request, currentCluster)
-        val tFederatedRepository = buildTFederatedRepository(request, taskMap)
-        federatedRepositoryDao.save(tFederatedRepository)
+        try {
+            val taskMap = doFederatedRepositoryCreate(request, currentCluster)
+            val tFederatedRepository = buildTFederatedRepository(request, taskMap)
+            federatedRepositoryDao.save(tFederatedRepository)
+        } catch (e: RemoteErrorCodeException) {
+            logger.warn("create federation repository failed, request: ${e.message}")
+            throw ErrorCodeException(ReplicationMessageCode.UNSUPPORTED_CLUSTER_VERSION)
+        }
+
     }
 
     override fun saveFederationRepositoryConfig(request: FederatedRepositoryCreateRequest) {
@@ -116,7 +124,11 @@ class FederationRepositoryServiceImpl(
         require(request.federatedClusters.isNotEmpty()) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "federatedClusters")
         }
-        localDataManager.findRepoByName(request.projectId, request.repoName)
+        val repo = localDataManager.findRepoByName(request.projectId, request.repoName)
+        if (repo.type != RepositoryType.GENERIC) {
+            logger.warn("Unsupported repo type: ${repo.type}")
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request.repoName)
+        }
     }
 
     private fun doFederatedRepositoryCreate(
@@ -128,7 +140,7 @@ class FederationRepositoryServiceImpl(
             val clusterNode = clusterNodeService.getByClusterId(fed.clusterId)
                 ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, fed.clusterId)
             val federatedClusters = request.federatedClusters
-                .filter { it.clusterId == fed.clusterId }
+                .filter { it.clusterId != fed.clusterId }
                 .plus(FederatedCluster(request.projectId, request.repoName, currentCluster.id!!, true))
             createFederatedClusterAndSyncConfig(fed.projectId, fed.repoName, clusterNode, federatedClusters)
             val taskId = createOrUpdateTask(request.projectId, request.repoName, fed, clusterNode)
@@ -171,7 +183,9 @@ class FederationRepositoryServiceImpl(
     }
 
     private fun checkClusterVersion(artifactReplicaClient: ArtifactReplicaClient) {
-        if (artifactReplicaClient.version().data != version) {
+        val currentVersion = SemVersion.parse(version)
+        val federatedClusterVersion = SemVersion.parse(artifactReplicaClient.version().data!!)
+        if (currentVersion > federatedClusterVersion) {
             throw ErrorCodeException(
                 ReplicationMessageCode.UNSUPPORTED_CLUSTER_VERSION,
                 version,
@@ -326,7 +340,7 @@ class FederationRepositoryServiceImpl(
      */
     private fun buildTFederatedRepository(
         request: FederatedRepositoryCreateRequest,
-        taskMap: Map<String, String>
+        taskMap: Map<String, String>,
     ): TFederatedRepository {
         // 将请求中的联邦集群列表转换为实体列表，并添加对应的任务ID
         val federatedClusters = request.federatedClusters.map {
