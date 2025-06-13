@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.repository.pojo.project
 
-import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import io.swagger.v3.oas.annotations.media.Schema
 

@@ -31,7 +31,6 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.manager.resource.FsNodeResource
 import com.tencent.bkrepo.common.artifact.manager.resource.LocalNodeResource
 import com.tencent.bkrepo.common.artifact.manager.resource.NodeResource

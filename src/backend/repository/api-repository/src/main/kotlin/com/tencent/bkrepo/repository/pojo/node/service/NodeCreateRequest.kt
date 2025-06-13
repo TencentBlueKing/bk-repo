@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.repository.pojo.node.service
 
-import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.AuditableRequest
 import com.tencent.bkrepo.repository.pojo.ServiceRequest
