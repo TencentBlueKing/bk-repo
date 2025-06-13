@@ -60,7 +60,9 @@ data class NodeMoveCopyRequest(
     @get:Schema(title = "同名文件是否覆盖", required = false)
     val overwrite: Boolean = false,
     @get:Schema(title = "操作用户", required = true)
-    val operator: String
+    val operator: String,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 ) : NodeRequest {
     override val projectId: String
         get() = srcProjectId

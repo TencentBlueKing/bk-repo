@@ -67,13 +67,15 @@ object NodeEventFactory {
         projectId: String,
         repoName: String,
         fullPath: String,
-        userId: String
+        userId: String,
+        deletedDate: String
     ): NodeDeletedEvent {
         return NodeDeletedEvent(
             projectId = projectId,
             repoName = repoName,
             resourceKey = fullPath,
-            userId = userId
+            userId = userId,
+            deletedDate = deletedDate
         )
     }
 
@@ -84,14 +86,16 @@ object NodeEventFactory {
         projectId: String,
         repoName: String,
         fullPaths: List<String>,
-        userId: String
+        userId: String,
+        deletedDate: String
     ): List<NodeDeletedEvent> {
         return fullPaths.map {
             NodeDeletedEvent(
                 projectId = projectId,
                 repoName = repoName,
                 resourceKey = it,
-                userId = userId
+                userId = userId,
+                deletedDate = deletedDate
             )
         }
     }

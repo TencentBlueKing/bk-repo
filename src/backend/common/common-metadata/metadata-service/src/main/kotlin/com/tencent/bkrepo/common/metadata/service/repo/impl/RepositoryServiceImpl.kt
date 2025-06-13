@@ -249,13 +249,10 @@ class RepositoryServiceImpl(
                 repository.configuration = cryptoConfigurationPwd(repoConfiguration, false).toJsonString()
                 checkAndRemoveDeletedRepo(projectId, name, credentialsKey)
                 repositoryDao.insert(repository)
-                val event = buildCreatedEvent(repoCreateRequest)
-                publishEvent(event)
-                messageSupplier.delegateToSupplier(
-                    data = event,
-                    topic = event.topic,
-                    key = event.getFullResourceKey(),
-                )
+                if (source.isNullOrEmpty()) {
+                    val event = buildCreatedEvent(repoCreateRequest)
+                    publishEvent(event)
+                }
                 logger.info("Create repository [$repoCreateRequest] success.")
                 convertToDetail(repository)!!
             } catch (exception: DuplicateKeyException) {
@@ -296,13 +293,10 @@ class RepositoryServiceImpl(
             repository.display = display
             repositoryDao.save(repository)
         }
-        val event = buildUpdatedEvent(repoUpdateRequest)
-        publishEvent(event)
-        messageSupplier.delegateToSupplier(
-            data = event,
-            topic = event.topic,
-            key = event.getFullResourceKey(),
-        )
+        if (repoUpdateRequest.source.isNullOrEmpty()) {
+            val event = buildUpdatedEvent(repoUpdateRequest)
+            publishEvent(event)
+        }
         logger.info("Update repository[$repoUpdateRequest] success.")
     }
 
@@ -324,7 +318,9 @@ class RepositoryServiceImpl(
                 }
             }
         }
-        publishEvent(buildDeletedEvent(repoDeleteRequest))
+        if (repoDeleteRequest.source.isNullOrEmpty()) {
+            publishEvent(buildDeletedEvent(repoDeleteRequest))
+        }
         logger.info("Delete repository [$repoDeleteRequest] success.")
     }
 

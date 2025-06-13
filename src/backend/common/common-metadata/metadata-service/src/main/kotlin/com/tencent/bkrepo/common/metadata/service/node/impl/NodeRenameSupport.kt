@@ -61,7 +61,9 @@ open class NodeRenameSupport(
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
             checkNodeCluster(node)
             doRename(node, newFullPath, operator)
-            publishEvent(buildRenamedEvent(renameRequest))
+            if (source.isNullOrEmpty()) {
+                publishEvent(buildRenamedEvent(renameRequest))
+            }
             logger.info("Rename node [$this] success.")
         }
     }

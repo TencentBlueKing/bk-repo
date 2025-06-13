@@ -106,10 +106,12 @@ open class NodeMoveCopySupport(
             } else {
                 moveCopyFile(this)
             }
-            if (move) {
-                publishEvent(NodeEventFactory.buildMovedEvent(request))
-            } else {
-                publishEvent(NodeEventFactory.buildCopiedEvent(request))
+            if (request.source.isNullOrEmpty()) {
+                if (move) {
+                    publishEvent(NodeEventFactory.buildMovedEvent(request))
+                } else {
+                    publishEvent(NodeEventFactory.buildCopiedEvent(request))
+                }
             }
             return convertToDetail(
                 nodeBaseService.nodeDao.findNode(

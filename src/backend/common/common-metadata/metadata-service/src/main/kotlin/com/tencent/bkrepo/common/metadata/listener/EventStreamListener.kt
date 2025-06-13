@@ -37,7 +37,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class EventStreamListener(
-    private val messageSupplier: MessageSupplier
+    private val messageSupplier: MessageSupplier,
 ) {
 
     /**

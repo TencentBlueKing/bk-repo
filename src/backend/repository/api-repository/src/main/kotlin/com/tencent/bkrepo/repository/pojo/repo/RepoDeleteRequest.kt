@@ -43,5 +43,7 @@ data class RepoDeleteRequest(
     @get:Schema(title = "是否强制删除（忽略存在的文件）", required = false)
     val forced: Boolean = false,
     @get:Schema(title = "操作用户", required = true)
-    val operator: String
+    val operator: String,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 ) : RepoRequest

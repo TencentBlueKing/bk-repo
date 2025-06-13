@@ -47,5 +47,7 @@ data class NodeUpdateRequest(
     @get:Schema(title = "过期时间，单位天(0代表永久保存)")
     val expires: Long = 0,
     @get:Schema(title = "操作用户", required = true)
-    override val operator: String
+    override val operator: String,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 ) : NodeRequest, ServiceRequest

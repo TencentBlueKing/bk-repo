@@ -64,11 +64,12 @@ class CenterNodeDeleteSupport(
         projectId: String,
         repoName: String,
         fullPath: String,
-        operator: String
+        operator: String,
+        source: String?,
     ): NodeDeleteResult {
         val clusterName = SecurityUtils.getClusterName()
         if (clusterName.isNullOrEmpty()) {
-            return super.deleteByPath(projectId, repoName, fullPath, operator)
+            return super.deleteByPath(projectId, repoName, fullPath, operator, source)
         }
         val normalizedFullPath = PathUtils.normalizeFullPath(fullPath)
         val node = nodeDao.findNode(projectId, repoName, normalizedFullPath)

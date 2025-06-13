@@ -51,4 +51,6 @@ data class ProjectCreateRequest(
     val metadata: List<ProjectMetadata> = emptyList(),
     @get:Schema(title = "项目新建仓库默认使用的存储", required = false)
     val credentialsKey: String? = null,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 ) : ProjectRequest

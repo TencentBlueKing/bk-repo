@@ -609,7 +609,8 @@ class DataSeparatorImpl(
             clusterNames = node.clusterNames,
             archived = node.archived,
             compressed = node.compressed,
-            separationDate = separationDate
+            separationDate = separationDate,
+            federatedSource = node.federatedSource
         )
     }
 

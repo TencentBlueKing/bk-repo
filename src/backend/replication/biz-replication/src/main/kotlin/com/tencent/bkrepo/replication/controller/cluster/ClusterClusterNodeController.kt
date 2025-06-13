@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ClusterClusterNodeController(
-    private val clusterNodeService: ClusterNodeService
+    private val clusterNodeService: ClusterNodeService,
 ) : ClusterClusterNodeClient {
 
     override fun create(userId: String, clusterNodeCreateRequest: ClusterNodeCreateRequest): Response<Void> {

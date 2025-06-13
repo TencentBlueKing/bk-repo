@@ -55,5 +55,7 @@ data class RepoUpdateRequest(
     @get:Schema(title = "操作用户", required = true)
     val operator: String,
     @get:Schema(title = "是否展示", required = true)
-    val display: Boolean = true
+    val display: Boolean = true,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 ) : RepoRequest
