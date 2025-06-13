@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.api.util.HumanReadable.time
+import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
@@ -37,6 +38,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Collections
 import java.util.concurrent.CancellationException
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -90,11 +92,6 @@ class StorageHealthMonitor(
      */
     private val checkFailedTimes: AtomicInteger = AtomicInteger(0)
 
-    /**
-     * 检查器
-     */
-    private val checker = StorageHealthChecker(getPrimaryPath(), monitorConfig.dataSize)
-
     init {
         require(!monitorConfig.timeout.isNegative && !monitorConfig.timeout.isZero)
         require(!monitorConfig.interval.isNegative && !monitorConfig.interval.isZero)
@@ -112,9 +109,21 @@ class StorageHealthMonitor(
         thread {
             while (true) {
                 if (monitorConfig.enabled) {
+                    var checker: StorageHealthChecker? = null
                     try {
-                        val future = executorService.submit { checker.check() }
-                        future.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
+                        // checker相关操作在故障时可能会阻塞线程，需要异步执行
+                        CompletableFuture.supplyAsync(
+                            // 创建checker
+                            {
+                                checker = StorageHealthChecker(getPrimaryPath(), monitorConfig.dataSize)
+                                checker!!
+                            },
+                            executorService
+                        ).thenAcceptAsync(
+                            // 执行检查
+                            { it.check() },
+                            executorService
+                        ).get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
                         onCheckSuccess()
                     } catch (ignored: TimeoutException) {
                         onCheckFailed(IO_TIMEOUT_MESSAGE)
@@ -128,23 +137,20 @@ class StorageHealthMonitor(
                         onCheckFailed(exception.message ?: UNKNOWN)
                     } finally {
                         try {
-                            val future = executorService.submit { checker.clean() }
+                            val future = executorService.submit { checker?.closeQuietly() }
                             future.get(1, TimeUnit.SECONDS)
-                        } catch (exception: ExecutionException) {
-                            val errorMsg = "Clean checker error: $exception"
-                            if (exception.cause is AccessDeniedException) {
-                                logger.error(errorMsg, exception)
-                            } else {
-                                logger.warn(errorMsg, exception)
-                            }
-                        } catch (exception: Exception) {
-                            logger.warn("Clean checker error: $exception", exception)
+                        } catch (e: Exception) {
+                            logger.warn("Close checker failed: ", e)
                         }
                     }
                 }
 
                 // wait loop
-                val interval = if (checkFailedTimes.get() > 0) 1 else monitorConfig.interval.seconds
+                val interval = if (checkFailedTimes.get() > 0) {
+                    monitorConfig.failedInterval.seconds
+                } else {
+                    monitorConfig.interval.seconds
+                }
                 TimeUnit.SECONDS.sleep(interval)
             }
         }
