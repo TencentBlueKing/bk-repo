@@ -32,6 +32,7 @@
 plugins {
     id("com.tencent.devops.boot") version Versions.DevopsBoot
     id("com.tencent.devops.publish") version Versions.DevopsBoot apply false
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
 }
 
 allprojects {
@@ -107,6 +108,18 @@ allprojects {
     if (isBootProject(this)) {
         tasks.named("copyToRelease") {
             dependsOn(tasks.named("bootJar"))
+        }
+    }
+}
+
+nexusPublishing {
+    repositories {
+        // see https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/#configuration
+        sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
+            username.set(System.getenv("SONATYPE_USERNAME"))
+            password.set(System.getenv("SONATYPE_PASSWORD"))
         }
     }
 }
