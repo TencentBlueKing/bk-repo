@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.retry
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.metadata.enums.OperationSource
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
@@ -37,15 +38,18 @@ import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
 import com.tencent.bkrepo.replication.constant.FEDERATED
+import com.tencent.bkrepo.replication.constant.FEDERATED_SOURCE
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
+import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
 import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterArtifactReplicationHandler
 import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
+import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -72,6 +76,7 @@ class FederationReplicator(
     private val localDataManager: LocalDataManager,
     private val artifactReplicationHandler: ClusterArtifactReplicationHandler,
     private val replicationProperties: ReplicationProperties,
+    private val federationRepositoryService: FederationRepositoryService
 ) : Replicator {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
@@ -98,7 +103,7 @@ class FederationReplicator(
                 displayName = remoteProjectId,
                 description = localProject.description,
                 operator = localProject.createdBy,
-                source = OperationSource.FEDERATE
+                source = getCurrentClusterName(localProjectId, localRepoName)
             )
             artifactReplicaClient!!.replicaProjectCreateRequest(request)
         }
@@ -120,7 +125,7 @@ class FederationReplicator(
                     description = localRepo.description,
                     configuration = localRepo.configuration,
                     operator = localRepo.createdBy,
-                    source = OperationSource.FEDERATE
+                    source = getCurrentClusterName(localProjectId, localRepoName)
                 )
                 artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
             }
@@ -175,7 +180,7 @@ class FederationReplicator(
                 extension = packageVersion.extension,
                 overwrite = true,
                 createdBy = packageVersion.createdBy,
-                source = OperationSource.FEDERATE
+                source = getCurrentClusterName(localProjectId, localRepoName)
             )
             artifactReplicaClient!!.replicaPackageVersionCreatedRequest(request)
         }
@@ -241,7 +246,9 @@ class FederationReplicator(
                 }
 
                 // 3. 通过文件传输完成标识
-                artifactReplicaClient!!.replicaMetadataSaveRequest(buildMetadataSaveRequest(nodeCreateRequest))
+                artifactReplicaClient!!.replicaMetadataSaveRequest(
+                    buildMetadataSaveRequest(nodeCreateRequest, localProjectId, localRepoName)
+                )
                 return true
             }
         }
@@ -265,6 +272,11 @@ class FederationReplicator(
         }
     }
 
+    private fun getCurrentClusterName(projectId: String, repoName: String): String {
+        return federationRepositoryService.getCurrentClusterName(projectId, repoName)
+            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, "self")
+    }
+
     private fun buildNodeDeleteRequest(context: ReplicaContext, node: NodeInfo): NodeDeleteRequest? {
         with(context) {
             // 外部集群仓库没有project/repoName
@@ -274,7 +286,7 @@ class FederationReplicator(
                 repoName = remoteRepoName,
                 fullPath = node.fullPath,
                 operator = node.createdBy,
-                source = OperationSource.FEDERATE,
+                source = getCurrentClusterName(localProjectId, localRepoName),
                 deletedDate = node.deleted
             )
         }
@@ -306,19 +318,21 @@ class FederationReplicator(
                 createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = node.lastModifiedBy,
                 lastModifiedDate = LocalDateTime.parse(node.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME),
-                source = OperationSource.FEDERATE
+                source = getCurrentClusterName(localProjectId, localRepoName)
             )
         }
     }
 
-    private fun buildMetadataSaveRequest(request: NodeCreateRequest): MetadataSaveRequest {
+    private fun buildMetadataSaveRequest(
+        request: NodeCreateRequest, localProjectId: String, localRepoName: String
+    ): MetadataSaveRequest {
         return MetadataSaveRequest(
             projectId = request.projectId,
             repoName = request.repoName,
             fullPath = request.fullPath,
             nodeMetadata = listOf(MetadataModel(FEDERATED, true, true)),
             operator = request.operator,
-            source = OperationSource.FEDERATE
+            source = getCurrentClusterName(localProjectId, localRepoName)
         )
     }
 

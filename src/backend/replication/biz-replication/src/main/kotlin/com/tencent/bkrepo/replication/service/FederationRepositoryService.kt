@@ -60,4 +60,9 @@ interface FederationRepositoryService {
      * 更新联邦仓库配置
      */
     fun updateFederationRepository(request: FederatedRepositoryCreateRequest)
+
+    /**
+     * 根据项目仓库获取当前集群名
+     */
+    fun getCurrentClusterName(projectId: String, repoName: String): String?
 }

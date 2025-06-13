@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.api.BlobReplicaClient
+import com.tencent.bkrepo.replication.api.cluster.ClusterClusterNodeClient
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
@@ -92,6 +93,7 @@ class ReplicaContext(
     var errorMessage: String? = null
     var artifactReplicaClient: ArtifactReplicaClient? = null
     var blobReplicaClient: BlobReplicaClient? = null
+    var clusterClusterNodeClient: ClusterClusterNodeClient? = null
     val replicator: Replicator
 
     var cluster: ClusterInfo
@@ -120,6 +122,7 @@ class ReplicaContext(
         if (remoteCluster.type != ClusterNodeType.REMOTE) {
             artifactReplicaClient = FeignClientFactory.create(cluster)
             blobReplicaClient = FeignClientFactory.create(cluster)
+            clusterClusterNodeClient = FeignClientFactory.create(cluster)
         }
         replicator = buildReplicator()
 

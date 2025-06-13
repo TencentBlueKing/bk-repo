@@ -87,6 +87,8 @@ data class NodeDetail(
     val archived: Boolean? = nodeInfo.archived,
     @get:Schema(title = "是否压缩")
     val compressed: Boolean? = nodeInfo.compressed,
+    @get:Schema(title = "联邦仓库同步来源集群id")
+    val federatedSource: String? = nodeInfo.federatedSource,
 ) {
     /**
      * 获取node所属package的name

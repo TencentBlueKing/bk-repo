@@ -32,10 +32,8 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
-import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.slf4j.LoggerFactory
@@ -51,7 +49,7 @@ class EventBasedReplicaJobExecutor(
     localDataManager: LocalDataManager,
     replicaService: EventBasedReplicaService,
     replicationProperties: ReplicationProperties,
-    replicaRecordService: ReplicaRecordService
+    replicaRecordService: ReplicaRecordService,
 ) : CommonBasedReplicaJobExecutor(
     clusterNodeService, localDataManager, replicaService, replicationProperties, replicaRecordService
 ) {
@@ -66,9 +64,11 @@ class EventBasedReplicaJobExecutor(
             ReplicaObjectType.PATH -> {
                 pathCheck(event, task)
             }
+
             ReplicaObjectType.PACKAGE -> {
                 packageCheck(event, task)
             }
+
             else -> true
         }
     }

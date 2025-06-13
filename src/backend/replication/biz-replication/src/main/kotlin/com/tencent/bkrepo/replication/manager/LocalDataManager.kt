@@ -363,7 +363,8 @@ class LocalDataManager(
         var compressed: Boolean? = null,
         var projectId: String,
         var repoName: String,
-        var id: String? = null
+        var id: String? = null,
+        var federatedSource: String? = null,
     )
 
     private fun convert(node: Node?): NodeInfo? {

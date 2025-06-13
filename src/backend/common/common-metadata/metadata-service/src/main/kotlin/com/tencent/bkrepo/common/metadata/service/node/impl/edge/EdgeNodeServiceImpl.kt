@@ -170,7 +170,7 @@ class EdgeNodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
-        source: OperationSource,
+        source: String?,
     ): NodeDeleteResult {
         return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator, source)
     }

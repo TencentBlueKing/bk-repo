@@ -72,7 +72,7 @@ interface NodeDeleteOperation {
         repoName: String,
         fullPath: String,
         operator: String,
-        source: OperationSource = OperationSource.ACTIVE
+        source: String? = null
     ): NodeDeleteResult
 
     /**

@@ -250,7 +250,7 @@ class RepositoryServiceImpl(
                 repository.configuration = cryptoConfigurationPwd(repoConfiguration, false).toJsonString()
                 checkAndRemoveDeletedRepo(projectId, name, credentialsKey)
                 repositoryDao.insert(repository)
-                if (source != OperationSource.FEDERATE) {
+                if (source.isNullOrEmpty()) {
                     val event = buildCreatedEvent(repoCreateRequest)
                     publishEvent(event)
                 }
@@ -294,7 +294,7 @@ class RepositoryServiceImpl(
             repository.display = display
             repositoryDao.save(repository)
         }
-        if (repoUpdateRequest.source != OperationSource.FEDERATE) {
+        if (repoUpdateRequest.source.isNullOrEmpty()) {
             val event = buildUpdatedEvent(repoUpdateRequest)
             publishEvent(event)
         }
@@ -319,7 +319,7 @@ class RepositoryServiceImpl(
                 }
             }
         }
-        if (repoDeleteRequest.source != OperationSource.FEDERATE) {
+        if (repoDeleteRequest.source.isNullOrEmpty()) {
             publishEvent(buildDeletedEvent(repoDeleteRequest))
         }
         logger.info("Delete repository [$repoDeleteRequest] success.")

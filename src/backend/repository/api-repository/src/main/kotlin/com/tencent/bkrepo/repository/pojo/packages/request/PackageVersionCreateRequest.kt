@@ -79,6 +79,6 @@ data class PackageVersionCreateRequest(
     val createdBy: String,
     @get:Schema(title = "同版本是否包含多个制品")
     val multiArtifact: Boolean = false,
-    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
-    val source: OperationSource = OperationSource.ACTIVE,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 )

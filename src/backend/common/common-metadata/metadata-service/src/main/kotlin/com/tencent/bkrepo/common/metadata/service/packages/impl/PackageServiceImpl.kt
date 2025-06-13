@@ -231,7 +231,7 @@ class PackageServiceImpl(
                     update.inc(TPackage::versions.name)
                     packageDao.upsert(query, update)
                     logger.info("Create package version[$newVersion] success")
-                    if (source != OperationSource.FEDERATE) {
+                    if (source.isNullOrEmpty()) {
                         publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
                     }
                 } catch (exception: DuplicateKeyException) {

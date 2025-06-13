@@ -133,7 +133,7 @@ open class NodeDeleteSupport(
         repoName: String,
         fullPath: String,
         operator: String,
-        source: OperationSource,
+        source: String?,
     ): NodeDeleteResult {
         val criteria = buildCriteria(projectId, repoName, fullPath)
         val query = Query(criteria)
@@ -225,7 +225,7 @@ open class NodeDeleteSupport(
         repoName: String,
         fullPaths: List<String>? = null,
         decreaseVolume: Boolean = true,
-        source: OperationSource = OperationSource.ACTIVE
+        source: String? = null
     ): NodeDeleteResult {
         var deletedNum = 0L
         var deletedSize = 0L
@@ -257,7 +257,7 @@ open class NodeDeleteSupport(
                 if (routerControllerProperties.enabled) {
                     routerControllerClient.removeNodes(projectId, repoName, fullPath)
                 }
-                if (source != OperationSource.FEDERATE) {
+                if (source.isNullOrEmpty()) {
                     publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator, deleteTime.toString()))
                 }
             }

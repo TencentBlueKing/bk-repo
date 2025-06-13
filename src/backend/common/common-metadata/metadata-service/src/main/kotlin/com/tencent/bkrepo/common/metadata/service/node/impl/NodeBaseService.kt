@@ -284,9 +284,9 @@ abstract class NodeBaseService(
         }
     }
 
-    private fun afterCreate(repo: TRepository, node: TNode, source: OperationSource) {
+    fun afterCreate(repo: TRepository, node: TNode, source: String?) {
         with(node) {
-            if (isGenericRepo(repo) && source != OperationSource.FEDERATE) {
+            if (isGenericRepo(repo) && source.isNullOrEmpty()) {
                 publishEvent(buildCreatedEvent(node))
                 createRouter(this)
             }

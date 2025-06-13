@@ -107,7 +107,7 @@ class MetadataServiceImpl(
             }
 
             nodeDao.save(node)
-            if (source != OperationSource.FEDERATE) {
+            if (source.isNullOrEmpty()) {
                 publishEvent(buildMetadataSavedEvent(request))
             }
             logger.info("Save metadata[$newMetadata] on node[/$projectId/$repoName$fullPath] success.")
@@ -151,7 +151,7 @@ class MetadataServiceImpl(
                 Query.query(where(TMetadata::key).inValues(keyList))
             )
             nodeDao.updateMulti(query, update)
-            if (source != OperationSource.FEDERATE) {
+            if (source.isNullOrEmpty()) {
                 publishEvent(buildMetadataDeletedEvent(this))
             }
             logger.info("Delete metadata[$keyList] on node[/$projectId/$repoName$fullPath] success.")

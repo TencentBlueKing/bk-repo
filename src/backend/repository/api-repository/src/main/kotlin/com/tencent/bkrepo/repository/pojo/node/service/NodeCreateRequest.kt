@@ -76,6 +76,6 @@ data class NodeCreateRequest(
     override var lastModifiedDate: LocalDateTime? = null,
     @get:Schema(title = "是否SEPARATE_UPLOAD")
     val separate: Boolean = false,
-    @get:Schema(title = "操作来源，是主动还是联邦操作", required = false)
-    val source: OperationSource = OperationSource.ACTIVE,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 ) : NodeRequest, ServiceRequest, AuditableRequest

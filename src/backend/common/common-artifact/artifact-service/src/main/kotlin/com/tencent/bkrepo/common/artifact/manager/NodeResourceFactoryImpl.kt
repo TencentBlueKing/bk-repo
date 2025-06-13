@@ -31,6 +31,7 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.ClusterArchitecture
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.manager.resource.FsNodeResource
 import com.tencent.bkrepo.common.artifact.manager.resource.LocalNodeResource
 import com.tencent.bkrepo.common.artifact.manager.resource.NodeResource
@@ -44,6 +45,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
+import com.tencent.bkrepo.replication.constant.FEDERATED
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 
@@ -73,6 +75,11 @@ class NodeResourceFactoryImpl(
         if (isFsFile(nodeInfo)) {
             return FsNodeResource(nodeInfo, blockNodeService, range, storageService, storageCredentials)
         }
+        if (isFederating(nodeInfo)) {
+            val clusterInfo = getClusterInfo(nodeInfo.federatedSource!!)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, nodeInfo.federatedSource!!)
+            return RemoteNodeResource(digest, range, storageCredentials, clusterInfo, storageService)
+        }
         if (clusterProperties.role == ClusterNodeType.EDGE &&
             clusterProperties.architecture != ClusterArchitecture.COMMIT_EDGE) {
             return RemoteNodeResource(digest, range, storageCredentials, centerClusterInfo, storageService)
@@ -91,6 +98,12 @@ class NodeResourceFactoryImpl(
             storageCredentialService,
             archiveClient,
         )
+    }
+
+    private fun isFederating(node: NodeInfo): Boolean {
+        val federatedMetadata = node.nodeMetadata?.firstOrNull { it.key == FEDERATED }
+        val federated = federatedMetadata?.value as? Boolean ?: true
+        return !node.federatedSource.isNullOrEmpty() && !federated
     }
 
     private fun isFsFile(node: NodeInfo): Boolean {

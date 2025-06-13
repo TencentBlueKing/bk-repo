@@ -170,12 +170,14 @@ class CenterNodeServiceImpl(
                 if (existNode.clusterNames.orEmpty().isEmpty()) {
                     clusterNames.add(clusterProperties.self.name.toString())
                 }
+                val repo = checkRepo(projectId, repoName)
                 val update = Update().addToSet(TNode::clusterNames.name).each(clusterNames)
                 nodeMetadata?.let { update.set(TNode::metadata.name, it.map { convert(it) }) }
                 update.set(TNode::lastModifiedBy.name, operator)
                 update.set(TNode::lastModifiedDate.name, LocalDateTime.now())
                 nodeDao.updateFirst(query, update)
                 existNode.clusterNames = clusterNames
+                afterCreate(repo, existNode, source)
                 logger.info("Create node[/$projectId/$repoName$fullPath],sha256[$sha256],region[$srcCluster] success.")
                 return convertToDetail(existNode)!!
             } else {
@@ -197,7 +199,7 @@ class CenterNodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
-        source: OperationSource,
+        source: String?,
     ): NodeDeleteResult {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteByPath(
             projectId,

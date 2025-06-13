@@ -28,11 +28,6 @@
 package com.tencent.bkrepo.replication.pojo.federation.request
 
 import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
-import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
-import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
-import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import io.swagger.v3.oas.annotations.media.Schema
 
 

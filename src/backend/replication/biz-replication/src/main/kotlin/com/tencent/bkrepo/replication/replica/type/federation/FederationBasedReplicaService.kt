@@ -57,36 +57,20 @@ class FederationBasedReplicaService(
                     replicator.replicaRepo(this)
                 }
             }
+            // 只有非third party集群支持该消息
+            if (context.remoteCluster.type == ClusterNodeType.REMOTE)
+                throw UnsupportedOperationException()
             when (event.type) {
                 EventType.NODE_DELETED -> {
-                    // 只有非third party集群支持该消息
-                    if (context.remoteCluster.type == ClusterNodeType.REMOTE)
-                        throw UnsupportedOperationException()
+
                     val deleted = event.data["deletedDate"]?.toString()
                     val pathConstraint = PathConstraint(event.resourceKey, deletedDate = deleted)
                     replicaByDeletedNode(this, pathConstraint)
                 }
 
                 EventType.NODE_CREATED -> {
-                    // 只有非third party集群支持该消息
-                    if (context.remoteCluster.type == ClusterNodeType.REMOTE)
-                        throw UnsupportedOperationException()
                     val pathConstraint = PathConstraint(event.resourceKey)
                     replicaByPathConstraint(this, pathConstraint)
-                }
-
-                EventType.VERSION_CREATED -> {
-                    val packageKey = event.data["packageKey"].toString()
-                    val packageVersion = event.data["packageVersion"].toString()
-                    val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
-                    replicaByPackageConstraint(this, packageConstraint)
-                }
-
-                EventType.VERSION_UPDATED -> {
-                    val packageKey = event.data["packageKey"].toString()
-                    val packageVersion = event.data["packageVersion"].toString()
-                    val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
-                    replicaByPackageConstraint(this, packageConstraint)
                 }
 
                 else -> throw UnsupportedOperationException()

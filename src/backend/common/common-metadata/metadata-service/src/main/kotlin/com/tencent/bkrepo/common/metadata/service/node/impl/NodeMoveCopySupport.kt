@@ -107,7 +107,7 @@ open class NodeMoveCopySupport(
             } else {
                 moveCopyFile(this)
             }
-            if (request.source != OperationSource.FEDERATE) {
+            if (request.source.isNullOrEmpty()) {
                 if (move) {
                     publishEvent(NodeEventFactory.buildMovedEvent(request))
                 } else {

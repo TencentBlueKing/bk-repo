@@ -106,6 +106,12 @@ class FederationRepositoryServiceImpl(
         federatedRepositoryDao.save(tFederatedRepository)
     }
 
+    override fun getCurrentClusterName(projectId: String, repoName: String): String? {
+        return federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName).firstOrNull()?.let {
+            clusterNodeService.getByClusterId(it.clusterId)?.name
+        }
+    }
+
     private fun paramsCheck(request: FederatedRepositoryCreateRequest) {
         require(request.federatedClusters.isNotEmpty()) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "federatedClusters")

@@ -66,7 +66,7 @@ class CenterNodeDeleteSupport(
         repoName: String,
         fullPath: String,
         operator: String,
-        source: OperationSource,
+        source: String?,
     ): NodeDeleteResult {
         val clusterName = SecurityUtils.getClusterName()
         if (clusterName.isNullOrEmpty()) {
