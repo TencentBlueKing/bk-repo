@@ -136,7 +136,12 @@ class StorageHealthMonitor(
                     } catch (exception: Exception) {
                         onCheckFailed(exception.message ?: UNKNOWN)
                     } finally {
-                        executorService.execute { checker?.closeQuietly() }
+                        try {
+                            val future = executorService.submit { checker?.closeQuietly() }
+                            future.get(1, TimeUnit.SECONDS)
+                        } catch (e: Exception) {
+                            logger.warn("Close checker failed: ", e)
+                        }
                     }
                 }
 
