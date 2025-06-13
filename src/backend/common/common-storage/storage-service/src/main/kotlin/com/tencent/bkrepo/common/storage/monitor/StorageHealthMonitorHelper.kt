@@ -42,8 +42,9 @@ class StorageHealthMonitorHelper(private val monitorMap: ConcurrentHashMap<Strin
     }
 
     private fun createExecutorService(number: Int): ExecutorService {
+        // 至少需要2线程，线程1用于执行健康检查，线程2用于检查超时后异步停止健康检查
         return ThreadPoolExecutor(
-            0, 1,
+            0, 2,
             60L, TimeUnit.SECONDS, SynchronousQueue(),
             ThreadFactoryBuilder().setNameFormat("storage-monitor-$number-%d").build()
         )
