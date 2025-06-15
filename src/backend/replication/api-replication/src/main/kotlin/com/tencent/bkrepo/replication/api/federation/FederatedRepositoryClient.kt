@@ -48,7 +48,7 @@ import org.springframework.web.bind.annotation.RequestMapping
  */
 @Tag(name = "联邦仓库配置同步")
 @FeignClient(REPLICATION_SERVICE_NAME, contextId = "FederatedRepositoryClient")
-@RequestMapping("/federation")
+@RequestMapping("/service/federation")
 interface FederatedRepositoryClient {
     @Operation(summary = "同步配置")
     @PostMapping("/config/sync")
