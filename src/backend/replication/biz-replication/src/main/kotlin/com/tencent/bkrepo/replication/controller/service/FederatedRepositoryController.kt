@@ -28,14 +28,11 @@
 package com.tencent.bkrepo.replication.controller.service
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.federation.FederatedRepositoryClient
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 
-@Principal(type = PrincipalType.ADMIN)
 class FederatedRepositoryController(
     private val federationRepositoryService: FederationRepositoryService,
 ) : FederatedRepositoryClient {
