@@ -43,6 +43,6 @@ interface ClusterClusterNodeClient {
     @PostMapping("/create")
     fun create(
         @RequestParam userId: String,
-        @RequestBody clusterNodeCreateRequest: ClusterNodeCreateRequest
+        @RequestBody clusterNodeCreateRequest: ClusterNodeCreateRequest,
     ): Response<Void>
 }

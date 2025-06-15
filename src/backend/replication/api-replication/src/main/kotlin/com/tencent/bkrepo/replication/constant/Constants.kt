@@ -59,6 +59,9 @@ const val NAME = "name"
 const val RETRY_COUNT = 2
 const val DELAY_IN_SECONDS: Long = 1
 
+const val FEDERATED = "federated"
+const val FEDERATED_SOURCE = "federatedSource"
+
 /**
  * metrics
  */

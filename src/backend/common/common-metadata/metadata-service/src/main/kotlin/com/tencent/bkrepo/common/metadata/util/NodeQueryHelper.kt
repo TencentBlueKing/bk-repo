@@ -58,10 +58,12 @@ import java.time.LocalDateTime
 object NodeQueryHelper {
     private val logger = LoggerFactory.getLogger(NodeQueryHelper::class.java)
 
-    fun nodeQuery(projectId: String, repoName: String, fullPath: String? = null): Query {
+    fun nodeQuery(
+        projectId: String, repoName: String, fullPath: String? = null, deleted: LocalDateTime? = null
+    ): Query {
         val criteria = where(TNode::projectId).isEqualTo(projectId)
             .and(TNode::repoName).isEqualTo(repoName)
-            .and(TNode::deleted).isEqualTo(null)
+            .and(TNode::deleted).isEqualTo(deleted)
             .apply { fullPath?.run { and(TNode::fullPath).isEqualTo(fullPath) } }
         return Query(criteria)
     }

@@ -50,5 +50,7 @@ data class NodeRenameRequest(
     @get:Schema(title = "节点新完整路径", required = true)
     val newFullPath: String,
     @get:Schema(title = "操作用户", required = true)
-    override val operator: String
+    override val operator: String,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 ) : NodeRequest, ServiceRequest
