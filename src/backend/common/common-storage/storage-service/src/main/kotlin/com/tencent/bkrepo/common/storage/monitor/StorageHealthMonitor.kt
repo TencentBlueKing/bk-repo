@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.api.util.HumanReadable.time
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.util.toPath
@@ -36,6 +37,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Collections
+import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
@@ -113,7 +115,7 @@ class StorageHealthMonitor(
             while (true) {
                 if (monitorConfig.enabled) {
                     try {
-                        val future = executorService.submit { checker.check() }
+                        val future = executorService.submit(Callable { checker.check() }.trace())
                         future.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
                         onCheckSuccess()
                     } catch (ignored: TimeoutException) {
@@ -128,7 +130,7 @@ class StorageHealthMonitor(
                         onCheckFailed(exception.message ?: UNKNOWN)
                     } finally {
                         try {
-                            val future = executorService.submit { checker.clean() }
+                            val future = executorService.submit(Callable { checker.clean() }.trace())
                             future.get(1, TimeUnit.SECONDS)
                         } catch (exception: ExecutionException) {
                             val errorMsg = "Clean checker error: $exception"

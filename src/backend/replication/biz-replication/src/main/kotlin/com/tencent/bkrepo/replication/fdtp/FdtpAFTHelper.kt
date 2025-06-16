@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.replication.fdtp
 
-import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager
+import com.tencent.bkrepo.common.api.util.okhttp.CertTrustManager
 import com.tencent.bkrepo.fdtp.codec.AttributeMapKey
 import com.tencent.bkrepo.fdtp.codec.DefaultEndpoint
 import com.tencent.bkrepo.fdtp.codec.FdtpClientCodec

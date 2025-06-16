@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import org.influxdb.InfluxDB
 import org.influxdb.InfluxDBException
 import org.influxdb.dto.BatchPoints
