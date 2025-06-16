@@ -29,9 +29,9 @@ package com.tencent.bkrepo.huggingface.util
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.ACCEPT_ENCODING
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.huggingface.constants.ERROR_CODE_HEADER
 import com.tencent.bkrepo.huggingface.constants.ERROR_MSG_HEADER
 import com.tencent.bkrepo.huggingface.exception.HfApiException

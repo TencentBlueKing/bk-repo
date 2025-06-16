@@ -5,8 +5,10 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJson
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -31,9 +33,7 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
