@@ -3,7 +3,7 @@ package com.tencent.bkrepo.common.service.util.proxy
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import okhttp3.MediaType

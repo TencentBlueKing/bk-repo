@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.api.constant.DEVX_ACCESS_FROM_OFFICE
 import com.tencent.bkrepo.common.api.constant.HEADER_DEVX_ACCESS_FROM
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -81,7 +82,7 @@ open class DevXAccessInterceptor(private val devXProperties: DevXProperties) : H
             }
 
             override fun reload(key: String, oldValue: Set<String>): ListenableFuture<Set<String>> {
-                return Futures.submit(Callable { load(key) }, executor)
+                return Futures.submit(Callable { load(key) }.trace(), executor)
             }
         })
 

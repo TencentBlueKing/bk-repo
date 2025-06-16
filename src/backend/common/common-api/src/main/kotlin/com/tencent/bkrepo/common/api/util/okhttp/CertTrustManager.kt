@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.util.okhttp
+package com.tencent.bkrepo.common.api.util.okhttp
 
 import java.security.KeyStore
 import java.security.cert.CertificateFactory

@@ -25,12 +25,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.util.okhttp
+package com.tencent.bkrepo.common.api.util.okhttp
 
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
-import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
-import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationTrustManager
-import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.trustAllHostname
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import okhttp3.internal.threadFactory
@@ -48,8 +45,11 @@ object HttpClientBuilderFactory {
 
     private val defaultClient by lazy {
         OkHttpClient.Builder()
-            .sslSocketFactory(disableValidationSSLSocketFactory, disableValidationTrustManager)
-            .hostnameVerifier(trustAllHostname)
+            .sslSocketFactory(
+                CertTrustManager.disableValidationSSLSocketFactory,
+                CertTrustManager.disableValidationTrustManager
+            )
+            .hostnameVerifier(CertTrustManager.trustAllHostname)
             .readTimeout(DEFAULT_READ_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS)
             .connectTimeout(DEFAULT_CONNECT_TIMEOUT_SECONDS, TimeUnit.MILLISECONDS)
             .build()

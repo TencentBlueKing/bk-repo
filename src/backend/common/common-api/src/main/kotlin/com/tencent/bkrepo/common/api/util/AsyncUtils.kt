@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.otel.util
+package com.tencent.bkrepo.common.api.util
 
 import io.micrometer.context.ContextExecutorService
 import io.micrometer.context.ContextSnapshotFactory

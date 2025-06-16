@@ -27,11 +27,11 @@
 
 package com.tencent.bkrepo.svn.interceptor
 
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil
 import com.tencent.bkrepo.common.service.util.proxy.ProxyCallHandler
 import com.tencent.bkrepo.svn.utils.SvnProxyHelper.getRepoId
