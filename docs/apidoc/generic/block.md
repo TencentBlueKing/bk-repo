@@ -22,12 +22,7 @@
   |path|string|是|无|完整路径|full path|
 
 - 请求头
-
-  |字段|类型|是否必须|默认值|说明|Description|
-  |---|---|---|---|---|---|
-  |X-BKREPO-MD5|string|否|无|文件md5|file md5|
-  |X-BKREPO-OVERWRITE|boolean|否|false|是否覆盖已存在文件|overwrite exist file|
-  |X-BKREPO-EXPIRES|long|否|0|过期时间，单位天(0代表永久保存)|file expired days|
+  无
 
 - 响应体
 
@@ -45,10 +40,10 @@
 
 - data字段说明
 
-  |字段|类型|说明|Description|
-  |---|---|---|---|
-  |uploadId|string|分块上传id|block upload id|
-  |expireSeconds|string|上传有效期(秒)|expire time(seconds)|
+  |字段|类型| 说明               |Description|
+  |---|---|------------------|---|
+  |uploadId|string| 分块上传id           |block upload id|
+  |expireSeconds|string| 上传有效期(秒)，0表示永久有效 |expire time(seconds)|
 
 ## 上传分块文件
 
@@ -113,6 +108,8 @@
   |字段|类型|是否必须|默认值|说明|Description|
   |---|---|---|---|---|---|
   |X-BKREPO-UPLOAD-ID|string|是|无|分块上传ID|block upload id|
+  |X-BKREPO-EXPIRES|long|否|0|过期时间，单位天(0代表永久保存)|file expired days|
+  |X-BKREPO-OVERWRITE|boolean|否|false|是否覆盖已存在文件|overwrite exist file|
 
 - 响应体
 
