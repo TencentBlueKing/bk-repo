@@ -138,7 +138,8 @@ class NodeSearchServiceImpl(
                 "query[${query.toJsonString().replace(System.lineSeparator(), "")}], " +
                 "cost ${HumanReadable.time(time, TimeUnit.MILLISECONDS)}")
         }
-        val metadataLabels = metadataLabelCacheService.listAll(nodeList.first()[NodeInfo::projectId.name].toString())
+        val projectId = nodeList.firstOrNull()?.get(NodeInfo::projectId.name)?.toString()
+        val metadataLabels = projectId?.let { metadataLabelCacheService.listAll(it) } ?: emptyList()
         // metadata格式转换，并排除id字段
         nodeList.forEach {
             it.remove("_id")
