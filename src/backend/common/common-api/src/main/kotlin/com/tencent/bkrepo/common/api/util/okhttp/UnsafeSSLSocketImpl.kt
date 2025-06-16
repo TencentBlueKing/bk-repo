@@ -25,10 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.util.okhttp
+package com.tencent.bkrepo.common.api.util.okhttp
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.io.InputStream

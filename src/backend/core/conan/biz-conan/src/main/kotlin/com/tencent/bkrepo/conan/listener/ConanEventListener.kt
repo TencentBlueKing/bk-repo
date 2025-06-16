@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.conan.listener
 
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.conan.listener.event.ConanPackageDeleteEvent
 import com.tencent.bkrepo.conan.listener.event.ConanPackageUploadEvent
 import com.tencent.bkrepo.conan.listener.event.ConanRecipeDeleteEvent
