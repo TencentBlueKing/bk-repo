@@ -37,6 +37,7 @@ import com.tencent.bkrepo.replication.fdtp.FdtpAFTServer
 import com.tencent.bkrepo.replication.fdtp.FdtpAuthManager
 import com.tencent.bkrepo.replication.fdtp.FdtpServerProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -44,6 +45,7 @@ import org.springframework.context.annotation.Primary
 
 @Configuration
 @EnableConfigurationProperties(FdtpServerProperties::class)
+@ConditionalOnProperty("fdtp.server.enabled", matchIfMissing = true)
 class FdtpServerConfiguration {
     @Bean
     @ConditionalOnMissingBean(FdtpAFTRequestHandler::class)
