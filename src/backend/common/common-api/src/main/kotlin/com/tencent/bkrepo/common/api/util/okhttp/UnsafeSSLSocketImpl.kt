@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,10 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.service.util.okhttp
+package com.tencent.bkrepo.common.api.util.okhttp
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.io.InputStream
