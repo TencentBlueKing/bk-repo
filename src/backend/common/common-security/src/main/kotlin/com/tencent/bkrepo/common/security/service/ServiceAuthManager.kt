@@ -37,11 +37,13 @@ import com.tencent.bkrepo.common.security.util.JwtUtils
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import org.slf4j.LoggerFactory
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 import java.time.Duration
 import kotlin.concurrent.thread
 
-@Component // 使用kotlin时，spring aop对@Import导入的bean不生效
+@Component
+@EnableConfigurationProperties(ServiceAuthProperties::class)
 class ServiceAuthManager(
     properties: ServiceAuthProperties,
 ) {
