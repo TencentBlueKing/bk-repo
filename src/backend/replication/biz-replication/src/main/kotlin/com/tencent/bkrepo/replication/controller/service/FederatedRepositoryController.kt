@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.controller.service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.federation.FederatedRepositoryClient
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import org.springframework.web.bind.annotation.RestController
 
