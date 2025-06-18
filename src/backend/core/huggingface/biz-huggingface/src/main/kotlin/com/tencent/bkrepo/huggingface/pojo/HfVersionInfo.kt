@@ -25,29 +25,45 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.huggingface.constants
+package com.tencent.bkrepo.huggingface.pojo
 
-const val REPO_TYPE_MODEL = "model"
-const val REPO_TYPE_DATASET = "dataset"
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import io.swagger.v3.oas.annotations.media.Schema
 
-const val ERROR_CODE_HEADER = "X-Error-Code"
-const val ERROR_MSG_HEADER = "X-Error-Message"
+@Schema(title = "hugging face版本详情页返回包装模型")
+data class HfVersionInfo(
+    @get:Schema(title = "基础信息")
+    val basic: BasicInfo,
+    @get:Schema(title = "元数据信息")
+    val metadata: List<MetadataModel>,
+)
 
-const val COMMIT_ID_HEADER = "X-Repo-Commit"
-
-const val COMMIT_OP_HEADER = "header"
-const val COMMIT_OP_FILE = "file"
-const val COMMIT_OP_LFS = "lfsFile"
-const val COMMIT_OP_DEL_FILE = "deletedFile"
-const val COMMIT_OP_DEL_FOLDER = "deletedFolder"
-
-const val REGULAR_UPLOAD_MODE = "regular"
-const val LFS_UPLOAD_MODE = "lfs"
-
-const val ORGANIZATION_KEY = "organization"
-const val NAME_KEY = "name"
-const val REVISION_KEY = "revision"
-const val TYPE_KEY = "type"
-
-const val PACKAGE_KEY = "packageKey"
-const val VERSION = "version"
+@Schema(title = "基础信息")
+class BasicInfo(
+    @get:Schema(title = "版本名称")
+    val version: String,
+    @get:Schema(title = "完整路径")
+    val fullPath: String,
+    @get:Schema(title = "文件大小，单位byte")
+    val size: Long,
+    @get:Schema(title = "文件sha256")
+    val sha256: String,
+    @get:Schema(title = "文件md5")
+    val md5: String,
+    @get:Schema(title = "晋级状态标签")
+    val stageTag: List<String>,
+    @get:Schema(title = "所属项目id")
+    val projectId: String,
+    @get:Schema(title = "所属仓库名称")
+    val repoName: String,
+    @get:Schema(title = "下载次数")
+    val downloadCount: Long,
+    @get:Schema(title = "创建者")
+    val createdBy: String,
+    @get:Schema(title = "创建时间")
+    val createdDate: String,
+    @get:Schema(title = "修改者")
+    val lastModifiedBy: String,
+    @get:Schema(title = "修改时间")
+    val lastModifiedDate: String
+)

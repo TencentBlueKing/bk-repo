@@ -39,7 +39,8 @@ class HfAuthHandler(
     val authenticationManager: AuthenticationManager
 ) : HttpAuthHandler {
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
-        val token = request.getHeader(HttpHeaders.AUTHORIZATION)?.removePrefix(BEARER_AUTH_PREFIX)
+        val token = request.getHeader(HttpHeaders.AUTHORIZATION)?.takeIf { it.startsWith(BEARER_AUTH_PREFIX) }
+            ?.removePrefix(BEARER_AUTH_PREFIX)
             ?: return AnonymousCredentials()
         return HfAuthCredentials(token)
     }
