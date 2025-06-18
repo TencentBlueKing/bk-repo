@@ -25,29 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.huggingface.constants
+package com.tencent.bkrepo.huggingface.service
 
-const val REPO_TYPE_MODEL = "model"
-const val REPO_TYPE_DATASET = "dataset"
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactInfo
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import org.springframework.stereotype.Service
 
-const val ERROR_CODE_HEADER = "X-Error-Code"
-const val ERROR_MSG_HEADER = "X-Error-Message"
+@Service
+class HfCommonService(
+    private val packageService: PackageService,
+) {
 
-const val COMMIT_ID_HEADER = "X-Repo-Commit"
-
-const val COMMIT_OP_HEADER = "header"
-const val COMMIT_OP_FILE = "file"
-const val COMMIT_OP_LFS = "lfsFile"
-const val COMMIT_OP_DEL_FILE = "deletedFile"
-const val COMMIT_OP_DEL_FOLDER = "deletedFolder"
-
-const val REGULAR_UPLOAD_MODE = "regular"
-const val LFS_UPLOAD_MODE = "lfs"
-
-const val ORGANIZATION_KEY = "organization"
-const val NAME_KEY = "name"
-const val REVISION_KEY = "revision"
-const val TYPE_KEY = "type"
-
-const val PACKAGE_KEY = "packageKey"
-const val VERSION = "version"
+    fun getPackageVersionByArtifactInfo(artifactInfo: HuggingfaceArtifactInfo): PackageVersion? {
+        with(artifactInfo) {
+            val version = getRevision() ?: return null
+            return packageService.findVersionByName(projectId, repoName, getPackageKey(), version)
+        }
+    }
+}

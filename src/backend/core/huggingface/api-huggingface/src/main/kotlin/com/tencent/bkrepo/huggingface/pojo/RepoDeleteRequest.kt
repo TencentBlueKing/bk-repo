@@ -33,5 +33,6 @@ data class RepoDeleteRequest(
     val projectId: String,
     val repoName: String,
     val repoId: String,
-    val type: String = REPO_TYPE_MODEL
+    val type: String = REPO_TYPE_MODEL,
+    val revision: String?,
 )
