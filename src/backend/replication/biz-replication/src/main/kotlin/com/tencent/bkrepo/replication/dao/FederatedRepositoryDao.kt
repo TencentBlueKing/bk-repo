@@ -37,11 +37,11 @@ import org.springframework.stereotype.Repository
 class FederatedRepositoryDao : SimpleMongoDao<TFederatedRepository>() {
 
     fun findByProjectIdAndRepoName(
-        projectId: String, repoName: String, key: String? =null
+        projectId: String, repoName: String, key: String? = null
     ): List<TFederatedRepository> {
         val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
             .and(TFederatedRepository::repoName.name).`is`(repoName)
-            .and(TFederatedRepository::key.name).`is`(key)
+        key?.let { criteria.and(TFederatedRepository::key.name).`is`(it) }
         return find(Query(criteria))
     }
 
