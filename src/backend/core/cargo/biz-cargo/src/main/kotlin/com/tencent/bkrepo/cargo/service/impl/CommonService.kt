@@ -47,10 +47,8 @@ import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.lock.service.LockOperation
@@ -300,7 +298,7 @@ class CommonService {
             if (crateName.isNullOrEmpty() || crateVersion.isNullOrEmpty()) {
                 return null
             }
-            return PackageDownloadRecord(projectId, repoName, PackageKeys.ofCargo(crateName), crateVersion, userId)
+            return PackageDownloadRecord(projectId, repoName, PackageKeys.ofCargo(crateName), crateVersion)
         }
     }
 
