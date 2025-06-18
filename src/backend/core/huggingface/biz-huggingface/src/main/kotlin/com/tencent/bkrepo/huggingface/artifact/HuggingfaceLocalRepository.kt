@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadCon
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
@@ -149,6 +150,9 @@ class HuggingfaceLocalRepository(
             }
         }
     }
+
+    override fun buildDownloadRecord(context: ArtifactDownloadContext, artifactResource: ArtifactResource) =
+        hfCommonService.buildDownloadRecord(context)
 
     private fun packageVersion(context: ArtifactContext) =
         hfCommonService.getPackageVersionByArtifactInfo(context.artifactInfo as HuggingfaceArtifactInfo)

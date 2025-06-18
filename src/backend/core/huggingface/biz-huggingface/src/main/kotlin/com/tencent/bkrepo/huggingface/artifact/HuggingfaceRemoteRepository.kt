@@ -40,6 +40,7 @@ import com.tencent.bkrepo.huggingface.constants.COMMIT_ID_HEADER
 import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_DATASET
 import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
+import com.tencent.bkrepo.huggingface.service.HfCommonService
 import com.tencent.bkrepo.huggingface.util.HfApi
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -47,7 +48,9 @@ import okhttp3.Headers
 import org.springframework.stereotype.Component
 
 @Component
-class HuggingfaceRemoteRepository : RemoteRepository() {
+class HuggingfaceRemoteRepository(
+    private val hfCommonService: HfCommonService,
+) : RemoteRepository() {
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
         super.onDownloadBefore(context)
@@ -141,5 +144,8 @@ class HuggingfaceRemoteRepository : RemoteRepository() {
             else -> ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "type:${artifactInfo.type}")
         }
     }
+
+    override fun buildDownloadRecord(context: ArtifactDownloadContext, artifactResource: ArtifactResource) =
+        hfCommonService.buildDownloadRecord(context)
 
 }
