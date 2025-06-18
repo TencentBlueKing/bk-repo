@@ -515,6 +515,7 @@ class GenericLocalRepository(
             if (notExistNodes.isNotEmpty()) {
                 throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
             }
+            nodes.filter { !it.folder }.forEach { downloadIntercept(this, it) }
             val (folderNodes, fileNodes) = nodes.partition { it.folder }
             // 添加所有目录节点的子节点, 检查文件数量和大小总和, 下载拦截
             val allNodes = getSubNodes(

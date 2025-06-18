@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.huggingface.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -65,6 +66,7 @@ class HuggingfaceLocalRepository(
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
         super.onDownloadBefore(context)
+        packageVersion(context)?.let { downloadIntercept(context, it) }
         val artifactInfo = context.artifactInfo
         if (artifactInfo is HuggingfaceArtifactInfo) {
             transferRevision(artifactInfo)
@@ -151,6 +153,9 @@ class HuggingfaceLocalRepository(
 
     override fun buildDownloadRecord(context: ArtifactDownloadContext, artifactResource: ArtifactResource) =
         hfCommonService.buildDownloadRecord(context)
+
+    private fun packageVersion(context: ArtifactContext) =
+        hfCommonService.getPackageVersionByArtifactInfo(context.artifactInfo as HuggingfaceArtifactInfo)
 
     private fun convert(nodes: List<NodeInfo>, basePath: String): List<RepoSibling> {
         return nodes.map { RepoSibling(

@@ -28,13 +28,17 @@
 package com.tencent.bkrepo.huggingface.service
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactInfo
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.springframework.stereotype.Service
 
 @Service
-class HfCommonService {
+class HfCommonService(
+    private val packageService: PackageService,
+) {
 
     fun buildDownloadRecord(context: ArtifactDownloadContext): PackageDownloadRecord? {
         with(context.artifactInfo as HuggingfaceArtifactInfo) {
@@ -51,6 +55,13 @@ class HfCommonService {
                     packageVersion = revision,
                 )
             } else null
+        }
+    }
+
+    fun getPackageVersionByArtifactInfo(artifactInfo: HuggingfaceArtifactInfo): PackageVersion? {
+        with(artifactInfo) {
+            val version = getRevision() ?: return null
+            return packageService.findVersionByName(projectId, repoName, getPackageKey(), version)
         }
     }
 }

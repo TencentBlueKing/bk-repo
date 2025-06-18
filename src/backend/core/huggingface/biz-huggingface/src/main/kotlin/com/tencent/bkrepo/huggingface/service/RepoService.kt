@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.huggingface.service
 
 import com.mongodb.DuplicateKeyException
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
@@ -137,16 +138,27 @@ class RepoService(
     fun delete(request: RepoDeleteRequest) {
         val userId = SecurityUtils.getUserId()
         val packageKey = PackageKeys.ofHuggingface(request.type, request.repoId)
-        packageService.findPackageByKey(request.projectId, request.repoName, packageKey)
-            ?: throw HfRepoNotFoundException(request.repoId)
+        var fullPath: String
+        if (request.revision == null) {
+            // 删除repo(package)
+            fullPath = "/${request.repoId}"
+            packageService.findPackageByKey(request.projectId, request.repoName, packageKey)
+                ?: throw HfRepoNotFoundException(request.repoId)
+            packageService.deletePackage(request.projectId, request.repoName, packageKey)
+        } else {
+            // 删除revision(version)
+            fullPath = "/${request.repoId}/resolve/${request.revision}"
+            packageService.findVersionByName(request.projectId, request.repoName, packageKey, request.revision!!)
+                ?: throw VersionNotFoundException("${request.repoId}/${request.revision}")
+            packageService.deleteVersion(request.projectId, request.repoName, packageKey, request.revision!!)
+        }
         val deleteRequest = NodeDeleteRequest(
             projectId = request.projectId,
             repoName = request.repoName,
-            fullPath = "/${request.repoId}",
+            fullPath = fullPath,
             operator = userId
         )
         nodeService.deleteNode(deleteRequest)
-        packageService.deletePackage(request.projectId, request.repoName, packageKey)
     }
 
     private fun checkRepository(projectId: String, repoName: String): RepositoryDetail {

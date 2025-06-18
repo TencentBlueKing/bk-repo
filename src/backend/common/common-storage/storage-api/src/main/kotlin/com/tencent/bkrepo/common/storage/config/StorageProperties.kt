@@ -101,7 +101,12 @@ data class StorageProperties(
     /**
      * polaris服务地址列表
      */
-    var polarisAddresses: List<String> = emptyList()
+    var polarisAddresses: List<String> = emptyList(),
+
+    /**
+     * fileStorageClient缓存大小
+     */
+    var clientCacheSize: Long = 32,
 
 ) {
     fun defaultStorageCredentials(): StorageCredentials {
