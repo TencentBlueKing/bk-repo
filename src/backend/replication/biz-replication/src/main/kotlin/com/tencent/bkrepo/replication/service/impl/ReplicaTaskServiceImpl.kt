@@ -569,6 +569,10 @@ class ReplicaTaskServiceImpl(
         }
     }
 
+    override fun listFederationTasks(projectId: String, repoName: String): List<ReplicaTaskDetail> {
+        return listTasks(projectId, repoName, ReplicaType.FEDERATION, true)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaTaskServiceImpl::class.java)
         private const val TASK_NAME_LENGTH_MIN = 2

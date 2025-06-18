@@ -27,7 +27,8 @@ object PackageEventFactory {
                 userId = createdBy,
                 packageType = packageType.name,
                 packageName = packageName,
-                realIpAddress = realIpAddress
+                realIpAddress = realIpAddress,
+                source = source
             )
         }
     }
@@ -45,7 +46,8 @@ object PackageEventFactory {
                 packageName = packageName,
                 packageVersion = versionName,
                 userId = createdBy,
-                realIpAddress = realIpAddress
+                realIpAddress = realIpAddress,
+                source = source
             )
         }
     }
@@ -58,7 +60,7 @@ object PackageEventFactory {
         packageType: String,
         packageName: String,
         createdBy: String,
-        realIpAddress: String?
+        realIpAddress: String?,
     ): VersionUpdatedEvent {
         with(request) {
             return VersionUpdatedEvent(
@@ -69,7 +71,8 @@ object PackageEventFactory {
                 packageName = packageName,
                 packageVersion = versionName,
                 userId = createdBy,
-                realIpAddress = realIpAddress
+                realIpAddress = realIpAddress,
+                source = source
             )
         }
     }

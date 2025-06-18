@@ -37,6 +37,7 @@ class VersionCreatedEvent(
     override val projectId: String,
     override val repoName: String,
     override val userId: String,
+    override val source: String?,
     val packageKey: String,
     val packageVersion: String,
     val packageName: String,
@@ -48,6 +49,7 @@ class VersionCreatedEvent(
     repoName = repoName,
     resourceKey = "$packageKey-$packageVersion",
     userId = userId,
+    source = source,
     data = mutableMapOf(
         "packageKey" to packageKey,
         "packageType" to packageType,

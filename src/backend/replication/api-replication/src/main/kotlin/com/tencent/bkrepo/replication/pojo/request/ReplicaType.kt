@@ -38,5 +38,7 @@ enum class ReplicaType {
     // 只执行一次，手动调用执行
     RUN_ONCE,
     // 边缘节点主动拉取的同步任务
-    EDGE_PULL
+    EDGE_PULL,
+    // 联邦仓库同步
+    FEDERATION
 }

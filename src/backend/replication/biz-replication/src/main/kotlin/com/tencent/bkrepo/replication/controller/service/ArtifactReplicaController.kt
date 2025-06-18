@@ -29,9 +29,11 @@ package com.tencent.bkrepo.replication.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
@@ -64,6 +66,8 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoUpdateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.RestController
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 集群间数据同步接口
@@ -77,7 +81,7 @@ class ArtifactReplicaController(
     private val packageService: PackageService,
     private val metadataService: MetadataService,
     private val userResource: ServiceUserClient,
-    private val permissionManager: PermissionManager
+    private val permissionManager: PermissionManager,
 ) : ArtifactReplicaClient {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
@@ -91,22 +95,25 @@ class ArtifactReplicaController(
     override fun checkNodeExist(
         projectId: String,
         repoName: String,
-        fullPath: String
+        fullPath: String,
     ): Response<Boolean> {
         return ResponseBuilder.success(nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath)))
     }
 
     override fun checkNodeExistList(
-        request: NodeExistCheckRequest
+        request: NodeExistCheckRequest,
     ): Response<List<String>> {
-        return ResponseBuilder.success(nodeService.listExistFullPath(
-            request.projectId,
-            request.repoName,
-            request.fullPathList
-        ))
+        return ResponseBuilder.success(
+            nodeService.listExistFullPath(
+                request.projectId,
+                request.repoName,
+                request.fullPathList
+            )
+        )
     }
 
     override fun replicaNodeCreateRequest(request: NodeCreateRequest): Response<NodeDetail> {
+        federatedCheck(request.projectId, request.repoName, request.fullPath, request.createdDate!!, request.source)
         return ResponseBuilder.success(nodeService.createNode(request))
     }
 
@@ -131,6 +138,13 @@ class ArtifactReplicaController(
     }
 
     override fun replicaNodeDeleteRequest(request: NodeDeleteRequest): Response<NodeDeleteResult> {
+        federatedCheck(
+            request.projectId,
+            request.repoName,
+            request.fullPath,
+            LocalDateTime.parse(request.deletedDate!!, DateTimeFormatter.ISO_DATE_TIME),
+            request.source
+        )
         return ResponseBuilder.success(nodeService.deleteNode(request))
     }
 
@@ -184,7 +198,7 @@ class ArtifactReplicaController(
     }
 
     override fun checkPackageVersionExist(
-        request: PackageVersionExistCheckRequest
+        request: PackageVersionExistCheckRequest,
     ): Response<Boolean> {
         val packageVersion = packageService.findVersionByName(
             request.projectId,
@@ -196,9 +210,26 @@ class ArtifactReplicaController(
     }
 
     override fun replicaPackageVersionCreatedRequest(
-        request: PackageVersionCreateRequest
+        request: PackageVersionCreateRequest,
     ): Response<Void> {
         packageService.createPackageVersion(request)
         return ResponseBuilder.success()
+    }
+
+    private fun federatedCheck(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        compareDate: LocalDateTime,
+        source: String?,
+    ) {
+        if (source.isNullOrEmpty()) return
+        val existNode = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
+        if (existNode != null) {
+            val existCreatedDate = LocalDateTime.parse(existNode.createdDate, DateTimeFormatter.ISO_DATE_TIME)
+            if (existCreatedDate.isAfter(compareDate)) {
+                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+            }
+        }
     }
 }

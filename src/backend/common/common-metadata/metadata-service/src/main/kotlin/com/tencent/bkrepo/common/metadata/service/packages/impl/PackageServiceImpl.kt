@@ -222,28 +222,44 @@ class PackageServiceImpl(
                     packageUpdate = update
                 )
             } else {
-                // create new
-                val newVersion = buildPackageVersion(request, tPackage.id!!)
-                try {
-                    packageVersionDao.save(newVersion)
-                    // 改为通过mongo的原子操作来更新。微服务持有版本数在并发下会导致版本数被覆盖的问题
-                    update.inc(TPackage::versions.name)
-                    packageDao.upsert(query, update)
-                    logger.info("Create package version[$newVersion] success")
-                    publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
-                } catch (exception: DuplicateKeyException) {
-                    logger.warn("Create version[$newVersion] error: [${exception.message}]")
-                    oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
-                    updateExistVersion(
-                        oldVersion = oldVersion!!,
-                        request = request,
-                        realIpAddress = realIpAddress,
-                        packageQuery = query,
-                        packageUpdate = update
-                    )
-                }
+                createVersion(
+                    request = request,
+                    query = query,
+                    update = update,
+                    tPackage = tPackage,
+                    realIpAddress = realIpAddress
+                )
             }
             populateCluster(tPackage)
+        }
+    }
+
+    private fun createVersion(
+        request: PackageVersionCreateRequest,
+        realIpAddress: String?,
+        update: Update,
+        query: Query,
+        tPackage: TPackage,
+    ) {
+        // create new
+        val newVersion = buildPackageVersion(request, tPackage.id!!)
+        try {
+            packageVersionDao.save(newVersion)
+            // 改为通过mongo的原子操作来更新。微服务持有版本数在并发下会导致版本数被覆盖的问题
+            update.inc(TPackage::versions.name)
+            packageDao.upsert(query, update)
+            logger.info("Create package version[$newVersion] success")
+            publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
+        } catch (exception: DuplicateKeyException) {
+            logger.warn("Create version[$newVersion] error: [${exception.message}]")
+            val oldVersion = packageVersionDao.findByName(tPackage.id!!, request.versionName)
+            updateExistVersion(
+                oldVersion = oldVersion!!,
+                request = request,
+                realIpAddress = realIpAddress,
+                packageQuery = query,
+                packageUpdate = update
+            )
         }
     }
 

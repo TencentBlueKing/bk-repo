@@ -37,12 +37,20 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 open class EventConsumer {
 
     /**
+     * 消息来源判断
+     */
+    open fun sourceCheck(message: ArtifactEvent): Boolean = false
+
+    /**
      * 允许接收的事件类型
      */
     open fun getAcceptTypes(): Set<EventType> = emptySet()
 
     fun accept(message: ArtifactEvent) {
         if (!getAcceptTypes().contains(message.type)) {
+            return
+        }
+        if (sourceCheck(message)) {
             return
         }
         action(message)

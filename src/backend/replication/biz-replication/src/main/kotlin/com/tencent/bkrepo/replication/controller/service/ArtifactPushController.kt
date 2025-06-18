@@ -64,7 +64,8 @@ class ArtifactPushController(
                 userId = SecurityUtils.getUserId(),
                 packageType = packageType,
                 packageName = packageName,
-                realIpAddress = null
+                realIpAddress = null,
+                source = null
             )
             replicaTaskService.listRealTimeTasks(event.projectId, event.repoName).forEach {
                 eventBasedReplicaJobExecutor.execute(it, event)

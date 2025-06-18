@@ -147,6 +147,10 @@ class RemoteReplicator : Replicator {
         // 暂时不支持同步目录到外部集群
     }
 
+    override fun replicaDeletedNode(context: ReplicaContext, node: NodeInfo): Boolean {
+        return true
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(RemoteReplicator::class.java)
     }
