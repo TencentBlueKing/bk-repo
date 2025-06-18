@@ -44,7 +44,7 @@ import java.util.concurrent.ConcurrentHashMap
  * fdtp-aft client工厂
  * */
 @Component
-@ConditionalOnProperty("fdtp.server.enabled", matchIfMissing = true)
+@ConditionalOnProperty("fdtp.server.enabled")
 class FdtpAFTClientFactory(fdtpAuthManager: FdtpAuthManager, clientProperties: FdtpClientProperties) :
     DisposableBean {
     private val group = NioEventLoopGroup(

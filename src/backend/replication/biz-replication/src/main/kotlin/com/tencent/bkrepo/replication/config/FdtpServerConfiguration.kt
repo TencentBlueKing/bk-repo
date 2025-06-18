@@ -45,7 +45,7 @@ import org.springframework.context.annotation.Primary
 
 @Configuration
 @EnableConfigurationProperties(FdtpServerProperties::class)
-@ConditionalOnProperty("fdtp.server.enabled", matchIfMissing = true)
+@ConditionalOnProperty("fdtp.server.enabled")
 class FdtpServerConfiguration {
     @Bean
     @ConditionalOnMissingBean(FdtpAFTRequestHandler::class)

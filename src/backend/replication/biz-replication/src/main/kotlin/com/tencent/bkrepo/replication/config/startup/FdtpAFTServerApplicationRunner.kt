@@ -38,7 +38,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 
 @Component
-@ConditionalOnProperty("fdtp.server.enabled", matchIfMissing = true)
+@ConditionalOnProperty("fdtp.server.enabled")
 class FdtpAFTServerApplicationRunner(
     val fdtpAFTServer: FdtpAFTServer,
 ) : ApplicationRunner, DisposableBean {

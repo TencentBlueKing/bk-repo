@@ -50,7 +50,7 @@ import java.net.ConnectException
 import java.util.concurrent.TimeUnit
 
 @Component
-@ConditionalOnProperty("fdtp.server.enabled", matchIfMissing = true)
+@ConditionalOnProperty("fdtp.server.enabled")
 class FdtpPusher(
     val localDataManager: LocalDataManager,
     val fdtpServerProperties: FdtpServerProperties,
