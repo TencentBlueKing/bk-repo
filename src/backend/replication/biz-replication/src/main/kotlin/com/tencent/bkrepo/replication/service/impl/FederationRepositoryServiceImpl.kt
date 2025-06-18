@@ -48,6 +48,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
 import com.tencent.bkrepo.replication.pojo.federation.FederatedClusterInfo
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType

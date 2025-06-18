@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
 
 /**
