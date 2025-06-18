@@ -1,24 +1,21 @@
 package com.tencent.bkrepo.common.storage.monitor
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 存储监控助手
  * */
 class StorageHealthMonitorHelper(private val monitorMap: ConcurrentHashMap<String, StorageHealthMonitor>) {
 
-    /**
-     * 监控健康检查线程池
-     * */
-    private val executorService = ThreadPoolExecutor(
-        0, Runtime.getRuntime().availableProcessors(),
-        60L, TimeUnit.SECONDS, LinkedBlockingQueue<Runnable>(1024)
-    )
+    private val monitorCounter = AtomicInteger()
 
     /**
      * 获取存储相对应的监控
@@ -27,6 +24,7 @@ class StorageHealthMonitorHelper(private val monitorMap: ConcurrentHashMap<Strin
         val location = storageCredentials.upload.location
         return monitorMap[location] ?: synchronized(location.intern()) {
             monitorMap[location]?.let { return it }
+            val executorService = createExecutorService(monitorCounter.getAndIncrement())
             val storageHealthMonitor = StorageHealthMonitor(properties, location, executorService)
             monitorMap.putIfAbsent(
                 location,
@@ -41,5 +39,14 @@ class StorageHealthMonitorHelper(private val monitorMap: ConcurrentHashMap<Strin
      * */
     fun all(): List<StorageHealthMonitor> {
         return monitorMap.values.toList()
+    }
+
+    private fun createExecutorService(number: Int): ExecutorService {
+        // 至少需要2线程，线程1用于执行健康检查，线程2用于检查超时后异步停止健康检查
+        return ThreadPoolExecutor(
+            0, 2,
+            60L, TimeUnit.SECONDS, SynchronousQueue(),
+            ThreadFactoryBuilder().setNameFormat("storage-monitor-$number-%d").build()
+        )
     }
 }

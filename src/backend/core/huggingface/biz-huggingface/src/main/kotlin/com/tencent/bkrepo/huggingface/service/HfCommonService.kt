@@ -25,32 +25,22 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.huggingface.security
+package com.tencent.bkrepo.huggingface.service
 
-import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
-import com.tencent.bkrepo.common.api.constant.HttpHeaders
-import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
-import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
-import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
-import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import javax.servlet.http.HttpServletRequest
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactInfo
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import org.springframework.stereotype.Service
 
-class HfAuthHandler(
-    val authenticationManager: AuthenticationManager
-) : HttpAuthHandler {
-    override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
-        val token = request.getHeader(HttpHeaders.AUTHORIZATION)?.takeIf { it.startsWith(BEARER_AUTH_PREFIX) }
-            ?.removePrefix(BEARER_AUTH_PREFIX)
-            ?: return AnonymousCredentials()
-        return HfAuthCredentials(token)
-    }
+@Service
+class HfCommonService(
+    private val packageService: PackageService,
+) {
 
-    override fun onAuthenticate(
-        request: HttpServletRequest,
-        authCredentials: HttpAuthCredentials
-    ): String {
-        require(authCredentials is HfAuthCredentials)
-        val userId = authenticationManager.findUserByToken(authCredentials.token).userId
-        return userId
+    fun getPackageVersionByArtifactInfo(artifactInfo: HuggingfaceArtifactInfo): PackageVersion? {
+        with(artifactInfo) {
+            val version = getRevision() ?: return null
+            return packageService.findVersionByName(projectId, repoName, getPackageKey(), version)
+        }
     }
 }

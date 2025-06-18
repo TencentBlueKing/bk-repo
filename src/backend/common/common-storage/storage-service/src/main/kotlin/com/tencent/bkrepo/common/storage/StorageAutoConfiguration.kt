@@ -110,14 +110,7 @@ class StorageAutoConfiguration {
 
     @Bean
     fun storageHealthMonitorHelper(storageProperties: StorageProperties): StorageHealthMonitorHelper {
-        val map = ConcurrentHashMap<String, StorageHealthMonitor>()
-        val location = storageProperties
-            .defaultStorageCredentials().upload.location
-        map[location] = StorageHealthMonitor(
-            storageProperties,
-            location,
-        )
-        return StorageHealthMonitorHelper(map)
+        return StorageHealthMonitorHelper(ConcurrentHashMap<String, StorageHealthMonitor>())
     }
 
     @Bean
