@@ -40,6 +40,16 @@ class HfCommonService(
     private val packageService: PackageService,
 ) {
 
+    /**
+     * huggingface仓库根据.gitattributes文件统计下载量：
+     *
+     * 1. huggingface包没有固定会包含的文件，而.gitattributes文件是最为普遍存在的（官方源几乎所有包都包含这个文件）；
+     * 2. 如果revision目录下所有文件都进行统计，会导致单次拉取一个revision的下载量增量等于文件数量，
+     *    采用这种方案时，需要在查询版本详情时转换得到相对准确的下载量（TPackageVersion记录的下载量/文件数量）
+     *    但是TPackage的下载量是单独统计的，package列表的下载量转换成本过高；
+     * 3. 由于推送包和下载包时都会查询revision信息，因此不适合在查询revision信息时进行统计；
+     * 4. 业务上不要求下载量的绝对准确。
+     */
     fun buildDownloadRecord(context: ArtifactDownloadContext): PackageDownloadRecord? {
         with(context.artifactInfo as HuggingfaceArtifactInfo) {
             val revision = getRevision()
