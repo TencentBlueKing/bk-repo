@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.huggingface.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
@@ -40,13 +41,16 @@ import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
 import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
 import com.tencent.bkrepo.huggingface.pojo.RepoSibling
+import com.tencent.bkrepo.huggingface.service.HfCommonService
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.springframework.stereotype.Component
 
 @Component
-class HuggingfaceLocalRepository : LocalRepository() {
+class HuggingfaceLocalRepository(
+    private val hfCommonService: HfCommonService,
+) : LocalRepository() {
 
     override fun onUpload(context: ArtifactUploadContext) {
         with(context) {
@@ -61,6 +65,7 @@ class HuggingfaceLocalRepository : LocalRepository() {
 
     override fun onDownloadBefore(context: ArtifactDownloadContext) {
         super.onDownloadBefore(context)
+        packageVersion(context)?.let { downloadIntercept(context, it) }
         val artifactInfo = context.artifactInfo
         if (artifactInfo is HuggingfaceArtifactInfo) {
             transferRevision(artifactInfo)
@@ -144,7 +149,10 @@ class HuggingfaceLocalRepository : LocalRepository() {
             }
         }
     }
-    
+
+    private fun packageVersion(context: ArtifactContext) =
+        hfCommonService.getPackageVersionByArtifactInfo(context.artifactInfo as HuggingfaceArtifactInfo)
+
     private fun convert(nodes: List<NodeInfo>, basePath: String): List<RepoSibling> {
         return nodes.map { RepoSibling(
             rfilename = it.fullPath.removePrefix(basePath),
