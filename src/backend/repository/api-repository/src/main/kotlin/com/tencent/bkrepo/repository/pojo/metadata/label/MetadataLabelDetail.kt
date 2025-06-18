@@ -36,6 +36,7 @@ data class MetadataLabelDetail(
     val display: Boolean,
     val category: String?,
     val system: Boolean,
+    val enableColorConfig: Boolean,
     val description: String,
     val createdBy: String,
     val createdDate: LocalDateTime,

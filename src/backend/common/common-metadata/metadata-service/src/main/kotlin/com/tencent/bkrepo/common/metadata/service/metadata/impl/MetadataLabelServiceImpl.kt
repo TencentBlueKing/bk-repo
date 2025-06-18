@@ -141,6 +141,7 @@ class MetadataLabelServiceImpl(
                 display = display ?: true,
                 category = category,
                 system = repositoryProperties.systemMetadataLabels.contains(labelKey),
+                enableColorConfig = enableColorConfig ?: false,
                 description = description ?: "",
                 createdBy = createdBy,
                 createdDate = createdDate,
