@@ -113,11 +113,11 @@ class CargoRemoteRepository : RemoteRepository() {
         // 优先级：未过期缓存 > 网络请求 > 已过期缓存
         val (cacheNode, isExpired) = getCacheInfo(context)
             // 缓存不存在时以网络请求为最终结果
-            ?: return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
+            ?: return executeRequest(context, downloadUrl)
         if (isExpired) {
             // 缓存过期时先尝试网络请求，如果网络请求出错，则忽略错误并继续使用已过期的缓存
             try {
-                executeRequest(context, downloadUrl) { response -> onResponse(context, response) }?.let { return it }
+                executeRequest(context, downloadUrl)?.let { return it }
             } catch (e: Exception) {
                 logger.warn("falling back to cache due to failed network request for the crate index.", e)
             }
@@ -141,9 +141,7 @@ class CargoRemoteRepository : RemoteRepository() {
             append("download")
         }
 
-        return executeRequest(context, downloadUrl) { response ->
-            onResponse(context, response)
-        }
+        return executeRequest(context, downloadUrl)
     }
 
     private fun initVersion(context: ArtifactContext, artifactResource: ArtifactResource) {
@@ -173,7 +171,7 @@ class CargoRemoteRepository : RemoteRepository() {
             append("&per_page=")
             append(context.getIntegerAttribute(PAGE_SIZE))
         }
-        return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
+        return executeRequest(context, downloadUrl)
     }
 
     private fun getDownloadHost(remoteUrl: String, context: ArtifactContext): String {
@@ -192,9 +190,11 @@ class CargoRemoteRepository : RemoteRepository() {
         }
     }
 
-    private fun <T> executeRequest(
-        context: ArtifactContext, url: String, responseHandler: (Response) -> T
-    ): T {
+    private fun executeRequest(
+        context: ArtifactContext,
+        url: String,
+        responseHandler: (Response) -> Any? = { response -> onResponse(context, response) }
+    ): Any? {
         val remoteConfiguration = context.getRemoteConfiguration()
         val request = Request.Builder().url(url).build()
 
