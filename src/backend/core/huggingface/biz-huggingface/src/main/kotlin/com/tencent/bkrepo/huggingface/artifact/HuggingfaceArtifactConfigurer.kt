@@ -60,7 +60,7 @@ class HuggingfaceArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getAuthSecurityCustomizer() = HttpAuthSecurityCustomizer { httpAuthSecurity ->
         val authenticationManager = httpAuthSecurity.authenticationManager!!
         httpAuthSecurity.addHttpAuthHandler(HfAuthHandler(authenticationManager))
-        httpAuthSecurity.withPrefix("/huggingface")
+        httpAuthSecurity.withPrefix("/huggingface").excludePattern("/lfs/**")
     }
 
     @Bean

@@ -71,6 +71,7 @@ internal class StorageHealthMonitorTest {
             enabled = true,
             fallbackLocation = "temp-fallback",
             interval = Duration.ofSeconds(5),
+            failedInterval = Duration.ofSeconds(1),
             timeout = Duration.ofSeconds(10),
             timesToRestore = 5,
             timesToFallback = 2

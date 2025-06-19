@@ -99,6 +99,7 @@ import java.nio.file.Paths
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -117,13 +118,19 @@ class CosClient(val credentials: InnerCosCredentials) {
     /**
      * 分片上传使用的执行器
      */
-    private val uploadThreadPool = Executors.newFixedThreadPool(config.uploadWorkers)
+    private val uploadThreadPool = ThreadPoolExecutor(
+        0,
+        config.uploadWorkers,
+        60, TimeUnit.SECONDS,
+        LinkedBlockingQueue(),
+        ThreadFactoryBuilder().setNameFormat("CosClientUp-${credentials.key}-%d").build(),
+    )
 
     /**
      * 分块下载使用的执行器。可以为null,为null则不使用分块下载
      * */
     private val downloadThreadPool: ThreadPoolExecutor? = if (config.downloadWorkers > 0) {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("CosClient-${credentials.key}-%d").build()
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("CosClientDown-${credentials.key}-%d").build()
         // 因为客户端存储凭证可以动态更新，所以为了避免产生过多线程数，这里设置allowCoreThreadTimeOut为true
         ThreadPoolExecutor(
             config.downloadWorkers,

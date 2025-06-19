@@ -125,7 +125,8 @@ class RepoController(
             projectId = projectId,
             repoName = repoName,
             repoId = "${request.organization}/${request.name}",
-            type = request.type
+            type = request.type,
+            revision = null,
         )
         repoService.delete(repoDeleteRequest)
     }

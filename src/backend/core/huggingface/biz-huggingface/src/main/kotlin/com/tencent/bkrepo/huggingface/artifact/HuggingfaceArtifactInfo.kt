@@ -29,7 +29,9 @@ package com.tencent.bkrepo.huggingface.artifact
 
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
 
 class HuggingfaceArtifactInfo(
@@ -63,4 +65,8 @@ class HuggingfaceArtifactInfo(
     override fun getArtifactFullPath(): String {
         return "/$organization/$name/resolve/${getRevision()}$artifactUri"
     }
+
+    override fun getArtifactVersion() = getRevision()
+
+    fun getPackageKey() = PackageKeys.ofHuggingface(type ?: REPO_TYPE_MODEL, getRepoId())
 }
