@@ -241,13 +241,12 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             throw ErrorCodeException(PARAMETER_INVALID, "Transfer-Encoding: chunked was not supported")
         }
         val contentLength = response.header(HttpHeaders.CONTENT_LENGTH)!!.toLong()
-        val range = resolveContentRange(response.header(HttpHeaders.CONTENT_RANGE)) ?: Range.full(contentLength)
+        val contentRange = resolveContentRange(response.header(HttpHeaders.CONTENT_RANGE))
+        val range = contentRange ?: Range.full(contentLength)
 
         val request = HttpContextHolder.getRequestOrNull()
-        val artifactStream = if (range.isEmpty() || request?.method == HEAD.name) {
-            // 返回空文件
-            response.close()
-            ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+        val artifactStream = if (contentRange?.isEmpty() == true || request?.method == HEAD.name) {
+            onEmptyResponse(response, range, context)
         } else {
             // 返回文件内容
             response.body!!.byteStream().artifactStream(range).apply {
@@ -269,6 +268,16 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             channel = ArtifactChannel.LOCAL,
             useDisposition = useDisposition,
         )
+    }
+
+    protected open fun onEmptyResponse(
+        response: Response,
+        range: Range,
+        context: ArtifactDownloadContext,
+    ): ArtifactInputStream {
+        // 返回空文件
+        response.close()
+        return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
     }
 
     /**
