@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.huggingface.util
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
+import com.tencent.bkrepo.common.api.constant.HttpHeaders.ACCEPT_ENCODING
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
@@ -38,6 +39,7 @@ import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
 import okhttp3.Request
 import okhttp3.Response
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.BeanFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
@@ -58,11 +60,13 @@ class HfApi(
                 .addInterceptor(RedirectInterceptor())
                 .followRedirects(false).build()
         }
+        private val logger = LoggerFactory.getLogger(HfApi::class.java)
 
-        fun modelInfo(endpoint: String, token: String, repoId: String): ModelInfo {
-            val url = "$endpoint/api/models/$repoId"
+        fun modelInfo(endpoint: String, token: String, repoId: String, revision: String?): ModelInfo {
+            val url = "$endpoint/api/models/$repoId" + revision?.let { "/revision/$it" }.orEmpty()
+            logger.info("fetch model info from $url")
             val request = Request.Builder().url(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 .build()
             httpClient.newCall(request).execute().use {
                 throwExceptionWhenFailed(it)
@@ -70,10 +74,11 @@ class HfApi(
             }
         }
 
-        fun datasetInfo(endpoint: String, token: String, repoId: String): DatasetInfo {
-            val url = "$endpoint/api/datasets/$repoId"
+        fun datasetInfo(endpoint: String, token: String, repoId: String, revision: String?): DatasetInfo {
+            val url = "$endpoint/api/datasets/$repoId" + revision?.let { "/revision/$it" }.orEmpty()
+            logger.info("fetch dataset info from $url")
             val request = Request.Builder().url(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 .build()
             httpClient.newCall(request).execute().use {
                 throwExceptionWhenFailed(it)
@@ -81,11 +86,15 @@ class HfApi(
             }
         }
 
-        fun download(endpoint: String, token: String, artifactUri: String): Response {
-            val url = "$endpoint$artifactUri"
+        fun download(endpoint: String, token: String, artifactUri: String, type: String?): Response {
+            val url = "${endpoint.trim('/')}${type?.let { "/" + it + "s" }.orEmpty()}$artifactUri"
             val method = HttpContextHolder.getRequestOrNull()?.method
+            logger.info("download file: $method $url")
             val request = Request.Builder().url(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
+                // https://github.com/square/okhttp/issues/259#issuecomment-22056176
+                // 使用默认gzip编码时，Content-Length可能被okhttp剥离
+                .header(ACCEPT_ENCODING, "identity")
                 .method(method ?: HttpMethod.GET.name, null)
                 .build()
             val response = httpClient.newCall(request).execute()
@@ -95,8 +104,9 @@ class HfApi(
 
         fun head(endpoint: String, token: String, artifactUri: String): Response {
             val url = "$endpoint$artifactUri"
+            logger.info("HEAD request url: $url")
             val request = Request.Builder().url(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $token")
+                .apply { if (token.isNotBlank()) header(HttpHeaders.AUTHORIZATION, "Bearer $token") }
                 .head()
                 .build()
             val response = httpClient.newCall(request).execute()

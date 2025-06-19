@@ -251,11 +251,6 @@ class RepositoryServiceImpl(
                 repositoryDao.insert(repository)
                 val event = buildCreatedEvent(repoCreateRequest)
                 publishEvent(event)
-                messageSupplier.delegateToSupplier(
-                    data = event,
-                    topic = event.topic,
-                    key = event.getFullResourceKey(),
-                )
                 logger.info("Create repository [$repoCreateRequest] success.")
                 convertToDetail(repository)!!
             } catch (exception: DuplicateKeyException) {
@@ -298,11 +293,6 @@ class RepositoryServiceImpl(
         }
         val event = buildUpdatedEvent(repoUpdateRequest)
         publishEvent(event)
-        messageSupplier.delegateToSupplier(
-            data = event,
-            topic = event.topic,
-            key = event.getFullResourceKey(),
-        )
         logger.info("Update repository[$repoUpdateRequest] success.")
     }
 

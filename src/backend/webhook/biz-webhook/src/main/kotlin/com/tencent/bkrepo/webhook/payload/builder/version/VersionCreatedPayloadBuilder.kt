@@ -45,10 +45,16 @@ class VersionCreatedPayloadBuilder(
 ) {
 
     override fun build(event: ArtifactEvent): VersionCreatedEventPayload {
+        val packageKey = event.data["packageKey"].toString()
         return VersionCreatedEventPayload(
             user = getUser(event.userId),
-            packageVersion = getPackageVersion(event.projectId, event.repoName,
-                event.data["packageKey"].toString(), event.data["packageVersion"].toString())
+            packageKey = packageKey,
+            packageVersion = getPackageVersion(
+                projectId = event.projectId,
+                repoName = event.repoName,
+                packageKey = packageKey,
+                version = event.data["packageVersion"].toString()
+            )
         )
     }
 

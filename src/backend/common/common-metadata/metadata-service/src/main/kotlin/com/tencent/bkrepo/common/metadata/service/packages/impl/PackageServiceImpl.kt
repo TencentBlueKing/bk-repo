@@ -48,13 +48,17 @@ import com.tencent.bkrepo.common.metadata.util.PackageEventFactory
 import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildUpdatedEvent
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
+import com.tencent.bkrepo.common.metadata.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
+import com.tencent.bkrepo.repository.constant.ORDINAL
+import com.tencent.bkrepo.repository.constant.PACKAGE_KEY_SEPARATOR
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
+import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageCreateRequest
@@ -162,7 +166,7 @@ class PackageServiceImpl(
                 packageId = tPackage.id!!,
                 name = option.version,
                 stageTag = stageTag,
-                sortProperty = option.sortProperty,
+                sortProperty = option.sortProperty ?: determineVersionSortProperty(packageKey),
                 direction = Sort.Direction.fromOptionalString(option.direction.toString()).orElse(Sort.Direction.DESC)
             )
             val totalRecords = packageVersionDao.count(query)
@@ -184,7 +188,7 @@ class PackageServiceImpl(
             name = option.version,
             stageTag = stageTag,
             metadata = option.metadata,
-            sortProperty = option.sortProperty,
+            sortProperty = option.sortProperty ?: determineVersionSortProperty(packageKey),
             direction = Sort.Direction.fromOptionalString(option.direction.toString()).orElse(Sort.Direction.DESC)
         )
         return packageVersionDao.find(query).map { convert(it)!! }
@@ -205,13 +209,19 @@ class PackageServiceImpl(
                     and(TPackage::key).isEqualTo(packageKey)
                 }
             )
+            val latest = if (determineVersionSortProperty(tPackage.key) == ORDINAL) {
+                val currentLatest = tPackage.latest
+                if (currentLatest == null || SemVersion.parse(versionName) > SemVersion.parse(currentLatest)) {
+                    versionName
+                } else null
+            } else versionName
             val update = Update().set(TPackage::lastModifiedBy.name, request.createdBy)
                 .set(TPackage::lastModifiedDate.name, LocalDateTime.now())
                 .set(TPackage::description.name, packageDescription?.let { packageDescription })
-                .set(TPackage::latest.name, versionName)
                 .set(TPackage::extension.name, extension?.let { extension })
                 .set(TPackage::versionTag.name, mergeVersionTag(tPackage.versionTag, versionTag))
                 .set(TPackage::historyVersion.name, tPackage.historyVersion.toMutableSet().apply { add(versionName) })
+                .apply { if (latest != null) set(TPackage::latest.name, latest) }
             // 检查本次上传是创建还是覆盖。
             if (oldVersion != null) {
                 updateExistVersion(
@@ -222,28 +232,44 @@ class PackageServiceImpl(
                     packageUpdate = update
                 )
             } else {
-                // create new
-                val newVersion = buildPackageVersion(request, tPackage.id!!)
-                try {
-                    packageVersionDao.save(newVersion)
-                    // 改为通过mongo的原子操作来更新。微服务持有版本数在并发下会导致版本数被覆盖的问题
-                    update.inc(TPackage::versions.name)
-                    packageDao.upsert(query, update)
-                    logger.info("Create package version[$newVersion] success")
-                    publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
-                } catch (exception: DuplicateKeyException) {
-                    logger.warn("Create version[$newVersion] error: [${exception.message}]")
-                    oldVersion = packageVersionDao.findByName(tPackage.id!!, versionName)
-                    updateExistVersion(
-                        oldVersion = oldVersion!!,
-                        request = request,
-                        realIpAddress = realIpAddress,
-                        packageQuery = query,
-                        packageUpdate = update
-                    )
-                }
+                createVersion(
+                    request = request,
+                    query = query,
+                    update = update,
+                    tPackage = tPackage,
+                    realIpAddress = realIpAddress
+                )
             }
             populateCluster(tPackage)
+        }
+    }
+
+    private fun createVersion(
+        request: PackageVersionCreateRequest,
+        realIpAddress: String?,
+        update: Update,
+        query: Query,
+        tPackage: TPackage,
+    ) {
+        // create new
+        val newVersion = buildPackageVersion(request, tPackage.id!!)
+        try {
+            packageVersionDao.save(newVersion)
+            // 改为通过mongo的原子操作来更新。微服务持有版本数在并发下会导致版本数被覆盖的问题
+            update.inc(TPackage::versions.name)
+            packageDao.upsert(query, update)
+            logger.info("Create package version[$newVersion] success")
+            publishEvent(buildCreatedEvent(request, realIpAddress ?: HttpContextHolder.getClientAddress()))
+        } catch (exception: DuplicateKeyException) {
+            logger.warn("Create version[$newVersion] error: [${exception.message}]")
+            val oldVersion = packageVersionDao.findByName(tPackage.id!!, request.versionName)
+            updateExistVersion(
+                oldVersion = oldVersion!!,
+                request = request,
+                realIpAddress = realIpAddress,
+                packageQuery = query,
+                packageUpdate = update
+            )
         }
     }
 
@@ -515,6 +541,10 @@ class PackageServiceImpl(
     private fun checkPackageVersion(packageId: String, versionName: String): TPackageVersion {
         return packageVersionDao.findByName(packageId, versionName)
             ?: throw ErrorCodeException(ArtifactMessageCode.VERSION_NOT_FOUND, versionName)
+    }
+
+    private fun determineVersionSortProperty(packageKey: String): String {
+        return PackageType.fromSchema(packageKey.substringBefore(PACKAGE_KEY_SEPARATOR))?.versionSortProperty ?: ORDINAL
     }
 
     companion object {

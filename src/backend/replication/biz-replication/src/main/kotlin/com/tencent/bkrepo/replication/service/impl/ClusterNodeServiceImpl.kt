@@ -53,6 +53,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
@@ -71,7 +72,7 @@ import kotlin.random.Random
 
 @Service
 class ClusterNodeServiceImpl(
-    private val clusterNodeDao: ClusterNodeDao
+    private val clusterNodeDao: ClusterNodeDao,
 ) : ClusterNodeService {
 
     override fun getByClusterId(id: String): ClusterNodeInfo? {
@@ -85,6 +86,10 @@ class ClusterNodeServiceImpl(
 
     override fun getByClusterName(name: String): ClusterNodeInfo? {
         return convert(clusterNodeDao.findByName(name))
+    }
+
+    override fun getInfoByClusterName(name: String): RemoteClusterInfo? {
+        return convertToRemote(clusterNodeDao.findByName(name))
     }
 
     override fun getCenterNode(): ClusterNodeInfo {
@@ -277,6 +282,7 @@ class ClusterNodeServiceImpl(
             }
         }
     }
+
     private fun connectWithUdp(clusterInfo: ClusterInfo) {
         with(clusterInfo) {
             try {
@@ -365,6 +371,21 @@ class ClusterNodeServiceImpl(
             }
         }
 
+        private fun convertToRemote(tClusterNode: TClusterNode?): RemoteClusterInfo? {
+            return tClusterNode?.let {
+                RemoteClusterInfo(
+                    name = it.name,
+                    url = it.url,
+                    certificate = it.certificate,
+                    username = it.username,
+                    password = crypto(it.password, true),
+                    appId = it.appId,
+                    accessKey = it.accessKey,
+                    secretKey = it.secretKey,
+                )
+            }
+        }
+
         private fun convertRemoteInfo(tClusterNode: ClusterNodeInfo): ClusterInfo {
             return tClusterNode.let {
                 ClusterInfo(
@@ -376,7 +397,7 @@ class ClusterNodeServiceImpl(
                     appId = it.appId,
                     accessKey = it.accessKey,
                     secretKey = it.secretKey,
-                    udpPort =  it.udpPort
+                    udpPort = it.udpPort
                 )
             }
         }

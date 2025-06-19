@@ -56,6 +56,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * 同步服务抽象类
@@ -194,6 +195,35 @@ abstract class AbstractReplicaService(
     }
 
     /**
+     * 同步删除节点数据
+     */
+    protected fun replicaByDeletedNode(replicaContext: ReplicaContext, constraint: PathConstraint) {
+        with(replicaContext) {
+            try {
+                val nodeInfo = if (constraint.deletedDate == null) {
+                    localDataManager.findDeletedNodeDetail(
+                        projectId = localProjectId,
+                        repoName = localRepoName,
+                        fullPath = constraint.path!!,
+                    )?.nodeInfo
+                } else {
+                    localDataManager.findDeletedNodeDetail(
+                        projectId = localProjectId,
+                        repoName = localRepoName,
+                        fullPath = constraint.path!!,
+                        deleted = LocalDateTime.parse(constraint.deletedDate, DateTimeFormatter.ISO_DATE_TIME)
+                    )?.nodeInfo
+                } ?: return
+                replicaDeletedNode(this, nodeInfo)
+            } catch (throwable: Throwable) {
+                logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
+                setRunOnceTaskFailedRecordMetrics(this, throwable, pathConstraint = constraint)
+                throw throwable
+            }
+        }
+    }
+
+    /**
      * 同步路径
      * 采用广度优先遍历
      */
@@ -240,6 +270,27 @@ abstract class AbstractReplicaService(
                     pageNumber = pageNumber,
                     pageSize = PAGE_SIZE
                 )
+            }
+        }
+    }
+
+    /**
+     * 同步删除节点
+     */
+    private fun replicaDeletedNode(replicaContext: ReplicaContext, node: NodeInfo) {
+        with(replicaContext) {
+            val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
+            val record = ReplicationRecord(path = node.fullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = node.fullPath,
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                when (replicaExecutionContext.detail.conflictStrategy) {
+                    ConflictStrategy.SKIP -> false
+                    ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
+                    else -> replicaContext.replicator.replicaDeletedNode(replicaContext, node)
+                }
             }
         }
     }

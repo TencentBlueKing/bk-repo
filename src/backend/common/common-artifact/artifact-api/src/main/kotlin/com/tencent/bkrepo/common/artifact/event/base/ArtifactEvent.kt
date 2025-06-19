@@ -60,7 +60,11 @@ open class ArtifactEvent(
     /**
      * 附属数据
      */
-    open val data: Map<String, Any> = mapOf()
+    open val data: Map<String, Any> = mapOf(),
+    /**
+     * 来源， 正常上传或者是联邦同步
+     */
+    open val source: String? = null,
 ) {
     override fun toString(): String {
         return "ArtifactEvent(type=$type, projectId='$projectId', repoName='$repoName', " +

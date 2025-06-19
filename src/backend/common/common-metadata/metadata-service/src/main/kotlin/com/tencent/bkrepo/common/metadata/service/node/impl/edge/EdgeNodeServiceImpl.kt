@@ -156,7 +156,7 @@ class EdgeNodeServiceImpl(
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
-        projectId: String, repoName: String, fullPath: String, operator: String
+        projectId: String, repoName: String, fullPath: String, operator: String,
     ) {
         return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
             projectId, repoName, fullPath, operator
@@ -169,8 +169,9 @@ class EdgeNodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
+        source: String?,
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
+        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator, source)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -189,7 +190,7 @@ class EdgeNodeServiceImpl(
         date: LocalDateTime,
         operator: String,
         path: String,
-        decreaseVolume: Boolean
+        decreaseVolume: Boolean,
     ): NodeDeleteResult {
         ignoreException(
             projectId = projectId,
@@ -206,7 +207,7 @@ class EdgeNodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
-        nodeId: String
+        nodeId: String,
     ): NodeDeleteResult {
         return NodeDeleteSupport(this).deleteNodeById(projectId, repoName, fullPath, operator, nodeId)
     }
@@ -259,6 +260,12 @@ class EdgeNodeServiceImpl(
 
     override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
         return NodeRestoreSupport(this).getDeletedNodeDetail(artifact)
+    }
+
+    override fun getDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime,
+    ): NodeDetail? {
+        return NodeRestoreSupport(this).getDeletedNodeDetail(projectId, repoName, fullPath, deleted)
     }
 
     override fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail? {

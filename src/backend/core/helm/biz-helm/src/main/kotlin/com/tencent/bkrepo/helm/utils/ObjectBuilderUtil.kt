@@ -70,12 +70,14 @@ object ObjectBuilderUtil {
     fun buildCreatedEvent(
         projectId: String,
         repoName: String,
-        operator: String
+        operator: String,
+        source: String? = null,
     ): RepoCreatedEvent {
         return RepoCreatedEvent(
             projectId = projectId,
             repoName = repoName,
-            userId = operator
+            userId = operator,
+            source = source
         )
     }
 
@@ -103,7 +105,8 @@ object ObjectBuilderUtil {
         userId: String,
         packageKey: String,
         packageName: String,
-        packageVersion: String
+        packageVersion: String,
+        source: String? = null
     ): VersionUpdatedEvent {
         return VersionUpdatedEvent(
             projectId = projectId,
@@ -113,7 +116,8 @@ object ObjectBuilderUtil {
             packageKey = packageKey,
             packageName = packageName,
             packageVersion = packageVersion,
-            realIpAddress = null
+            realIpAddress = null,
+            source = source
         )
     }
 

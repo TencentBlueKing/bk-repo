@@ -139,16 +139,21 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 尝试读取缓存的远程构件
      */
     fun getCacheArtifactResource(context: ArtifactDownloadContext): ArtifactResource? {
+        val (cacheNode, isExpired) = getCacheInfo(context) ?: return null
+        return if (isExpired) null else loadArtifactResource(cacheNode, context)
+    }
+
+    /**
+     * 获取缓存的远程构件节点及过期状态
+     */
+    protected fun getCacheInfo(context: ArtifactDownloadContext): Pair<NodeDetail, Boolean>? {
         if (!shouldCache(context)) {
             return null
         }
 
         val cacheNode = findCacheNodeDetail(context)
-        if (cacheNode == null || cacheNode.folder) return null
-
-        return if (!isExpired(cacheNode, context.getRemoteConfiguration().cache.expiration)) {
-            loadArtifactResource(cacheNode, context)
-        } else null
+        return if (cacheNode == null || cacheNode.folder) null else
+            Pair(cacheNode, isExpired(cacheNode, context.getRemoteConfiguration().cache.expiration))
     }
 
     /**
@@ -236,13 +241,12 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             throw ErrorCodeException(PARAMETER_INVALID, "Transfer-Encoding: chunked was not supported")
         }
         val contentLength = response.header(HttpHeaders.CONTENT_LENGTH)!!.toLong()
-        val range = resolveContentRange(response.header(HttpHeaders.CONTENT_RANGE)) ?: Range.full(contentLength)
+        val contentRange = resolveContentRange(response.header(HttpHeaders.CONTENT_RANGE))
+        val range = contentRange ?: Range.full(contentLength)
 
         val request = HttpContextHolder.getRequestOrNull()
-        val artifactStream = if (range.isEmpty() || request?.method == HEAD.name) {
-            // 返回空文件
-            response.close()
-            ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+        val artifactStream = if (contentRange?.isEmpty() == true || request?.method == HEAD.name) {
+            onEmptyResponse(response, range, context)
         } else {
             // 返回文件内容
             response.body!!.byteStream().artifactStream(range).apply {
@@ -264,6 +268,16 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             channel = ArtifactChannel.LOCAL,
             useDisposition = useDisposition,
         )
+    }
+
+    protected open fun onEmptyResponse(
+        response: Response,
+        range: Range,
+        context: ArtifactDownloadContext,
+    ): ArtifactInputStream {
+        // 返回空文件
+        response.close()
+        return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
     }
 
     /**

@@ -114,14 +114,14 @@ class WebHookExecutor(
     }
 
     fun asyncExecutor(event: ArtifactEvent, webHook: TWebHook) {
-        val payload = try {
-            eventPayloadFactory.build(event)
-        }catch (e :Exception) {
-            logger.warn("webhook build payload error, event[$event], error: ${e.message}")
+        val (payload, request) = try {
+            val payload = eventPayloadFactory.build(event)
+            payload to buildRequest(webHook, payload)
+        } catch (e: Exception) {
+            logger.warn("webhook build payload or request error, event[$event], error: ${e.message}")
             webHookLogDao.insert(buildWebHookErrorLog(event, webHook, e))
             return
         }
-        val request = buildRequest(webHook, payload)
         val startTimestamp = System.currentTimeMillis()
         val log = buildWebHookLog(webHook, request, payload)
         webHookMetrics.executingCount.incrementAndGet()

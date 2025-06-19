@@ -56,5 +56,7 @@ data class MetadataSaveRequest(
     @get:Schema(title = "是否替换元数据，删除原有元数据再新增元数据", required = false)
     val replace: Boolean = false,
     @get:Schema(title = "操作用户")
-    override val operator: String = SYSTEM_USER
+    override val operator: String = SYSTEM_USER,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 ) : NodeRequest, ServiceRequest

@@ -20,7 +20,8 @@ object RepoEventFactory {
             return RepoCreatedEvent(
                 projectId = projectId,
                 repoName = name,
-                userId = operator
+                userId = operator,
+                source = source
             )
         }
     }
@@ -33,7 +34,8 @@ object RepoEventFactory {
             return RepoUpdatedEvent(
                 projectId = projectId,
                 repoName = name,
-                userId = operator
+                userId = operator,
+                source = source
             )
         }
     }
@@ -46,7 +48,8 @@ object RepoEventFactory {
             return RepoDeletedEvent(
                 projectId = projectId,
                 repoName = name,
-                userId = operator
+                userId = operator,
+                source= source
             )
         }
     }
