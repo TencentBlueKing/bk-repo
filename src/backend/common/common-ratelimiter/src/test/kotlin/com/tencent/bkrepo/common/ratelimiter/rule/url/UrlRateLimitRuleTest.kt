@@ -224,6 +224,10 @@ class UrlRateLimitRuleTest : BaseRuleTest() {
         assertEquals(actualInfo?.resource, "/project3/xxxx/")
 
 
+        resInfo = ResInfo("%2Fproject2%2Fs.txt")
+        actualInfo = urlRateLimitRule.getRateLimitRule(resInfo)
+        assertEqualsLimitInfo(actualInfo?.resourceLimit, l4)
+        assertEquals(actualInfo?.resource, "%2Fproject2%2Fs.txt")
     }
 
     @Test

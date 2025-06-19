@@ -81,6 +81,35 @@ class ResourcePathUtilsTest {
     }
 
     @Test
+    fun `test tokenizeResourcePath with URL encoded path`() {
+        val path = "/a%2Fb"
+        val result = ResourcePathUtils.tokenizeResourcePath(path)
+        assertEquals(listOf("a", "b"), result)
+    }
+
+    @Test
+    fun `test tokenizeResourcePath with consecutive slashes`() {
+        val path = "/a//b"
+        val result = ResourcePathUtils.tokenizeResourcePath(path)
+        assertEquals(listOf("a", "b"), result)
+    }
+
+    @Test
+    fun `test tokenizeResourcePath with mixed path`() {
+        val path = "/a%2Fb//c"
+        val result = ResourcePathUtils.tokenizeResourcePath(path)
+        assertEquals(listOf("a", "b", "c"), result)
+    }
+
+
+    @Test
+    fun `test tokenizeResourcePath with consecutive URL encoded path`() {
+        val path = "%2Fa%2Fb%2F%2Fc"
+        val result = ResourcePathUtils.tokenizeResourcePath(path)
+        assertEquals(listOf("a", "b", "c"), result)
+    }
+
+    @Test
     fun testGetUrlPath() {
         try {
             var actualPath: String? = ResourcePathUtils.getPathOfUrl("http://www.bkrepo.com/")
