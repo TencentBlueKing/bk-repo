@@ -91,7 +91,7 @@ open class NodeRestoreSupport(
     override fun getDeletedNodeDetail(
         projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime
     ): NodeDetail? {
-        val query = nodeQuery(projectId, repoName, fullPath, deleted)
+        val query = nodeDeletedPointQuery(projectId, repoName, fullPath, deleted)
         val node = nodeDao.findOne(query)
         return convertToDetail(node)
     }
