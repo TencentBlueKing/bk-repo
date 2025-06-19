@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,25 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.dao
+package com.tencent.bkrepo.webhook.payload.builder.version
 
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.webhook.constant.AssociationType
-import com.tencent.bkrepo.webhook.model.TWebHook
-import org.springframework.data.domain.Sort
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Repository
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.webhook.payload.builder.EventPayloadBuilder
+import com.tencent.bkrepo.webhook.pojo.payload.version.VersionDeletedEventPayload
+import org.springframework.stereotype.Component
 
-@Repository
-class WebHookDao : SimpleMongoDao<TWebHook>() {
+@Component
+class VersionDeletedPayloadBuilder : EventPayloadBuilder(
+    eventType = EventType.VERSION_DELETED
+) {
 
-    fun findByAssociationTypeAndAssociationId(type: AssociationType, id: String?): List<TWebHook> {
-        val query = Query(
-            Criteria.where(TWebHook::associationType.name).isEqualTo(type)
-                .apply { id?.let { and(TWebHook::associationId.name).isEqualTo(id) } }
-        ).with(Sort.by(Sort.Direction.DESC, TWebHook::createdDate.name))
-        return this.find(query)
+    override fun build(event: ArtifactEvent): VersionDeletedEventPayload {
+        return VersionDeletedEventPayload(
+            user = getUser(event.userId),
+            projectId = event.projectId,
+            repoName = event.repoName,
+            packageKey = event.data["packageKey"].toString(),
+            version = event.data["packageVersion"].toString()
+        )
     }
 }

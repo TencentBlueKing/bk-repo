@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,43 +25,46 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.payload.builder
+package com.tencent.bkrepo.webhook.payload.builder.version
 
-import com.tencent.bkrepo.auth.api.ServiceUserClient
-import com.tencent.bkrepo.auth.pojo.user.UserInfo
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
-import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
-import org.springframework.beans.factory.annotation.Autowired
+import com.tencent.bkrepo.webhook.payload.builder.EventPayloadBuilder
+import com.tencent.bkrepo.webhook.pojo.payload.version.VersionUpdatedEventPayload
+import org.springframework.stereotype.Component
 
-abstract class EventPayloadBuilder(
-    open val eventType: EventType
+@Component
+class VersionUpdatedPayloadBuilder(
+    private val packageService: PackageService,
+) : EventPayloadBuilder(
+    eventType = EventType.VERSION_UPDATED
 ) {
 
-    @Autowired
-    private lateinit var userResource: ServiceUserClient
-
-    abstract fun build(event: ArtifactEvent): CommonEventPayload
-
-    fun getUser(userId: String): UserInfo {
-        return if (userId == SYSTEM_USER || userId == ANONYMOUS_USER) {
-            UserInfo(
-                userId = userId,
-                name = userId,
-                email = null,
-                phone = null,
-                createdDate = null,
-                locked = false,
-                admin = false,
-                group = false,
+    override fun build(event: ArtifactEvent): VersionUpdatedEventPayload {
+        val packageKey = event.data["packageKey"].toString()
+        return VersionUpdatedEventPayload(
+            user = getUser(event.userId),
+            packageKey = packageKey,
+            packageVersion = getPackageVersion(
+                projectId = event.projectId,
+                repoName = event.repoName,
+                packageKey = packageKey,
+                version = event.data["packageVersion"].toString()
             )
-        } else {
-            userResource.userInfoById(userId).data
-                ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_USER_NOT_FOUND)
-        }
+        )
+    }
+
+    private fun getPackageVersion(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String
+    ): PackageVersion {
+        return packageService.findVersionByName(projectId, repoName, packageKey, version)
+            ?: throw NotFoundException(WebHookMessageCode.WEBHOOK_VERSION_NOT_FOUND)
     }
 }
