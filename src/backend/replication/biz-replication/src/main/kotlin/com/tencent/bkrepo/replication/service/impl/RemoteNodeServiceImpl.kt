@@ -196,7 +196,8 @@ class RemoteNodeServiceImpl(
             userId = SecurityUtils.getUserId(),
             packageType = repositoryDetail.type.name,
             packageName = packageName,
-            realIpAddress = null
+            realIpAddress = null,
+            source = null
         )
         eventBasedReplicaJobExecutor.execute(taskDetail, event)
     }

@@ -78,4 +78,9 @@ interface Replicator {
      * @return 是否执行了同步，如果远程存在相同目录，则返回false
      */
     fun replicaDir(context: ReplicaContext, node: NodeInfo)
+
+    /**
+     * 删除节点
+     */
+    fun replicaDeletedNode(context: ReplicaContext, node: NodeInfo): Boolean
 }

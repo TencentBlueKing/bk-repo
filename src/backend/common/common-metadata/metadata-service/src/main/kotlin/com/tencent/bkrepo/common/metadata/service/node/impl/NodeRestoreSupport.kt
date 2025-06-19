@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 
 /**
@@ -85,6 +86,14 @@ open class NodeRestoreSupport(
                 listOf(convertToDetail(deletedNode)!!)
             }
         }
+    }
+
+    override fun getDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime
+    ): NodeDetail? {
+        val query = nodeDeletedPointQuery(projectId, repoName, fullPath, deleted)
+        val node = nodeDao.findOne(query)
+        return convertToDetail(node)
     }
 
     override fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail? {

@@ -275,6 +275,10 @@ class ClusterReplicator(
         }
     }
 
+    override fun replicaDeletedNode(context: ReplicaContext, node: NodeInfo): Boolean {
+        return true
+    }
+
     private fun buildNodeCreateRequest(context: ReplicaContext, node: NodeInfo): NodeCreateRequest? {
         with(context) {
             // 外部集群仓库没有project/repoName

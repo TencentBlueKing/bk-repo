@@ -76,7 +76,8 @@ class OciPackageController(
         eventExecutor.submit(RepoCreatedEvent(
             projectId = projectId,
             repoName = repoName,
-            userId = SecurityUtils.getUserId()
+            userId = SecurityUtils.getUserId(),
+            source = null
         ))
         return ResponseBuilder.success()
     }

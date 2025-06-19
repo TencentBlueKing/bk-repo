@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import org.springframework.web.bind.annotation.RestController
 
@@ -40,6 +41,10 @@ class ServiceClusterNodeController(
 ) : ClusterNodeClient {
     override fun getCluster(name: String): Response<ClusterNodeInfo?> {
         return ResponseBuilder.success(clusterNodeService.getByClusterName(name))
+    }
+
+    override fun getClusterInfo(name: String): Response<RemoteClusterInfo?> {
+        return ResponseBuilder.success(clusterNodeService.getInfoByClusterName(name))
     }
 
     override fun listEdgeNodes(): Response<List<ClusterNodeInfo>> {

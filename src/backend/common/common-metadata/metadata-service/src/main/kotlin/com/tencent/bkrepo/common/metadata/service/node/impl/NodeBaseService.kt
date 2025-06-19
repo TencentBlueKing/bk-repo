@@ -198,7 +198,7 @@ abstract class NodeBaseService(
             // 创建节点
             val node = buildTNode(this)
             doCreate(node, separate = separate)
-            afterCreate(repo, node)
+            afterCreate(repo, node, source)
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
             return convertToDetail(node)!!
         }
@@ -283,10 +283,10 @@ abstract class NodeBaseService(
         }
     }
 
-    private fun afterCreate(repo: TRepository, node: TNode) {
+    fun afterCreate(repo: TRepository, node: TNode, source: String?) {
         with(node) {
             if (isGenericRepo(repo)) {
-                publishEvent(buildCreatedEvent(node))
+                publishEvent(buildCreatedEvent(node, source))
                 createRouter(this)
             }
             reportNode2Bkbase(node)

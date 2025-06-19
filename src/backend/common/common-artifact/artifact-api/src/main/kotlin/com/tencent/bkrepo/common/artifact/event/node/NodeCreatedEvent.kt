@@ -37,11 +37,13 @@ class NodeCreatedEvent(
     override val projectId: String,
     override val repoName: String,
     override val resourceKey: String,
-    override val userId: String
+    override val userId: String,
+    override val source: String?,
 ) : ArtifactEvent(
     type = EventType.NODE_CREATED,
     projectId = projectId,
     repoName = repoName,
     resourceKey = resourceKey,
-    userId = userId
+    userId = userId,
+    source = source
 )
