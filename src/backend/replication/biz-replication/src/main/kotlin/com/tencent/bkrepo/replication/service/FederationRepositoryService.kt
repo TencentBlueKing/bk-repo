@@ -48,24 +48,24 @@ interface FederationRepositoryService {
     fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest)
 
     /**
-     * 根据项目id和仓库名称和key查询相关联的联邦仓库配置
+     * 根据项目id和仓库名称和federationId查询相关联的联邦仓库配置
      */
     fun listFederationRepository(
-        projectId: String, repoName: String, key: String? = null,
+        projectId: String, repoName: String, federationId: String? = null,
     ): List<FederatedRepositoryInfo>
 
     /**
      * 删除联邦仓库配置（本地+remote）
      */
-    fun deleteFederationRepositoryConfig(projectId: String, repoName: String, key: String)
+    fun deleteFederationRepositoryConfig(projectId: String, repoName: String, federationId: String)
 
     /**
      * 删除本地联邦仓库配置
      */
-    fun deleteLocalFederationRepositoryConfig(projectId: String, repoName: String, key: String)
+    fun deleteLocalFederationRepositoryConfig(projectId: String, repoName: String, federationId: String)
 
     /**
      * 根据项目仓库获取当前集群名
      */
-    fun getCurrentClusterName(projectId: String, repoName: String, key: String): String?
+    fun getCurrentClusterName(projectId: String, repoName: String, federationId: String): String?
 }

@@ -80,15 +80,15 @@ class FederationRepositoryServiceImpl(
         val currentCluster = clusterNodeService.getByClusterId(request.clusterId)
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, request.clusterId)
         try {
-            val key = uniqueId()
-            val taskMap = doFederatedRepositoryCreate(request, currentCluster, key)
-            val tFederatedRepository = buildTFederatedRepository(request, taskMap, key)
+            val federationId = uniqueId()
+            val taskMap = doFederatedRepositoryCreate(request, currentCluster, federationId)
+            val tFederatedRepository = buildTFederatedRepository(request, taskMap, federationId)
             federatedRepositoryDao.save(tFederatedRepository)
             logger.info(
                 "Successfully created federation repository for repo:" +
-                    " ${request.projectId}|${request.repoName} with key: $key"
+                    " ${request.projectId}|${request.repoName} with key: $federationId"
             )
-            return key
+            return federationId
         } catch (e: Exception) {
             logger.warn("Failed to create federation repository, request: ${e.message}")
             throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_CREATE_ERROR, e.message.orEmpty())
@@ -100,23 +100,23 @@ class FederationRepositoryServiceImpl(
     }
 
     override fun listFederationRepository(
-        projectId: String, repoName: String, key: String?,
+        projectId: String, repoName: String, federationId: String?,
     ): List<FederatedRepositoryInfo> {
-        return federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, key).map {
+        return federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).map {
             convertToFederatedRepositoryInfo(it)
         }
     }
 
-    override fun deleteFederationRepositoryConfig(projectId: String, repoName: String, key: String) {
-        deleteConfig(projectId, repoName, key, true)
+    override fun deleteFederationRepositoryConfig(projectId: String, repoName: String, federationId: String) {
+        deleteConfig(projectId, repoName, federationId, true)
     }
 
-    override fun deleteLocalFederationRepositoryConfig(projectId: String, repoName: String, key: String) {
-        deleteConfig(projectId, repoName, key, false)
+    override fun deleteLocalFederationRepositoryConfig(projectId: String, repoName: String, federationId: String) {
+        deleteConfig(projectId, repoName, federationId, false)
     }
 
-    override fun getCurrentClusterName(projectId: String, repoName: String, key: String): String? {
-        return federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, key).firstOrNull()?.let {
+    override fun getCurrentClusterName(projectId: String, repoName: String, federationId: String): String? {
+        return federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).firstOrNull()?.let {
             clusterNodeService.getByClusterId(it.clusterId)?.name
         }
     }
@@ -135,27 +135,27 @@ class FederationRepositoryServiceImpl(
     private fun deleteConfig(
         projectId: String,
         repoName: String,
-        key: String,
+        federationId: String,
         deleteRemote: Boolean = false,
     ) {
-        val federationRepository = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, key)
+        val federationRepository = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId)
             .firstOrNull() ?: return
         federationRepository.federatedClusters.forEach {
             if (deleteRemote) {
-                deleteRemoteFederationConfig(key, it)
+                deleteRemoteFederationConfig(federationId, it)
             }
             val task = replicaTaskService.getByTaskId(it.taskId!!)
             task?.let {
                 replicaTaskService.deleteByTaskKey(task.key)
             }
         }
-        federatedRepositoryDao.deleteByProjectIdAndRepoName(projectId, repoName, key)
+        federatedRepositoryDao.deleteByProjectIdAndRepoName(projectId, repoName, federationId)
     }
 
     private fun doFederatedRepositoryCreate(
         request: FederatedRepositoryCreateRequest,
         currentCluster: ClusterNodeInfo,
-        key: String,
+        federationId: String,
     ): Map<String, String> {
         val taskMap = mutableMapOf<String, String>()
         request.federatedClusters.forEach { fed ->
@@ -168,9 +168,11 @@ class FederationRepositoryServiceImpl(
                 request.projectId, request.repoName, fed.projectId, fed.repoName, remoteClusterNode, currentCluster
             )
             // 在目标集群生成对应cluster以及对应同步task
-            syncFederationConfig(request.name, key, fed.projectId, fed.repoName, remoteClusterNode, federatedClusters)
+            syncFederationConfig(
+                request.name, federationId, fed.projectId, fed.repoName, remoteClusterNode, federatedClusters
+            )
             // 生成本地同步task
-            val taskId = createOrUpdateTask(key, request.projectId, request.repoName, fed, remoteClusterNode)
+            val taskId = createOrUpdateTask(federationId, request.projectId, request.repoName, fed, remoteClusterNode)
             taskMap[fed.clusterId] = taskId
         }
         return taskMap
@@ -186,14 +188,14 @@ class FederationRepositoryServiceImpl(
 
     private fun syncFederationConfig(
         name: String,
-        key: String,
+        federationId: String,
         projectId: String,
         repoName: String,
         remoteClusterNode: ClusterNodeInfo,
         federatedClusters: List<FederatedCluster>,
     ) {
         logger.info(
-            "Start to sync federation config with key $key " +
+            "Start to sync federation config with federationId $federationId " +
                 "for repo: $projectId|$repoName to cluster ${remoteClusterNode.name}"
         )
         val cluster = buildClusterInfo(remoteClusterNode)
@@ -209,7 +211,7 @@ class FederationRepositoryServiceImpl(
         }
         val configRequest = FederatedRepositoryConfigRequest(
             name = name,
-            key = key,
+            federationId = federationId,
             projectId = projectId,
             repoName = repoName,
             federatedClusters = federatedClusterInfos,
@@ -218,7 +220,7 @@ class FederationRepositoryServiceImpl(
         val federatedRepositoryClient = FeignClientFactory.create<FederatedRepositoryClient>(cluster)
         federatedRepositoryClient.createFederatedConfig(configRequest)
         logger.info(
-            "Successfully synced federation config with key $key " +
+            "Successfully synced federation config with federationId $federationId " +
                 "for repo: $projectId|$repoName to cluster ${cluster.name}"
         )
     }
@@ -265,8 +267,8 @@ class FederationRepositoryServiceImpl(
         with(request) {
             logger.info("Start to sync federation config for project: $projectId, repo: $repoName")
             val selfCluster = getOrCreateCluster(selfCluster)
-            val fedList = buildFederatedClusterList(key, projectId, repoName, federatedClusters)
-            saveFederationConfig(name, key, projectId, repoName, selfCluster.id!!, fedList)
+            val fedList = buildFederatedClusterList(federationId, projectId, repoName, federatedClusters)
+            saveFederationConfig(name, federationId, projectId, repoName, selfCluster.id!!, fedList)
             logger.info("Successfully synced federation config for project: $projectId, repo: $repoName")
         }
     }
@@ -302,7 +304,7 @@ class FederationRepositoryServiceImpl(
     }
 
     private fun buildFederatedClusterList(
-        key: String,
+        federationId: String,
         projectId: String,
         repoName: String,
         federatedClusters: List<FederatedClusterInfo>,
@@ -311,7 +313,7 @@ class FederationRepositoryServiceImpl(
         return federatedClusters.mapNotNull { it ->
             val federatedCluster = getOrCreateCluster(it.clusterNodeInfo)
             val fed = FederatedCluster(it.projectId, it.repoName, federatedCluster.id!!, it.enabled)
-            val taskId = createOrUpdateTask(key, projectId, repoName, fed, federatedCluster)
+            val taskId = createOrUpdateTask(federationId, projectId, repoName, fed, federatedCluster)
             fed.taskId = taskId
             fed
         }.toMutableList()
@@ -319,7 +321,7 @@ class FederationRepositoryServiceImpl(
 
     private fun saveFederationConfig(
         name: String,
-        key: String,
+        federationId: String,
         projectId: String,
         repoName: String,
         clusterId: String,
@@ -327,7 +329,7 @@ class FederationRepositoryServiceImpl(
     ) {
         val request = buildTFederatedRepository(
             name = name,
-            key = key,
+            federationId = federationId,
             projectId = projectId,
             repoName = repoName,
             clusterId = clusterId,
@@ -340,7 +342,7 @@ class FederationRepositoryServiceImpl(
      * 当远端集群创建后，创建/更新对应的任务
      */
     private fun createOrUpdateTask(
-        key: String,
+        federationId: String,
         projectId: String,
         repoName: String,
         federatedCluster: FederatedCluster,
@@ -351,7 +353,7 @@ class FederationRepositoryServiceImpl(
             repoName, repositoryDetail.type, federatedCluster
         )
         val sourceRepo = projectId + StringPool.DASH + repoName
-        val taskName = FEDERATION_TASK_NAME.format(key, sourceRepo, clusterInfo.name)
+        val taskName = FEDERATION_TASK_NAME.format(federationId, sourceRepo, clusterInfo.name)
         var task = replicaTaskService.getByTaskName(taskName)
         if (task == null) {
             logger.info("Creating new federation task: $taskName")
@@ -386,7 +388,7 @@ class FederationRepositoryServiceImpl(
         }
         logger.info(
             "Successfully created federation task: $taskName" +
-                " with key $key for repo: $projectId|$repoName to cluster: ${clusterInfo.name}"
+                " with federationId $federationId for repo: $projectId|$repoName to cluster: ${clusterInfo.name}"
         )
         return task!!.id
     }
@@ -437,7 +439,7 @@ class FederationRepositoryServiceImpl(
     private fun buildTFederatedRepository(
         request: FederatedRepositoryCreateRequest,
         taskMap: Map<String, String>,
-        key: String,
+        federationId: String,
     ): TFederatedRepository {
         // 将请求中的联邦集群列表转换为实体列表，并添加对应的任务ID
         val federatedClusters = request.federatedClusters.map {
@@ -460,14 +462,14 @@ class FederationRepositoryServiceImpl(
             createdDate = LocalDateTime.now(),
             lastModifiedBy = SecurityUtils.getUserId(),
             lastModifiedDate = LocalDateTime.now(),
-            key = key,
+            federationId = federationId,
             name = request.name
         )
     }
 
     private fun buildTFederatedRepository(
         name: String,
-        key: String,
+        federationId: String,
         projectId: String,
         repoName: String,
         federatedClusters: List<FederatedCluster>,
@@ -475,7 +477,7 @@ class FederationRepositoryServiceImpl(
     ): TFederatedRepository {
         return TFederatedRepository(
             name = name,
-            key = key,
+            federationId = federationId,
             projectId = projectId,
             repoName = repoName,
             clusterId = clusterId,
@@ -489,7 +491,7 @@ class FederationRepositoryServiceImpl(
 
     private fun convertToFederatedRepositoryInfo(tFederatedRepository: TFederatedRepository): FederatedRepositoryInfo {
         return FederatedRepositoryInfo(
-            key = tFederatedRepository.key,
+            federationId = tFederatedRepository.federationId,
             name = tFederatedRepository.name,
             projectId = tFederatedRepository.projectId,
             repoName = tFederatedRepository.repoName,

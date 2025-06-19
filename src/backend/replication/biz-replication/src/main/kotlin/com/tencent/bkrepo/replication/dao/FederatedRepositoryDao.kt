@@ -37,18 +37,18 @@ import org.springframework.stereotype.Repository
 class FederatedRepositoryDao : SimpleMongoDao<TFederatedRepository>() {
 
     fun findByProjectIdAndRepoName(
-        projectId: String, repoName: String, key: String? = null
+        projectId: String, repoName: String, federationId: String? = null
     ): List<TFederatedRepository> {
         val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
             .and(TFederatedRepository::repoName.name).`is`(repoName)
-        key?.let { criteria.and(TFederatedRepository::key.name).`is`(it) }
+        federationId?.let { criteria.and(TFederatedRepository::federationId.name).`is`(it) }
         return find(Query(criteria))
     }
 
-    fun deleteByProjectIdAndRepoName(projectId: String, repoName: String, key: String) {
+    fun deleteByProjectIdAndRepoName(projectId: String, repoName: String, federationId: String) {
         val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
             .and(TFederatedRepository::repoName.name).`is`(repoName)
-            .and(TFederatedRepository::key.name).`is`(key)
+            .and(TFederatedRepository::federationId.name).`is`(federationId)
         val query = Query(criteria)
         remove(query)
     }

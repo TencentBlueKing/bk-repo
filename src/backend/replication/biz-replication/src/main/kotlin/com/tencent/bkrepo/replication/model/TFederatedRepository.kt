@@ -35,7 +35,9 @@ import java.time.LocalDateTime
 
 @Document("federated_repository")
 @CompoundIndexes(
-    CompoundIndex(name = "repo_idx", def = "{'projectId': 1, 'repoName':1, 'key':1}", unique = true, background = true)
+    CompoundIndex(
+        name = "repo_idx", def = "{'projectId': 1, 'repoName':1, 'federationId':1}", unique = true, background = true
+    )
 )
 data class TFederatedRepository(
     var id: String? = null,
@@ -47,8 +49,8 @@ data class TFederatedRepository(
     var repoName: String,
     // 当前仓库所属集群id
     var clusterId: String,
-    // 联邦仓库配置key
-    var key: String,
+    // 联邦仓库配置id
+    var federationId: String,
     var name: String,
     // 配置的联邦集群对应仓库信息
     var federatedClusters: List<FederatedCluster>,

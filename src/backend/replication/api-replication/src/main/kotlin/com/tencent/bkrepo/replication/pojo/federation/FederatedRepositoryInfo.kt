@@ -29,7 +29,7 @@ package com.tencent.bkrepo.replication.pojo.federation
 
 data class FederatedRepositoryInfo(
     val name: String,
-    val key: String,
+    val federationId: String,
     val projectId: String,
     val repoName: String,
     val clusterId: String,

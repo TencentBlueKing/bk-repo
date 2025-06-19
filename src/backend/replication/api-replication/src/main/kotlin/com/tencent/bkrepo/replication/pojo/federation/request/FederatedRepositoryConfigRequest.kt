@@ -38,8 +38,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 data class FederatedRepositoryConfigRequest(
     @get:Schema(title = "联邦仓库配置名")
     val name: String,
-    @get:Schema(title = "联邦仓库key")
-    val key: String,
+    @get:Schema(title = "联邦仓库id")
+    val federationId: String,
     @get:Schema(title = "项目")
     val projectId: String,
     @get:Schema(title = "仓库")

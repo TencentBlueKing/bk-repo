@@ -68,14 +68,14 @@ class UserFederationRepositoryController(
     }
 
     @Operation(summary = "删除联邦仓库")
-    @DeleteMapping("/delete/{projectId}/{repoName}/{key}")
+    @DeleteMapping("/delete/{projectId}/{repoName}/{federationId}")
     fun federatedRepositoryDelete(
         @PathVariable("projectId") projectId: String,
         @PathVariable("repoName") repoName: String,
-        @PathVariable("key") key: String,
+        @PathVariable("federationId") federationId: String,
     ): Response<Void> {
         permissionManager.checkRepoPermission(PermissionAction.WRITE, projectId, repoName)
-        federationRepositoryService.deleteFederationRepositoryConfig(projectId, repoName, key)
+        federationRepositoryService.deleteFederationRepositoryConfig(projectId, repoName, federationId)
         return ResponseBuilder.success()
     }
 
@@ -85,9 +85,11 @@ class UserFederationRepositoryController(
     fun federatedRepositoryQuery(
         @PathVariable("projectId") projectId: String,
         @PathVariable("repoName") repoName: String,
-        @RequestParam("key") key: String? = null,
+        @RequestParam("federationId") federationId: String? = null,
     ): Response<List<FederatedRepositoryInfo>> {
         permissionManager.checkRepoPermission(PermissionAction.READ, projectId, repoName)
-        return ResponseBuilder.success(federationRepositoryService.listFederationRepository(projectId, repoName, key))
+        return ResponseBuilder.success(
+            federationRepositoryService.listFederationRepository(projectId, repoName, federationId)
+        )
     }
 }
