@@ -91,11 +91,11 @@ class DevXBkciWebhookListener(
         createLocalProject(payload)
 
         // 创建本地仓库
-        createLocalCompositeRepo(payload.projectCode, LSYNC, LSYNC)
-        createLocalCompositeRepo(payload.projectCode, PIPELINE, "$PIPELINE$DEVX_SUFFIX")
-        createLocalCompositeRepo(payload.projectCode, CUSTOM, "$CUSTOM$DEVX_SUFFIX")
-        createLocalCompositeRepo(payload.projectCode, REPORT, "$REPORT$DEVX_SUFFIX")
-        createLocalCompositeRepo(payload.projectCode, LOG, LOG)
+        createLocalCompositeRepo(payload.projectCode, LSYNC, LSYNC, true)
+        createLocalCompositeRepo(payload.projectCode, PIPELINE, "$PIPELINE$DEVX_SUFFIX", true)
+        createLocalCompositeRepo(payload.projectCode, CUSTOM, "$CUSTOM$DEVX_SUFFIX", true)
+        createLocalCompositeRepo(payload.projectCode, REPORT, "$REPORT$DEVX_SUFFIX", false)
+        createLocalCompositeRepo(payload.projectCode, LOG, LOG, false)
     }
 
     /**
@@ -167,7 +167,12 @@ class DevXBkciWebhookListener(
     /**
      * 创建代理远程集群同名仓库的本地仓库
      */
-    private fun createLocalCompositeRepo(projectId: String, repoName: String, remoteRepoName: String) {
+    private fun createLocalCompositeRepo(
+        projectId: String,
+        repoName: String,
+        remoteRepoName: String,
+        display: Boolean,
+    ) {
         val configuration = CompositeConfiguration(
             ProxyConfiguration(
                 listOf(
@@ -186,6 +191,7 @@ class DevXBkciWebhookListener(
             category = RepositoryCategory.COMPOSITE,
             public = false,
             configuration = configuration,
+            display = display
         )
 
         try {
