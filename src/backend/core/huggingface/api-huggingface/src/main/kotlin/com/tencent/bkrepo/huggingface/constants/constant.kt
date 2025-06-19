@@ -51,3 +51,5 @@ const val TYPE_KEY = "type"
 
 const val PACKAGE_KEY = "packageKey"
 const val VERSION = "version"
+
+const val BASE64_ENCODING = "base64"
