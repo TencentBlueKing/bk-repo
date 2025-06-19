@@ -139,7 +139,8 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 尝试读取缓存的远程构件
      */
     fun getCacheArtifactResource(context: ArtifactDownloadContext): ArtifactResource? {
-        return getCacheInfo(context)?.takeIf { !it.second }?.let { loadArtifactResource(it.first, context) }
+        val (cacheNode, isExpired) = getCacheInfo(context) ?: return null
+        return if (isExpired) null else loadArtifactResource(cacheNode, context)
     }
 
     /**
