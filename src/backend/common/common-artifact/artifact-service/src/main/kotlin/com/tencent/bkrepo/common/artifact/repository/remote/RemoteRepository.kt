@@ -173,11 +173,17 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     protected fun isExpired(cacheNode: NodeDetail, expiration: Long): Boolean {
         if (expiration <= 0) {
-            return false
+            return isExpiredForNonPositiveValue()
         }
         val createdDate = LocalDateTime.parse(cacheNode.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         return Duration.between(createdDate, LocalDateTime.now()).toMinutes() >= expiration
     }
+
+    /**
+     * expiration 为0或负数时表示是否过期
+     * @see [com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCacheConfiguration.expiration]
+     */
+    protected open fun isExpiredForNonPositiveValue(): Boolean = false
 
     /**
      * 尝试获取缓存的远程构件节点

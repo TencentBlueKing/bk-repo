@@ -89,7 +89,8 @@ class HuggingfaceRemoteRepository(
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        return getCacheArtifactResource(context) ?: run {
+        // revision下的文件不会变化，优先获取缓存
+        return getCacheInfo(context)?.let { loadArtifactResource(it.first, context) } ?: run {
             val configuration = context.getRemoteConfiguration()
             val artifactInfo = context.artifactInfo as HuggingfaceArtifactInfo
             val response = HfApi.download(
@@ -168,8 +169,10 @@ class HuggingfaceRemoteRepository(
     override fun buildDownloadRecord(context: ArtifactDownloadContext, artifactResource: ArtifactResource) =
         hfCommonService.buildDownloadRecord(context)
 
+    override fun isExpiredForNonPositiveValue() = true
+
     private inline fun <reified T> getRevisionInfo(context: ArtifactQueryContext): T? {
-        // 优先级：未过期缓存 > 网络请求 > 已过期缓存
+        // revision信息可能会更新，优先级：未过期缓存 > 网络请求 > 已过期缓存
         // 缓存不存在时以网络请求为最终结果
         val (cacheNode, isExpired) = getCacheInfo(context) ?: return requestRevisionInfo<T>(context)
         // 缓存过期时先尝试网络请求，失败时回落到已过期缓存
