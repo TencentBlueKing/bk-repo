@@ -15,7 +15,10 @@
 		"FAILED": "#FF0000",
 		"SUCCESS": "#00EE00"
 	},
-	"display": true
+	"display": true,
+	"enumType": true,
+	"category": "质量",
+	"description": "元数据标签描述"
   }
 ```
 - 响应体
@@ -34,6 +37,9 @@
 | labelKey | String | 是 | 标签对应元数据的key | scanStatus |
 | labelColorMap | Map | 是 | 元数据值和标签颜色的对应关系, 颜色为十六进制颜色码 | { "FAILED": "#FF0000", "SUCCESS": "#00EE00" } |
 | display | Boolean | 否 | 标签是否在文件列表展示，默认值true | true |
+| enumType | Boolean | 否 | 元数据为枚举类型，限制元数据值为枚举值，默认值false | false |
+| category | String | 否 | 元数据标签分类 | 质量 | 
+| description | String | 否 | 表数据标签描述 | |
 
 
 
@@ -47,14 +53,46 @@
 ```json
 {
 	"labelColorMap": {
-	     "FAILED": "#FF0000",
-	     "SUCCESS": "#00EE00"
+		"FAILED": "#FF0000",
+		"SUCCESS": "#00EE00"
 	},
-	"display": true
- }
+	"display": true,
+	"enumType": true,
+	"category": "质量",
+	"description" : "元数据标签描述"
+  }
  ```
  - 响应体
  ```json
+{
+  "code": 0,
+  "data": null,
+  "traceId": null
+}
+```
+
+## 批量保存元数据标签
+- POST /repository/api/metadata/label/batch/{projectId}
+- API 名称: batch_save_metadata_label
+- 功能说明：
+  - 中文：批量保存元数据标签
+  - English：batch save metadata label
+- 请求体
+```json
+  [{
+	"labelKey": "scanStatus",
+	"labelColorMap": {
+		"FAILED": "#FF0000",
+		"SUCCESS": "#00EE00"
+	},
+	"display": true,
+	"enumType": true,
+	"category": "质量",
+	"description" : "元数据标签描述"
+  }]
+```
+- 响应体
+```json
 {
   "code": 0,
   "data": null,
@@ -80,6 +118,9 @@
 		      "SUCCESS": "#00EE00"
 	    },
 	    "display": true,
+		"enumType": true,
+	    "category": "质量",
+		"description" : "元数据标签描述",
 	    "createdBy": "admin",
 	    "createdDate": "2022-08-22T17:00:00.000",
 	    "lastModifiedBy": "admin",
@@ -107,6 +148,9 @@
 		  "SUCCESS": "#00EE00"
 	    },
 	    "display": true,
+		"enumType": true,
+	    "category": "质量",
+		"description" : "元数据标签描述",
 	    "createdBy": "admin",
 	    "createdDate": "2022-08-22T17:00:00.000",
 	    "lastModifiedBy": "admin",

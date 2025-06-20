@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata
+package com.tencent.bkrepo.common.metadata.model
 
-import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
-import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelRequest
+import org.springframework.data.mongodb.core.index.Indexed
+import org.springframework.data.mongodb.core.mapping.Document
+import java.time.LocalDateTime
 
-/**
- * 元数据标签服务
- */
-interface MetadataLabelService {
-
-    /**
-     * 创建标签
-     */
-    fun create(request: MetadataLabelRequest)
-
-    /**
-     * 更新标签
-     */
-    fun update(request: MetadataLabelRequest)
-
-    /**
-     * 查询全部标签
-     */
-    fun listAll(projectId: String): List<MetadataLabelDetail>
-
-    /**
-     * 查询标签详情
-     */
-    fun detail(projectId: String, labelKey: String): MetadataLabelDetail
-
-    /**
-     * 删除标签
-     */
-    fun delete(projectId: String, labelKey: String)
-}
+@Document("metadata_label")
+data class TMetadataLabel(
+    val id: String? = null,
+    @Indexed(background = true)
+    val projectId: String,
+    val labelKey: String,
+    var labelColorMap: Map<String, String>,
+    var enumType: Boolean?,
+    var enableColorConfig: Boolean?,
+    var display: Boolean?,
+    var category: String?,
+    var description: String?,
+    val createdBy: String,
+    val createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime
+)

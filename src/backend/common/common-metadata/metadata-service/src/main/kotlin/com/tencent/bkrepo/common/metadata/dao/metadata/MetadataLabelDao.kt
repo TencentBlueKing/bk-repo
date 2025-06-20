@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,40 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.metadata.service.metadata.impl
+package com.tencent.bkrepo.common.metadata.dao.metadata
 
+import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
-import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
-import com.tencent.bkrepo.common.metadata.model.TNode
-import com.tencent.bkrepo.common.metadata.service.metadata.MetadataLabelService
-import com.tencent.bkrepo.common.metadata.util.ClusterUtils
-import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
-import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.metadata.model.TMetadataLabel
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Service
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.stereotype.Repository
 
-@Service
-@Conditional(SyncCondition::class, CommitEdgeCenterCondition::class)
-class CenterMetadataServiceImpl(
-    nodeDao: NodeDao,
-    repositoryProperties: RepositoryProperties,
-    ciPermissionManager: CIPermissionManager,
-    metadataLabelService: MetadataLabelService
-) : MetadataServiceImpl(
-    nodeDao,
-    repositoryProperties,
-    ciPermissionManager,
-    metadataLabelService
-) {
+@Repository
+@Conditional(SyncCondition::class)
+class MetadataLabelDao : SimpleMongoDao<TMetadataLabel>() {
+    fun findByProjectIdAndLabelKey(projectId: String, labelKey: String): TMetadataLabel? {
+        val query = Query(
+            Criteria.where(TMetadataLabel::projectId.name).`is`(projectId)
+                .and(TMetadataLabel::labelKey.name).`is`(labelKey)
+        )
+        return findOne(query)
+    }
 
-    /**
-     * 检查节点地点
-     * 目录没有记录地点，不检查
-     */
-    override fun checkNodeCluster(node: TNode) {
-        if (!node.folder) {
-            ClusterUtils.checkContainsSrcCluster(node.clusterNames)
-        }
+    fun findByProjectId(projectId: String): List<TMetadataLabel> {
+        val query = Query(
+            Criteria.where(TMetadataLabel::projectId.name).`is`(projectId)
+        )
+        return find(query)
+    }
+
+    fun deleteByProjectIdAndLabelKey(projectId: String, labelKey: String): DeleteResult {
+        val query = Query(
+            Criteria.where(TMetadataLabel::projectId.name).`is`(projectId)
+                .and(TMetadataLabel::labelKey.name).`is`(labelKey)
+        )
+        return remove(query)
     }
 }
