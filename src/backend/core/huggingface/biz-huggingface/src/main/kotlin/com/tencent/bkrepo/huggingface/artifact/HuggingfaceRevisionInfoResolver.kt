@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,25 +29,32 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.pojo.configuration.remote
+package com.tencent.bkrepo.huggingface.artifact
 
-/**
- * 远程仓库 缓存配置
- */
-data class RemoteCacheConfiguration(
-    /**
-     * 是否开启缓存
-     */
-    var enabled: Boolean = true,
-    /**
-     * 构件缓存时间，单位分钟，默认情况下0或负数表示永久缓存（兼容历史仓库类型）
-     *
-     * 为了减少网络请求数量，新增远程仓库类型时推荐按照此优先级对缓存进行使用：
-     * 1. 对于内容不会改变的制品文件（例如某个版本的二进制文件），无需判断过期状态，优先读取缓存；
-     * 2. 对于内容可能改变的制品文件（通常是索引文件），在未设置[expiration]值时优先通过网络请求获取最新文件，
-     *    可通过覆写RemoteRepository的isExpiredForNonPositiveValue方法更改[expiration]值为0或负数时的定义；
-     *    设置了有效的[expiration]值时根据缓存过期状态决定优先级：未过期缓存 > 网络请求 > 已过期缓存，
-     *    无法从网络请求获取最新文件时回落到已过期缓存。
-     */
-    var expiration: Long = -1L
-)
+import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
+import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.huggingface.constants.NAME_KEY
+import com.tencent.bkrepo.huggingface.constants.ORGANIZATION_KEY
+import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
+import com.tencent.bkrepo.huggingface.constants.TYPE_KEY
+import org.springframework.stereotype.Component
+import org.springframework.web.servlet.HandlerMapping
+import javax.servlet.http.HttpServletRequest
+
+@Component
+@Resolver(HuggingfaceRevisionInfo::class)
+class HuggingfaceRevisionInfoResolver : ArtifactInfoResolver {
+    override fun resolve(
+        projectId: String,
+        repoName: String,
+        artifactUri: String,
+        request: HttpServletRequest
+    ): HuggingfaceRevisionInfo {
+        val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
+        val type = attributes[TYPE_KEY]!!.toString()
+        val organization = attributes[ORGANIZATION_KEY]!!.toString()
+        val name = attributes[NAME_KEY]!!.toString()
+        val revision = attributes[REVISION_KEY]?.toString()
+        return HuggingfaceRevisionInfo(projectId, repoName, organization, name, revision, type, artifactUri)
+    }
+}

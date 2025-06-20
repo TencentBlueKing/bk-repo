@@ -158,13 +158,14 @@ class GenericRemoteRepository(
         return UrlFormatter.format(configuration.url, artifactUri, queryString)
     }
 
-    override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
+    override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactContext): ArtifactResource? {
         return storageManager.loadArtifactInputStream(cacheNode, context.repositoryDetail.storageCredentials)?.run {
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
             }
             val artifactName = context.artifactInfo.getResponseName()
-            ArtifactResource(this, artifactName, cacheNode, ArtifactChannel.PROXY, context.useDisposition)
+            val useDisposition = if (context is ArtifactDownloadContext) context.useDisposition else false
+            ArtifactResource(this, artifactName, cacheNode, ArtifactChannel.PROXY, useDisposition)
         }
     }
 

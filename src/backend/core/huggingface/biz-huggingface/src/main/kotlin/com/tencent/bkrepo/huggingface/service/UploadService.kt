@@ -54,6 +54,7 @@ import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_FILE
 import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_HEADER
 import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_LFS
 import com.tencent.bkrepo.huggingface.constants.LFS_UPLOAD_MODE
+import com.tencent.bkrepo.huggingface.constants.REVISION_MAIN
 import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
 import com.tencent.bkrepo.huggingface.exception.OperationNotSupportException
 import com.tencent.bkrepo.huggingface.exception.RevisionNotFoundException
@@ -190,7 +191,7 @@ class UploadService(
     }
 
     private fun checkRevision(request: PreUploadRequest, revision: String) {
-        if (revision != "main") {
+        if (revision != REVISION_MAIN) {
             logger.warn(
                 "package[${request.repoId}] in [${request.projectId}/${request.repoName}] " +
                     "commit from $revision"
@@ -253,7 +254,7 @@ class UploadService(
     ) {
         with(artifactInfo) {
             val packageKey = PackageKeys.ofHuggingface(type.toString(), getRepoId())
-            if (baseRevision == "main") {
+            if (baseRevision == REVISION_MAIN) {
                 packageService.findPackageByKey(projectId, repoName, packageKey)
                     ?.let { copyBaseRevisionNode(it.latest, artifactInfo) }
             } else {

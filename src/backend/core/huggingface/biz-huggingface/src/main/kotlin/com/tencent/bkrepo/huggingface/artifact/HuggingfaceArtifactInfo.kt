@@ -34,7 +34,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
 
-class HuggingfaceArtifactInfo(
+open class HuggingfaceArtifactInfo(
     projectId: String,
     repoName: String,
     val organization: String,
@@ -57,7 +57,7 @@ class HuggingfaceArtifactInfo(
         return "$organization/$name"
     }
 
-    fun getRevision(): String? {
+    open fun getRevision(): String? {
         val request = HttpContextHolder.getRequestOrNull()
         return request?.getAttribute(REVISION_KEY)?.toString() ?: revision
     }

@@ -96,6 +96,8 @@ class CargoRemoteRepository(
         return doRequest(context) as ArtifactResource?
     }
 
+    override fun isExpiredForNonPositiveValue() = true
+
     private fun doRequest(context: ArtifactContext): Any? {
         val remoteConfiguration = context.getRemoteConfiguration()
         val remoteUrl = remoteConfiguration.url
@@ -120,7 +122,7 @@ class CargoRemoteRepository(
     private fun handleIndexFileRequest(context: ArtifactContext, remoteUrl: String): Any? {
         require(context is ArtifactDownloadContext)
         val downloadUrl = remoteUrl.trim('/') + context.artifactInfo.getArtifactName()
-        // 优先级：未过期缓存 > 网络请求 > 已过期缓存
+        // 索引文件内容可能会更新，优先级：未过期缓存 > 网络请求 > 已过期缓存
         val (cacheNode, isExpired) = getCacheInfo(context)
             // 缓存不存在时以网络请求为最终结果
             ?: return executeRequest(context, downloadUrl)
@@ -136,7 +138,8 @@ class CargoRemoteRepository(
     }
 
     private fun handleCrateFileRequest(context: ArtifactContext, remoteUrl: String): Any? {
-        getCacheArtifactResource(context as ArtifactDownloadContext)?.let { return it }
+        // crate文件不会变化，优先获取缓存
+        getCacheInfo(context)?.let { return loadArtifactResource(it.first, context) }
 
         val downloadHost = getDownloadHost(remoteUrl, context)
         val artifactInfo = context.artifactInfo as CargoArtifactInfo

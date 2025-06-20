@@ -46,6 +46,7 @@ import com.tencent.bkrepo.huggingface.pojo.RepoUpdateRequest
 import com.tencent.bkrepo.huggingface.pojo.RepoUrl
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
@@ -138,27 +139,35 @@ class RepoService(
     fun delete(request: RepoDeleteRequest) {
         val userId = SecurityUtils.getUserId()
         val packageKey = PackageKeys.ofHuggingface(request.type, request.repoId)
-        var fullPath: String
         if (request.revision == null) {
             // 删除repo(package)
-            fullPath = "/${request.repoId}"
             packageService.findPackageByKey(request.projectId, request.repoName, packageKey)
                 ?: throw HfRepoNotFoundException(request.repoId)
             packageService.deletePackage(request.projectId, request.repoName, packageKey)
+            nodeService.deleteNode(
+                NodeDeleteRequest(
+                    projectId = request.projectId,
+                    repoName = request.repoName,
+                    fullPath = "/${request.repoId}",
+                    operator = userId,
+                )
+            )
         } else {
             // 删除revision(version)
-            fullPath = "/${request.repoId}/resolve/${request.revision}"
             packageService.findVersionByName(request.projectId, request.repoName, packageKey, request.revision!!)
                 ?: throw VersionNotFoundException("${request.repoId}/${request.revision}")
             packageService.deleteVersion(request.projectId, request.repoName, packageKey, request.revision!!)
+            val deleteRequest = NodesDeleteRequest(
+                projectId = request.projectId,
+                repoName = request.repoName,
+                fullPaths = listOf(
+                    "/${request.repoId}/resolve/${request.revision}",
+                    "/${request.repoId}/info/${request.revision}"
+                ),
+                operator = userId
+            )
+            nodeService.deleteNodes(deleteRequest)
         }
-        val deleteRequest = NodeDeleteRequest(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            fullPath = fullPath,
-            operator = userId
-        )
-        nodeService.deleteNode(deleteRequest)
     }
 
     private fun checkRepository(projectId: String, repoName: String): RepositoryDetail {

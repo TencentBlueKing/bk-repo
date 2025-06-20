@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
+import com.tencent.bkrepo.huggingface.constants.REVISION_MAIN
 import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
 import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
@@ -75,7 +76,7 @@ class HuggingfaceLocalRepository(
 
     private fun transferRevision(artifactInfo: HuggingfaceArtifactInfo) {
         with(artifactInfo) {
-            if (artifactInfo.getRevision().isNullOrEmpty() || artifactInfo.getRevision() == "main") {
+            if (artifactInfo.getRevision().isNullOrEmpty() || artifactInfo.getRevision() == REVISION_MAIN) {
                 val packageKey = PackageKeys.ofHuggingface(type ?: REPO_TYPE_MODEL, getRepoId())
                 val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey)
                     ?: throw HfRepoNotFoundException(getRepoId())
