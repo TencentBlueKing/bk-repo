@@ -115,6 +115,12 @@ import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
+import java.nio.charset.Charset
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.util.Date
+import java.util.Locale
+import javax.servlet.http.HttpServletRequest
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -124,12 +130,6 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
-import java.nio.charset.Charset
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.util.Locale
-import javax.servlet.http.HttpServletRequest
 
 @Service
 class OciOperationServiceImpl(
@@ -913,16 +913,18 @@ class OciOperationServiceImpl(
         result.records.forEach {
             val imageName = it[OCI_PACKAGE_NAME] as String
             val lastModifiedBy = it[LAST_MODIFIED_BY] as String
-            val lastModifiedDate = it[LAST_MODIFIED_DATE] as Long
-            val downLoadCount = it[DOWNLOADS] as Int
+            val lastModifiedDate = it[LAST_MODIFIED_DATE]
+            val localLastModifiedDate = if (lastModifiedDate is Date) {
+                LocalDateTime.ofInstant(lastModifiedDate.toInstant(), ZoneId.systemDefault())
+            } else null
+            val downLoadCount = it[DOWNLOADS] as Long
             val description = it[DESCRIPTION] as String? ?: StringPool.EMPTY
-            val localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(lastModifiedDate), ZoneId.systemDefault())
             data.add(
                 OciImage(
                     name = imageName,
                     lastModifiedBy = lastModifiedBy,
-                    lastModifiedDate = localDateTime.toString(),
-                    downloadCount = downLoadCount.toLong(),
+                    lastModifiedDate = localLastModifiedDate?.toString() ?: StringPool.EMPTY,
+                    downloadCount = downLoadCount,
                     logoUrl = StringPool.EMPTY,
                     description = description
                 )
