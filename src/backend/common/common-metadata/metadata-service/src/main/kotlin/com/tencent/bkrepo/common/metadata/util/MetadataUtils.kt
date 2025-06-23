@@ -94,7 +94,9 @@ object MetadataUtils {
                 system = it.system,
                 description = it.description,
                 link = it.link,
-                color = metadataLabels.find { label -> label.labelKey == it.key }?.labelColorMap?.get(it.value)
+                color = metadataLabels.find {
+                    label -> label.labelKey == it.key && label.enableColorConfig && label.display
+                }?.labelColorMap?.get(it.value)
             )
         }.orEmpty()
     }
@@ -148,7 +150,9 @@ object MetadataUtils {
                 val system = it[TMetadata::system.name] as Boolean? ?: false
                 val description = it[TMetadata::description.name]?.toString()
                 val link = it[TMetadata::link.name]?.toString()
-                val color = metadataLabels.find { label -> label.labelKey == key }?.labelColorMap?.get(value)
+                val color = metadataLabels.find {
+                    label -> label.labelKey == key && label.enableColorConfig && label.display
+                }?.labelColorMap?.get(value)
                 MetadataModel(
                     key = key,
                     value = value,

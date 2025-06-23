@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
@@ -80,7 +81,9 @@ class MetadataLabelServiceTest @Autowired constructor(
             ),
             enumType = false,
             category = null,
-            display = true
+            display = true,
+            enableColorConfig = true,
+            description = StringPool.EMPTY,
         )
         assertThrows<ErrorCodeException> { metadataLabelService.create(invalidColorRequest) }
     }
@@ -98,7 +101,9 @@ class MetadataLabelServiceTest @Autowired constructor(
             ),
             enumType = false,
             category = null,
-            display = true
+            display = true,
+            enableColorConfig = true,
+            description = StringPool.EMPTY,
         )
         metadataLabelService.update(updateRequest)
         val metadataLabel = metadataLabelService.detail(updateRequest.projectId, updateRequest.labelKey)
@@ -124,5 +129,7 @@ class MetadataLabelServiceTest @Autowired constructor(
         display = true,
         enumType = false,
         category = null,
+        enableColorConfig = true,
+        description = StringPool.EMPTY,
     )
 }
