@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,22 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.model
+package com.tencent.bkrepo.common.metadata.service.metadata.impl
 
-import org.springframework.data.mongodb.core.index.Indexed
-import org.springframework.data.mongodb.core.mapping.Document
-import java.time.LocalDateTime
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataLabelService
+import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
+import org.springframework.context.annotation.Conditional
+import org.springframework.stereotype.Service
+import java.time.Duration
 
-@Document("metadata_label")
-data class TMetadataLabel(
-    val id: String? = null,
-    @Indexed(background = true)
-    val projectId: String,
-    val labelKey: String,
-    var labelColorMap: Map<String, String>,
-    var display: Boolean?,
-    val createdBy: String,
-    val createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime
-)
+@Service
+@Conditional(SyncCondition::class)
+class MetadataLabelCacheService(
+    private val metadataLabelService: MetadataLabelService,
+) {
+
+    private val metadataLabelCache = CacheBuilder.newBuilder()
+        .maximumSize(1000)
+        .expireAfterWrite(Duration.ofMinutes(10))
+        .build(CacheLoader.from<String, List<MetadataLabelDetail>> {
+            projectId -> metadataLabelService.listAll(projectId!!) })
+
+    fun listAll(projectId: String): List<MetadataLabelDetail> {
+        return metadataLabelCache.get(projectId)
+    }
+}
