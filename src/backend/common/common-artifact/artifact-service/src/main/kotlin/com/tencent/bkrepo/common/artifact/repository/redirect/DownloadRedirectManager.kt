@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import org.slf4j.LoggerFactory
@@ -54,6 +55,8 @@ class DownloadRedirectManager(
                     it.redirect(context)
                     return true
                 }
+            } catch (e: ErrorCodeException) {
+                throw e
             } catch (ignore: Exception) {
                 logger.error("Redirect by ${it.javaClass.simpleName} failed", ignore)
             }
