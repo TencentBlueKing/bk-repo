@@ -78,9 +78,5 @@
     "svg-sprite-loader/**/micromatch": "^4.0.8",
     "svg-sprite-loader/**/braces": "3.0.3",
     "webpack-dev-server": "^5.2.2"
-  },
-  "dependencies": {
-    "@vue/cli-service": "5",
-    "@vue/cli-shared-utils": "5"
   }
 }
