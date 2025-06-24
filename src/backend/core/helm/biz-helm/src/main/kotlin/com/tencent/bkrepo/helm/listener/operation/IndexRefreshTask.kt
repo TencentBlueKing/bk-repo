@@ -72,7 +72,7 @@ class IndexRefreshTask(
         } catch (e: Exception) {
             logger.error(
                 "Error [$e] occurred while refreshing index.yaml by" +
-                    " in repo [$projectId/$repoName] !"
+                    " in repo [$projectId/$repoName] !", e
             )
             throw e
         } finally {
