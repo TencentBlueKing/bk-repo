@@ -36,5 +36,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class WebHookProperties(
     var maxRequests: Int? = null,
     var maxRequestsPerHost: Int? = null,
-    var filterProjectRepoKey: MutableList<String> = mutableListOf()
+    var filterProjectRepoKey: MutableList<String> = mutableListOf(),
+    /**
+     * 是否允许依赖源仓库的节点事件触发webhook
+     */
+    var triggeredByNodeEventOfPackageSupportedRepo: Boolean = true,
 )

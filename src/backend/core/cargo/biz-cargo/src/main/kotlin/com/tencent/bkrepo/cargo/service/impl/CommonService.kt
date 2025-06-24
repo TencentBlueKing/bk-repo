@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.cargo.service.impl
 
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
 import com.tencent.bkrepo.cargo.pojo.json.CrateJsonData
@@ -59,6 +60,7 @@ import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
@@ -286,6 +288,18 @@ class CommonService {
             .projectId(projectId)
             .repoName(repoName).path(PathUtils.toPath(cargoFileFolder))
         return nodeSearchService.searchWithoutCount(queryModelBuilder.build())
+    }
+
+    fun buildDownloadRecord(
+        userId: String,
+        artifactInfo: CargoArtifactInfo,
+    ): PackageDownloadRecord? {
+        with(artifactInfo) {
+            if (crateName.isNullOrEmpty() || crateVersion.isNullOrEmpty()) {
+                return null
+            }
+            return PackageDownloadRecord(projectId, repoName, PackageKeys.ofCargo(crateName), crateVersion)
+        }
     }
 
     private fun buildRedisKey(projectId: String, repoName: String, revPath: String): String {

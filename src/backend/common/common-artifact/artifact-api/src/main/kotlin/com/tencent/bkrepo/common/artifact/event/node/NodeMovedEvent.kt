@@ -38,6 +38,7 @@ class NodeMovedEvent(
     override val repoName: String,
     override val resourceKey: String,
     override val userId: String,
+    override val source: String?,
     val dstProjectId: String,
     val dstRepoName: String,
     val dstFullPath: String
@@ -51,5 +52,6 @@ class NodeMovedEvent(
         "dstProjectId" to dstProjectId,
         "dstRepoName" to dstRepoName,
         "dstFullPath" to dstFullPath
-    )
+    ),
+    source = source
 )

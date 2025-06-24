@@ -38,6 +38,7 @@ class MetadataDeletedEvent(
     override val repoName: String,
     override val resourceKey: String,
     override val userId: String,
+    override val source: String?,
     val keys: Set<String>
 ) : ArtifactEvent(
     type = EventType.METADATA_DELETED,
@@ -45,5 +46,6 @@ class MetadataDeletedEvent(
     repoName = repoName,
     resourceKey = resourceKey,
     userId = userId,
-    data = mapOf("keys" to keys)
+    data = mapOf("keys" to keys),
+    source = source
 )

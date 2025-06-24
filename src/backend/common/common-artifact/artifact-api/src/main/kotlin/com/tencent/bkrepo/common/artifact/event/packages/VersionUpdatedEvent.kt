@@ -37,6 +37,7 @@ class VersionUpdatedEvent(
     override val projectId: String,
     override val repoName: String,
     override val userId: String,
+    override val source: String?,
     val packageKey: String,
     val packageVersion: String,
     val packageName: String,
@@ -55,5 +56,6 @@ class VersionUpdatedEvent(
         "packageVersion" to packageVersion
     ).apply {
         realIpAddress?.let { this["realIpAddress"] = realIpAddress }
-    }
+    },
+    source = source
 )

@@ -42,10 +42,14 @@ import com.tencent.bkrepo.cargo.constants.FILE_TYPE
 import com.tencent.bkrepo.cargo.constants.PAGE_SIZE
 import com.tencent.bkrepo.cargo.constants.QUERY
 import com.tencent.bkrepo.cargo.exception.CargoBadRequestException
+import com.tencent.bkrepo.cargo.listener.event.CargoPackageDeleteEvent
 import com.tencent.bkrepo.cargo.pojo.CargoSearchResult
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_PREFIX
+import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
+import com.tencent.bkrepo.cargo.pojo.event.CargoPackageDeleteRequest
 import com.tencent.bkrepo.cargo.pojo.index.IndexConfiguration
+import com.tencent.bkrepo.cargo.service.impl.CommonService
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -54,18 +58,24 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.TimeUnit
+import kotlin.text.ifEmpty
 
 @Component
-class CargoRemoteRepository : RemoteRepository() {
+class CargoRemoteRepository(
+    private val commonService: CommonService,
+) : RemoteRepository() {
 
     private val downloadHostCache = CacheBuilder.newBuilder().maximumSize(100)
         .expireAfterWrite(60, TimeUnit.MINUTES).build<String, String>()
@@ -108,8 +118,21 @@ class CargoRemoteRepository : RemoteRepository() {
     }
 
     private fun handleIndexFileRequest(context: ArtifactContext, remoteUrl: String): Any? {
+        require(context is ArtifactDownloadContext)
         val downloadUrl = remoteUrl.trim('/') + context.artifactInfo.getArtifactName()
-        return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
+        // 优先级：未过期缓存 > 网络请求 > 已过期缓存
+        val (cacheNode, isExpired) = getCacheInfo(context)
+            // 缓存不存在时以网络请求为最终结果
+            ?: return executeRequest(context, downloadUrl)
+        if (isExpired) {
+            // 缓存过期时先尝试网络请求，如果网络请求出错，则忽略错误并继续使用已过期的缓存
+            try {
+                executeRequest(context, downloadUrl)?.let { return it }
+            } catch (e: Exception) {
+                logger.warn("falling back to cache due to failed network request for the crate index.", e)
+            }
+        }
+        return loadArtifactResource(cacheNode, context)
     }
 
     private fun handleCrateFileRequest(context: ArtifactContext, remoteUrl: String): Any? {
@@ -128,9 +151,7 @@ class CargoRemoteRepository : RemoteRepository() {
             append("download")
         }
 
-        return executeRequest(context, downloadUrl) { response ->
-            onResponse(context, response)
-        }
+        return executeRequest(context, downloadUrl)
     }
 
     private fun initVersion(context: ArtifactContext, artifactResource: ArtifactResource) {
@@ -160,7 +181,7 @@ class CargoRemoteRepository : RemoteRepository() {
             append("&per_page=")
             append(context.getIntegerAttribute(PAGE_SIZE))
         }
-        return executeRequest(context, downloadUrl) { response -> onResponse(context, response) }
+        return executeRequest(context, downloadUrl)
     }
 
     private fun getDownloadHost(remoteUrl: String, context: ArtifactContext): String {
@@ -179,9 +200,11 @@ class CargoRemoteRepository : RemoteRepository() {
         }
     }
 
-    private fun <T> executeRequest(
-        context: ArtifactContext, url: String, responseHandler: (Response) -> T
-    ): T {
+    private fun executeRequest(
+        context: ArtifactContext,
+        url: String,
+        responseHandler: (Response) -> Any? = { response -> onResponse(context, response) }
+    ): Any? {
         val remoteConfiguration = context.getRemoteConfiguration()
         val request = Request.Builder().url(url).build()
 
@@ -210,9 +233,30 @@ class CargoRemoteRepository : RemoteRepository() {
         return parseSearchResponse(response)
     }
 
+    override fun buildDownloadRecord(
+        context: ArtifactDownloadContext,
+        artifactResource: ArtifactResource
+    ) = commonService.buildDownloadRecord(context.userId, context.artifactInfo as CargoArtifactInfo)
+
     private fun parseConfigResponse(response: Response): IndexConfiguration? {
         return response.body?.byteStream().use {
             JsonUtils.objectMapper.readValue(it, IndexConfiguration::class.java)
+        }
+    }
+
+    override fun remove(context: ArtifactRemoveContext) {
+        commonService.removeCargoRelatedNode(context)
+        with(context.artifactInfo as CargoDeleteArtifactInfo) {
+            val event = CargoPackageDeleteEvent(
+                CargoPackageDeleteRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    name = PackageKeys.resolveCargo(packageName),
+                    userId = context.userId,
+                    version = version.ifEmpty { null }
+                )
+            )
+            publishEvent(event)
         }
     }
 
