@@ -55,4 +55,16 @@ interface ScanQualityService {
         scanResultOverview: Map<String, Number>,
         scanner: Scanner
     ): Boolean
+
+    /**
+     * 是否要禁用
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     * @param fullPath 制品路径
+     * @param sha256 制品sha256
+     *
+     * @return 是否禁用制品
+     */
+    fun shouldForbid(projectId: String, repoName: String, fullPath: String, sha256: String): Boolean
 }

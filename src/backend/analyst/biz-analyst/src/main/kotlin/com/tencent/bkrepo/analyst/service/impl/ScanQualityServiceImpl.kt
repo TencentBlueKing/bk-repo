@@ -27,17 +27,21 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
-import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
+import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
+import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
+import com.tencent.bkrepo.analyst.model.TScanPlan
 import com.tencent.bkrepo.analyst.pojo.request.ScanQualityUpdateRequest
 import com.tencent.bkrepo.analyst.pojo.response.ScanQuality
 import com.tencent.bkrepo.analyst.service.LicenseScanQualityService
 import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.analyst.service.ScannerService
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
@@ -45,7 +49,8 @@ class ScanQualityServiceImpl(
     private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val scanPlanDao: ScanPlanDao,
     private val scannerService: ScannerService,
-    private val licenseScanQualityService: LicenseScanQualityService
+    private val licenseScanQualityService: LicenseScanQualityService,
+    private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
 ) : ScanQualityService {
     override fun getScanQuality(planId: String): ScanQuality {
         val scanPlan = scanPlanDao.get(planId)
@@ -88,6 +93,19 @@ class ScanQualityServiceImpl(
         return true
     }
 
+    override fun shouldForbid(projectId: String, repoName: String, fullPath: String, sha256: String): Boolean {
+        val plans = scanPlanDao.findByProjectIdAndRepoName(projectId, repoName)
+        val planSubtasks = planArtifactLatestSubScanTaskDao
+            .findAll(projectId, repoName, fullPath)
+            .associateBy { it.planId }
+        plans.forEach { plan ->
+            if (shouldForbid(projectId, repoName, fullPath, sha256, plan, planSubtasks[plan.id])) {
+                return true
+            }
+        }
+        return false
+    }
+
     /**
      * 判断[overviewKey]对应的CVE数量是否超过[quality]中指定的红线
      *
@@ -101,5 +119,42 @@ class ScanQualityServiceImpl(
         val cveCount = overview[overviewKey.key]?.toLong() ?: 0L
         val redLine = quality[overviewKey.level.levelName] as Long? ?: Long.MAX_VALUE
         return cveCount > redLine
+    }
+
+    private fun shouldForbid(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        sha256: String,
+        plan: TScanPlan,
+        planSubtask: TPlanArtifactLatestSubScanTask?
+    ): Boolean {
+        // 未扫描过且开启了禁用未扫描制品
+        val scanned = planSubtask?.sha256 == sha256 &&
+                planSubtask.projectId == projectId &&
+                planSubtask.repoName == repoName &&
+                planSubtask.fullPath == fullPath
+        if (!scanned && plan.scanQuality[ScanQuality::forbidNotScanned.name] == true) {
+            logger.info("forbid [$projectId/$repoName$fullPath][$sha256], reason: forbid not scanned")
+            return true
+        }
+
+        // 未扫描过时不禁用
+        if (!scanned) {
+            return false
+        }
+
+        // 扫描过时判断是否通过质量规则
+        val scanner = scannerService.get(plan.scanner)
+        val scanResultOverview = planSubtask?.scanResultOverview ?: emptyMap()
+        val shouldForbid = checkScanQualityRedLine(plan.scanQuality, scanResultOverview, scanner)
+        if (shouldForbid) {
+            logger.info("forbid [$projectId/$repoName$fullPath][$sha256], reason: exceed red line")
+        }
+        return shouldForbid
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ScanQualityServiceImpl::class.java)
     }
 }

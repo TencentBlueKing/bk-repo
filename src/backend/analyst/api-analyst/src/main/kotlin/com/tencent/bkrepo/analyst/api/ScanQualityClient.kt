@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,20 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.response
+package com.tencent.bkrepo.analyst.api
 
-class LicenseScanQualityResponse(
-    val recommend: Boolean?,
-    val compliance: Boolean?,
-    val unknown: Boolean?,
-    val forbidQualityUnPass: Boolean?
-) {
-    companion object {
-        fun create(map: Map<String, Any>) = LicenseScanQualityResponse(
-            recommend = map[LicenseScanQualityResponse::recommend.name] as? Boolean,
-            compliance = map[LicenseScanQualityResponse::compliance.name] as? Boolean,
-            unknown = map[LicenseScanQualityResponse::unknown.name] as? Boolean,
-            forbidQualityUnPass = map[LicenseScanQualityResponse::forbidQualityUnPass.name] as? Boolean
-        )
-    }
+import com.tencent.bkrepo.common.api.constant.SCANNER_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+
+@FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanQualityClient")
+@RequestMapping("/service/scan/quality")
+interface ScanQualityClient {
+
+    /**
+     * 检查是否要禁用制品
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     * @param fullPath 制品路径
+     * @param sha256 制品sha256
+     *
+     * @return 需要禁用返回true,否则返回false
+     * */
+    @GetMapping("/precheck")
+    fun shouldForbid(projectId: String, repoName: String, fullPath: String, sha256: String): Response<Boolean>
 }

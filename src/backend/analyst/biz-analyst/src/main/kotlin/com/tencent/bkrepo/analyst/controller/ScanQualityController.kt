@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,20 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request
+package com.tencent.bkrepo.analyst.controller
 
-data class LicenseScanQualityUpdateRequest(
-    val recommend: Boolean = false,
-    val compliance: Boolean = false,
-    val unknown: Boolean = false,
-    val forbidQualityUnPass: Boolean = false
-) {
-    fun toMap(): Map<String, Any> {
-        val map = mutableMapOf<String, Any>()
-        map[LicenseScanQualityUpdateRequest::recommend.name] = recommend
-        map[LicenseScanQualityUpdateRequest::compliance.name] = compliance
-        map[LicenseScanQualityUpdateRequest::unknown.name] = unknown
-        map[LicenseScanQualityUpdateRequest::forbidQualityUnPass.name] = forbidQualityUnPass
-        return map
+import com.tencent.bkrepo.analyst.api.ScanQualityClient
+import com.tencent.bkrepo.analyst.service.ScanQualityService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class ScanQualityController @Autowired constructor(
+    private val scanQualityService: ScanQualityService,
+) : ScanQualityClient {
+    override fun shouldForbid(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        sha256: String
+    ): Response<Boolean> {
+        return ResponseBuilder.success(scanQualityService.shouldForbid(projectId, repoName, fullPath, sha256))
     }
 }
