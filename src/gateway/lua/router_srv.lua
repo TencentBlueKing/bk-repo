@@ -54,11 +54,18 @@ if config.env and healthUtil:get_cluster_health_status(config.env) then
     end
 end
 
--- 路由表转发
-local env, router_target = hostUtil:get_target_by_project()
-if router_target then
-    ngx.var.target = router_target .. "/" .. service_name
-    return
+local router_by_project = true
+if ngx.var.pass_router_by_project ~= nil and ngx.var.pass_router_by_project ~= "true" then
+    router_by_project = false
+end
+
+if router_by_project then
+    -- 路由表转发
+    local env, router_target = hostUtil:get_target_by_project()
+    if env then
+        ngx.var.target = router_target .. "/" .. service_name
+        return
+    end
 end
 
 
