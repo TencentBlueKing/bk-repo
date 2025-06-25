@@ -43,10 +43,9 @@ interface ScanQualityClient {
      * @param projectId 项目ID
      * @param repoName 仓库名
      * @param fullPath 制品路径
-     * @param sha256 制品sha256
      *
      * @return 需要禁用返回true,否则返回false
      * */
     @GetMapping("/precheck")
-    fun shouldForbid(projectId: String, repoName: String, fullPath: String, sha256: String): Response<Boolean>
+    fun shouldForbidBeforeScanned(projectId: String, repoName: String, fullPath: String): Response<Boolean>
 }

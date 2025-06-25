@@ -37,10 +37,12 @@ import com.tencent.bkrepo.analyst.pojo.response.ScanQuality
 import com.tencent.bkrepo.analyst.service.LicenseScanQualityService
 import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.analyst.service.ScannerService
+import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
+import com.tencent.bkrepo.common.api.util.readJsonString
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -104,6 +106,15 @@ class ScanQualityServiceImpl(
             }
         }
         return false
+    }
+
+    override fun shouldForbidBeforeScanned(projectId: String, repoName: String, fullPath: String): Boolean {
+        return scanPlanDao
+            .findByProjectIdAndRepoName(projectId, repoName)
+            .any { plan ->
+                val forbidNotScanned = plan.scanQuality[ScanQuality::forbidNotScanned.name] == true
+                forbidNotScanned && RuleUtil.match(plan.rule.readJsonString(), projectId, repoName, fullPath)
+            }
     }
 
     /**

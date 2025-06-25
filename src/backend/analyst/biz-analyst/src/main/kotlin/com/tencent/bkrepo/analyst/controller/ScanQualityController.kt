@@ -38,12 +38,7 @@ import org.springframework.web.bind.annotation.RestController
 class ScanQualityController @Autowired constructor(
     private val scanQualityService: ScanQualityService,
 ) : ScanQualityClient {
-    override fun shouldForbid(
-        projectId: String,
-        repoName: String,
-        fullPath: String,
-        sha256: String
-    ): Response<Boolean> {
-        return ResponseBuilder.success(scanQualityService.shouldForbid(projectId, repoName, fullPath, sha256))
+    override fun shouldForbidBeforeScanned(projectId: String, repoName: String, fullPath: String): Response<Boolean> {
+        return ResponseBuilder.success(scanQualityService.shouldForbidBeforeScanned(projectId, repoName, fullPath))
     }
 }
