@@ -55,7 +55,7 @@ if config.env and healthUtil:get_cluster_health_status(config.env) then
 end
 
 local router_by_project = true
-if ngx.var.pass_router_by_project ~= nil and ngx.var.pass_router_by_project ~= "true" then
+if ngx.var.pass_router_by_project ~= nil and ngx.var.pass_router_by_project == "true" then
     router_by_project = false
 end
 
