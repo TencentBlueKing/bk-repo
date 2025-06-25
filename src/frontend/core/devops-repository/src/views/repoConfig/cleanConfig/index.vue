@@ -5,6 +5,7 @@
         </bk-form-item>
         <bk-form-item :label="$t('cleanupStrategy')" required>
             <bk-select
+                :placeholder="$t('pleaseSelect')"
                 style="width:150px;"
                 v-model="cleanupStrategy.cleanupType"
                 @change="changeType"
