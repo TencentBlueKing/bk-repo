@@ -133,7 +133,7 @@ class NodeSearchServiceImpl(
         }
         if (time > repositoryProperties.slowLogTimeThreshold) {
             logger.warn("search node slow log, " +
-                "query[${query.toJsonString().replace(System.lineSeparator(), "")}], " +
+                "query[${query.queryObject.toJsonString().replace(System.lineSeparator(), "")}], " +
                 "cost ${HumanReadable.time(time, TimeUnit.MILLISECONDS)}")
         }
         // metadata格式转换，并排除id字段
