@@ -161,7 +161,7 @@ class CommonRateLimitInputStream(
                 return permits
             }
             if (!flag) {
-                if (keepConnection) {
+                if (!keepConnection) {
                     throwOrLogOverloadException()
                 }
                 if (rateCheckContext.dryRun) {
@@ -210,7 +210,7 @@ class CommonRateLimitInputStream(
      * 处理超时情况
      */
     private fun handleTimeout(permits: Long, bytes: Long): Long {
-        if (keepConnection) {
+        if (!keepConnection) {
             throwOrLogOverloadException()
         }
         return permits.coerceAtMost(bytes)
