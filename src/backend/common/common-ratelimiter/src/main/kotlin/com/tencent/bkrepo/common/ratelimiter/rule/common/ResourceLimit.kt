@@ -52,6 +52,6 @@ data class ResourceLimit(
     var scope: String = WorkScope.LOCAL.name,
     // 指定机器上运行
     var targets: List<String> = emptyList(),
-    // 是否终止请求
-    var terminateFast: Boolean = false,
+    // 是否保持连接
+    var keepConnection: Boolean = true,
 )

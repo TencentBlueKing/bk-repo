@@ -63,7 +63,7 @@ class RateLimiterConfigService(
                     capacity = capacity,
                     scope = scope,
                     moduleName = moduleName,
-                    terminateFast = terminateFast
+                    keepConnection = keepConnection
                 )
             )
         }
@@ -102,7 +102,7 @@ class RateLimiterConfigService(
                         scope = scope,
                         moduleName = moduleName,
                         targets = it,
-                        terminateFast = terminateFast
+                        keepConnection = keepConnection
                     )
                 )
             } ?: run {
@@ -117,7 +117,7 @@ class RateLimiterConfigService(
                         capacity = capacity,
                         scope = scope,
                         moduleName = moduleName,
-                        terminateFast = terminateFast
+                        keepConnection = keepConnection
                     )
                 )
             }

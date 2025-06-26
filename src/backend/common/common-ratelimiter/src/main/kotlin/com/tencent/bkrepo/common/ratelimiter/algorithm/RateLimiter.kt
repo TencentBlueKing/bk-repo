@@ -35,4 +35,6 @@ interface RateLimiter {
 
     fun getLimitPerSecond(): Long
 
+    fun keepConnection(): Boolean
+
 }

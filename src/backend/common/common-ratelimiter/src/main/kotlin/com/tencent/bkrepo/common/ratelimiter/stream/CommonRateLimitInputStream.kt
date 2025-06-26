@@ -67,6 +67,7 @@ class CommonRateLimitInputStream(
     private var applyNum: Long = 0
     private var rateLimiter: RateLimiter? = null
     private var limitPerSecond: Long = 0
+    private var keepConnection: Boolean = false
 
     override fun read(): Int {
         tryAcquireOrWait(1)
@@ -160,7 +161,7 @@ class CommonRateLimitInputStream(
                 return permits
             }
             if (!flag) {
-                if (rateCheckContext.resourceLimit.terminateFast) {
+                if (keepConnection) {
                     throwOrLogOverloadException()
                 }
                 if (rateCheckContext.dryRun) {
@@ -209,7 +210,7 @@ class CommonRateLimitInputStream(
      * 处理超时情况
      */
     private fun handleTimeout(permits: Long, bytes: Long): Long {
-        if (rateCheckContext.resourceLimit.terminateFast) {
+        if (keepConnection) {
             throwOrLogOverloadException()
         }
         return permits.coerceAtMost(bytes)
@@ -311,6 +312,7 @@ class CommonRateLimitInputStream(
         limitPerSecond = rateLimiter!!.getLimitPerSecond()
         rateCheckContext.dryRun = AbstractBandwidthRateLimiterService.getDryRunStatus()
         rateCheckContext.bandwidthProperties = AbstractBandwidthRateLimiterService.getBandwidthProperties()
+        keepConnection = rateLimiter!!.keepConnection()
     }
 
     companion object {

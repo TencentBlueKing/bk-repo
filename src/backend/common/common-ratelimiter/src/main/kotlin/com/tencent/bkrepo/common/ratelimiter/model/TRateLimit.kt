@@ -68,6 +68,6 @@ data class TRateLimit(
     var targets: List<String> = emptyList(),
     // 模块名
     var moduleName: List<String>,
-    // 是否终止请求
-    var terminateFast: Boolean = false,
+    // 是否保持连接
+    var keepConnection: Boolean = true,
 )

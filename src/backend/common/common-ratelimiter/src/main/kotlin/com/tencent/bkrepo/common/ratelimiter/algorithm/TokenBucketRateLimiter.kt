@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit
  */
 class TokenBucketRateLimiter(
     private val permitsPerSecond: Double,
+    private val keepConnection: Boolean = true,
 ) : RateLimiter {
 
     private val guavaRateLimiter = com.google.common.util.concurrent.RateLimiter.create(permitsPerSecond)
@@ -54,5 +55,9 @@ class TokenBucketRateLimiter(
 
     override fun getLimitPerSecond(): Long {
         return permitsPerSecond.toLong()
+    }
+
+    override fun keepConnection(): Boolean {
+        return keepConnection
     }
 }
