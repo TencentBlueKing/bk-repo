@@ -67,7 +67,7 @@ class CommonRateLimitInputStream(
     private var applyNum: Long = 0
     private var rateLimiter: RateLimiter? = null
     private var limitPerSecond: Long = 0
-    private var keepConnection: Boolean = false
+    private var keepConnection: Boolean = true
 
     override fun read(): Int {
         tryAcquireOrWait(1)
