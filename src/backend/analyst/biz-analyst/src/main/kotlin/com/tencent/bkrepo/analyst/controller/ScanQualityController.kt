@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,18 +25,20 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.metadata
+package com.tencent.bkrepo.analyst.controller
 
-/**
- * 制品禁用类型
- */
-enum class ForbidType {
-    // 扫描中被禁用
-    SCANNING,
-    // 未通过质量规则被禁用
-    QUALITY_UNPASS,
-    // 手动禁用
-    MANUAL,
-    // 未扫描时禁用
-    NOT_SCANNED,
+import com.tencent.bkrepo.analyst.api.ScanQualityClient
+import com.tencent.bkrepo.analyst.service.ScanQualityService
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.RestController
+
+@RestController
+class ScanQualityController @Autowired constructor(
+    private val scanQualityService: ScanQualityService,
+) : ScanQualityClient {
+    override fun shouldForbidBeforeScanned(projectId: String, repoName: String, fullPath: String): Response<Boolean> {
+        return ResponseBuilder.success(scanQualityService.shouldForbidBeforeScanned(projectId, repoName, fullPath))
+    }
 }

@@ -72,15 +72,15 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
     fun findByProjectIdAndRepoName(
         projectId: String,
         repoName: String,
-        planType: String,
+        planType: String? = null,
         scanOnNewArtifact: Boolean = true,
         includeEmptyRepoNames: Boolean = true
     ): List<TScanPlan> {
         val criteria = Criteria
             .where(TScanPlan::projectId.name).isEqualTo(projectId)
             .and(TScanPlan::scanOnNewArtifact.name).isEqualTo(scanOnNewArtifact)
-            .and(TScanPlan::type.name).isEqualTo(planType)
             .and(TScanPlan::deleted.name).isEqualTo(null)
+        planType?.let { criteria.and(TScanPlan::type.name).isEqualTo(it) }
         if (!includeEmptyRepoNames) {
             criteria.and(TScanPlan::repoNames.name).isEqualTo(repoName)
         } else {

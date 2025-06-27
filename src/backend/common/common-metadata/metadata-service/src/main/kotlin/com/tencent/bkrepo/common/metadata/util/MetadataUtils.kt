@@ -46,6 +46,8 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
 
 /**
  * 元数据工具类
@@ -126,6 +128,21 @@ object MetadataUtils {
 
         return result
     }
+
+    fun generateForbidMetadata(
+        forbid: Boolean,
+        reason: String = "",
+        type: ForbidType = ForbidType.MANUAL,
+        user: String = SecurityUtils.getUserId(),
+    ): MutableList<MetadataModel> {
+        return mutableListOf(
+            MetadataModel(key = FORBID_STATUS, value = forbid, system = true),
+            MetadataModel(key = FORBID_REASON, value = reason, system = true),
+            MetadataModel(key = FORBID_USER, value = user, system = true),
+            MetadataModel(key = FORBID_TYPE, value = type.name, system = true)
+        )
+    }
+
 
     fun convert(metadataList: List<Map<String, Any>>): Map<String, Any> {
         return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
