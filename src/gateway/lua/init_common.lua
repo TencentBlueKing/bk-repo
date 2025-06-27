@@ -34,7 +34,7 @@ urlUtil = require("util.url_util")
 oauthUtil = require("util.oauth_util")
 hostUtil = require("util.host_util")
 healthUtil = require("util.health_util")
-
+bandwidth_util = require("util.bandwidth_util")
 math.randomseed(os.time())
 uuid.seed()
 
