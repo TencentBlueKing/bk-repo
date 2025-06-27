@@ -217,8 +217,8 @@ class PackageServiceImpl(
             } else versionName
             val update = Update().set(TPackage::lastModifiedBy.name, request.createdBy)
                 .set(TPackage::lastModifiedDate.name, LocalDateTime.now())
-                .set(TPackage::description.name, packageDescription?.let { packageDescription })
-                .set(TPackage::extension.name, extension?.let { extension })
+                .set(TPackage::description.name, packageDescription)
+                .set(TPackage::extension.name, packageExtension)
                 .set(TPackage::versionTag.name, mergeVersionTag(tPackage.versionTag, versionTag))
                 .set(TPackage::historyVersion.name, tPackage.historyVersion.toMutableSet().apply { add(versionName) })
                 .apply { if (latest != null) set(TPackage::latest.name, latest) }
