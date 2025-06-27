@@ -112,8 +112,12 @@ class ScanQualityServiceImpl(
         return scanPlanDao
             .findByProjectIdAndRepoName(projectId, repoName)
             .any { plan ->
-                val forbidNotScanned = plan.scanQuality[ScanQuality::forbidNotScanned.name] == true
-                forbidNotScanned && RuleUtil.match(plan.rule.readJsonString(), projectId, repoName, fullPath)
+                val shouldForbid = plan.scanQuality[ScanQuality::forbidNotScanned.name] == true &&
+                        RuleUtil.match(plan.rule.readJsonString(), projectId, repoName, fullPath)
+                if (shouldForbid) {
+                    logger.info("Artifact[$projectId/$repoName/$fullPath] should be forbidden before scanned")
+                }
+                shouldForbid
             }
     }
 
