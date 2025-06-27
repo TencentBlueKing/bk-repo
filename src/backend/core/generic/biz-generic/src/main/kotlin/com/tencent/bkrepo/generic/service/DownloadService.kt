@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.DownloadInterceptorType
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
+import com.tencent.bkrepo.common.artifact.constant.REPORT
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
@@ -50,6 +51,7 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
+import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.repository.pojo.list.HeaderItem
 import com.tencent.bkrepo.repository.pojo.list.RowItem
@@ -68,6 +70,7 @@ import org.springframework.stereotype.Service
 class DownloadService(
     private val nodeService: NodeService,
     private val viewModelService: ViewModelService,
+    private val genericProperties: GenericProperties
 ) : ArtifactService() {
 
     @Value("\${spring.application.name}")
@@ -77,7 +80,11 @@ class DownloadService(
         with(artifactInfo) {
             val node = ArtifactContextHolder.getNodeDetail(this)
             val context = ArtifactDownloadContext()
-            if (node == null && context.repositoryDetail.category == RepositoryCategory.LOCAL) {
+            var condition = node == null && context.repositoryDetail.category == RepositoryCategory.LOCAL
+            if (genericProperties.compressedReport.enabled) {
+                condition = condition && repoName != REPORT
+            }
+            if (condition) {
                 throw NodeNotFoundException(getArtifactFullPath())
             }
 
@@ -100,6 +107,7 @@ class DownloadService(
                 }
             } else {
                 // 如果仓库类型不是Local，可能Node在远程仓库中，尝试下载
+                // 报告仓库可能是压缩报告，尝试下载
                 repository.download(context)
             }
         }
