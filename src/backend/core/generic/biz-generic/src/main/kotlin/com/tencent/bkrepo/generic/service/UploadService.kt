@@ -162,14 +162,11 @@ class UploadService(
             gid = NodeAttribute.NOBODY,
             mode = NodeAttribute.DEFAULT_MODE
         )
-        val fsAttr = MetadataModel(
-            key = FS_ATTR_KEY,
-            value = attributes,
-        )
-        val versionMetadata = MetadataModel(
-            key = UPLOADID_KEY,
-            value = uploadId
-        )
+        val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL) as GenericLocalRepository
+        val metadata = repository.resolveMetadata(artifactInfo, HttpContextHolder.getRequest()).toMutableList()
+        metadata.add(MetadataModel(UPLOADID_KEY, uploadId, system = true))
+        metadata.add(MetadataModel(key = FS_ATTR_KEY, value = attributes))
+
         val fileSize = getLongHeader(HEADER_FILE_SIZE).takeIf { it > 0L }
             ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND)
         val request = NodeCreateRequest(
@@ -183,9 +180,8 @@ class UploadService(
             size = fileSize,
             overwrite = getBooleanHeader(HEADER_OVERWRITE),
             expires = getLongHeader(HEADER_EXPIRES),
-            nodeMetadata = listOf(fsAttr, versionMetadata),
+            nodeMetadata = metadata,
             separate = true,
-            metadata = mapOf(UPLOADID_KEY to uploadId)
         )
         ActionAuditContext.current().setInstance(request)
         nodeService.createNode(request)
@@ -249,7 +245,7 @@ class UploadService(
             overwrite = getBooleanHeader(HEADER_OVERWRITE),
             operator = userId,
             expires = getLongHeader(HEADER_EXPIRES),
-            nodeMetadata = repository.resolveMetadata(HttpContextHolder.getRequest()),
+            nodeMetadata = repository.resolveMetadata(artifactInfo, HttpContextHolder.getRequest()),
         )
         ActionAuditContext.current().setInstance(request)
         nodeService.createNode(request)

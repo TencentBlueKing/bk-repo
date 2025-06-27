@@ -471,7 +471,7 @@ class DeltaSyncService(
                 uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256),
                 uploadMd5 = HeaderUtils.getHeader(HEADER_MD5),
                 expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
-                metadata = repository.resolveMetadata(request),
+                metadata = repository.resolveMetadata(artifactInfo, request),
                 contentLength = request.contentLengthLong,
                 emitter = emitter,
                 counterInputStream = counterInputStream,

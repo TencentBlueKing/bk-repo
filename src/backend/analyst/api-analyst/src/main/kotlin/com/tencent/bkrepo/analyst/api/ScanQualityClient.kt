@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 
 @FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanQualityClient")
 @RequestMapping("/service/scan/quality")
@@ -47,5 +48,9 @@ interface ScanQualityClient {
      * @return 需要禁用返回true,否则返回false
      * */
     @GetMapping("/precheck")
-    fun shouldForbidBeforeScanned(projectId: String, repoName: String, fullPath: String): Response<Boolean>
+    fun shouldForbidBeforeScanned(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String,
+        @RequestParam fullPath: String
+    ): Response<Boolean>
 }
