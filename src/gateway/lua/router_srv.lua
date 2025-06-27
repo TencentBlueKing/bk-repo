@@ -47,7 +47,7 @@ end
 
 -- 异常故障转移
 if config.env and healthUtil:get_cluster_health_status(config.env) then
-    local back_target = hostUtil:get_target_by_random(config.env)
+    local back_target = healthUtil:get_target_by_random(config.env)
     if back_target ~= nil then
         ngx.var.target = back_target .. "/" .. service_name
         return
@@ -61,7 +61,7 @@ end
 
 if router_by_project then
     -- 路由表转发
-    local env, router_target = hostUtil:get_target_by_project()
+    local env, router_target = healthUtil:get_target_by_project()
     if env then
         ngx.var.target = router_target .. "/" .. service_name
         return
