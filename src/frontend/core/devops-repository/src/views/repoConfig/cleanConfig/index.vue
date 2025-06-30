@@ -17,13 +17,13 @@
             </bk-select>
         </bk-form-item>
         <bk-form-item :label="$t('retentionDays')" property="cleanupValue" required error-display-type="normal" v-if="cleanupStrategy.cleanupType === 'retentionDays'">
-            <bk-input class="w250" v-model="cleanupStrategy.cleanupValue" placeholder="$t('pleaseInput')" :disabled="!cleanupStrategy.enable"></bk-input>
+            <bk-input class="w250" v-model="cleanupStrategy.cleanupValue" :placeholder="$t('pleaseInput')" :disabled="!cleanupStrategy.enable"></bk-input>
         </bk-form-item>
         <bk-form-item :label="$t('retentionDate')" property="cleanupValue" required error-display-type="normal" v-if="cleanupStrategy.cleanupType === 'retentionDate'">
             <bk-date-picker v-model="cleanupStrategy.cleanupValue" :placeholder="$t('chooseDateTip')" :clearable="false" :type="'datetime'" :disabled="!cleanupStrategy.enable"></bk-date-picker>
         </bk-form-item>
         <bk-form-item :label="$t('retentionNums')" property="cleanupValue" required error-display-type="normal" v-if="cleanupStrategy.cleanupType === 'retentionNums'">
-            <bk-input class="w250" v-model="cleanupStrategy.cleanupValue" placeholder="$t('pleaseInput')" :disabled="!cleanupStrategy.enable"></bk-input>
+            <bk-input class="w250" v-model="cleanupStrategy.cleanupValue" :placeholder="$t('pleaseInput')" :disabled="!cleanupStrategy.enable"></bk-input>
         </bk-form-item>
         <bk-form-item :label="$t('cleanTarget')">
             <bk-button :disabled="!cleanupStrategy.enable || repoName === 'pipeline'" icon="plus" @click="addRule()">{{$t('addTarget')}}</bk-button>
