@@ -204,7 +204,12 @@ open class PathResourceLimitRule(
             patternBuilder.append(variablePattern)
             patternBuilder.append(')')
         } else {
-            patternBuilder.append(PATH_REGEX)
+            val normalizedPathDir = if (pathDir.contains("*")) {
+                pathDir.replace("*", PATH_REGEX)
+            } else {
+                PATH_REGEX
+            }
+            patternBuilder.append(normalizedPathDir)
         }
         return patternBuilder.toString()
     }
