@@ -159,7 +159,7 @@ class ScanQualityServiceImpl(
                 planSubtask.repoName == repoName &&
                 planSubtask.fullPath == fullPath
         if (!scanned && plan.scanQuality[ScanQuality::forbidNotScanned.name] == true) {
-            logger.info("forbid [$projectId/$repoName$fullPath][$sha256], reason: forbid not scanned")
+            logger.info("forbid [$projectId/$repoName$fullPath][$sha256][${plan.id}], reason: forbid not scanned")
             return CheckForbidResult(true, ForbidType.NOT_SCANNED.name, ScanPlanConverter.convert(plan))
         }
 
@@ -176,7 +176,7 @@ class ScanQualityServiceImpl(
         var type = ForbidType.NONE
         if (shouldForbid) {
             type = ForbidType.QUALITY_UNPASS
-            logger.info("forbid [$projectId/$repoName$fullPath][$sha256], reason: exceed red line")
+            logger.info("forbid [$projectId/$repoName$fullPath][$sha256][${plan.id}], reason: exceed red line")
         }
         return CheckForbidResult(shouldForbid, type.name, ScanPlanConverter.convert(plan))
     }
