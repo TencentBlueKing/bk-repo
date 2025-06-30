@@ -98,6 +98,12 @@ class UrlRateLimitRuleTest : BaseRuleTest() {
         duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
 
+    private val l12 = ResourceLimit(
+        algo = Algorithms.FIXED_WINDOW.name, resource = "/bkrepo/pipeline/p-axxxxx*",
+        limitDimension = LimitDimension.URL.name, limit = 52428800,
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
+    )
+
     @Test
     fun testIsEmpty() {
         val urlRateLimitRule = UrlRateLimitRule()
@@ -224,6 +230,22 @@ class UrlRateLimitRuleTest : BaseRuleTest() {
         assertEquals(actualInfo?.resource, "/project3/xxxx/")
 
 
+        resInfo = ResInfo("%2Fproject2%2Fs.txt")
+        actualInfo = urlRateLimitRule.getRateLimitRule(resInfo)
+        assertEqualsLimitInfo(actualInfo?.resourceLimit, l4)
+        assertEquals(actualInfo?.resource, "%2Fproject2%2Fs.txt")
+        urlRateLimitRule.addRateLimitRule(l12)
+
+
+        resInfo = ResInfo("/bkrepo/pipeline%2Fp-axxxxxcccsdd%2Fb-ddxcc%2Fs.txt")
+        actualInfo = urlRateLimitRule.getRateLimitRule(resInfo)
+        assertEqualsLimitInfo(actualInfo?.resourceLimit, l12)
+        assertEquals(actualInfo?.resource, "/bkrepo/pipeline%2Fp-axxxxxcccsdd%2Fb-ddxcc%2Fs.txt")
+
+        resInfo = ResInfo("/bkrepo/pipeline%2Fp-bxxxxxcccsdd%2Fb-ddxcc%2Fs.txt")
+        actualInfo = urlRateLimitRule.getRateLimitRule(resInfo)
+        assertEqualsLimitInfo(actualInfo?.resourceLimit, l1)
+        assertEquals(actualInfo?.resource, "/bkrepo/pipeline%2Fp-bxxxxxcccsdd%2Fb-ddxcc%2Fs.txt")
     }
 
     @Test
