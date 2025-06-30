@@ -171,7 +171,8 @@ class ScanQualityServiceImpl(
         // 扫描过时判断是否通过质量规则
         val scanner = scannerService.get(plan.scanner)
         val scanResultOverview = planSubtask?.scanResultOverview ?: emptyMap()
-        val shouldForbid = checkScanQualityRedLine(plan.scanQuality, scanResultOverview, scanner)
+        val forbidQualityUnPass = plan.scanQuality[ScanQuality::forbidQualityUnPass.name] == true
+        val shouldForbid = forbidQualityUnPass && checkScanQualityRedLine(plan.scanQuality, scanResultOverview, scanner)
         var type = ForbidType.NONE
         if (shouldForbid) {
             type = ForbidType.QUALITY_UNPASS

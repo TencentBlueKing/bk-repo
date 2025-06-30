@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
 import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
@@ -61,6 +62,7 @@ class SubtaskStatusChangedEventListener(
     private val packageMetadataService: PackageMetadataService,
     private val scanPlanService: ScanPlanService,
     private val scanQualityService: ScanQualityService,
+    private val lockOperation: LockOperation,
 ) {
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
@@ -73,11 +75,13 @@ class SubtaskStatusChangedEventListener(
             }
 
             // 更新扫描状态元数据
-            val metadata = ArrayList<MetadataModel>(4)
-            addScanStatus(this, metadata)
-            modifyForbidMetadata(this, metadata)
-            saveMetadata(this, metadata)
-            logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] metadata[$metadata] success")
+            lockOperation.doWithLock("scanner:lock:forbid:$projectId") {
+                val metadata = ArrayList<MetadataModel>(4)
+                addScanStatus(this, metadata)
+                modifyForbidMetadata(this, metadata)
+                saveMetadata(this, metadata)
+                logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] metadata[$metadata] success")
+            }
         }
     }
 
@@ -140,33 +144,39 @@ class SubtaskStatusChangedEventListener(
      * 需要禁用时添加元数据到[metadata]中，不需要禁用时移除禁用相关元数据
      */
     private fun modifyForbidMetadata(subtask: TPlanArtifactLatestSubScanTask, metadata: ArrayList<MetadataModel>) {
+        val projectId = subtask.projectId
+        val repoName = subtask.repoName
+        val fullPath = subtask.fullPath
         subtask.qualityRedLine?.let {
             metadata.add(MetadataModel(key = SubScanTaskDefinition::qualityRedLine.name, value = it, system = true))
         }
-        val result = scanQualityService.shouldForbid(
-            subtask.projectId, subtask.repoName, subtask.fullPath, subtask.sha256
-        )
+        val currentForbidType = metadataService.listMetadata(projectId, repoName, fullPath)[FORBID_TYPE]
+        if (currentForbidType == ForbidType.MANUAL.name) {
+            // 手动禁用的情况不处理
+            return
+        }
+
+        val result = scanQualityService.shouldForbid(projectId, repoName, fullPath, subtask.sha256)
         if (result.shouldForbid) {
-            // 添加制品禁用元数据
+            // 扫描未通过时添加制品禁用元数据
             val type = ForbidType.valueOf(result.type)
             val user = result.plan?.lastModifiedBy ?: SYSTEM_USER
             metadata.addAll(MetadataUtils.generateForbidMetadata(true, type.reason, type, user))
+            return
         } else {
             // 全部方案均通过时移除禁用元数据
-            val request = MetadataDeleteRequest(
-                subtask.projectId,
-                subtask.repoName,
-                subtask.fullPath,
-                setOf(FORBID_STATUS, FORBID_REASON, FORBID_USER, FORBID_TYPE)
+            metadataService.deleteMetadata(
+                MetadataDeleteRequest(
+                    subtask.projectId,
+                    subtask.repoName,
+                    subtask.fullPath,
+                    setOf(FORBID_STATUS, FORBID_REASON, FORBID_USER, FORBID_TYPE)
+                )
             )
-            metadataService.deleteMetadata(request)
         }
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(SubtaskStatusChangedEventListener::class.java)
-
-        // 禁用质量规则未通过的制品
-        const val FORBID_QUALITY_UNPASS = "forbidQualityUnPass"
     }
 }
