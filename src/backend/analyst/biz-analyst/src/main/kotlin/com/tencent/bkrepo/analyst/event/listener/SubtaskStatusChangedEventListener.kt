@@ -74,8 +74,9 @@ class SubtaskStatusChangedEventListener(
                 return
             }
 
-            // 更新扫描状态元数据
+            // 加锁避免同一制品的多个扫描方案同时扫描结束时，并发更新禁用状态导致禁用状态错误
             lockOperation.doWithLock("scanner:lock:forbid:$projectId") {
+                // 更新扫描状态元数据
                 val metadata = ArrayList<MetadataModel>(4)
                 addScanStatus(this, metadata)
                 modifyForbidMetadata(this, metadata)
