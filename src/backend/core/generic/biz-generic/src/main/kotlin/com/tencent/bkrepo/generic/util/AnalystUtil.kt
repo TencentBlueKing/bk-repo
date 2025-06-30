@@ -29,7 +29,7 @@ package com.tencent.bkrepo.generic.util
 
 import com.tencent.bkrepo.analyst.api.ScanQualityClient
 import com.tencent.bkrepo.common.metadata.properties.AnalystProperties
-import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils.generateForbidMetadata
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.FORBID_REASON_NOT_SCANNED
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
@@ -52,7 +52,7 @@ class AnalystUtil(
 
         try {
             if (scanQualityClient.shouldForbidBeforeScanned(projectId, repoName, fullPath).data == true) {
-                return MetadataUtils.generateForbidMetadata(true, FORBID_REASON_NOT_SCANNED, ForbidType.NOT_SCANNED, SYSTEM_USER)
+                return generateForbidMetadata(true, FORBID_REASON_NOT_SCANNED, ForbidType.NOT_SCANNED, SYSTEM_USER)
             }
         } catch (e: Exception) {
             logger.error("Pre-check forbid status for [$projectId/$repoName$fullPath] failed", e)
