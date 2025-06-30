@@ -41,7 +41,8 @@ import java.util.concurrent.locks.ReentrantLock
 class FixedWindowRateLimiter(
     private val limit: Long,
     private val duration: Duration,
-    private val stopWatch: Stopwatch = Stopwatch.createStarted()
+    private val stopWatch: Stopwatch = Stopwatch.createStarted(),
+    private val keepConnection: Boolean = true,
 ) : RateLimiter {
 
     private var currentValue: Long = 0
@@ -75,5 +76,9 @@ class FixedWindowRateLimiter(
 
     override fun getLimitPerSecond(): Long {
         return limit / duration.seconds
+    }
+
+    override fun keepConnection(): Boolean {
+        return keepConnection
     }
 }

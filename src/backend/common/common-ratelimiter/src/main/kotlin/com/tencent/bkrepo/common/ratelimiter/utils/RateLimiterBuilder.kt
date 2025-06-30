@@ -109,10 +109,12 @@ object RateLimiterBuilder {
         redisTemplate: RedisTemplate<String, String>? = null
     ): RateLimiter {
         return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            FixedWindowRateLimiter(resourceLimit.limit, resourceLimit.duration)
+            FixedWindowRateLimiter(
+                resourceLimit.limit, resourceLimit.duration, keepConnection = resourceLimit.keepConnection
+            )
         } else {
             DistributedFixedWindowRateLimiter(
-                resource, resourceLimit.limit, resourceLimit.duration, redisTemplate!!
+                resource, resourceLimit.limit, resourceLimit.duration, redisTemplate!!, resourceLimit.keepConnection
             )
         }
     }
@@ -124,13 +126,13 @@ object RateLimiterBuilder {
     ): RateLimiter {
         val permitsPerSecond = (resourceLimit.limit / resourceLimit.duration.seconds.toDouble())
         return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            TokenBucketRateLimiter(permitsPerSecond)
+            TokenBucketRateLimiter(permitsPerSecond, resourceLimit.keepConnection)
         } else {
             if (resourceLimit.capacity == null || resourceLimit.capacity!! <= 0) {
                 throw InvalidResourceException("Resource limit config $resourceLimit is illegal")
             }
             DistributedTokenBucketRateLimiter(
-                resource, permitsPerSecond, resourceLimit.capacity!!, redisTemplate!!
+                resource, permitsPerSecond, resourceLimit.capacity!!, redisTemplate!!, resourceLimit.keepConnection
             )
         }
     }
@@ -141,10 +143,10 @@ object RateLimiterBuilder {
         redisTemplate: RedisTemplate<String, String>? = null
     ): RateLimiter {
         return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            SlidingWindowRateLimiter(resourceLimit.limit, resourceLimit.duration)
+            SlidingWindowRateLimiter(resourceLimit.limit, resourceLimit.duration, resourceLimit.keepConnection)
         } else {
             DistributedSlidingWindowRateLimiter(
-                resource, resourceLimit.limit, resourceLimit.duration, redisTemplate!!
+                resource, resourceLimit.limit, resourceLimit.duration, redisTemplate!!, resourceLimit.keepConnection
             )
         }
     }
@@ -159,10 +161,10 @@ object RateLimiterBuilder {
         }
         val rate = resourceLimit.limit / resourceLimit.duration.seconds.toDouble()
         return if (resourceLimit.scope == WorkScope.LOCAL.name) {
-            LeakyRateLimiter(rate, resourceLimit.capacity!!)
+            LeakyRateLimiter(rate, resourceLimit.capacity!!, resourceLimit.keepConnection)
         } else {
             DistributedLeakyRateLimiter(
-                resource, rate, resourceLimit.capacity!!, redisTemplate!!
+                resource, rate, resourceLimit.capacity!!, redisTemplate!!, resourceLimit.keepConnection
             )
         }
     }

@@ -44,6 +44,7 @@ import java.util.concurrent.locks.ReentrantLock
 class SlidingWindowRateLimiter(
     private val limit: Long,
     private val duration: Duration,
+    private val keepConnection: Boolean = true,
 ) : RateLimiter {
 
     private val lock: Lock = ReentrantLock()
@@ -82,6 +83,10 @@ class SlidingWindowRateLimiter(
         return limit / duration.seconds
     }
 
+    override fun keepConnection(): Boolean {
+        return keepConnection
+    }
+
     private fun allow(permits: Long): Boolean {
         val currentTimeMillis = System.currentTimeMillis()
         // 1. 计算当前时间窗口
@@ -112,7 +117,7 @@ class SlidingWindowRateLimiter(
 
     data class WindowInfo(
         var time: Long = System.currentTimeMillis(),
-        var count: Long = 0
+        var count: Long = 0,
     )
 
 }

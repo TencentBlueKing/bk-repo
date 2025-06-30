@@ -67,5 +67,7 @@ data class TRateLimit(
     // 指定机器上运行
     var targets: List<String> = emptyList(),
     // 模块名
-    var moduleName: List<String>
+    var moduleName: List<String>,
+    // 是否保持连接
+    var keepConnection: Boolean = true,
 )

@@ -44,6 +44,7 @@ class DistributedFixedWindowRateLimiter(
     private val limit: Long,
     private val duration: Duration,
     private val redisTemplate: RedisTemplate<String, String>,
+    private val keepConnection: Boolean = true,
 ) : RateLimiter {
     override fun tryAcquire(permits: Long): Boolean {
         try {
@@ -75,6 +76,10 @@ class DistributedFixedWindowRateLimiter(
 
     override fun getLimitPerSecond(): Long {
         return limit / duration.seconds
+    }
+
+    override fun keepConnection(): Boolean {
+        return keepConnection
     }
 
     companion object {
