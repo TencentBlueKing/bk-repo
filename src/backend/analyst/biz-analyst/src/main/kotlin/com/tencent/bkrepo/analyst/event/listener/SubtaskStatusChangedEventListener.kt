@@ -32,15 +32,21 @@ import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.analyst.service.ScanPlanService
+import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.FORBID_REASON
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
+import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
@@ -53,7 +59,8 @@ import org.springframework.stereotype.Component
 class SubtaskStatusChangedEventListener(
     private val metadataService: MetadataService,
     private val packageMetadataService: PackageMetadataService,
-    private val scanPlanService: ScanPlanService
+    private val scanPlanService: ScanPlanService,
+    private val scanQualityService: ScanQualityService,
 ) {
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
@@ -68,14 +75,7 @@ class SubtaskStatusChangedEventListener(
             // 更新扫描状态元数据
             val metadata = ArrayList<MetadataModel>(4)
             addScanStatus(this, metadata)
-            // 更新质量规则元数据
-            qualityRedLine?.let {
-                // 未通过质量规则，判断是否触发禁用
-                if (!qualityRedLine) {
-                    addForbidMetadata(this, metadata)
-                }
-                metadata.add(MetadataModel(key = SubScanTaskDefinition::qualityRedLine.name, value = it, system = true))
-            }
+            modifyForbidMetadata(this, metadata)
             saveMetadata(this, metadata)
             logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] metadata[$metadata] success")
         }
@@ -87,33 +87,6 @@ class SubtaskStatusChangedEventListener(
     private fun recordSubtask(subtask: TPlanArtifactLatestSubScanTask) {
         if (SubScanTaskStatus.finishedStatus(subtask.status)) {
             logger.info(subtask.toJsonString().replace(System.lineSeparator(), ""))
-        }
-    }
-
-    /**
-     * 如果方案设置forbidQualityUnPass=true，保存禁用信息
-     * 保存metadata(forbidStatus禁用状态(true)、forbidType禁用类型(qualityUnPass))
-     */
-    fun addForbidMetadata(subTask: TPlanArtifactLatestSubScanTask, metadata: ArrayList<MetadataModel>) {
-        with(subTask) {
-            // 方案禁用触发设置
-            val forbidQualityUnPass = scanQuality?.get(FORBID_QUALITY_UNPASS) as Boolean?
-            if (forbidQualityUnPass == true) {
-                metadata.add(
-                    MetadataModel(
-                        key = FORBID_STATUS,
-                        value = true,
-                        system = true
-                    )
-                )
-                metadata.add(
-                    MetadataModel(
-                        key = FORBID_TYPE,
-                        value = ForbidType.QUALITY_UNPASS.name,
-                        system = true
-                    )
-                )
-            }
         }
     }
 
@@ -160,6 +133,33 @@ class SubtaskStatusChangedEventListener(
                 )
                 packageMetadataService.saveMetadata(request)
             }
+        }
+    }
+
+    /**
+     * 需要禁用时添加元数据到[metadata]中，不需要禁用时移除禁用相关元数据
+     */
+    private fun modifyForbidMetadata(subtask: TPlanArtifactLatestSubScanTask, metadata: ArrayList<MetadataModel>) {
+        subtask.qualityRedLine?.let {
+            metadata.add(MetadataModel(key = SubScanTaskDefinition::qualityRedLine.name, value = it, system = true))
+        }
+        val result = scanQualityService.shouldForbid(
+            subtask.projectId, subtask.repoName, subtask.fullPath, subtask.sha256
+        )
+        if (result.shouldForbid) {
+            // 添加制品禁用元数据
+            val type = ForbidType.valueOf(result.type)
+            val user = result.plan?.lastModifiedBy ?: SYSTEM_USER
+            metadata.addAll(MetadataUtils.generateForbidMetadata(true, type.reason, type, user))
+        } else {
+            // 全部方案均通过时移除禁用元数据
+            val request = MetadataDeleteRequest(
+                subtask.projectId,
+                subtask.repoName,
+                subtask.fullPath,
+                setOf(FORBID_STATUS, FORBID_REASON, FORBID_USER, FORBID_TYPE)
+            )
+            metadataService.deleteMetadata(request)
         }
     }
 

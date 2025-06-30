@@ -27,9 +27,10 @@
 
 package com.tencent.bkrepo.analyst.service
 
+import com.tencent.bkrepo.analyst.pojo.CheckForbidResult
 import com.tencent.bkrepo.analyst.pojo.request.ScanQualityUpdateRequest
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.analyst.pojo.response.ScanQuality
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 
 interface ScanQualityService {
     /**
@@ -64,9 +65,9 @@ interface ScanQualityService {
      * @param fullPath 制品路径
      * @param sha256 制品sha256
      *
-     * @return 是否禁用制品
+     * @return 是否禁用制品检查结果
      */
-    fun shouldForbid(projectId: String, repoName: String, fullPath: String, sha256: String): Boolean
+    fun shouldForbid(projectId: String, repoName: String, fullPath: String, sha256: String): CheckForbidResult
 
     /**
      * 是否禁用未扫描制品

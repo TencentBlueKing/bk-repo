@@ -32,17 +32,20 @@ import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
 import com.tencent.bkrepo.analyst.model.TScanPlan
+import com.tencent.bkrepo.analyst.pojo.CheckForbidResult
 import com.tencent.bkrepo.analyst.pojo.request.ScanQualityUpdateRequest
 import com.tencent.bkrepo.analyst.pojo.response.ScanQuality
 import com.tencent.bkrepo.analyst.service.LicenseScanQualityService
 import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.utils.RuleUtil
+import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -95,17 +98,23 @@ class ScanQualityServiceImpl(
         return true
     }
 
-    override fun shouldForbid(projectId: String, repoName: String, fullPath: String, sha256: String): Boolean {
+    override fun shouldForbid(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        sha256: String
+    ): CheckForbidResult {
         val plans = scanPlanDao.findByProjectIdAndRepoName(projectId, repoName)
         val planSubtasks = planArtifactLatestSubScanTaskDao
             .findAll(projectId, repoName, fullPath)
             .associateBy { it.planId }
         plans.forEach { plan ->
-            if (shouldForbid(projectId, repoName, fullPath, sha256, plan, planSubtasks[plan.id])) {
-                return true
+            val result = shouldForbid(projectId, repoName, fullPath, sha256, plan, planSubtasks[plan.id])
+            if (result.shouldForbid) {
+                return result
             }
         }
-        return false
+        return CheckForbidResult()
     }
 
     override fun shouldForbidBeforeScanned(projectId: String, repoName: String, fullPath: String): Boolean {
@@ -143,7 +152,7 @@ class ScanQualityServiceImpl(
         sha256: String,
         plan: TScanPlan,
         planSubtask: TPlanArtifactLatestSubScanTask?
-    ): Boolean {
+    ): CheckForbidResult {
         // 未扫描过且开启了禁用未扫描制品
         val scanned = planSubtask?.sha256 == sha256 &&
                 planSubtask.projectId == projectId &&
@@ -151,22 +160,24 @@ class ScanQualityServiceImpl(
                 planSubtask.fullPath == fullPath
         if (!scanned && plan.scanQuality[ScanQuality::forbidNotScanned.name] == true) {
             logger.info("forbid [$projectId/$repoName$fullPath][$sha256], reason: forbid not scanned")
-            return true
+            return CheckForbidResult(true, ForbidType.NOT_SCANNED.name, ScanPlanConverter.convert(plan))
         }
 
         // 未扫描过时不禁用
         if (!scanned) {
-            return false
+            return CheckForbidResult()
         }
 
         // 扫描过时判断是否通过质量规则
         val scanner = scannerService.get(plan.scanner)
         val scanResultOverview = planSubtask?.scanResultOverview ?: emptyMap()
         val shouldForbid = checkScanQualityRedLine(plan.scanQuality, scanResultOverview, scanner)
+        var type = ForbidType.NONE
         if (shouldForbid) {
+            type = ForbidType.QUALITY_UNPASS
             logger.info("forbid [$projectId/$repoName$fullPath][$sha256], reason: exceed red line")
         }
-        return shouldForbid
+        return CheckForbidResult(shouldForbid, type.name, ScanPlanConverter.convert(plan))
     }
 
     companion object {
