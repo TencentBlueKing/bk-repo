@@ -23,7 +23,8 @@ const localeAliasMap = {
     us: 'en-US',
     // 设置蓝鲸cookie使用
     'zh-CN': 'zh-cn',
-    'en-US': 'en'
+    'en-US': 'en',
+    'ja': 'ja'
 }
 
 const BK_CI_DOMAIN = location.host.split('.').slice(1).join('.')

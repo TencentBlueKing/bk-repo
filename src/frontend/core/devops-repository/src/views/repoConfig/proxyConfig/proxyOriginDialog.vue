@@ -15,8 +15,8 @@
             </bk-form-item>
             <bk-form-item :label="$t('publicProxy')" property="proxyType">
                 <bk-radio-group v-model="editProxyData.proxyType">
-                    <bk-radio value="publicProxy">{{ $t('yes') }}</bk-radio>
-                    <bk-radio class="ml20" value="privateProxy">{{ $t('no') }}</bk-radio>
+                    <bk-radio value="publicProxy">{{ $t('Yes') }}</bk-radio>
+                    <bk-radio class="ml20" value="privateProxy">{{ $t('No') }}</bk-radio>
                 </bk-radio-group>
             </bk-form-item>
             <bk-form-item v-if="editProxyData.proxyType === 'privateProxy'" :label="$t('username')" property="username">

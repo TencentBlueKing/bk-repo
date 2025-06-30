@@ -18,6 +18,7 @@
                 </div>
                 <div v-if="resultList.length !== 0 || repoList[0].children.length !== 0" class="sort-tool flex-align-center">
                     <bk-select
+                        :placeholder="$t('pleaseSelect')"
                         style="width:220px;"
                         v-model="property"
                         :clearable="false"

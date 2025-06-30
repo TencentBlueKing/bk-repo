@@ -3,6 +3,7 @@
         <div class="mt10 flex-between-center">
             <bk-button class="ml20" icon="plus" theme="primary" @click="upload">{{ $t('upload') }}</bk-button>
             <bk-select
+                :placeholder="$t('pleaseSelect')"
                 class="mr20 w250"
                 v-model="scannerFilter"
                 @change="handlerPaginationChange()">

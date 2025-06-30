@@ -37,7 +37,7 @@
                 </bk-radio-group>
             </bk-form-item>
             <bk-form-item :label="$t('ruleIgnoreMethod')">
-                <bk-select v-model="selectedFilterMethod" @change="filterMethodChanged">
+                <bk-select :placeholder="$t('pleaseSelect')" v-model="selectedFilterMethod" @change="filterMethodChanged">
                     <bk-option :disabled="option.type === FILTER_METHOD_SEVERITY && ignoreRule.type === FILTER_RULE_INCLUDE" v-for="option in filterMethods" :key="option.type" :id="option.type" :name="option.name"></bk-option>
                 </bk-select>
             </bk-form-item>

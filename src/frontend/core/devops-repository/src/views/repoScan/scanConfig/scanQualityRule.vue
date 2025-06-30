@@ -19,7 +19,8 @@
                     <div class="flex-align-center">
                         <div :class="`status-sign ${id}`" :data-name="$t(`leakLevelEnum.${id}`) + $t('space') + $t('vulnerability') + `≦`"></div>
                         <bk-input class="ml10 mr10" style="width: 80px;" :disabled="!editable" v-model.trim="rule[id.toLowerCase()]"
-                            @focus="$refs.ruleForm.clearError()"
+                                  :placeholder="$t('pleaseInput')"
+                                  @focus="$refs.ruleForm.clearError()"
                             @blur="$refs.ruleForm.validate()"></bk-input>
                         <span>{{ $t('per') }}</span>
                     </div>

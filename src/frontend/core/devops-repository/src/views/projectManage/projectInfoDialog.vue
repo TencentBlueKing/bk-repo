@@ -14,10 +14,10 @@
                 </bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('projectName')" :required="true" property="name" error-display-type="normal">
-                <bk-input v-model.trim="editProjectDialog.name" maxlength="100" show-word-limit></bk-input>
+                <bk-input v-model.trim="editProjectDialog.name" maxlength="100" show-word-limit placeholder="$t('pleaseInput')"></bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('projectDescription')" property="description">
-                <bk-input type="textarea" v-model.trim="editProjectDialog.description" maxlength="200" show-word-limit></bk-input>
+                <bk-input placeholder="$t('pleaseInput')" type="textarea" v-model.trim="editProjectDialog.description" maxlength="200" show-word-limit></bk-input>
             </bk-form-item>
         </bk-form>
         <template #footer>

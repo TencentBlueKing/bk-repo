@@ -18,6 +18,7 @@
                 <bk-option v-for="[id] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="$t(`leakLevelEnum.${id}`)"></bk-option>
             </bk-select>
             <bk-select
+                :placeholder="$t('pleaseSelect')"
                 v-if="subtaskOverview.scannerType === 'standard'"
                 class="ml10 input-common"
                 :clearable="false"
