@@ -32,12 +32,12 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 @DisplayName("已删除Node清理Job测试")
@@ -47,31 +47,31 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
 ) : JobBaseTest() {
 
-    @MockBean
+    @MockitoBean
     private lateinit var messageSupplier: MessageSupplier
 
-    @MockBean
+    @MockitoBean
     private lateinit var servicePermissionClient: ServicePermissionClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var routerControllerClient: RouterControllerClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var archiveClient: ArchiveClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
-    @MockBean
+    @MockitoBean
     private lateinit var storageCredentialService: StorageCredentialService
 
-    @MockBean
+    @MockitoBean
     lateinit var separationTaskService: SeparationTaskService
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
     @BeforeAll

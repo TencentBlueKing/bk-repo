@@ -3,7 +3,9 @@ package com.tencent.bkrepo.common.service.util.proxy
 import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
@@ -13,8 +15,6 @@ import okhttp3.Response
 import okio.BufferedSink
 import okio.source
 import org.slf4j.LoggerFactory
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 class HttpProxyUtil(
     private val client: OkHttpClient = HttpClientBuilderFactory.create().build(),

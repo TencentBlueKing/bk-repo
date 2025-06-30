@@ -10,9 +10,9 @@ import com.tencent.bkrepo.nuget.constant.LOWER_VERSION
 import com.tencent.bkrepo.nuget.constant.UPPER_VERSION
 import com.tencent.bkrepo.nuget.constant.VERSION
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetRegistrationArtifactInfo
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(NugetRegistrationArtifactInfo::class)
