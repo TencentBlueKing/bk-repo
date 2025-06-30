@@ -81,7 +81,7 @@ class SubtaskStatusChangedEventListener(
                 addScanStatus(this, metadata)
                 modifyForbidMetadata(this, metadata)
                 saveMetadata(this, metadata)
-                logger.info("update project[$projectId] repo[$repoName] fullPath[$fullPath] metadata[$metadata] success")
+                logger.info("update [$projectId/$repoName$fullPath] metadata[$metadata] success")
             }
         }
     }
