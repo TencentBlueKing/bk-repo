@@ -14,7 +14,9 @@
                 :id="'pdfCanvas' + page"
             ></canvas>
         </div>
-        <img v-if="imgShow" :src="imgUrl" />
+        <div v-if="imgShow" style="width: 100%; height: 100%">
+            <img id="image" :src="imgUrl" alt="Picture">
+        </div>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <textarea v-model="basicFileText" class="textarea" readonly></textarea>
@@ -47,6 +49,7 @@
     import { isFormatType, isHtmlType, isPic, isText } from '@repository/utils/file'
     import Papa from 'papaparse'
     import Table from '@wolf-table/table'
+    import Viewer from 'viewerjs'
 
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.isEvalSupported = false
@@ -239,8 +242,16 @@
                     this.pdfShow = true
                     this.pageUrl = url
                 } else if (isPic(this.filePath)) {
-                    this.imgUrl = URL.createObjectURL(res.data)
                     this.imgShow = true
+                    this.imgUrl = URL.createObjectURL(res.data)
+                    this.$nextTick(() => {
+                        const viewer = new Viewer(document.getElementById('image'), {
+                            inline: true,
+                            viewed () {
+                                viewer.zoomTo(1)
+                            }
+                        })
+                    })
                 } else {
                     url = URL.createObjectURL(res.data)
                     this.showFrame = true
@@ -323,6 +334,8 @@
 <style lang="scss" scoped>
 @import '@vue-office/docx/lib/index.css';
 @import '@vue-office/excel/lib/index.css';
+@import 'viewerjs/dist/viewer.css';
+
 .preview-file-tips {
     margin-bottom: 10px;
     color: #707070;
