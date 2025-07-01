@@ -37,9 +37,9 @@ import com.tencent.bkrepo.huggingface.constants.NAME_KEY
 import com.tencent.bkrepo.huggingface.constants.ORGANIZATION_KEY
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
 import com.tencent.bkrepo.huggingface.constants.TYPE_KEY
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(HuggingfaceRevisionInfo::class)
