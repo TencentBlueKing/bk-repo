@@ -145,6 +145,10 @@ class SubtaskStatusChangedEventListener(
      * 需要禁用时添加元数据到[metadata]中，不需要禁用时移除禁用相关元数据
      */
     private fun modifyForbidMetadata(subtask: TPlanArtifactLatestSubScanTask, metadata: ArrayList<MetadataModel>) {
+        if (!SubScanTaskStatus.finishedStatus(subtask.status)) {
+            // 扫描任务未结束时不更新禁用状态元数据
+            return
+        }
         val projectId = subtask.projectId
         val repoName = subtask.repoName
         val fullPath = subtask.fullPath
