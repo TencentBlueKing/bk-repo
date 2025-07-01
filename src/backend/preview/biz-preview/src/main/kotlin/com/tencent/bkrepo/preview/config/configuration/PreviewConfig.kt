@@ -288,4 +288,9 @@ class PreviewConfig {
      */
     @Value("\${preview.watermark.angle:10}")
     val watermarkAngle = "10"
+    /**
+     * 压缩报告文件名
+     */
+    @Value("\${preview.compressed.report.filename:bkrepo_compressed_report.zip}")
+    val compressedReportFilename = "bkrepo_compressed_report.zip"
 }
