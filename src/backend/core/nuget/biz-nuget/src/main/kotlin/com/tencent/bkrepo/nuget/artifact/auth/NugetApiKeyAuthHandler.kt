@@ -8,8 +8,8 @@ import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.http.credentials.UsernamePasswordCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import jakarta.servlet.http.HttpServletRequest
 import org.apache.commons.lang3.StringUtils
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 限定nuget set api key使用用户名+密码模式来进行认证

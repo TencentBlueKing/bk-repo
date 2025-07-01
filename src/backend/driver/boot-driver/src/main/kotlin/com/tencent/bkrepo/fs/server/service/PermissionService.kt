@@ -37,10 +37,12 @@ import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import kotlinx.coroutines.reactor.awaitSingle
+import org.springframework.stereotype.Component
 
 /**
  * 权限服务
  * */
+@Component
 class PermissionService(
     private val rAuthClient: RAuthClient,
     private val devXProperties: DevXProperties

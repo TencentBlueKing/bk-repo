@@ -33,8 +33,6 @@ package com.tencent.bkrepo.common.metadata.search.packages
 
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
-import com.tencent.bkrepo.common.query.interceptor.QueryContext
-import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.metadata.search.common.CommonQueryInterpreter
 import com.tencent.bkrepo.common.metadata.search.common.LocalDatetimeRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.MetadataRuleInterceptor
@@ -42,10 +40,12 @@ import com.tencent.bkrepo.common.metadata.search.common.ModelValidateInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.RepoNameRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.RepoTypeRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.SelectFieldInterceptor
+import com.tencent.bkrepo.common.query.interceptor.QueryContext
+import com.tencent.bkrepo.common.query.model.QueryModel
+import jakarta.annotation.PostConstruct
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
-import javax.annotation.PostConstruct
 
 @Component
 @Conditional(SyncCondition::class)
