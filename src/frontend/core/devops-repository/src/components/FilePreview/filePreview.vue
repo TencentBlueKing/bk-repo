@@ -15,7 +15,7 @@
             ></canvas>
         </div>
         <div v-if="imgShow" style="width: 100%; height: 100%">
-            <img id="image" :src="imgUrl" alt="Picture">
+            <img id="image" :src="imgUrl" alt="Picture" style="max-width: 100%; max-height: 100%;">
         </div>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
