@@ -175,6 +175,19 @@ object MetadataUtils {
         }
     }
 
+    fun compatibleConvertToModel(
+        metadataMap: Map<String, Any>?,
+        metadataModels: List<MetadataModel>?
+    ): MutableList<MetadataModel> {
+        return if (!metadataModels.isNullOrEmpty()) {
+            metadataModels.toMutableList()
+        } else if (!metadataMap.isNullOrEmpty()) {
+            metadataMap.mapTo(ArrayList(metadataMap.size)) { MetadataModel(key = it.key, value = it.value) }
+        } else {
+            ArrayList()
+        }
+    }
+
     /**
      * 将允许用户新增为系统元数据的元数据设置为System=true
      */

@@ -40,6 +40,8 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
@@ -80,7 +82,8 @@ class PackageServiceImpl(
     repositoryDao: RepositoryDao,
     packageDao: PackageDao,
     protected val packageVersionDao: PackageVersionDao,
-    private val packageSearchInterpreter: PackageSearchInterpreter
+    private val packageSearchInterpreter: PackageSearchInterpreter,
+    private val metadataCustomizer: MetadataCustomizer? = null
 ) : PackageBaseService(repositoryDao, packageDao) {
 
     override fun findPackageByKey(projectId: String, repoName: String, packageKey: String): PackageSummary? {
@@ -195,6 +198,7 @@ class PackageServiceImpl(
             Preconditions.checkNotBlank(packageKey, this::packageKey.name)
             Preconditions.checkNotBlank(packageName, this::packageName.name)
             Preconditions.checkNotBlank(versionName, this::versionName.name)
+            val packageVersionMetadata = resolvePackageVersionMetadata(request)
             // 先查询包是否存在，不存在先创建包
             val tPackage = findOrCreatePackage(buildPackage(request))
             // 检查版本是否存在
@@ -217,13 +221,14 @@ class PackageServiceImpl(
                 updateExistVersion(
                     oldVersion = oldVersion,
                     request = request,
+                    packageVersionMetadata = packageVersionMetadata,
                     realIpAddress = realIpAddress,
                     packageQuery = query,
                     packageUpdate = update
                 )
             } else {
                 // create new
-                val newVersion = buildPackageVersion(request, tPackage.id!!)
+                val newVersion = buildPackageVersion(request, packageVersionMetadata, tPackage.id!!)
                 try {
                     packageVersionDao.save(newVersion)
                     // 改为通过mongo的原子操作来更新。微服务持有版本数在并发下会导致版本数被覆盖的问题
@@ -237,6 +242,7 @@ class PackageServiceImpl(
                     updateExistVersion(
                         oldVersion = oldVersion!!,
                         request = request,
+                        packageVersionMetadata = packageVersionMetadata,
                         realIpAddress = realIpAddress,
                         packageQuery = query,
                         packageUpdate = update
@@ -350,11 +356,6 @@ class PackageServiceImpl(
         val repoName = request.repoName
         val packageKey = request.packageKey
         val versionName = request.versionName
-        val newMetadata = if (request.metadata != null || request.packageMetadata != null) {
-            MetadataUtils.compatibleConvertAndCheck(request.metadata, request.packageMetadata)
-        } else {
-            null
-        }
         val tPackage = findPackageExcludeHistoryVersion(projectId, repoName, packageKey)
         val packageId = tPackage.id.orEmpty()
         val tPackageVersion = checkPackageVersion(packageId, versionName).apply {
@@ -363,7 +364,7 @@ class PackageServiceImpl(
             manifestPath = request.manifestPath ?: manifestPath
             artifactPath = request.artifactPath ?: artifactPath
             stageTag = request.stageTag ?: stageTag
-            metadata = newMetadata ?: metadata
+            metadata = resolvePackageVersionMetadata(request, metadata)
             tags = request.tags ?: tags
             extension = request.extension ?: extension
             lastModifiedBy = operator
@@ -454,6 +455,7 @@ class PackageServiceImpl(
     private fun updateExistVersion(
         oldVersion: TPackageVersion,
         request: PackageVersionCreateRequest,
+        packageVersionMetadata: List<TMetadata>,
         realIpAddress: String?,
         packageQuery: Query,
         packageUpdate: Update
@@ -469,7 +471,7 @@ class PackageServiceImpl(
                 artifactPath = request.artifactPath
                 artifactPaths = buildArtifactPaths(request)
                 stageTag = request.stageTag.orEmpty()
-                metadata = MetadataUtils.compatibleConvertAndCheck(request.metadata, packageMetadata)
+                metadata = packageVersionMetadata
                 tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
                 extension = request.extension.orEmpty()
             }
@@ -515,6 +517,25 @@ class PackageServiceImpl(
     private fun checkPackageVersion(packageId: String, versionName: String): TPackageVersion {
         return packageVersionDao.findByName(packageId, versionName)
             ?: throw ErrorCodeException(ArtifactMessageCode.VERSION_NOT_FOUND, versionName)
+    }
+
+    private fun resolvePackageVersionMetadata(req: PackageVersionCreateRequest): List<TMetadata> {
+        return metadataCustomizer?.customize(req)?.map { MetadataUtils.convertAndCheck(it) }
+            ?: MetadataUtils.compatibleConvertAndCheck(req.metadata, req.packageMetadata)
+    }
+
+    private fun resolvePackageVersionMetadata(
+        req: PackageVersionUpdateRequest,
+        oldMetadata: List<TMetadata>
+    ): List<TMetadata> {
+        if (req.packageMetadata == null || req.metadata == null) {
+            return oldMetadata
+        }
+
+        return metadataCustomizer
+            ?.customize(req, MetadataUtils.toList(oldMetadata))
+            ?.map { MetadataUtils.convertAndCheck(it) }
+            ?: MetadataUtils.compatibleConvertAndCheck(req.metadata, req.packageMetadata)
     }
 
     companion object {

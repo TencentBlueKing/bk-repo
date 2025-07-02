@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
@@ -79,6 +80,7 @@ class NodeServiceImpl(
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
     override val projectService: ProjectService,
+    override val metadataCustomizer: MetadataCustomizer?,
     private val archiveClient: ArchiveClient,
 ) : NodeBaseService(
     nodeDao,
@@ -92,7 +94,8 @@ class NodeServiceImpl(
     routerControllerClient,
     routerControllerProperties,
     blockNodeService,
-    projectService
+    projectService,
+    metadataCustomizer,
 ) {
 
     override fun computeSize(

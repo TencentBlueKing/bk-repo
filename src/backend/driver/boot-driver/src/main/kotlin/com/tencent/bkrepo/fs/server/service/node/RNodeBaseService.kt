@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.RNodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RRepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
@@ -97,6 +98,7 @@ abstract class RNodeBaseService(
     open val authClient: RAuthClient,
     open val blockNodeService: RBlockNodeService,
     open val projectService: RProjectService,
+    open val metadataCustomizer: MetadataCustomizer?,
 ) : RNodeService {
 
     override suspend fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
@@ -187,7 +189,10 @@ abstract class RNodeBaseService(
     }
 
     open fun buildTNode(request: NodeCreateRequest): TNode {
-        return NodeBaseServiceHelper.buildTNode(request, repositoryProperties.allowUserAddSystemMetadata)
+        val metadata = NodeBaseServiceHelper.resolveMetadata(
+            request, metadataCustomizer, repositoryProperties.allowUserAddSystemMetadata
+        )
+        return NodeBaseServiceHelper.buildTNode(request, metadata)
     }
 
     private suspend fun getTotalNodeNum(artifact: ArtifactInfo, query: Query): Long {
