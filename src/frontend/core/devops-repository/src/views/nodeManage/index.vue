@@ -90,10 +90,10 @@
                     </bk-radio-group>
                 </bk-form-item>
                 <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
-                    <bk-input v-model.trim="editNodeDialog.name" :disabled="!editNodeDialog.add" maxlength="32" show-word-limit></bk-input>
+                    <bk-input v-model.trim="editNodeDialog.name" :disabled="!editNodeDialog.add" maxlength="32" show-word-limit :placeholder="$t('pleaseInput')"></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('address')" :required="true" property="url" error-display-type="normal">
-                    <bk-input v-model.trim="editNodeDialog.url"></bk-input>
+                    <bk-input v-model.trim="editNodeDialog.url" :placeholder="$t('pleaseInput')"></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('Certificate')" property="certificate" error-display-type="normal">
                     <bk-input type="textarea" v-model.trim="editNodeDialog.certificate"></bk-input>

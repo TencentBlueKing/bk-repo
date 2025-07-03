@@ -13,6 +13,7 @@
             </bk-input>
             <div class="sort-tool flex-align-center">
                 <bk-select
+                    :placeholder="$t('pleaseSelect')"
                     style="width:170px;"
                     v-model="property"
                     :clearable="true"
