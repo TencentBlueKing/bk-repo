@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 Tencent.  All rights reserved.
+ * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.websocket.pojo.fs
+package com.tencent.bkrepo.websocket.dispatch.push
 
-/**
- * 复制协议数据单元
- */
-data class CopyPDU(
-    val projectId: String,
-    var userId: String,
-    val workspaceName: String,
-    val files: Map<String, Long>,
-    val timestamp: Long,
-    val dstPath: String? = null,
-    val strategy: ConflictStrategy = ConflictStrategy.OVERWRITE,
-    var token: String? = null,
-    var envHashId: String? = null,
-    var zone: String? = null,
-    var sessionId: String? = null,
+import com.tencent.bkrepo.websocket.pojo.fs.PingPongPDU
+
+class PingPDUTransferPush(
+    pingPDU: PingPongPDU,
+) : TransferPush(
+    topic = "/topic/clipboard/ping/${pingPDU.workspaceName}",
+    data = pingPDU
 )

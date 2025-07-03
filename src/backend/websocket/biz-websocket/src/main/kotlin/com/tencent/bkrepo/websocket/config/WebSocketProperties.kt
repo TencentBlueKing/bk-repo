@@ -37,4 +37,5 @@ data class WebSocketProperties(
     var messageSizeLimit: Int = 8*1024*1024,
     var sendTimeLimit: Int = 10*1000,
     var sendBufferSizeLimit: Int = 1024*1024,
+    var heartbeatInterval: Long = 15000
 )

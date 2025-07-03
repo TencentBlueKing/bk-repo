@@ -76,7 +76,7 @@ object HostUtils {
         if (query.isNullOrEmpty()) {
             return null
         }
-        return query.substringAfter("sessionId=").substringBefore("&t=")
+        return query.substringAfter("sessionId=").substringBefore("&")
     }
 
     private const val DEFAULT_IP = "127.0.0.1"

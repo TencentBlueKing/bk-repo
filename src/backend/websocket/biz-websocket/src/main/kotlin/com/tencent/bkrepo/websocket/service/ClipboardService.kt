@@ -46,12 +46,17 @@ import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.websocket.dispatch.TransferDispatch
 import com.tencent.bkrepo.websocket.dispatch.push.CopyPDUTransferPush
 import com.tencent.bkrepo.websocket.dispatch.push.PastePDUTransferPush
+import com.tencent.bkrepo.websocket.dispatch.push.PingPDUTransferPush
+import com.tencent.bkrepo.websocket.dispatch.push.PongPDUTransferPush
 import com.tencent.bkrepo.websocket.pojo.fs.CopyPDU
+import com.tencent.bkrepo.websocket.pojo.fs.DownloadUrlPDU
 import com.tencent.bkrepo.websocket.pojo.fs.PastePDU
+import com.tencent.bkrepo.websocket.pojo.fs.PingPongPDU
 import com.tencent.devops.api.pojo.Response
 import okhttp3.Request
 import okio.IOException
 import org.slf4j.LoggerFactory
+import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
 
 @Service
@@ -60,11 +65,24 @@ class ClipboardService(
     private val devXProperties: DevXProperties,
     private val jwtAuthProperties: JwtAuthProperties,
     private val permissionManager: PermissionManager,
-    private val serviceUserClient: ServiceUserClient
+    private val serviceUserClient: ServiceUserClient,
+    private val simpMessagingTemplate: SimpMessagingTemplate
 ) {
 
     private val httpClient = HttpClientBuilderFactory.create().build()
     private val signingKey = JwtUtils.createSigningKey(jwtAuthProperties.secretKey)
+
+    fun ping(userId: String, pingPDU: PingPongPDU) {
+        logger.info("userId: $userId, PingPDU: $pingPDU")
+        val pingPDUTransferPush = PingPDUTransferPush(pingPDU)
+        transferDispatch.dispatch(pingPDUTransferPush)
+    }
+
+    fun pong(userId: String, pongPDU: PingPongPDU) {
+        logger.info("userId: $userId, PongPDU: $pongPDU")
+        val pongPDUTransferPush = PongPDUTransferPush(pongPDU)
+        transferDispatch.dispatch(pongPDUTransferPush)
+    }
 
     fun copy(userId: String, copyPDU: CopyPDU) {
         logger.info("userId: $userId, CopyPDU: $copyPDU")
@@ -72,6 +90,14 @@ class ClipboardService(
         copyPDU.token = token
         val copyPDUTransferPush = CopyPDUTransferPush(copyPDU)
         transferDispatch.dispatch(copyPDUTransferPush)
+        if (!copyPDU.dstPath.isNullOrEmpty()) {
+            val downloadPDU = convertToDownloadUrlPDU(copyPDU)
+            logger.info("send download pdu: $downloadPDU")
+            simpMessagingTemplate.convertAndSend(
+                "/topic/clipboard/url/${copyPDU.sessionId}",
+                downloadPDU
+            )
+        }
     }
 
     fun paste(pastePDU: PastePDU) {
@@ -80,13 +106,26 @@ class ClipboardService(
         transferDispatch.dispatch(pastePDUTransferPush)
     }
 
+    private fun convertToDownloadUrlPDU(copyPDU: CopyPDU): DownloadUrlPDU {
+        with(copyPDU) {
+            return DownloadUrlPDU(
+                url = "${devXProperties.downloadHosts[zone]}/ui/$projectId/generic" +
+                        "?repoName=lsync" +
+                        "&path=%2FPersonal%2F$userId%2Fclipboard%2F$workspaceName%2F$timestamp%2Fdefault",
+                timestamp = timestamp,
+                workspaceName = workspaceName
+            )
+        }
+    }
+
     /**
      * 云桌面拥有者上传文件时，不再生成token
      * 云桌面分享人上传文件时，生成分享人的token
      */
     private fun generateToken(userId: String, copyPDU: CopyPDU): String? {
+        // 客户端有时候获取不到userid，此处作为兜底
         if (userId != copyPDU.userId) {
-            throw PermissionException("can't send copy pdu with userId[${copyPDU.userId}]")
+            copyPDU.userId = userId
         }
         if (devXProperties.groupWorkspaceUrl.isEmpty() || devXProperties.personalWorkspaceUrl.isEmpty()) {
             return null

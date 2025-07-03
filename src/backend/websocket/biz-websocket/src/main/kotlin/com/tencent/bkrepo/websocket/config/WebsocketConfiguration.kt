@@ -39,9 +39,11 @@ import com.tencent.bkrepo.websocket.service.WebsocketService
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Lazy
 import org.springframework.messaging.Message
 import org.springframework.messaging.simp.config.ChannelRegistration
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
+import org.springframework.scheduling.TaskScheduler
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
@@ -56,12 +58,17 @@ class WebsocketConfiguration(
     private val websocketService: WebsocketService,
     private val jwtAuthProperties: JwtAuthProperties,
     private val authenticationManager: AuthenticationManager,
-    private val webSocketMetrics: WebSocketMetrics
+    private val webSocketMetrics: WebSocketMetrics,
+    @Lazy private val messageBrokerTaskScheduler: TaskScheduler
 ) : WebSocketMessageBrokerConfigurer {
 
     override fun configureMessageBroker(config: MessageBrokerRegistry) {
         config.setCacheLimit(webSocketProperties.cacheLimit)
         config.enableSimpleBroker("/topic")
+//            .setHeartbeatValue(
+//                longArrayOf(webSocketProperties.heartbeatInterval, webSocketProperties.heartbeatInterval)
+//            )
+//            .setTaskScheduler(messageBrokerTaskScheduler)
         config.setApplicationDestinationPrefixes("/app")
     }
 
