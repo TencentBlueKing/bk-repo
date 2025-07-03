@@ -34,7 +34,7 @@ dependencies {
     api(project(":common:common-redis"))
     api(project(":common:common-generic"))
     api(project(":common:common-artifact:artifact-service"))
-    implementation(":analyst:metadata-analyst")
+    implementation(project(":analyst:metadata-analyst"))
     implementation(project(":common:common-artifact:artifact-cache"))
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
