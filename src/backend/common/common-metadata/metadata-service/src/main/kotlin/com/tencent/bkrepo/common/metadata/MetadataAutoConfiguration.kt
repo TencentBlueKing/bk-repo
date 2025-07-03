@@ -71,7 +71,7 @@ import java.util.function.Consumer
     RouterControllerProperties::class,
     ArtifactEventProperties::class,
     RepositoryProperties::class,
-    EnableMultiTenantProperties::class,
+    EnableMultiTenantProperties::class
 )
 class MetadataAutoConfiguration {
 

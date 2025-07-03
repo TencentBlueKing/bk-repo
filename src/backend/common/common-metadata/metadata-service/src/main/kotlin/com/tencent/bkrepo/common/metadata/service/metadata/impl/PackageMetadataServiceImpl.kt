@@ -104,7 +104,7 @@ class PackageMetadataServiceImpl(
                 Query.query(where(TMetadata::key).inValues(keysToDelete))
             )
             packageVersionDao.updateFirst(PackageQueryHelper.versionQuery(tPackage.id!!, name = version), update)
-            logger.info("Delete metadata[$keysToDelete] on package[/$projectId/$repoName/$packageKey:$version] success.")
+            logger.info("Delete metadata[$keysToDelete] on pkg[/$projectId/$repoName/$packageKey:$version] success.")
         }
     }
 

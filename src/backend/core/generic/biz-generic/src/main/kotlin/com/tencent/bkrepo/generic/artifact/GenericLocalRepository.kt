@@ -814,7 +814,7 @@ class GenericLocalRepository(
         // format X-BKREPO-META: base64(a=1&b=2)
         request.getHeader(BKREPO_META)?.let { metadata.putAll(decodeMetadata(it)) }
         pipelineMetadata?.let { metadata.putAll(pipelineMetadata) }
-        return metadata.mapTo(ArrayList(metadata.size)) { MetadataModel(key = it.key, value = it.value) }
+        return metadata.map { MetadataModel(key = it.key, value = it.value) }
     }
 
     private fun decodeMetadata(header: String): Map<String, String> {

@@ -47,4 +47,4 @@ const val FORBID_REASON_NONE = ""
 
 const val FORBID_REASON_NOT_SCANNED = "Not scanned"
 
-const val FORBID_REASON_QUALITY_ISSUE = "Failed quality gate"
+const val FORBID_REASON_QUALITY_ISSUE = "Not pass quality rules"
