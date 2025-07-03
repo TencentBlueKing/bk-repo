@@ -25,38 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.api
+package com.tencent.bkrepo.analyst.config
 
-import com.tencent.bkrepo.common.api.constant.SCANNER_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-@FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanQualityClient")
-@RequestMapping("/service/scan/quality")
-interface ScanQualityClient {
-
+@ConfigurationProperties("analyst")
+data class AnalystProperties(
     /**
-     * 检查是否要禁用制品
+     * 是否启用自动禁用未扫描制品功能
      *
-     * @param projectId 项目ID
-     * @param repoName 仓库名
-     * @param repoType 仓库类型
-     * @param fullPath 制品路径
-     * @param packageName 包名
-     * @param packageVersion 包版本
-     *
-     * @return 需要禁用返回true,否则返回false
-     * */
-    @GetMapping("/precheck")
-    fun shouldForbidBeforeScanned(
-        @RequestParam projectId: String,
-        @RequestParam repoName: String,
-        @RequestParam repoType: String,
-        @RequestParam(required = false) fullPath: String? = null,
-        @RequestParam(required = false) packageName: String? = null,
-        @RequestParam(required = false) packageVersion: String? = null,
-    ): Response<Boolean>
-}
+     * 启用后将根据制品分析方案判断是否禁用未扫描的制品，制品分析方案较多时可能会导致上传结束后返回响应给用户变慢
+     */
+    var enableForbidNotScanned: Boolean = false,
+)

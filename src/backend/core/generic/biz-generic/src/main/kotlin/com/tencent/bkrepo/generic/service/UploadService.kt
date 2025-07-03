@@ -163,7 +163,7 @@ class UploadService(
             mode = NodeAttribute.DEFAULT_MODE
         )
         val repository = ArtifactContextHolder.getRepository(RepositoryCategory.LOCAL) as GenericLocalRepository
-        val metadata = repository.resolveMetadata(artifactInfo, HttpContextHolder.getRequest()).toMutableList()
+        val metadata = repository.resolveMetadata(HttpContextHolder.getRequest()).toMutableList()
         metadata.add(MetadataModel(UPLOADID_KEY, uploadId, system = true))
         metadata.add(MetadataModel(key = FS_ATTR_KEY, value = attributes))
 
@@ -245,7 +245,7 @@ class UploadService(
             overwrite = getBooleanHeader(HEADER_OVERWRITE),
             operator = userId,
             expires = getLongHeader(HEADER_EXPIRES),
-            nodeMetadata = repository.resolveMetadata(artifactInfo, HttpContextHolder.getRequest()),
+            nodeMetadata = repository.resolveMetadata(HttpContextHolder.getRequest()),
         )
         ActionAuditContext.current().setInstance(request)
         nodeService.createNode(request)

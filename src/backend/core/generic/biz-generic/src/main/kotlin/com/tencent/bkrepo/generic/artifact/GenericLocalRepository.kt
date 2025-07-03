@@ -108,7 +108,6 @@ import com.tencent.bkrepo.generic.constant.SEPARATE_UPLOAD
 import com.tencent.bkrepo.generic.pojo.ChunkedResponseProperty
 import com.tencent.bkrepo.generic.pojo.SeparateBlockInfo
 import com.tencent.bkrepo.generic.util.ChunkedRequestUtil.uploadResponse
-import com.tencent.bkrepo.generic.util.AnalystUtil
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.api.ReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
@@ -149,7 +148,6 @@ class GenericLocalRepository(
     private val ciPermissionManager: CIPermissionManager,
     private val blockNodeService: BlockNodeService,
     private val storageProperties: StorageProperties,
-    private val analystUtil: AnalystUtil,
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -338,7 +336,7 @@ class GenericLocalRepository(
         }
         with(context.artifactInfo) {
             val existNode = nodeService.getNodeDetail(this)
-            val metadata = resolveMetadata(context.artifactInfo, context.request)
+            val metadata = resolveMetadata(context.request)
             val mPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true) }?.value?.toString()
                 ?: metadata.find { it.key.equals(METADATA_PIPELINE_ID, true) }?.value?.toString()
             if (mPipelineId != null) {
@@ -682,7 +680,7 @@ class GenericLocalRepository(
         return super.buildNodeCreateRequest(context).copy(
             expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
             overwrite = HeaderUtils.getBooleanHeader(HEADER_OVERWRITE),
-            nodeMetadata = resolveMetadata(context.artifactInfo, context.request, context.pipelineMetadata)
+            nodeMetadata = resolveMetadata(context.request, context.pipelineMetadata)
         )
     }
 
@@ -798,7 +796,6 @@ class GenericLocalRepository(
      * 从header中提取metadata
      */
     fun resolveMetadata(
-        artifactInfo: ArtifactInfo,
         request: HttpServletRequest,
         pipelineMetadata: Map<String, String>? = null
     ): List<MetadataModel> {
@@ -817,16 +814,7 @@ class GenericLocalRepository(
         // format X-BKREPO-META: base64(a=1&b=2)
         request.getHeader(BKREPO_META)?.let { metadata.putAll(decodeMetadata(it)) }
         pipelineMetadata?.let { metadata.putAll(pipelineMetadata) }
-        val nodeMetadata = metadata.mapTo(ArrayList(metadata.size)) { MetadataModel(key = it.key, value = it.value) }
-
-        // 添加制品禁用元数据
-        analystUtil.resolveForbidMetadata(
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
-            fullPath = artifactInfo.getArtifactFullPath(),
-        )?.let { nodeMetadata.addAll(it) }
-
-        return nodeMetadata
+        return metadata.mapTo(ArrayList(metadata.size)) { MetadataModel(key = it.key, value = it.value) }
     }
 
     private fun decodeMetadata(header: String): Map<String, String> {

@@ -42,7 +42,6 @@ import com.tencent.bkrepo.common.metadata.listener.NodeUpdateAccessDateEventList
 import com.tencent.bkrepo.common.metadata.permission.EdgePermissionManager
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.permission.ProxyPermissionManager
-import com.tencent.bkrepo.common.metadata.properties.AnalystProperties
 import com.tencent.bkrepo.common.metadata.properties.OperateProperties
 import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsProperties
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
@@ -73,7 +72,6 @@ import java.util.function.Consumer
     ArtifactEventProperties::class,
     RepositoryProperties::class,
     EnableMultiTenantProperties::class,
-    AnalystProperties::class,
 )
 class MetadataAutoConfiguration {
 

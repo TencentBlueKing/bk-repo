@@ -25,38 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.api
+package com.tencent.bkrepo.analyst
 
-import com.tencent.bkrepo.common.api.constant.SCANNER_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
+import com.tencent.bkrepo.analyst.api.ScanQualityClient
+import com.tencent.bkrepo.analyst.config.AnalystProperties
+import com.tencent.bkrepo.analyst.metadata.AnalystMetadataCustomizer
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-@FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanQualityClient")
-@RequestMapping("/service/scan/quality")
-interface ScanQualityClient {
-
-    /**
-     * 检查是否要禁用制品
-     *
-     * @param projectId 项目ID
-     * @param repoName 仓库名
-     * @param repoType 仓库类型
-     * @param fullPath 制品路径
-     * @param packageName 包名
-     * @param packageVersion 包版本
-     *
-     * @return 需要禁用返回true,否则返回false
-     * */
-    @GetMapping("/precheck")
-    fun shouldForbidBeforeScanned(
-        @RequestParam projectId: String,
-        @RequestParam repoName: String,
-        @RequestParam repoType: String,
-        @RequestParam(required = false) fullPath: String? = null,
-        @RequestParam(required = false) packageName: String? = null,
-        @RequestParam(required = false) packageVersion: String? = null,
-    ): Response<Boolean>
+@Configuration
+@EnableConfigurationProperties(AnalystProperties::class)
+class AnalystMetadataAutoConfiguration {
+    @Bean
+    fun analystMetadataCustomizer(
+        properties: AnalystProperties,
+        scanQualityClient: ScanQualityClient
+    ): MetadataCustomizer =
+        AnalystMetadataCustomizer(properties, scanQualityClient)
 }

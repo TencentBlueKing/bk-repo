@@ -29,6 +29,8 @@ package com.tencent.bkrepo.analyst.controller
 
 import com.tencent.bkrepo.analyst.api.ScanQualityClient
 import com.tencent.bkrepo.analyst.service.ScanQualityService
+import com.tencent.bkrepo.common.api.exception.BadRequestException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_MISSING
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,7 +40,21 @@ import org.springframework.web.bind.annotation.RestController
 class ScanQualityController @Autowired constructor(
     private val scanQualityService: ScanQualityService,
 ) : ScanQualityClient {
-    override fun shouldForbidBeforeScanned(projectId: String, repoName: String, fullPath: String): Response<Boolean> {
-        return ResponseBuilder.success(scanQualityService.shouldForbidBeforeScanned(projectId, repoName, fullPath))
+    override fun shouldForbidBeforeScanned(
+        projectId: String,
+        repoName: String,
+        repoType: String,
+        fullPath: String?,
+        packageName: String?,
+        packageVersion: String?
+    ): Response<Boolean> {
+        val shouldForbid = if (fullPath != null) {
+            scanQualityService.shouldForbidBeforeScanned(projectId, repoName, repoType, fullPath)
+        } else if (packageName != null && packageVersion != null) {
+            scanQualityService.shouldForbidBeforeScanned(projectId, repoName, repoType, packageName, packageVersion)
+        } else {
+            throw BadRequestException(PARAMETER_MISSING, "fullPath or packageName or packageVersion is null")
+        }
+        return ResponseBuilder.success(shouldForbid)
     }
 }

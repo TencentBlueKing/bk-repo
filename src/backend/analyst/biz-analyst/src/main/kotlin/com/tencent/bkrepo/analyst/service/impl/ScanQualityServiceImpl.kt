@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -117,17 +118,48 @@ class ScanQualityServiceImpl(
         return CheckForbidResult()
     }
 
-    override fun shouldForbidBeforeScanned(projectId: String, repoName: String, fullPath: String): Boolean {
-        return scanPlanDao
-            .findByProjectIdAndRepoName(projectId, repoName)
-            .any { plan ->
-                val shouldForbid = plan.scanQuality[ScanQuality::forbidNotScanned.name] == true &&
-                        RuleUtil.match(plan.rule.readJsonString(), projectId, repoName, fullPath)
-                if (shouldForbid) {
-                    logger.info("Artifact[$projectId/$repoName/$fullPath] should be forbidden before scanned")
-                }
-                shouldForbid
+    override fun shouldForbidBeforeScanned(
+        projectId: String,
+        repoName: String,
+        repoType: String,
+        fullPath: String
+    ): Boolean {
+        return shouldForbidBeforeScanned(projectId, repoName, repoType) { rule ->
+            val matched = RuleUtil.match(rule, projectId, repoName, fullPath)
+            if (matched) {
+                logger.info("Artifact[$projectId/$repoName$fullPath] should be forbidden before scanned")
             }
+            matched
+        }
+    }
+
+    override fun shouldForbidBeforeScanned(
+        projectId: String,
+        repoName: String,
+        repoType: String,
+        packageName: String,
+        packageVersion: String
+    ): Boolean {
+        return shouldForbidBeforeScanned(projectId, repoName, repoType) { rule ->
+            val matched = RuleUtil.match(rule, projectId, repoName, repoType, packageName, packageVersion)
+            if (matched) {
+                logger.info(
+                    "Artifact[$projectId/$repoName/$packageName:$packageVersion] should be forbidden before scanned"
+                )
+            }
+            matched
+        }
+    }
+
+    private fun shouldForbidBeforeScanned(
+        projectId: String,
+        repoName: String,
+        repoType: String,
+        ruleMatcher: (rule: Rule) -> Boolean
+    ): Boolean {
+        return scanPlanDao
+            .findByProjectIdAndRepoName(projectId, repoName, repoType)
+            .any { it.scanQuality[ScanQuality::forbidNotScanned.name] == true && ruleMatcher(it.rule.readJsonString()) }
     }
 
     /**

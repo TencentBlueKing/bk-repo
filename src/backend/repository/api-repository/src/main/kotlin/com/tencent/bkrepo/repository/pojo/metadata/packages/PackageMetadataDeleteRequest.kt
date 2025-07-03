@@ -25,16 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.metadata.properties
+package com.tencent.bkrepo.repository.pojo.metadata.packages
 
-import org.springframework.boot.context.properties.ConfigurationProperties
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.ServiceRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersionRequest
+import io.swagger.v3.oas.annotations.media.Schema
 
-@ConfigurationProperties("analyst")
-data class AnalystProperties(
-    /**
-     * 是否启用自动禁用未扫描制品功能
-     *
-     * 启用后将根据制品分析方案判断是否禁用未扫描的制品，制品分析方案较多时可能会导致上传结束后返回响应给用户变慢
-     */
-    var enableForbidNotScanned: Boolean = false,
-)
+@Schema(title = "依赖源包删除元数据请求")
+data class PackageMetadataDeleteRequest(
+    @get:Schema(title = "项目id", required = true)
+    override val projectId: String,
+    @get:Schema(title = "仓库名称", required = true)
+    override val repoName: String,
+    @get:Schema(title = "包唯一key", required = true)
+    override val packageKey: String,
+    @get:Schema(title = "包版本", required = true)
+    override val version: String,
+    @get:Schema(title = "待删除的元数据key列表", required = true)
+    val keysToDelete: Set<String>,
+    @get:Schema(title = "操作用户")
+    override val operator: String = SYSTEM_USER
+) : PackageVersionRequest, ServiceRequest

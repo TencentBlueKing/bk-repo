@@ -304,11 +304,22 @@ object PackageKeys {
      * @return package key
      */
     fun ofName(repositoryType: RepositoryType, name: String): String {
-        val schema = when (repositoryType) {
-            RepositoryType.MAVEN -> MAVEN
-            else -> repositoryType.name.lowercase(Locale.getDefault())
-        }
-        return ofName(schema, name)
+        return ofName(getScheme(repositoryType), name)
+    }
+
+    /**
+     * 获取packageKey对应的packageName
+     *
+     * 例子：npm://test -> test
+     *      gav://test -> test
+     *
+     * @param repositoryType 仓库类型
+     * @param key package key
+     *
+     * @return package name
+     */
+    fun resolve(repositoryType: RepositoryType, key: String): String {
+        return resolveName(getScheme(repositoryType), key)
     }
 
     /**
@@ -328,5 +339,13 @@ object PackageKeys {
     fun resolveName(schema: String, nameKey: String): String {
         val prefix = StringBuilder(schema).append(SEPARATOR).toString()
         return nameKey.substringAfter(prefix)
+    }
+
+    /**
+     * 获取仓库类型对应的协议名
+     */
+    fun getScheme(repositoryType: RepositoryType) = when (repositoryType) {
+        RepositoryType.MAVEN -> MAVEN
+        else -> repositoryType.name.lowercase(Locale.getDefault())
     }
 }

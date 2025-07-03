@@ -50,6 +50,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -141,6 +142,18 @@ class SubtaskStatusChangedEventListener(
         }
     }
 
+    private fun deleteMetadata(subtask: TPlanArtifactLatestSubScanTask, keysToDelete: Set<String>) {
+        with(subtask) {
+            if (repoType == RepositoryType.GENERIC.name) {
+                metadataService.deleteMetadata(MetadataDeleteRequest(projectId, repoName, fullPath, keysToDelete))
+            } else if (!packageKey.isNullOrEmpty() && !version.isNullOrEmpty()) {
+                packageMetadataService.deleteMetadata(
+                    PackageMetadataDeleteRequest(projectId, repoName, packageKey, version, keysToDelete)
+                )
+            }
+        }
+    }
+
     /**
      * 需要禁用时添加元数据到[metadata]中，不需要禁用时移除禁用相关元数据
      */
@@ -170,14 +183,7 @@ class SubtaskStatusChangedEventListener(
             return
         } else {
             // 全部方案均通过时移除禁用元数据
-            metadataService.deleteMetadata(
-                MetadataDeleteRequest(
-                    subtask.projectId,
-                    subtask.repoName,
-                    subtask.fullPath,
-                    setOf(FORBID_STATUS, FORBID_REASON, FORBID_USER, FORBID_TYPE)
-                )
-            )
+            deleteMetadata(subtask, setOf(FORBID_STATUS, FORBID_REASON, FORBID_USER, FORBID_TYPE))
         }
     }
 

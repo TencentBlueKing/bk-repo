@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.api
-
-import com.tencent.bkrepo.common.api.constant.SCANNER_SERVICE_NAME
-import com.tencent.bkrepo.common.api.pojo.Response
-import org.springframework.cloud.openfeign.FeignClient
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-
-@FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanQualityClient")
-@RequestMapping("/service/scan/quality")
-interface ScanQualityClient {
-
-    /**
-     * 检查是否要禁用制品
-     *
-     * @param projectId 项目ID
-     * @param repoName 仓库名
-     * @param repoType 仓库类型
-     * @param fullPath 制品路径
-     * @param packageName 包名
-     * @param packageVersion 包版本
-     *
-     * @return 需要禁用返回true,否则返回false
-     * */
-    @GetMapping("/precheck")
-    fun shouldForbidBeforeScanned(
-        @RequestParam projectId: String,
-        @RequestParam repoName: String,
-        @RequestParam repoType: String,
-        @RequestParam(required = false) fullPath: String? = null,
-        @RequestParam(required = false) packageName: String? = null,
-        @RequestParam(required = false) packageVersion: String? = null,
-    ): Response<Boolean>
+dependencies {
+    implementation(project(":analyst:api-analyst"))
+    implementation(project(":common:common-metadata:metadata-service"))
+    implementation(project(":common:common-artifact:artifact-service"))
 }
