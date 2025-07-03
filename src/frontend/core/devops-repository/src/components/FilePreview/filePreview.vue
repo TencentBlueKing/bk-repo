@@ -142,7 +142,7 @@
                 }).then(res => {
                     this.loading = false
                     this.previewBasic = true
-                    this.basicFileText = res
+                    this.basicFileText = typeof (res) === 'string' ? res : JSON.stringify(res)
                 }).catch(() => this.showError())
             } else if (this.filePath.endsWith('.xlsx')) {
                 customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
