@@ -37,11 +37,15 @@ class NodeDeletedEvent(
     override val projectId: String,
     override val repoName: String,
     override val resourceKey: String,
-    override val userId: String
-) : ArtifactEvent(
+    override val userId: String,
+    override val source: String?,
+    val deletedDate: String,
+    ) : ArtifactEvent(
     type = EventType.NODE_DELETED,
     projectId = projectId,
     repoName = repoName,
     resourceKey = resourceKey,
-    userId = userId
+    userId = userId,
+    data = mapOf("deletedDate" to deletedDate),
+    source = source
 )

@@ -209,7 +209,7 @@ abstract class PackageBaseService(
      */
     private fun calculateOrdinal(versionName: String): Long {
         return try {
-            SemVersion.parse(versionName).ordinal()
+            SemVersion.parse(versionName.removePrefix("v")).ordinal()
         } catch (exception: IllegalArgumentException) {
             LOWEST_ORDINAL
         }

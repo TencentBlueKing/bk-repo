@@ -100,6 +100,14 @@ mongodb:
     subPath: mongodb
     size: 20Gi
 
+redis:
+  enabled: false
+  host: "localhost"
+  port: "6379"
+  password: ""
+  database: ""
+
+
 tls:
   mongodb:
     enabled: false

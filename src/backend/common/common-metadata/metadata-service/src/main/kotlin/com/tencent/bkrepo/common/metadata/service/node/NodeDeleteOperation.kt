@@ -66,7 +66,13 @@ interface NodeDeleteOperation {
     /**
      * 根据全路径删除文件或者目录
      */
-    fun deleteByPath(projectId: String, repoName: String, fullPath: String, operator: String): NodeDeleteResult
+    fun deleteByPath(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String,
+        source: String? = null
+    ): NodeDeleteResult
 
     /**
      * 根据全路径批量删除文件或者目录

@@ -48,6 +48,9 @@ enum class ReplicationMessageCode(private val businessCode: Int, private val key
     REPLICA_CLUSTER_NOT_FOUND(13, "replica.cluster.not-found"),
     REPLICA_TASK_FAILED(14, "replica.task.failed"),
     REPLICA_NODE_DISPATCH_CONFIG_NOT_FOUND(15, "replica.node.dispatch.config.notfound"),
+    UNSUPPORTED_CLUSTER_VERSION(16, "unsupported.cluster.version"),
+    FEDERATION_REPOSITORY_CREATE_ERROR(17, "federation.repository.create.error"),
+
     ;
 
     override fun getBusinessCode() = businessCode

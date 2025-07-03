@@ -676,6 +676,7 @@ class DataRestorerImpl(
             clusterNames = node.clusterNames,
             archived = node.archived,
             compressed = node.compressed,
+            federatedSource = node.federatedSource
         )
     }
 

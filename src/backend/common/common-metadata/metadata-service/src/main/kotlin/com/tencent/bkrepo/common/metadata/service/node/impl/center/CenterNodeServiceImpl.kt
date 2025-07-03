@@ -172,12 +172,15 @@ class CenterNodeServiceImpl(
                 if (existNode.clusterNames.orEmpty().isEmpty()) {
                     clusterNames.add(clusterProperties.self.name.toString())
                 }
+                val repo = checkRepo(projectId, repoName)
                 val update = Update().addToSet(TNode::clusterNames.name).each(clusterNames)
                 nodeMetadata?.let { update.set(TNode::metadata.name, it.map { convert(it) }) }
                 update.set(TNode::lastModifiedBy.name, operator)
                 update.set(TNode::lastModifiedDate.name, LocalDateTime.now())
+                update.set(TNode::federatedSource.name, source)
                 nodeDao.updateFirst(query, update)
                 existNode.clusterNames = clusterNames
+                afterCreate(repo, existNode, source)
                 logger.info("Create node[/$projectId/$repoName$fullPath],sha256[$sha256],region[$srcCluster] success.")
                 return convertToDetail(existNode)!!
             } else {
@@ -198,13 +201,15 @@ class CenterNodeServiceImpl(
         projectId: String,
         repoName: String,
         fullPath: String,
-        operator: String
+        operator: String,
+        source: String?,
     ): NodeDeleteResult {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteByPath(
             projectId,
             repoName,
             fullPath,
-            operator
+            operator,
+            source
         )
     }
 
@@ -270,6 +275,12 @@ class CenterNodeServiceImpl(
 
     override fun renameNode(renameRequest: NodeRenameRequest) {
         return CenterNodeRenameSupport(this, clusterProperties).renameNode(renameRequest)
+    }
+
+    override fun getDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime
+    ): NodeDetail? {
+        return CenterNodeRestoreSupport(this).getDeletedNodeDetail(projectId, repoName, fullPath, deleted)
     }
 
     override fun additionalCheck(existNode: TNode) {

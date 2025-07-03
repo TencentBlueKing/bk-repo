@@ -34,7 +34,7 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-      - run: yarn install && yarn start && yarn public
+      - run: yarn install && yarn public
         working-directory: src/frontend
       - uses: actions/upload-artifact@v4
         with:

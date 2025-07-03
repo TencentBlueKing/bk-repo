@@ -79,7 +79,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.constant.FULL_PATH
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
@@ -168,7 +167,6 @@ class CargoLocalRepository(
                 cargoMetadata = cargoMetadata,
                 size = size,
                 fullPath = fullPath,
-                metadataList = convertToMetadata(cargoMetadata)
             )
             packageService.createPackageVersion(packageVersionCreateRequest).apply {
                 logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
@@ -226,17 +224,7 @@ class CargoLocalRepository(
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): PackageDownloadRecord? {
-        with(context.artifactInfo as CargoArtifactInfo) {
-            if (crateName.isNullOrEmpty() || crateVersion.isNullOrEmpty()) {
-                return null
-            }
-            return PackageDownloadRecord(
-                context.projectId, context.repoName, PackageKeys.ofCargo(crateName), crateVersion
-            )
-        }
-
-    }
+    ) = commonService.buildDownloadRecord(context.userId, context.artifactInfo as CargoArtifactInfo)
 
     override fun remove(context: ArtifactRemoveContext) {
         commonService.removeCargoRelatedNode(context)

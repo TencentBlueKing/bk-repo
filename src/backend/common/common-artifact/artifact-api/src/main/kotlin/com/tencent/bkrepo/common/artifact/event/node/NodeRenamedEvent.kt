@@ -38,6 +38,7 @@ class NodeRenamedEvent(
     override val repoName: String,
     override val resourceKey: String,
     override val userId: String,
+    override val source: String?,
     val newFullPath: String
 ) : ArtifactEvent(
     type = EventType.NODE_RENAMED,
@@ -45,5 +46,6 @@ class NodeRenamedEvent(
     repoName = repoName,
     resourceKey = resourceKey,
     userId = userId,
-    data = mapOf("newFullPath" to newFullPath)
+    data = mapOf("newFullPath" to newFullPath),
+    source = source
 )

@@ -27,11 +27,13 @@
 
 package com.tencent.bkrepo.common.ratelimiter.stream
 
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.ratelimiter.algorithm.RateLimiter
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService.Companion.logger
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UploadBandwidthRateLimiterService
 import java.io.InputStream
@@ -65,6 +67,7 @@ class CommonRateLimitInputStream(
     private var applyNum: Long = 0
     private var rateLimiter: RateLimiter? = null
     private var limitPerSecond: Long = 0
+    private var keepConnection: Boolean = true
 
     override fun read(): Int {
         tryAcquireOrWait(1)
@@ -150,7 +153,7 @@ class CommonRateLimitInputStream(
         while (!flag) {
             // 当限制小于读取大小时，会进入死循环，增加等待轮次，如果等待达到时间上限，则放通一次避免连接断开
             if ((System.currentTimeMillis() - startTime) > rateCheckContext.bandwidthProperties.timeout) {
-                return permits.coerceAtMost(bytes)
+                return handleTimeout(permits, bytes)
             }
             try {
                 flag = rateLimiter!!.tryAcquire(acquirePermits)
@@ -158,6 +161,9 @@ class CommonRateLimitInputStream(
                 return permits
             }
             if (!flag) {
+                if (!keepConnection) {
+                    throwOrLogOverloadException()
+                }
                 if (rateCheckContext.dryRun) {
                     return permits
                 }
@@ -197,6 +203,30 @@ class CommonRateLimitInputStream(
             }
         }
         return alreadyAcquirePermits
+    }
+
+
+    /**
+     * 处理超时情况
+     */
+    private fun handleTimeout(permits: Long, bytes: Long): Long {
+        if (!keepConnection) {
+            throwOrLogOverloadException()
+        }
+        return permits.coerceAtMost(bytes)
+    }
+
+    /**
+     * 抛出或记录过载异常
+     */
+    private fun throwOrLogOverloadException() {
+        val msg = "${rateCheckContext.resInfo.resource} has exceeded max rate limit: " +
+            "${rateCheckContext.resourceLimit.limit} /${rateCheckContext.resourceLimit.duration}"
+        if (rateCheckContext.dryRun) {
+            logger.warn(msg)
+        } else {
+            throw OverloadException(msg)
+        }
     }
 
     private fun getTryAcquirePermits(type: String, acquirePermits: Long, alreadyAcquirePermits: Long): Long {
@@ -282,6 +312,7 @@ class CommonRateLimitInputStream(
         limitPerSecond = rateLimiter!!.getLimitPerSecond()
         rateCheckContext.dryRun = AbstractBandwidthRateLimiterService.getDryRunStatus()
         rateCheckContext.bandwidthProperties = AbstractBandwidthRateLimiterService.getBandwidthProperties()
+        keepConnection = rateLimiter!!.keepConnection()
     }
 
     companion object {

@@ -34,6 +34,7 @@ import io.netty.bootstrap.Bootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.util.concurrent.DefaultThreadFactory
 import org.springframework.beans.factory.DisposableBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import java.net.InetSocketAddress
 import java.net.URL
@@ -43,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap
  * fdtp-aft client工厂
  * */
 @Component
+@ConditionalOnProperty("fdtp.server.enabled")
 class FdtpAFTClientFactory(fdtpAuthManager: FdtpAuthManager, clientProperties: FdtpClientProperties) :
     DisposableBean {
     private val group = NioEventLoopGroup(

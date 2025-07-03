@@ -145,4 +145,9 @@ interface ReplicaTaskService {
      * 手动执行任务
      */
     fun execute(key: String)
+
+    /**
+     * 根据项目id和仓库名称查询联邦仓库对应任务
+     */
+    fun listFederationTasks(projectId: String, repoName: String): List<ReplicaTaskDetail>
 }

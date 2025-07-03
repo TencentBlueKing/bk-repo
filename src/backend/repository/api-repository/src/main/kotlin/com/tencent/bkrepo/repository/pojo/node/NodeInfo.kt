@@ -90,4 +90,6 @@ data class NodeInfo(
     val archived: Boolean? = null,
     @get:Schema(title = "是否压缩")
     val compressed: Boolean? = null,
+    @get:Schema(title = "联邦仓库同步来源集群id")
+    val federatedSource: String? = null,
 )

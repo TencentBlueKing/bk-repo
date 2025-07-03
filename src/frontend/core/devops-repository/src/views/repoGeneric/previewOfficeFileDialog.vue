@@ -45,6 +45,7 @@
     import Table from '@wolf-table/table'
 
     const PDFJS = require('pdfjs-dist')
+    PDFJS.GlobalWorkerOptions.isEvalSupported = false
     PDFJS.GlobalWorkerOptions.workerSrc = location.origin + '/ui/pdf.worker.js'
 
     export default {

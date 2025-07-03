@@ -60,4 +60,5 @@ data class BackupNodeInfo(
     var compressed: Boolean? = null,
     var projectId: String,
     var repoName: String,
+    var federatedSource: String? = null,
 )

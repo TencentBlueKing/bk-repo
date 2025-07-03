@@ -144,8 +144,9 @@ class NodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
+        source: String?
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
+        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator, source)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -196,6 +197,12 @@ class NodeServiceImpl(
 
     override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
         return NodeRestoreSupport(this).getDeletedNodeDetail(artifact)
+    }
+
+    override fun getDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime
+    ): NodeDetail? {
+        return NodeRestoreSupport(this).getDeletedNodeDetail(projectId, repoName, fullPath, deleted)
     }
 
     override fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail? {

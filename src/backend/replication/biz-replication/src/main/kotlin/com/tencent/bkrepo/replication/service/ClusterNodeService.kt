@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterListOption
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeStatusUpdateRequest
 import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeUpdateRequest
@@ -56,6 +57,11 @@ interface ClusterNodeService {
      * 查询名称为[name]的节点信息
      */
     fun getByClusterName(name: String): ClusterNodeInfo?
+
+    /**
+     * 查询名称为[name]的节点信息
+     */
+    fun getInfoByClusterName(name: String): RemoteClusterInfo?
 
     /**
      * 查询中心节点

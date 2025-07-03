@@ -30,6 +30,7 @@ package com.tencent.bkrepo.webhook.dao
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.webhook.constant.AssociationType
 import com.tencent.bkrepo.webhook.model.TWebHook
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -42,7 +43,7 @@ class WebHookDao : SimpleMongoDao<TWebHook>() {
         val query = Query(
             Criteria.where(TWebHook::associationType.name).isEqualTo(type)
                 .apply { id?.let { and(TWebHook::associationId.name).isEqualTo(id) } }
-        )
+        ).with(Sort.by(Sort.Direction.DESC, TWebHook::createdDate.name))
         return this.find(query)
     }
 }

@@ -78,6 +78,7 @@ object NodeBaseServiceHelper {
                 lastModifiedBy = createdBy ?: operator,
                 lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
                 lastAccessDate = LocalDateTime.now(),
+                federatedSource = source
             )
         }
     }
@@ -112,6 +113,7 @@ object NodeBaseServiceHelper {
                 clusterNames = it.clusterNames,
                 archived = it.archived,
                 compressed = it.compressed,
+                federatedSource = it.federatedSource,
             )
         }
     }

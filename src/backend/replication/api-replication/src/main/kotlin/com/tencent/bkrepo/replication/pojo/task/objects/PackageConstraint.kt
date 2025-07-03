@@ -45,4 +45,5 @@ data class PackageConstraint(
     val packageRegex: List<String>? = null,
     @get:Schema(title = "包版本正则匹配规则")
     val versionRegex: List<String>? = null,
+    val deletedDate: String? = null,
 )

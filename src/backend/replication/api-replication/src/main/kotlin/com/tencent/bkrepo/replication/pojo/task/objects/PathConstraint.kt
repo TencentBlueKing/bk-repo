@@ -35,5 +35,6 @@ data class PathConstraint(
     @get:Schema(title = "路径")
     val path: String? = null,
     @get:Schema(title = "路径正则匹配规则")
-    val pathRegex: List<String>? = null
+    val pathRegex: List<String>? = null,
+    val deletedDate: String? = null,
 )

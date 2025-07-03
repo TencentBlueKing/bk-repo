@@ -75,7 +75,7 @@ open class NodeDeleteSupport(
             if (PathUtils.isRoot(fullPath)) {
                 throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Can't delete root node.")
             }
-            return deleteByPath(projectId, repoName, fullPath, operator)
+            return deleteByPath(projectId, repoName, fullPath, operator, source)
         }
     }
 
@@ -131,11 +131,12 @@ open class NodeDeleteSupport(
         projectId: String,
         repoName: String,
         fullPath: String,
-        operator: String
+        operator: String,
+        source: String?,
     ): NodeDeleteResult {
         val criteria = buildCriteria(projectId, repoName, fullPath)
         val query = Query(criteria)
-        return delete(query, operator, criteria, projectId, repoName, listOf(fullPath))
+        return delete(query, operator, criteria, projectId, repoName, listOf(fullPath), source = source)
     }
 
     override fun deleteByPaths(
@@ -222,7 +223,8 @@ open class NodeDeleteSupport(
         projectId: String,
         repoName: String,
         fullPaths: List<String>? = null,
-        decreaseVolume: Boolean = true
+        decreaseVolume: Boolean = true,
+        source: String? = null
     ): NodeDeleteResult {
         var deletedNum = 0L
         var deletedSize = 0L
@@ -254,7 +256,7 @@ open class NodeDeleteSupport(
                 if (routerControllerProperties.enabled) {
                     routerControllerClient.removeNodes(projectId, repoName, fullPath)
                 }
-                publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator))
+                publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator, deleteTime.toString(), source))
             }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[$resourceKey] by [$operator] error: [${exception.message}]")

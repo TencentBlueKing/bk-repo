@@ -57,6 +57,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import java.time.format.DateTimeFormatter
 
 object ObjectBuilderUtil {
 
@@ -91,7 +92,6 @@ object ObjectBuilderUtil {
         cargoMetadata: CargoMetadata,
         size: Long,
         fullPath: String,
-        metadataList: List<MetadataModel>
     ): PackageVersionCreateRequest {
         return buildPackageVersionCreateRequest(
             projectId = projectId,
@@ -100,7 +100,6 @@ object ObjectBuilderUtil {
             version = cargoMetadata.vers,
             description = cargoMetadata.description,
             size = size,
-            metadataList = metadataList,
             fullPath = fullPath,
             userId = userId,
         )
@@ -115,7 +114,6 @@ object ObjectBuilderUtil {
         description: String? = null,
         size: Long,
         fullPath: String,
-        metadataList: List<MetadataModel> = emptyList()
     ): PackageVersionCreateRequest {
         return PackageVersionCreateRequest(
             projectId = projectId,
@@ -129,7 +127,6 @@ object ObjectBuilderUtil {
             manifestPath = null,
             artifactPath = fullPath,
             stageTag = null,
-            packageMetadata = metadataList,
             overwrite = true,
             createdBy = userId
         )
@@ -205,10 +202,10 @@ object ObjectBuilderUtil {
                 projectId = projectId,
                 repoName = repoName,
                 downloadCount = packageVersion.downloads,
-                createdBy = createdBy,
-                createdDate = createdDate,
-                lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate
+                createdBy = packageVersion.createdBy,
+                createdDate = packageVersion.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedBy = packageVersion.lastModifiedBy,
+                lastModifiedDate = packageVersion.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
             )
         }
     }

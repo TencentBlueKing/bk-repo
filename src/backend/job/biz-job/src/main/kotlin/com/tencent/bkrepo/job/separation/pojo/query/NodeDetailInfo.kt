@@ -54,6 +54,7 @@ data class NodeDetailInfo(
     var nodeNum: Long? = null,
     var archived: Boolean? = null,
     var compressed: Boolean? = null,
+    var federatedSource: String? = null,
 
     var projectId: String,
     var repoName: String,
