@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
@@ -108,6 +109,7 @@ abstract class NodeBaseService(
     open val routerControllerProperties: RouterControllerProperties,
     open val blockNodeService: BlockNodeService,
     open val projectService: ProjectService,
+    open val metadataCustomizer: MetadataCustomizer?,
 ) : NodeService {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
@@ -240,7 +242,10 @@ abstract class NodeBaseService(
     }
 
     open fun buildTNode(request: NodeCreateRequest): TNode {
-        return NodeBaseServiceHelper.buildTNode(request, repositoryProperties.allowUserAddSystemMetadata)
+        val metadata = NodeBaseServiceHelper.resolveMetadata(
+            request, metadataCustomizer, repositoryProperties.allowUserAddSystemMetadata
+        )
+        return NodeBaseServiceHelper.buildTNode(request, metadata)
     }
 
     private fun getTotalNodeNum(artifact: ArtifactInfo, query: Query): Long {

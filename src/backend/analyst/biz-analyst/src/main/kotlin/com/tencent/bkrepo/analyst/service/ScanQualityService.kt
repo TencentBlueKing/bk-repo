@@ -27,9 +27,10 @@
 
 package com.tencent.bkrepo.analyst.service
 
+import com.tencent.bkrepo.analyst.pojo.CheckForbidResult
 import com.tencent.bkrepo.analyst.pojo.request.ScanQualityUpdateRequest
-import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.analyst.pojo.response.ScanQuality
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 
 interface ScanQualityService {
     /**
@@ -54,5 +55,55 @@ interface ScanQualityService {
         scanQuality: Map<String, Any>,
         scanResultOverview: Map<String, Number>,
         scanner: Scanner
+    ): Boolean
+
+    /**
+     * 是否要禁用
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     * @param repoType 仓库类型
+     * @param fullPath 制品路径
+     * @param sha256 制品sha256
+     *
+     * @return 是否禁用制品检查结果
+     */
+    fun shouldForbid(
+        projectId: String,
+        repoName: String,
+        repoType: String,
+        fullPath: String,
+        sha256: String
+    ): CheckForbidResult
+
+    /**
+     * 是否禁用未扫描制品
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     * @param repoType 仓库类型
+     * @param fullPath 制品路径
+     *
+     * @return 是否禁用制品
+     */
+    fun shouldForbidBeforeScanned(projectId: String, repoName: String, repoType: String, fullPath: String): Boolean
+
+    /**
+     * 是否禁用未扫描制品
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     * @param repoType 仓库类型
+     * @param packageName 包名
+     * @param packageVersion 包版本
+     *
+     * @return 是否禁用制品
+     */
+    fun shouldForbidBeforeScanned(
+        projectId: String,
+        repoName: String,
+        repoType: String,
+        packageName: String,
+        packageVersion: String
     ): Boolean
 }

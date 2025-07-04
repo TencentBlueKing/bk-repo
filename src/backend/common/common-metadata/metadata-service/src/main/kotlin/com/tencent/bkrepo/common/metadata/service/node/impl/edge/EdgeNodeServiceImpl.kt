@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
@@ -92,6 +93,7 @@ class EdgeNodeServiceImpl(
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
     override val projectService: ProjectService,
+    override val metadataCustomizer: MetadataCustomizer?,
     val archiveClient: ArchiveClient,
 ) : EdgeNodeBaseService(
     nodeDao,
@@ -106,6 +108,7 @@ class EdgeNodeServiceImpl(
     routerControllerProperties,
     blockNodeService,
     projectService,
+    metadataCustomizer,
     clusterProperties
 ) {
     override fun computeSize(

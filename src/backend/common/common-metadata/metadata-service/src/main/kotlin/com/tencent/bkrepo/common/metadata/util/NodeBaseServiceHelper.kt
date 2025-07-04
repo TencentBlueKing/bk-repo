@@ -2,6 +2,8 @@ package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -37,7 +39,25 @@ object NodeBaseServiceHelper {
         return true
     }
 
-    fun buildTNode(request: NodeCreateRequest, allowUserAddSystemMetadata: List<String>): TNode {
+    fun resolveMetadata(
+        request: NodeCreateRequest,
+        metadataCustomizer: MetadataCustomizer?,
+        allowUserAddSystemMetadata: List<String>
+    ): MutableList<TMetadata> {
+        val customizedMetadata = metadataCustomizer?.customize(request)?.let { metadata ->
+            MetadataUtils.changeSystem(metadata, allowUserAddSystemMetadata)!!.mapTo(ArrayList(metadata.size)) {
+                MetadataUtils.convertAndCheck(it)
+            }
+        }
+
+        return customizedMetadata
+            ?: MetadataUtils.compatibleConvertAndCheck(
+                request.metadata,
+                MetadataUtils.changeSystem(request.nodeMetadata, allowUserAddSystemMetadata),
+            )
+    }
+
+    fun buildTNode(request: NodeCreateRequest, metadata: MutableList<TMetadata>): TNode {
         with(request) {
             val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
             return TNode(
@@ -52,10 +72,7 @@ object NodeBaseServiceHelper {
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,
                 nodeNum = null,
-                metadata = MetadataUtils.compatibleConvertAndCheck(
-                    metadata,
-                    MetadataUtils.changeSystem(nodeMetadata, allowUserAddSystemMetadata),
-                ),
+                metadata = metadata,
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),
                 lastModifiedBy = createdBy ?: operator,

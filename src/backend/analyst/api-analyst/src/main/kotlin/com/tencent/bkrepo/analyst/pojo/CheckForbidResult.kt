@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,20 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request
+package com.tencent.bkrepo.analyst.pojo
 
-data class LicenseScanQualityUpdateRequest(
-    val recommend: Boolean = false,
-    val compliance: Boolean = false,
-    val unknown: Boolean = false,
-    val forbidQualityUnPass: Boolean = false
-) {
-    fun toMap(): Map<String, Any> {
-        val map = mutableMapOf<String, Any>()
-        map[LicenseScanQualityUpdateRequest::recommend.name] = recommend
-        map[LicenseScanQualityUpdateRequest::compliance.name] = compliance
-        map[LicenseScanQualityUpdateRequest::unknown.name] = unknown
-        map[LicenseScanQualityUpdateRequest::forbidQualityUnPass.name] = forbidQualityUnPass
-        return map
-    }
-}
+import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
+
+data class CheckForbidResult(
+    /**
+     * 是否需要禁用
+     */
+    val shouldForbid: Boolean = false,
+    /**
+     * 禁用类型
+     */
+    val type: String = ForbidType.NONE.name,
+    /**
+     * 由于哪个扫描方案导致的禁用
+     */
+    val plan: ScanPlan? = null,
+)

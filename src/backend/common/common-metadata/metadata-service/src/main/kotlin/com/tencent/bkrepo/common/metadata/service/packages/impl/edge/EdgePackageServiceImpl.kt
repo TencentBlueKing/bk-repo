@@ -35,6 +35,7 @@ import com.tencent.bkrepo.repository.api.cluster.ClusterPackageClient
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionUpdateRequest
@@ -53,12 +54,14 @@ class EdgePackageServiceImpl(
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
     packageSearchInterpreter: PackageSearchInterpreter,
-    clusterProperties: ClusterProperties
+    clusterProperties: ClusterProperties,
+    metadataCustomizer: MetadataCustomizer?,
 ) : PackageServiceImpl(
     repositoryDao,
     packageDao,
     packageVersionDao,
-    packageSearchInterpreter
+    packageSearchInterpreter,
+    metadataCustomizer,
 ) {
 
     private val centerPackageClient: ClusterPackageClient by lazy {

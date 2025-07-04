@@ -36,13 +36,22 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
-import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
+import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
+import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.inValues
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -70,6 +79,32 @@ class PackageMetadataServiceImpl(
             tPackageVersion.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
             packageVersionDao.save(tPackageVersion)
             logger.info("Save package metadata [$this] success.")
+        }
+    }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun deleteMetadata(request: PackageMetadataDeleteRequest, allowDeleteSystemMetadata: Boolean) {
+        with(request) {
+            if (keysToDelete.isEmpty()) {
+                logger.info("Metadata key list is empty, skip deleting")
+                return
+            }
+            val tPackage = getPackage(projectId, repoName, packageKey)
+            val tPackageVersion = getPackageVersion(tPackage.id!!, version)
+            // 检查是否有更新权限
+            ClusterUtils.checkContainsSrcCluster(tPackageVersion.clusterNames)
+            tPackageVersion.metadata.forEach {
+                if (it.key in keysToDelete && it.system && !allowDeleteSystemMetadata) {
+                    throw PermissionException("No permission to update system metadata[${it.key}]")
+                }
+            }
+
+            val update = Update().pull(
+                TPackageVersion::metadata.name,
+                Query.query(where(TMetadata::key).inValues(keysToDelete))
+            )
+            packageVersionDao.updateFirst(PackageQueryHelper.versionQuery(tPackage.id!!, name = version), update)
+            logger.info("Delete metadata[$keysToDelete] on pkg[/$projectId/$repoName/$packageKey:$version] success.")
         }
     }
 

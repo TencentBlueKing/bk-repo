@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.api.cluster.ClusterNodeClient
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -63,6 +64,7 @@ abstract class EdgeNodeBaseService(
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
     override val projectService: ProjectService,
+    override val metadataCustomizer: MetadataCustomizer?,
     open val clusterProperties: ClusterProperties,
 ) : NodeBaseService(
     nodeDao,
@@ -76,7 +78,8 @@ abstract class EdgeNodeBaseService(
     routerControllerClient,
     routerControllerProperties,
     blockNodeService,
-    projectService
+    projectService,
+    metadataCustomizer,
 ) {
 
     val centerNodeClient: ClusterNodeClient by lazy {

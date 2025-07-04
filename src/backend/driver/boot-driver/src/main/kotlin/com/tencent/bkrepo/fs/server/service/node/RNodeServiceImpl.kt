@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.RNodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RRepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.RFileReferenceService
 import com.tencent.bkrepo.common.metadata.service.project.RProjectService
@@ -60,6 +61,7 @@ class RNodeServiceImpl(
     override val authClient: RAuthClient,
     override val blockNodeService: RBlockNodeService,
     override val projectService: RProjectService,
+    override val metadataCustomizer: MetadataCustomizer?,
 ) : RNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -70,7 +72,8 @@ class RNodeServiceImpl(
     messageSupplier,
     authClient,
     blockNodeService,
-    projectService
+    projectService,
+    metadataCustomizer,
 ) {
 
     override suspend fun computeSize(

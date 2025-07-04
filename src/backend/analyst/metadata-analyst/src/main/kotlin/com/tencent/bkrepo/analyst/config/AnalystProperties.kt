@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,26 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.metadata
+package com.tencent.bkrepo.analyst.config
 
-/**
- * 制品禁用类型
- */
-enum class ForbidType(val reason: String = FORBID_REASON_NONE) {
-    // 扫描中被禁用
-    SCANNING,
-    // 未通过质量规则被禁用
-    QUALITY_UNPASS(FORBID_REASON_QUALITY_ISSUE),
-    // 手动禁用
-    MANUAL,
-    // 未扫描时禁用
-    NOT_SCANNED(FORBID_REASON_NOT_SCANNED),
-    // 未禁用
-    NONE;
-}
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-const val FORBID_REASON_NONE = ""
-
-const val FORBID_REASON_NOT_SCANNED = "Not scanned"
-
-const val FORBID_REASON_QUALITY_ISSUE = "Not pass quality rules"
+@ConfigurationProperties("analyst")
+data class AnalystProperties(
+    /**
+     * 是否启用自动禁用未扫描制品功能
+     *
+     * 启用后将根据制品分析方案判断是否禁用未扫描的制品，制品分析方案较多时可能会导致上传结束后返回响应给用户变慢
+     */
+    var enableForbidNotScanned: Boolean = false,
+)

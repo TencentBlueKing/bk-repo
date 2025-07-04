@@ -25,26 +25,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.metadata
-
-/**
- * 制品禁用类型
- */
-enum class ForbidType(val reason: String = FORBID_REASON_NONE) {
-    // 扫描中被禁用
-    SCANNING,
-    // 未通过质量规则被禁用
-    QUALITY_UNPASS(FORBID_REASON_QUALITY_ISSUE),
-    // 手动禁用
-    MANUAL,
-    // 未扫描时禁用
-    NOT_SCANNED(FORBID_REASON_NOT_SCANNED),
-    // 未禁用
-    NONE;
+dependencies {
+    implementation(project(":analyst:api-analyst"))
+    implementation(project(":common:common-metadata:metadata-service"))
+    implementation(project(":common:common-artifact:artifact-service"))
 }
-
-const val FORBID_REASON_NONE = ""
-
-const val FORBID_REASON_NOT_SCANNED = "Not scanned"
-
-const val FORBID_REASON_QUALITY_ISSUE = "Not pass quality rules"
