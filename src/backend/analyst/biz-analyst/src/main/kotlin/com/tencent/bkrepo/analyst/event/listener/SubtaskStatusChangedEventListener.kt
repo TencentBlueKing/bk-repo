@@ -174,7 +174,7 @@ class SubtaskStatusChangedEventListener(
             return
         }
 
-        val result = scanQualityService.shouldForbid(projectId, repoName, fullPath, subtask.sha256)
+        val result = scanQualityService.shouldForbid(projectId, repoName, subtask.repoType, fullPath, subtask.sha256)
         if (result.shouldForbid) {
             // 扫描未通过时添加制品禁用元数据
             val type = ForbidType.valueOf(result.type)

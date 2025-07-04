@@ -31,6 +31,7 @@ import com.tencent.bkrepo.analyst.api.ScanQualityClient
 import com.tencent.bkrepo.analyst.config.AnalystProperties
 import com.tencent.bkrepo.analyst.metadata.AnalystMetadataCustomizer
 import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -39,6 +40,7 @@ import org.springframework.context.annotation.Configuration
 @EnableConfigurationProperties(AnalystProperties::class)
 class AnalystMetadataAutoConfiguration {
     @Bean
+    @ConditionalOnProperty("analyst.enableForbidNotScanned", havingValue = "true")
     fun analystMetadataCustomizer(
         properties: AnalystProperties,
         scanQualityClient: ScanQualityClient

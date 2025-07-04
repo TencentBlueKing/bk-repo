@@ -48,19 +48,23 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
 
 @Service
 class ScanQualityServiceImpl(
-    private val permissionCheckHandler: ScannerPermissionCheckHandler,
     private val scanPlanDao: ScanPlanDao,
     private val scannerService: ScannerService,
     private val licenseScanQualityService: LicenseScanQualityService,
     private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
 ) : ScanQualityService {
+    @Autowired
+    @Lazy
+    private lateinit var permissionCheckHandler: ScannerPermissionCheckHandler
+
     override fun getScanQuality(planId: String): ScanQuality {
         val scanPlan = scanPlanDao.get(planId)
-        permissionCheckHandler.checkProjectPermission(scanPlan.projectId, PermissionAction.MANAGE)
         return ScanQuality.create(scanPlan.scanQuality)
     }
 
@@ -102,10 +106,11 @@ class ScanQualityServiceImpl(
     override fun shouldForbid(
         projectId: String,
         repoName: String,
+        repoType: String,
         fullPath: String,
         sha256: String
     ): CheckForbidResult {
-        val plans = scanPlanDao.findByProjectIdAndRepoName(projectId, repoName)
+        val plans = scanPlanDao.findByProjectIdAndRepoName(projectId, repoName, repoType)
         val planSubtasks = planArtifactLatestSubScanTaskDao
             .findAll(projectId, repoName, fullPath)
             .associateBy { it.planId }
@@ -159,7 +164,14 @@ class ScanQualityServiceImpl(
     ): Boolean {
         return scanPlanDao
             .findByProjectIdAndRepoName(projectId, repoName, repoType)
-            .any { it.scanQuality[ScanQuality::forbidNotScanned.name] == true && ruleMatcher(it.rule.readJsonString()) }
+            .any {
+                val forbidNotScanned = it.scanQuality[ScanQuality::forbidNotScanned.name] == true
+                val forbid = forbidNotScanned && ruleMatcher(it.rule.readJsonString())
+                if (forbid) {
+                    logger.info("forbid before scanned by plan[${it.id}]")
+                }
+                forbid
+            }
     }
 
     /**
@@ -204,7 +216,7 @@ class ScanQualityServiceImpl(
         val scanner = scannerService.get(plan.scanner)
         val scanResultOverview = planSubtask?.scanResultOverview ?: emptyMap()
         val forbidQualityUnPass = plan.scanQuality[ScanQuality::forbidQualityUnPass.name] == true
-        val shouldForbid = forbidQualityUnPass && checkScanQualityRedLine(plan.scanQuality, scanResultOverview, scanner)
+        val shouldForbid = forbidQualityUnPass && !checkScanQualityRedLine(plan.scanQuality, scanResultOverview, scanner)
         var type = ForbidType.NONE
         if (shouldForbid) {
             type = ForbidType.QUALITY_UNPASS

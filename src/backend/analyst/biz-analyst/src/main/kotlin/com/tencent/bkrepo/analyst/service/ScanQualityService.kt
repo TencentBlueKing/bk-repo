@@ -62,12 +62,13 @@ interface ScanQualityService {
      *
      * @param projectId 项目ID
      * @param repoName 仓库名
+     * @param repoType 仓库类型
      * @param fullPath 制品路径
      * @param sha256 制品sha256
      *
      * @return 是否禁用制品检查结果
      */
-    fun shouldForbid(projectId: String, repoName: String, fullPath: String, sha256: String): CheckForbidResult
+    fun shouldForbid(projectId: String, repoName: String, repoType: String, fullPath: String, sha256: String): CheckForbidResult
 
     /**
      * 是否禁用未扫描制品

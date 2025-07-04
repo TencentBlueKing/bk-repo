@@ -49,9 +49,9 @@ class AnalystMetadataCustomizer(
     private val analystProperties: AnalystProperties,
     private val scanQualityClient: ScanQualityClient,
 ) : MetadataCustomizer() {
-    override fun customize(req: NodeCreateRequest): List<MetadataModel> {
+    override fun customize(req: NodeCreateRequest, extra: List<MetadataModel>?): List<MetadataModel> {
         with(req) {
-            val metadata = MetadataUtils.compatibleConvertToModel(metadata, nodeMetadata)
+            val metadata = merge(MetadataUtils.compatibleConvertToModel(metadata, nodeMetadata), extra)
             val repoType = getRepoType(projectId, repoName) ?: return metadata
             if (repoType == RepositoryType.GENERIC) {
                 resolveForbidMetadata(projectId, repoName, repoType.name, fullPath)?.let { metadata.addAll(it) }
@@ -60,29 +60,32 @@ class AnalystMetadataCustomizer(
         }
     }
 
-    override fun customize(req: PackageVersionCreateRequest): List<MetadataModel> {
+    override fun customize(req: PackageVersionCreateRequest, extra: List<MetadataModel>?): List<MetadataModel> {
         with(req) {
-            val metadata = MetadataUtils.compatibleConvertToModel(metadata, packageMetadata)
+            val metadata = merge(MetadataUtils.compatibleConvertToModel(metadata, packageMetadata), extra)
             val repoType = getRepoType(projectId, repoName) ?: return metadata
-            resolveForbidMetadata(projectId, repoName, repoType.name, packageName, versionName)
-                ?.let { metadata.addAll(it) }
+            resolveForbidMetadata(
+                projectId, repoName, repoType.name, packageName = packageName, packageVersion = versionName
+            )?.let { metadata.addAll(it) }
             return metadata
         }
     }
 
     override fun customize(
         req: PackageVersionUpdateRequest,
-        oldMetadataModel: List<MetadataModel>
+        oldMetadataModel: List<MetadataModel>,
+        extra: List<MetadataModel>?
     ): List<MetadataModel> {
         with(req) {
             return if (req.metadata == null && req.packageMetadata == null) {
                 oldMetadataModel
             } else {
-                val metadata = MetadataUtils.compatibleConvertToModel(req.metadata, req.packageMetadata)
+                val metadata = merge(MetadataUtils.compatibleConvertToModel(req.metadata, req.packageMetadata), extra)
                 val repoType = getRepoType(projectId, repoName) ?: return metadata
                 val packageName = PackageKeys.resolve(repoType, packageKey)
-                resolveForbidMetadata(projectId, repoName, repoType.name, packageName, versionName)
-                    ?.let { metadata.addAll(it) }
+                resolveForbidMetadata(
+                    projectId, repoName, repoType.name, packageName = packageName, packageVersion = versionName
+                )?.let { metadata.addAll(it) }
                 metadata
             }
         }

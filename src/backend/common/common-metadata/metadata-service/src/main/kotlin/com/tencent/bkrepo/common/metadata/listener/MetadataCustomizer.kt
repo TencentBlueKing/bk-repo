@@ -42,36 +42,51 @@ abstract class MetadataCustomizer {
      * 自定义元数据
      *
      * @param req node创建请求
+     * @param extra 额外的元数据
      *
      * @return 自定义元数据
      */
-    open fun customize(req: NodeCreateRequest): List<MetadataModel> {
-        return MetadataUtils.compatibleConvertToModel(req.metadata, req.nodeMetadata)
+    open fun customize(req: NodeCreateRequest, extra: List<MetadataModel>? = null): List<MetadataModel> {
+        return merge(MetadataUtils.compatibleConvertToModel(req.metadata, req.nodeMetadata), extra)
     }
 
     /**
      * 自定义元数据
      *
      * @param req package version创建请求
+     * @param extra 额外的元数据
      *
      * @return 自定义元数据
      */
-    open fun customize(req: PackageVersionCreateRequest): List<MetadataModel> {
-        return MetadataUtils.compatibleConvertToModel(req.metadata, req.packageMetadata)
+    open fun customize(req: PackageVersionCreateRequest, extra: List<MetadataModel>? = null): List<MetadataModel> {
+        return merge(MetadataUtils.compatibleConvertToModel(req.metadata, req.packageMetadata), extra)
     }
 
     /**
      * 自定义元数据，仅在元数据有更新时触发
      *
      * @param req package version更新请求
+     * @param extra 额外的元数据
      *
      * @return 自定义元数据
      */
-    open fun customize(req: PackageVersionUpdateRequest, oldMetadataModel: List<MetadataModel>): List<MetadataModel> {
+    open fun customize(
+        req: PackageVersionUpdateRequest,
+        oldMetadataModel: List<MetadataModel>,
+        extra: List<MetadataModel>? = null
+    ): List<MetadataModel> {
         return if (req.metadata == null && req.packageMetadata == null) {
             oldMetadataModel
         } else {
-            MetadataUtils.compatibleConvertToModel(req.metadata, req.packageMetadata)
+            merge(MetadataUtils.compatibleConvertToModel(req.metadata, req.packageMetadata), extra)
         }
+    }
+
+    protected fun merge(
+        metadataModels: MutableList<MetadataModel>,
+        extra: List<MetadataModel>? = null
+    ): MutableList<MetadataModel> {
+        extra?.let { metadataModels.addAll(it) }
+        return metadataModels
     }
 }
