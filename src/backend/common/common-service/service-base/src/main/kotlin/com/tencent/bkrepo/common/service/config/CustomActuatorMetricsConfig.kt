@@ -25,16 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.algorithm
+package com.tencent.bkrepo.common.service.config
 
-interface RateLimiter {
+import org.springframework.boot.context.properties.ConfigurationProperties
 
-    fun tryAcquire(permits: Long): Boolean
-
-    fun removeCacheLimit(key: String)
-
-    fun getLimitPerSecond(): Long
-
-    fun keepConnection(): Boolean
-
-}
+@ConfigurationProperties("management.metrics.ignored")
+data class CustomActuatorMetricsConfig(
+    var filterList: List<String> = emptyList(),
+)

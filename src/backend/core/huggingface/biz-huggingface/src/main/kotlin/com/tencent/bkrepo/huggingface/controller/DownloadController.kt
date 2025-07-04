@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactInfo
+import com.tencent.bkrepo.huggingface.artifact.HuggingfaceRevisionInfo
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -49,12 +50,14 @@ class DownloadController : ArtifactService() {
         repository.download(context)
     }
 
-    @GetMapping("/{projectId}/{repoName}/api/{type}s/{organization}/{name}",
-        "/{projectId}/{repoName}/api/{type}s/{organization}/{name}/revision/{revision}")
+    @GetMapping(
+        "/{projectId}/{repoName}/api/{type}s/{organization}/{name}",
+        "/{projectId}/{repoName}/api/{type}s/{organization}/{name}/revision/{revision}",
+    )
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun info(
-        @ArtifactPathVariable artifactInfo: HuggingfaceArtifactInfo
-    ) : Any? {
+        @ArtifactPathVariable artifactInfo: HuggingfaceRevisionInfo,
+    ): Any? {
         return repository.query(ArtifactQueryContext())
     }
 }

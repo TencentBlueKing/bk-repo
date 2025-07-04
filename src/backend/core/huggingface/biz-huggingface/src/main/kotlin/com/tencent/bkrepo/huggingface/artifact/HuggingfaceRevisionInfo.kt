@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,16 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.algorithm
+package com.tencent.bkrepo.huggingface.artifact
 
-interface RateLimiter {
+import com.tencent.bkrepo.huggingface.constants.REVISION_MAIN
 
-    fun tryAcquire(permits: Long): Boolean
+class HuggingfaceRevisionInfo(
+    projectId: String,
+    repoName: String,
+    organization: String,
+    name: String,
+    revision: String?,
+    type: String?,
+    artifactUri: String,
+) : HuggingfaceArtifactInfo(projectId, repoName, organization, name, revision, type, artifactUri) {
 
-    fun removeCacheLimit(key: String)
+    override fun getArtifactFullPath(): String {
+        return "/$organization/$name/info/${getRevision()}"
+    }
 
-    fun getLimitPerSecond(): Long
-
-    fun keepConnection(): Boolean
-
+    override fun getRevision(): String {
+        return super.getRevision() ?: REVISION_MAIN
+    }
 }
