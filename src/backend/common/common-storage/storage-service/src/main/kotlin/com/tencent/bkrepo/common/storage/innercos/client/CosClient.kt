@@ -119,12 +119,12 @@ class CosClient(val credentials: InnerCosCredentials) {
      * 分片上传使用的执行器
      */
     private val uploadThreadPool = ThreadPoolExecutor(
-        0,
+        config.uploadWorkers,
         config.uploadWorkers,
         60, TimeUnit.SECONDS,
         LinkedBlockingQueue(),
         ThreadFactoryBuilder().setNameFormat("CosClientUp-${credentials.key}-%d").build(),
-    )
+    ).apply { this.allowCoreThreadTimeOut(true) }
 
     /**
      * 分块下载使用的执行器。可以为null,为null则不使用分块下载
