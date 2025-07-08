@@ -52,10 +52,8 @@ class ArtifactFileCleanupFilterFunction : CoHandlerFilterFunction {
         try {
             val artifactFileList = request.exchange()
                 .attributes[CoArtifactFileFactory.ARTIFACT_FILES] as? MutableList<ArtifactFile>
-            artifactFileList?.filter {
-                !it.isInMemory()
-            }?.forEach {
-                val absolutePath = it.getFile()!!.absolutePath
+            artifactFileList?.forEach {
+                val absolutePath = it.getFile()?.absolutePath ?: IN_MEMORY
                 measureTimeMillis { it.delete() }.apply {
                     logger.info("Delete temp artifact file [$absolutePath] success, elapse $this ms")
                 }
@@ -67,5 +65,6 @@ class ArtifactFileCleanupFilterFunction : CoHandlerFilterFunction {
 
     companion object{
         private val logger = LoggerFactory.getLogger(ArtifactFileCleanupFilterFunction::class.java)
+        private const val IN_MEMORY = "in memory"
     }
 }
