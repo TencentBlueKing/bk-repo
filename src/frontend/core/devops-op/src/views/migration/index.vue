@@ -2,7 +2,7 @@
   <div class="app-container node-container">
     <el-form ref="form" :inline="true" :model="clientQuery">
       <el-form-item label="任务状态" style="margin-left: 15px">
-        <el-select v-model="clientQuery.state" clearable placeholder="请选择">
+        <el-select v-model="clientQuery.state" clearable placeholder="请选择" @change="changeRouteQueryParams(1)">
           <el-option
             v-for="item in options"
             :key="item.value"
@@ -11,17 +11,10 @@
           />
         </el-select>
       </el-form-item>
-      <el-form-item>
-        <el-button
-          size="mini"
-          type="primary"
-          @click="changeRouteQueryParams(1)"
-        >查询</el-button>
-      </el-form-item>
     </el-form>
     <el-table v-loading="loading" :data="preloadData" style="width: 100%">
-      <el-table-column prop="projectId" label="源项目ID" align="center" />
-      <el-table-column prop="repoName" label="源仓库名称" align="center" />
+      <el-table-column prop="projectId" label="项目ID" align="center" />
+      <el-table-column prop="repoName" label="仓库名称" align="center" />
       <el-table-column prop="srcStorageKey" label="源存储" align="center" />
       <el-table-column prop="dstStorageKey" label="目标存储" align="center" />
       <el-table-column key="state" prop="state" label="状态" align="center">
@@ -39,8 +32,13 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column key="totalCount" prop="totalCount" label="目标数" align="center" />
-      <el-table-column key="migratedCount" prop="migratedCount" label="已迁移数" align="center" />
+      <el-table-column key="progress"  label="进度" align="center">
+        <template slot-scope="scope">
+          <span>
+            {{ formatProgress(scope.row) }}
+          </span>
+        </template>
+      </el-table-column>
       <el-table-column key="lastMigratedNodeId" prop="lastMigratedNodeId" label="最后的节点ID" align="center" />
       <el-table-column key="createdBy" prop="createdBy" label="创建人" align="center" />
       <el-table-column prop="createdDate" label="创建时间" width="160" align="center">
@@ -163,6 +161,12 @@ export default {
     },
     formatNormalDate(data) {
       return formatNormalDate(data)
+    },
+    formatProgress(data) {
+      if (!data.totalCount || data.totalCount === 0 || !data.migratedCount) {
+        return '0%(0/0)'
+      }
+      return Math.round(data.migratedCount / data.totalCount * 10000) / 100 + '%('+ data.migratedCount + '/' + data.totalCount + ')';
     },
     formatState(data) {
       for (let i = 0; i < this.options.length; i++) {
