@@ -62,6 +62,7 @@ import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.url.UrlPatternUtil.parameterMaps
 import com.tencent.bkrepo.pypi.artifact.xml.Value
 import com.tencent.bkrepo.pypi.artifact.xml.XmlUtil
+import com.tencent.bkrepo.pypi.constants.DISABLE_REPO_INDEX
 import com.tencent.bkrepo.pypi.constants.INDENT
 import com.tencent.bkrepo.pypi.constants.LINE_BREAK
 import com.tencent.bkrepo.pypi.constants.NON_ALPHANUMERIC_SEQ_REGEX
@@ -303,7 +304,13 @@ class PypiLocalRepository(
      */
     override fun query(context: ArtifactQueryContext): Any? {
         return when (val artifactInfo = context.artifactInfo) {
-            is PypiSimpleArtifactInfo -> getSimpleHtml(artifactInfo)
+            is PypiSimpleArtifactInfo -> {
+                // 可设置查询仓库级别索引返回空，此索引在常规pypi制品拉取流程中不起作用但可能仍会被访问，虚拟仓库聚合索引时可能有性能问题
+                if (
+                    artifactInfo.packageName == null &&
+                    context.repositoryDetail.configuration.settings[DISABLE_REPO_INDEX] == true
+                ) null else getSimpleHtml(artifactInfo)
+            }
             else -> getVersionDetail(context)
         }
     }
