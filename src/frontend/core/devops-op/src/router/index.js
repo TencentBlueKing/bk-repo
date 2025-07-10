@@ -29,6 +29,7 @@ export const ROUTER_NAME_PRELOAD_CONFIG = 'PreloadConfig'
 export const ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG = 'ExecutionClustersConfig'
 export const ROUTER_NAME_SEPARATION_CONFIG = 'SeparationConfig'
 export const ROUTER_NAME_SEPARATION_RECORD = 'SeparationRecord'
+export const ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG = 'MigrationConfig'
 export const ROUTER_NAME_SERVER_LOG = 'ServerLog'
 
 Vue.use(Router)
@@ -368,6 +369,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_SEPARATION_RECORD,
         meta: { title: '数据查询', icon: 'separate' },
         component: () => import('@/views/separation/ShowData')
+      }
+    ]
+  },
+  {
+    path: '/migration-config',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG,
+        meta: { title: '迁移任务管理', icon: 'separate' },
+        component: () => import('@/views/migration/index')
       }
     ]
   },

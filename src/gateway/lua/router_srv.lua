@@ -1,7 +1,7 @@
 --[[
 Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
 
-Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+Copyright (C) 2019 Tencent.  All rights reserved.
 
 BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
 
@@ -47,7 +47,7 @@ end
 
 -- 异常故障转移
 if config.env and healthUtil:get_cluster_health_status(config.env) then
-    local back_target = hostUtil:get_target_by_random(config.env)
+    local back_target = healthUtil:get_target_by_random(config.env)
     if back_target ~= nil then
         ngx.var.target = back_target .. "/" .. service_name
         return
@@ -61,7 +61,7 @@ end
 
 if router_by_project then
     -- 路由表转发
-    local env, router_target = hostUtil:get_target_by_project()
+    local env, router_target = healthUtil:get_target_by_project()
     if env then
         ngx.var.target = router_target .. "/" .. service_name
         return
@@ -87,5 +87,4 @@ ngx.var.target = hostUtil:get_addr(service_name)
 if ngx.var.assembly ~= nil and ngx.var.assembly ~= "" then
     ngx.var.target = ngx.var.target .. "/" .. service_name
 end
-
 

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -52,10 +52,8 @@ class ArtifactFileCleanupFilterFunction : CoHandlerFilterFunction {
         try {
             val artifactFileList = request.exchange()
                 .attributes[CoArtifactFileFactory.ARTIFACT_FILES] as? MutableList<ArtifactFile>
-            artifactFileList?.filter {
-                !it.isInMemory()
-            }?.forEach {
-                val absolutePath = it.getFile()!!.absolutePath
+            artifactFileList?.forEach {
+                val absolutePath = it.getFile()?.absolutePath ?: IN_MEMORY
                 measureTimeMillis { it.delete() }.apply {
                     logger.info("Delete temp artifact file [$absolutePath] success, elapse $this ms")
                 }
@@ -67,5 +65,6 @@ class ArtifactFileCleanupFilterFunction : CoHandlerFilterFunction {
 
     companion object{
         private val logger = LoggerFactory.getLogger(ArtifactFileCleanupFilterFunction::class.java)
+        private const val IN_MEMORY = "in memory"
     }
 }

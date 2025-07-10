@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
@@ -119,12 +119,12 @@ class CosClient(val credentials: InnerCosCredentials) {
      * 分片上传使用的执行器
      */
     private val uploadThreadPool = ThreadPoolExecutor(
-        0,
+        config.uploadWorkers,
         config.uploadWorkers,
         60, TimeUnit.SECONDS,
         LinkedBlockingQueue(),
         ThreadFactoryBuilder().setNameFormat("CosClientUp-${credentials.key}-%d").build(),
-    )
+    ).apply { this.allowCoreThreadTimeOut(true) }
 
     /**
      * 分块下载使用的执行器。可以为null,为null则不使用分块下载
