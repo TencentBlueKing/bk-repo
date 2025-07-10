@@ -78,8 +78,8 @@ class PreviewArtifactResourceWriter(
         responseRateLimitCheck()
         downloadRateLimitCheck(resource)
         val request = HttpContextHolder.getRequest()
-        var toFile = request.getAttribute(PREVIEW_ARTIFACT_TO_FILE)
-        return if (toFile as Boolean) {
+        val toFile = request.getAttribute(PREVIEW_ARTIFACT_TO_FILE)
+        return if (toFile as? Boolean == true) {
             return writeSingleArtifactToFile(resource)
         } else {
             TraceHeaderUtils.setResponseHeader()
