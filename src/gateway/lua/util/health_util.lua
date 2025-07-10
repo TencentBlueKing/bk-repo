@@ -100,8 +100,11 @@ function _M:get_target_by_project()
         end
     end
 
+    if not projectId then
+        return nil, nil
+    end
     -- get router from config file
-    if projectId and config.project_router and config.router_domain then
+    if config.project_router and config.router_domain then
         local env = config.project_router[projectId]
         if env and config.router_domain[env] then
             return env, config.router_domain[env]
@@ -118,7 +121,7 @@ function _M:get_target_by_project()
     if not router_map then
         return nil, nil
     end
-    if projectId and config.router_domain and router_map then
+    if config.router_domain and router_map then
         local env = router_map[projectId]
         if env and config.router_domain[env] then
             return env, config.router_domain[env]
