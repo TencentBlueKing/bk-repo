@@ -109,16 +109,7 @@ function _M:get_target_by_project()
     end
     -- get router from cache
     local router_cache = ngx.shared.router_srv_store
-    local domain_key = "project:router_domain"
     local router_key = "project:project_router"
-    local domain_content, err = router_cache:get(domain_key)
-    if domain_content == nil or err ~= nil then
-        return nil, nil
-    end
-    local domain_map = json.decode(domain_content)
-    if not domain_map then
-        return nil, nil
-    end
     local router_content, err = router_cache:get(router_key)
     if router_content == nil or err ~= nil then
         return nil, nil
@@ -127,10 +118,10 @@ function _M:get_target_by_project()
     if not router_map then
         return nil, nil
     end
-    if projectId and domain_map and router_map then
+    if projectId and config.router_domain and router_map then
         local env = router_map[projectId]
-        if env and domain_map[env] then
-            return env, domain_map[env]
+        if env and config.router_domain[env] then
+            return env, config.router_domain[env]
         end
     end
     return nil, nil
