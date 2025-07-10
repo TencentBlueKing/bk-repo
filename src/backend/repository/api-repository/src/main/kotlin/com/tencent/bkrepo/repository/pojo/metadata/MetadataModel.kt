@@ -47,5 +47,9 @@ data class MetadataModel(
     /**
      * 元数据链接地址
      */
-    val link: String? = null
+    val link: String? = null,
+    /**
+     * 元数据标签颜色
+     */
+    val color: String? = null,
 )

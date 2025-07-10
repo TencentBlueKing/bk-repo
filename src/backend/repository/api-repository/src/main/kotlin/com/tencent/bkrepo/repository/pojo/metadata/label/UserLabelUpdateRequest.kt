@@ -29,5 +29,9 @@ package com.tencent.bkrepo.repository.pojo.metadata.label
 
 data class UserLabelUpdateRequest(
     val labelColorMap: Map<String, String>,
-    val display: Boolean?
+    val display: Boolean?,
+    val enumType: Boolean?,
+    val enableColorConfig: Boolean?,
+    val category: String?,
+    val description: String?,
 )

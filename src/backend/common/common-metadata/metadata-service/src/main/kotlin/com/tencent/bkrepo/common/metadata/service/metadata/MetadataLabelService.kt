@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.metadata
+package com.tencent.bkrepo.common.metadata.service.metadata
 
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelRequest
@@ -44,6 +44,11 @@ interface MetadataLabelService {
      * 更新标签
      */
     fun update(request: MetadataLabelRequest)
+
+    /**
+     * 批量保存标签
+     */
+    fun batchSave(requests: List<MetadataLabelRequest>)
 
     /**
      * 查询全部标签
