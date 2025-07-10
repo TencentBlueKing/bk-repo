@@ -68,6 +68,9 @@
         <el-checkbox v-model="selectDockerAndOci" style="margin-left: 10px">添加docker和oci</el-checkbox>
         <el-checkbox v-model="moduleSelectAll" style="margin-left: 10px">全选</el-checkbox>
       </el-form-item>
+      <el-form-item label="是否保持连接" prop="keepConnection">
+        <el-switch v-model="rateLimit.keepConnection" />
+      </el-form-item>
       <el-form-item
         v-for="(item,index) in rateLimit.targets"
         :key="index"
@@ -541,6 +544,7 @@ export default {
         capacity: '',
         scope: 'LOCAL',
         moduleName: [],
+        keepConnection: true,
         targets: ['']
       }
       return rateLimit
