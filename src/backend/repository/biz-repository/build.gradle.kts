@@ -38,6 +38,7 @@ dependencies {
     api(project(":common:common-artifact:artifact-service"))
     implementation(project(":common:common-redis"))
     implementation(project(":common:common-artifact:artifact-cache"))
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("io.mockk:mockk")

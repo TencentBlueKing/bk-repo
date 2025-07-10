@@ -41,4 +41,6 @@ dependencies {
     api("org.apache.commons:commons-compress")
     api("com.google.guava:guava")
     api("org.springframework.boot:spring-boot-starter-test")
+    api("io.micrometer:micrometer-tracing-bridge-otel")
+    api("com.squareup.okhttp3:okhttp")
 }

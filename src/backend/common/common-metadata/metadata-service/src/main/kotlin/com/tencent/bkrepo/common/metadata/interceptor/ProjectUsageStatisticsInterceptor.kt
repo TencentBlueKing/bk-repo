@@ -28,15 +28,15 @@
 package com.tencent.bkrepo.common.metadata.interceptor
 
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
-import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsProperties
+import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpMethod
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 open class ProjectUsageStatisticsInterceptor(
     private val properties: ProjectUsageStatisticsProperties,
@@ -44,7 +44,7 @@ open class ProjectUsageStatisticsInterceptor(
 ) : HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val enabled = properties.enabled && properties.enableReqCountStatistic
-        if (!enabled || SecurityUtils.getUserId() == SYSTEM_USER || request.method == HttpMethod.HEAD.name) {
+        if (!enabled || SecurityUtils.getUserId() == SYSTEM_USER || request.method == HttpMethod.HEAD.name()) {
             return true
         }
 

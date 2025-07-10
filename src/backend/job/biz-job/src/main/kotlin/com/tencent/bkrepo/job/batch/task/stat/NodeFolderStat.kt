@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.UpdateDefinition
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.redis.core.HashOperations
 import org.springframework.data.redis.core.RedisTemplate
@@ -83,7 +84,7 @@ class NodeFolderStat(
         keyPrefix: String,
         collectionName: String? = null,
         cacheNumLimit: Long,
-        ) {
+    ) {
         //只统计非目录类节点；没有根目录这个节点，不需要统计
         if (node.path == PathUtils.ROOT) {
             return
@@ -142,7 +143,7 @@ class NodeFolderStat(
         force: Boolean = false,
         collectionName: String?,
         cacheNumLimit: Long,
-        ) {
+    ) {
         if (!force && context.folderCache.size < cacheNumLimit) return
         if (context.folderCache.isEmpty()) return
         val movedToRedis: MutableList<String> = mutableListOf()
@@ -203,7 +204,7 @@ class NodeFolderStat(
         } else {
             FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
         }
-        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
+        val updateList = ArrayList<org.springframework.data.util.Pair<Query, UpdateDefinition>>()
         val storedKeys = mutableSetOf<String>()
         for (entry in context.folderCache) {
             if (!entry.key.startsWith(prefix)) continue
@@ -263,7 +264,7 @@ class NodeFolderStat(
         collectionName: String?,
     ) {
         val hashOps = redisTemplate.opsForHash<String, String>()
-        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
+        val updateList = ArrayList<org.springframework.data.util.Pair<Query, UpdateDefinition>>()
         val options = ScanOptions.scanOptions().build()
         redisTemplate.execute { connection ->
             val hashCommands = connection.hashCommands()
@@ -340,7 +341,7 @@ class NodeFolderStat(
         fullPath: String,
         size: Long,
         nodeNum: Long
-    ): org.springframework.data.util.Pair<Query, Update> {
+    ): org.springframework.data.util.Pair<Query, UpdateDefinition> {
         val query = Query(
             Criteria.where(PROJECT).isEqualTo(projectId)
                 .and(REPO).isEqualTo(repoName)

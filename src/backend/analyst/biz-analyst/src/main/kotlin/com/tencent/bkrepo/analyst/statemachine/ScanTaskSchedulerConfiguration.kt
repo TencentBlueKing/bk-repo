@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.statemachine
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.task.support.ContextPropagatingTaskDecorator
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.ThreadPoolExecutor.DiscardPolicy
 
@@ -45,6 +46,7 @@ class ScanTaskSchedulerConfiguration {
             setAwaitTerminationSeconds(DEFAULT_AWAIT_TERMINATION_SECONDS)
             threadNamePrefix = SCAN_TASK_SCHEDULER_THREAD_NAME_PREFIX
             setRejectedExecutionHandler(DiscardPolicy())
+            setTaskDecorator(ContextPropagatingTaskDecorator())
         }
     }
 

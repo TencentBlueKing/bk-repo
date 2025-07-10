@@ -62,8 +62,8 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import jakarta.servlet.http.HttpServletResponse
 import java.time.LocalDateTime
-import javax.servlet.http.HttpServletResponse
 
 object ObjectBuildUtil {
     fun buildPackageVersionCreateRequest(

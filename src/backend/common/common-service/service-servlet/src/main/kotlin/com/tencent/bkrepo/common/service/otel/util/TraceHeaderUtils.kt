@@ -30,15 +30,15 @@ package com.tencent.bkrepo.common.service.otel.util
 import com.tencent.bkrepo.common.api.constant.BKREPO_TRACE
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import io.micrometer.tracing.Tracer
 import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.Tracer
 
 object TraceHeaderUtils {
 
     fun buildB3Header(): String {
         val trace = try {
             SpringContextUtils.getBean<Tracer>()
-        } catch (_ : BeansException) {
+        } catch (_: BeansException) {
             null
         }
 
@@ -49,11 +49,11 @@ object TraceHeaderUtils {
     fun setResponseHeader() {
         val trace = try {
             SpringContextUtils.getBean<Tracer>()
-        } catch (_ : BeansException) {
+        } catch (_: BeansException) {
             null
         }
         val context = trace?.currentSpan()?.context()
         val response = HttpContextHolder.getResponseOrNull()
-        context?.let {response?.setHeader(BKREPO_TRACE, context.traceId())}
+        context?.let { response?.setHeader(BKREPO_TRACE, context.traceId()) }
     }
 }

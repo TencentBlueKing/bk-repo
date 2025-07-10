@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @DataMongoTest
 @ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
@@ -26,10 +26,10 @@ class CompressServiceTest @Autowired constructor(
     private val compressService: CompressService,
     private val compressFileRepository: CompressFileRepository,
 ) : BaseTest() {
-    @MockBean
+    @MockitoBean
     lateinit var bdZipManager: BDZipManager
 
-    @MockBean
+    @MockitoBean
     lateinit var storageService: StorageService
 
     @BeforeEach

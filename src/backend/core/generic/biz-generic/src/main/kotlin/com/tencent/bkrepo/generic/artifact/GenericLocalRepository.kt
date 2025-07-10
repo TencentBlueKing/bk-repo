@@ -126,6 +126,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
@@ -137,7 +138,6 @@ import java.util.Base64
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import javax.servlet.http.HttpServletRequest
 import kotlin.reflect.full.memberProperties
 
 @Component
@@ -191,14 +191,17 @@ class GenericLocalRepository(
                 }
                 onSeparateUpload(context, uploadId)
             }
+
             isBlockUpload(uploadId, sequence) -> {
                 this.blockUpload(uploadId, sequence!!, context)
                 context.response.contentType = MediaTypes.APPLICATION_JSON
                 context.response.writer.println(ResponseBuilder.success().toJsonString())
             }
+
             isChunkedUpload(uploadType) -> {
                 chunkedUpload(context)
             }
+
             else -> {
                 val nodeDetail = storageManager.storeArtifactFile(
                     buildNodeCreateRequest(context),
@@ -320,7 +323,8 @@ class GenericLocalRepository(
         val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
         if (!overwrite && !isBlockUpload(uploadId, sequence)
-            && !isChunkedUpload(uploadType) && !isSeparateUpload(uploadType)) {
+            && !isChunkedUpload(uploadType) && !isSeparateUpload(uploadType)
+        ) {
             with(context.artifactInfo) {
                 nodeService.getNodeDetail(this)?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
@@ -571,7 +575,7 @@ class GenericLocalRepository(
                 )
                 val records =
                     nodeService.listNodePage(ArtifactInfo(folder.projectId, folder.repoName, folder.fullPath), option)
-                    .records.takeUnless { it.isEmpty() }?.map { NodeDetail(it) } ?: break
+                        .records.takeUnless { it.isEmpty() }?.map { NodeDetail(it) } ?: break
                 records.filterNot { it.folder }.forEach { downloadIntercept(context, it) }
                 totalSize += records.sumOf { it.size }
                 checkFileTotalSize(totalSize)
@@ -846,8 +850,8 @@ class GenericLocalRepository(
     private fun chunkedUpload(context: ArtifactUploadContext) {
         logger.info("chunked upload method ${context.request.method} ")
         val responseProperty = when (context.request.method) {
-            HttpMethod.PATCH.name -> patchUpload(context)
-            HttpMethod.PUT.name -> putUpload(context)
+            HttpMethod.PATCH.name() -> patchUpload(context)
+            HttpMethod.PUT.name() -> putUpload(context)
             else -> null
         } ?: return
         uploadResponse(responseProperty, context.response)
@@ -875,6 +879,7 @@ class GenericLocalRepository(
                 ChunkedUploadUtils.RangeStatus.ILLEGAL_RANGE -> {
                     Pair(length.toLong(), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
                 }
+
                 ChunkedUploadUtils.RangeStatus.READY_TO_APPEND -> {
                     val patchLen = storageService.append(
                         appendId = uuid!!,
@@ -887,6 +892,7 @@ class GenericLocalRepository(
                     )
                     Pair(patchLen, HttpStatus.ACCEPTED)
                 }
+
                 else -> {
                     logger.info(
                         "Part of file with sha256 $sha256 in repo $projectId|$repoName " +

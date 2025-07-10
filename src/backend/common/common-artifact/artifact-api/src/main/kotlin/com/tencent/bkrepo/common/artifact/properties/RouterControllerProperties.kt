@@ -35,5 +35,5 @@ data class RouterControllerProperties(
     /**
      * 支持路由转发的服务名
      * */
-    var supportServices: Set<String>,
+    var supportServices: Set<String> = mutableSetOf(),
 )

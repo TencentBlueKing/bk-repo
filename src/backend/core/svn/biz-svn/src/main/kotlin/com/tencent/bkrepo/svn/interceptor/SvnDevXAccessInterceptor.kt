@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.svn.interceptor
 
-import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXAccessInterceptor
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.svn.utils.SvnProxyHelper.getRepoId
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 class SvnDevXAccessInterceptor(devxProperties: DevXProperties) : DevXAccessInterceptor(devxProperties) {
     override fun getProjectId(request: HttpServletRequest): String? {
