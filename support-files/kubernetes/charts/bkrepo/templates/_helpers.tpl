@@ -16,6 +16,18 @@ Create the name of the service account to use
 {{- end -}}
 {{- end -}}
 
+{{/*
+define init project id
+*/}}
+{{- define "bkrepo.init.project" -}}
+{{- if .Values.gateway.enableMultiTenantMode -}}
+{{- $tenantId := default "system" .Values.gateway.oPTenantId -}}
+{{- printf "%s.blueking" $tenantId -}}
+{{- else -}}
+{{- printf "blueking" -}}
+{{- end -}}
+{{- end -}}
+
 
 
 {{/*
