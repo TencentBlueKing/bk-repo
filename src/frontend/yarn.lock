@@ -11139,6 +11139,11 @@ vary@~1.1.2:
   resolved "https://mirrors.tencent.com/npm/vary/-/vary-1.1.2.tgz"
   integrity sha1-IpnwLG3tMNSllhsLn3RSShj2NPw=
 
+viewerjs@^1.11.7:
+  version "1.11.7"
+  resolved "https://mirrors.tencent.com/npm/viewerjs/-/viewerjs-1.11.7.tgz#99c39b86c3f1b6debf446747a1f0e25f8be4db74"
+  integrity sha512-0JuVqOmL5v1jmEAlG5EBDR3XquxY8DWFQbFMprOXgaBB0F7Q/X9xWdEaQc59D8xzwkdUgXEMSSknTpriq95igg==
+
 vinyl-contents@^2.0.0:
   version "2.0.0"
   resolved "https://mirrors.tencent.com/npm/vinyl-contents/-/vinyl-contents-2.0.0.tgz"
