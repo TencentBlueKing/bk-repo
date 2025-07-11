@@ -7,10 +7,11 @@
         @cancel="cancel">
         <bk-form class="mr10" :label-width="100" :model="scanForm" :rules="rules" ref="scanForm">
             <bk-form-item :label="$t('schemeName')" :required="true" property="name" error-display-type="normal">
-                <bk-input v-model.trim="scanForm.name" maxlength="32" show-word-limit></bk-input>
+                <bk-input :placeholder="$t('pleaseInput')" v-model.trim="scanForm.name" maxlength="32" show-word-limit></bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('schemeType')" :required="true" property="type" error-display-type="normal">
                 <bk-select
+                    :placeholder="$t('pleaseSelect')"
                     v-model="scanForm.type"
                     @change="scanForm.scanner = ''">
                     <bk-option v-for="[id] in Object.entries(scanTypeEnum)" :key="id" :id="id" :name="$t(`scanTypeEnum.${id}`)"></bk-option>
@@ -18,6 +19,7 @@
             </bk-form-item>
             <bk-form-item v-if="scanForm.type" :label="$t('scanner')" :required="true" property="scanner" error-display-type="normal">
                 <bk-select
+                    :placeholder="$t('pleaseSelect')"
                     v-model="scanForm.scanner">
                     <bk-option v-for="scanner in filterScannerList" :key="scanner.name" :id="scanner.name" :name="scanner.name"></bk-option>
                 </bk-select>
@@ -29,6 +31,7 @@
                     type="textarea"
                     maxlength="200"
                     show-word-limit
+                    :placeholder="$t('pleaseInput')"
                     :rows="4">
                 </bk-input>
             </bk-form-item>
