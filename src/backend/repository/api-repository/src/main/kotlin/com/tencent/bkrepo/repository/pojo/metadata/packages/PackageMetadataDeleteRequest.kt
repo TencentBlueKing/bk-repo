@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,26 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.metadata
+package com.tencent.bkrepo.repository.pojo.metadata.packages
 
-/**
- * 制品禁用类型
- */
-enum class ForbidType(val reason: String = FORBID_REASON_NONE) {
-    // 扫描中被禁用
-    SCANNING,
-    // 未通过质量规则被禁用
-    QUALITY_UNPASS(FORBID_REASON_QUALITY_ISSUE),
-    // 手动禁用
-    MANUAL,
-    // 未扫描时禁用
-    NOT_SCANNED(FORBID_REASON_NOT_SCANNED),
-    // 未禁用
-    NONE;
-}
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.ServiceRequest
+import com.tencent.bkrepo.repository.pojo.packages.PackageVersionRequest
+import io.swagger.v3.oas.annotations.media.Schema
 
-const val FORBID_REASON_NONE = ""
-
-const val FORBID_REASON_NOT_SCANNED = "Not scanned"
-
-const val FORBID_REASON_QUALITY_ISSUE = "Not pass quality rules"
+@Schema(title = "依赖源包删除元数据请求")
+data class PackageMetadataDeleteRequest(
+    @get:Schema(title = "项目id", required = true)
+    override val projectId: String,
+    @get:Schema(title = "仓库名称", required = true)
+    override val repoName: String,
+    @get:Schema(title = "包唯一key", required = true)
+    override val packageKey: String,
+    @get:Schema(title = "包版本", required = true)
+    override val version: String,
+    @get:Schema(title = "待删除的元数据key列表", required = true)
+    val keysToDelete: Set<String>,
+    @get:Schema(title = "操作用户")
+    override val operator: String = SYSTEM_USER
+) : PackageVersionRequest, ServiceRequest

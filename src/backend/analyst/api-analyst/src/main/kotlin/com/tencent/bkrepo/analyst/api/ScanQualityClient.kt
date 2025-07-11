@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,26 +25,38 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.metadata
+package com.tencent.bkrepo.analyst.api
 
-/**
- * 制品禁用类型
- */
-enum class ForbidType(val reason: String = FORBID_REASON_NONE) {
-    // 扫描中被禁用
-    SCANNING,
-    // 未通过质量规则被禁用
-    QUALITY_UNPASS(FORBID_REASON_QUALITY_ISSUE),
-    // 手动禁用
-    MANUAL,
-    // 未扫描时禁用
-    NOT_SCANNED(FORBID_REASON_NOT_SCANNED),
-    // 未禁用
-    NONE;
+import com.tencent.bkrepo.common.api.constant.SCANNER_SERVICE_NAME
+import com.tencent.bkrepo.common.api.pojo.Response
+import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+
+@FeignClient(SCANNER_SERVICE_NAME, contextId = "ScanQualityClient")
+@RequestMapping("/service/scan/quality")
+interface ScanQualityClient {
+
+    /**
+     * 检查是否要禁用制品
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名
+     * @param repoType 仓库类型
+     * @param fullPath 制品路径
+     * @param packageName 包名
+     * @param packageVersion 包版本
+     *
+     * @return 需要禁用返回true,否则返回false
+     * */
+    @GetMapping("/precheck")
+    fun shouldForbidBeforeScanned(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String,
+        @RequestParam repoType: String,
+        @RequestParam(required = false) fullPath: String? = null,
+        @RequestParam(required = false) packageName: String? = null,
+        @RequestParam(required = false) packageVersion: String? = null,
+    ): Response<Boolean>
 }
-
-const val FORBID_REASON_NONE = ""
-
-const val FORBID_REASON_NOT_SCANNED = "Not scanned"
-
-const val FORBID_REASON_QUALITY_ISSUE = "Not pass quality rules"

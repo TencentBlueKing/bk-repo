@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
@@ -88,6 +89,7 @@ class CenterNodeServiceImpl(
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
     override val projectService: ProjectService,
+    override val metadataCustomizer: MetadataCustomizer?,
     val clusterProperties: ClusterProperties,
     val archiveClient: ArchiveClient,
 ) : NodeServiceImpl(
@@ -103,6 +105,7 @@ class CenterNodeServiceImpl(
     routerControllerProperties,
     blockNodeService,
     projectService,
+    metadataCustomizer,
     archiveClient,
 ) {
 

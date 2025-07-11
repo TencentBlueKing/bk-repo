@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,20 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.analyst.pojo.request
+package com.tencent.bkrepo.analyst.config
 
-data class LicenseScanQualityUpdateRequest(
-    val recommend: Boolean = false,
-    val compliance: Boolean = false,
-    val unknown: Boolean = false,
-    val forbidQualityUnPass: Boolean = false
-) {
-    fun toMap(): Map<String, Any> {
-        val map = mutableMapOf<String, Any>()
-        map[LicenseScanQualityUpdateRequest::recommend.name] = recommend
-        map[LicenseScanQualityUpdateRequest::compliance.name] = compliance
-        map[LicenseScanQualityUpdateRequest::unknown.name] = unknown
-        map[LicenseScanQualityUpdateRequest::forbidQualityUnPass.name] = forbidQualityUnPass
-        return map
-    }
-}
+import org.springframework.boot.context.properties.ConfigurationProperties
+
+@ConfigurationProperties("analyst")
+data class AnalystProperties(
+    /**
+     * 是否启用自动禁用未扫描制品功能
+     *
+     * 启用后将根据制品分析方案判断是否禁用未扫描的制品，制品分析方案较多时可能会导致上传结束后返回响应给用户变慢
+     */
+    var enableForbidNotScanned: Boolean = false,
+)

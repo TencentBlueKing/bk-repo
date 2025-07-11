@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,26 +25,25 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.metadata
+package com.tencent.bkrepo.analyst
 
-/**
- * 制品禁用类型
- */
-enum class ForbidType(val reason: String = FORBID_REASON_NONE) {
-    // 扫描中被禁用
-    SCANNING,
-    // 未通过质量规则被禁用
-    QUALITY_UNPASS(FORBID_REASON_QUALITY_ISSUE),
-    // 手动禁用
-    MANUAL,
-    // 未扫描时禁用
-    NOT_SCANNED(FORBID_REASON_NOT_SCANNED),
-    // 未禁用
-    NONE;
+import com.tencent.bkrepo.analyst.api.ScanQualityClient
+import com.tencent.bkrepo.analyst.config.AnalystProperties
+import com.tencent.bkrepo.analyst.metadata.AnalystMetadataCustomizer
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+@EnableConfigurationProperties(AnalystProperties::class)
+class AnalystMetadataAutoConfiguration {
+    @Bean
+    @ConditionalOnProperty("analyst.enableForbidNotScanned", havingValue = "true")
+    fun analystMetadataCustomizer(
+        properties: AnalystProperties,
+        scanQualityClient: ScanQualityClient
+    ): MetadataCustomizer =
+        AnalystMetadataCustomizer(properties, scanQualityClient)
 }
-
-const val FORBID_REASON_NONE = ""
-
-const val FORBID_REASON_NOT_SCANNED = "Not scanned"
-
-const val FORBID_REASON_QUALITY_ISSUE = "Not pass quality rules"

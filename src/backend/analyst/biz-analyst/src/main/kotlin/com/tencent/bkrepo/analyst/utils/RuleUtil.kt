@@ -27,9 +27,15 @@
 
 package com.tencent.bkrepo.analyst.utils
 
+import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
+import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact.Companion.RULE_FIELD_LATEST_VERSION
+import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 
 object RuleUtil {
     fun getProjectIds(rule: Rule?): List<String> {
@@ -46,7 +52,7 @@ object RuleUtil {
      */
     @Suppress("UNCHECKED_CAST")
     fun fieldValueFromRule(rule: Rule?, field: String): List<String> {
-        return when(rule) {
+        return when (rule) {
             is Rule.QueryRule -> fieldValue(rule, field)
             is Rule.FixedRule -> fieldValue(rule.wrapperRule, field)
             is Rule.NestedRule -> valuesFromNestedRule(rule, field)
@@ -81,5 +87,34 @@ object RuleUtil {
                 }
             }
         return fieldValues
+    }
+
+    fun match(rule: Rule, projectId: String, repoName: String, fullPath: String): Boolean {
+        val valuesToMatch = mapOf(
+            NodeDetail::projectId.name to projectId,
+            NodeDetail::repoName.name to repoName,
+            RuleArtifact::name.name to fullPath.substringAfterLast(CharPool.SLASH)
+        )
+        return RuleMatcher.match(rule, valuesToMatch)
+    }
+
+    fun match(
+        rule: Rule,
+        projectId: String,
+        repoName: String,
+        packageType: String,
+        packageName: String,
+        packageVersion: String,
+    ): Boolean {
+        val valuesToMatch = mapOf<String, Any>(
+            PackageSummary::projectId.name to projectId,
+            PackageSummary::repoName.name to repoName,
+            PackageSummary::type.name to packageType,
+            RuleArtifact::name.name to packageName,
+            RuleArtifact::version.name to packageVersion,
+            // 默认当前正在创建的是最新版本
+            RULE_FIELD_LATEST_VERSION to true
+        )
+        return RuleMatcher.match(rule, valuesToMatch)
     }
 }

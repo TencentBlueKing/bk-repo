@@ -95,6 +95,11 @@ class PackageServiceTest @Autowired constructor(
         val request = buildCreateRequest(version = "0.0.1-SNAPSHOT", overwrite = false)
         packageService.createPackageVersion(request)
         val tPackage = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
+        val tPackageVersion = packageService.findVersionByName(
+            UT_PROJECT_ID, UT_REPO_NAME, request.packageKey, request.versionName
+        )
+        Assertions.assertNotNull(tPackageVersion)
+        Assertions.assertEquals("value", tPackageVersion!!.metadata["key"])
         Assertions.assertNotNull(tPackage)
         Assertions.assertEquals(UT_USER, tPackage!!.createdBy)
         Assertions.assertEquals(UT_USER, tPackage.lastModifiedBy)
