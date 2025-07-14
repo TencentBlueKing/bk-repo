@@ -84,7 +84,7 @@ class CompressFilePreviewImpl(
         while (inputStream.nextEntry.also { entry = it } != null) {
             if (entry!!.name == fileAttribute.zipEntryPath) {
                 var byteArray = ByteArray(maxSize)
-                val size = IOUtils.readFully(inputStream, byteArray)
+                val size = inputStream.use { IOUtils.readFully(it, byteArray) }
                 if (size < maxSize) {
                     byteArray = byteArray.sliceArray(IntRange(0, size - 1))
                 }

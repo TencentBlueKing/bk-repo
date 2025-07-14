@@ -52,6 +52,7 @@ class CompressedReportRedirectService(
         if (context.repoName != REPORT) {
             return false
         }
+        // 报告存储路径 /{pipelineId}/{buildId}/{taskId}/xxxx
         if (context.artifactInfo.getArtifactFullPath().split(StringPool.SLASH).size < 4) {
             return false
         }
