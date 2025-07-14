@@ -285,7 +285,7 @@
                                 this.repoBaseInfo.ip_segment = {
                                     enable: true,
                                     ipSegment: i.rules.ipSegment.join(','),
-                                    whitelistUser: i.rules.whitelistUser instanceof Array ? i.rules.whitelistUser.splice(',') : i.rules.whitelistUser,
+                                    whitelistUser: i.rules.whitelistUser instanceof Array ? i.rules.whitelistUser.join(',') : i.rules.whitelistUser,
                                     officeNetwork: i.rules.officeNetwork
                                 }
                             } else {
