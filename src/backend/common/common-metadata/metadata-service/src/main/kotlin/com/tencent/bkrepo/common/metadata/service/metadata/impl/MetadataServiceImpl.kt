@@ -161,10 +161,10 @@ class MetadataServiceImpl(
     }
 
     fun checkEnumTypeMetadata(projectId: String, metadata: MutableList<TMetadata>) {
-        val enumTypeLabels = metadataLabelService.listAll(projectId).filter { it.enumType }.map { it.labelKey }
-        metadata.forEach {
-            if (enumTypeLabels.contains(it.key)) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "${it.key}: ${it.value}")
+        val metadataLabels = metadataLabelService.listAll(projectId)
+        metadata.forEach { m ->
+            if (metadataLabels.find { it.labelKey == m.key && !it.labelColorMap.keys.contains(m.value) } != null) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "${m.key}: ${m.value}")
             }
         }
     }
