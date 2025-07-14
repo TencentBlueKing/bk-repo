@@ -80,4 +80,7 @@ data class FileAttribute (
 
     // 文件后缀
     var suffix: String? = null,
+
+    // 压缩包内文件路径
+    var zipEntryPath: String? = null
 )
