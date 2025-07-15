@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataLabelService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
@@ -74,7 +75,8 @@ import org.springframework.transaction.annotation.Transactional
 class MetadataServiceImpl(
     private val nodeDao: NodeDao,
     private val repositoryProperties: RepositoryProperties,
-    private val ciPermissionManager: CIPermissionManager
+    private val ciPermissionManager: CIPermissionManager,
+    private val metadataLabelService: MetadataLabelService
 ) : MetadataService {
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
@@ -97,6 +99,7 @@ class MetadataServiceImpl(
                 metadata,
                 MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
             )
+            checkEnumTypeMetadata(projectId, newMetadata)
             checkIfModifyPipelineMetadata(node, newMetadata.map { it.key })
             checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
             node.metadata = if (replace) {
@@ -155,6 +158,15 @@ class MetadataServiceImpl(
 
     fun checkNodeCluster(node: TNode) {
         return
+    }
+
+    fun checkEnumTypeMetadata(projectId: String, metadata: MutableList<TMetadata>) {
+        val metadataLabels = metadataLabelService.listAll(projectId)
+        metadata.forEach { m ->
+            if (metadataLabels.find { it.labelKey == m.key && !it.labelColorMap.keys.contains(m.value) } != null) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "${m.key}: ${m.value}")
+            }
+        }
     }
 
     private fun checkIfModifyPipelineMetadata(node: TNode, newMetadataKeys: Collection<String>) {

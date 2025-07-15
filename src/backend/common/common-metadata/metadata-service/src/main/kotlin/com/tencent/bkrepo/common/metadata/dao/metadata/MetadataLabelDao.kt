@@ -25,14 +25,40 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.dao.repository
+package com.tencent.bkrepo.common.metadata.dao.metadata
 
-import com.tencent.bkrepo.repository.model.TMetadataLabel
-import org.springframework.data.mongodb.repository.MongoRepository
+import com.mongodb.client.result.DeleteResult
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.model.TMetadataLabel
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import org.springframework.context.annotation.Conditional
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Repository
 
 @Repository
-interface MetadataLabelRepository : MongoRepository<TMetadataLabel, String> {
-    fun findByProjectIdAndLabelKey(projectId: String, labelKey: String): TMetadataLabel?
-    fun findByProjectId(projectId: String): List<TMetadataLabel>
+@Conditional(SyncCondition::class)
+class MetadataLabelDao : SimpleMongoDao<TMetadataLabel>() {
+    fun findByProjectIdAndLabelKey(projectId: String, labelKey: String): TMetadataLabel? {
+        val query = Query(
+            Criteria.where(TMetadataLabel::projectId.name).`is`(projectId)
+                .and(TMetadataLabel::labelKey.name).`is`(labelKey)
+        )
+        return findOne(query)
+    }
+
+    fun findByProjectId(projectId: String): List<TMetadataLabel> {
+        val query = Query(
+            Criteria.where(TMetadataLabel::projectId.name).`is`(projectId)
+        )
+        return find(query)
+    }
+
+    fun deleteByProjectIdAndLabelKey(projectId: String, labelKey: String): DeleteResult {
+        val query = Query(
+            Criteria.where(TMetadataLabel::projectId.name).`is`(projectId)
+                .and(TMetadataLabel::labelKey.name).`is`(labelKey)
+        )
+        return remove(query)
+    }
 }

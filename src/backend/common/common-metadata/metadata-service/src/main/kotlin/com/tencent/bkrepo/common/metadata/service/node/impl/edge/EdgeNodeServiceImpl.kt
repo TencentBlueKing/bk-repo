@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeArchiveSupport
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeCompressSupport
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeDeleteSupport
@@ -95,6 +96,7 @@ class EdgeNodeServiceImpl(
     override val projectService: ProjectService,
     override val metadataCustomizer: MetadataCustomizer?,
     val archiveClient: ArchiveClient,
+    override val metadataLabelCacheService: MetadataLabelCacheService
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -109,7 +111,8 @@ class EdgeNodeServiceImpl(
     blockNodeService,
     projectService,
     metadataCustomizer,
-    clusterProperties
+    clusterProperties,
+    metadataLabelCacheService,
 ) {
     override fun computeSize(
         artifact: ArtifactInfo,
