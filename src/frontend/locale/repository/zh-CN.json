@@ -447,6 +447,8 @@
     "triggerEvent": "触发事件",
     "scanQualityCheckBtnPre":"可勾选下方按钮，在扫描或扫描结束后触发勾选项",
     "scanQualityCheckBtn":"自动禁止使用制品：质量规则未通过的制品",
+    "scanQualityScanBtn":"自动禁用未扫描制品",
+    "scanQualityScanTip": "需前置打开自动扫描",
     "scanQualityErrorTips":"请填写至少一条质量规则",
     "scanQualityNonNegativeIntegerTip": "请填写 0 - 10000 之间的非负整数",
     "per": "个",

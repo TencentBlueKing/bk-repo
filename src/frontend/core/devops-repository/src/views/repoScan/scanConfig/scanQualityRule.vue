@@ -30,6 +30,9 @@
             <div style="color:var(--fontSubsidiaryColor);">{{ $t('scanQualityCheckBtnPre') }}</div>
             <!-- <div class="mt10"><bk-checkbox v-model="rule.forbidScanUnFinished">自动禁止使用制品：制品扫描未结束的制品</bk-checkbox></div> -->
             <div class="mt10"><bk-checkbox :disabled="!editable" v-model="rule.forbidQualityUnPass">{{ $t('scanQualityCheckBtn') }}</bk-checkbox></div>
+            <div class="mt10"><bk-checkbox :disabled="!(data.scanOnNewArtifact && editable)" v-model="rule.forbidNotScanned">{{ $t('scanQualityScanBtn') }}</bk-checkbox>
+                <i class="bk-icon icon-info f14 ml5" v-bk-tooltips="$t('scanQualityScanTip')"></i>
+            </div>
         </bk-form-item>
         <bk-form-item>
             <bk-button :loading="isLoading" theme="primary" @click="save()">{{$t('save')}}</bk-button>
@@ -44,7 +47,15 @@
         props: {
             projectId: String,
             planId: String,
-            scanTypes: Array
+            scanTypes: Array,
+            data: {
+                type: Object,
+                default: () => ({
+                    type: '',
+                    scanOnNewArtifact: false,
+                    rule: {}
+                })
+            }
         },
         data () {
             const validate = {
@@ -67,7 +78,8 @@
                     medium: '',
                     low: '',
                     forbidScanUnFinished: false,
-                    forbidQualityUnPass: false
+                    forbidQualityUnPass: false,
+                    forbidNotScanned: false
                 },
                 rules: {
                     critical: [validate],
