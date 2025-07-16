@@ -166,21 +166,9 @@ class DeletedNodeCleanupJob(
         val query = Query.query(Criteria.where(ID).isEqualTo(node.id))
         var result: DeleteResult? = null
         try {
-            if (node.sha256.isNullOrEmpty() || node.sha256 == FAKE_SHA256) return
-            try {
-                val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
-                val deletedDays = node.deleted?.let { Duration.between(it, LocalDateTime.now()).toDays() } ?: 0
-                val keepRefLostNode = deletedDays < properties.keepRefLostNodeDays
-                // 需要保留Node用于排查问题时不补偿创建引用，避免引用创建后node记录可以被正常删除
-                val createIfNotExists = !keepRefLostNode
-                if (!decrementFileReferences(node.sha256, credentialsKey, createIfNotExists)) {
-                    logger.warn("Clean up node fail collection[$collectionName], node[$node]")
-                    return
-                }
-            } catch (e: UncheckedExecutionException) {
-                require(e.cause is RepoNotFoundException)
-                logger.warn("repo ${node.projectId}|${node.repoName} was deleted!")
-                handleNodeWithUnknownRepo(node.sha256)
+            if (!decrementFileReferences(node)) {
+                logger.warn("Clean up node fail collection[$collectionName], node[$node]")
+                return
             }
             result = mongoTemplate.remove(query, collectionName)
         } catch (ignored: Exception) {
@@ -188,6 +176,26 @@ class DeletedNodeCleanupJob(
         }
 
         context.fileCount.addAndGet(result?.deletedCount ?: 0)
+    }
+
+    private fun decrementFileReferences(node: Node): Boolean {
+        if (node.sha256.isNullOrEmpty() || node.sha256 == FAKE_SHA256) {
+            return true
+        }
+
+        try {
+            val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
+            val deletedDays = node.deleted?.let { Duration.between(it, LocalDateTime.now()).toDays() } ?: 0
+            val keepRefLostNode = deletedDays < properties.keepRefLostNodeDays
+            // 需要保留Node用于排查问题时不补偿创建引用，避免引用创建后node记录可以被正常删除
+            val createIfNotExists = !keepRefLostNode
+            return decrementFileReferences(node.sha256, credentialsKey, createIfNotExists)
+        } catch (e: UncheckedExecutionException) {
+            require(e.cause is RepoNotFoundException)
+            logger.warn("repo ${node.projectId}|${node.repoName} was deleted!")
+            handleNodeWithUnknownRepo(node.sha256)
+            return true
+        }
     }
 
     private fun decrementFileReferences(sha256: String, credentialsKey: String?, createIfNotExists: Boolean): Boolean {
