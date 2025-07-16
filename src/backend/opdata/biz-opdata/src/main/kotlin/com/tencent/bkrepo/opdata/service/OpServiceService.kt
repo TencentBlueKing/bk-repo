@@ -42,11 +42,13 @@ import com.tencent.bkrepo.opdata.message.OpDataMessageCode
 import com.tencent.bkrepo.opdata.pojo.bandwidth.BandwidthInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
+import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryClient
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
@@ -56,6 +58,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 class OpServiceService @Autowired constructor(
+    private val discoveryClient: DiscoveryClient,
     private val registryClientProvider: ObjectProvider<RegistryClient>,
     private val artifactMetricsClient: ArtifactMetricsClient,
     private val pluginClient: PluginClient,
@@ -66,19 +69,45 @@ class OpServiceService @Autowired constructor(
      * 获取服务列表
      */
     fun listServices(): List<ServiceInfo> {
-        return registryClient().services()
+        return discoveryClient.services.map { service->
+            ServiceInfo(
+                name = service,
+                instances = emptyList()
+            )
+        }
     }
 
     /**
      * 获取服务的所有实例
      */
     fun instances(serviceName: String): List<InstanceInfo> {
-        return registryClient().instances(serviceName).map { instance ->
-            executor.submit<InstanceInfo> {
-                instance.copy(detail = instanceDetail(instance))
+        if (registryClient().isActive()) {
+            return registryClient().instances(serviceName).map { instance ->
+                executor.submit<InstanceInfo> {
+                    instance.copy(detail = instanceDetail(instance))
+                }
+            }.map {
+                it.get()
             }
-        }.map {
-            it.get()
+        } else {
+            return discoveryClient.getInstances(serviceName).map {
+                InstanceInfo(
+                    id = it.serviceId,
+                    serviceName = serviceName,
+                    host = it.host,
+                    port = it.port,
+                    status = InstanceStatus.RUNNING,
+                    detail = instanceDetail(
+                       InstanceInfo(
+                           id = it.serviceId,
+                           serviceName = serviceName,
+                           host = it.host,
+                           port = it.port,
+                           status = InstanceStatus.RUNNING
+                       )
+                    )
+                )
+            }
         }
     }
 
@@ -102,6 +131,17 @@ class OpServiceService @Autowired constructor(
      * @param down true: 下线， false: 上线
      */
     fun changeInstanceStatus(serviceName: String, instanceId: String, down: Boolean): InstanceInfo {
+        if (!registryClient().isActive()) {
+            val match = discoveryClient.getInstances(serviceName).filter { instance -> instance.instanceId.equals(instanceId) }.first()
+            val target = InstanceInfo(
+                id = match.serviceId,
+                serviceName = serviceName,
+                host = match.host,
+                port = match.port,
+                status = InstanceStatus.RUNNING,
+            )
+            return target.copy(detail=instanceDetail(target))
+        }
         val instanceInfo = registryClient().maintenance(serviceName, instanceId, down)
         return instanceInfo.copy(detail = instanceDetail(instanceInfo))
     }

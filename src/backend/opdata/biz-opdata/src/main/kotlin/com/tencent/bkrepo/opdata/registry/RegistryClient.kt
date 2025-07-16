@@ -45,4 +45,6 @@ interface RegistryClient {
      * @param enable true: 开启维护模式，实例不再对外提供服务， false: 关闭维护模式，实例恢复正常
      */
     fun maintenance(serviceName: String, instanceId: String, enable: Boolean): InstanceInfo
+
+    fun isActive(): Boolean
 }
