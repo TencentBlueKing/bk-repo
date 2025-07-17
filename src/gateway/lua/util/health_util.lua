@@ -103,13 +103,6 @@ function _M:get_target_by_project()
     if not projectId then
         return nil, nil
     end
-    -- get router from config file
-    if config.project_router and config.router_domain then
-        local env = config.project_router[projectId]
-        if env and config.router_domain[env] then
-            return env, config.router_domain[env]
-        end
-    end
     -- get router from cache
     local router_cache = ngx.shared.router_srv_store
     local router_key = "project:project_router"
