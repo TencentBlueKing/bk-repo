@@ -31,5 +31,9 @@ data class ReportExportProperties(
     /**
      * 非空时仅白名单中的扫描器会导出报告
      */
-    var scannerWhiteList: Set<String> = emptySet()
+    var scannerWhiteList: Set<String> = emptySet(),
+    /**
+     * 允许同时上报的漏洞、敏感信息、License最大数量，超过该值将不上报
+     */
+    var maxReportSize: Int = 10000,
 )

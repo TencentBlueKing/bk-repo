@@ -62,7 +62,8 @@ class ReportExporter(
             && subtask.projectId in projectsBlackList
         val notInScannerWhiteList = reportProperties.scannerWhiteList.isNotEmpty()
             && subtask.scanner !in reportProperties.scannerWhiteList
-        return !(notInWhiteList || inBlackList || notInScannerWhiteList)
+        val exceedMaxSize = (result.output?.result?.totalSize() ?: 0) > reportProperties.maxReportSize
+        return !(notInWhiteList || inBlackList || notInScannerWhiteList || exceedMaxSize)
     }
 
     /**
