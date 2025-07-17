@@ -86,4 +86,9 @@ data class ArtifactMetricsProperties(
      * 配置在在统计流量时固定在LruMeterFilter中不被淘汰的仓库
      */
     var pinnedRepositories: Set<String> = emptySet(),
+
+    /**
+     * 是否开启实例带宽指标上报
+     */
+    var enableInstanceBandwidthMetrics: Boolean = false
 )
