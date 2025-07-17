@@ -50,7 +50,8 @@ class ReportExporter(
     private fun shouldExport(subtask: TSubScanTask, result: ScanExecutorResult): Boolean {
         if (!reportProperties.enabled ||
             result !is StandardScanExecutorResult ||
-            result.scanStatus != SubScanTaskStatus.SUCCESS.name) {
+            result.scanStatus != SubScanTaskStatus.SUCCESS.name
+        ) {
             return false
         }
 
@@ -58,11 +59,17 @@ class ReportExporter(
         val projectsBlackList = reportProperties.projectBlackList
         val notInWhiteList = projectWhiteList.isNotEmpty() && subtask.projectId !in projectWhiteList
         val inBlackList = projectWhiteList.isEmpty()
-            && projectsBlackList.isNotEmpty()
-            && subtask.projectId in projectsBlackList
+                && projectsBlackList.isNotEmpty()
+                && subtask.projectId in projectsBlackList
         val notInScannerWhiteList = reportProperties.scannerWhiteList.isNotEmpty()
-            && subtask.scanner !in reportProperties.scannerWhiteList
-        val exceedMaxSize = (result.output?.result?.totalSize() ?: 0) > reportProperties.maxReportSize
+                && subtask.scanner !in reportProperties.scannerWhiteList
+        val totalReportSize = result.output?.result?.totalSize() ?: 0
+        val exceedMaxSize = totalReportSize > reportProperties.maxReportSize
+        if (exceedMaxSize) {
+            logger.warn(
+                "report[$totalReportSize] of subtask[${subtask.id}] exceed max size ${reportProperties.maxReportSize}"
+            )
+        }
         return !(notInWhiteList || inBlackList || notInScannerWhiteList || exceedMaxSize)
     }
 
