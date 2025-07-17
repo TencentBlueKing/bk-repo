@@ -282,14 +282,11 @@
                     if (interceptors instanceof Array) {
                         interceptors.forEach(i => {
                             if (i.type === 'IP_SEGMENT') {
-                                const curRules = {
-                                    ipSegment: i.rules.ipSegment.join(','),
-                                    whitelistUser: i.rules.whitelistUser.join(','),
-                                    officeNetwork: i.rules.officeNetwork
-                                }
-                                this.repoBaseInfo[i.type.toLowerCase()] = {
+                                this.repoBaseInfo.ip_segment = {
                                     enable: true,
-                                    ...curRules
+                                    ipSegment: i.rules.ipSegment.join(','),
+                                    whitelistUser: i.rules.whitelistUser instanceof Array ? i.rules.whitelistUser.join(',') : i.rules.whitelistUser,
+                                    officeNetwork: i.rules.officeNetwork
                                 }
                             } else {
                                 this.repoBaseInfo[i.type.toLowerCase()] = {
