@@ -37,6 +37,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -69,59 +70,65 @@ interface ArtifactReplicaClient {
 
     @PostMapping("/node/exist/list")
     fun checkNodeExistList(
-        @RequestBody request: NodeExistCheckRequest
+        @RequestBody request: NodeExistCheckRequest,
     ): Response<List<String>>
 
     @GetMapping("/node/exist")
     fun checkNodeExist(
         @RequestParam projectId: String,
         @RequestParam repoName: String,
-        @RequestParam fullPath: String
+        @RequestParam fullPath: String,
+        @RequestParam deleted: String? = null,
     ): Response<Boolean>
 
     @PostMapping("/node/create")
     fun replicaNodeCreateRequest(
-        @RequestBody request: NodeCreateRequest
+        @RequestBody request: NodeCreateRequest,
+    ): Response<NodeDetail>
+
+    @PostMapping("/deleted/node/replica")
+    fun replicaDeletedNodeReplicationRequest(
+        @RequestBody request: DeletedNodeReplicationRequest,
     ): Response<NodeDetail>
 
     @PostMapping("/node/rename")
     fun replicaNodeRenameRequest(
-        @RequestBody request: NodeRenameRequest
+        @RequestBody request: NodeRenameRequest,
     ): Response<Void>
 
     @PostMapping("/node/update")
     fun replicaNodeUpdateRequest(
-        @RequestBody request: NodeUpdateRequest
+        @RequestBody request: NodeUpdateRequest,
     ): Response<Void>
 
     @PostMapping("/node/copy")
     fun replicaNodeCopyRequest(
-        @RequestBody request: NodeMoveCopyRequest
+        @RequestBody request: NodeMoveCopyRequest,
     ): Response<Void>
 
     @PostMapping("/node/move")
     fun replicaNodeMoveRequest(
-        @RequestBody request: NodeMoveCopyRequest
+        @RequestBody request: NodeMoveCopyRequest,
     ): Response<Void>
 
     @PostMapping("/node/delete")
     fun replicaNodeDeleteRequest(
-        @RequestBody request: NodeDeleteRequest
+        @RequestBody request: NodeDeleteRequest,
     ): Response<NodeDeleteResult>
 
     @PostMapping("/repo/create")
     fun replicaRepoCreateRequest(
-        @RequestBody request: RepoCreateRequest
+        @RequestBody request: RepoCreateRequest,
     ): Response<RepositoryDetail>
 
     @PostMapping("/repo/update")
     fun replicaRepoUpdateRequest(
-        @RequestBody request: RepoUpdateRequest
+        @RequestBody request: RepoUpdateRequest,
     ): Response<Void>
 
     @PostMapping("/repo/delete")
     fun replicaRepoDeleteRequest(
-        @RequestBody request: RepoDeleteRequest
+        @RequestBody request: RepoDeleteRequest,
     ): Response<Void>
 
     @PostMapping("/permission/check")
@@ -129,26 +136,26 @@ interface ArtifactReplicaClient {
 
     @PostMapping("/project/create")
     fun replicaProjectCreateRequest(
-        @RequestBody request: ProjectCreateRequest
+        @RequestBody request: ProjectCreateRequest,
     ): Response<ProjectInfo>
 
     @PostMapping("/metadata/save")
     fun replicaMetadataSaveRequest(
-        @RequestBody request: MetadataSaveRequest
+        @RequestBody request: MetadataSaveRequest,
     ): Response<Void>
 
     @PostMapping("/metadata/delete")
     fun replicaMetadataDeleteRequest(
-        @RequestBody request: MetadataDeleteRequest
+        @RequestBody request: MetadataDeleteRequest,
     ): Response<Void>
 
     @PostMapping("/package/version/exist")
     fun checkPackageVersionExist(
-        @RequestBody request: PackageVersionExistCheckRequest
+        @RequestBody request: PackageVersionExistCheckRequest,
     ): Response<Boolean>
 
     @PostMapping("/package/version/create")
     fun replicaPackageVersionCreatedRequest(
-        @RequestBody request: PackageVersionCreateRequest
+        @RequestBody request: PackageVersionCreateRequest,
     ): Response<Void>
 }

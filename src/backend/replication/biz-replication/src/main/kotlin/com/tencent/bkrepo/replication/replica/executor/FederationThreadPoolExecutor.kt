@@ -50,6 +50,6 @@ object FederationThreadPoolExecutor {
         return ThreadPoolExecutor(
             corePoolSize, corePoolSize * 2, 60, TimeUnit.SECONDS,
             ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
-        )
+        ).apply { this.allowCoreThreadTimeOut(true) }
     }
 }

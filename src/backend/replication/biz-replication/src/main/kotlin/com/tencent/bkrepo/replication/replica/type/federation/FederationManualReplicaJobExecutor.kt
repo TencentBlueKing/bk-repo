@@ -25,62 +25,64 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.replica.type.event
+package com.tencent.bkrepo.replication.replica.type.federation
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
-import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 /**
- * 基于事件消息的实时同步通用逻辑
+ * 手动调用仅执行一次的任务
+ * 仅针对remote类型节点同步
  */
-open class CommonEventBasedReplicaJobExecutor(
+@Component
+class FederationManualReplicaJobExecutor(
     clusterNodeService: ClusterNodeService,
     localDataManager: LocalDataManager,
-    replicaService: ReplicaService,
+    replicaService: FederationBasedReplicaService,
     replicationProperties: ReplicationProperties,
-    val replicaRecordService: ReplicaRecordService
+    private val replicaRecordService: ReplicaRecordService,
 ) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService, replicationProperties) {
 
     /**
-     * 执行同步
+     * 执行仅执行一次的同步任务，仅限remote类型节点同步
      */
-    fun execute(taskDetail: ReplicaTaskDetail, event: ArtifactEvent) {
-        if (!replicaObjectCheck(taskDetail, event)) return
-        val task = taskDetail.task
-        val taskRecord: ReplicaRecordInfo = replicaRecordService.findOrCreateLatestRecord(task.key)
+    fun execute(taskDetail: ReplicaTaskDetail) {
+        logger.info("The federation full sync task[${taskDetail.task.key}] will be manually executed.")
+        var replicaOverview: ReplicaOverview? = null
+        val taskRecord = replicaRecordService.findOrCreateLatestRecord(taskDetail.task.key)
+            .copy(startTime = LocalDateTime.now())
         try {
-            val results = task.remoteClusters.map { submit(taskDetail, taskRecord, it, event) }.map { it.get() }
-            val replicaOverview = getResultsSummary(results).replicaOverview
+            val result = taskDetail.task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
+            replicaOverview = getResultsSummary(result).replicaOverview
             taskRecord.replicaOverview?.let { overview ->
                 replicaOverview.success += overview.success
                 replicaOverview.failed += overview.failed
                 replicaOverview.conflict += overview.conflict
             }
             replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
-            logger.info("Replica ${event.getFullResourceKey()} completed.")
-        } catch (exception: Exception) {
-            logger.error("Replica ${event.getFullResourceKey()}} failed: $exception", exception)
+        } catch (ignore: Exception) {
+            // 记录异常
+            logger.error(
+                "Federation full sync task[${taskDetail.task.key}]," +
+                    " record[${taskRecord.id}] failed: $ignore", ignore
+            )
+        } finally {
+            replicaOverview?.let {
+                replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
+            }
+            logger.info("Federation full sync task[${taskDetail.task.key}], record[${taskRecord.id}] finished")
         }
     }
 
-
-    /**
-     * 判断分发配置内容是否与待分发事件匹配
-     */
-    open fun replicaObjectCheck(task: ReplicaTaskDetail, event: ArtifactEvent): Boolean {
-        return true
-    }
-
-
     companion object {
-        private val logger = LoggerFactory.getLogger(CommonEventBasedReplicaJobExecutor::class.java)
+        private val logger = LoggerFactory.getLogger(FederationManualReplicaJobExecutor::class.java)
     }
 }

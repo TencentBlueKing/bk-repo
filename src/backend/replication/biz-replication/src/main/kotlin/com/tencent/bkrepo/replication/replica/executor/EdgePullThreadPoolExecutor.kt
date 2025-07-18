@@ -50,6 +50,6 @@ object EdgePullThreadPoolExecutor {
         return ThreadPoolExecutor(
             corePoolSize, corePoolSize, 60, TimeUnit.SECONDS,
             SynchronousQueue(), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
-        )
+        ).apply { this.allowCoreThreadTimeOut(true) }
     }
 }
