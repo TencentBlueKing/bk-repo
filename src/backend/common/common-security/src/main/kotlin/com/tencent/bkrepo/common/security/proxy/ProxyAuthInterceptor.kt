@@ -46,14 +46,14 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.PROJECT_ID
 import com.tencent.bkrepo.common.service.util.HttpSigner.PROXY_NAME
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.web.servlet.AsyncHandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
 import java.io.ByteArrayOutputStream
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 class ProxyAuthInterceptor(
     private val proxyAuthProperties: ProxyAuthProperties

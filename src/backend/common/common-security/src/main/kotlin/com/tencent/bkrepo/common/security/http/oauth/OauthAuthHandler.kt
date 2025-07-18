@@ -38,8 +38,8 @@ import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
-import javax.servlet.http.HttpServletRequest
 
 open class OauthAuthHandler(
     val authenticationManager: AuthenticationManager,

@@ -33,8 +33,8 @@ package com.tencent.bkrepo.common.security.http.core
 
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 
 /**
  * http请求认证处理器
@@ -82,5 +82,5 @@ interface HttpAuthHandler {
     /**
      * 认证成功回调
      */
-    fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) { }
+    fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) {}
 }

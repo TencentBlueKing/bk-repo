@@ -79,6 +79,14 @@ class CodeObjDatabase(
         }
     }
 
+    override fun getApproximateObjectCount(): Long {
+        return try {
+            listPacks().sumOf { it.objectCount }
+        } catch (_: Exception) {
+            -1
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(CodeObjDatabase::class.java)
     }

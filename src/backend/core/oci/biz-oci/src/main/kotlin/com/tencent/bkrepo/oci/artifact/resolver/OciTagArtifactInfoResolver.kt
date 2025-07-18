@@ -41,9 +41,9 @@ import com.tencent.bkrepo.oci.constant.OCI_TAG
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.TAGS_LIST_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(OciTagArtifactInfo::class)
@@ -64,9 +64,11 @@ class OciTagArtifactInfoResolver : ArtifactInfoResolver {
                 val tag = request.getParameter(OCI_TAG) ?: StringPool.EMPTY
                 OciTagArtifactInfo(projectId, repoName, packageName, tag)
             }
+
             requestURL.contains(DOCKER_CATALOG_SUFFIX) -> {
                 OciTagArtifactInfo(projectId, repoName, StringPool.EMPTY, StringPool.EMPTY)
             }
+
             else -> {
                 val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
                 val packageName = requestUrl.replaceAfterLast("/tags", StringPool.EMPTY).removeSuffix("/tags")

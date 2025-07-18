@@ -32,21 +32,21 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
+import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
+import com.tencent.bkrepo.common.metadata.model.TPackage
+import com.tencent.bkrepo.common.metadata.model.TPackageVersion
+import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
+import com.tencent.bkrepo.common.metadata.service.packages.StageService
 import com.tencent.bkrepo.repository.UT_PACKAGE_KEY
 import com.tencent.bkrepo.repository.UT_PACKAGE_VERSION
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
-import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
-import com.tencent.bkrepo.common.metadata.model.TPackage
-import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.stage.ArtifactStageEnum
 import com.tencent.bkrepo.repository.pojo.stage.StageUpgradeRequest
-import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
 import com.tencent.bkrepo.repository.service.PackageServiceTest.Companion.buildCreateRequest
-import com.tencent.bkrepo.common.metadata.service.packages.PackageService
-import com.tencent.bkrepo.common.metadata.service.packages.StageService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -56,10 +56,10 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @DisplayName("包服务测试")
 @DataMongoTest
@@ -74,7 +74,7 @@ class StageServiceTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate
 ) : ServiceBaseTest() {
 
-    @MockBean
+    @MockitoBean
     private lateinit var packageSearchInterpreter: PackageSearchInterpreter
 
     @BeforeAll

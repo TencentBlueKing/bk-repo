@@ -36,10 +36,12 @@ import com.tencent.bkrepo.fs.server.request.ClientPushMetricsRequest
 import com.tencent.bkrepo.fs.server.service.ClientService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import kotlinx.coroutines.reactor.awaitSingle
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.queryParamOrNull
 
+@Component
 class ClientHandler(
     private val clientService: ClientService
 ) {

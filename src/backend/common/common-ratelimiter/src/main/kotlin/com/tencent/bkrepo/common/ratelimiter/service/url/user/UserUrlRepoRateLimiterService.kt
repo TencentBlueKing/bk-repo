@@ -41,10 +41,10 @@ import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRepoRateLimitR
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE
-import javax.servlet.http.HttpServletRequest
 
 /**
  * user+urlRepo限流器实现

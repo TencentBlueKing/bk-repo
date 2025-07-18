@@ -44,8 +44,8 @@ import org.springframework.data.mongodb.core.aggregation.AggregationResults
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.data.util.CloseableIterator
 import java.lang.reflect.ParameterizedType
+import java.util.stream.Stream
 
 /**
  * mongo db 数据访问层抽象类
@@ -75,7 +75,7 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         return findAll(classType)
     }
 
-    fun stream(query: Query): CloseableIterator<E> {
+    fun stream(query: Query): Stream<E> {
         return stream(query, classType)
     }
 
@@ -185,7 +185,7 @@ abstract class AbstractMongoDao<E> : MongoDao<E> {
         return determineMongoTemplate().findAndModify(query, update, options, clazz, determineCollectionName(query))
     }
 
-    override fun <T> stream(query: Query, clazz: Class<T>): CloseableIterator<T> {
+    override fun <T> stream(query: Query, clazz: Class<T>): Stream<T> {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao stream query: [$query]")
         }

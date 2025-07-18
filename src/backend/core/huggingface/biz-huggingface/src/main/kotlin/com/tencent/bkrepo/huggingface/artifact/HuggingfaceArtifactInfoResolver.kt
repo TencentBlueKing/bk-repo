@@ -45,9 +45,9 @@ import com.tencent.bkrepo.huggingface.constants.PACKAGE_KEY
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
 import com.tencent.bkrepo.huggingface.constants.TYPE_KEY
 import com.tencent.bkrepo.huggingface.constants.VERSION
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 import kotlin.collections.component1
 import kotlin.collections.component2
 

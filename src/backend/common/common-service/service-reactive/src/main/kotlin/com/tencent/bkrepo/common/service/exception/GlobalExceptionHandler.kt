@@ -46,6 +46,13 @@ import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import java.util.Locale
 
+/**
+ * 全局异常处理器
+ *
+ * [org.springframework.boot.autoconfigure.web.reactive.error.ErrorWebFluxAutoConfiguration]中定义
+ * [org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler]使用注解@ConditionalOnMissingBean，
+ * 配置了SearchStrategy.CURRENT，所以需要在服务中各自定义该Bean
+ */
 class GlobalExceptionHandler : ErrorWebExceptionHandler {
     override fun handle(exchange: ServerWebExchange, ex: Throwable): Mono<Void> {
         val body = when (ex) {
