@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
@@ -110,12 +111,14 @@ abstract class NodeBaseService(
     open val blockNodeService: BlockNodeService,
     open val projectService: ProjectService,
     open val metadataCustomizer: MetadataCustomizer?,
+    open val metadataLabelCacheService: MetadataLabelCacheService,
 ) : NodeService {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
             val node = nodeDao.findNode(projectId, repoName, getArtifactFullPath())
-            return convertToDetail(node)
+            val metadataLabels = metadataLabelCacheService.listAll(projectId)
+            return convertToDetail(node, metadataLabels)
         }
     }
 
