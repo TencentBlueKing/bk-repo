@@ -85,6 +85,7 @@ export default {
     },
     close() {
       this.showDialog = false
+      this.$refs['form'].resetFields()
       this.$emit('update:visible', false)
     },
     handleCreateOrUpdate(projectConfig) {
@@ -114,6 +115,9 @@ export default {
           environment: ''
         }
       }
+      this.$nextTick(() => {
+        this.$refs['form'].clearValidate()
+      })
     }
   }
 }
