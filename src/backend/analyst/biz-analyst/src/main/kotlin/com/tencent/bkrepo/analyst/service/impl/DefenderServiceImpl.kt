@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
-import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.message.ScannerMessageCode
 import com.tencent.bkrepo.analyst.pojo.DefenderTask
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
@@ -40,6 +39,8 @@ import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
@@ -51,11 +52,11 @@ import org.springframework.stereotype.Service
 class DefenderServiceImpl(
     private val scanService: ScanService,
     private val nodeService: NodeService,
-    private val scannerProperties: ScannerProperties
+    private val signProperties: SignProperties
 ) : DefenderService {
     override fun defender(request: DefenderRequest): DefenderResponse {
         with(request) {
-            val scanner = getScanner(projectId)
+            val scanner = getScanner(projectId, PathUtils.resolveName(fullPath))
             val rules = ArrayList<Rule>()
             rules.add(Rule.QueryRule(NodeInfo::projectId.name, projectId, OperationType.EQ))
             rules.add(Rule.QueryRule(NodeInfo::repoName.name, repoName, OperationType.EQ))
@@ -80,8 +81,8 @@ class DefenderServiceImpl(
         }
     }
 
-    private fun getScanner(projectId: String): String {
-        val scanner = scannerProperties.defender.projectScanner[projectId]
+    private fun getScanner(projectId: String, fileName: String): String {
+        val scanner = signProperties.config[projectId]?.scanner?.get(PathUtils.resolveExtension(fileName))
         return scanner ?: throw ErrorCodeException(ScannerMessageCode.SCANNER_NOT_FOUND, projectId)
     }
 }

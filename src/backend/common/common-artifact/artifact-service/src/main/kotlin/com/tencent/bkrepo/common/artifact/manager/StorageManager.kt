@@ -48,9 +48,8 @@ import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.devops.plugin.api.PluginManager
-import com.tencent.devops.plugin.api.applyExtension
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 
 /**
  * 存储管理类
@@ -71,7 +70,7 @@ class StorageManager(
     private val nodeService: NodeService,
     private val fileReferenceService: FileReferenceService,
     private val nodeResourceFactory: NodeResourceFactory,
-    private val pluginManager: PluginManager,
+    private val nodeForwardService: ObjectProvider<NodeForwardService>
 ) {
 
     /**
@@ -145,14 +144,11 @@ class StorageManager(
         if (node == null) {
             return null
         }
-        var forwardNode: NodeDetail? = null
-        pluginManager.applyExtension<NodeForwardExtension> {
-            forwardNode = forward(node, SecurityUtils.getUserId())
-            forwardNode?.let {
-                logger.info("Load[${node.identity()}] forward to [${it.identity()}].")
-                ActionAuditContext.current().addExtendData("alphaApkSha256", it.sha256)
-                ActionAuditContext.current().addExtendData("alphaApkMd5", it.md5)
-            }
+        val forwardNode: NodeDetail? = nodeForwardService.ifAvailable?.forward(node, SecurityUtils.getUserId())
+        if (forwardNode != null) {
+            logger.info("Load[${node.identity()}] forward to [${forwardNode.identity()}].")
+            ActionAuditContext.current().addExtendData("alphaApkSha256", forwardNode.sha256)
+            ActionAuditContext.current().addExtendData("alphaApkMd5", forwardNode.md5)
         }
         val load = forwardNode ?: node
         val loadStorageCredentials = if (load.repoName == node.repoName) {

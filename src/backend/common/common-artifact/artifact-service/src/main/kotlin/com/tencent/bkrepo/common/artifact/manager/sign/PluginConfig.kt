@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 Tencent.  All rights reserved.
+ * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,11 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.manager
+package com.tencent.bkrepo.common.artifact.manager.sign
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.devops.plugin.api.ExtensionPoint
-
-interface NodeForwardExtension : ExtensionPoint {
-    fun forward(node: NodeDetail, userId: String): NodeDetail?
-}
+data class PluginConfig(
+    var projectId: String = "",
+    // key文件类型, value扫描器
+    var scanner: MutableMap<String, String> = mutableMapOf(),
+    var signedProjectId: String = "",
+    var signedRepoName: String = "",
+    var tags: MutableList<String> = mutableListOf("Alpha"),
+)

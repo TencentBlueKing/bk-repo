@@ -103,10 +103,6 @@ data class ScannerProperties(
      * 扫描结果中来源于不同组件的相同漏洞ID和许可证ID是否仅计数1次
      */
     var uniqueCounting: Boolean = false,
-    /**
-     * 加固扫描器配置
-     */
-    var defender: DefenderProperties = DefenderProperties(),
 ) {
     companion object {
         /**
