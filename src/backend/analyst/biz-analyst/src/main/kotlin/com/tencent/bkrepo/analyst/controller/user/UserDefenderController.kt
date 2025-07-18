@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,11 +25,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.manager
+package com.tencent.bkrepo.analyst.controller.user
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.devops.plugin.api.ExtensionPoint
+import com.tencent.bkrepo.analyst.pojo.request.DefenderRequest
+import com.tencent.bkrepo.analyst.pojo.response.DefenderResponse
+import com.tencent.bkrepo.analyst.service.DefenderService
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-interface NodeForwardExtension : ExtensionPoint {
-    fun forward(node: NodeDetail, userId: String): NodeDetail?
+@RestController
+@RequestMapping("/api")
+class UserDefenderController(
+    private val defenderService: DefenderService,
+    private val permissionManager: PermissionManager
+) {
+
+    @PostMapping("/defender", "/ext/apk/defender"/* Deprecated */)
+    fun defender(@RequestBody request: DefenderRequest): Response<DefenderResponse> {
+        permissionManager.checkProjectPermission(PermissionAction.MANAGE, request.projectId)
+        return ResponseBuilder.success(defenderService.defender(request))
+    }
 }
