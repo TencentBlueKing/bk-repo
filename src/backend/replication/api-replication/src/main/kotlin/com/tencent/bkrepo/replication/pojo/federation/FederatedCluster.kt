@@ -33,5 +33,7 @@ class FederatedCluster(
     var clusterId: String,
     // 是否启用
     var enabled: Boolean,
-    var taskId: String? = null
+    var taskId: String? = null,
+    // 是否全量同步
+    var fullSync: Boolean = false
 )

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent. All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,56 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.model
+package com.tencent.bkrepo.replication.replica.executor
 
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
-import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
-import org.springframework.data.mongodb.core.index.Indexed
-import org.springframework.data.mongodb.core.mapping.Document
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
- * 同步对象
- * 同步任务 - 同步对象： 1 to N
+ * 用于联邦仓库全量执行分发到对应执行器的线程池
  */
-@Document("replica_object")
-data class TReplicaObject(
-    var id: String? = null,
+object FederationFullSyncThreadPoolExecutor {
     /**
-     * 任务唯一key
+     * 线程池实例
      */
-    @Indexed
-    var taskKey: String,
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
+
     /**
-     * 本地项目
+     * 创建线程池
      */
-    val localProjectId: String,
-    /**
-     * 本地仓库
-     */
-    val localRepoName: String,
-    /**
-     * 远程项目（对于远端分发集群没有项目这个概念，可以为空）
-     */
-    val remoteProjectId: String?,
-    /**
-     * 远程仓库（对于远端分发集群没有仓库这个概念，可以为空）
-     */
-    val remoteRepoName: String?,
-    /**
-     * 仓库类型
-     */
-    val repoType: RepositoryType,
-    /**
-     * 包限制
-     */
-    val packageConstraints: List<PackageConstraint>?,
-    /**
-     * 节点限制
-     */
-    val pathConstraints: List<PathConstraint>?,
-    /**
-     * 当来源不为空的场景下仅限制来源是列表中的数据进行同步
-     */
-    val sourceFilter: List<String>? = null
-)
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("fullSync-worker-%d").build()
+        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
+        return ThreadPoolExecutor(
+            corePoolSize, corePoolSize * 2, 60, TimeUnit.SECONDS,
+            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+        ).apply { this.allowCoreThreadTimeOut(true) }
+    }
+}

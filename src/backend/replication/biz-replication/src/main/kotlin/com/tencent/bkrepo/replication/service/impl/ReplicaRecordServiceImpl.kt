@@ -154,7 +154,8 @@ class ReplicaRecordServiceImpl(
                 sha256 = sha256,
                 status = ExecutionStatus.RUNNING,
                 progress = ReplicaProgress(),
-                startTime = LocalDateTime.now()
+                startTime = LocalDateTime.now(),
+                executeType = executeType
             )
             return try {
                 replicaRecordDetailDao.insert(recordDetail).let { convert(it)!! }
@@ -314,7 +315,8 @@ class ReplicaRecordServiceImpl(
                     progress = it.progress,
                     startTime = it.startTime,
                     endTime = it.endTime,
-                    errorReason = it.errorReason
+                    errorReason = it.errorReason,
+                    executeType = it.executeType
                 )
             }
         }

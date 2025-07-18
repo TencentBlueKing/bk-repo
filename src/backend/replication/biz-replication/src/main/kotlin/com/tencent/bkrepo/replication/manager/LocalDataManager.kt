@@ -291,18 +291,20 @@ class LocalDataManager(
         fullPath: String,
         pageNumber: Int,
         pageSize: Int,
+        includeDeleted: Boolean = false
     ): List<NodeInfo> {
         val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val nodePath = PathUtils.toPath(fullPath)
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
-            .and(DELETED).isEqualTo(null)
             .and(NODE_PATH).isEqualTo(nodePath)
-
-        val query = Query(criteria)
-        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val records = mongoTemplate.find(query.with(pageRequest), Node::class.java, collectionName)
-        return records.map { convert(it)!! }
+            .apply {
+                if (!includeDeleted) {
+                    and(DELETED).isEqualTo(null)
+                }
+            }
+        val query = Query(criteria).with(Pages.ofRequest(pageNumber, pageSize))
+        return mongoTemplate.find(query, Node::class.java, collectionName).mapNotNull { convert(it) }
     }
 
     /**

@@ -32,7 +32,7 @@ import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
-import com.tencent.bkrepo.replication.replica.type.event.CommonBasedReplicaJobExecutor
+import com.tencent.bkrepo.replication.replica.type.event.CommonEventBasedReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.slf4j.LoggerFactory
@@ -43,13 +43,13 @@ import org.springframework.stereotype.Component
  */
 @Suppress("TooGenericExceptionCaught")
 @Component
-class FederationBasedReplicaJobExecutor(
+class FederationEventBasedReplicaJobExecutor(
     clusterNodeService: ClusterNodeService,
     localDataManager: LocalDataManager,
     replicaService: FederationBasedReplicaService,
     replicationProperties: ReplicationProperties,
     replicaRecordService: ReplicaRecordService,
-) : CommonBasedReplicaJobExecutor(
+) : CommonEventBasedReplicaJobExecutor(
     clusterNodeService, localDataManager, replicaService, replicationProperties, replicaRecordService
 ) {
 
@@ -65,6 +65,6 @@ class FederationBasedReplicaJobExecutor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(FederationBasedReplicaJobExecutor::class.java)
+        private val logger = LoggerFactory.getLogger(FederationEventBasedReplicaJobExecutor::class.java)
     }
 }

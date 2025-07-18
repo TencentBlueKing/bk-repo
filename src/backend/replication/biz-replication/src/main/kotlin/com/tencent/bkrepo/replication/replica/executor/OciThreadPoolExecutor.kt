@@ -50,6 +50,6 @@ object OciThreadPoolExecutor {
         return ThreadPoolExecutor(
             corePoolSize, corePoolSize * 2, 30, TimeUnit.SECONDS,
             ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
-        )
+        ).apply { this.allowCoreThreadTimeOut(true) }
     }
 }

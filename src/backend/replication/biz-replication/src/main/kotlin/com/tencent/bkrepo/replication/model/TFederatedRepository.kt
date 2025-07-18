@@ -51,7 +51,10 @@ data class TFederatedRepository(
     var clusterId: String,
     // 联邦仓库配置id
     var federationId: String,
+    // 联邦仓库配置名
     var name: String,
     // 配置的联邦集群对应仓库信息
     var federatedClusters: List<FederatedCluster>,
+    // 是否全量同步
+    var fullSync: Boolean = false
 )

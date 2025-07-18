@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component
 @Component
 class FederationArtifactEventConsumer(
     private val replicaTaskService: ReplicaTaskService,
-    private val federationBasedReplicaJobExecutor: FederationBasedReplicaJobExecutor,
+    private val federationBasedReplicaJobExecutor: FederationEventBasedReplicaJobExecutor,
 ) : EventConsumer() {
 
     private val federationExecutors = FederationThreadPoolExecutor.instance

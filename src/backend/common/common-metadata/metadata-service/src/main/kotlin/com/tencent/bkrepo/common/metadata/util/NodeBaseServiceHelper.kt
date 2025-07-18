@@ -10,6 +10,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
@@ -38,6 +39,33 @@ object NodeBaseServiceHelper {
             return false
         }
         return true
+    }
+
+    fun buildDeletedNode(request: DeletedNodeReplicationRequest): TNode {
+        with(request) {
+            val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
+            return TNode(
+                projectId = projectId,
+                repoName = repoName,
+                path = PathUtils.resolveParent(normalizeFullPath),
+                name = PathUtils.resolveName(normalizeFullPath),
+                fullPath = normalizeFullPath,
+                folder = folder,
+                expireDate = if (folder) null else parseExpireDate(expires),
+                size = if (folder) 0 else size ?: 0,
+                sha256 = if (folder) null else sha256,
+                md5 = if (folder) null else md5,
+                nodeNum = null,
+                metadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata),
+                createdBy = createdBy ?: operator,
+                createdDate = createdDate ?: LocalDateTime.now(),
+                lastModifiedBy = createdBy ?: operator,
+                lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
+                lastAccessDate = LocalDateTime.now(),
+                federatedSource = source,
+                deleted = deleted
+            )
+        }
     }
 
     fun resolveMetadata(

@@ -224,7 +224,8 @@ class ReplicaTaskServiceImpl(
                     remoteRepoName = it.remoteRepoName,
                     repoType = it.repoType,
                     packageConstraints = it.packageConstraints,
-                    pathConstraints = it.pathConstraints
+                    pathConstraints = it.pathConstraints,
+                    sourceFilter = it.sourceFilter
                 )
             }
             return try {
@@ -509,7 +510,8 @@ class ReplicaTaskServiceImpl(
                     remoteRepoName = it.remoteRepoName,
                     repoType = it.repoType,
                     packageConstraints = it.packageConstraints,
-                    pathConstraints = it.pathConstraints
+                    pathConstraints = it.pathConstraints,
+                    sourceFilter = it.sourceFilter
                 )
             }
             return try {
@@ -618,7 +620,8 @@ class ReplicaTaskServiceImpl(
                     remoteRepoName = it.remoteRepoName,
                     repoType = it.repoType,
                     packageConstraints = it.packageConstraints,
-                    pathConstraints = it.pathConstraints
+                    pathConstraints = it.pathConstraints,
+                    sourceFilter = it.sourceFilter
                 )
             }
         }
