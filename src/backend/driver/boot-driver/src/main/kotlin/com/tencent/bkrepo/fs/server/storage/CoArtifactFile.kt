@@ -132,6 +132,11 @@ class CoArtifactFile(
         return receiver.listener.getSha256()
     }
 
+    override fun getFileCrc64Ecma(): String {
+        require(initialized)
+        return receiver.listener.getCrc64Ecma()
+    }
+
     suspend fun write(buffer: DataBuffer) {
         receiver.receive(buffer)
     }

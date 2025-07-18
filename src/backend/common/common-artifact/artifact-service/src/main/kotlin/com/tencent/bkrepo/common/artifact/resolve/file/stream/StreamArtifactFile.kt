@@ -145,6 +145,11 @@ open class StreamArtifactFile(
         return receiver.listener.getSha256()
     }
 
+    override fun getFileCrc64Ecma(): String {
+        init()
+        return receiver.listener.getCrc64Ecma()
+    }
+
     override fun delete() {
         if (initialized && !isInMemory()) {
             receiver.close()

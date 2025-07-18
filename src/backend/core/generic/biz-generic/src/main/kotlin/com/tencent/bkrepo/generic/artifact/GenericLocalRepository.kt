@@ -95,6 +95,7 @@ import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
+import com.tencent.bkrepo.generic.constant.HEADER_CRC64ECMA
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OFFSET
@@ -174,6 +175,12 @@ class GenericLocalRepository(
         val uploadMd5 = HeaderUtils.getHeader(HEADER_MD5)
         if (uploadMd5 != null && !calculatedMd5.equals(uploadMd5, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
+        }
+        // 校验crc64ecma
+        val calculatedCrc64Ecma = context.getArtifactSha256()
+        val uploadCrc64Ecma = HeaderUtils.getHeader(HEADER_CRC64ECMA)
+        if (uploadCrc64Ecma != null && !calculatedCrc64Ecma.equals(uploadCrc64Ecma, true)) {
+            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "crc64ecma")
         }
         // 二次检查，防止接收文件过程中，有并发上传成功的情况
         checkNodeExist(context)

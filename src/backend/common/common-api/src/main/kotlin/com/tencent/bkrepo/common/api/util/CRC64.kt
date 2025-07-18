@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package com.tencent.bkrepo.common.storage.util
+package com.tencent.bkrepo.common.api.util
 
 import java.util.zip.Checksum
 
@@ -104,6 +104,8 @@ class CRC64 : Checksum {
     override fun reset() {
         this.value = 0
     }
+
+    fun unsignedStringValue(): String = java.lang.Long.toUnsignedString(value)
 
     companion object {
         private const val POLY = -0x3693a86a2878f0beL // ECMA-182
