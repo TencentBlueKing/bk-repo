@@ -93,6 +93,12 @@ class ConsulRegistryClient constructor(
         return changeInstanceStatus(urlBuilder, serviceName, instanceId, targetStatus)
     }
 
+    override fun isActive(): Boolean {
+        val url = urlBuilder().build()
+        val req = url.requestBuilder().build()
+        return httpClient.newCall(req).execute().isSuccessful
+    }
+
     private fun changeInstanceStatus(
         urlBuilder: HttpUrl.Builder,
         serviceName: String,
