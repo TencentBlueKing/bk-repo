@@ -44,5 +44,7 @@ data class ReplicaObjectInfo(
     @get:Schema(title = "包限制条件")
     val packageConstraints: List<PackageConstraint>?,
     @get:Schema(title = "路径限制条件")
-    val pathConstraints: List<PathConstraint>?
+    val pathConstraints: List<PathConstraint>?,
+    @get:Schema(title = "当来源不为空的场景下仅限制来源是列表中的数据进行同步")
+    val sourceFilter: List<String>? = null
 )

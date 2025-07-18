@@ -52,6 +52,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -96,8 +97,16 @@ class ArtifactReplicaController(
         projectId: String,
         repoName: String,
         fullPath: String,
+        deleted: String?
     ): Response<Boolean> {
-        return ResponseBuilder.success(nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath)))
+        val result = if (deleted == null) {
+             nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))
+        } else {
+            val deletedDate = LocalDateTime.parse(deleted, DateTimeFormatter.ISO_DATE_TIME)
+            val nodeDetail = nodeService.getDeletedNodeDetail(projectId, repoName, fullPath, deletedDate)
+            nodeDetail != null
+        }
+        return ResponseBuilder.success(result)
     }
 
     override fun checkNodeExistList(
@@ -115,6 +124,11 @@ class ArtifactReplicaController(
     override fun replicaNodeCreateRequest(request: NodeCreateRequest): Response<NodeDetail> {
         federatedCheck(request.projectId, request.repoName, request.fullPath, request.createdDate!!, request.source)
         return ResponseBuilder.success(nodeService.createNode(request))
+    }
+
+    override fun replicaDeletedNodeReplicationRequest(request: DeletedNodeReplicationRequest): Response<NodeDetail> {
+        // TODO 需要考虑deleted node的各种特殊场景
+        return ResponseBuilder.success(nodeService.replicaDeletedNode(request))
     }
 
     override fun replicaNodeRenameRequest(request: NodeRenameRequest): Response<Void> {

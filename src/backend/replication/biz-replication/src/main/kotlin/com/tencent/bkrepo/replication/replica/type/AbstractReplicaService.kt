@@ -39,7 +39,9 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
@@ -65,7 +67,7 @@ import java.time.format.DateTimeFormatter
 @Suppress("TooGenericExceptionCaught")
 abstract class AbstractReplicaService(
     private val replicaRecordService: ReplicaRecordService,
-    private val localDataManager: LocalDataManager
+    private val localDataManager: LocalDataManager,
 ) : ReplicaService {
 
     /**
@@ -83,9 +85,11 @@ abstract class AbstractReplicaService(
             }
             // 按仓库同步
             if (includeAllData(this)) {
+                replicaContext.executeType = TaskExecuteType.FULL
                 replicaByRepo(this)
                 return
             }
+            replicaContext.executeType = TaskExecuteType.PARTIAL
             replicaTaskObjectConstraints(this)
         }
     }
@@ -230,11 +234,25 @@ abstract class AbstractReplicaService(
     private fun replicaByPath(replicaContext: ReplicaContext, node: NodeInfo) {
         with(replicaContext) {
             if (!node.folder) {
+                // 如果节点来源不属于此次任务限制的来源，则跳过
+                val sourceFilter = replicaContext.taskObject.sourceFilter
+                if (!sourceFilter.isNullOrEmpty() && !node.federatedSource.isNullOrEmpty()) {
+                    if (node.federatedSource !in sourceFilter) {
+                        logger.info(
+                            "Node ${node.fullPath} in repo ${node.projectId}|${node.repoName}" +
+                                " is not in source filter list"
+                        )
+                        return
+                    }
+                }
+
                 // 存在冲突：记录冲突策略
                 // 外部集群仓库没有project/repoName
                 val conflictStrategy = if (
                     !remoteProjectId.isNullOrBlank() && !remoteRepoName.isNullOrBlank() &&
-                    artifactReplicaClient!!.checkNodeExist(remoteProjectId, remoteRepoName, node.fullPath).data == true
+                    artifactReplicaClient!!.checkNodeExist(
+                        remoteProjectId, remoteRepoName, node.fullPath, node.deleted
+                    ).data == true
                 ) {
                     replicaProgress.conflict++
                     task.setting.conflictStrategy
@@ -249,14 +267,19 @@ abstract class AbstractReplicaService(
                 replicaFile(replicaExecutionContext, node)
                 return
             }
+            // 判断是否需要同步已删除的节点
+            val includeDeleted =
+                taskDetail.task.replicaType == ReplicaType.FEDERATION && executeType != TaskExecuteType.DELTA
             // 查询子节点
             var pageNumber = DEFAULT_PAGE_NUMBER
+            // TODO 根据条件判断是否需要同步已删除的节点
             var nodes = localDataManager.listNodePage(
                 projectId = replicaContext.localProjectId,
                 repoName = replicaContext.localRepoName,
                 fullPath = node.fullPath,
                 pageNumber = pageNumber,
-                pageSize = PAGE_SIZE
+                pageSize = PAGE_SIZE,
+                includeDeleted = includeDeleted
             )
             while (nodes.isNotEmpty()) {
                 nodes.forEach {
@@ -268,7 +291,8 @@ abstract class AbstractReplicaService(
                     repoName = replicaContext.localRepoName,
                     fullPath = node.fullPath,
                     pageNumber = pageNumber,
-                    pageSize = PAGE_SIZE
+                    pageSize = PAGE_SIZE,
+                    includeDeleted = includeDeleted
                 )
             }
         }
@@ -326,7 +350,7 @@ abstract class AbstractReplicaService(
     private fun replicaByPackage(
         replicaContext: ReplicaContext,
         packageSummary: PackageSummary,
-        versionNames: List<String>? = null
+        versionNames: List<String>? = null,
     ) {
         replicaContext.replicator.replicaPackage(replicaContext, packageSummary)
         // 同步package功能： 对应内部集群配置是当version不存在时则同步全部的package version
@@ -384,7 +408,7 @@ abstract class AbstractReplicaService(
     private fun replicaPackageVersion(
         context: ReplicaExecutionContext,
         packageSummary: PackageSummary,
-        version: PackageVersion
+        version: PackageVersion,
     ) {
         with(context) {
             val record = ReplicationRecord(
@@ -406,7 +430,7 @@ abstract class AbstractReplicaService(
     private fun runActionAndPrintLog(
         context: ReplicaExecutionContext,
         record: ReplicationRecord,
-        action: () -> Boolean
+        action: () -> Boolean,
     ) {
         with(context) {
             val startTime = LocalDateTime.now().toString()
@@ -452,7 +476,7 @@ abstract class AbstractReplicaService(
         context: ReplicaContext,
         throwable: Throwable,
         packageConstraint: PackageConstraint? = null,
-        pathConstraint: PathConstraint? = null
+        pathConstraint: PathConstraint? = null,
     ) {
         with(context) {
             if (throwable !is IllegalStateException) return
@@ -480,7 +504,7 @@ abstract class AbstractReplicaService(
         startTime: String,
         status: ExecutionStatus,
         errorReason: String? = null,
-        record: ReplicationRecord
+        record: ReplicationRecord,
     ) {
         logger.info(
             toJson(
@@ -511,7 +535,7 @@ abstract class AbstractReplicaService(
         version: String? = null,
         conflictStrategy: ConflictStrategy? = null,
         size: Long? = null,
-        sha256: String? = null
+        sha256: String? = null,
     ): ReplicaExecutionContext {
         // 创建详情
         val request = RecordDetailInitialRequest(
@@ -525,7 +549,8 @@ abstract class AbstractReplicaService(
             version = version,
             conflictStrategy = conflictStrategy,
             size = size,
-            sha256 = sha256
+            sha256 = sha256,
+            executeType = context.executeType
         )
         val recordDetail = replicaRecordService.initialRecordDetail(request)
         return ReplicaExecutionContext(context, recordDetail)
