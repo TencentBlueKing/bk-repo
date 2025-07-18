@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.artifact.stream
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.CRC64
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import java.math.BigInteger
 import java.security.MessageDigest
@@ -43,24 +44,29 @@ import java.security.MessageDigest
 class DigestCalculateListener : StreamReceiveListener {
     private val md5Digest = MessageDigest.getInstance("MD5")
     private val sha256Digest = MessageDigest.getInstance("SHA-256")
+    private val crc64EcmaDigest = CRC64()
 
     private var md5: String? = null
     private var sha256: String? = null
+    private var crc64Ecma: String? = null
 
     override fun data(b: Int) {
         val v = b.toByte()
         md5Digest.update(v)
         sha256Digest.update(v)
+        crc64EcmaDigest.update(v)
     }
 
     override fun data(buffer: ByteArray, offset: Int, length: Int) {
         md5Digest.update(buffer, offset, length)
         sha256Digest.update(buffer, offset, length)
+        crc64EcmaDigest.update(buffer, offset, length)
     }
 
     override fun finished() {
         md5 = hexToString(md5Digest.digest(), MD5_LENGTH)
         sha256 = hexToString(sha256Digest.digest(), SHA256_LENGTH)
+        crc64Ecma = crc64EcmaDigest.unsignedStringValue()
     }
 
     fun getMd5(): String {
@@ -69,6 +75,10 @@ class DigestCalculateListener : StreamReceiveListener {
 
     fun getSha256(): String {
         return sha256 ?: throw ErrorCodeException(ArtifactMessageCode.ARTIFACT_RECEIVE_FAILED)
+    }
+
+    fun getCrc64Ecma(): String {
+        return crc64Ecma ?: throw ErrorCodeException(ArtifactMessageCode.ARTIFACT_RECEIVE_FAILED)
     }
 
     private fun hexToString(byteArray: ByteArray, length: Int): String {

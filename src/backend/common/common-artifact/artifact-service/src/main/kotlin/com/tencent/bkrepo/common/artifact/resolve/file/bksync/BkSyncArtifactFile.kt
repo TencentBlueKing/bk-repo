@@ -101,6 +101,11 @@ class BkSyncArtifactFile(
         return chunkedArtifactFile.getFileSha256()
     }
 
+    override fun getFileCrc64Ecma(): String {
+        init()
+        return chunkedArtifactFile.getFileCrc64Ecma()
+    }
+
     override fun isInLocalDisk(): Boolean {
         return chunkedArtifactFile.isInLocalDisk()
     }
