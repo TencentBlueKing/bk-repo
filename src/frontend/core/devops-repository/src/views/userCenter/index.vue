@@ -17,7 +17,7 @@
                             </bk-button>
                         </div>
                         <div v-else class="flex-align-center">
-                            <bk-input class="w250" v-focus v-model.trim="editItem.value" maxlength="32" show-word-limit></bk-input>
+                            <bk-input class="w250" v-focus v-model.trim="editItem.value" maxlength="32" show-word-limit :placeholder="$t('pleaseInput')"></bk-input>
                             <bk-button class="ml10" theme="default" @click="cancelEdit">{{$t('cancel')}}</bk-button>
                             <bk-button class="ml10" theme="primary" @click="confirmEdit">{{$t('confirm')}}</bk-button>
                         </div>

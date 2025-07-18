@@ -9,8 +9,9 @@
         @cancel="cancel">
         <div>
             <div style="display: flex">
-                <bk-input v-model="importTitle" readonly style="width: 290px" />
+                <bk-input v-model="importTitle" readonly style="width: 290px" :placeholder="$t('pleaseInput')"/>
                 <bk-select style="width: 360px"
+                    :placeholder="$t('pleaseSelect')"
                     @change="changeImport"
                     v-model="selectedType">
                     <bk-option v-for="option in importType"
@@ -24,6 +25,7 @@
             <div style="display: flex" v-if="selectedType">
                 <bk-input v-model="importUserGroupTitle" readonly style="width: 290px" />
                 <bk-select style="width: 360px;margin-bottom: 10px"
+                    :placeholder="$t('pleaseSelect')"
                     searchable
                     selected-style="checkbox"
                     @change="changeUserGroup"

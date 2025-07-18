@@ -10,7 +10,7 @@
                 <bk-radio value="ui">{{ $t('autoEdit') }}</bk-radio>
             </bk-radio-group>
             <div v-if="mode === 'manual'" class="mt10">
-                <bk-input v-model="manualVal" @blur="manualChange"></bk-input>
+                <bk-input :placeholder="$t('userGroupPlaceholder')" v-model="manualVal" @blur="manualChange"></bk-input>
             </div>
             <bk-tab v-else class="cron-tab" type="unborder-card" :active.sync="tabName">
                 <bk-tab-panel
@@ -29,6 +29,7 @@
                             <template v-if="type === 'interval' && cron[tab].type === 'interval'">
                                 <span>{{ $t('cron.from') }}</span>
                                 <bk-select style="width: 100px;margin: 0 5px;"
+                                    :placeholder="$t('pleaseSelect')"
                                     v-model="cron[tab][type][0]"
                                     @change="uiChange"
                                     @click.native.stop.prevent="() => {}">
@@ -44,6 +45,7 @@
                                 </bk-select>
                                 <span>{{ $t('cron.to') }}</span>
                                 <bk-select style="width: 100px;margin: 0 5px;"
+                                    :placeholder="$t('pleaseSelect')"
                                     v-model="cron[tab][type][1]"
                                     @change="uiChange"
                                     @click.native.stop.prevent="() => {}">
@@ -61,6 +63,7 @@
                             </template>
                             <template v-else-if="type === 'circle' && cron[tab].type === 'circle' && tab !== 'year'">
                                 <bk-select style="width: 108px;margin: 0 5px;"
+                                    :placeholder="$t('pleaseSelect')"
                                     v-model="cron[tab][type][0]"
                                     @change="uiChange"
                                     @click.native.stop.prevent="() => {}">
@@ -76,6 +79,7 @@
                                 </bk-select>
                                 <span>{{ $t('circleMsg1') }}</span>
                                 <bk-select style="width: 100px;margin: 0 5px;"
+                                    :placeholder="$t('pleaseSelect')"
                                     v-model="cron[tab][type][1]"
                                     @change="uiChange"
                                     @click.native.stop.prevent="() => {}">

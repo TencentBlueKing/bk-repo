@@ -42,6 +42,7 @@
                 </bk-form-item>
                 <bk-form-item :label="$t('scanStatus')">
                     <bk-select
+                        :placeholder="$t('pleaseSelect')"
                         v-model="exportStatus"
                         :clearable="false">
                         <bk-option id="ALL" :name="$t('total')"></bk-option>
