@@ -447,6 +447,8 @@
   "triggerEvent": "トリガーイベント",
   "scanQualityCheckBtnPre": "以下のボタンをチェックし、スキャン中またはスキャン終了後にチェック項目をトリガーできます",
   "scanQualityCheckBtn": "品質ルールに合格しないアーティファクトの使用を自動禁止",
+  "scanQualityScanBtn": "未スキャン製品を自動無効化",
+  "scanQualityScanTip": "自動スキャンを事前に有効にする必要があります",
   "scanQualityErrorTips": "少なくとも1つの品質ルールを入力してください",
   "scanQualityNonNegativeIntegerTip": "0 - 10000 の間の負でない整数を入力してください",
   "per": "個",
