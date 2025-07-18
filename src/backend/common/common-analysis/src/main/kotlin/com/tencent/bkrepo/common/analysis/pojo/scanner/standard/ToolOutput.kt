@@ -74,7 +74,14 @@ data class Result(
      * 敏感信息分析结果
      */
     val sensitiveResults: List<SensitiveResult>? = null
-)
+) {
+    fun totalSize(): Int {
+        val securityResultSize = securityResults?.size ?: 0
+        val licenseResultSize = licenseResults?.size ?: 0
+        val sensitiveResultSize = sensitiveResults?.size ?: 0
+        return securityResultSize + licenseResultSize + sensitiveResultSize
+    }
+}
 
 /**
  * 漏洞分析结果
