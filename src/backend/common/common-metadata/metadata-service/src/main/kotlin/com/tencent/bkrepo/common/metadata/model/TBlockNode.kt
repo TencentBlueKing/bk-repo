@@ -50,7 +50,7 @@ data class TBlockNode(
     val nodeFullPath: String,
     val startPos: Long,
     var sha256: String,
-    var crc64Ecma: String? = null,
+    var crc64ecma: String? = null,
     val projectId: String,
     @ShardingKey(count = SHARDING_COUNT)
     val repoName: String,

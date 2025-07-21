@@ -177,9 +177,9 @@ class GenericLocalRepository(
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
         }
         // 校验crc64ecma
-        val calculatedCrc64Ecma = context.getArtifactSha256()
-        val uploadCrc64Ecma = HeaderUtils.getHeader(HEADER_CRC64ECMA)
-        if (uploadCrc64Ecma != null && !calculatedCrc64Ecma.equals(uploadCrc64Ecma, true)) {
+        val calculatedCrc64ecma = context.getArtifactSha256()
+        val uploadCrc64ecma = HeaderUtils.getHeader(HEADER_CRC64ECMA)
+        if (uploadCrc64ecma != null && !calculatedCrc64ecma.equals(uploadCrc64ecma, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "crc64ecma")
         }
         // 二次检查，防止接收文件过程中，有并发上传成功的情况
@@ -235,6 +235,7 @@ class GenericLocalRepository(
                 nodeFullPath = artifactInfo.getArtifactFullPath(),
                 startPos = offset ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND),
                 sha256 = sha256,
+                crc64ecma = getArtifactCrc64ecma(),
                 projectId = projectId,
                 repoName = repoName,
                 size = blockArtifactFile.getSize(),

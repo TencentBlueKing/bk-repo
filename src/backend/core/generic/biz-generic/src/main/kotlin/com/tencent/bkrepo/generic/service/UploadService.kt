@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.metadata.constant.FAKE_CRC64_ECMA
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
@@ -176,6 +177,7 @@ class UploadService(
             fullPath = artifactInfo.getArtifactFullPath(),
             sha256 = FAKE_SHA256,
             md5 = FAKE_MD5,
+            crc64ecma = FAKE_CRC64_ECMA,
             operator = userId,
             size = fileSize,
             overwrite = getBooleanHeader(HEADER_OVERWRITE),

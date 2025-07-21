@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.api
 
-import com.tencent.bkrepo.common.artifact.hash.crc64Ecma
+import com.tencent.bkrepo.common.artifact.hash.crc64ecma
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.hash.sha256
@@ -46,7 +46,7 @@ class FileSystemArtifactFile(private val file: File, private val isInLocalDisk: 
     private var md5: String? = null
     private var sha1: String? = null
     private var sha256: String? = null
-    private var crc64Ecma: String? = null
+    private var crc64ecma: String? = null
 
     override fun getInputStream() = file.inputStream()
 
@@ -74,8 +74,8 @@ class FileSystemArtifactFile(private val file: File, private val isInLocalDisk: 
         return sha256 ?: run { file.sha256().apply { sha256 = this } }
     }
 
-    override fun getFileCrc64Ecma(): String {
-        return crc64Ecma ?: run { file.crc64Ecma().apply { crc64Ecma = this } }
+    override fun getFileCrc64ecma(): String {
+        return crc64ecma ?: run { file.crc64ecma().apply { crc64ecma = this } }
     }
 
     override fun delete() {

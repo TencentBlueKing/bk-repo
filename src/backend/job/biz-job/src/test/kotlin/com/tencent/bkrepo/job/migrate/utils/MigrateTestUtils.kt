@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.UT_CRC64_ECMA
 import com.tencent.bkrepo.job.UT_MD5
 import com.tencent.bkrepo.job.UT_PROJECT_ID
 import com.tencent.bkrepo.job.UT_REPO_NAME
@@ -178,6 +179,7 @@ object MigrateTestUtils {
             size = 100L,
             sha256 = sha256,
             md5 = UT_MD5,
+            crc64ecma = UT_CRC64_ECMA,
             folder = false,
             archived = archived,
             compressed = compressed,

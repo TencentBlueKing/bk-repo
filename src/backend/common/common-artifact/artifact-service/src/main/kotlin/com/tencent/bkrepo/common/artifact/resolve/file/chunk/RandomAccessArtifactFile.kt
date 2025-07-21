@@ -99,9 +99,9 @@ class RandomAccessArtifactFile(
         return receiver.listener.getSha256()
     }
 
-    override fun getFileCrc64Ecma(): String {
+    override fun getFileCrc64ecma(): String {
         require(receiver.finished)
-        return receiver.listener.getCrc64Ecma()
+        return receiver.listener.getCrc64ecma()
     }
 
     override fun delete() {

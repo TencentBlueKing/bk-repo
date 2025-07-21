@@ -294,6 +294,7 @@ class ClusterReplicator(
                 size = node.size,
                 sha256 = node.sha256!!,
                 md5 = node.md5!!,
+                crc64ecma = node.crc64ecma,
                 nodeMetadata = metadata,
                 operator = node.createdBy,
                 createdBy = node.createdBy,

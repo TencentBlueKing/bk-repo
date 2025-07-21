@@ -197,8 +197,8 @@ open class ArtifactUploadContext : ArtifactContext {
      *
      * [name]为`null`或不传值则返回二进制流文件的crc64ecma
      */
-    fun getArtifactCrc64Ecma(name: String? = null): String {
-        return getArtifactFile(name).getFileCrc64Ecma()
+    fun getArtifactCrc64ecma(name: String? = null): String {
+        return getArtifactFile(name).getFileCrc64ecma()
     }
 
     /**

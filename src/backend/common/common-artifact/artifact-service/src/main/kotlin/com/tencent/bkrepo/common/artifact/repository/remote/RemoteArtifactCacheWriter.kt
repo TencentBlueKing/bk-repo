@@ -145,6 +145,7 @@ class RemoteArtifactCacheWriter(
             size = artifactFile.getSize(),
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
+            crc64ecma = artifactFile.getFileCrc64ecma(),
             nodeMetadata = findRemoteMetadata(remoteNodes, fullPath),
             overwrite = true,
             operator = context.userId

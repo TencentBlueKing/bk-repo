@@ -52,7 +52,7 @@ interface FileHashAccessor {
     fun getFileSha256(): String
 
     /**
-     * 获取文件数据的Crc64Ecma校验值
+     * 获取文件数据的Crc64ecma校验值
      */
-    fun getFileCrc64Ecma(): String
+    fun getFileCrc64ecma(): String
 }
