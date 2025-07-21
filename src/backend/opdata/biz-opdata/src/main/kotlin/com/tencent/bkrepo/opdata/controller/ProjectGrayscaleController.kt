@@ -63,9 +63,6 @@ class ProjectGrayscaleController(
 
     @DeleteMapping("/delete/{id}")
     fun deleteProjectGrayscale(@PathVariable("id") id: String): Response<Void> {
-        if (!projectGrayscaleService.check(id)) {
-            throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
-        }
         projectGrayscaleService.delete(id)
         return ResponseBuilder.success()
     }
