@@ -250,7 +250,7 @@
     import { getIconName } from '@repository/store/publicEnum'
     import { convertFileSize, debounce, formatDate, routeBase } from '@repository/utils'
     import { beforeMonths, beforeYears } from '@repository/utils/date'
-    import { customizeDownloadFile, downloadFile } from '@repository/utils/downloadFile'
+    import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import metadataTag from '@repository/views/repoCommon/metadataTag'
     import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
@@ -358,6 +358,9 @@
             },
             community () {
                 return RELEASE_MODE === 'community'
+            },
+            enableMultipleTypeFilePreview () {
+                return RELEASE_MODE === 'community' || RELEASE_MODE === 'tencent'
             },
             searchFileName () {
                 return this.$route.query.fileName
@@ -820,7 +823,7 @@
             },
             // 单击table打开预览
             previewFile (row) {
-                if (row.folder || !this.community) return
+                if (row.folder || !this.enableMultipleTypeFilePreview) return
                 if (isOutDisplayType(row.fullPath)) {
                     const isLocal = this.localRepo
                     const typeParam = isLocal ? 'local/' : 'remote/'
@@ -1478,7 +1481,7 @@
             },
 
             getBtnDisabled (name) {
-                return this.community ? isOutDisplayType(name) : isText(name)
+                return this.enableMultipleTypeFilePreview ? isOutDisplayType(name) : isText(name)
             },
             // 文件夹内部的搜索，根据文件名或文件夹名搜索
             inFolderSearchFile () {

@@ -102,11 +102,14 @@
         computed: {
             projectId () {
                 return this.$route.params.projectId
+            },
+            enableMultipleTypeFilePreview () {
+                return RELEASE_MODE === 'community' || RELEASE_MODE === 'tencent'
             }
         },
         async created () {
             this.loading = true
-            if (RELEASE_MODE !== 'community') {
+            if (!this.enableMultipleTypeFilePreview) {
                 this.showError()
                 return
             }
