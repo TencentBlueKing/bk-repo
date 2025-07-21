@@ -2,19 +2,7 @@
   <el-dialog title="创建项目配置" :visible.sync="showDialog" :before-close="close">
     <el-form ref="form" :model="projectConfig" status-icon>
       <el-form-item ref="project-form-item" label="项目ID" prop="projectId" :rules="[{ required: true, message: '项目ID不能为空'}]">
-        <el-autocomplete
-          v-model="projectConfig.projectId"
-          :disabled="!createMode"
-          class="inline-input"
-          :fetch-suggestions="queryProjects"
-          placeholder="请输入项目ID"
-          size="mini"
-          @select="selectProject"
-        >
-          <template slot-scope="{ item }">
-            <div>{{ item.name }}</div>
-          </template>
-        </el-autocomplete>
+        <el-input :disabled="!createMode" v-model="projectConfig.projectId" />
       </el-form-item>
       <el-form-item
         label="环境"
@@ -85,7 +73,6 @@ export default {
     },
     close() {
       this.showDialog = false
-      this.$refs['form'].resetFields()
       this.$emit('update:visible', false)
     },
     handleCreateOrUpdate(projectConfig) {
