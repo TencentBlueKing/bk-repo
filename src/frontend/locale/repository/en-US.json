@@ -441,6 +441,8 @@
     "triggerEvent": "Trigger event",
     "scanQualityCheckBtnPre":"The button below can be checked to trigger the tick option after scanning or after scanning",
     "scanQualityCheckBtn":"Automatically Prohibited Articles: Articles that fail quality rules",
+    "scanQualityScanBtn":"Automatically disable unscanned artifacts",
+    "scanQualityScanTip": "Pre-scan needs to be enabled.",
     "scanQualityErrorTips":"Please fill in at least one quality rule",
     "scanQualityNonNegativeIntegerTip": "Please fill in a non-negative integer between 0 - 10000",
     "per": " ",
