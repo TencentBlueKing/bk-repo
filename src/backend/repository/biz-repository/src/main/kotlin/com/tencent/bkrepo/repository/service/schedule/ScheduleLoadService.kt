@@ -8,7 +8,7 @@ import com.tencent.bkrepo.repository.pojo.schedule.ScheduleResult
 
 interface ScheduleLoadService {
     // 创建预约下载任务
-    fun saveScheduleLoad(request: ScheduleLoadCreateRequest)
+    fun createScheduleLoad(request: ScheduleLoadCreateRequest)
 
     // 删除预约下载任务
     fun removeScheduleLoad(id: String)

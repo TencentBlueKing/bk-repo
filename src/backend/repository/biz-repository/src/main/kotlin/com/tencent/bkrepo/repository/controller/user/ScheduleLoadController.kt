@@ -29,8 +29,8 @@ class ScheduleLoadController(
     private val scheduleLoadService: ScheduleLoadService
 ) {
     @Operation(summary = "创建或更新预约下载任务")
-    @PostMapping("/save")
-    fun saveScheduleLoadTask(
+    @PostMapping("/create")
+    fun createScheduleLoadTask(
         @RequestAttribute userId: String,
         @RequestBody request: ScheduleRequest
     ): Response<Void> {
@@ -38,16 +38,15 @@ class ScheduleLoadController(
             val createRequest = ScheduleLoadCreateRequest(
                 userId = userId,
                 projectId = projectId,
-                pipeLineId = pipeLineId,
-                buildId = buildId,
+                repoName = repoName,
+                fullPathRegex = fullPathRegex,
+                nodeMetadata = nodeMetadata,
                 cronExpression = cronExpression,
                 isEnabled = isEnabled,
                 platform = platform,
-                rules = rules,
-                createdDate = LocalDateTime.now(),
-                lastModifiedDate = LocalDateTime.now(),
+                type = type,
             )
-            scheduleLoadService.saveScheduleLoad(createRequest)
+            scheduleLoadService.createScheduleLoad(createRequest)
             return ResponseBuilder.success()
         }
     }
