@@ -34,8 +34,10 @@ package com.tencent.bkrepo.common.artifact.manager
 import com.tencent.bkrepo.analyst.api.ScanClient
 import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
 import com.tencent.bkrepo.common.artifact.manager.sign.SignedNodeForwardServiceImpl
+import com.tencent.bkrepo.common.artifact.manager.sign.SignedRepoDownloadInterceptor
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -47,6 +49,7 @@ import org.springframework.context.annotation.Import
     StorageManager::class,
     PackageManager::class,
     NodeResourceFactoryImpl::class,
+    SignedRepoDownloadInterceptor::class
 )
 @EnableConfigurationProperties(SignProperties::class)
 class ArtifactManagerConfiguration {
@@ -57,8 +60,9 @@ class ArtifactManagerConfiguration {
         signProperties: SignProperties,
         nodeService: NodeService,
         metadataService: MetadataService,
-        scanClient: ScanClient
+        scanClient: ScanClient,
+        repositoryService: RepositoryService
     ): NodeForwardService {
-        return SignedNodeForwardServiceImpl(signProperties, nodeService, metadataService, scanClient)
+        return SignedNodeForwardServiceImpl(signProperties, nodeService, metadataService, scanClient, repositoryService)
     }
 }
