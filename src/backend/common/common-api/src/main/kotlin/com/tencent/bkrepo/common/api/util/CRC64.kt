@@ -139,6 +139,10 @@ class CRC64 : Checksum {
             return CRC64(l)
         }
 
+        fun fromUnsignedString(value: String): CRC64 {
+            return CRC64(java.lang.Long.parseUnsignedLong(value))
+        }
+
         /*
          * dimension of GF(2) vectors (length of CRC)
          */

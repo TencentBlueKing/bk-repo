@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.CRC64
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -49,11 +50,13 @@ import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.NodeAttribute
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
+import com.tencent.bkrepo.common.service.util.HeaderUtils.getHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -65,6 +68,7 @@ import com.tencent.bkrepo.fs.server.constant.UPLOADID_KEY
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
+import com.tencent.bkrepo.generic.constant.HEADER_CRC64ECMA
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_FILE_SIZE
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
@@ -283,6 +287,9 @@ class UploadService(
             throw ErrorCodeException(GenericMessageCode.NODE_DATA_ERROR, artifactInfo)
         }
 
+        // 校验crc64
+        getHeader(HEADER_CRC64ECMA)?.let { checkCrc64ecma(blockInfoList, it) }
+
         // 创建新的基础节点（Base Node）
         try {
             blockBaseNodeCreate(userId, artifactInfo, uploadId)
@@ -345,6 +352,23 @@ class UploadService(
         return blockInfoList.map { blockInfo ->
             SeparateBlockInfo(blockInfo.size, blockInfo.sha256, blockInfo.startPos, blockInfo.uploadId)
         }
+    }
+
+    /**
+     * 检查blocks合并后crc64与[expectedCrc64ecma]是否匹配，匹配则返回true，否则返回false
+     */
+    private fun checkCrc64ecma(blocks: List<TBlockNode>, expectedCrc64ecma: String): Boolean {
+        var crc64ecma = 0L
+        blocks.sortedBy { it.startPos }.forEachIndexed { index, block ->
+            val blockCrc64ecma = block.crc64ecma?.let { CRC64.fromUnsignedString(it).value } ?: return false
+            crc64ecma = if (index == 0) {
+                blockCrc64ecma
+            } else {
+                CRC64.combine(crc64ecma, blockCrc64ecma, block.size)
+            }
+        }
+
+        return CRC64(crc64ecma).unsignedStringValue() == expectedCrc64ecma
     }
 
     private fun checkUploadId(uploadId: String, storageCredentials: StorageCredentials?) {
