@@ -35,6 +35,7 @@ import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.CRC64
 import com.tencent.bkrepo.common.api.util.Preconditions
@@ -45,7 +46,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
-import com.tencent.bkrepo.common.metadata.constant.FAKE_CRC64_ECMA
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
@@ -161,7 +161,13 @@ class UploadService(
         }
     }
 
-    fun blockBaseNodeCreate(userId: String, artifactInfo: GenericArtifactInfo, uploadId: String) {
+    fun blockBaseNodeCreate(
+        userId: String,
+        artifactInfo: GenericArtifactInfo,
+        uploadId: String,
+        fileSize: Long,
+        crc64ecma: String
+    ) {
         val attributes = NodeAttribute(
             uid = NodeAttribute.NOBODY,
             gid = NodeAttribute.NOBODY,
@@ -172,8 +178,6 @@ class UploadService(
         metadata.add(MetadataModel(UPLOADID_KEY, uploadId, system = true))
         metadata.add(MetadataModel(key = FS_ATTR_KEY, value = attributes))
 
-        val fileSize = getLongHeader(HEADER_FILE_SIZE).takeIf { it > 0L }
-            ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND)
         val request = NodeCreateRequest(
             projectId = artifactInfo.projectId,
             repoName = artifactInfo.repoName,
@@ -181,7 +185,7 @@ class UploadService(
             fullPath = artifactInfo.getArtifactFullPath(),
             sha256 = FAKE_SHA256,
             md5 = FAKE_MD5,
-            crc64ecma = FAKE_CRC64_ECMA,
+            crc64ecma = crc64ecma,
             operator = userId,
             size = fileSize,
             overwrite = getBooleanHeader(HEADER_OVERWRITE),
@@ -283,16 +287,24 @@ class UploadService(
         val totalSize = blockInfoList.sumOf { it.size }
 
         // 验证节点大小是否与块总大小一致
-        if (getLongHeader(HEADER_FILE_SIZE) != totalSize) {
+        val fileSize = getLongHeader(HEADER_FILE_SIZE).takeIf { it > 0L }
+            ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND)
+        if (fileSize != totalSize) {
             throw ErrorCodeException(GenericMessageCode.NODE_DATA_ERROR, artifactInfo)
         }
 
         // 校验crc64
-        getHeader(HEADER_CRC64ECMA)?.let { checkCrc64ecma(blockInfoList, it) }
+        val crc64ecma = crc64ecma(blockInfoList)
+        getHeader(HEADER_CRC64ECMA)?.let {
+            if (crc64ecma != it) {
+                throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "crc64ecma")
+            }
+        }
+
 
         // 创建新的基础节点（Base Node）
         try {
-            blockBaseNodeCreate(userId, artifactInfo, uploadId)
+            blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma)
         } catch (e: Exception) {
             logger.error(
                 "Create block base node failed, file path [${artifactInfo.getArtifactFullPath()}], " +
@@ -354,13 +366,14 @@ class UploadService(
         }
     }
 
-    /**
-     * 检查blocks合并后crc64与[expectedCrc64ecma]是否匹配，匹配则返回true，否则返回false
-     */
-    private fun checkCrc64ecma(blocks: List<TBlockNode>, expectedCrc64ecma: String): Boolean {
+    private fun crc64ecma(blocks: List<TBlockNode>): String {
         var crc64ecma = 0L
         blocks.sortedBy { it.startPos }.forEachIndexed { index, block ->
-            val blockCrc64ecma = block.crc64ecma?.let { CRC64.fromUnsignedString(it).value } ?: return false
+            val blockCrc64ecma = block.crc64ecma?.let { CRC64.fromUnsignedString(it).value }
+            if (blockCrc64ecma == null) {
+                logger.error("crc64ecma not found for block node[$block]")
+                throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR)
+            }
             crc64ecma = if (index == 0) {
                 blockCrc64ecma
             } else {
@@ -368,7 +381,7 @@ class UploadService(
             }
         }
 
-        return CRC64(crc64ecma).unsignedStringValue() == expectedCrc64ecma
+        return CRC64(crc64ecma).unsignedStringValue()
     }
 
     private fun checkUploadId(uploadId: String, storageCredentials: StorageCredentials?) {

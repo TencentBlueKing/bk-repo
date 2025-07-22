@@ -454,7 +454,7 @@ abstract class NodeBaseService(
 
             if (separate) {
                 // 删除旧节点，并检查旧节点是否被删除，防止并发删除
-                val currentVersion = metadata!![UPLOADID_KEY].toString()
+                val currentVersion = nodeMetadata?.first { it.key == UPLOADID_KEY }!!.value.toString()
                 val oldNodeId = currentVersion.substringAfter("/")
 
                 if (oldNodeId == FAKE_SEPARATE) {
