@@ -27,16 +27,35 @@
 
 package com.tencent.bkrepo.common.artifact.manager.sign
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.auth.api.ServiceUserClient
+import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptor
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
-enum class SignedNodeForwardMessageCode(
-    private val key: String
-) : MessageCode {
+/**
+ * 已签名仓库下载拦截器
+ *
+ * 禁止通过api方式下载水印加固后的文件，只能通过NodeForwardService转发
+ */
+class SignedRepoDownloadInterceptor(
+    private val signProperties: SignProperties,
+    private val serviceUserClient: ServiceUserClient
+) : DownloadInterceptor<Unit, NodeDetail>(emptyMap()) {
+    override fun parseRule() {
+        return
+    }
 
-    SIGNED_NODE_NOT_FOUND("正在准备下载资源，请稍后重试"),
-    ;
+    override fun matcher(
+        artifact: NodeDetail,
+        rule: Unit
+    ): Boolean {
+        if (artifact.repoName != signProperties.signedRepoName) {
+            return true
+        }
+        if (serviceUserClient.userInfoById(SecurityUtils.getUserId()).data?.admin == true) {
+            return true
+        }
 
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 31
+        return false
+    }
 }

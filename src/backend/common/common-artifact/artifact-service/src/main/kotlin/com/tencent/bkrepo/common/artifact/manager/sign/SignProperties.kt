@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,5 +31,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "sign")
 data class SignProperties(
+    var host: String = "http://localhost",
     var config: MutableMap<String, PluginConfig> = mutableMapOf(),
+    var signedRepoName: String = "bkrepo-signed-repo",
+    var oldSignedProjectId: String = "",
+    var oldSignedRepoName: String= "",
 )

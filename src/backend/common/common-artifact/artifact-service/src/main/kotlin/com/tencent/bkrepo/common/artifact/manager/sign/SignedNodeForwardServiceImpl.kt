@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -36,18 +36,24 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
 import java.util.Base64
 
@@ -55,7 +61,8 @@ class SignedNodeForwardServiceImpl(
     private val signProperties: SignProperties,
     private val nodeService: NodeService,
     private val metadataService: MetadataService,
-    private val scanClient: ScanClient
+    private val scanClient: ScanClient,
+    private val repositoryService: RepositoryService,
 ) : NodeForwardService {
     override fun forward(
         node: NodeDetail,
@@ -71,9 +78,10 @@ class SignedNodeForwardServiceImpl(
                 throw NodeNotFoundException(node.fullPath)
             }
             val traceableApkPath = "/${node.sha256}/${userId}_${node.name}"
+            createRepoIfNotExist(projectId)
             val forwardNode = nodeService.getNodeDetail(
-                ArtifactInfo(signedProjectId, signedRepoName, traceableApkPath)
-            )
+                ArtifactInfo(node.projectId, signProperties.signedRepoName, traceableApkPath)
+            ) ?: getOldForwardNode(traceableApkPath)
             forwardNode ?: let {
                 createApkDefenderTaskIfNot(node, config, userId)
                 throw ErrorCodeException(
@@ -83,6 +91,40 @@ class SignedNodeForwardServiceImpl(
             }
             clearTask(node, userId)
             return forwardNode
+        }
+    }
+
+    private fun getOldForwardNode(traceableApkPath: String): NodeDetail?{
+        return if (signProperties.oldSignedProjectId.isNotEmpty()) {
+            nodeService.getNodeDetail(
+                ArtifactInfo(
+                    signProperties.oldSignedProjectId,
+                    signProperties.oldSignedRepoName,
+                    traceableApkPath
+                )
+            )
+        } else {
+            null
+        }
+    }
+
+    private fun createRepoIfNotExist(projectId: String) {
+        val request = RepoCreateRequest(
+            projectId = projectId,
+            name = signProperties.signedRepoName,
+            operator = SYSTEM_USER,
+            description = "Signed node repository",
+            display = false,
+            type = RepositoryType.GENERIC,
+            public = false,
+            category = RepositoryCategory.LOCAL,
+        )
+        try {
+            repositoryService.createRepo(request)
+        } catch (e: ErrorCodeException) {
+            if (e.messageCode != ArtifactMessageCode.REPOSITORY_EXISTED) {
+                throw e
+            }
         }
     }
 
@@ -149,6 +191,10 @@ class SignedNodeForwardServiceImpl(
                 metadata = listOf(
                     TaskMetadata("users", userId),
                     TaskMetadata("sha256", node.sha256!!),
+                    TaskMetadata(
+                        "repoUrl",
+                        "${signProperties.host}/generic/${node.projectId}/${signProperties.signedRepoName}"
+                    )
                 ),
             )
             val task = scanClient.scan(scanRequest).data ?: error("Request error")
