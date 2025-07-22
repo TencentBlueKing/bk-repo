@@ -37,11 +37,12 @@ dependencies {
     api(project(":common:common-security"))
     api(project(":common:common-mongo"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("io.mockk:mockk")
     testImplementation(project(":common:common-redis"))
-    testImplementation("it.ozimov:embedded-redis:${Versions.EmbeddedRedis}") {
+    testImplementation("com.github.codemonstur:embedded-redis:${Versions.EmbeddedRedis}") {
         exclude("org.slf4j", "slf4j-simple")
     }
 }

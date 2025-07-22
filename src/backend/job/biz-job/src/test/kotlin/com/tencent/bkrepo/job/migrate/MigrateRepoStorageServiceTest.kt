@@ -68,13 +68,13 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 @DisplayName("迁移服务测试")
@@ -98,16 +98,16 @@ class MigrateRepoStorageServiceTest @Autowired constructor(
     @Value(ActuatorConfiguration.SERVICE_INSTANCE_ID)
     private lateinit var instanceId: String
 
-    @MockBean
+    @MockitoBean
     private lateinit var repositoryService: RepositoryService
 
-    @MockBean
+    @MockitoBean
     private lateinit var storageCredentialService: StorageCredentialService
 
-    @MockBean(name = "migrateExecutor")
+    @MockitoBean(name = "migrateExecutor")
     private lateinit var mockMigrateExecutor: TaskExecutor
 
-    @MockBean(name = "correctExecutor")
+    @MockitoBean(name = "correctExecutor")
     private lateinit var mockCorrectExecutor: TaskExecutor
 
     @Autowired

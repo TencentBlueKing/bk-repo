@@ -29,7 +29,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
@@ -37,21 +36,24 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 import kotlin.random.Random
 
 
 @DataMongoTest
 @EnableAutoConfiguration
-@ComponentScan(basePackages =
-    ["com.tencent.bkrepo.generic.service",
-    "com.tencent.bkrepo.common.storage",
-    "com.tencent.bkrepo.common.metadata"])
+@ComponentScan(
+    basePackages =
+        ["com.tencent.bkrepo.generic.service",
+            "com.tencent.bkrepo.common.storage",
+            "com.tencent.bkrepo.common.metadata"]
+)
 @ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class BlockNodeServiceTest {
 
-    @MockBean
+    @MockitoBean
     lateinit var nodeDao: NodeDao
 
     @Autowired
@@ -191,7 +193,7 @@ class BlockNodeServiceTest {
         return FileSystemArtifactFile(tempFile)
     }
 
-    private fun createAndStoreBlock(i: Int,fullPath: String = "/file") {
+    private fun createAndStoreBlock(i: Int, fullPath: String = "/file") {
         val blockNode = TBlockNode(
             createdBy = UT_USER,
             createdDate = LocalDateTime.now(),
@@ -208,6 +210,7 @@ class BlockNodeServiceTest {
         storageService.store(blockNode.sha256, artifactFile, storageCredentials)
         blockNodeService.createBlock(blockNode, storageCredentials)
     }
+
     private fun listBlocks(fullPath: String = "/file"): List<TBlockNode> {
         return blockNodeService.listBlocksInUploadId(
             projectId = UT_PROJECT_ID,
@@ -217,10 +220,12 @@ class BlockNodeServiceTest {
         )
     }
 
-    private fun assertBlocks(blocks: List<TBlockNode>,
-                             expectedSize: Int,
-                             blockSize: Long,
-                             version: String?,) {
+    private fun assertBlocks(
+        blocks: List<TBlockNode>,
+        expectedSize: Int,
+        blockSize: Long,
+        version: String?,
+    ) {
         Assertions.assertEquals(expectedSize, blocks.size)
         blocks.forEach { block ->
             Assertions.assertEquals(blockSize, block.size)
@@ -241,10 +246,12 @@ class BlockNodeServiceTest {
         }
     }
 
-    private fun deleteBlocksQuery(fullPath: String,
-                                  projectId: String,
-                                  repoName: String,
-                                  createdDate: LocalDateTime): Query {
+    private fun deleteBlocksQuery(
+        fullPath: String,
+        projectId: String,
+        repoName: String,
+        createdDate: LocalDateTime
+    ): Query {
         val criteria = where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
             .and(TBlockNode::projectId.name).isEqualTo(projectId)
             .and(TBlockNode::repoName.name).isEqualTo(repoName)

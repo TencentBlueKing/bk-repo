@@ -29,10 +29,10 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @DisplayName("归档文件迁移失败自动修复策略测试")
 @DataMongoTest
@@ -55,7 +55,7 @@ class ArchivedFileAutoFixStrategyTest @Autowired constructor(
     private val srcStorageKey = "src_$UT_STORAGE_CREDENTIALS_KEY"
     private val dstStorageKey = "dst_$UT_STORAGE_CREDENTIALS_KEY"
 
-    @MockBean
+    @MockitoBean
     private lateinit var storageService: StorageService
 
     @BeforeEach

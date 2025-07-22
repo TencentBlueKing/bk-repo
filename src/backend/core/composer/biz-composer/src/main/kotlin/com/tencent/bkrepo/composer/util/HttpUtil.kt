@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.composer.util
 
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 object HttpUtil {
     private const val requestAddrFormat = "%s://%s:%d"

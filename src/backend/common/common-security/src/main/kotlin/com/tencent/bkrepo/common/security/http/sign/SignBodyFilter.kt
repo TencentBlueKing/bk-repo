@@ -4,13 +4,13 @@ import com.google.common.hash.Hashing
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.service.servlet.MultipleReadHttpRequest
 import com.tencent.bkrepo.common.service.util.HttpSigner
+import jakarta.servlet.Filter
+import jakarta.servlet.FilterChain
+import jakarta.servlet.ServletRequest
+import jakarta.servlet.ServletResponse
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.MediaType
 import java.io.ByteArrayOutputStream
-import javax.servlet.Filter
-import javax.servlet.FilterChain
-import javax.servlet.ServletRequest
-import javax.servlet.ServletResponse
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 对body进行签名的过滤器。
