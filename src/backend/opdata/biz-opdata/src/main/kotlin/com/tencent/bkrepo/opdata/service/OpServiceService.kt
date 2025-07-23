@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.opdata.service
 
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMetrics.Companion.COS_ASYNC_UPLOAD_SUFFIX
 import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMetrics.Companion.DOWNLOAD_SUFFIX
 import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMetrics.Companion.INSTANCE_BANDWIDTH
@@ -38,7 +37,6 @@ import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMet
 import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMetrics.Companion.UPLOAD_SUFFIX
 import com.tencent.bkrepo.opdata.client.ArtifactMetricsClient
 import com.tencent.bkrepo.opdata.client.plugin.PluginClient
-import com.tencent.bkrepo.opdata.message.OpDataMessageCode
 import com.tencent.bkrepo.opdata.pojo.bandwidth.BandwidthInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
@@ -132,7 +130,9 @@ class OpServiceService @Autowired constructor(
      */
     fun changeInstanceStatus(serviceName: String, instanceId: String, down: Boolean): InstanceInfo {
         if (!checkConsulAlive()) {
-            val match = discoveryClient.getInstances(serviceName).filter { instance -> instance.instanceId.equals(instanceId) }.first()
+            val match = discoveryClient.getInstances(serviceName)
+                .filter { instance -> instance.instanceId.equals(instanceId) }
+                .first()
             val target = InstanceInfo(
                 id = match.serviceId,
                 serviceName = serviceName,
