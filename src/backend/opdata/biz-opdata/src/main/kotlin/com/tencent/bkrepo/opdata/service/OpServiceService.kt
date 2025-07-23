@@ -109,7 +109,6 @@ class OpServiceService @Autowired constructor(
                 )
             }
         }
-
     }
 
     fun instance(serviceName: String, instanceId: String): InstanceInfo {
@@ -132,6 +131,17 @@ class OpServiceService @Autowired constructor(
      * @param down true: 下线， false: 上线
      */
     fun changeInstanceStatus(serviceName: String, instanceId: String, down: Boolean): InstanceInfo {
+        if (!checkConsulAlive()) {
+            val match = discoveryClient.getInstances(serviceName).filter { instance -> instance.instanceId.equals(instanceId) }.first()
+            val target = InstanceInfo(
+                id = match.serviceId,
+                serviceName = serviceName,
+                host = match.host,
+                port = match.port,
+                status = InstanceStatus.RUNNING,
+            )
+            return target.copy(detail=instanceDetail(target))
+        }
         val instanceInfo = registryClient().maintenance(serviceName, instanceId, down)
         return instanceInfo.copy(detail = instanceDetail(instanceInfo))
     }
