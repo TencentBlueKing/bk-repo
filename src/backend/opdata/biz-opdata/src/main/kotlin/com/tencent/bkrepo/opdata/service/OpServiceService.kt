@@ -81,7 +81,7 @@ class OpServiceService @Autowired constructor(
      * 获取服务的所有实例
      */
     fun instances(serviceName: String): List<InstanceInfo> {
-        if (registryClient().isActive()) {
+        if (checkConsulAlive()) {
             return registryClient().instances(serviceName).map { instance ->
                 executor.submit<InstanceInfo> {
                     instance.copy(detail = instanceDetail(instance))
@@ -109,6 +109,7 @@ class OpServiceService @Autowired constructor(
                 )
             }
         }
+
     }
 
     fun instance(serviceName: String, instanceId: String): InstanceInfo {
@@ -131,17 +132,6 @@ class OpServiceService @Autowired constructor(
      * @param down true: 下线， false: 上线
      */
     fun changeInstanceStatus(serviceName: String, instanceId: String, down: Boolean): InstanceInfo {
-        if (!registryClient().isActive()) {
-            val match = discoveryClient.getInstances(serviceName).filter { instance -> instance.instanceId.equals(instanceId) }.first()
-            val target = InstanceInfo(
-                id = match.serviceId,
-                serviceName = serviceName,
-                host = match.host,
-                port = match.port,
-                status = InstanceStatus.RUNNING,
-            )
-            return target.copy(detail=instanceDetail(target))
-        }
         val instanceInfo = registryClient().maintenance(serviceName, instanceId, down)
         return instanceInfo.copy(detail = instanceDetail(instanceInfo))
     }
@@ -283,8 +273,11 @@ class OpServiceService @Autowired constructor(
     }
 
     private fun registryClient(): RegistryClient {
-        return registryClientProvider.firstOrNull()
-            ?: throw SystemErrorException(OpDataMessageCode.REGISTRY_CLIENT_NOT_FOUND)
+        return registryClientProvider.first()
+    }
+
+    private fun checkConsulAlive() : Boolean {
+        return registryClientProvider.firstOrNull() == null
     }
 
     companion object {
