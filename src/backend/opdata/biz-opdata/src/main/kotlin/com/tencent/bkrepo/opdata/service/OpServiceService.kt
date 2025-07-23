@@ -277,7 +277,7 @@ class OpServiceService @Autowired constructor(
     }
 
     private fun checkConsulAlive() : Boolean {
-        return registryClientProvider.firstOrNull() == null
+        return registryClientProvider.firstOrNull() != null
     }
 
     companion object {
