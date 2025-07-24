@@ -232,42 +232,56 @@ abstract class AbstractReplicaService(
      * 采用广度优先遍历
      */
     private fun replicaByPath(replicaContext: ReplicaContext, node: NodeInfo) {
-        with(replicaContext) {
-            if (!node.folder) {
-                // 如果节点来源不属于此次任务限制的来源，则跳过
-                val sourceFilter = replicaContext.taskObject.sourceFilter
-                if (!sourceFilter.isNullOrEmpty() && !node.federatedSource.isNullOrEmpty()) {
-                    if (node.federatedSource !in sourceFilter) {
-                        logger.info(
-                            "Node ${node.fullPath} in repo ${node.projectId}|${node.repoName}" +
-                                " is not in source filter list"
-                        )
-                        return
-                    }
-                }
+        if (!node.folder) {
+            replicaFileNode(replicaContext, node)
+            return
+        }
+        replicaFolderNode(replicaContext, node)
+    }
 
-                // 存在冲突：记录冲突策略
-                // 外部集群仓库没有project/repoName
-                val conflictStrategy = if (
-                    !remoteProjectId.isNullOrBlank() && !remoteRepoName.isNullOrBlank() &&
-                    artifactReplicaClient!!.checkNodeExist(
-                        remoteProjectId, remoteRepoName, node.fullPath, node.deleted
-                    ).data == true
-                ) {
-                    replicaProgress.conflict++
-                    task.setting.conflictStrategy
-                } else null
-                val replicaExecutionContext = initialExecutionContext(
-                    context = replicaContext,
-                    artifactName = node.fullPath,
-                    conflictStrategy = conflictStrategy,
-                    size = node.size,
-                    sha256 = node.sha256
-                )
-                replicaExecutionContext.replicaContext.recordDetailId == replicaExecutionContext.detail.id
-                replicaFile(replicaExecutionContext, node)
-                return
+    /**
+     * 同步文件节点
+     */
+    private fun replicaFileNode(replicaContext: ReplicaContext, node: NodeInfo) {
+        with(replicaContext) {
+            // 如果节点来源不属于此次任务限制的来源，则跳过
+            val sourceFilter = replicaContext.taskObject.sourceFilter
+            if (!sourceFilter.isNullOrEmpty() && !node.federatedSource.isNullOrEmpty()) {
+                if (node.federatedSource !in sourceFilter) {
+                    logger.info(
+                        "Node ${node.fullPath} in repo ${node.projectId}|${node.repoName}" +
+                            " is not in source filter list"
+                    )
+                    return
+                }
             }
+            // 存在冲突：记录冲突策略
+            val conflictStrategy = if (
+                !remoteProjectId.isNullOrBlank() && !remoteRepoName.isNullOrBlank() &&
+                artifactReplicaClient!!.checkNodeExist(
+                    remoteProjectId, remoteRepoName, node.fullPath, node.deleted
+                ).data == true
+            ) {
+                replicaProgress.conflict++
+                task.setting.conflictStrategy
+            } else null
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = node.fullPath,
+                conflictStrategy = conflictStrategy,
+                size = node.size,
+                sha256 = node.sha256
+            )
+            replicaExecutionContext.replicaContext.recordDetailId == replicaExecutionContext.detail.id
+            replicaFile(replicaExecutionContext, node)
+        }
+    }
+
+    /**
+     * 同步文件夹节点（子节点遍历）
+     */
+    private fun replicaFolderNode(replicaContext: ReplicaContext, node: NodeInfo) {
+        with(replicaContext) {
             // 判断是否需要同步已删除的节点
             val includeDeleted =
                 taskDetail.task.replicaType == ReplicaType.FEDERATION && executeType != TaskExecuteType.DELTA
