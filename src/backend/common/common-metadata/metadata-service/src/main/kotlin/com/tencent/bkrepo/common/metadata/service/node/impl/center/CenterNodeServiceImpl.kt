@@ -253,14 +253,16 @@ class CenterNodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
-        nodeId: String
+        nodeId: String,
+        deleteTime: LocalDateTime
     ): NodeDeleteResult {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteNodeById(
             projectId,
             repoName,
             fullPath,
             operator,
-            nodeId
+            nodeId,
+            deleteTime
         )
     }
 

@@ -82,6 +82,7 @@ class FederationRepositoryServiceImpl(
     private val executor = FederationFullSyncThreadPoolExecutor.instance
 
     override fun createFederationRepository(request: FederatedRepositoryCreateRequest): String {
+        // TODO 需要校验用户是有有目标仓库的权限
         logger.info("Creating federation repository for project: ${request.projectId}, repo: ${request.repoName}")
         paramsCheck(request)
         val currentCluster = clusterNodeService.getByClusterId(request.clusterId)
