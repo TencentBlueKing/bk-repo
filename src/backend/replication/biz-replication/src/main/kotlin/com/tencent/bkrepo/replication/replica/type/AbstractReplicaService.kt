@@ -264,6 +264,7 @@ abstract class AbstractReplicaService(
                     size = node.size,
                     sha256 = node.sha256
                 )
+                replicaExecutionContext.replicaContext.recordDetailId == replicaExecutionContext.detail.id
                 replicaFile(replicaExecutionContext, node)
                 return
             }
@@ -272,7 +273,6 @@ abstract class AbstractReplicaService(
                 taskDetail.task.replicaType == ReplicaType.FEDERATION && executeType != TaskExecuteType.DELTA
             // 查询子节点
             var pageNumber = DEFAULT_PAGE_NUMBER
-            // TODO 根据条件判断是否需要同步已删除的节点
             var nodes = localDataManager.listNodePage(
                 projectId = replicaContext.localProjectId,
                 repoName = replicaContext.localRepoName,

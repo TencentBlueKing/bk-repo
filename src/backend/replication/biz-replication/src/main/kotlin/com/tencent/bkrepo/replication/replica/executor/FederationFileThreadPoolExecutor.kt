@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 Tencent.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,51 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.replication.pojo.record
+package com.tencent.bkrepo.replication.replica.executor
+
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
- * 同步进度
+ * 用于处理联邦仓库文件同步的线程池
  */
-data class ReplicaProgress(
+object FederationFileThreadPoolExecutor {
     /**
-     * 成功数量
+     * 线程池实例
      */
-    var success: Long = 0,
-    /**
-     * 跳过数量
-     */
-    var skip: Long = 0,
-    /**
-     * 失败数量
-     */
-    var failed: Long = 0,
-    /**
-     * 数据大小, 单位bytes
-     */
-    var totalSize: Long = 0,
-    /**
-     * 冲突数量
-     */
-    var conflict: Long = 0,
-    /**
-     * 文件成功数量
-     */
-    var fileSuccess: Long = 0,
-    /**
-     * 文件失败数量
-     */
-    var fileFailed: Long = 0,
-) {
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
 
-    operator fun plus(replicaProgress: ReplicaProgress): ReplicaProgress {
-        return ReplicaProgress(
-            success = this.success + replicaProgress.success,
-            skip = this.skip + replicaProgress.skip,
-            failed = this.failed + replicaProgress.failed,
-            totalSize = this.totalSize + replicaProgress.totalSize,
-            conflict = this.conflict + replicaProgress.conflict,
-            fileSuccess = this.fileSuccess + replicaProgress.fileSuccess,
-            fileFailed = this.fileFailed + replicaProgress.fileFailed
-        )
+    /**
+     * 创建线程池
+     */
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("federation-file-worker-%d").build()
+        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
+        return ThreadPoolExecutor(
+            corePoolSize, corePoolSize * 2, 60, TimeUnit.SECONDS,
+            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+        ).apply { this.allowCoreThreadTimeOut(true) }
     }
 }

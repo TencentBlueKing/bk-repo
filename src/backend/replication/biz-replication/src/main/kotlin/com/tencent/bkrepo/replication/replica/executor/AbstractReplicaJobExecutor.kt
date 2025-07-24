@@ -132,6 +132,8 @@ open class AbstractReplicaJobExecutor(
                 replicaOverview.success += (progress.success + progress.skip)
                 replicaOverview.failed += progress.failed
                 replicaOverview.conflict += progress.conflict
+                replicaOverview.fileSuccess += progress.fileSuccess
+                replicaOverview.fileFailed += progress.fileFailed
             }
         }
         return ResultsSummary(replicaOverview, errorReason, status)

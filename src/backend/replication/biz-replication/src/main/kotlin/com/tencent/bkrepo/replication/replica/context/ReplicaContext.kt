@@ -108,6 +108,8 @@ class ReplicaContext(
 
     var executeType: TaskExecuteType? = null
 
+    var recordDetailId: String? = null
+
     init {
         cluster = ClusterInfo(
             name = remoteCluster.name,
