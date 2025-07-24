@@ -177,6 +177,17 @@ class ReplicaRecordServiceImpl(
         logger.info("Update record detail [$detailId] success.")
     }
 
+    override fun updateRecordDetailProgress(detailId: String, fileSuccess: Boolean) {
+        val replicaRecordDetail = findRecordDetailById(detailId)
+            ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, detailId)
+        if (fileSuccess) {
+            replicaRecordDetail.progress.fileSuccess += 1
+        } else {
+            replicaRecordDetail.progress.fileFailed += 1
+        }
+        replicaRecordDetailDao.save(replicaRecordDetail)
+    }
+
     override fun completeRecordDetail(detailId: String, result: ExecutionResult) {
         val tReplicaRecordDetail = replicaRecordDetailDao.findById(detailId)
             ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, detailId)

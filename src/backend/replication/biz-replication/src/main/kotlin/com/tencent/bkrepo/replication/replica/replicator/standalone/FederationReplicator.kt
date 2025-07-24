@@ -44,10 +44,12 @@ import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.executor.FederationFileThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
 import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterArtifactReplicationHandler
 import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
+import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -76,12 +78,15 @@ class FederationReplicator(
     private val artifactReplicationHandler: ClusterArtifactReplicationHandler,
     private val replicationProperties: ReplicationProperties,
     private val federationRepositoryService: FederationRepositoryService,
+    private val replicaRecordService: ReplicaRecordService,
 ) : Replicator {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
     private var version: String = DEFAULT_VERSION
 
     private val remoteRepoCache = ConcurrentHashMap<String, RepositoryDetail>()
+
+    private val executor = FederationFileThreadPoolExecutor.instance
 
     override fun checkVersion(context: ReplicaContext) {
         with(context) {
@@ -188,22 +193,69 @@ class FederationReplicator(
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
-            var type: String = replicationProperties.pushType
-            var downGrade = false
-            val remoteRepositoryType = context.remoteRepoType
             // 1. 同步节点
             if (!syncNodeToFederatedCluster(this, node)) return false
 
-            // TODO node和文件分发拆分成并发执行
-            // 2. 同步文件元数据
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
+            // 2. 同步文件
+            return if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
+                // 异步执行
+                executor.execute {
+                    try {
+                        pushFileToFederatedCluster(this, node)
+                        completeFileReplicaRecord(context)
+                    } catch (throwable: Throwable) {
+                        logger.error(
+                            "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
+                                "${node.projectId}|${node.repoName} failed, error is" +
+                                " ${Throwables.getStackTraceAsString(throwable)}"
+                        )
+                        completeFileReplicaRecord(context, false)
+                    }
+                }
+                true
+            } else {
+                // 同步执行
+                var result: Boolean = true
+                try {
+                    pushFileToFederatedCluster(this, node)
+                    completeFileReplicaRecord(context)
+                } catch (throwable: Throwable) {
+                    logger.error(
+                        "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
+                            "${node.projectId}|${node.repoName} failed, error is" +
+                            " ${Throwables.getStackTraceAsString(throwable)}"
+                    )
+                    completeFileReplicaRecord(context, false)
+                    result = false
+                }
+                return result
+            }
+        }
+    }
+
+    private fun completeFileReplicaRecord(context: ReplicaContext, success: Boolean = true) {
+        with(context) {
+            if (task.record == false || recordDetailId.isNullOrEmpty()) return
+            replicaRecordService.updateRecordDetailProgress(recordDetailId!!, success)
+        }
+    }
+
+    /**
+     * 推送文件到联邦集群
+     */
+    private fun pushFileToFederatedCluster(context: ReplicaContext, node: NodeInfo): Boolean {
+        with(context) {
+            var type: String = replicationProperties.pushType
+            var downGrade = false
+            val remoteRepositoryType = context.remoteRepoType
+
+            return retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
                 if (blobReplicaClient!!.check(
                         node.sha256!!,
                         remoteRepo?.storageCredentials?.key,
                         remoteRepositoryType
                     ).data != true
                 ) {
-                    // 1. 同步文件数据
                     logger.info(
                         "The file [${node.fullPath}] with sha256 [${node.sha256}] " +
                             "will be pushed to the federated server ${cluster.name}, try the $retry time!"
@@ -245,7 +297,7 @@ class FederationReplicator(
                 artifactReplicaClient!!.replicaMetadataSaveRequest(
                     buildMetadataSaveRequest(context, node, task.name)
                 )
-                return true
+                true
             }
         }
     }

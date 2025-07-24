@@ -63,6 +63,8 @@ open class CommonEventBasedReplicaJobExecutor(
                 replicaOverview.success += overview.success
                 replicaOverview.failed += overview.failed
                 replicaOverview.conflict += overview.conflict
+                replicaOverview.fileSuccess += overview.fileSuccess
+                replicaOverview.fileFailed  += overview.fileFailed
             }
             replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
             logger.info("Replica ${event.getFullResourceKey()} completed.")

@@ -140,7 +140,6 @@ class FederationRepositoryServiceImpl(
             // 使用线程池异步执行同步任务
             executor.submit {
                 try {
-//                     TODO 只有来源是这个联邦仓库配置的数据才同步
                     // TODO 多个任务并发执行
                     federationRepository.federatedClusters.forEach {
                         val taskInfo = replicaTaskService.getByTaskId(it.taskId!!)
