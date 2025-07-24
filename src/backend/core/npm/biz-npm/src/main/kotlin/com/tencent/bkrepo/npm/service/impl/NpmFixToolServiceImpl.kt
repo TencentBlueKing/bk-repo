@@ -378,6 +378,7 @@ class NpmFixToolServiceImpl(
 			size = record["size"].toString().toLong(),
 			sha256 = record["sha256"] as String,
 			md5 = record["md5"] as String,
+			crc64ecma = record["crc64ecma"] as? String,
 			projectId = record["projectId"] as String,
 			repoName = record["repoName"] as String,
 			metadata = mapOf()

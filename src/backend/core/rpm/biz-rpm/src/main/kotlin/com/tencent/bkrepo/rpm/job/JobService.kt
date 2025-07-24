@@ -504,6 +504,7 @@ class JobService(
             size = mapData["size"].toString().toLong(),
             sha256 = mapData["sha256"] as String,
             md5 = mapData["md5"] as String,
+            crc64ecma = mapData["crc64ecma"] as? String,
             projectId = mapData["projectId"] as String,
             repoName = mapData["repoName"] as String,
             metadata = if (mapData["metadata"] == null) {
