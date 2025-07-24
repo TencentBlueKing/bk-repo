@@ -16,6 +16,13 @@ export function instances(serviceName) {
   })
 }
 
+export function bandwidths(serviceName) {
+  return request({
+    url: `${PREFIX_SERVICES}/${serviceName}/bandwidth`,
+    method: 'get'
+  })
+}
+
 export function up(serviceName, instanceId) {
   return request({
     url: `${PREFIX_SERVICES}/${serviceName}/instances/${instanceId}/up`,
