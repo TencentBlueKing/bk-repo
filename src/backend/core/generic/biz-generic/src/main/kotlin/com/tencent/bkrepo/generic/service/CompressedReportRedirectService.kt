@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.constant.ACCESS_FROM_API
 import com.tencent.bkrepo.common.api.constant.HEADER_ACCESS_FROM
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.redirect.DownloadRedirectService
@@ -57,34 +56,32 @@ class CompressedReportRedirectService(
             return false
         }
         val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo)
+        if (node != null) {
+            return false
+        }
         val compressedReportFullPath = buildCompressedReportFullPath(context)
         val compressedReportArtifactInfo = ArtifactInfo(context.projectId, context.repoName, compressedReportFullPath)
         val compressedReport = nodeService.getNodeDetail(compressedReportArtifactInfo)
-        return node == null && compressedReport != null
+        return compressedReport != null
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
-        val commonPrefix = PathUtils.getCommonPath(
-            context.artifactInfo.getArtifactFullPath(),
-            buildCompressedReportFullPath(context)
-        )
-        val filePath = context.artifactInfo.getArtifactFullPath().removePrefix(commonPrefix)
         val redirectUrlBuilder = StringBuilder()
         redirectUrlBuilder.append(genericProperties.domain.removeSuffix("/generic"))
         // 判断请求来源是浏览器还是API调用
         if (context.request.getHeader(HEADER_ACCESS_FROM) != ACCESS_FROM_API) {
             redirectUrlBuilder.append("/web")
         }
-        redirectUrlBuilder.append("/preview/compressed/report/preview${context.request.requestURI}?filePath=$filePath")
+        redirectUrlBuilder.append("/preview/api/compressed/report/preview${context.request.requestURI}")
         context.request.queryString?.let {
-            redirectUrlBuilder.append("&${context.request.queryString}")
+            redirectUrlBuilder.append("?${context.request.queryString}")
         }
         context.response.sendRedirect(redirectUrlBuilder.toString())
     }
 
     private fun buildCompressedReportFullPath(context: ArtifactDownloadContext): String {
         return context.artifactInfo.getArtifactFullPath().split(StringPool.SLASH)
-            .subList(0,4).joinToString(StringPool.SLASH)
+            .subList(0, 4).joinToString(StringPool.SLASH)
             .plus("/${genericProperties.compressedReport.zipFileName}")
     }
 }
