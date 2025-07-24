@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.message.CommonMessageCode.REQUEST_DENIED
 import com.tencent.bkrepo.common.api.util.CRC64
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -142,6 +143,14 @@ class UploadService(
             // 如果不允许覆盖且节点已经存在，抛出异常
             if (node != null && !overwrite) {
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
+            }
+
+            // 检查node是否已完成关联blockNode，避免在node创建但是尚未关联到对应blockNode时候覆盖上传导致，node与blockNode关联错误
+            val oldBlocks = node?.metadata?.get(UPLOADID_KEY)?.let { uploadId ->
+                blockNodeService.listBlocksInUploadId(projectId, repoName, getArtifactFullPath(), uploadId as String)
+            }
+            if (oldBlocks?.isNotEmpty() == true) {
+                throw ErrorCodeException(REQUEST_DENIED, "node[${getArtifactFullPath()}] is uploading")
             }
 
             // 生成唯一的 uploadId，作为上传会话的标识
@@ -310,7 +319,7 @@ class UploadService(
                 "Create block base node failed, file path [${artifactInfo.getArtifactFullPath()}], " +
                         "version : $uploadId"
             )
-            abortSeparateBlockUpload(userId, uploadId, artifactInfo)
+            // 用户可能重试complete可以成功，或者重复complete导致创建node冲突，此处不清理避免误删，在定时任务中清理过期的BlockNode
             throw e
         }
 
