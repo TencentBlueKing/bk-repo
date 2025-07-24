@@ -1,5 +1,2 @@
 spring.application.name: opdata
 server.port: 25904
-
-fs-service-url:
-
