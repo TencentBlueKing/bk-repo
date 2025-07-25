@@ -112,7 +112,7 @@
                     <bk-table-column :selectable="selectable" type="selection" width="60"></bk-table-column>
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip>
                         <template #default="{ row }">
-                            <div @click="previewFile(row)">
+                            <div>
                                 <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
                                 <span
                                     class="hover-btn disabled"
@@ -821,9 +821,8 @@
                     this.$set(item, 'loading', false)
                 })
             },
-            // 单击table打开预览
             previewFile (row) {
-                if (row.folder || !this.enableMultipleTypeFilePreview) return
+                if (!this.enableMultipleTypeFilePreview) return
                 if (isOutDisplayType(row.fullPath)) {
                     const isLocal = this.localRepo
                     const typeParam = isLocal ? 'local/' : 'remote/'
@@ -857,7 +856,10 @@
             },
             // 双击table打开文件夹
             openFolder (row) {
-                if (!row.folder) return
+                if (!row.folder) {
+                    this.previewFile(row)
+                    return
+                }
                 if (this.searchFileName) {
                     // 搜索中打开文件夹
                     this.inFolderSearchName = ''
