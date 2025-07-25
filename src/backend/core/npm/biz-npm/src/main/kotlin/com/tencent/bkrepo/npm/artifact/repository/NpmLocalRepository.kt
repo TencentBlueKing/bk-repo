@@ -122,6 +122,7 @@ class NpmLocalRepository(
             size = context.getArtifactFile().getSize(),
             sha256 = context.getArtifactSha256(),
             md5 = context.getArtifactMd5(),
+            crc64ecma = context.getArtifactCrc64ecma(),
             operator = context.userId,
             overwrite = name != NPM_PACKAGE_TGZ_FILE
         )
@@ -634,6 +635,7 @@ class NpmLocalRepository(
             size = file.getSize(),
             sha256 = sha256,
             md5 = md5,
+            crc64ecma = file.getFileCrc64ecma(),
             overwrite = true,
             operator = context.userId
         )

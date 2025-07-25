@@ -50,6 +50,7 @@ data class BackupNodeInfo(
     var expireDate: LocalDateTime? = null,
     var sha256: String? = null,
     var md5: String? = null,
+    var crc64ecma: String? = null,
     var deleted: LocalDateTime? = null,
     var copyFromCredentialsKey: String? = null,
     var copyIntoCredentialsKey: String? = null,

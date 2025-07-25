@@ -345,6 +345,7 @@ class MavenServiceImpl(
             size = context.getArtifactFile().getSize(),
             sha256 = context.getArtifactSha256(),
             md5 = context.getArtifactMd5(),
+            crc64ecma = context.getArtifactCrc64ecma(),
             operator = context.userId,
             overwrite = true,
             nodeMetadata = createNodeMetaData(context.getArtifactFile())
@@ -804,6 +805,7 @@ class MavenServiceImpl(
                 overwrite = true,
                 size = artifactFile.getSize(),
                 md5 = artifactFile.getFileMd5(),
+                crc64ecma = artifactFile.getFileCrc64ecma(),
                 sha256 = artifactFile.getFileSha256(),
                 operator = SecurityUtils.getUserId()
             )

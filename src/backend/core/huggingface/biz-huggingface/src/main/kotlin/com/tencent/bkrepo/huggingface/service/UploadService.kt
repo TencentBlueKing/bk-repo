@@ -306,6 +306,7 @@ class UploadService(
                 size = regularFile.getSize(),
                 sha256 = regularFile.getFileSha256(),
                 md5 = regularFile.getFileMd5(),
+                crc64ecma = regularFile.getFileCrc64ecma(),
                 operator = SecurityUtils.getUserId(),
                 overwrite = true,
             )

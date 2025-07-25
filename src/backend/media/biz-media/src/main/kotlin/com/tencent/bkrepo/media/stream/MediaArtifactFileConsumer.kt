@@ -58,6 +58,7 @@ class MediaArtifactFileConsumer(
                 size = file.getSize(),
                 sha256 = file.getFileSha256(),
                 md5 = file.getFileMd5(),
+                crc64ecma = file.getFileCrc64ecma(),
                 operator = userId,
                 nodeMetadata = listOf(
                     MetadataModel(key = METADATA_KEY_MEDIA_START_TIME, value = startTime, system = true),

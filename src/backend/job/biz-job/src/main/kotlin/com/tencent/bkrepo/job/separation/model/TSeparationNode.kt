@@ -94,6 +94,7 @@ data class TSeparationNode(
     var size: Long,
     var expireDate: LocalDateTime? = null,
     var sha256: String? = null,
+    var crc64ecma: String? = null,
     var md5: String? = null,
     var deleted: LocalDateTime? = null,
     var copyFromCredentialsKey: String? = null,

@@ -149,6 +149,7 @@ class AsyncRemoteArtifactCacheWriter(
             fullPath = cacheTask.fullPath,
             size = artifactFile.getSize(),
             sha256 = artifactFile.getFileSha256(),
+            crc64ecma = artifactFile.getFileCrc64ecma(),
             md5 = artifactFile.getFileMd5(),
             nodeMetadata = findRemoteMetadata(cacheTask.remoteNodes, cacheTask.fullPath),
             overwrite = true,

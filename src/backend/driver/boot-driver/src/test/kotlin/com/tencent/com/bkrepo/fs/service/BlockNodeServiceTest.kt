@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.com.bkrepo.fs.UT_CRC64_ECMA
 import com.tencent.com.bkrepo.fs.UT_PROJECT_ID
 import com.tencent.com.bkrepo.fs.UT_REPO_NAME
 import com.tencent.com.bkrepo.fs.UT_USER
@@ -173,6 +174,7 @@ class BlockNodeServiceTest {
             nodeFullPath = fullPath,
             startPos = startPos,
             sha256 = sha256,
+            crc64ecma = UT_CRC64_ECMA,
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             size = 1

@@ -10,6 +10,8 @@ data class SeparateBlockInfo(
     val size: Long,
     @get:Schema(title = "分块sha256")
     val sha256: String,
+    @get:Schema(title = "分块crc64ecma")
+    val crc64ecma: String?,
     @get:Schema(title = "分块起始位置")
     val startPos: Long,
     @get:Schema(title = "分块uploadID")

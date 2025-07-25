@@ -55,6 +55,6 @@ interface BlobChunkedService {
         projectId: String, repoName: String,
         credentials: StorageCredentials, sha256: String,
         artifactFile: ArtifactFile, uuid: String,
-        size: Long?, md5: String?
+        size: Long?, md5: String?, crc64ecma: String?
     )
 }

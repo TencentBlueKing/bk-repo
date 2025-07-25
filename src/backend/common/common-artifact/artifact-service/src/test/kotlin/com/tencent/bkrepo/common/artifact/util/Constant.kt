@@ -32,4 +32,5 @@ object Constant {
     const val UT_REPO_NAME = "ut-repo"
     const val UT_USER = "system"
     const val UT_SHA256 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c6"
+    const val UT_CRC64_ECMA = "14529005747808976418"
 }

@@ -222,6 +222,7 @@ class EdgePullReplicaExecutor(
         overwrite = task.setting.conflictStrategy == ConflictStrategy.OVERWRITE,
         sha256 = nodeDetail.sha256,
         md5 = nodeDetail.md5,
+        crc64ecma = nodeDetail.crc64ecma,
         size = nodeDetail.size,
         nodeMetadata = nodeDetail.nodeMetadata,
         createdBy = nodeDetail.createdBy,

@@ -158,6 +158,7 @@ class HelmLocalRepository(
                 size = getLongAttribute(SIZE),
                 sha256 = getArtifactSha256(),
                 md5 = getArtifactMd5(),
+                crc64ecma = getArtifactCrc64ecma(),
                 operator = userId,
                 nodeMetadata = parseMetaData(context)?.map { MetadataModel(key = it.key, value = it.value) },
                 overwrite = isOverwrite(fullPath, isForce)
