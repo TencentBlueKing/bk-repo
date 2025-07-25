@@ -88,6 +88,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.BKREPO_META
@@ -140,6 +141,7 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import javax.servlet.http.HttpServletRequest
 import kotlin.reflect.full.memberProperties
+import kotlin.system.measureNanoTime
 
 @Component
 class GenericLocalRepository(
@@ -243,9 +245,13 @@ class GenericLocalRepository(
                 expireDate = calculateExpiryDateTime(expires)
             )
 
-            storageService.store(sha256, blockArtifactFile, storageCredentials)
-
+            val nanoTime = measureNanoTime { storageService.store(sha256, blockArtifactFile, storageCredentials) }
             val blockNodeInfo = blockNodeService.createBlock(blockNode, storageCredentials)
+            val throughput = Throughput(blockArtifactFile.getSize(), nanoTime)
+            logger.info(
+                "Success to store block node file uploadId[$uploadId] sha256[$sha256] " +
+                        "crc64ecma[${getArtifactCrc64ecma()}] offset[$offset], $throughput."
+            )
 
             // Set response content type and write success response
             context.response.contentType = MediaTypes.APPLICATION_JSON

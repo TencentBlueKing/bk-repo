@@ -161,7 +161,7 @@ class UploadService(
             )
             // 记录上传启动的日志
             logger.info(
-                "User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success, "
+                "User[${SecurityUtils.getPrincipal()}] start separate upload [$artifactInfo] success, "
                         + "version: $uploadId."
             )
             return uploadTransaction
@@ -328,6 +328,7 @@ class UploadService(
             repoName,
             artifactFullPath
         )
+        logger.info("delete old blocks of node[$projectId/$repoName$artifactFullPath] success, uploadId[$uploadId]")
 
         // 更新节点版本信息为null
         blockNodeService.updateBlockUploadId(
@@ -339,7 +340,7 @@ class UploadService(
 
         // 上传完成，记录日志
         logger.info(
-            "User [$userId] successfully completed block upload [uploadId: $uploadId], " +
+            "User [$userId] successfully completed separate upload [uploadId: $uploadId], " +
                     "file path [${artifactFullPath}]."
         )
     }
