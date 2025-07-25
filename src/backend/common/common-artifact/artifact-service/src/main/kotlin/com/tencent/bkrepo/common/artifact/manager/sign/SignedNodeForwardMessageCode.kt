@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,11 +25,18 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.manager
+package com.tencent.bkrepo.common.artifact.manager.sign
 
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.devops.plugin.api.ExtensionPoint
+import com.tencent.bkrepo.common.api.message.MessageCode
 
-interface NodeForwardExtension : ExtensionPoint {
-    fun forward(node: NodeDetail, userId: String): NodeDetail?
+enum class SignedNodeForwardMessageCode(
+    private val key: String
+) : MessageCode {
+
+    SIGNED_NODE_NOT_FOUND("正在准备下载资源，请稍后重试"),
+    ;
+
+    override fun getBusinessCode() = ordinal + 1
+    override fun getKey() = key
+    override fun getModuleCode() = 31
 }
