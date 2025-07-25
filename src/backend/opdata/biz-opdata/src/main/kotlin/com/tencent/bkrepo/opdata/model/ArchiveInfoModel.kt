@@ -33,6 +33,7 @@ package com.tencent.bkrepo.opdata.model
 
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.opdata.config.OpArchiveOrGcProperties
+import com.tencent.bkrepo.opdata.model.GcInfoModel.Companion.BATCH_SIZE
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
@@ -82,7 +83,7 @@ class ArchiveInfoModel @Autowired constructor(
 
         if (opArchiveOrGcProperties.archiveProjects.isEmpty()) {
             // 处理所有项目的归档数据
-            val query = Query(criteria)
+            val query = Query(criteria).cursorBatchSize(BATCH_SIZE)
             // 遍历节点表
             GcInfoModel.forEachCollectionAsync { collection ->
                 mongoTemplate.stream<Node>(query, collection).use { nodes ->
@@ -96,6 +97,7 @@ class ArchiveInfoModel @Autowired constructor(
             opArchiveOrGcProperties.archiveProjects.forEach { project ->
                 val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
                 val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
+                    .cursorBatchSize(BATCH_SIZE)
                 mongoTemplate.stream<Node>(query, collectionName).use { nodes ->
                     nodes.forEach { node ->
                         updateStatistics(statistics, node)

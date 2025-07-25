@@ -88,7 +88,7 @@ class GcInfoModel @Autowired constructor(
             .and("deleted").isEqualTo(null)
         val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
         if (opArchiveOrGcProperties.gcProjects.isEmpty()) {
-            val query = Query(criteria)
+            val query = Query(criteria).cursorBatchSize(BATCH_SIZE)
             forEachCollectionAsync {
                 mongoTemplate.stream<Node>(query, it).use { nodes ->
                     nodes.forEach { node ->
@@ -101,6 +101,7 @@ class GcInfoModel @Autowired constructor(
             opArchiveOrGcProperties.gcProjects.forEach { project ->
                 val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
                 val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
+                    .cursorBatchSize(BATCH_SIZE)
                 mongoTemplate.stream<Node>(query, collectionName).use { nodes ->
                     nodes.forEach { node ->
                         updateStatistics(statistics, node)
@@ -148,6 +149,7 @@ class GcInfoModel @Autowired constructor(
         private const val RETRY_TIMES = 3
         private const val MAX_EXECUTOR_POOL_SIZE = 64
         private const val MAX_EXECUTOR_QUEUE_SIZE = 1024
+        const val BATCH_SIZE = 1000
 
         fun reduce(statistics: ConcurrentHashMap<String, Array<AtomicLong>>): Array<AtomicLong> {
             val longs = arrayOf(AtomicLong(), AtomicLong())
