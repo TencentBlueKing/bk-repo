@@ -33,19 +33,21 @@ package com.tencent.bkrepo.opdata.model
 
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.opdata.config.OpArchiveOrGcProperties
+import com.tencent.bkrepo.opdata.model.GcInfoModel.Companion.BATCH_SIZE
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.stream
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+
 
 @Service
 class ArchiveInfoModel @Autowired constructor(
@@ -68,39 +70,54 @@ class ArchiveInfoModel @Autowired constructor(
     @Scheduled(cron = "0 0 4 * * ?")
     @SchedulerLock(name = "ArchiveInfoStatJob", lockAtMostFor = "PT24H")
     fun refresh() {
-        if (!opArchiveOrGcProperties.archiveEnabled) return
         archiveInfo = stat()
     }
 
     private fun stat(): Map<String, Array<Long>> {
+        if (!opArchiveOrGcProperties.archiveEnabled) return emptyMap()
         logger.info("Start update archive metrics.")
         val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
         val criteria = Criteria.where("archived").isEqualTo(true)
             .and("deleted").isEqualTo(null)
 
         if (opArchiveOrGcProperties.archiveProjects.isEmpty()) {
-            // 处理所有项目的归档数据
-            val query = Query(criteria)
-            // 遍历节点表
-            GcInfoModel.forEachCollectionAsync { collection ->
-                mongoTemplate.find<Node>(query, collection).forEach { node ->
-                    updateStatistics(statistics, node)
-                }
-            }
+            processAllProjects(statistics, criteria)
         } else {
-            // 处理指定项目的归档数据
-            opArchiveOrGcProperties.archiveProjects.forEach { project ->
-                val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
-                val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
-                mongoTemplate.find<Node>(query, collectionName).forEach { node ->
-                    updateStatistics(statistics, node)
-                }
-            }
+            processSpecificProjects(statistics, criteria)
         }
 
         statistics[SUM] = GcInfoModel.reduce(statistics)
         logger.info("Update archive metrics successful.")
         return statistics.mapValues { arrayOf(it.value[0].get(), it.value[1].get()) }
+    }
+
+    private fun processAllProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, criteria: Criteria) {
+        // 处理所有项目的归档数据
+        val query = Query(criteria).cursorBatchSize(BATCH_SIZE)
+        // 遍历节点表
+        GcInfoModel.forEachCollectionAsync { collection ->
+            processNodes(query, collection, statistics)
+        }
+    }
+
+    private fun processSpecificProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, criteria: Criteria) {
+        // 处理指定项目的归档数据
+        opArchiveOrGcProperties.archiveProjects.forEach { project ->
+            val collection = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
+            val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
+                .cursorBatchSize(BATCH_SIZE)
+            processNodes(query, collection, statistics)
+        }
+    }
+
+    private fun processNodes(
+        query: Query, collection: String, statistics: ConcurrentHashMap<String, Array<AtomicLong>>
+    ) {
+        mongoTemplate.stream<Node>(query, collection).use { nodes ->
+            nodes.forEach { node ->
+                updateStatistics(statistics, node)
+            }
+        }
     }
 
     private fun updateStatistics(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, node: Node) {
