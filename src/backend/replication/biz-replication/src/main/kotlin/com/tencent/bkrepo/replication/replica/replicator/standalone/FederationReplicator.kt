@@ -217,7 +217,8 @@ class FederationReplicator(
                                 name = node.fullPath,
                                 size = node.size,
                                 sha256 = node.sha256,
-                                md5 = node.md5
+                                md5 = node.md5,
+                                crc64ecma = node.crc64ecma,
                             ),
                             pushType = type,
                             downGrade = downGrade

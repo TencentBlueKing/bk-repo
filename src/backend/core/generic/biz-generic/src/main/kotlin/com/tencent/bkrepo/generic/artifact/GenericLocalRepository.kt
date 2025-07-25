@@ -252,10 +252,11 @@ class GenericLocalRepository(
             context.response.writer.println(
                 ResponseBuilder.success(
                     SeparateBlockInfo(
-                        blockNodeInfo.size,
-                        blockNodeInfo.sha256,
-                        blockNodeInfo.startPos,
-                        blockNodeInfo.uploadId
+                        size = blockNodeInfo.size,
+                        sha256 = blockNodeInfo.sha256,
+                        crc64ecma = blockNodeInfo.crc64ecma,
+                        startPos = blockNodeInfo.startPos,
+                        uploadId = blockNodeInfo.uploadId,
                     )
                 ).toJsonString()
             )
@@ -927,7 +928,7 @@ class GenericLocalRepository(
 
             // 当传递了 md5和size 以后，分块文件合并时不计算 sha256 与 md5,只校验 size 是否一致
             val originalFileInfo = if (sha256 != null && md5 != null) {
-                FileInfo(sha256!!, md5!!, size!!)
+                FileInfo(sha256!!, md5!!, size!!, crc64ecma)
             } else {
                 null
             }
@@ -950,6 +951,7 @@ class GenericLocalRepository(
             val nodeRequest = buildNodeCreateRequest(context).copy(
                 sha256 = fileInfo.sha256,
                 md5 = fileInfo.md5,
+                crc64ecma = fileInfo.crc64ecma,
                 size = fileInfo.size
             )
             ActionAuditContext.current().setInstance(nodeRequest)

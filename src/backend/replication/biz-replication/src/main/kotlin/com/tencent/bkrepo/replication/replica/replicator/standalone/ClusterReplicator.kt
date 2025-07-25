@@ -205,7 +205,8 @@ class ClusterReplicator(
                                     name = it.fullPath,
                                     size = it.size,
                                     sha256 = it.sha256,
-                                    md5 = it.md5
+                                    md5 = it.md5,
+                                    crc64ecma = it.crc64ecma,
                                 ),
                                 pushType = type,
                                 downGrade = downGrade

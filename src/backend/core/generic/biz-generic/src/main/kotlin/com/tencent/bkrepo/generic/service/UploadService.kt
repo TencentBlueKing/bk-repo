@@ -105,9 +105,7 @@ class UploadService(
 
     fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): UploadTransactionInfo {
         with(artifactInfo) {
-            val expires = getLongHeader(HEADER_EXPIRES)
             val overwrite = getBooleanHeader(HEADER_OVERWRITE)
-            Preconditions.checkArgument(expires >= 0, "expires")
             // 判断文件是否存在
             if (!overwrite && nodeService.checkExist(this)) {
                 logger.warn(
@@ -124,7 +122,7 @@ class UploadService(
             }
             val uploadTransaction = UploadTransactionInfo(
                 uploadId = uploadId,
-                expireSeconds = expires
+                expireSeconds = TRANSACTION_EXPIRES
             )
 
             logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadId.")
@@ -232,6 +230,7 @@ class UploadService(
         artifactInfo: GenericArtifactInfo,
         sha256: String? = null,
         md5: String? = null,
+        crc64ecma: String? = null,
         size: Long? = null,
         mergeFileFlag: Boolean = true
     ) {
@@ -242,7 +241,7 @@ class UploadService(
                 "sha256 $sha256, md5 $md5, size $size for " +
                         "fullPath ${artifactInfo.getArtifactFullPath()} with uploadId $uploadId"
             )
-            FileInfo(sha256, md5, size)
+            FileInfo(sha256, md5, size, crc64ecma)
         } else {
             null
         }
@@ -370,8 +369,14 @@ class UploadService(
             uploadId = uploadId
         )
 
-        return blockInfoList.map { blockInfo ->
-            SeparateBlockInfo(blockInfo.size, blockInfo.sha256, blockInfo.startPos, blockInfo.uploadId)
+        return blockInfoList.map {
+            SeparateBlockInfo(
+                size = it.size,
+                sha256 = it.sha256,
+                crc64ecma = it.crc64ecma,
+                startPos = it.startPos,
+                uploadId = it.uploadId,
+            )
         }
     }
 
