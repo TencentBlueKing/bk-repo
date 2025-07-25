@@ -99,5 +99,9 @@ data class ReplicationProperties(
      * 针对部分 client_max_body_size 大小限制，
      * 导致超过该请求的文件无法使用普通上传
      */
-    var clientMaxBodySize: Long = 10 * 1024 * 1024 * 1024L
+    var clientMaxBodySize: Long = 10 * 1024 * 1024 * 1024L,
+    /**
+     * 联邦仓库分发文件并行数
+     */
+    var federatedFileConcurrencyNum: Int = 3,
     )

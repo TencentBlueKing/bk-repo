@@ -192,11 +192,10 @@ open class NodeDeleteSupport(
         repoName: String,
         fullPath: String,
         operator: String,
-        nodeId: String
+        nodeId: String,
+        deleteTime: LocalDateTime
     ): NodeDeleteResult {
         require(!PathUtils.isRoot(fullPath)) { "Cannot delete root node." }
-        val deleteTime = LocalDateTime.now()
-
         val criteria = buildCriteria(projectId, repoName, fullPath).apply {
             and(ID).isEqualTo(nodeId)
         }

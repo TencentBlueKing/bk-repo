@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.pojo.record.request
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
@@ -57,5 +58,7 @@ data class RecordDetailInitialRequest(
     @get:Schema(title = "制品大小")
     var size: Long? = null,
     @get:Schema(title = "制品sha256值")
-    var sha256: String? = null
+    var sha256: String? = null,
+    @get:Schema(title = "任务执行类型")
+    var executeType: TaskExecuteType? = null
 )

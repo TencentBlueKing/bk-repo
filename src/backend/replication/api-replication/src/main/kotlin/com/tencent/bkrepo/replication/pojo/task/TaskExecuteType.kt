@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent. All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,17 +25,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.replication.pojo.task
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-lock"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+enum class TaskExecuteType {
+    DELTA,  // 增量任务
+    FULL,   // 全量任务
+    PARTIAL; // 部分任务（新增）
 }

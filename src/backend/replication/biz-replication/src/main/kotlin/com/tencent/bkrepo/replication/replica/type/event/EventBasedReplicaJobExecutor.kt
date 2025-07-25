@@ -50,7 +50,7 @@ class EventBasedReplicaJobExecutor(
     replicaService: EventBasedReplicaService,
     replicationProperties: ReplicationProperties,
     replicaRecordService: ReplicaRecordService,
-) : CommonBasedReplicaJobExecutor(
+) : CommonEventBasedReplicaJobExecutor(
     clusterNodeService, localDataManager, replicaService, replicationProperties, replicaRecordService
 ) {
 
