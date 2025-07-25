@@ -42,10 +42,12 @@ import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.stream
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+
 
 @Service
 class ArchiveInfoModel @Autowired constructor(
@@ -68,11 +70,11 @@ class ArchiveInfoModel @Autowired constructor(
     @Scheduled(cron = "0 0 4 * * ?")
     @SchedulerLock(name = "ArchiveInfoStatJob", lockAtMostFor = "PT24H")
     fun refresh() {
-        if (!opArchiveOrGcProperties.archiveEnabled) return
         archiveInfo = stat()
     }
 
     private fun stat(): Map<String, Array<Long>> {
+        if (!opArchiveOrGcProperties.archiveEnabled) return emptyMap()
         logger.info("Start update archive metrics.")
         val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
         val criteria = Criteria.where("archived").isEqualTo(true)
@@ -83,8 +85,10 @@ class ArchiveInfoModel @Autowired constructor(
             val query = Query(criteria)
             // 遍历节点表
             GcInfoModel.forEachCollectionAsync { collection ->
-                mongoTemplate.find<Node>(query, collection).forEach { node ->
-                    updateStatistics(statistics, node)
+                mongoTemplate.stream<Node>(query, collection).use { nodes ->
+                    nodes.forEach { node ->
+                        updateStatistics(statistics, node)
+                    }
                 }
             }
         } else {
@@ -92,8 +96,10 @@ class ArchiveInfoModel @Autowired constructor(
             opArchiveOrGcProperties.archiveProjects.forEach { project ->
                 val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
                 val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
-                mongoTemplate.find<Node>(query, collectionName).forEach { node ->
-                    updateStatistics(statistics, node)
+                mongoTemplate.stream<Node>(query, collectionName).use { nodes ->
+                    nodes.forEach { node ->
+                        updateStatistics(statistics, node)
+                    }
                 }
             }
         }

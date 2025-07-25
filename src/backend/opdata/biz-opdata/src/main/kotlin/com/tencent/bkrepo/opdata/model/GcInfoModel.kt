@@ -45,6 +45,7 @@ import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.stream
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.util.concurrent.ArrayBlockingQueue
@@ -76,11 +77,11 @@ class GcInfoModel @Autowired constructor(
     @Scheduled(cron = "0 0 3 * * ?")
     @SchedulerLock(name = "GcInfoStatJob", lockAtMostFor = "PT24H")
     fun refresh() {
-        if (!opArchiveOrGcProperties.gcEnabled) return
         gcInfo = stat()
     }
 
     private fun stat(): Map<String, Array<Long>> {
+        if (!opArchiveOrGcProperties.gcEnabled) return emptyMap()
         logger.info("Start update gc metrics.")
         // 遍历节点表
         val criteria = Criteria.where("compressed").isEqualTo(true)
@@ -89,9 +90,10 @@ class GcInfoModel @Autowired constructor(
         if (opArchiveOrGcProperties.gcProjects.isEmpty()) {
             val query = Query(criteria)
             forEachCollectionAsync {
-                val nodes = mongoTemplate.find<Node>(query, it)
-                for (node in nodes) {
-                    updateStatistics(statistics, node)
+                mongoTemplate.stream<Node>(query, it).use { nodes ->
+                    nodes.forEach { node ->
+                        updateStatistics(statistics, node)
+                    }
                 }
             }
         } else {
@@ -99,8 +101,10 @@ class GcInfoModel @Autowired constructor(
             opArchiveOrGcProperties.gcProjects.forEach { project ->
                 val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
                 val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
-                mongoTemplate.find<Node>(query, collectionName).forEach { node ->
-                    updateStatistics(statistics, node)
+                mongoTemplate.stream<Node>(query, collectionName).use { nodes ->
+                    nodes.forEach { node ->
+                        updateStatistics(statistics, node)
+                    }
                 }
             }
         }
