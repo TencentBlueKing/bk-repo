@@ -40,7 +40,6 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -88,30 +87,40 @@ class GcInfoModel @Autowired constructor(
             .and("deleted").isEqualTo(null)
         val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
         if (opArchiveOrGcProperties.gcProjects.isEmpty()) {
-            val query = Query(criteria).cursorBatchSize(BATCH_SIZE)
-            forEachCollectionAsync {
-                mongoTemplate.stream<Node>(query, it).use { nodes ->
-                    nodes.forEach { node ->
-                        updateStatistics(statistics, node)
-                    }
-                }
-            }
+            processAllProjects(statistics, criteria)
         } else {
-            // 处理指定项目的gc数据
-            opArchiveOrGcProperties.gcProjects.forEach { project ->
-                val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
-                val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
-                    .cursorBatchSize(BATCH_SIZE)
-                mongoTemplate.stream<Node>(query, collectionName).use { nodes ->
-                    nodes.forEach { node ->
-                        updateStatistics(statistics, node)
-                    }
-                }
-            }
+            processSpecificProjects(statistics, criteria)
         }
         statistics[SUM] = reduce(statistics)
         logger.info("Update gc metrics successful.")
         return statistics.mapValues { arrayOf(it.value[0].get(), it.value[1].get()) }
+    }
+
+    private fun processAllProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, criteria: Criteria) {
+        val query = Query(criteria).cursorBatchSize(BATCH_SIZE)
+        forEachCollectionAsync {
+            processNodes(query, it, statistics)
+        }
+    }
+
+    private fun processSpecificProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, criteria: Criteria) {
+        // 处理指定项目的gc数据
+        opArchiveOrGcProperties.gcProjects.forEach { project ->
+            val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
+            val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
+                .cursorBatchSize(BATCH_SIZE)
+            processNodes(query, collectionName, statistics)
+        }
+    }
+
+    private fun processNodes(
+        query: Query, collection: String, statistics: ConcurrentHashMap<String, Array<AtomicLong>>
+    ) {
+        mongoTemplate.stream<Node>(query, collection).use { nodes ->
+            nodes.forEach { node ->
+                updateStatistics(statistics, node)
+            }
+        }
     }
 
     private fun updateStatistics(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, node: Node) {
