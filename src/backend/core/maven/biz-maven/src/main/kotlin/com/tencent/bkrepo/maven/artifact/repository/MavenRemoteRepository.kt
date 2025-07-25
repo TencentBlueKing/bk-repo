@@ -230,7 +230,10 @@ class MavenRemoteRepository(
         }
         val size = artifactFile.getSize()
         val artifactStream = artifactFile.getInputStream().artifactStream(Range.full(size))
-        val node = cacheArtifactFile(context, artifactFile)
+        val artifactInfo = context.artifactInfo as MavenArtifactInfo
+        val node = if (!artifactInfo.isMetadata()) {
+            cacheArtifactFile(context, artifactFile)
+        } else null
         node?.let {
             mavenMetadataService.update(node)
             if (shouldCache(context)) {
