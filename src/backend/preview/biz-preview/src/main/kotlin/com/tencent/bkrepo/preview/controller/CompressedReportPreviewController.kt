@@ -40,7 +40,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/compressed/report")
+@RequestMapping("/api/compressed/report")
 class CompressedReportPreviewController(
     private val compressFilePreviewImpl: CompressFilePreviewImpl,
     private val config: PreviewConfig
