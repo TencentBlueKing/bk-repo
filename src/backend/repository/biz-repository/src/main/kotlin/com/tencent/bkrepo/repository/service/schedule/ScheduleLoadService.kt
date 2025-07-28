@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.service.schedule
 
+import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.repository.model.TScheduleLoad
 import com.tencent.bkrepo.repository.pojo.schedule.ScheduleLoadCreateRequest
@@ -11,7 +12,7 @@ interface ScheduleLoadService {
     fun createScheduleLoad(request: ScheduleLoadCreateRequest)
 
     // 删除预约下载任务
-    fun removeScheduleLoad(id: String)
+    fun removeScheduleLoad(id: String): DeleteResult
 
     // 更新任务状态
     fun updateScheduleStatus(id: String, isEnabled: Boolean)

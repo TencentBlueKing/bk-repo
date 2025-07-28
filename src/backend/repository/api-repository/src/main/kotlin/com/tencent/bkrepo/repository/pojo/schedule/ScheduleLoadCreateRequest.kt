@@ -15,6 +15,8 @@ data class ScheduleLoadCreateRequest(
     val nodeMetadata: Map<String, Any>,
     @get:Schema(title = "CRON表达式")
     val cronExpression: String,
+    @get:Schema(title = "是否覆盖")
+    val isCovered: Boolean,
     @get:Schema(title = "是否启用")
     val isEnabled: Boolean,
     @get:Schema(title = "适用平台类型")

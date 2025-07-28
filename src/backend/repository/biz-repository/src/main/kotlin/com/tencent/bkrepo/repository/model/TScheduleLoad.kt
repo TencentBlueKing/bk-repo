@@ -30,6 +30,7 @@ data class TScheduleLoad(
     var fullPathRegex: String?,
     var nodeMetadata: MutableList<TMetadata>? = null,
     var cronExpression: String,
+    var isCovered: Boolean = false,
     var isEnabled: Boolean = false,
     var platform: SchedulePlatformType = SchedulePlatformType.All,
     var type: ScheduleType,

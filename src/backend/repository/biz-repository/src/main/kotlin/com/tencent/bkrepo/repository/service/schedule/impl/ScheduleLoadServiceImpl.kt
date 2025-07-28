@@ -1,7 +1,9 @@
 package com.tencent.bkrepo.repository.service.schedule.impl
 
+import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.metadata.model.TMetadata
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.repository.dao.ScheduleLoadDao
 import com.tencent.bkrepo.repository.model.TScheduleLoad
@@ -35,6 +37,7 @@ class ScheduleLoadServiceImpl(
             fullPathRegex = request.fullPathRegex,
             nodeMetadata = metadata,
             cronExpression = request.cronExpression,
+            isCovered = request.isCovered,
             isEnabled = request.isEnabled,
             platform = request.platform,
             type = request.type,
@@ -49,27 +52,28 @@ class ScheduleLoadServiceImpl(
         }
     }
 
-    override fun removeScheduleLoad(id: String) {
-        scheduleLoadDao.remove(Query.query(Criteria.where("_id").`is`(id)))
+    override fun removeScheduleLoad(id: String): DeleteResult {
+        return scheduleLoadDao.remove(Query.query(Criteria.where(ID).`is`(id)))
     }
 
     override fun updateScheduleStatus(id: String, isEnabled: Boolean) {
-        val query = Query.query(Criteria.where("_id").`is`(id))
-        val update = Update().set("isEnabled", isEnabled).set("lastModifiedDate", LocalDateTime.now())
+        val query = Query.query(Criteria.where(ID).`is`(id))
+        val update = Update().set(TScheduleLoad::isEnabled.name, isEnabled)
+            .set(TScheduleLoad::lastModifiedDate.name, LocalDateTime.now())
         scheduleLoadDao.updateFirst(query, update)
     }
 
     override fun queryScheduleLoad(userId: String, request: ScheduleQueryRequest): Page<ScheduleResult> {
-        val criteria = Criteria.where("userId").`is`(userId)
-        request.projectId?.let { criteria.and("projectId").`is`(it) }
-        request.repoName?.let { criteria.and("repoName").`is`(it) }
-        request.fullPathRegex?.let { criteria.and("fullPathRegex").`is`(it) }
-        request.isEnable?.let { criteria.and("isEnabled").`is`(it) }
+        val criteria = Criteria.where(TScheduleLoad::userId.name).`is`(userId)
+        request.projectId?.let { criteria.and(TScheduleLoad::projectId.name).`is`(it) }
+        request.repoName?.let { criteria.and(TScheduleLoad::repoName.name).`is`(it) }
+        request.fullPathRegex?.let { criteria.and(TScheduleLoad::fullPathRegex.name).`is`(it) }
+        request.isEnable?.let { criteria.and(TScheduleLoad::isEnabled.name).`is`(it) }
 
         // 处理元数据查询条件
         request.nodeMetadata?.takeIf { it.isNotEmpty() }?.let { metadataMap ->
             val metadataCriteria = metadataMap.map { (key, value) ->
-                Criteria.where("nodeMetadata").elemMatch(
+                Criteria.where(TScheduleLoad::nodeMetadata.name).elemMatch(
                     Criteria.where("key").`is`(key)
                         .and("value").`is`(value)
                 )
@@ -102,6 +106,7 @@ class ScheduleLoadServiceImpl(
                 fullPathRegex = tScheduleLoad.fullPathRegex?: "",
                 nodeMetadata = scheduleNodeMetadata,
                 cronExpression = tScheduleLoad.cronExpression,
+                isCovered = tScheduleLoad.isCovered,
                 isEnabled = tScheduleLoad.isEnabled,
                 platform = tScheduleLoad.platform,
             )

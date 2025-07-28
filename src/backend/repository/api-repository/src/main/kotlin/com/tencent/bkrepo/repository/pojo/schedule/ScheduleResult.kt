@@ -15,6 +15,8 @@ data class ScheduleResult(
     val nodeMetadata: List<ScheduleMetadata>,
     @get:Schema(title = "预约时间")
     val cronExpression: String,
+    @get:Schema(title = "是否覆盖")
+    val isCovered: Boolean,
     @get:Schema(title = "是否启用")
     val isEnabled: Boolean,
     @get:Schema(title = "使用平台")
