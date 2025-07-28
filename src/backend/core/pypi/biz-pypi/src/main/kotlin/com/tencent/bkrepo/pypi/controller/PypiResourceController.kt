@@ -76,14 +76,14 @@ class PypiResourceController(
         scopeId = "#pypiArtifactInfo?.projectId",
         content = ActionAuditContent.NODE_UPLOAD_CONTENT
     )
-    @PostMapping(PypiArtifactInfo.PYPI_ROOT_POST_URI)
+    @PostMapping(PypiArtifactInfo.PYPI_ROOT_POST_URI, "${PypiArtifactInfo.PYPI_ROOT_POST_URI}/")
     fun upload(pypiArtifactInfo: PypiArtifactInfo, artifactFileMap: ArtifactFileMap) {
         logger.info("upload pypi package: $pypiArtifactInfo")
         pypiService.upload(pypiArtifactInfo, artifactFileMap)
     }
 
     @PostMapping(
-        PypiArtifactInfo.PYPI_ROOT_POST_URI,
+        PypiArtifactInfo.PYPI_ROOT_POST_URI, "${PypiArtifactInfo.PYPI_ROOT_POST_URI}/",
         consumes = [MediaType.TEXT_XML_VALUE],
         produces = [MediaType.TEXT_XML_VALUE]
     )
@@ -93,7 +93,9 @@ class PypiResourceController(
     }
 
     @GetMapping(
-        "/{projectId}/{repoName}/simple", "/{projectId}/{repoName}/simple/{name}",
+        "/{projectId}/{repoName}/simple",
+        "/{projectId}/{repoName}/simple/{name}",
+        "/{projectId}/{repoName}/simple/{name:.+}/",
         produces = [MediaType.TEXT_HTML_VALUE]
     )
     fun simple(artifactInfo: PypiSimpleArtifactInfo): Any? {
@@ -118,7 +120,7 @@ class PypiResourceController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_DOWNLOAD_CONTENT
     )
-    @GetMapping(PypiArtifactInfo.PYPI_PACKAGES_MAPPING_URI)
+    @GetMapping(PypiArtifactInfo.PYPI_PACKAGES_MAPPING_URI, "${PypiArtifactInfo.PYPI_PACKAGES_MAPPING_URI}/")
     fun packages(artifactInfo: PypiArtifactInfo) {
         logger.info("packages pypi package: $artifactInfo")
         pypiService.packages(artifactInfo)

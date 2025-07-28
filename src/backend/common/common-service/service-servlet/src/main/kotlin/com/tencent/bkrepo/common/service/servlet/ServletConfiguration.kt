@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.service.servlet
 
 import org.springframework.beans.factory.annotation.Configurable
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.web.filter.UrlHandlerFilter
 
@@ -39,6 +40,7 @@ class ServletConfiguration {
      * https://docs.spring.io/spring-framework/reference/web/webmvc/filters.html#filters.url-handler
      */
     @Bean
+    @ConditionalOnProperty(name = ["request.trailing.slash.enable"], havingValue = "true", matchIfMissing = true)
     fun urlHandlerFilter(): UrlHandlerFilter {
         return UrlHandlerFilter
             // will wrap the request to "/admin/user/account/" and make it as "/admin/user/account"

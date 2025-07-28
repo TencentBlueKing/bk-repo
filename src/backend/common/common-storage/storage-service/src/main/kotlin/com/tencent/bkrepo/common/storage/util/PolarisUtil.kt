@@ -42,6 +42,8 @@ class PolarisUtil(
         if (storageProperties.polarisAddresses.isNotEmpty()) {
             configuration = ConfigurationImpl()
             configuration.setDefault()
+            configuration.global.statReporter.isEnable = false
+            configuration.global.traceReporter.isEnable = false
             configuration.global.serverConnector.addresses = storageProperties.polarisAddresses
             configuration.consumer.localCache.persistDir = System.getProperty("java.io.tmpdir")
             consumerAPI = DiscoveryAPIFactory.createConsumerAPIByConfig(configuration)
