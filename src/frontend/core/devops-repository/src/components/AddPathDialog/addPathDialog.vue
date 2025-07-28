@@ -111,15 +111,23 @@
                     for (let i = 0; i < this.editPathConfig.originPaths.length; i++) {
                         temp.push(this.editPathConfig.originPaths[i])
                     }
+                    const fullPaths = Array.from(new Set(temp))
                     const param = {
                         projectId: this.projectId,
                         repoName: this.repoName,
-                        fullPaths: Array.from(new Set(temp))
+                        fullPaths: fullPaths
                     }
                     this.getCorrectFolder({ path: param }).then(res => {
                         this.editPathConfig.paths = res
                         this.editPathConfig.originPaths = res
                         this.editPathConfig.newPath = ''
+                        const noExistFolders = fullPaths.filter(path => !res.includes(path)).join(',')
+                        if (noExistFolders) {
+                            this.$bkMessage({
+                                theme: 'error',
+                                message: this.$t('folderNoExistTip', { 0: noExistFolders })
+                            })
+                        }
                     }).catch(err => {
                         this.$bkMessage({
                             theme: 'error',
@@ -181,7 +189,7 @@
             border: 1px solid var(--borderWeightColor);
             background-color: var(--bgLighterColor);
             .update-user-name {
-                max-width: 100px;
+                max-width: 300px;
                 margin-left: 5px;
             }
         }
