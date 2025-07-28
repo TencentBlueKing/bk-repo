@@ -882,7 +882,7 @@
     "copyAll": "Copy All",
     "clear": "Clear",
     "userGroupPlaceholder": "Please enter username, separated by carriage return/comma/space",
-    "userPathPlaceholder": "Please enter the actual path. It must start with / and not end with /, separated by line breaks/commas/spaces",
+    "userPathPlaceholder": "Please enter the actual path, starting with / and separated by line breaks/commas/spaces",
     "importBkTitle":"User From BKCI",
     "bkciUserGroup":"BKCI User Group",
     "userSource":"User Source",

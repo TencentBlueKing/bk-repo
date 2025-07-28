@@ -10,12 +10,11 @@
                 <Icon v-show="!disabled" class="ml10 hover-btn" size="24" name="icon-delete" @click.native="deletePath(index)" />
             </div>
         </div>
-        <add-path-dialog :visible.sync="showAddDialog" @complete="confirm"></add-path-dialog>
+        <add-path-dialog :show-data="pathObjects" :visible.sync="showAddDialog" @complete="confirm" ref="addPathDialog"></add-path-dialog>
     </div>
 </template>
 <script>
     import AddPathDialog from '@/components/AddPathDialog/addPathDialog'
-    import { mapActions } from 'vuex'
 
     export default {
         name: 'RepositoryTable',
@@ -24,20 +23,11 @@
             initData: {
                 type: Array,
                 default: () => []
-            },
-            disabled: {
-                type: Boolean,
-                default: false
-            },
-            targetData: {
-                type: Array,
-                default: () => []
             }
         },
         data () {
             return {
                 showAddDialog: false,
-                folders: [],
                 pathObjects: []
             }
         },
@@ -50,9 +40,6 @@
             }
         },
         methods: {
-            ...mapActions([
-                'getFirstLevelFolder'
-            ]),
             confirm (pathList) {
                 this.pathObjects = pathList
                 this.$emit('clearError', pathList)

@@ -885,7 +885,7 @@
     "copyAll": "复制全部",
     "clear": "清空",
     "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割",
-    "userPathPlaceholder": "请输入真实路径,以/开头,不能以/结尾,以回车/逗号/空格分割",
+    "userPathPlaceholder": "请输入真实路径,以/开头,以回车/逗号/空格分割",
     "folderNoExistTip": "文件夹{0}不存在",
     "importBkTitle":"蓝盾用户导入",
     "bkciUserGroup":"蓝盾用户组",

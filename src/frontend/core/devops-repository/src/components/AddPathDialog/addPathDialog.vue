@@ -48,14 +48,15 @@
 <script>
     import { copyToClipboard } from '@/utils'
     import { mapActions } from 'vuex'
+    import _ from 'lodash'
 
     export default {
         name: 'AddPathDialog',
         props: {
             visible: Boolean,
             showData: {
-                type: Object,
-                default: undefined
+                type: Array,
+                default: () => []
             }
         },
         data () {
@@ -81,6 +82,8 @@
             visible: function (newVal) {
                 if (newVal) {
                     this.showDialog = true
+                    this.editPathConfig.paths = _.cloneDeep(this.showData)
+                    this.editPathConfig.originPaths = _.cloneDeep(this.showData)
                 } else {
                     this.cancel()
                 }
@@ -104,8 +107,9 @@
                     const paths = data.toString().replace(/\n/g, ',').replace(/\s/g, ',').split(',')
                     for (let i = 0; i < paths.length; i++) {
                         paths[i] = paths[i].toString().trim()
-                        if (paths[i] !== '') {
-                            temp.push(paths[i])
+                        const tempPath = paths[i].replace(/\/+$/, '')
+                        if (tempPath !== '') {
+                            temp.push(tempPath)
                         }
                     }
                     for (let i = 0; i < this.editPathConfig.originPaths.length; i++) {

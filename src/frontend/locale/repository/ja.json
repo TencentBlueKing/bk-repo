@@ -885,7 +885,7 @@
   "copyAll": "すべてコピー",
   "clear": "クリア",
   "userGroupPlaceholder": "ユーザー名を入力（Enter/カンマ/スペースで区切る）",
-  "userPathPlaceholder": "実際のパスを入力してください。/で始まり、/で終わらないようにし、改行/カンマ/スペースで区切ってください",
+  "userPathPlaceholder": "実際のパスを入力してください。/で始まり、改行/カンマ/スペースで区切ります",
   "importBkTitle":"BlueKing CIユーザーインポート",
   "bkciUserGroup":"BlueKing CIユーザーグループ",
   "userSource":"ユーザーソース",
