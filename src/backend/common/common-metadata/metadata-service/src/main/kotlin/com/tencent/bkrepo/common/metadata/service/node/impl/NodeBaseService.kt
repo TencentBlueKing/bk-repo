@@ -181,6 +181,10 @@ abstract class NodeBaseService(
         return nodeDao.exists(artifact.projectId, artifact.repoName, artifact.getArtifactFullPath())
     }
 
+    override fun checkFolderExists(projectId: String, repoName: String, fullPath: String): Boolean {
+        return nodeDao.checkFolder(projectId, repoName, fullPath)
+    }
+
     override fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
         val queryList = fullPathList.map { PathUtils.normalizeFullPath(it) }.filter { !PathUtils.isRoot(it) }
         val nodeQuery = NodeQueryHelper.nodeQuery(projectId, repoName, queryList)
