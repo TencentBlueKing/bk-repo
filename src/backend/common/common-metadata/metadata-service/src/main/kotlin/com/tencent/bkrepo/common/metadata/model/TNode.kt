@@ -42,8 +42,6 @@ import com.tencent.bkrepo.common.metadata.model.TNode.Companion.COMPRESSED_IDX
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.COMPRESSED_IDX_DEF
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.COPY_FROM_IDX
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.COPY_FROM_IDX_DEF
-import com.tencent.bkrepo.common.metadata.model.TNode.Companion.CRC64ECMA_IDX
-import com.tencent.bkrepo.common.metadata.model.TNode.Companion.CRC64ECMA_IDX_DEF
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.FOLDER_IDX
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.FOLDER_IDX_DEF
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.FULL_PATH_IDX
@@ -67,7 +65,6 @@ import java.time.LocalDateTime
     CompoundIndex(name = PATH_IDX, def = PATH_IDX_DEF, background = true),
     CompoundIndex(name = METADATA_IDX, def = METADATA_IDX_DEF, background = true),
     CompoundIndex(name = SHA256_IDX, def = SHA256_IDX_DEF, background = true),
-    CompoundIndex(name = CRC64ECMA_IDX, def = CRC64ECMA_IDX_DEF, background = true),
     CompoundIndex(name = COPY_FROM_IDX, def = COPY_FROM_IDX_DEF, background = true),
     CompoundIndex(name = FOLDER_IDX, def = FOLDER_IDX_DEF, background = true),
     CompoundIndex(name = CLUSTER_NAMES_IDX, def = CLUSTER_NAMES_IDX_DEF, background = true),
@@ -113,13 +110,11 @@ data class TNode(
         const val COMPRESSED_IDX = "compressed_idx"
         const val ARCHIVED_IDX = "archived_idx"
         const val SHA256_IDX = "sha256_idx"
-        const val CRC64ECMA_IDX = "crc64ecma_idx"
         const val COPY_FROM_IDX = "copy_idx"
         const val FULL_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'fullPath': 1, 'deleted': 1}"
         const val PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'path': 1, 'deleted': 1}"
         const val METADATA_IDX_DEF = "{'metadata.key': 1, 'metadata.value': 1}"
         const val SHA256_IDX_DEF = "{'sha256': 1}"
-        const val CRC64ECMA_IDX_DEF = "{'crc64ecma': 1}"
         const val COMPRESSED_IDX_DEF = "{'compressed': 1}"
         const val ARCHIVED_IDX_DEF = "{'archived': 1}"
         const val COPY_FROM_IDX_DEF = "{'copyFromCredentialsKey':1}"
