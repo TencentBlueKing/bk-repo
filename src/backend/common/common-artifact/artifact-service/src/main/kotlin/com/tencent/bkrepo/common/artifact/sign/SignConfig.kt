@@ -27,13 +27,9 @@
 
 package com.tencent.bkrepo.common.artifact.manager.sign
 
-import org.springframework.boot.context.properties.ConfigurationProperties
-
-@ConfigurationProperties(prefix = "sign")
-data class SignProperties(
-    var host: String = "http://localhost",
-    var config: MutableMap<String, PluginConfig> = mutableMapOf(),
-    var signedRepoName: String = "bkrepo-signed-repo",
-    var oldSignedProjectId: String = "",
-    var oldSignedRepoName: String= "",
+data class SignConfig(
+    var projectId: String = "",
+    // key文件类型, value扫描器
+    var scanner: MutableMap<String, String> = mutableMapOf(),
+    var tags: MutableList<String> = mutableListOf("Alpha"),
 )

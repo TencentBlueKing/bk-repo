@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.manager.sign
+package com.tencent.bkrepo.analyst.sign
 
 import com.tencent.bkrepo.analyst.api.ScanClient
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
@@ -36,6 +36,9 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
+import com.tencent.bkrepo.common.artifact.manager.sign.SignConfig
+import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
+import com.tencent.bkrepo.common.artifact.manager.sign.SignedNodeForwardMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -55,7 +58,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
-import java.util.Base64
+import java.util.*
 
 class SignedNodeForwardServiceImpl(
     private val signProperties: SignProperties,
@@ -70,7 +73,7 @@ class SignedNodeForwardServiceImpl(
     ): NodeDetail? {
         val config = signProperties.config[node.projectId] ?: return null
         with(config) {
-            if (fromScanService() || notOnCondition(node, config)) {
+            if (notOnCondition(node, config) || fromScanService()) {
                 return null
             }
             if (SecurityUtils.isAnonymous()) {
@@ -147,7 +150,7 @@ class SignedNodeForwardServiceImpl(
      * 2. 对应文件类型
      * 3. BK_CI_APP_STAGE=Alpha
      * */
-    private fun notOnCondition(node: NodeDetail, config: PluginConfig): Boolean {
+    private fun notOnCondition(node: NodeDetail, config: SignConfig): Boolean {
         if (node.folder) {
             return true
         }
@@ -168,7 +171,7 @@ class SignedNodeForwardServiceImpl(
     /**
      * 创建apk加固任务，如果已存在任务，则不创建
      * */
-    private fun createApkDefenderTaskIfNot(node: NodeDetail, config: PluginConfig, userId: String) {
+    private fun createApkDefenderTaskIfNot(node: NodeDetail, config: SignConfig, userId: String) {
         with(node) {
             val key = getKey(userId)
             val metadata = metadataService.listMetadata(projectId, repoName, fullPath)

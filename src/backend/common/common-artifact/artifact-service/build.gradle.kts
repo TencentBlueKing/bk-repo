@@ -45,7 +45,6 @@ dependencies {
     api(project(":common:common-metrics-push"))
     api(project(":common:common-metadata:metadata-service"))
     api(project(":common:common-mongo"))
-    api(project(":analyst:api-analyst"))
 
     api("org.springframework.boot:spring-boot-starter-aop")
     api("io.micrometer:micrometer-registry-prometheus")

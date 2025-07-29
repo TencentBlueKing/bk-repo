@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.common.artifact.manager.sign
 
-import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.common.metadata.interceptor.DownloadInterceptor
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 
@@ -39,7 +39,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
  */
 class SignedRepoDownloadInterceptor(
     private val signProperties: SignProperties,
-    private val serviceUserClient: ServiceUserClient
+    private val permissionManager: PermissionManager
 ) : DownloadInterceptor<Unit, NodeDetail>(emptyMap()) {
     override fun parseRule() {
         return
@@ -52,7 +52,7 @@ class SignedRepoDownloadInterceptor(
         if (artifact.repoName != signProperties.signedRepoName) {
             return true
         }
-        if (serviceUserClient.userInfoById(SecurityUtils.getUserId()).data?.admin == true) {
+        if (permissionManager.isAdminUser(SecurityUtils.getUserId())) {
             return true
         }
 
