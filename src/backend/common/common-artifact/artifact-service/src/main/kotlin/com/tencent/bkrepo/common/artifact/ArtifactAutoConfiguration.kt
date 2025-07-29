@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
 import com.tencent.bkrepo.common.artifact.manager.ArtifactManagerConfiguration
+import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionConfiguration
 import com.tencent.bkrepo.common.artifact.repository.ArtifactContextConfiguration
@@ -56,7 +57,10 @@ import org.springframework.context.annotation.PropertySource
 @Configuration
 @PropertySource("classpath:common-artifact.properties")
 @AutoConfigureAfter(InfluxMetricsExportAutoConfiguration::class)
-@EnableConfigurationProperties(ViewModelProperties::class)
+@EnableConfigurationProperties(
+    ViewModelProperties::class,
+    SignProperties::class
+)
 @ConditionalOnWebApplication
 @Import(
     ArtifactContextConfiguration::class,

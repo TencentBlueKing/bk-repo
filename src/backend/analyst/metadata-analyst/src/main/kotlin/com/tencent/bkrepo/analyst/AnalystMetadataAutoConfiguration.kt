@@ -27,17 +27,27 @@
 
 package com.tencent.bkrepo.analyst
 
+import com.tencent.bkrepo.analyst.api.ScanClient
 import com.tencent.bkrepo.analyst.api.ScanQualityClient
 import com.tencent.bkrepo.analyst.config.AnalystProperties
 import com.tencent.bkrepo.analyst.metadata.AnalystMetadataCustomizer
+import com.tencent.bkrepo.analyst.sign.SignedNodeForwardServiceImpl
+import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
+import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
 import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-@EnableConfigurationProperties(AnalystProperties::class)
+@EnableConfigurationProperties(
+    AnalystProperties::class,
+    SignProperties::class
+)
 class AnalystMetadataAutoConfiguration {
     @Bean
     @ConditionalOnProperty("analyst.enableForbidNotScanned", havingValue = "true")
@@ -46,4 +56,14 @@ class AnalystMetadataAutoConfiguration {
         scanQualityClient: ScanQualityClient
     ): MetadataCustomizer =
         AnalystMetadataCustomizer(properties, scanQualityClient)
+
+    @Bean
+    fun signNodeForwardService(
+        signProperties: SignProperties,
+        nodeService: NodeService,
+        metadataService: MetadataService,
+        scanClient: ScanClient,
+        repositoryService: RepositoryService,
+    ): NodeForwardService =
+        SignedNodeForwardServiceImpl(signProperties, nodeService, metadataService, scanClient, repositoryService)
 }

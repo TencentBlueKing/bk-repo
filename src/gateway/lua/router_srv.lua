@@ -77,7 +77,7 @@ end
 
 
 -- 校验endpoint与method开放访问 --
-if healthUtil:check_path() == false then
+if healthUtil:check_path(service_name) == false then
     ngx.exit(422)
     return
 end
