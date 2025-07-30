@@ -68,4 +68,11 @@ interface FederationRepositoryService {
      * 根据项目仓库获取当前集群名
      */
     fun getCurrentClusterName(projectId: String, repoName: String, federationId: String): String?
+
+    /**
+     * 执行联邦仓库fullSync
+    */
+    fun fullSyncFederationRepository(projectId: String, repoName: String, federationId: String)
+
+
 }
