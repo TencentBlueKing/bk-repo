@@ -2,6 +2,7 @@ package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.schedule.ScheduledDownloadRule
 import com.tencent.bkrepo.repository.pojo.schedule.UserScheduledDownloadRuleCreateRequest
@@ -27,25 +28,35 @@ class ScheduledDownloadRuleController(
     @Operation(summary = "创建预约下载规则")
     @PostMapping
     fun create(@RequestBody request: UserScheduledDownloadRuleCreateRequest): Response<ScheduledDownloadRule> {
+        request.operator = SecurityUtils.getUserId()
         return ResponseBuilder.success(scheduledDownloadRuleService.create(request))
     }
 
     @Operation(summary = "删除预约下载规则")
     @DeleteMapping("/{id}")
     fun delete(@PathVariable id: String): Response<Void> {
-        scheduledDownloadRuleService.remove(id)
+        scheduledDownloadRuleService.remove(id, SecurityUtils.getUserId())
         return ResponseBuilder.success()
     }
 
     @Operation(summary = "更新预约下载规则")
     @PutMapping
     fun update(@RequestBody request: UserScheduledDownloadRuleUpdateRequest): Response<ScheduledDownloadRule> {
+        request.operator = SecurityUtils.getUserId()
         return ResponseBuilder.success(scheduledDownloadRuleService.update(request))
     }
 
-    @Operation(summary = "查询预约下载规则")
+    @Operation(summary = "查询项目级预约下载规则")
+    @PostMapping("/project/query")
+    fun projectRules(@RequestBody request: UserScheduledDownloadRuleQueryRequest): Response<Page<ScheduledDownloadRule>> {
+        request.operator = SecurityUtils.getUserId()
+        return ResponseBuilder.success(scheduledDownloadRuleService.projectRules(request))
+    }
+
+    @Operation(summary = "查询对当前用户生效的预约下载规则，包含项目级与用户自身创建的规则")
     @PostMapping("/query")
-    fun page(@RequestBody request: UserScheduledDownloadRuleQueryRequest): Response<Page<ScheduledDownloadRule>> {
-        return ResponseBuilder.success(scheduledDownloadRuleService.page(request))
+    fun rules(@RequestBody request: UserScheduledDownloadRuleQueryRequest): Response<Page<ScheduledDownloadRule>> {
+        request.operator = SecurityUtils.getUserId()
+        return ResponseBuilder.success(scheduledDownloadRuleService.rules(request))
     }
 }

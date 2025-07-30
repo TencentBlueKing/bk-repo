@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.schedule
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.tencent.bkrepo.common.metadata.pojo.node.ConflictStrategy
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -27,4 +28,6 @@ data class UserScheduledDownloadRuleCreateRequest(
     val platform: Platform = Platform.All,
     @get:Schema(title = "规则生效范围")
     val scope: ScheduledDownloadRuleScope,
+    @JsonIgnore
+    var operator: String? = null,
 )

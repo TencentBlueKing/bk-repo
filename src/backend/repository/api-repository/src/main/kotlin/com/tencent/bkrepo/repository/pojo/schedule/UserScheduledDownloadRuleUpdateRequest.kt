@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.schedule
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.tencent.bkrepo.common.metadata.pojo.node.ConflictStrategy
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -25,4 +26,6 @@ data class UserScheduledDownloadRuleUpdateRequest(
     val enabled: Boolean? = null,
     @get:Schema(title = "适用平台")
     val platform: Platform? = null,
+    @JsonIgnore
+    var operator: String? = null,
 )

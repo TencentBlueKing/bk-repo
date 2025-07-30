@@ -20,8 +20,9 @@ interface ScheduledDownloadRuleService {
      * 删除预约下载规则
      *
      * @param id 预约下载规则id
+     * @param operator 操作人
      */
-    fun remove(id: String)
+    fun remove(id: String, operator: String)
 
     /**
      * 更新预约下载规则
@@ -33,20 +34,30 @@ interface ScheduledDownloadRuleService {
     fun update(request: UserScheduledDownloadRuleUpdateRequest): ScheduledDownloadRule
 
     /**
-     * 分页获取预约下载规则
+     * 获取项目级别预约下载规则
      *
      * @param request 查询请求
      *
      * @return 预约下载规则分页结果
      */
-    fun page(request: UserScheduledDownloadRuleQueryRequest): Page<ScheduledDownloadRule>
+    fun projectRules(request: UserScheduledDownloadRuleQueryRequest): Page<ScheduledDownloadRule>
+
+    /**
+     * 获取对用户生效的预约下载规则
+     *
+     * @param request 查询请求
+     *
+     * @return 预约下载规则
+     */
+    fun rules(request: UserScheduledDownloadRuleQueryRequest): Page<ScheduledDownloadRule>
 
     /**
      * 获取预约下载规则
      *
      * @param id 预约下载规则id
+     * @param operator 操作人
      *
      * @return [id]对应的预约下载规则
      */
-    fun get(id: String): ScheduledDownloadRule
+    fun get(id: String, operator: String): ScheduledDownloadRule
 }

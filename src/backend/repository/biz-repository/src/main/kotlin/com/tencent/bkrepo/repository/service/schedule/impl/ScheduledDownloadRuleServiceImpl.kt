@@ -7,7 +7,6 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.exception.PermissionException
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.dao.ScheduledDownloadRuleDao
 import com.tencent.bkrepo.repository.model.TScheduledDownloadRule
 import com.tencent.bkrepo.repository.pojo.schedule.MetadataRule
@@ -34,21 +33,21 @@ class ScheduledDownloadRuleServiceImpl(
 ) : ScheduledDownloadRuleService {
     override fun create(request: UserScheduledDownloadRuleCreateRequest): ScheduledDownloadRule {
         with(request) {
-            val now = LocalDateTime.now()
-            val operator = SecurityUtils.getUserId()
             checkParams(cron)
+            requireNotNull(operator)
+            val now = LocalDateTime.now()
             val ruleUserIds = if (scope == ScheduledDownloadRuleScope.PROJECT) {
                 userIds
             } else {
-                setOf(operator)
+                setOf(operator!!)
             }
-            checkUpdatePermission(projectId, operator, scope, ruleUserIds)
+            checkUpdatePermission(projectId, operator!!, scope, ruleUserIds)
             // 创建规则
             val rule = scheduledDownloadRuleDao.insert(
                 TScheduledDownloadRule(
-                    createdBy = operator,
+                    createdBy = operator!!,
                     createdDate = now,
-                    lastModifiedBy = operator,
+                    lastModifiedBy = operator!!,
                     lastModifiedDate = now,
                     userIds = ruleUserIds,
                     projectId = projectId,
@@ -60,25 +59,27 @@ class ScheduledDownloadRuleServiceImpl(
                     conflictStrategy = conflictStrategy,
                     enabled = enabled,
                     platform = platform,
+                    scope = scope
                 )
             )
 
             logger.info("user[$operator] create scheduled rule[${rule.id}] of project[$projectId] success ")
-            return convert(rule, userIds)
+            return convert(rule, ruleUserIds)
         }
     }
 
-    override fun remove(id: String) {
+    override fun remove(id: String, operator: String) {
         val rule = getRule(id)
-        checkUpdatePermission(rule.projectId, SecurityUtils.getUserId(), rule.scope, rule.userIds)
+        checkUpdatePermission(rule.projectId, operator, rule.scope, rule.userIds)
         scheduledDownloadRuleDao.removeById(id)
+        logger.info("[$operator] remove scheduled rule[$id] of project[${rule.projectId}] success ")
     }
 
     override fun update(request: UserScheduledDownloadRuleUpdateRequest): ScheduledDownloadRule {
         with(request) {
+            requireNotNull(operator)
             checkParams(cron)
             val oldRule = getRule(id)
-            val operator = SecurityUtils.getUserId()
             val ruleUserIds = if (oldRule.scope == ScheduledDownloadRuleScope.PROJECT) {
                 userIds
             } else {
@@ -87,7 +88,7 @@ class ScheduledDownloadRuleServiceImpl(
             }
 
             // 校验权限
-            checkUpdatePermission(oldRule.projectId, operator, oldRule.scope, ruleUserIds)
+            checkUpdatePermission(oldRule.projectId, operator!!, oldRule.scope, ruleUserIds)
 
             // 更新规则
             ruleUserIds?.let { oldRule.userIds = it }
@@ -100,34 +101,76 @@ class ScheduledDownloadRuleServiceImpl(
             enabled?.let { oldRule.enabled = it }
             platform?.let { oldRule.platform = it }
 
+            logger.info("[$operator] update scheduled rule[${oldRule.id}] of project[${oldRule.projectId}] success ")
             return convert(scheduledDownloadRuleDao.save(oldRule), ruleUserIds)
         }
     }
 
-    override fun page(request: UserScheduledDownloadRuleQueryRequest): Page<ScheduledDownloadRule> {
+    override fun projectRules(request: UserScheduledDownloadRuleQueryRequest): Page<ScheduledDownloadRule> {
         with(request) {
-            val operator = SecurityUtils.getUserId()
+            requireNotNull(operator)
             // 权限校验
-            val hasManagerPermission = isProjectManager(operator, projectId)
-            if (!hasManagerPermission) {
-                permissionManager.checkProjectPermission(PermissionAction.DOWNLOAD, projectId, operator)
-            }
+            permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId, operator!!)
 
             // 构造查询条件
-            val criteria = Criteria().and(TScheduledDownloadRule::projectId.name).isEqualTo(projectId)
-            if (hasManagerPermission && !userIds.isNullOrEmpty()) {
-                // 查询包含指定用户的规则，表示只查询项目级别的规则
+            val criteria = buildQueryCriteria(request)
+                .and(TScheduledDownloadRule::scope.name).isEqualTo(ScheduledDownloadRuleScope.PROJECT)
+            if (!userIds.isNullOrEmpty()) {
                 criteria.and(TScheduledDownloadRule::userIds.name).inValues(userIds!!)
-                criteria.and(TScheduledDownloadRule::scope.name).isEqualTo(ScheduledDownloadRuleScope.PROJECT)
-            } else {
-                // 仅查询包含的当前用户的规则
-                criteria.orOperator(
-                    TScheduledDownloadRule::userIds.size(0),
-                    TScheduledDownloadRule::userIds.isEqualTo(null),
-                    TScheduledDownloadRule::userIds.inValues(operator),
-                )
-                scope?.let { criteria.and(TScheduledDownloadRule::scope.name).isEqualTo(it) }
             }
+
+            // 执行查询
+            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+            val query = Query(criteria)
+            val count = scheduledDownloadRuleDao.count(query)
+            val rules = scheduledDownloadRuleDao.find(query.with(pageRequest)).map { convert(it, it.userIds) }
+            return Pages.ofResponse(pageRequest, count, rules)
+        }
+    }
+
+    override fun rules(request: UserScheduledDownloadRuleQueryRequest): Page<ScheduledDownloadRule> {
+        with(request) {
+            requireNotNull(operator)
+            // 权限校验
+            permissionManager.checkProjectPermission(PermissionAction.DOWNLOAD, projectId, operator!!)
+
+            // 构造查询条件
+            val criteria = buildQueryCriteria(request).orOperator(
+                TScheduledDownloadRule::userIds.size(0),
+                TScheduledDownloadRule::userIds.isEqualTo(null),
+                TScheduledDownloadRule::userIds.inValues(operator!!),
+            )
+
+            // 执行查询
+            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+            val query = Query(criteria)
+            val count = scheduledDownloadRuleDao.count(query)
+            val ruleUserIds = setOf(operator!!)
+            val rules = scheduledDownloadRuleDao.find(query.with(pageRequest)).map { convert(it, ruleUserIds) }
+            return Pages.ofResponse(pageRequest, count, rules)
+        }
+    }
+
+    override fun get(id: String, operator: String): ScheduledDownloadRule {
+        val rule = getRule(id)
+        if (rule.scope == ScheduledDownloadRuleScope.PROJECT && isProjectManager(operator, rule.projectId)) {
+            return convert(rule, rule.userIds)
+        }
+
+        // 有项目下载权限且用户在userId列表里表示有权限，userId列表为空时表示规则对所有用户生效
+        permissionManager.checkProjectPermission(PermissionAction.DOWNLOAD, rule.projectId, operator)
+        if (!rule.userIds.isNullOrEmpty() && operator !in rule.userIds!!) {
+            throw PermissionException()
+        }
+
+        return convert(rule, setOf(operator))
+    }
+
+    private fun buildQueryCriteria(request: UserScheduledDownloadRuleQueryRequest): Criteria {
+        with(request) {
+            val criteria = Criteria()
+                .and(TScheduledDownloadRule::projectId.name).isEqualTo(projectId)
+
             if (!repoNames.isNullOrEmpty()) {
                 criteria.and(TScheduledDownloadRule::repoNames.name).inValues(repoNames!!)
             }
@@ -143,37 +186,8 @@ class ScheduledDownloadRuleServiceImpl(
             }
             enabled?.let { criteria.and(TScheduledDownloadRule::enabled.name).isEqualTo(it) }
             platform?.let { criteria.and(TScheduledDownloadRule::platform.name).isEqualTo(it) }
-
-            // 执行查询
-            val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-            val query = Query(criteria)
-            val count = scheduledDownloadRuleDao.count(query)
-            val rules = scheduledDownloadRuleDao.find(query.with(pageRequest)).map {
-                val ruleUserIds = if (hasManagerPermission) {
-                    it.userIds
-                } else {
-                    setOf(operator)
-                }
-                convert(it, ruleUserIds)
-            }
-            return Pages.ofResponse(pageRequest, count, rules)
+            return criteria
         }
-    }
-
-    override fun get(id: String): ScheduledDownloadRule {
-        val rule = getRule(id)
-        val operator = SecurityUtils.getUserId()
-        if (isProjectManager(operator, rule.projectId)) {
-            return convert(rule, rule.userIds)
-        }
-
-        // 有项目下载权限且用户在userId列表里表示有权限，userId列表为空时表示规则对所有用户生效
-        permissionManager.checkProjectPermission(PermissionAction.DOWNLOAD, rule.projectId, operator)
-        if (!rule.userIds.isNullOrEmpty() && operator !in rule.userIds!!) {
-            throw PermissionException()
-        }
-
-        return convert(rule, setOf(operator))
     }
 
     private fun getRule(id: String): TScheduledDownloadRule {
@@ -182,7 +196,7 @@ class ScheduledDownloadRuleServiceImpl(
     }
 
     private fun checkParams(cron: String?) {
-        if (cron != null && CronExpression.isValidExpression(cron)) {
+        if (cron != null && !CronExpression.isValidExpression(cron)) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, cron)
         }
     }
@@ -203,10 +217,10 @@ class ScheduledDownloadRuleServiceImpl(
         userIds: Set<String>?,
     ) {
         if (scope == ScheduledDownloadRuleScope.PROJECT) {
-            permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
+            permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId, operator)
         } else {
             // 需要拥有项目下载权限并且拥有该预约规则才有权限
-            permissionManager.checkProjectPermission(PermissionAction.DOWNLOAD, projectId)
+            permissionManager.checkProjectPermission(PermissionAction.DOWNLOAD, projectId, operator)
             if (operator !in userIds!!) {
                 throw PermissionException()
             }
