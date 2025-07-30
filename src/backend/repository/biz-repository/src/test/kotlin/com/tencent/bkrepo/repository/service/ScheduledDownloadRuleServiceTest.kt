@@ -90,10 +90,6 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
         // check permission failed
         assertThrows<PermissionException> { ruleService.create(req.copy(operator = USER_NORMAL, scope = PROJECT)) }
         assertThrows<PermissionException> { ruleService.create(req.copy(operator = USER_NO_PERMISSION, scope = USER)) }
-
-        // check cron failed
-        req = req.copy(cron = "xxx")
-        assertThrows<ErrorCodeException> { ruleService.create(req) }
     }
 
     @Test

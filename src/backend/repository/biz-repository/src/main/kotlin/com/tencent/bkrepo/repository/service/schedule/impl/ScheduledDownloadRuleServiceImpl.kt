@@ -33,7 +33,6 @@ class ScheduledDownloadRuleServiceImpl(
 ) : ScheduledDownloadRuleService {
     override fun create(request: UserScheduledDownloadRuleCreateRequest): ScheduledDownloadRule {
         with(request) {
-            checkParams(cron)
             requireNotNull(operator)
             val now = LocalDateTime.now()
             val ruleUserIds = if (scope == ScheduledDownloadRuleScope.PROJECT) {
@@ -78,7 +77,6 @@ class ScheduledDownloadRuleServiceImpl(
     override fun update(request: UserScheduledDownloadRuleUpdateRequest): ScheduledDownloadRule {
         with(request) {
             requireNotNull(operator)
-            checkParams(cron)
             val oldRule = getRule(id)
             val ruleUserIds = if (oldRule.scope == ScheduledDownloadRuleScope.PROJECT) {
                 userIds
@@ -193,12 +191,6 @@ class ScheduledDownloadRuleServiceImpl(
     private fun getRule(id: String): TScheduledDownloadRule {
         return scheduledDownloadRuleDao.findById(id)
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, id)
-    }
-
-    private fun checkParams(cron: String?) {
-        if (cron != null && !CronExpression.isValidExpression(cron)) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, cron)
-        }
     }
 
     private fun isProjectManager(userId: String, projectId: String): Boolean {
