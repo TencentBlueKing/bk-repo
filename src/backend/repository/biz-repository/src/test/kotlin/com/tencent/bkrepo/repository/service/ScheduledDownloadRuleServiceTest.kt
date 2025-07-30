@@ -30,6 +30,7 @@ import com.tencent.bkrepo.repository.service.schedule.impl.ScheduledDownloadRule
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -38,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.context.TestPropertySource
 
 @DisplayName("预约下载规则测试")
@@ -54,7 +56,6 @@ import org.springframework.test.context.TestPropertySource
 class ScheduledDownloadRuleServiceTest @Autowired constructor(
     private val ruleDao: ScheduledDownloadRuleDao,
     private val ruleService: ScheduledDownloadRuleService,
-    private val permissionManager: PermissionManager,
 ) {
     @MockBean
     private lateinit var servicePermissionClient: ServicePermissionClient
@@ -73,6 +74,12 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
 
     @MockBean
     private lateinit var nodeService: NodeService
+
+    @BeforeEach
+    fun beforeEach() {
+        ruleDao.remove(Query())
+    }
+
 
     @Test
     fun `test create rule`() {
@@ -225,7 +232,9 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
     ) {
         override fun checkProjectPermission(action: PermissionAction, projectId: String, userId: String) {
             val users = setOf(USER_ADMIN, USER_NORMAL)
-            if (action == MANAGE && userId != USER_ADMIN || action == DOWNLOAD && userId !in users) {
+            val noManagerPermission = action == MANAGE && userId != USER_ADMIN
+            val noDownloadPermission = action == DOWNLOAD && userId !in users
+            if (noManagerPermission || noDownloadPermission) {
                 throw PermissionException()
             }
         }

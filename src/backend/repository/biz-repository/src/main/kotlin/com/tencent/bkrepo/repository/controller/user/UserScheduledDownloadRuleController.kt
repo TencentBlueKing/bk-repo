@@ -48,7 +48,9 @@ class UserScheduledDownloadRuleController(
 
     @Operation(summary = "查询项目级预约下载规则")
     @PostMapping("/project/query")
-    fun projectRules(@RequestBody request: UserScheduledDownloadRuleQueryRequest): Response<Page<ScheduledDownloadRule>> {
+    fun projectRules(
+        @RequestBody request: UserScheduledDownloadRuleQueryRequest
+    ): Response<Page<ScheduledDownloadRule>> {
         request.operator = SecurityUtils.getUserId()
         return ResponseBuilder.success(scheduledDownloadRuleService.projectRules(request))
     }
