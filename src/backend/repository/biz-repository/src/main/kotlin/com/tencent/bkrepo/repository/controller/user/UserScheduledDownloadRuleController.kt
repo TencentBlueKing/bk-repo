@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController
 @Tag(name = "预约下载接口")
 @RestController
 @RequestMapping("/api/schedule/rule")
-class ScheduledDownloadRuleController(
+class UserScheduledDownloadRuleController(
     private val scheduledDownloadRuleService: ScheduledDownloadRuleService,
 ) {
     @Operation(summary = "创建预约下载规则")
