@@ -203,7 +203,7 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
         downloadDir = "~/Download",
         conflictStrategy = ConflictStrategy.OVERWRITE,
         enabled = true,
-        platform = Platform.WIN,
+        platform = Platform.WINDOWS,
         scope = PROJECT,
         operator = USER_ADMIN
     )
