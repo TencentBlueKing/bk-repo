@@ -30,10 +30,10 @@ package com.tencent.bkrepo.common.artifact.manager.sign
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "sign")
-data class SignProperties(
-    var host: String = "http://localhost",
-    var config: MutableMap<String, SignConfig> = mutableMapOf(),
-    var signedRepoName: String = "bkrepo-signed-repo",
-    var oldSignedProjectId: String = "",
-    var oldSignedRepoName: String= "",
-)
+class SignProperties {
+    var host: String = "http://localhost"
+    var config: MutableMap<String, SignConfig> = mutableMapOf()
+    var signedRepoName: String = "bkrepo-signed-repo"
+    var oldSignedProjectId: String = ""
+    var oldSignedRepoName: String = ""
+}
