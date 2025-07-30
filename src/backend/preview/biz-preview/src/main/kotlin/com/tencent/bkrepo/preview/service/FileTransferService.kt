@@ -135,8 +135,8 @@ class FileTransferService(
         val file = File(sourcePath)
         require(file.exists()) { "The file does not exist, $sourcePath" }
         // 准备要上传的信息,如果是bkrepo文件，预览文件保存在原仓库，否则保存在自定义仓库中
-        val projectId = if (fileAttribute.storageType == 0) fileAttribute.projectId else config.projectId
-        val repoName = if (fileAttribute.storageType == 0) fileAttribute.repoName else config.repoName
+        val projectId = config.projectId
+        val repoName = config.repoName
         val artifactInfo = ArtifactInfo(projectId!!, repoName!!, buildArtifactUri(fileAttribute))
         setFileTransferAttribute(artifactInfo, fileAttribute, true)
         val artifactFile = ArtifactFileFactory.build(file.inputStream(), file.length())

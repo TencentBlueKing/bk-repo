@@ -1,29 +1,29 @@
 <template>
     <canway-dialog
-        v-model="show"
+        v-model="showDialog"
         width="800"
         height-num="603"
         :title="type === 'create' ? $t('createPermission') : $t('updatePermission')"
         ref="permDialog"
         @confirm="confirm"
         @cancel="cancel">
-        <bk-form class="mb20 permission-form" :label-width="120" :model="permissionForm" :rules="rules" ref="permissionForm">
+        <bk-form class="mb20 permission-form" :label-width="120" :model="showData" :rules="rules" ref="permissionForm">
             <bk-form-item :label="$t('name')" :required="true" property="name" error-display-type="normal">
-                <bk-input class="w480" v-model.trim="permissionForm.name"></bk-input>
+                <bk-input class="w480" v-model.trim="showData.name"></bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('filePath')" :required="true" property="includePattern" error-display-type="normal">
                 <template>
                     <node-table
                         ref="pathConfig"
-                        :init-data="permissionForm.includePattern"
+                        :init-data="showData.includePattern"
                         @clearError="clearError">
                     </node-table>
                 </template>
             </bk-form-item>
             <bk-form-item :label="$t('staffing')">
                 <bk-button icon="plus" @click="showAddDialog">{{ $t('add') + $t('space') + $t('user') }}</bk-button>
-                <div v-show="permissionForm.users.length" class="mt10 user-list">
-                    <div class="pl10 pr10 user-item flex-between-center" v-for="(user, index) in permissionForm.users" :key="index">
+                <div v-show="showData.users.length" class="mt10 user-list">
+                    <div class="pl10 pr10 user-item flex-between-center" v-for="(user, index) in showData.users" :key="index">
                         <div class="flex-align-center">
                             <span class="user-name text-overflow" :title="user">{{ user }}</span>
                         </div>
@@ -35,7 +35,7 @@
                 <div style="display: flex;">
                     <bk-tag-input
                         class="w480"
-                        v-model="permissionForm.roles"
+                        v-model="showData.roles"
                         :placeholder="$t('enterPlaceHolder')"
                         trigger="focus"
                         :list="roleList"
@@ -53,11 +53,16 @@
     import nodeTable from '@/views/repoConfig/permissionConfig/nodeTable'
     import AddUserDialog from '@/components/AddUserDialog/addUserDialog'
     import { mapActions, mapState } from 'vuex'
+    import _ from 'lodash'
 
     export default {
-        name: 'createPermission',
+        name: 'CreatePermission',
         components: { nodeTable, AddUserDialog },
         props: {
+            show: {
+                type: Boolean,
+                default: false
+            },
             permissionForm: {
                 type: Object,
                 default: {
@@ -75,7 +80,7 @@
         },
         data () {
             return {
-                show: false,
+                showDialog: this.show,
                 isLoading: false,
                 title: '',
                 roleList: [],
@@ -96,7 +101,13 @@
                     ]
                 },
                 showAddUserDialog: false,
-                showData: {}
+                showData: {
+                    id: '',
+                    users: [],
+                    roles: [],
+                    includePattern: [],
+                    name: ''
+                }
             }
         },
         computed: {
@@ -106,6 +117,25 @@
             },
             repoName () {
                 return this.$route.query.repoName
+            }
+        },
+        watch: {
+            show: function (newVal) {
+                if (newVal) {
+                    this.showDialog = true
+                    if (this.type === 'create') {
+                        this.showData = {
+                            id: '',
+                            users: [],
+                            roles: [],
+                            includePattern: [],
+                            name: ''
+                        }
+                    } else {
+                        this.showData = _.cloneDeep(this.permissionForm)
+                    }
+                    this.$refs.pathConfig.pathObjects = this.showData.includePattern
+                }
             }
         },
         created () {
@@ -125,23 +155,28 @@
                 'getProjectRoleList'
             ]),
             clearError (val) {
-                this.permissionForm.includePattern = val
+                this.showData.includePattern = val
                 this.$refs.permissionForm.clearError()
             },
             cancel () {
                 this.reset()
+                this.closeDialog()
+            },
+            closeDialog () {
+                this.showDialog = false
+                this.$emit('close')
             },
             async confirm () {
                 await this.$refs.permissionForm.validate()
                 if (this.type === 'create') {
                     const body = {
                         resourceType: 'NODE',
-                        permName: this.permissionForm.name,
+                        permName: this.showData.name,
                         projectId: this.projectId,
                         repos: [this.repoName],
-                        includePattern: this.permissionForm.includePattern,
-                        users: this.permissionForm.users,
-                        roles: this.permissionForm.roles,
+                        includePattern: this.showData.includePattern,
+                        users: this.showData.users,
+                        roles: this.showData.roles,
                         actions: ['MANAGE'],
                         createBy: this.userInfo.userId,
                         updatedBy: this.userInfo.userId
@@ -150,33 +185,26 @@
                         body: body
                     }).then(() => {
                         this.reset()
+                        this.closeDialog()
                     })
                 } else {
                     const body = {
-                        name: this.permissionForm.name,
+                        name: this.showData.name,
                         projectId: this.projectId,
-                        path: this.permissionForm.includePattern,
-                        permissionId: this.permissionForm.id,
-                        users: this.permissionForm.users,
-                        roles: this.permissionForm.roles
+                        path: this.showData.includePattern,
+                        permissionId: this.showData.id,
+                        users: this.showData.users,
+                        roles: this.showData.roles
                     }
                     this.UpdatePermissionConfigInRepo({
                         body: body
                     }).then(() => {
                         this.reset()
+                        this.closeDialog()
                     })
                 }
             },
             reset () {
-                this.show = false
-                this.permissionForm = {
-                    id: [],
-                    users: [],
-                    roles: [],
-                    includePattern: [],
-                    name: ''
-                }
-                this.type = 'create'
                 this.$refs.pathConfig.replicaTaskObjects = []
                 this.$refs.permissionForm.clearError()
                 this.$emit('refresh')
@@ -193,19 +221,19 @@
                         temp.push(this.permissionForm.users[i])
                     }
                 }
-                this.permissionForm.users = temp
+                this.showData.users = temp
             },
             showAddDialog () {
                 this.showAddUserDialog = true
                 this.$refs.addUserDialog.editUserConfig = {
-                    users: this.permissionForm.users,
-                    originUsers: this.permissionForm.users,
+                    users: this.showData.users,
+                    originUsers: this.showData.users,
                     search: '',
                     newUser: ''
                 }
             },
             handleAddUsers (users) {
-                this.permissionForm.users = users
+                this.showData.users = users
             }
         }
     }

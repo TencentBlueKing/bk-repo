@@ -77,6 +77,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeArchiveRestoreRequest
+import com.tencent.bkrepo.repository.pojo.node.user.UserNodeFolderCheckRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
@@ -671,6 +672,20 @@ class UserNodeController(
                 operator = userId,
             )
             return ResponseBuilder.success(nodeService.restoreNode(restoreRequest))
+        }
+    }
+
+    @Operation(summary = "检查并返回有效的文件夹路径")
+    @PostMapping("/correct/folders")
+    fun checkFolders(
+        @RequestAttribute userId: String,
+        @RequestBody request: UserNodeFolderCheckRequest,
+    ): Response<List<String>> {
+        with(request) {
+            permissionManager.checkRepoPermission(PermissionAction.MANAGE, projectId, repoName, userId = userId)
+            return ResponseBuilder.success (
+                fullPaths.filter { nodeService.checkFolderExists(projectId, repoName, it) }
+            )
         }
     }
 
