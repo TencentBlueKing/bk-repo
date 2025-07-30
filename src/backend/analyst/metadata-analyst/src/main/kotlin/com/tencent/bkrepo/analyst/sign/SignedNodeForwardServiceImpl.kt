@@ -37,12 +37,12 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
 import com.tencent.bkrepo.common.artifact.manager.sign.SignConfig
-import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
 import com.tencent.bkrepo.common.artifact.manager.sign.SignedNodeForwardMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.sign.SignProperties
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -58,7 +58,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.Base64
 
 class SignedNodeForwardServiceImpl(
     private val signProperties: SignProperties,

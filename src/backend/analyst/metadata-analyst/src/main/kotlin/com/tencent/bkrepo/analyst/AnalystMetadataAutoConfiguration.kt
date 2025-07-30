@@ -33,7 +33,7 @@ import com.tencent.bkrepo.analyst.config.AnalystProperties
 import com.tencent.bkrepo.analyst.metadata.AnalystMetadataCustomizer
 import com.tencent.bkrepo.analyst.sign.SignedNodeForwardServiceImpl
 import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
-import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
+import com.tencent.bkrepo.common.artifact.sign.SignProperties
 import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
