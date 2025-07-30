@@ -135,7 +135,7 @@ class ProjectDailyAvgMetricsJob(
             usage = usage,
             bgName = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_BG_NAME }?.value as? String
                 ?: StringPool.EMPTY,
-            flag = covertToFlag(projectInfo.name, bgId, productId, enabled),
+            flag = covertToFlag(projectInfo.name, enabled),
             costDateDay = yesterday.format(
                 DateTimeFormatter.ofPattern("yyyyMMdd")
             ),
@@ -158,23 +158,13 @@ class ProjectDailyAvgMetricsJob(
         return update
     }
 
-    private fun covertToFlag(
-        projectId: String,
-        bgId: String,
-        productId: Int?,
-        enabled: Boolean
-    ): Boolean {
+    private fun covertToFlag(projectId: String, enabled: Boolean): Boolean {
         val streamReport = if (properties.reportStream) {
             true
         } else {
             !projectId.startsWith(GIT_PROJECT_PREFIX)
         }
-        return if (properties.bgIds.isEmpty()) {
-            streamReport && bgId.isNotBlank() && productId != null && enabled
-        } else {
-            streamReport && properties.bgIds.contains(bgId)
-                && bgId.isNotBlank() && productId != null && enabled
-        }
+        return streamReport && enabled
     }
 
     private fun convertToCostDate(yesterday: LocalDateTime): String {
