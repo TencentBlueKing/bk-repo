@@ -20,16 +20,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 local _M = {}
 
 --[[判断字符串是否在数组中]]
-function _M:check_path()
+function _M:check_path(service_name)
     local security_paths = config.security_paths
     if security_paths ~= nil and #security_paths ~= 0 then
         local method = ngx.req.get_method()
         local path = ngx.var.uri
         for _, item in ipairs(security_paths) do
-            local pathPattern = "/web/" .. service_name .. item.path
-            if service_name == "fs-server" then
-                pathPattern = "/web/fs%-server" .. item.path
-            end
+            local pathPattern = item.prefix .. service_name .. item.path
             if string.find(path, "^" .. pathPattern) ~= nil and service_name == item.service and method == item.method then
                 return true
             end

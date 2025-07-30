@@ -240,8 +240,8 @@
     },
     "permissionTip": {
         "default": "项目下的成员均可上传/下载",
-        "strict": "按一级目录管理权限，仅开通权限的用户可以上传/下载",
-        "folder": "仅指定一级目录进行严格鉴权，其余的项目成员均可访问",
+        "strict": "按目录管理权限，仅开通权限的用户可以上传/下载",
+        "folder": "仅指定目录进行严格鉴权，其余的项目成员均可访问",
         "public": "不鉴权，任意终端均可下载",
         "pipeline": "和流水线权限对齐，仅有此权限才能上传/下载/分享制品"
     },
@@ -885,6 +885,8 @@
     "copyAll": "复制全部",
     "clear": "清空",
     "userGroupPlaceholder": "请输入用户名,以回车/逗号/空格分割",
+    "userPathPlaceholder": "请输入真实路径,以/开头,以回车/逗号/空格分割",
+    "folderNoExistTip": "文件夹{0}不存在",
     "importBkTitle":"蓝盾用户导入",
     "bkciUserGroup":"蓝盾用户组",
     "userSource":"用户来源",
