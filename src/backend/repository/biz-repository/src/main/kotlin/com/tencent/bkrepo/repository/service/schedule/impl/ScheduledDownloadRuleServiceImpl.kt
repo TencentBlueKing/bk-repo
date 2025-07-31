@@ -35,6 +35,7 @@ class ScheduledDownloadRuleServiceImpl(
 ) : ScheduledDownloadRuleService {
     override fun create(request: UserScheduledDownloadRuleCreateRequest): ScheduledDownloadRule {
         with(request) {
+            logger.info("test")
             checkParams(cron, fullPathRegex, downloadDir)
             requireNotNull(operator)
             val now = LocalDateTime.now()
@@ -196,6 +197,7 @@ class ScheduledDownloadRuleServiceImpl(
             }
 
             if (!valid) {
+                logger.info("test")
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, cron)
             }
         }
