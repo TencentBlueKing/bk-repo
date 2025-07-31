@@ -32,4 +32,6 @@ data class SignConfig(
     // key文件类型, value扫描器
     var scanner: MutableMap<String, String> = mutableMapOf(),
     var tags: MutableList<String> = mutableListOf("Alpha"),
+    var oldSignedProjectId: String = "",
+    var oldSignedRepoName: String= "",
 )

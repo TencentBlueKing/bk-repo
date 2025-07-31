@@ -84,7 +84,7 @@ class SignedNodeForwardServiceImpl(
             createRepoIfNotExist(projectId)
             val forwardNode = nodeService.getNodeDetail(
                 ArtifactInfo(node.projectId, signProperties.signedRepoName, traceableApkPath)
-            ) ?: getOldForwardNode(traceableApkPath)
+            ) ?: getOldForwardNode(traceableApkPath, config)
             forwardNode ?: let {
                 createApkDefenderTaskIfNot(node, config, userId)
                 throw ErrorCodeException(
@@ -97,12 +97,12 @@ class SignedNodeForwardServiceImpl(
         }
     }
 
-    private fun getOldForwardNode(traceableApkPath: String): NodeDetail?{
-        return if (signProperties.oldSignedProjectId.isNotEmpty()) {
+    private fun getOldForwardNode(traceableApkPath: String, config: SignConfig): NodeDetail?{
+        return if (config.oldSignedProjectId.isNotEmpty()) {
             nodeService.getNodeDetail(
                 ArtifactInfo(
-                    signProperties.oldSignedProjectId,
-                    signProperties.oldSignedRepoName,
+                    config.oldSignedProjectId,
+                    config.oldSignedRepoName,
                     traceableApkPath
                 )
             )
