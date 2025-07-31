@@ -158,6 +158,10 @@ class RepoNameRuleInterceptor(
     private fun buildRule(projectId: String, repoName: String): Rule {
         val repoRule = Rule.QueryRule(NodeInfo::repoName.name, repoName, OperationType.EQ).toFixed()
 
+        if (HttpContextHolder.getRequestOrNull() == null || SecurityUtils.isServiceRequest()) {
+            return repoRule
+        }
+
         // 获取有权限或无权限的路径
         val (hasPermissionPaths, noPermissionPaths) = servicePermissionClient.listPermissionPaths(
             SecurityUtils.getUserId(), projectId, repoName
