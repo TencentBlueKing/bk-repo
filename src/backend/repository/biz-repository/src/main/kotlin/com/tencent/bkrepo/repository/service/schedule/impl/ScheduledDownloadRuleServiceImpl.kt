@@ -22,8 +22,10 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.size
+import org.springframework.scheduling.support.CronExpression
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.util.regex.Pattern
 
 @Service
 class ScheduledDownloadRuleServiceImpl(
@@ -32,6 +34,7 @@ class ScheduledDownloadRuleServiceImpl(
 ) : ScheduledDownloadRuleService {
     override fun create(request: UserScheduledDownloadRuleCreateRequest): ScheduledDownloadRule {
         with(request) {
+            checkParams(cron, fullPathRegex, downloadDir)
             requireNotNull(operator)
             val now = LocalDateTime.now()
             val ruleUserIds = if (scope == ScheduledDownloadRuleScope.PROJECT) {
@@ -75,6 +78,7 @@ class ScheduledDownloadRuleServiceImpl(
 
     override fun update(request: UserScheduledDownloadRuleUpdateRequest): ScheduledDownloadRule {
         with(request) {
+            checkParams(cron, fullPathRegex, downloadDir)
             requireNotNull(operator)
             val oldRule = getRule(id)
             val ruleUserIds = if (oldRule.scope == ScheduledDownloadRuleScope.PROJECT) {
@@ -169,6 +173,26 @@ class ScheduledDownloadRuleServiceImpl(
         return convert(rule, setOf(operator))
     }
 
+    private fun checkParams(
+        cron: String?,
+        fullPathRegex: String?,
+        downloadDir: String?,
+    ) {
+        if (cron != null && !CronExpression.isValidExpression(cron)) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, cron)
+        }
+
+        try {
+            fullPathRegex?.let { Pattern.compile(it) }
+        } catch (e: Exception) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, fullPathRegex ?: "fullPathRegex")
+        }
+
+        if ((downloadDir?.length ?: 0) > MAX_DOWNLOAD_DIR_LENGTH) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, downloadDir ?: "downloadDir")
+        }
+    }
+
     private fun buildQueryCriteria(request: UserScheduledDownloadRuleQueryRequest): Criteria {
         with(request) {
             val criteria = Criteria()
@@ -243,5 +267,6 @@ class ScheduledDownloadRuleServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ScheduledDownloadRuleServiceImpl::class.java)
+        private const val MAX_DOWNLOAD_DIR_LENGTH = 4096
     }
 }

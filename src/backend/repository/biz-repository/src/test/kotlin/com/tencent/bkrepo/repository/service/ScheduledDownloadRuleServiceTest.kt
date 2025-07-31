@@ -97,6 +97,10 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
         // check permission failed
         assertThrows<PermissionException> { ruleService.create(req.copy(operator = USER_NORMAL, scope = PROJECT)) }
         assertThrows<PermissionException> { ruleService.create(req.copy(operator = USER_NO_PERMISSION, scope = USER)) }
+
+        // check param failed
+        assertThrows<ErrorCodeException> { ruleService.create(req.copy(cron = "xxx")) }
+        assertThrows<ErrorCodeException> { ruleService.create(req.copy(fullPathRegex = "[a-z")) }
     }
 
     @Test
