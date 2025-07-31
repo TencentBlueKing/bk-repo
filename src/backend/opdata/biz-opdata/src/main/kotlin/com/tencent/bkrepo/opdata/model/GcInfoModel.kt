@@ -40,11 +40,11 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.stream
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.util.concurrent.ArrayBlockingQueue
@@ -76,37 +76,51 @@ class GcInfoModel @Autowired constructor(
     @Scheduled(cron = "0 0 3 * * ?")
     @SchedulerLock(name = "GcInfoStatJob", lockAtMostFor = "PT24H")
     fun refresh() {
-        if (!opArchiveOrGcProperties.gcEnabled) return
         gcInfo = stat()
     }
 
     private fun stat(): Map<String, Array<Long>> {
+        if (!opArchiveOrGcProperties.gcEnabled) return emptyMap()
         logger.info("Start update gc metrics.")
         // 遍历节点表
         val criteria = Criteria.where("compressed").isEqualTo(true)
             .and("deleted").isEqualTo(null)
         val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
         if (opArchiveOrGcProperties.gcProjects.isEmpty()) {
-            val query = Query(criteria)
-            forEachCollectionAsync {
-                val nodes = mongoTemplate.find<Node>(query, it)
-                for (node in nodes) {
-                    updateStatistics(statistics, node)
-                }
-            }
+            processAllProjects(statistics, criteria)
         } else {
-            // 处理指定项目的gc数据
-            opArchiveOrGcProperties.gcProjects.forEach { project ->
-                val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
-                val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
-                mongoTemplate.find<Node>(query, collectionName).forEach { node ->
-                    updateStatistics(statistics, node)
-                }
-            }
+            processSpecificProjects(statistics, criteria)
         }
         statistics[SUM] = reduce(statistics)
         logger.info("Update gc metrics successful.")
         return statistics.mapValues { arrayOf(it.value[0].get(), it.value[1].get()) }
+    }
+
+    private fun processAllProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, criteria: Criteria) {
+        val query = Query(criteria).cursorBatchSize(BATCH_SIZE)
+        forEachCollectionAsync {
+            processNodes(query, it, statistics)
+        }
+    }
+
+    private fun processSpecificProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, criteria: Criteria) {
+        // 处理指定项目的gc数据
+        opArchiveOrGcProperties.gcProjects.forEach { project ->
+            val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
+            val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
+                .cursorBatchSize(BATCH_SIZE)
+            processNodes(query, collectionName, statistics)
+        }
+    }
+
+    private fun processNodes(
+        query: Query, collection: String, statistics: ConcurrentHashMap<String, Array<AtomicLong>>
+    ) {
+        mongoTemplate.stream<Node>(query, collection).use { nodes ->
+            nodes.forEach { node ->
+                updateStatistics(statistics, node)
+            }
+        }
     }
 
     private fun updateStatistics(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, node: Node) {
@@ -144,6 +158,7 @@ class GcInfoModel @Autowired constructor(
         private const val RETRY_TIMES = 3
         private const val MAX_EXECUTOR_POOL_SIZE = 64
         private const val MAX_EXECUTOR_QUEUE_SIZE = 1024
+        const val BATCH_SIZE = 1000
 
         fun reduce(statistics: ConcurrentHashMap<String, Array<AtomicLong>>): Array<AtomicLong> {
             val longs = arrayOf(AtomicLong(), AtomicLong())

@@ -393,5 +393,12 @@ export default {
                 }
             }
         )
+    },
+
+    getCorrectFolder (_, { path }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/node/correct/folders`,
+            path
+        )
     }
 }

@@ -96,6 +96,13 @@ class NodeDao : HashShardingMongoDao<TNode>() {
         return this.exists(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))
     }
 
+    fun checkFolder(projectId: String, repoName: String, fullPath: String): Boolean {
+        if (PathUtils.isRoot(fullPath)) {
+            return true
+        }
+        return this.exists(NodeQueryHelper.nodeFolderQuery(projectId, repoName, fullPath))
+    }
+
     /**
      * 更新目录下变更的文件数量以及涉及的文件大小
      */

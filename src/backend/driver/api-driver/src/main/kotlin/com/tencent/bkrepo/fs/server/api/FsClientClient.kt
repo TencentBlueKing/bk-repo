@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
-@FeignClient(FS_SERVER_SERVICE_NAME, contextId = "ClientClient", primary = false)
+@FeignClient(FS_SERVER_SERVICE_NAME, url = "\${fs-service-url:}", contextId = "ClientClient", primary = false)
 @RequestMapping("/service/client")
 interface FsClientClient {
 

@@ -35,11 +35,13 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeArchiveSupport
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeCompressSupport
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeDeleteSupport
@@ -92,7 +94,9 @@ class EdgeNodeServiceImpl(
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
     override val projectService: ProjectService,
+    override val metadataCustomizer: MetadataCustomizer?,
     val archiveClient: ArchiveClient,
+    override val metadataLabelCacheService: MetadataLabelCacheService
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -106,7 +110,9 @@ class EdgeNodeServiceImpl(
     routerControllerProperties,
     blockNodeService,
     projectService,
-    clusterProperties
+    metadataCustomizer,
+    clusterProperties,
+    metadataLabelCacheService,
 ) {
     override fun computeSize(
         artifact: ArtifactInfo,

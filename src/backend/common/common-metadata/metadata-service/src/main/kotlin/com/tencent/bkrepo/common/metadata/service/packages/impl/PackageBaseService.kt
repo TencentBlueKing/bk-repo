@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.ClusterResource
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.model.TRepository
@@ -148,7 +149,11 @@ abstract class PackageBaseService(
         )
     }
 
-    protected open fun buildPackageVersion(request: PackageVersionCreateRequest, packageId: String) = with(request) {
+    protected open fun buildPackageVersion(
+        request: PackageVersionCreateRequest,
+        packageVersionMetadata: List<TMetadata>,
+        packageId: String
+    ) = with(request) {
         TPackageVersion(
             createdBy = createdBy,
             createdDate = LocalDateTime.now(),
@@ -163,7 +168,7 @@ abstract class PackageBaseService(
             artifactPath = artifactPath,
             artifactPaths = artifactPath?.let { mutableSetOf(it) },
             stageTag = stageTag.orEmpty(),
-            metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
+            metadata = packageVersionMetadata,
             tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
             extension = request.extension.orEmpty()
         )

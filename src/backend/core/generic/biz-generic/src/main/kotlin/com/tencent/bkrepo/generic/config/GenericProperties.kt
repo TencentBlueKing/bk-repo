@@ -56,4 +56,6 @@ data class GenericProperties(
     var proxy: ProxyProperties = ProxyProperties(),
     @NestedConfigurationProperty
     var userShareInterceptor: UserShareInterceptorProperties = UserShareInterceptorProperties(),
+    @NestedConfigurationProperty
+    var compressedReport: CompressedReportProperties = CompressedReportProperties(),
 )

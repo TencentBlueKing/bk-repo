@@ -30,6 +30,7 @@ export const ROUTER_NAME_EXECUTION_CLUSTERS_CONFIG = 'ExecutionClustersConfig'
 export const ROUTER_NAME_SEPARATION_CONFIG = 'SeparationConfig'
 export const ROUTER_NAME_SEPARATION_RECORD = 'SeparationRecord'
 export const ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG = 'MigrationConfig'
+export const ROUTER_NAME_MIGRATE_PROJECT_GRAYSCALE_CONFIG = 'ProjectGrayscaleConfig'
 export const ROUTER_NAME_SERVER_LOG = 'ServerLog'
 
 Vue.use(Router)
@@ -96,6 +97,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_ACCOUNT,
         meta: { title: '平台账户管理', icon: 'user' },
         component: () => import('@/views/account/index')
+      }
+    ]
+  },
+  {
+    path: '/grayscale-config',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_MIGRATE_PROJECT_GRAYSCALE_CONFIG,
+        meta: { title: '项目灰度管理', icon: 'permission' },
+        component: () => import('@/views/grayscaleConfig/index')
       }
     ]
   },

@@ -61,5 +61,9 @@ data class RepositoryProperties(
     /**
      * 是否返回真实项目启用禁用状态
      */
-    var returnEnabled: Boolean = true
+    var returnEnabled: Boolean = true,
+    /**
+     * 系统元数据标签
+     */
+    var systemMetadataLabels: List<String> = emptyList(),
 )

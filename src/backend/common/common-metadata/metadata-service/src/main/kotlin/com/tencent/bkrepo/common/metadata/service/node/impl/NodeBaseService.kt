@@ -47,10 +47,12 @@ import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
@@ -108,12 +110,15 @@ abstract class NodeBaseService(
     open val routerControllerProperties: RouterControllerProperties,
     open val blockNodeService: BlockNodeService,
     open val projectService: ProjectService,
+    open val metadataCustomizer: MetadataCustomizer?,
+    open val metadataLabelCacheService: MetadataLabelCacheService,
 ) : NodeService {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
             val node = nodeDao.findNode(projectId, repoName, getArtifactFullPath())
-            return convertToDetail(node)
+            val metadataLabels = metadataLabelCacheService.listAll(projectId)
+            return convertToDetail(node, metadataLabels)
         }
     }
 
@@ -174,6 +179,10 @@ abstract class NodeBaseService(
 
     override fun checkExist(artifact: ArtifactInfo): Boolean {
         return nodeDao.exists(artifact.projectId, artifact.repoName, artifact.getArtifactFullPath())
+    }
+
+    override fun checkFolderExists(projectId: String, repoName: String, fullPath: String): Boolean {
+        return nodeDao.checkFolder(projectId, repoName, fullPath)
     }
 
     override fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
@@ -240,7 +249,10 @@ abstract class NodeBaseService(
     }
 
     open fun buildTNode(request: NodeCreateRequest): TNode {
-        return NodeBaseServiceHelper.buildTNode(request, repositoryProperties.allowUserAddSystemMetadata)
+        val metadata = NodeBaseServiceHelper.resolveMetadata(
+            request, metadataCustomizer, repositoryProperties.allowUserAddSystemMetadata
+        )
+        return NodeBaseServiceHelper.buildTNode(request, metadata)
     }
 
     private fun getTotalNodeNum(artifact: ArtifactInfo, query: Query): Long {

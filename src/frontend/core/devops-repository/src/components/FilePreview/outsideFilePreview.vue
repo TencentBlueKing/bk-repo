@@ -18,7 +18,9 @@
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
             <textarea id="basicFileText" v-model="basicFileText" class="textarea" readonly></textarea>
         </div>
-        <img v-if="imgShow" :src="imgUrl" />
+        <div v-if="imgShow" style="width: 100%; height: 100%">
+            <img id="image" :src="imgUrl" alt="Picture" style="max-width: 100%; max-height: 100%;">
+        </div>
         <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
@@ -45,6 +47,7 @@
     import { isHtmlType, isOutDisplayType, isPic, isText } from '@repository/utils/file'
     import Papa from 'papaparse'
     import Table from '@wolf-table/table'
+    import Viewer from 'viewerjs'
 
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.isEvalSupported = false
@@ -99,11 +102,14 @@
         computed: {
             projectId () {
                 return this.$route.params.projectId
+            },
+            enableMultipleTypeFilePreview () {
+                return RELEASE_MODE === 'community' || RELEASE_MODE === 'tencent'
             }
         },
         async created () {
             this.loading = true
-            if (RELEASE_MODE !== 'community') {
+            if (!this.enableMultipleTypeFilePreview) {
                 this.showError()
                 return
             }
@@ -149,6 +155,14 @@
                         } else if (isPic(res.data.data.suffix)) {
                             this.imgShow = true
                             this.imgUrl = URL.createObjectURL(fileDate.data)
+                            this.$nextTick(() => {
+                                const viewer = new Viewer(document.getElementById('image'), {
+                                    inline: true,
+                                    viewed () {
+                                        viewer.zoomTo(1)
+                                    }
+                                })
+                            })
                         } else if (res.data.data.suffix.endsWith('csv')) {
                             this.csvShow = true
                             this.dealCsv(fileDate)
@@ -264,6 +278,7 @@
 <style lang="scss" scoped>
 @import '@vue-office/docx/lib/index.css';
 @import '@vue-office/excel/lib/index.css';
+@import 'viewerjs/dist/viewer.css';
 .preview-file-tips {
     margin-bottom: 10px;
     color: #707070;

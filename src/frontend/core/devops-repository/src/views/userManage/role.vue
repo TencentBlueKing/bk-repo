@@ -50,7 +50,7 @@
             @cancel="editRoleConfig.show = false">
             <bk-form :label-width="80" :model="editRoleConfig" :rules="rules" ref="roleForm">
                 <bk-form-item label="名称" :required="true" property="name" error-display-type="normal">
-                    <bk-input v-model.trim="editRoleConfig.name" maxlength="32" show-word-limit></bk-input>
+                    <bk-input v-model.trim="editRoleConfig.name" maxlength="32" show-word-limit :placeholder="$t('pleaseInput')"></bk-input>
                 </bk-form-item>
                 <bk-form-item label="简介">
                     <bk-input type="textarea" v-model.trim="editRoleConfig.description" maxlength="200"></bk-input>

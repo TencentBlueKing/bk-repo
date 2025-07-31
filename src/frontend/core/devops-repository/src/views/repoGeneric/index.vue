@@ -112,7 +112,7 @@
                     <bk-table-column :selectable="selectable" type="selection" width="60"></bk-table-column>
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip>
                         <template #default="{ row }">
-                            <div @click="previewFile(row)">
+                            <div>
                                 <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
                                 <span
                                     class="hover-btn disabled"
@@ -250,7 +250,7 @@
     import { getIconName } from '@repository/store/publicEnum'
     import { convertFileSize, debounce, formatDate, routeBase } from '@repository/utils'
     import { beforeMonths, beforeYears } from '@repository/utils/date'
-    import { customizeDownloadFile, downloadFile } from '@repository/utils/downloadFile'
+    import { customizeDownloadFile } from '@repository/utils/downloadFile'
     import metadataTag from '@repository/views/repoCommon/metadataTag'
     import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
     import genericDetail from '@repository/views/repoGeneric/genericDetail'
@@ -358,6 +358,9 @@
             },
             community () {
                 return RELEASE_MODE === 'community'
+            },
+            enableMultipleTypeFilePreview () {
+                return RELEASE_MODE === 'community' || RELEASE_MODE === 'tencent'
             },
             searchFileName () {
                 return this.$route.query.fileName
@@ -818,9 +821,8 @@
                     this.$set(item, 'loading', false)
                 })
             },
-            // 单击table打开预览
             previewFile (row) {
-                if (row.folder || !this.community) return
+                if (!this.enableMultipleTypeFilePreview) return
                 if (isOutDisplayType(row.fullPath)) {
                     const isLocal = this.localRepo
                     const typeParam = isLocal ? 'local/' : 'remote/'
@@ -854,7 +856,10 @@
             },
             // 双击table打开文件夹
             openFolder (row) {
-                if (!row.folder) return
+                if (!row.folder) {
+                    this.previewFile(row)
+                    return
+                }
                 if (this.searchFileName) {
                     // 搜索中打开文件夹
                     this.inFolderSearchName = ''
@@ -1478,7 +1483,7 @@
             },
 
             getBtnDisabled (name) {
-                return this.community ? isOutDisplayType(name) : isText(name)
+                return this.enableMultipleTypeFilePreview ? isOutDisplayType(name) : isText(name)
             },
             // 文件夹内部的搜索，根据文件名或文件夹名搜索
             inFolderSearchFile () {
