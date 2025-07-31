@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
@@ -84,7 +85,7 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
     @Test
     fun `test create rule`() {
         // create project rule success
-        var req = buildCreateReq(setOf("user1", "user2"))
+        val req = buildCreateReq(setOf("user1", "user2"))
         var rule = ruleService.create(req)
         assertEquals(2, rule.userIds!!.size)
 
@@ -99,6 +100,9 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
         assertThrows<PermissionException> { ruleService.create(req.copy(operator = USER_NO_PERMISSION, scope = USER)) }
 
         // check param failed
+        assertDoesNotThrow { ruleService.create(req.copy(cron = "0 0 2 1 * ?")) }
+        assertDoesNotThrow { ruleService.create(req.copy(cron = "0 15 10 ? * 6L 2025")) }
+        assertThrows<ErrorCodeException> { ruleService.create(req.copy(cron = "0 15 10 ? * 6L xxxx")) }
         assertThrows<ErrorCodeException> { ruleService.create(req.copy(cron = "xxx")) }
         assertThrows<ErrorCodeException> { ruleService.create(req.copy(fullPathRegex = "[a-z")) }
     }

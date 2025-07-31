@@ -24,6 +24,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.size
 import org.springframework.scheduling.support.CronExpression
 import org.springframework.stereotype.Service
+import org.springframework.util.StringUtils
 import java.time.LocalDateTime
 import java.util.regex.Pattern
 
@@ -178,8 +179,25 @@ class ScheduledDownloadRuleServiceImpl(
         fullPathRegex: String?,
         downloadDir: String?,
     ) {
-        if (cron != null && !CronExpression.isValidExpression(cron)) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, cron)
+        cron?.let {
+            val cronSplits = StringUtils.tokenizeToStringArray(it, " ");
+            var valid = false
+            if (cronSplits.size == 6) {
+                // 0 0 2 1 * ?
+                valid = CronExpression.isValidExpression(cron)
+            } else if (cronSplits.size == 7) {
+                // 0 15 10 ? * 6L 2025
+                valid = CronExpression.isValidExpression(cron.substringBeforeLast(" "))
+                try {
+                    cronSplits[6].toInt()
+                } catch (e: NumberFormatException) {
+                    valid = false
+                }
+            }
+
+            if (!valid) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, cron)
+            }
         }
 
         try {
