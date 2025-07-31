@@ -1,8 +1,8 @@
 package com.tencent.bkrepo.repository.model
 
-import com.tencent.bkrepo.common.metadata.pojo.node.ConflictStrategy
 import com.tencent.bkrepo.repository.pojo.schedule.MetadataRule
 import com.tencent.bkrepo.repository.pojo.schedule.Platform
+import com.tencent.bkrepo.repository.pojo.schedule.ScheduledDownloadConflictStrategy
 import com.tencent.bkrepo.repository.pojo.schedule.ScheduledDownloadRuleScope
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
@@ -62,7 +62,7 @@ data class TScheduledDownloadRule(
     /**
      * 下载文件冲突处理策略
      */
-    var conflictStrategy: ConflictStrategy = ConflictStrategy.OVERWRITE,
+    var conflictStrategy: ScheduledDownloadConflictStrategy = ScheduledDownloadConflictStrategy.OVERWRITE,
 
     /**
      * 是否启用规则

@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.repository.pojo.schedule
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.tencent.bkrepo.common.metadata.pojo.node.ConflictStrategy
 import io.swagger.v3.oas.annotations.media.Schema
 
 @Schema(title = "创建预约下载规则请求")
@@ -21,7 +20,7 @@ data class UserScheduledDownloadRuleCreateRequest(
     @get:Schema(title = "下载的目标路径")
     val downloadDir: String? = null,
     @get:Schema(title = "冲突处理策略", defaultValue = "OVERWRITE")
-    val conflictStrategy: ConflictStrategy = ConflictStrategy.OVERWRITE,
+    val conflictStrategy: ScheduledDownloadConflictStrategy = ScheduledDownloadConflictStrategy.OVERWRITE,
     @get:Schema(title = "是否启用")
     val enabled: Boolean = true,
     @get:Schema(title = "适用平台类型")

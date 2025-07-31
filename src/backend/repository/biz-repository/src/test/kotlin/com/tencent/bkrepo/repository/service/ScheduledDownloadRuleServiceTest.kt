@@ -8,7 +8,6 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DOWNLOAD
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
-import com.tencent.bkrepo.common.metadata.pojo.node.ConflictStrategy
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
@@ -20,6 +19,7 @@ import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.dao.ScheduledDownloadRuleDao
 import com.tencent.bkrepo.repository.pojo.schedule.MetadataRule
 import com.tencent.bkrepo.repository.pojo.schedule.Platform
+import com.tencent.bkrepo.repository.pojo.schedule.ScheduledDownloadConflictStrategy
 import com.tencent.bkrepo.repository.pojo.schedule.ScheduledDownloadRuleScope.PROJECT
 import com.tencent.bkrepo.repository.pojo.schedule.ScheduledDownloadRuleScope.USER
 import com.tencent.bkrepo.repository.pojo.schedule.UserScheduledDownloadRuleCreateRequest
@@ -157,7 +157,7 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
         ruleService.create(req.copy(operator = USER_NORMAL, scope = USER))
 
         // query project rules
-        val queryReq = UserScheduledDownloadRuleQueryRequest(projectId = UT_PROJECT_ID, operator = USER_ADMIN)
+        val queryReq = UserScheduledDownloadRuleQueryRequest(projectIds = setOf(UT_PROJECT_ID), operator = USER_ADMIN)
         assertEquals(2, ruleService.projectRules(queryReq).totalRecords)
         assertEquals(1, ruleService.projectRules(queryReq.copy(userIds = setOf(USER_NORMAL))).totalRecords)
         assertEquals(1, ruleService.projectRules(queryReq.copy(metadataRules = setOf(metadataRule))).totalRecords)
@@ -204,7 +204,7 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
         metadataRules = setOf(MetadataRule("pid", "xxxx")),
         cron = "0 0 3 * * ?",
         downloadDir = "~/Download",
-        conflictStrategy = ConflictStrategy.OVERWRITE,
+        conflictStrategy = ScheduledDownloadConflictStrategy.OVERWRITE,
         enabled = true,
         platform = Platform.WINDOWS,
         scope = PROJECT,

@@ -8,7 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 @Schema(title = "查询预约下载规则请求")
 data class UserScheduledDownloadRuleQueryRequest(
     @get:Schema(title = "项目id", required = true)
-    val projectId: String,
+    val projectIds: Set<String>,
     @get:Schema(title = "用户id列表，仅在scope为PROJECT且有项目管理权限时有效")
     val userIds: Set<String>? = null,
     @get:Schema(title = "仓库名称")

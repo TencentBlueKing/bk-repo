@@ -22,7 +22,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.size
-import org.springframework.scheduling.support.CronExpression
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -107,8 +106,14 @@ class ScheduledDownloadRuleServiceImpl(
     override fun projectRules(request: UserScheduledDownloadRuleQueryRequest): Page<ScheduledDownloadRule> {
         with(request) {
             requireNotNull(operator)
+
+            // 仅允许查询单项目的项目级规则
+            if (projectIds.size != 1) {
+                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, projectIds)
+            }
+
             // 权限校验
-            permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId, operator!!)
+            permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectIds.first(), operator!!)
 
             // 构造查询条件
             val criteria = buildQueryCriteria(request)
@@ -130,7 +135,7 @@ class ScheduledDownloadRuleServiceImpl(
         with(request) {
             requireNotNull(operator)
             // 权限校验
-            permissionManager.checkProjectPermission(PermissionAction.DOWNLOAD, projectId, operator!!)
+            projectIds.forEach { permissionManager.checkProjectPermission(PermissionAction.DOWNLOAD, it, operator!!) }
 
             // 构造查询条件
             val criteria = buildQueryCriteria(request).orOperator(
@@ -167,7 +172,7 @@ class ScheduledDownloadRuleServiceImpl(
     private fun buildQueryCriteria(request: UserScheduledDownloadRuleQueryRequest): Criteria {
         with(request) {
             val criteria = Criteria()
-                .and(TScheduledDownloadRule::projectId.name).isEqualTo(projectId)
+                .and(TScheduledDownloadRule::projectId.name).inValues(projectIds)
 
             if (!repoNames.isNullOrEmpty()) {
                 criteria.and(TScheduledDownloadRule::repoNames.name).inValues(repoNames!!)
