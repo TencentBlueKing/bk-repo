@@ -34,6 +34,4 @@ class SignProperties {
     var host: String = "http://localhost"
     var config: MutableMap<String, SignConfig> = mutableMapOf()
     var signedRepoName: String = "bkrepo-signed-repo"
-    var oldSignedProjectId: String = ""
-    var oldSignedRepoName: String = ""
 }

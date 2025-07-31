@@ -58,7 +58,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.Base64
 
 class SignedNodeForwardServiceImpl(
     private val signProperties: SignProperties,
@@ -84,7 +84,7 @@ class SignedNodeForwardServiceImpl(
             createRepoIfNotExist(projectId)
             val forwardNode = nodeService.getNodeDetail(
                 ArtifactInfo(node.projectId, signProperties.signedRepoName, traceableApkPath)
-            ) ?: getOldForwardNode(traceableApkPath)
+            ) ?: getOldForwardNode(traceableApkPath, config)
             forwardNode ?: let {
                 createApkDefenderTaskIfNot(node, config, userId)
                 throw ErrorCodeException(
@@ -97,12 +97,12 @@ class SignedNodeForwardServiceImpl(
         }
     }
 
-    private fun getOldForwardNode(traceableApkPath: String): NodeDetail?{
-        return if (signProperties.oldSignedProjectId.isNotEmpty()) {
+    private fun getOldForwardNode(traceableApkPath: String, config: SignConfig): NodeDetail?{
+        return if (config.oldSignedProjectId.isNotEmpty()) {
             nodeService.getNodeDetail(
                 ArtifactInfo(
-                    signProperties.oldSignedProjectId,
-                    signProperties.oldSignedRepoName,
+                    config.oldSignedProjectId,
+                    config.oldSignedRepoName,
                     traceableApkPath
                 )
             )
