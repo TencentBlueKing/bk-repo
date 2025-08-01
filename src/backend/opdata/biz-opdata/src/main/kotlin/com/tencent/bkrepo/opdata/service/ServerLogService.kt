@@ -117,9 +117,6 @@ class ServerLogService(
             headers.add(MS_AUTH_HEADER_UID, uid)
             val httpEntity = HttpEntity<Any>(headers)
             val response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, Response::class.java).body
-            if (logger.isDebugEnabled) {
-                logger.debug("Get response from $target[$url]: ${response.data}.")
-            }
             return JsonUtils.objectMapper.readValue(response.data?.toJsonString(), LogData::class.java)
         } catch (e: Exception) {
             logger.error("log data request error,$url", e)
