@@ -4,6 +4,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.CronUtils
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.security.exception.PermissionException
@@ -22,9 +23,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.size
-import org.springframework.scheduling.support.CronExpression
 import org.springframework.stereotype.Service
-import org.springframework.util.StringUtils
 import java.time.LocalDateTime
 import java.util.regex.Pattern
 
@@ -180,22 +179,7 @@ class ScheduledDownloadRuleServiceImpl(
         downloadDir: String?,
     ) {
         cron?.let {
-            val cronSplits = StringUtils.tokenizeToStringArray(it, " ");
-            var valid = false
-            if (cronSplits.size == 6) {
-                // 0 0 2 1 * ?
-                valid = CronExpression.isValidExpression(cron)
-            } else if (cronSplits.size == 7) {
-                // 0 15 10 ? * 6L 2025
-                valid = CronExpression.isValidExpression(cron.substringBeforeLast(" "))
-                try {
-                    cronSplits[6].toInt()
-                } catch (e: NumberFormatException) {
-                    valid = false
-                }
-            }
-
-            if (!valid) {
+            if (!CronUtils.isValidExpression(it)) {
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, cron)
             }
         }
