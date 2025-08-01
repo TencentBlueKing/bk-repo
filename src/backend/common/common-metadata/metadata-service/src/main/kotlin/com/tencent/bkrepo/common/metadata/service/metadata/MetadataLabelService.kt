@@ -48,7 +48,7 @@ interface MetadataLabelService {
     /**
      * 批量保存标签
      */
-    fun batchSave(requests: List<MetadataLabelRequest>)
+    fun batchSave(projectId: String, requests: List<MetadataLabelRequest>)
 
     /**
      * 查询全部标签
