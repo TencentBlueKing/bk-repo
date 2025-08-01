@@ -117,7 +117,7 @@ class UserMetadataLabelController(
                 description = it.description,
             )
         }
-        metadataLabelService.batchSave(requests)
+        metadataLabelService.batchSave(projectId, requests)
         return ResponseBuilder.success()
     }
 

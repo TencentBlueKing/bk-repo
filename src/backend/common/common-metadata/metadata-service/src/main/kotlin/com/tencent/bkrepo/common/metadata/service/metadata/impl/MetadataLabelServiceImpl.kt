@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.metadata.service.metadata.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.metadata.MetadataLabelDao
@@ -53,6 +54,9 @@ class MetadataLabelServiceImpl(
     override fun create(request: MetadataLabelRequest) {
         with(request) {
             checkColor(labelColorMap)
+            getSystemMetadataLabels().find { it.labelKey == labelKey }?.let {
+                throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, labelKey)
+            }
             metadataLabelDao.findByProjectIdAndLabelKey(projectId, labelKey)?.let {
                 throw ErrorCodeException(CommonMessageCode.RESOURCE_EXISTED, labelKey)
             }
@@ -95,9 +99,10 @@ class MetadataLabelServiceImpl(
         }
     }
 
-    override fun batchSave(requests: List<MetadataLabelRequest>) {
-        val oldLabels = metadataLabelDao.findByProjectId(requests.first().projectId)
-        val mutableRequests = requests.toMutableList()
+    override fun batchSave(projectId: String, requests: List<MetadataLabelRequest>) {
+        val oldLabels = metadataLabelDao.findByProjectId(projectId)
+        val systemLabels = getSystemMetadataLabels().map { it.labelKey }
+        val mutableRequests = requests.filter { !systemLabels.contains(it.labelKey) }.toMutableList()
         oldLabels.forEach {
             val request = requests.find { request -> request.labelKey == it.labelKey }
             if (request == null) {
@@ -113,18 +118,18 @@ class MetadataLabelServiceImpl(
     }
 
     override fun listAll(projectId: String): List<MetadataLabelDetail> {
-        return metadataLabelDao.findByProjectId(projectId).map { convert(it) }
+        return getSystemMetadataLabels() + metadataLabelDao.findByProjectId(projectId).map { convert(it) }
     }
 
     override fun detail(projectId: String, labelKey: String): MetadataLabelDetail {
+        getSystemMetadataLabels().find { it.labelKey == labelKey }?.let {
+            return it
+        }
         return metadataLabelDao.findByProjectIdAndLabelKey(projectId, labelKey)?.let { convert(it) }
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, labelKey)
     }
 
     override fun delete(projectId: String, labelKey: String) {
-        if (repositoryProperties.systemMetadataLabels.contains(labelKey)) {
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, labelKey)
-        }
         val result = metadataLabelDao.deleteByProjectIdAndLabelKey(projectId, labelKey)
         if (result.deletedCount == 0L) {
             throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, labelKey)
@@ -140,7 +145,7 @@ class MetadataLabelServiceImpl(
                 enumType = enumType ?: false,
                 display = display ?: true,
                 category = category,
-                system = repositoryProperties.systemMetadataLabels.contains(labelKey),
+                system = false,
                 enableColorConfig = enableColorConfig ?: true,
                 description = description ?: "",
                 createdBy = createdBy,
@@ -157,6 +162,18 @@ class MetadataLabelServiceImpl(
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, it)
             }
         }
+    }
+
+    private fun getSystemMetadataLabels(): List<MetadataLabelDetail> {
+        val system = repositoryProperties.systemMetadataLabels.map {
+            try {
+                it.readJsonString<MetadataLabelDetail>()
+            } catch (e: Exception) {
+                logger.error("parse system metadata label failed", e)
+                null
+            }
+        }.filter { it != null }
+        return system as List<MetadataLabelDetail>
     }
 
     companion object {
