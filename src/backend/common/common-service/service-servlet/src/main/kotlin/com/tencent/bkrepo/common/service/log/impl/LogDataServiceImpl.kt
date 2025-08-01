@@ -69,7 +69,7 @@ class LogDataServiceImpl : LogDataService {
             }
             // 过滤掉非法字符
             val filteredContent = String(contentBytes)
-                .replace(Regex("[\\x00-\\x1F\\x7F]"), "")
+                .replace(Regex("[\\x00-\\x09\\x0B-\\x1F\\x7F]"), "")  // 过滤除换行符外的控制字符
                 .replace(Regex("\\x12"), "")
             val lastUpdateLabel = parseTimestampFromLastLineOptimized(contentBytes) ?: LocalDateTime.now().toString()
             return LogData(endPosition, filteredContent, lastUpdateLabel)
