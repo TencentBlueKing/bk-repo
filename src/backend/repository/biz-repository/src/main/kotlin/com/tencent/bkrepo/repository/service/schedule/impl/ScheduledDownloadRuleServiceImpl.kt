@@ -11,6 +11,7 @@ import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.repository.dao.ScheduledDownloadRuleDao
 import com.tencent.bkrepo.repository.model.TScheduledDownloadRule
 import com.tencent.bkrepo.repository.pojo.schedule.MetadataRule
+import com.tencent.bkrepo.repository.pojo.schedule.Platform
 import com.tencent.bkrepo.repository.pojo.schedule.ScheduledDownloadRule
 import com.tencent.bkrepo.repository.pojo.schedule.ScheduledDownloadRuleScope
 import com.tencent.bkrepo.repository.pojo.schedule.UserScheduledDownloadRuleCreateRequest
@@ -142,10 +143,13 @@ class ScheduledDownloadRuleServiceImpl(
             projectIds.forEach { permissionManager.checkProjectPermission(PermissionAction.DOWNLOAD, it, operator!!) }
 
             // 构造查询条件
-            val criteria = buildQueryCriteria(request).orOperator(
-                TScheduledDownloadRule::userIds.size(0),
-                TScheduledDownloadRule::userIds.isEqualTo(null),
-                TScheduledDownloadRule::userIds.inValues(operator!!),
+            val criteria = Criteria().andOperator(
+                buildQueryCriteria(request),
+                Criteria().orOperator(
+                    TScheduledDownloadRule::userIds.size(0),
+                    TScheduledDownloadRule::userIds.isEqualTo(null),
+                    TScheduledDownloadRule::userIds.inValues(operator!!),
+                )
             )
 
             // 执行查询
@@ -214,7 +218,14 @@ class ScheduledDownloadRuleServiceImpl(
                 criteria.andOperator(metadataCriteria)
             }
             enabled?.let { criteria.and(TScheduledDownloadRule::enabled.name).isEqualTo(it) }
-            platform?.let { criteria.and(TScheduledDownloadRule::platform.name).isEqualTo(it) }
+
+            if (platform != null && platform != Platform.All) {
+                criteria.orOperator(
+                    TScheduledDownloadRule::platform.isEqualTo(Platform.All),
+                    TScheduledDownloadRule::platform.isEqualTo(platform)
+                )
+            }
+
             return criteria
         }
     }
