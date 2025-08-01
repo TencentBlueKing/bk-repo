@@ -34,6 +34,7 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.config.properties.ActiveProjectNodeFolderStatJobProperties
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.slf4j.LoggerFactory
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -53,7 +54,8 @@ class ActiveProjectNodeFolderStatJob(
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
     private val nodeFolderStat: NodeFolderStat,
-) : StatBaseJob(mongoTemplate, properties, executor) {
+    private val separationTaskService: SeparationTaskService
+) : StatBaseJob(mongoTemplate, properties, executor, separationTaskService) {
 
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do folder stat job for active projects")
