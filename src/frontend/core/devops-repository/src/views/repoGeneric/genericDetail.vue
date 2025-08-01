@@ -62,7 +62,7 @@
                                 </div>
                             </div>
                             <bk-table
-                                :data="(detailSlider.data.nodeMetadata || []).filter(m => !m.system)"
+                                :data="detailSlider.data.nodeMetadata"
                                 :outer-border="false"
                                 :row-border="false"
                                 size="small">
