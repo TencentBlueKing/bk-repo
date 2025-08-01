@@ -44,7 +44,6 @@ import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
-import com.tencent.bkrepo.common.metadata.service.metadata.MetadataLabelService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
@@ -57,6 +56,7 @@ import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -76,7 +76,7 @@ class MetadataServiceImpl(
     private val nodeDao: NodeDao,
     private val repositoryProperties: RepositoryProperties,
     private val ciPermissionManager: CIPermissionManager,
-    private val metadataLabelService: MetadataLabelService
+    private val metadataLabelCacheService: MetadataLabelCacheService
 ) : MetadataService {
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
@@ -161,12 +161,8 @@ class MetadataServiceImpl(
     }
 
     fun checkEnumTypeMetadata(projectId: String, metadata: MutableList<TMetadata>) {
-        val metadataLabels = metadataLabelService.listAll(projectId)
-        metadata.forEach { m ->
-            if (metadataLabels.find { it.labelKey == m.key && !it.labelColorMap.keys.contains(m.value) } != null) {
-                throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "${m.key}: ${m.value}")
-            }
-        }
+        val metadataList = metadata.map { MetadataModel(it.key, it.value) }
+        metadataLabelCacheService.checkEnumMetadataLabel(projectId, metadataList)
     }
 
     private fun checkIfModifyPipelineMetadata(node: TNode, newMetadataKeys: Collection<String>) {

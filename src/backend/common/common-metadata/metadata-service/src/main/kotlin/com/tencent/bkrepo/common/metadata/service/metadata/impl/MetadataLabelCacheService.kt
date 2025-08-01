@@ -29,8 +29,11 @@ package com.tencent.bkrepo.common.metadata.service.metadata.impl
 
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataLabelService
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
@@ -44,11 +47,27 @@ class MetadataLabelCacheService(
 
     private val metadataLabelCache = CacheBuilder.newBuilder()
         .maximumSize(1000)
-        .expireAfterWrite(Duration.ofMinutes(10))
+        .expireAfterWrite(Duration.ofMinutes(1))
         .build(CacheLoader.from<String, List<MetadataLabelDetail>> {
             projectId -> metadataLabelService.listAll(projectId!!) })
 
     fun listAll(projectId: String): List<MetadataLabelDetail> {
         return metadataLabelCache.get(projectId)
+    }
+
+    fun checkEnumMetadataLabel(projectId: String, metadataList: List<MetadataModel>) {
+        val enumMetadataLabels = listAll(projectId).filter { it.display && it.enumType }
+        metadataList.forEach { m ->
+            enumMetadataLabels.find { it.labelKey == m.key }?.let { label ->
+                if (!label.labelColorMap.keys.contains(m.value)) {
+                    throw ErrorCodeException(
+                        ArtifactMessageCode.INVALID_METADATA,
+                        m.key,
+                        m.value,
+                        label.labelColorMap.keys
+                    )
+                }
+            }
+        }
     }
 }
