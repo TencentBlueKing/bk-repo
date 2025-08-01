@@ -125,7 +125,9 @@ class ClusterArtifactReplicationHandler(
     override fun getBlobFileInfo(
         filePushContext: FilePushContext
     ): FileInfo {
-        return FileInfo(filePushContext.sha256!!, filePushContext.md5!!, filePushContext.size!!)
+        with(filePushContext) {
+            return FileInfo(sha256!!, md5!!, size!!, crc64ecma)
+        }
     }
 
     override fun buildSessionRequestInfo(filePushContext: FilePushContext) : Pair<String, String?> {

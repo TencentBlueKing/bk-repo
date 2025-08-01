@@ -157,6 +157,7 @@ class NpmRemoteRepository(
             size = artifactFile.getSize(),
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
+            crc64ecma = artifactFile.getFileCrc64ecma(),
             overwrite = true,
             operator = context.userId
         )

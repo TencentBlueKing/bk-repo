@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.artifact.manager
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
+import com.tencent.bkrepo.common.artifact.util.Constant.UT_CRC64_ECMA
 import com.tencent.bkrepo.common.artifact.util.Constant.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.util.Constant.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.util.Constant.UT_SHA256
@@ -142,6 +143,7 @@ class StorageManagerTest @Autowired constructor(
         overwrite = false,
         size = size,
         sha256 = sha256,
+        crc64ecma = UT_CRC64_ECMA,
         md5 = "md5",
     )
 

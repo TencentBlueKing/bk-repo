@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.memory
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.hash.crc64ecma
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.hash.sha256
@@ -41,6 +42,7 @@ class ByteArrayArtifactFile(
     private val sha1: String by lazy { getInputStream().sha1() }
     private val sha256: String by lazy { getInputStream().sha256() }
     private val md5: String by lazy { getInputStream().md5() }
+    private val crc64ecma: String by lazy { getInputStream().crc64ecma() }
 
     override fun getInputStream(): InputStream {
         return data.inputStream()
@@ -88,6 +90,10 @@ class ByteArrayArtifactFile(
 
     override fun getFileSha256(): String {
         return sha256
+    }
+
+    override fun getFileCrc64ecma(): String {
+        return crc64ecma
     }
 
     fun byteArray() = data

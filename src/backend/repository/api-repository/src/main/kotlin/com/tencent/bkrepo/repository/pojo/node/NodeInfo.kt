@@ -69,6 +69,8 @@ data class NodeInfo(
     val sha256: String? = null,
     @get:Schema(title = "文件md5")
     val md5: String? = null,
+    @get:Schema(title = "文件crc64ecma")
+    val crc64ecma: String? = null,
     @get:Schema(title = "元数据")
     val metadata: Map<String, Any>? = null,
     @get:Schema(title = "元数据信息")

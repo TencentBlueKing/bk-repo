@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.constant.FAKE_CRC64_ECMA
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
@@ -240,6 +241,7 @@ abstract class NodeBaseService(
                 overwrite = overwrite,
                 sha256 = FAKE_SHA256,
                 md5 = FAKE_MD5,
+                crc64ecma = FAKE_CRC64_ECMA,
                 nodeMetadata = nodeMetadata?.let { it + metadata } ?: metadata,
                 operator = operator,
             )
@@ -456,7 +458,7 @@ abstract class NodeBaseService(
 
             if (separate) {
                 // 删除旧节点，并检查旧节点是否被删除，防止并发删除
-                val currentVersion = metadata!![UPLOADID_KEY].toString()
+                val currentVersion = nodeMetadata?.first { it.key == UPLOADID_KEY }!!.value.toString()
                 val oldNodeId = currentVersion.substringAfter("/")
 
                 if (oldNodeId == FAKE_SEPARATE) {

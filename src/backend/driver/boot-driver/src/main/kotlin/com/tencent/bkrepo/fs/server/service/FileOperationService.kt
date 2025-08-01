@@ -29,6 +29,7 @@ package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.constant.FAKE_CRC64_ECMA
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.NodeAttribute
@@ -84,6 +85,7 @@ class FileOperationService(
                 nodeFullPath = fullPath,
                 startPos = offset,
                 sha256 = artifactFile.getFileSha256(),
+                crc64ecma = artifactFile.getFileCrc64ecma(),
                 projectId = projectId,
                 repoName = repoName,
                 size = artifactFile.getSize()
@@ -133,6 +135,7 @@ class FileOperationService(
                 nodeFullPath = streamRequest.fullPath,
                 startPos = offset.toLong(),
                 sha256 = reactiveArtifactFile.getFileSha256(),
+                crc64ecma = reactiveArtifactFile.getFileCrc64ecma(),
                 projectId = streamRequest.projectId,
                 repoName = streamRequest.repoName,
                 size = reactiveArtifactFile.getSize()
@@ -201,6 +204,7 @@ class FileOperationService(
             size = request.size,
             sha256 = FAKE_SHA256,
             md5 = FAKE_MD5,
+            crc64ecma = FAKE_CRC64_ECMA,
             operator = user,
             createdBy = user,
             createdDate = LocalDateTime.now(),

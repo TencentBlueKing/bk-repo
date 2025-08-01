@@ -101,6 +101,10 @@ class ReceiverArtifactFile(
         return receiver.listener.getSha256()
     }
 
+    override fun getFileCrc64ecma(): String {
+        return receiver.listener.getCrc64ecma()
+    }
+
     override fun delete() {
         receiver.close()
     }
