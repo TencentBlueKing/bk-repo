@@ -30,7 +30,6 @@ package com.tencent.bkrepo.job.batch.task.stat
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.PROJECT
@@ -39,9 +38,9 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
-import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils.Companion.SEPARATION_COLLECTION_NAME_PREFIX
 import com.tencent.bkrepo.job.batch.utils.StatUtils.specialRepoRunCheck
 import com.tencent.bkrepo.job.config.properties.StatJobProperties
+import com.tencent.bkrepo.job.pojo.stat.StatNode
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
@@ -101,7 +100,6 @@ open class StatBaseJob(
             } while (querySize == properties.batchSize)
         }.apply {
             val elapsedTime = HumanReadable.time(this)
-            onRunProjectFinished(collection, projectId, context)
             logger.info(
                 "${this@StatBaseJob.javaClass.simpleName} " +
                     "project $projectId run completed, elapse $elapsedTime"
@@ -126,7 +124,9 @@ open class StatBaseJob(
     ) {
         val futureList = mutableListOf<Future<Unit>>()
         executeStat(activeProjects, futureList) { projectId ->
-            val collectionList = buildCollectionList(projectId)
+            val normalNodeCollectionName = COLLECTION_NODE_PREFIX +
+                MongoShardingUtils.shardingSequence(projectId, SHARDING_COUNT)
+            val collectionList = buildCollectionList(projectId, normalNodeCollectionName)
             collectionList.forEach { collectionName ->
                 queryNodes(
                     projectId = projectId,
@@ -135,21 +135,15 @@ open class StatBaseJob(
                     extraCriteria = extraCriteria
                 )
             }
+            onRunProjectFinished(normalNodeCollectionName, projectId, jobContext)
         }
         futureList.forEach { it.get() }
     }
 
-    private fun buildCollectionList(projectId: String): List<String> {
+    private fun buildCollectionList(projectId: String, nodeCollection: String): List<String> {
         val collectionList = mutableListOf<String>()
-        val normalNodeCollectionName = COLLECTION_NODE_PREFIX +
-            MongoShardingUtils.shardingSequence(projectId, SHARDING_COUNT)
-        collectionList.add(normalNodeCollectionName)
-        separationTaskService.findDistinctSeparationDate(projectId).forEach { date ->
-            val separationNodeCollection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
-                MonthRangeShardingUtils.shardingSequenceFor(date, 1)
-            )
-            collectionList.add(separationNodeCollection)
-        }
+        collectionList.add(nodeCollection)
+        collectionList.addAll(separationTaskService.findSeparationCollectionList(projectId))
         return collectionList
     }
 
@@ -187,16 +181,6 @@ open class StatBaseJob(
             )
         )
     }
-
-    data class StatNode(
-        val id: String,
-        val folder: Boolean,
-        val path: String,
-        val fullPath: String,
-        val size: Long,
-        val projectId: String,
-        val repoName: String,
-    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(StatBaseJob::class.java)
