@@ -162,7 +162,7 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
         val metadataRule = MetadataRule("k", "v")
         ruleService.create(req)
         ruleService.create(req.copy(userIds = null, metadataRules = setOf(metadataRule), platform = Platform.MACOS))
-        ruleService.create(req.copy(operator = USER_NORMAL, scope = USER, platform = Platform.All))
+        ruleService.create(req.copy(operator = USER_NORMAL, scope = USER, platform = Platform.ALL))
 
         // query project rules
         val queryReq = UserScheduledDownloadRuleQueryRequest(projectIds = setOf(UT_PROJECT_ID), operator = USER_ADMIN)

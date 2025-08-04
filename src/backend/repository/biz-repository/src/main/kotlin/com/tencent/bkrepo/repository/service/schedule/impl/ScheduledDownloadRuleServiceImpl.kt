@@ -219,9 +219,9 @@ class ScheduledDownloadRuleServiceImpl(
             }
             enabled?.let { criteria.and(TScheduledDownloadRule::enabled.name).isEqualTo(it) }
 
-            if (platform != null && platform != Platform.All) {
+            if (platform != null && platform != Platform.ALL) {
                 criteria.orOperator(
-                    TScheduledDownloadRule::platform.isEqualTo(Platform.All),
+                    TScheduledDownloadRule::platform.isEqualTo(Platform.ALL),
                     TScheduledDownloadRule::platform.isEqualTo(platform)
                 )
             }
