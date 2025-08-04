@@ -57,7 +57,8 @@ class RepositoryServiceHelper(
         fun convertToDetail(
             tRepository: TRepository?,
             storageCredentials: StorageCredentials? = null,
-        ): RepositoryDetail? {
+            returnDecrypt: Boolean = false,
+            ): RepositoryDetail? {
             return tRepository?.let {
                 handlerConfiguration(it)
                 RepositoryDetail(
@@ -66,7 +67,10 @@ class RepositoryServiceHelper(
                     category = it.category,
                     public = it.public,
                     description = it.description,
-                    configuration = cryptoConfigurationPwd(it.configuration.readJsonString()),
+                    configuration = cryptoConfigurationPwd(
+                        it.configuration.readJsonString(),
+                        returnDecrypt = returnDecrypt
+                    ),
                     storageCredentials = storageCredentials,
                     projectId = it.projectId,
                     createdBy = it.createdBy,
@@ -80,7 +84,7 @@ class RepositoryServiceHelper(
             }
         }
 
-        fun convertToInfo(tRepository: TRepository?): RepositoryInfo? {
+        fun convertToInfo(tRepository: TRepository?, returnDecrypt: Boolean = false): RepositoryInfo? {
             return tRepository?.let {
                 handlerConfiguration(it)
                 RepositoryInfo(
@@ -90,7 +94,10 @@ class RepositoryServiceHelper(
                     category = it.category,
                     public = it.public,
                     description = it.description,
-                    configuration = cryptoConfigurationPwd(it.configuration.readJsonString()),
+                    configuration = cryptoConfigurationPwd(
+                        it.configuration.readJsonString(),
+                        returnDecrypt = returnDecrypt
+                    ),
                     storageCredentialsKey = it.credentialsKey,
                     projectId = it.projectId,
                     createdBy = it.createdBy,
@@ -144,30 +151,35 @@ class RepositoryServiceHelper(
         fun cryptoConfigurationPwd(
             repoConfiguration: RepositoryConfiguration,
             decrypt: Boolean = true,
+            returnDecrypt: Boolean = false,
         ): RepositoryConfiguration {
             if (repoConfiguration is CompositeConfiguration) {
                 repoConfiguration.proxy.channelList.forEach {
                     it.password?.let { pw ->
-                        it.password = crypto(pw, decrypt)
+                        it.password = crypto(pw, decrypt, returnDecrypt)
                     }
                 }
             }
             if (repoConfiguration is RemoteConfiguration) {
                 repoConfiguration.credentials.password?.let {
-                    repoConfiguration.credentials.password = crypto(it, decrypt)
+                    repoConfiguration.credentials.password = crypto(it, decrypt, returnDecrypt)
                 }
             }
             return repoConfiguration
         }
 
-        fun crypto(pw: String, decrypt: Boolean): String {
+        fun crypto(pw: String, decrypt: Boolean, returnDecrypt: Boolean): String {
             return if (!decrypt) {
                 RsaUtils.encrypt(pw)
             } else {
-                try {
-                    RsaUtils.decrypt(pw)
-                } catch (e: Exception) {
+                if (returnDecrypt) {
                     pw
+                } else {
+                    try {
+                        RsaUtils.decrypt(pw)
+                    } catch (e: Exception) {
+                        pw
+                    }
                 }
             }
         }
