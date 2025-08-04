@@ -161,8 +161,8 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
         val req = buildCreateReq(setOf(USER_NORMAL, "user2"))
         val metadataRule = MetadataRule("k", "v")
         ruleService.create(req)
-        ruleService.create(req.copy(userIds = null, metadataRules = setOf(metadataRule)))
-        ruleService.create(req.copy(operator = USER_NORMAL, scope = USER))
+        ruleService.create(req.copy(userIds = null, metadataRules = setOf(metadataRule), platform = Platform.MACOS))
+        ruleService.create(req.copy(operator = USER_NORMAL, scope = USER, platform = Platform.ALL))
 
         // query project rules
         val queryReq = UserScheduledDownloadRuleQueryRequest(projectIds = setOf(UT_PROJECT_ID), operator = USER_ADMIN)
@@ -176,9 +176,13 @@ class ScheduledDownloadRuleServiceTest @Autowired constructor(
         // query rules
         assertThrows<PermissionException> { ruleService.projectRules(queryReq.copy(operator = "user2")) }
         assertEquals(1, ruleService.rules(queryReq.copy(operator = USER_ADMIN)).totalRecords)
-        val rules = ruleService.rules(queryReq.copy(operator = USER_NORMAL))
+
+        var rules = ruleService.rules(queryReq.copy(operator = USER_NORMAL))
         assertEquals(3, rules.totalRecords)
         rules.records.forEach { assertEquals(USER_NORMAL, it.userIds!!.first()) }
+
+        rules = ruleService.rules(queryReq.copy(operator = USER_NORMAL, platform = Platform.WINDOWS))
+        assertEquals(2, rules.totalRecords)
     }
 
     @Test
