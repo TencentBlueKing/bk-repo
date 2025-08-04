@@ -72,7 +72,7 @@ data class TScheduledDownloadRule(
     /**
      * 预约下载规则所属平台
      */
-    var platform: Platform = Platform.All,
+    var platform: Platform = Platform.ALL,
 
     /**
      * 生效范围

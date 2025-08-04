@@ -24,7 +24,7 @@ data class UserScheduledDownloadRuleCreateRequest(
     @get:Schema(title = "是否启用")
     val enabled: Boolean = true,
     @get:Schema(title = "适用平台类型")
-    val platform: Platform = Platform.All,
+    val platform: Platform = Platform.ALL,
     @get:Schema(title = "规则生效范围")
     val scope: ScheduledDownloadRuleScope,
     @JsonIgnore
