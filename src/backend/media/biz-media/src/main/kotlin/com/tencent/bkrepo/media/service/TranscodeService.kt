@@ -38,7 +38,7 @@ class TranscodeService(
     fun transcode(artifactInfo: ArtifactInfo, transcodeConfig: TranscodeConfig, userId: String) {
         val transcodeParam = generateTranscodeParam(artifactInfo, transcodeConfig, userId)
         TranscodeHelper.addTask(transcodeConfig.jobId, transcodeParam)
-        logger.info("Add transcode task for artifact[$artifactInfo]")
+        logger.info("Add transcode task for artifact[$artifactInfo] param[$transcodeParam]")
     }
 
     /**
