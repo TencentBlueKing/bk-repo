@@ -193,6 +193,15 @@ open class ArtifactUploadContext : ArtifactContext {
     }
 
     /**
+     * 返回名为[name]的构件crc64ecma校验值
+     *
+     * [name]为`null`或不传值则返回二进制流文件的crc64ecma
+     */
+    fun getArtifactCrc64ecma(name: String? = null): String {
+        return getArtifactFile(name).getFileCrc64ecma()
+    }
+
+    /**
      * 验证文件摘要是否正确，根据[uploadDigest]长度自动选择合适的摘要算法
      */
     fun validateDigest(uploadDigest: String, filename: String? = null) {

@@ -207,7 +207,6 @@ class GenericController(
         scopeId = "#artifactInfo?.projectId",
         content = ActionAuditContent.NODE_UPLOAD_CONTENT
     )
-
     @Permission(ResourceType.NODE, PermissionAction.WRITE)
     @PutMapping(BLOCK_MAPPING_URI)
     fun completeBlockUpload(

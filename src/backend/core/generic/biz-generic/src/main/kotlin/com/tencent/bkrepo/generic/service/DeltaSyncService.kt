@@ -39,6 +39,7 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
+import com.tencent.bkrepo.generic.constant.HEADER_CRC64ECMA
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
@@ -345,7 +346,7 @@ class DeltaSyncService(
     private fun doPatch(patchContext: PatchContext, heartBeatFuture: ScheduledFuture<*>) {
         with(patchContext) {
             try {
-                verifyCheckSum(uploadMd5, uploadSha256, file)
+                verifyCheckSum(uploadMd5, uploadSha256, uploadCrc64ecma, file)
                 val nodeCreateRequest =
                     buildPatchNewNodeCreateRequest(
                         repositoryDetail,
@@ -414,14 +415,18 @@ class DeltaSyncService(
     /**
      * 验证校验和
      * */
-    private fun verifyCheckSum(md5: String?, sha256: String?, file: ArtifactFile) {
+    private fun verifyCheckSum(md5: String?, sha256: String?, crc64ecma: String?, file: ArtifactFile) {
         val calculatedSha256 = file.getFileSha256()
         val calculatedMd5 = file.getFileMd5()
+        val calculatedCrc64ecma = file.getFileCrc64ecma()
         if (sha256 != null && !calculatedSha256.equals(sha256, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "sha256")
         }
         if (md5 != null && !calculatedMd5.equals(md5, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
+        }
+        if (crc64ecma != null && !calculatedCrc64ecma.equals(crc64ecma, true)) {
+            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "crc64ecma")
         }
     }
 
@@ -445,6 +450,7 @@ class DeltaSyncService(
             size = file.getSize(),
             sha256 = file.getFileSha256(),
             md5 = file.getFileMd5(),
+            crc64ecma = file.getFileCrc64ecma(),
             operator = userId,
             expires = expires,
             overwrite = overwrite,
@@ -470,6 +476,7 @@ class DeltaSyncService(
             return PatchContext(
                 uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256),
                 uploadMd5 = HeaderUtils.getHeader(HEADER_MD5),
+                uploadCrc64ecma = HeaderUtils.getHeader(HEADER_CRC64ECMA),
                 expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
                 metadata = repository.resolveMetadata(request),
                 contentLength = request.contentLengthLong,
@@ -501,6 +508,7 @@ class DeltaSyncService(
             fullPath = artifactInfo.getArtifactFullPath(),
             size = file.getSize(),
             sha256 = file.getFileSha256(),
+            crc64ecma = file.getFileCrc64ecma(),
             md5 = file.getFileMd5(),
             operator = userId,
             overwrite = true,
@@ -587,6 +595,7 @@ class DeltaSyncService(
         val emitter: SseEmitter,
         val uploadSha256: String?,
         val uploadMd5: String?,
+        val uploadCrc64ecma: String?,
         val expires: Long,
         val metadata: List<MetadataModel>,
         val repositoryDetail: RepositoryDetail,
