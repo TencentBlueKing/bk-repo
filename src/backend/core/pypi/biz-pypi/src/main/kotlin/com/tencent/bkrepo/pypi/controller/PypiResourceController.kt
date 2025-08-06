@@ -94,6 +94,7 @@ class PypiResourceController(
 
     @GetMapping(
         "/{projectId}/{repoName}/simple",
+        "/{projectId}/{repoName}/simple/",
         "/{projectId}/{repoName}/simple/{name}",
         "/{projectId}/{repoName}/simple/{name:.+}/",
         produces = [MediaType.TEXT_HTML_VALUE]
