@@ -66,7 +66,6 @@ class InactiveProjectNodeFolderStatJob(
     }
 
     override fun buildQuery(): Query {
-
         return Query(buildCriteria())
     }
 

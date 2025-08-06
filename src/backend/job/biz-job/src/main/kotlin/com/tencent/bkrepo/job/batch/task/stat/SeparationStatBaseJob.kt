@@ -86,7 +86,7 @@ open class SeparationStatBaseJob(
                     processor(data)
                 }
                 processedCount += datas.size
-                lastId = datas.last().id as ObjectId
+                lastId = ObjectId(datas.last().id)
             } while (datas.size == batchSize && shouldRun)
         }
     }

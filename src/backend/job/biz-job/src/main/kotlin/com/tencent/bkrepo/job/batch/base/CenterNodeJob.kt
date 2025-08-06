@@ -11,7 +11,7 @@ abstract class CenterNodeJob<C : JobContext>(batchJobProperties: BatchJobPropert
     private lateinit var clusterProperties: ClusterProperties
 
     override fun shouldExecute(): Boolean {
-        val centerNode = clusterProperties.role == ClusterNodeType.CENTER
+        val centerNode = clusterProperties.role == ClusterNodeType.CENTER || clusterProperties.role == ClusterNodeType.STANDALONE
         val commitEdgeEdgeNode = clusterProperties.role == ClusterNodeType.EDGE &&
             clusterProperties.architecture == ClusterArchitecture.COMMIT_EDGE
         return super.shouldExecute() && (centerNode || commitEdgeEdgeNode)
