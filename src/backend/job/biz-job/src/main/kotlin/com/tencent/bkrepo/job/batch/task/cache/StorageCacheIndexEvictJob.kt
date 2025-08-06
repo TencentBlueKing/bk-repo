@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexPro
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.config.properties.StorageCacheIndexEvictJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 
@@ -42,7 +41,6 @@ import org.springframework.stereotype.Component
  * 定时执行缓存淘汰，淘汰索引器中缓存的同时会删除对应的缓存文件
  */
 @Component
-@EnableConfigurationProperties(StorageCacheIndexEvictJobProperties::class)
 class StorageCacheIndexEvictJob(
     properties: StorageCacheIndexEvictJobProperties,
     storageProperties: StorageProperties,

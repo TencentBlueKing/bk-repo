@@ -28,15 +28,17 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
 /**
  * 流水线构件清理任务配置项
  * @param enabled 是否启用任务
  * @param reservedFrequency 保留最近构建产物的次数
  */
+@Component
 @ConfigurationProperties("job.pipeline-artifact-cleanup")
-data class PipelineArtifactCleanupJobProperties(
+class PipelineArtifactCleanupJobProperties(
     override var cron: String = "0 0 0 1 1/1 ?",
-    override var enabled: Boolean = true,
+    override var enabled: Boolean = false,
     var reservedFrequency: Long = 10000,
 ) : MongodbJobProperties(enabled)

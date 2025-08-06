@@ -35,7 +35,6 @@ import com.tencent.bkrepo.job.config.properties.ProjectDailyAvgMetricsJobPropert
 import com.tencent.bkrepo.job.pojo.project.TProjectMetricsDailyAvgRecord
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -53,7 +52,6 @@ import java.time.format.DateTimeFormatter
  * 根据每日用量采点数据生成每日平均用量
  */
 @Component
-@EnableConfigurationProperties(ProjectDailyAvgMetricsJobProperties::class)
 class ProjectDailyAvgMetricsJob(
     val properties: ProjectDailyAvgMetricsJobProperties,
     private val mongoTemplate: MongoTemplate

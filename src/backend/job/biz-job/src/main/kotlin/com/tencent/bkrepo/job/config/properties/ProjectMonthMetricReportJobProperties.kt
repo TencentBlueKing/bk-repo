@@ -29,7 +29,9 @@ package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.project-month-metric-report")
 class ProjectMonthMetricReportJobProperties(
     override var enabled: Boolean = false,

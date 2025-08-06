@@ -28,7 +28,9 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.user-share-cleanup")
 class UserShareCleanupJobProperties(
     override var cron: String = "0 30 2 * * ?",

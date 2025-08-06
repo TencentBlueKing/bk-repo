@@ -35,7 +35,6 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import okhttp3.Request
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -46,7 +45,6 @@ import java.time.Duration
  * 定时从蓝盾同步项目元数据
  */
 @Component
-@EnableConfigurationProperties(BkciProjectMetadataSyncJobProperties::class)
 class BkciProjectMetadataSyncJob(
     private val properties: BkciProjectMetadataSyncJobProperties,
 ) : DefaultContextMongoDbJob<BkciProjectMetadataSyncJob.Project>(properties) {
