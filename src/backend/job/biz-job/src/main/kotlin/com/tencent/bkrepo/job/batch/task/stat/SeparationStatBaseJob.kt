@@ -39,7 +39,6 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import kotlin.system.measureNanoTime
 
 open class SeparationStatBaseJob(
     private val mongoTemplate: MongoTemplate,
@@ -64,7 +63,7 @@ open class SeparationStatBaseJob(
     /**
      * 通用分页查询处理方法
      */
-    fun  processPagedQuery(
+    private fun processPagedQuery(
         collectionName: String,
         criteria: Criteria,
         batchSize: Int,
@@ -73,29 +72,27 @@ open class SeparationStatBaseJob(
     ) {
         var lastId = ObjectId(MIN_OBJECT_ID)
         var processedCount = 0L
-        val elapsedTime = measureNanoTime {
-            do {
-                val query = Query(criteria)
-                    .addCriteria(Criteria.where(ID).gt(lastId))
-                    .limit(batchSize)
-                    .with(Sort.by(ID).ascending())
+        do {
+            val query = Query(criteria)
+                .addCriteria(Criteria.where(ID).gt(lastId))
+                .limit(batchSize)
+                .with(Sort.by(ID).ascending())
 
-                val datas = mongoTemplate.find<StatNode>(query, collectionName)
-                if (datas.isEmpty()) break
-                datas.forEach { data ->
-                    processor(data)
-                }
-                processedCount += datas.size
-                lastId = ObjectId(datas.last().id)
-            } while (datas.size == batchSize && shouldRun)
-        }
+            val datas = mongoTemplate.find<StatNode>(query, collectionName)
+            if (datas.isEmpty()) break
+            datas.forEach { data ->
+                processor(data)
+            }
+            processedCount += datas.size
+            lastId = ObjectId(datas.last().id)
+        } while (datas.size == batchSize && shouldRun)
     }
 
     fun buildSeparationProjectList(): Map<String, Set<String>> {
         val separationProjects = mutableMapOf<String, MutableSet<String>>()
         separationTaskService.findProjectList().forEach { projectId ->
             val collectionName = COLLECTION_NODE_PREFIX +
-                MongoShardingUtils.shardingSequence(projectId, com.tencent.bkrepo.job.SHARDING_COUNT)
+                    MongoShardingUtils.shardingSequence(projectId, com.tencent.bkrepo.job.SHARDING_COUNT)
             separationProjects.getOrPut(collectionName) { mutableSetOf() }.add(projectId)
         }
         return separationProjects

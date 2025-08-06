@@ -148,6 +148,7 @@ class InactiveProjectNodeFolderStatJob(
         require(context is NodeFolderJobContext)
         context.separationProjects[collectionName]?.let { projectSet ->
             projectSet.filter { context.activeProjects[it] == null }.forEach { projectId ->
+                logger.info("Processing inactive projectId: $projectId in collection: $collectionName")
                 nodeFolderStat.processSeparationQuery(
                     projectId = projectId,
                     criteria = buildCriteria(),

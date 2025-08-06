@@ -132,6 +132,7 @@ class InactiveProjectEmptyFolderCleanupJob(
         require(context is EmptyFolderCleanupJobContext)
         context.separationProjects[collectionName]?.let { projectSet ->
             projectSet.filter { context.activeProjects[it] == null }.forEach { projectId ->
+                logger.info("Processing inactive projectId: $projectId in collection: $collectionName")
                 emptyFolderCleanup.processSeparationQuery(
                     projectId = projectId,
                     criteria = buildCriteria(),
