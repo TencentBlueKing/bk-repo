@@ -36,6 +36,7 @@ class TranscodeService(
      * 视频转码
      * */
     fun transcode(artifactInfo: ArtifactInfo, transcodeConfig: TranscodeConfig, userId: String) {
+        logger.info("Add transcode task for artifact[$artifactInfo]")
         val transcodeParam = generateTranscodeParam(artifactInfo, transcodeConfig, userId)
         logger.info("Add transcode task for artifact[$artifactInfo] param[$transcodeParam]")
         TranscodeHelper.addTask(transcodeConfig.jobId, transcodeParam)
