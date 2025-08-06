@@ -16,7 +16,7 @@ bcs_secret_key=$BK_REPO_BCS_SECRETKEY
 
 mongo_args="--ipv6"
 if [ "$tls_enable" = "true" ] ; then
-    if [ "$client_pem_path" = "" ]; then
+    if [ "$client_cert_path" = "" ]; then
         mongo_args="$mongo_args --tls --tlsCAFile $tls_path --tlsAllowInvalidHostnames"
       else
         mongo_args="$mongo_args --tls --tlsCAFile $tls_path --tlsCertificateKeyFile $client_cert_path --tlsAllowInvalidHostnames"
