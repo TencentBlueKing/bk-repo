@@ -68,6 +68,7 @@ import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
@@ -148,6 +149,7 @@ class GenericLocalRepository(
     private val ciPermissionManager: CIPermissionManager,
     private val blockNodeService: BlockNodeService,
     private val storageProperties: StorageProperties,
+    private val metadataLabelCacheService: MetadataLabelCacheService
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -163,6 +165,8 @@ class GenericLocalRepository(
         checkNodeExist(context)
         // 检查是否是覆盖流水线构件
         checkIfOverwritePipelineArtifact(context)
+        // 检查元数据是否合规
+        checkMetadataLabel(context)
         // 校验sha256
         val calculatedSha256 = context.getArtifactSha256()
         val uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256)
@@ -953,6 +957,11 @@ class GenericLocalRepository(
     private fun calculateExpiryDateTime(expireDuration: Duration): LocalDateTime {
         val hoursToAdd = expireDuration.toHours().takeIf { it > 0 } ?: 12 // 如果 expireDuration <= 0，则使用 12 小时
         return LocalDateTime.now().plusHours(hoursToAdd)
+    }
+
+    private fun checkMetadataLabel(context: ArtifactUploadContext) {
+        val metadataList = resolveMetadata(context.request)
+        metadataLabelCacheService.checkEnumMetadataLabel(context.projectId, metadataList)
     }
 
 

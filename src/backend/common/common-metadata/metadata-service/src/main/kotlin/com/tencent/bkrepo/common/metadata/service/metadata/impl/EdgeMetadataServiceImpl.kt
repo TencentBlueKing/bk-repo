@@ -30,7 +30,6 @@ package com.tencent.bkrepo.common.metadata.service.metadata.impl
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
-import com.tencent.bkrepo.common.metadata.service.metadata.MetadataLabelService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.ignoreException
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.nodeLevelNotFoundError
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
@@ -50,12 +49,12 @@ class EdgeMetadataServiceImpl(
     repositoryProperties: RepositoryProperties,
     clusterProperties: ClusterProperties,
     ciPermissionManager: CIPermissionManager,
-    metadataLabelService: MetadataLabelService
+    metadataLabelCacheService: MetadataLabelCacheService
 ) : MetadataServiceImpl(
     nodeDao,
     repositoryProperties,
     ciPermissionManager,
-    metadataLabelService
+    metadataLabelCacheService
 ) {
 
     private val centerMetadataClient: ClusterMetadataClient by lazy {
