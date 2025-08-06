@@ -183,10 +183,4 @@ data class DevXProperties(
      */
     var shareFileSizeLimit: DataSize = DataSize.ofMegabytes(50),
 
-    /**
-     * 云桌面下载地址
-     * key为云桌面区域，value为云桌面下载地址
-     */
-    var downloadHosts: Map<String, String> = emptyMap(),
-
 )

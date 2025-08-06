@@ -49,14 +49,12 @@ import com.tencent.bkrepo.websocket.dispatch.push.PastePDUTransferPush
 import com.tencent.bkrepo.websocket.dispatch.push.PingPDUTransferPush
 import com.tencent.bkrepo.websocket.dispatch.push.PongPDUTransferPush
 import com.tencent.bkrepo.websocket.pojo.fs.CopyPDU
-import com.tencent.bkrepo.websocket.pojo.fs.DownloadUrlPDU
 import com.tencent.bkrepo.websocket.pojo.fs.PastePDU
 import com.tencent.bkrepo.websocket.pojo.fs.PingPongPDU
 import com.tencent.devops.api.pojo.Response
 import okhttp3.Request
 import okio.IOException
 import org.slf4j.LoggerFactory
-import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
 
 @Service
@@ -66,7 +64,6 @@ class ClipboardService(
     private val jwtAuthProperties: JwtAuthProperties,
     private val permissionManager: PermissionManager,
     private val serviceUserClient: ServiceUserClient,
-    private val simpMessagingTemplate: SimpMessagingTemplate
 ) {
 
     private val httpClient = HttpClientBuilderFactory.create().build()
@@ -80,6 +77,7 @@ class ClipboardService(
 
     fun pong(userId: String, pongPDU: PingPongPDU) {
         logger.info("userId: $userId, PongPDU: $pongPDU")
+        pongPDU.type = "pong"
         val pongPDUTransferPush = PongPDUTransferPush(pongPDU)
         transferDispatch.dispatch(pongPDUTransferPush)
     }
@@ -90,32 +88,12 @@ class ClipboardService(
         copyPDU.token = token
         val copyPDUTransferPush = CopyPDUTransferPush(copyPDU)
         transferDispatch.dispatch(copyPDUTransferPush)
-        if (!copyPDU.dstPath.isNullOrEmpty()) {
-            val downloadPDU = convertToDownloadUrlPDU(copyPDU)
-            logger.info("send download pdu: $downloadPDU")
-            simpMessagingTemplate.convertAndSend(
-                "/topic/clipboard/url/${copyPDU.sessionId}",
-                downloadPDU
-            )
-        }
     }
 
     fun paste(pastePDU: PastePDU) {
         logger.info("PastePDU: $pastePDU")
         val pastePDUTransferPush = PastePDUTransferPush(pastePDU)
         transferDispatch.dispatch(pastePDUTransferPush)
-    }
-
-    private fun convertToDownloadUrlPDU(copyPDU: CopyPDU): DownloadUrlPDU {
-        with(copyPDU) {
-            return DownloadUrlPDU(
-                url = "${devXProperties.downloadHosts[zone]}/ui/$projectId/generic" +
-                        "?repoName=lsync" +
-                        "&path=%2FPersonal%2F$userId%2Fclipboard%2F$workspaceName%2F$timestamp%2Fdefault",
-                timestamp = timestamp,
-                workspaceName = workspaceName
-            )
-        }
     }
 
     /**
