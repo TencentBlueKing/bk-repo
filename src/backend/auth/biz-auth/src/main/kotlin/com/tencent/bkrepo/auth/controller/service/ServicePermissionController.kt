@@ -66,7 +66,7 @@ class ServicePermissionController @Autowired constructor(
         } else {
             val permissionPath = permissionService.listNoPermissionPath(userId, projectId, repoName)
             if (permissionPath == null) {
-                val result = ListPathResult(status = false, path = mapOf(OperationType.IN to emptyList()))
+                val result = ListPathResult(status = true, path = mapOf(OperationType.IN to emptyList()))
                 return ResponseBuilder.success(result)
             }
             val status = permissionPath.isNotEmpty()
