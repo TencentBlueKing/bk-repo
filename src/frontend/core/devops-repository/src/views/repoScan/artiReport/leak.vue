@@ -217,7 +217,7 @@
                     position: 'bottom-right',
                     theme: 'success'
                 })
-                const url = `/web/analyst/api/scan/export/artifact/leak/${this.projectId}/${this.subtaskOverview.recordId}?x-bkrepo-project-id=${this.scanPlan.projectId}`
+                const url = `/web/analyst/api/scan/export/artifact/leak/${this.projectId}/${this.subtaskOverview.recordId}?x-bkrepo-project-id=${this.projectId}`
                 window.open(url, '_self')
             }
         }

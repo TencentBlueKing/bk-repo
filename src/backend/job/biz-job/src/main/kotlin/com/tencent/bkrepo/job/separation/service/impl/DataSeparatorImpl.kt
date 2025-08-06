@@ -597,6 +597,7 @@ class DataSeparatorImpl(
             size = node.size,
             sha256 = node.sha256,
             md5 = node.md5,
+            crc64ecma = node.crc64ecma,
             nodeNum = node.nodeNum,
             metadata = node.metadata,
             createdBy = node.createdBy,

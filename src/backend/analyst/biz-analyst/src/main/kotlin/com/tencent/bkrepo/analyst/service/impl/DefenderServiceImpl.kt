@@ -37,6 +37,7 @@ import com.tencent.bkrepo.analyst.pojo.response.DefenderResponse
 import com.tencent.bkrepo.analyst.service.DefenderService
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
@@ -56,6 +57,10 @@ class DefenderServiceImpl(
 ) : DefenderService {
     override fun defender(request: DefenderRequest): DefenderResponse {
         with(request) {
+            if (users.isEmpty()) {
+                return DefenderResponse(emptyList())
+            }
+            Preconditions.checkArgument(batchSize > 0, DefenderRequest::batchSize.name)
             val scanner = getScanner(projectId, PathUtils.resolveName(fullPath))
             val rules = ArrayList<Rule>()
             rules.add(Rule.QueryRule(NodeInfo::projectId.name, projectId, OperationType.EQ))
