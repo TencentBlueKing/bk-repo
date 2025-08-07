@@ -186,6 +186,7 @@ class RpmLocalRepository(
             size = artifactFile.getSize(),
             sha256 = sha256,
             md5 = md5,
+            crc64ecma = artifactFile.getFileCrc64ecma(),
             operator = userId,
             nodeMetadata = metadata?.map { MetadataModel(key = it.key, value = it.value) }
         )

@@ -86,6 +86,7 @@ class ConanLocalRepository : LocalRepository() {
                 fullPath = fullPath,
                 size = getArtifactFile().getSize(),
                 sha256 = getArtifactSha256(),
+                crc64ecma = getArtifactCrc64ecma(),
                 md5 = getArtifactMd5(),
                 operator = userId,
                 overwrite = true,

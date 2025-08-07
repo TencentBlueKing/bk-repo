@@ -23,11 +23,13 @@
             </div>
         </draggable>
         <empty-data :is-loading="isLoading" v-if="!permissionListPages.length"></empty-data>
-        <create-permission :show="showCreatePermissionDialog"
+        <create-permission
+            :show="showCreatePermissionDialog"
             :type="showType"
             :permission-form="permissionDate"
             ref="createDialog"
             @refresh="refresh"
+            @close="showCreatePermissionDialog = false"
         > </create-permission>
     </div>
 </template>
@@ -35,7 +37,7 @@
     import { mapActions } from 'vuex'
     import createPermission from '@/views/repoConfig/permissionConfig/createPermission'
     export default {
-        name: 'permissionConfig',
+        name: 'PermissionConfig',
         components: { createPermission },
         props: {
             baseData: Object
@@ -108,7 +110,7 @@
                 })
             },
             updatePermission (row) {
-                this.$refs.createDialog.show = true
+                this.showCreatePermissionDialog = true
                 this.showType = 'update'
                 this.permissionDate = {
                     id: row.id,
@@ -119,7 +121,7 @@
                 }
             },
             showCreatePermission () {
-                this.$refs.createDialog.show = true
+                this.showCreatePermissionDialog = true
                 this.showType = 'create'
                 this.permissionDate = {
                     id: [],

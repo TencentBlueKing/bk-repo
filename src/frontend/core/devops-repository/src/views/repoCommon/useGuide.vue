@@ -19,6 +19,7 @@
                     v-if="repoType === 'maven' || repoType === 'npm'"
                     class="w160"
                     :clearable="false"
+                    :placeholder="$t('pleaseSelect')"
                     v-model="activeDependType">
                     <bk-option v-for="type in dependTypes" :key="type" :id="type" :name="type">
                         <div class="flex-align-center">

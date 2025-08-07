@@ -45,6 +45,13 @@ if service_name == "" then
     return
 end
 
+-- 哪些服务需要转到容器中 --
+local service_in_container = config.service_in_container
+if service_in_container ~= nil and string.find(service_in_container, service_name) ~= nil then
+    ngx.var.target = config.container_url .. "/" .. service_name
+    return
+end
+
 -- 异常故障转移
 if config.env and healthUtil:get_cluster_health_status(config.env) then
     local back_target = healthUtil:get_target_by_random(config.env)
@@ -70,17 +77,11 @@ end
 
 
 -- 校验endpoint与method开放访问 --
-if healthUtil:check_path() == false then
+if healthUtil:check_path(service_name) == false then
     ngx.exit(422)
     return
 end
 
--- 哪些服务需要转到容器中 --
-local service_in_container = config.service_in_container
-if service_in_container ~= nil and string.find(service_in_container, service_name) ~= nil then
-    ngx.var.target = config.container_url .. "/" .. service_name
-    return
-end
 
 ngx.var.target = hostUtil:get_addr(service_name)
 

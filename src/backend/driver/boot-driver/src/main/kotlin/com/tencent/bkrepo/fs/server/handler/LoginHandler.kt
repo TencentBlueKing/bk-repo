@@ -93,10 +93,18 @@ class LoginHandler(
         val devIdToken = devxLoginRequest?.token
         val accessToken = devxLoginRequest?.accessToken
         val repoName = request.pathVariable(REPO_NAME)
-        val response = when {
-            !devIdToken.isNullOrEmpty() -> devIdTokenLogin(devIdToken, repoName)
-            !accessToken.isNullOrEmpty() -> accessTokenLogin(accessToken, repoName)
-            else -> ipLogin(repoName)
+        val response = try {
+            when {
+                !devIdToken.isNullOrEmpty() -> devIdTokenLogin(devIdToken, repoName)
+                !accessToken.isNullOrEmpty() -> accessTokenLogin(accessToken, repoName)
+                else -> ipLogin(repoName)
+            }
+        } catch (e: IllegalArgumentException) {
+            logger.info("login failed: $e")
+            throw AuthenticationException()
+        } catch (e: Exception) {
+            logger.error("login failed: ", e)
+            throw AuthenticationException()
         }
         return ReactiveResponseBuilder.success(response)
     }

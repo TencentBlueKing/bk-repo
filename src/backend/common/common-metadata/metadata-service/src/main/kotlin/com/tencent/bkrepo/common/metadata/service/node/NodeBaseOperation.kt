@@ -85,6 +85,11 @@ interface NodeBaseOperation {
     fun checkExist(artifact: ArtifactInfo): Boolean
 
     /**
+     *  判断文件夹是否存在
+     */
+    fun checkFolderExists(projectId: String, repoName: String, fullPath: String): Boolean
+
+    /**
      * 判断节点列表是否存在
      */
     fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String>

@@ -119,6 +119,11 @@
                         icon: 'english',
                         name: 'English',
                         id: 'en'
+                    },
+                    {
+                        icon: 'japanese',
+                        name: '日语',
+                        id: 'ja'
                     }
                 ]
             }
@@ -189,13 +194,17 @@
             },
             changeLanguage (id) {
                 const BK_CI_DOMAIN = location.host.split('.').slice(1).join('.')
-                if (id !== 'zh-cn') {
+                if (id === 'en') {
                     cookies.remove('blueking_language', { domain: BK_CI_DOMAIN, path: '/' })
                     cookies.set('blueking_language', 'en', { domain: BK_CI_DOMAIN, path: '/', expires: 366 })
                     location.reload()
-                } else {
+                } else if (id === 'zh-cn') {
                     cookies.remove('blueking_language', { domain: BK_CI_DOMAIN, path: '/' })
                     cookies.set('blueking_language', 'zh-cn', { domain: BK_CI_DOMAIN, path: '/', expires: 366 })
+                    location.reload()
+                } else {
+                    cookies.remove('blueking_language', { domain: BK_CI_DOMAIN, path: '/' })
+                    cookies.set('blueking_language', 'ja', { domain: BK_CI_DOMAIN, path: '/', expires: 366 })
                     location.reload()
                 }
             },
