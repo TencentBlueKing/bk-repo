@@ -55,6 +55,7 @@ class GenericChunkedArtifactInfoResolver : ArtifactInfoResolver {
         val size = request.getParameterValues("size")?.firstOrNull()?.toLongOrNull()
         val sha256 = request.getParameterValues("sha256")?.firstOrNull()
         val md5 = request.getParameterValues("md5")?.firstOrNull()
+        val crc64ecma = request.getParameterValues("crc64ecma")?.firstOrNull()
         return GenericChunkedArtifactInfo(
             projectId = projectId,
             repoName = repoName,
@@ -62,6 +63,7 @@ class GenericChunkedArtifactInfoResolver : ArtifactInfoResolver {
             uuid = uuid,
             md5 = md5,
             sha256 = sha256,
+            crc64ecma = crc64ecma,
             size = size
         )
     }

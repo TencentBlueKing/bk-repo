@@ -33,5 +33,5 @@ data class SignConfig(
     var scanner: MutableMap<String, String> = mutableMapOf(),
     var tags: MutableList<String> = mutableListOf("Alpha"),
     var oldSignedProjectId: String = "",
-    var oldSignedRepoName: String = ""
+    var oldSignedRepoName: String = "",
 )

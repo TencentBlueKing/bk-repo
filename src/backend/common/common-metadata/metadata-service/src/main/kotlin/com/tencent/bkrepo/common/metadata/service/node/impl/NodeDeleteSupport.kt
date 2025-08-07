@@ -209,6 +209,7 @@ open class NodeDeleteSupport(
 
         if (deletedNum == 0L) return NodeDeleteResult(0L, 0L, deleteTime)
 
+        publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator, deleteTime.toString(), null))
         logger.info(
             "Delete old block base node: $fullPath, operator: $operator, delete num : $deletedNum, " +
                     "delete time: $deleteTime success"
