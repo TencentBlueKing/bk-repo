@@ -76,7 +76,11 @@ class DefenderServiceImpl(
                     rule = queryRule,
                     metadata = listOf(
                         TaskMetadata("users", it.joinToString(",")),
-                        TaskMetadata("sha256", node.sha256!!)
+                        TaskMetadata("sha256", node.sha256!!),
+                        TaskMetadata(
+                            "repoUrl",
+                            "${signProperties.host}/generic/${node.projectId}/${signProperties.signedRepoName}"
+                        )
                     )
                 )
                 val scanTask = scanService.scan(scanRequest, ScanTriggerType.MANUAL, SecurityUtils.getUserId())
