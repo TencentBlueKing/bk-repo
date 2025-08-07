@@ -101,6 +101,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
             fullPath = context.artifactInfo.getArtifactFullPath(),
             size = context.getArtifactFile().getSize(),
             sha256 = context.getArtifactSha256(),
+            crc64ecma = context.getArtifactCrc64ecma(),
             md5 = context.getArtifactMd5(),
             operator = context.userId
         )

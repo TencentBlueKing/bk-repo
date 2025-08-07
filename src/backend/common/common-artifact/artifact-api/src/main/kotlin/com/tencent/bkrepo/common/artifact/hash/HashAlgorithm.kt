@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.hash
 
+import com.tencent.bkrepo.common.api.util.CRC64
 import java.io.File
 import java.io.InputStream
 import java.math.BigInteger
@@ -92,12 +93,28 @@ fun InputStream.sha256() = HashAlgorithm.SHA256().hash(this)
 fun InputStream.sha1() = HashAlgorithm.SHA1().hash(this)
 fun InputStream.md5() = HashAlgorithm.MD5().hash(this)
 
+fun InputStream.crc64ecma(): String {
+    val crc64ecma = CRC64()
+    use {
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        var sizeRead = it.read(buffer)
+        while (sizeRead != -1) {
+            crc64ecma.update(buffer, 0, sizeRead)
+            sizeRead = it.read(buffer)
+        }
+    }
+
+    return crc64ecma.unsignedStringValue()
+}
+
 fun File.sha512() = this.inputStream().buffered().sha512()
 fun File.sha256() = this.inputStream().buffered().sha256()
 fun File.sha1() = this.inputStream().buffered().sha1()
 fun File.md5() = this.inputStream().buffered().md5()
+fun File.crc64ecma() = this.inputStream().buffered().crc64ecma()
 
 fun String.sha512() = this.byteInputStream().sha512()
 fun String.sha256() = this.byteInputStream().sha256()
 fun String.sha1() = this.byteInputStream().sha1()
 fun String.md5() = this.byteInputStream().md5()
+fun String.crc64ecma() = this.byteInputStream().crc64ecma()

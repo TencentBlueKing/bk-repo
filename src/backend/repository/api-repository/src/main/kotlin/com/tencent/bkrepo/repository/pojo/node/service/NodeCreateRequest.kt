@@ -62,6 +62,8 @@ data class NodeCreateRequest(
     val sha256: String? = null,
     @get:Schema(title = "文件md5")
     val md5: String? = null,
+    @get:Schema(title = "文件crc64ecma")
+    val crc64ecma: String? = null,
     @get:Schema(title = "元数据信息")
     @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("nodeMetadata"))
     val metadata: Map<String, Any>? = null,

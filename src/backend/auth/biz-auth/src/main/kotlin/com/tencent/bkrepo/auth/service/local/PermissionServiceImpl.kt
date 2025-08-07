@@ -323,8 +323,8 @@ open class PermissionServiceImpl constructor(
         return repoList.distinct()
     }
 
-    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
-        val user = userDao.findFirstByUserId(userId) ?: return emptyList()
+    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
+        val user = userDao.findFirstByUserId(userId) ?: return null
         if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
             return emptyList()
         }

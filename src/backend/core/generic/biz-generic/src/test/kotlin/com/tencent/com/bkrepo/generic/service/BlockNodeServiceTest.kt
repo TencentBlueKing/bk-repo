@@ -13,6 +13,7 @@ import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.com.bkrepo.generic.BLOCK_SIZE
+import com.tencent.com.bkrepo.generic.UT_CRC64_ECMA
 import com.tencent.com.bkrepo.generic.UT_PROJECT_ID
 import com.tencent.com.bkrepo.generic.UT_REPO_NAME
 import com.tencent.com.bkrepo.generic.UT_SHA256
@@ -179,6 +180,7 @@ class BlockNodeServiceTest {
             nodeFullPath = fullPath,
             startPos = startPos,
             sha256 = sha256,
+            crc64ecma = UT_CRC64_ECMA,
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             size = 1
@@ -200,6 +202,7 @@ class BlockNodeServiceTest {
             nodeFullPath = fullPath,
             startPos = i * BLOCK_SIZE,
             sha256 = "$UT_SHA256$i",
+            crc64ecma = "$UT_CRC64_ECMA$i",
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             size = BLOCK_SIZE,

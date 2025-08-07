@@ -408,7 +408,8 @@ class OciOperationServiceImpl(
             val newNodeRequest = request.copy(
                 size = fileInfo.size,
                 md5 = fileInfo.md5,
-                sha256 = fileInfo.sha256
+                sha256 = fileInfo.sha256,
+                crc64ecma = fileInfo.crc64ecma,
             )
             ActionAuditContext.current().setInstance(newNodeRequest)
             nodeService.createNode(newNodeRequest)
