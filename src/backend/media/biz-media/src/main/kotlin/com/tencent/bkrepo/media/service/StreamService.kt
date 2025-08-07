@@ -106,7 +106,12 @@ class StreamService(
         val repoId = RepositoryId(projectId, repoName)
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
         val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
-        val transcodeConfig = getTranscodeConfig(projectId)
+        // 只有视频流参与转码
+        val transcodeConfig = if (saveType == MediaType.JSON) {
+            null
+        } else {
+            getTranscodeConfig(projectId)
+        }
         transcodeConfig?.let { it.extraParams = transcodeExtraParams }
         val fileConsumer = MediaArtifactFileConsumer(
             storageManager,
