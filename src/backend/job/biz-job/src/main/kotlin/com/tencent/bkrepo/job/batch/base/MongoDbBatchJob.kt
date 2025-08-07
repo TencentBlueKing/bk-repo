@@ -81,6 +81,11 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     abstract fun entityClass(): KClass<Entity>
 
     /**
+     * 表开始执行前置操作
+     * */
+    open fun onRunCollectionStart(collectionName: String, context: Context) {}
+
+    /**
      * 表执行结束回调
      * */
     open fun onRunCollectionFinished(collectionName: String, context: Context) {}
@@ -144,6 +149,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
             logger.info("Job[${getJobName()}] already stopped.")
             return
         }
+        onRunCollectionStart(collectionName, context)
         logger.info("Job[${getJobName()}]: Start collection $collectionName.")
         val pageSize = batchSize
         var querySize: Int
