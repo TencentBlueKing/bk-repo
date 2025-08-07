@@ -126,7 +126,8 @@ class StreamService(
             RemuxRecordingListener(credentials.upload.location, scheduler, saveType, fileConsumer)
         } else {
             val artifactFile = ArtifactFileFactory.buildChunked(credentials)
-            ArtifactFileRecordingListener(artifactFile, fileConsumer, saveType, scheduler)
+            val clientMouseArtifactFile = ArtifactFileFactory.buildChunked(credentials)
+            ArtifactFileRecordingListener(artifactFile, clientMouseArtifactFile, fileConsumer, saveType, scheduler)
         }
         val streamId = "$projectId:$repoName:$name"
         val stream = ClientStream(name, streamId, mediaProperties.maxRecordFileSize.toBytes(), recordingListener)

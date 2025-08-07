@@ -35,12 +35,10 @@ class TranscodeService(
     /**
      * 视频转码
      * */
-    fun transcode(artifactInfo: ArtifactInfo, transcodeConfig: TranscodeConfig, userId: String) {
-        logger.info("Add transcode task for artifact[$artifactInfo]")
-        val transcodeParam = generateTranscodeParam(artifactInfo, transcodeConfig, userId)
-        logger.info("Add transcode task for artifact[$artifactInfo] param[$transcodeParam]")
+    fun transcode(artifactInfos: List<ArtifactInfo>, transcodeConfig: TranscodeConfig, userId: String) {
+        val transcodeParam = artifactInfos.map { generateTranscodeParam(it, transcodeConfig, userId) }
+        logger.info("Add transcode task for artifact[$artifactInfos] param[$transcodeParam]")
         TranscodeHelper.addTask(transcodeConfig.jobId, transcodeParam)
-        logger.info("Add transcode task for artifact[$artifactInfo]")
     }
 
     /**
@@ -133,7 +131,7 @@ class TranscodeService(
         val outputToken = createAccessToken(output, userId)
         val downloadUrl = "$host/media/user/transcode/download$input?token=$inputToken"
         val callbackUrl = "$host/media/user/transcode/upload$output?token=$outputToken" +
-            "&origin=${input.getArtifactFullPath()}&originToken=$inputToken"
+                "&origin=${input.getArtifactFullPath()}&originToken=$inputToken"
         return Pair(downloadUrl, callbackUrl)
     }
 
