@@ -22,7 +22,7 @@ class ArtifactFileRecordingListener(
 
     override fun init(name: String) {
         this.name = "$name.${type.name.lowercase(Locale.getDefault())}"
-        this.clientMouseName = "CM_${this.name}"
+        this.clientMouseName = "CM_${name}.${MediaType.JSON.name.lowercase(Locale.getDefault())}"
     }
 
     override fun handler(packet: StreamPacket) {

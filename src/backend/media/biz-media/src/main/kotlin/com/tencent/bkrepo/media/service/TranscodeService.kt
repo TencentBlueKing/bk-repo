@@ -3,6 +3,7 @@ package com.tencent.bkrepo.media.service
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -37,7 +38,7 @@ class TranscodeService(
      * */
     fun transcode(artifactInfos: List<ArtifactInfo>, transcodeConfig: TranscodeConfig, userId: String) {
         val transcodeParam = artifactInfos.map { generateTranscodeParam(it, transcodeConfig, userId) }
-        logger.info("Add transcode task for artifact[$artifactInfos] param[$transcodeParam]")
+        logger.info("Add transcode task for artifact[$artifactInfos] param[${transcodeParam.toJsonString()}]")
         TranscodeHelper.addTask(transcodeConfig.jobId, transcodeParam)
     }
 
