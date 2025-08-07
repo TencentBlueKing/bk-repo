@@ -44,13 +44,16 @@ import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.executor.FederationFileThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
 import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterArtifactReplicationHandler
 import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
+import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -75,12 +78,15 @@ class FederationReplicator(
     private val artifactReplicationHandler: ClusterArtifactReplicationHandler,
     private val replicationProperties: ReplicationProperties,
     private val federationRepositoryService: FederationRepositoryService,
+    private val replicaRecordService: ReplicaRecordService,
 ) : Replicator {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
     private var version: String = DEFAULT_VERSION
 
     private val remoteRepoCache = ConcurrentHashMap<String, RepositoryDetail>()
+
+    private val executor = FederationFileThreadPoolExecutor.instance
 
     override fun checkVersion(context: ReplicaContext) {
         with(context) {
@@ -187,25 +193,69 @@ class FederationReplicator(
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
+            // 1. 同步节点
+            if (!syncNodeToFederatedCluster(this, node)) return false
+
+            // 2. 同步文件
+            return if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
+                // 异步执行
+                executor.execute {
+                    try {
+                        pushFileToFederatedCluster(this, node)
+                        completeFileReplicaRecord(context)
+                    } catch (throwable: Throwable) {
+                        logger.error(
+                            "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
+                                "${node.projectId}|${node.repoName} failed, error is" +
+                                " ${Throwables.getStackTraceAsString(throwable)}"
+                        )
+                        completeFileReplicaRecord(context, false)
+                    }
+                }
+                true
+            } else {
+                // 同步执行
+                var result: Boolean = true
+                try {
+                    pushFileToFederatedCluster(this, node)
+                    completeFileReplicaRecord(context)
+                } catch (throwable: Throwable) {
+                    logger.error(
+                        "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
+                            "${node.projectId}|${node.repoName} failed, error is" +
+                            " ${Throwables.getStackTraceAsString(throwable)}"
+                    )
+                    completeFileReplicaRecord(context, false)
+                    result = false
+                }
+                return result
+            }
+        }
+    }
+
+    private fun completeFileReplicaRecord(context: ReplicaContext, success: Boolean = true) {
+        with(context) {
+            if (task.record == false || recordDetailId.isNullOrEmpty()) return
+            replicaRecordService.updateRecordDetailProgress(recordDetailId!!, success)
+        }
+    }
+
+    /**
+     * 推送文件到联邦集群
+     */
+    private fun pushFileToFederatedCluster(context: ReplicaContext, node: NodeInfo): Boolean {
+        with(context) {
             var type: String = replicationProperties.pushType
             var downGrade = false
             val remoteRepositoryType = context.remoteRepoType
-            val nodeCreateRequest = buildNodeCreateRequest(this, node) ?: return false
-            logger.info(
-                "The node [${node.fullPath}] will be pushed to the federated cluster server!"
-            )
-            // 1. 同步节点信息
-            artifactReplicaClient!!.replicaNodeCreateRequest(nodeCreateRequest)
 
-            // 2. 同步文件元数据
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
+            return retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
                 if (blobReplicaClient!!.check(
                         node.sha256!!,
                         remoteRepo?.storageCredentials?.key,
                         remoteRepositoryType
                     ).data != true
                 ) {
-                    // 1. 同步文件数据
                     logger.info(
                         "The file [${node.fullPath}] with sha256 [${node.sha256}] " +
                             "will be pushed to the federated server ${cluster.name}, try the $retry time!"
@@ -246,9 +296,9 @@ class FederationReplicator(
 
                 // 3. 通过文件传输完成标识
                 artifactReplicaClient!!.replicaMetadataSaveRequest(
-                    buildMetadataSaveRequest(nodeCreateRequest, localProjectId, localRepoName, task.name)
+                    buildMetadataSaveRequest(context, node, task.name)
                 )
-                return true
+                true
             }
         }
     }
@@ -299,17 +349,101 @@ class FederationReplicator(
     }
 
     private fun buildNodeCreateRequest(context: ReplicaContext, node: NodeInfo): NodeCreateRequest? {
+        return buildBaseRequest(context, node)?.let { baseRequest ->
+            NodeCreateRequest(
+                projectId = baseRequest.projectId,
+                repoName = baseRequest.repoName,
+                fullPath = baseRequest.fullPath,
+                folder = baseRequest.folder,
+                overwrite = baseRequest.overwrite,
+                size = baseRequest.size,
+                sha256 = baseRequest.sha256,
+                md5 = baseRequest.md5,
+                nodeMetadata = baseRequest.nodeMetadata,
+                operator = baseRequest.operator,
+                createdBy = baseRequest.createdBy,
+                createdDate = baseRequest.createdDate,
+                lastModifiedBy = baseRequest.lastModifiedBy,
+                lastModifiedDate = baseRequest.lastModifiedDate,
+                source = baseRequest.source
+            )
+        }
+    }
+
+    private fun buildDeletedNodeReplicaRequest(
+        context: ReplicaContext, node: NodeInfo,
+    ): DeletedNodeReplicationRequest? {
+        return buildBaseRequest(context, node)?.let { baseRequest ->
+            DeletedNodeReplicationRequest(
+                projectId = baseRequest.projectId,
+                repoName = baseRequest.repoName,
+                fullPath = baseRequest.fullPath,
+                folder = baseRequest.folder,
+                overwrite = baseRequest.overwrite,
+                size = baseRequest.size,
+                sha256 = baseRequest.sha256,
+                md5 = baseRequest.md5,
+                nodeMetadata = baseRequest.nodeMetadata,
+                operator = baseRequest.operator,
+                createdBy = baseRequest.createdBy,
+                createdDate = baseRequest.createdDate,
+                lastModifiedBy = baseRequest.lastModifiedBy,
+                lastModifiedDate = baseRequest.lastModifiedDate,
+                source = baseRequest.source,
+                deleted = LocalDateTime.parse(node.deleted, DateTimeFormatter.ISO_DATE_TIME)
+            )
+        }
+    }
+
+    private fun syncNodeToFederatedCluster(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
-            // 外部集群仓库没有project/repoName
+            val request = if (node.deleted != null) {
+                buildDeletedNodeReplicaRequest(this, node)?.also {
+                    logger.info("The deleted node [${node.fullPath}] will be pushed to the federated cluster server!")
+                }
+            } else {
+                buildNodeCreateRequest(this, node)?.also {
+                    logger.info("The node [${node.fullPath}] will be pushed to the federated cluster server!")
+                }
+            } ?: return false
+
+            if (node.deleted != null) {
+                artifactReplicaClient!!.replicaDeletedNodeReplicationRequest(request as DeletedNodeReplicationRequest)
+            } else {
+                artifactReplicaClient!!.replicaNodeCreateRequest(request as NodeCreateRequest)
+            }
+            return true
+        }
+    }
+
+    private data class BaseRequest(
+        val projectId: String,
+        val repoName: String,
+        val fullPath: String,
+        val folder: Boolean,
+        val overwrite: Boolean,
+        val size: Long?,
+        val sha256: String,
+        val md5: String,
+        val nodeMetadata: List<MetadataModel>,
+        val operator: String,
+        val createdBy: String,
+        val createdDate: LocalDateTime,
+        val lastModifiedBy: String,
+        val lastModifiedDate: LocalDateTime,
+        val source: String,
+    )
+
+    private fun buildBaseRequest(context: ReplicaContext, node: NodeInfo): BaseRequest? {
+        with(context) {
             if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return null
-            // 查询元数据
             val metadata = if (task.setting.includeMetadata) {
                 node.nodeMetadata ?: emptyList()
             } else {
                 emptyList()
             }
             val updatedMetadata = metadata.plus(MetadataModel(FEDERATED, false, true))
-            return NodeCreateRequest(
+            return BaseRequest(
                 projectId = remoteProjectId,
                 repoName = remoteRepoName,
                 fullPath = node.fullPath,
@@ -331,18 +465,17 @@ class FederationReplicator(
     }
 
     private fun buildMetadataSaveRequest(
-        request: NodeCreateRequest,
-        projectId: String,
-        repoName: String,
+        context: ReplicaContext,
+        node: NodeInfo,
         taskName: String,
     ): MetadataSaveRequest {
         return MetadataSaveRequest(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            fullPath = request.fullPath,
+            projectId = context.remoteProjectId!!,
+            repoName = context.remoteRepoName!!,
+            fullPath = node.fullPath,
             nodeMetadata = listOf(MetadataModel(FEDERATED, true, true)),
-            operator = request.operator,
-            source = getCurrentClusterName(projectId, repoName, taskName)
+            operator = node.createdBy,
+            source = getCurrentClusterName(node.projectId, node.repoName, taskName)
         )
     }
 

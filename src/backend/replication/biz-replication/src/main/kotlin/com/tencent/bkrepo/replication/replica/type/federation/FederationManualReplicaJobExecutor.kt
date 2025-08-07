@@ -27,44 +27,62 @@
 
 package com.tencent.bkrepo.replication.replica.type.federation
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
+import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
-import com.tencent.bkrepo.replication.replica.type.event.CommonBasedReplicaJobExecutor
+import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.time.LocalDateTime
 
 /**
- * 基于事件消息的实时同步逻辑实现类
+ * 手动调用仅执行一次的任务
+ * 仅针对remote类型节点同步
  */
-@Suppress("TooGenericExceptionCaught")
 @Component
-class FederationBasedReplicaJobExecutor(
+class FederationManualReplicaJobExecutor(
     clusterNodeService: ClusterNodeService,
     localDataManager: LocalDataManager,
     replicaService: FederationBasedReplicaService,
     replicationProperties: ReplicationProperties,
-    replicaRecordService: ReplicaRecordService,
-) : CommonBasedReplicaJobExecutor(
-    clusterNodeService, localDataManager, replicaService, replicationProperties, replicaRecordService
-) {
+    private val replicaRecordService: ReplicaRecordService,
+) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService, replicationProperties) {
 
     /**
-     * 判断分发配置内容是否与待分发事件匹配, 联邦仓库分发只支持仓库类型
+     * 执行仅执行一次的同步任务，仅限remote类型节点同步
      */
-    override fun replicaObjectCheck(task: ReplicaTaskDetail, event: ArtifactEvent): Boolean {
-        if (!task.task.enabled) return false
-        return when (task.task.replicaObjectType) {
-            ReplicaObjectType.REPOSITORY -> true
-            else -> false
+    fun execute(taskDetail: ReplicaTaskDetail) {
+        logger.info("The federation full sync task[${taskDetail.task.key}] will be manually executed.")
+        var replicaOverview: ReplicaOverview? = null
+        val taskRecord = replicaRecordService.findOrCreateLatestRecord(taskDetail.task.key)
+            .copy(startTime = LocalDateTime.now())
+        try {
+            val result = taskDetail.task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
+            replicaOverview = getResultsSummary(result).replicaOverview
+            taskRecord.replicaOverview?.let { overview ->
+                replicaOverview.success += overview.success
+                replicaOverview.failed += overview.failed
+                replicaOverview.conflict += overview.conflict
+            }
+            replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
+        } catch (ignore: Exception) {
+            // 记录异常
+            logger.error(
+                "Federation full sync task[${taskDetail.task.key}]," +
+                    " record[${taskRecord.id}] failed: $ignore", ignore
+            )
+        } finally {
+            replicaOverview?.let {
+                replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
+            }
+            logger.info("Federation full sync task[${taskDetail.task.key}], record[${taskRecord.id}] finished")
         }
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(FederationBasedReplicaJobExecutor::class.java)
+        private val logger = LoggerFactory.getLogger(FederationManualReplicaJobExecutor::class.java)
     }
 }

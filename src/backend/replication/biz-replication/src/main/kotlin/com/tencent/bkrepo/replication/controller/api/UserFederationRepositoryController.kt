@@ -92,4 +92,17 @@ class UserFederationRepositoryController(
             federationRepositoryService.listFederationRepository(projectId, repoName, federationId)
         )
     }
+
+
+    @Operation(summary = "联邦仓库fullsync")
+    @GetMapping("/fullSync/{projectId}/{repoName}")
+    fun federatedRepositoryFullSync(
+        @PathVariable("projectId") projectId: String,
+        @PathVariable("repoName") repoName: String,
+        @RequestParam("federationId") federationId: String,
+    ): Response<Void> {
+        permissionManager.checkRepoPermission(PermissionAction.WRITE, projectId, repoName)
+        federationRepositoryService.fullSyncFederationRepository(projectId, repoName, federationId)
+        return ResponseBuilder.success()
+    }
 }

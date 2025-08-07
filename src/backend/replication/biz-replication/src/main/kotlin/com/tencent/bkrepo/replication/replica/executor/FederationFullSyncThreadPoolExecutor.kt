@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent. All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,17 +25,31 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// val testapi by configurations
+package com.tencent.bkrepo.replication.replica.executor
 
-dependencies {
-    api(project(":replication:api-replication"))
-    api(project(":repository:api-repository"))
-    api(project(":common:common-job"))
-    api(project(":common:common-fdtp"))
-    api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-lock"))
-    implementation("org.quartz-scheduler:quartz")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
-    testImplementation("org.mockito.kotlin:mockito-kotlin")
-    testImplementation("io.mockk:mockk")
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+
+/**
+ * 用于联邦仓库全量执行分发到对应执行器的线程池
+ */
+object FederationFullSyncThreadPoolExecutor {
+    /**
+     * 线程池实例
+     */
+    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
+
+    /**
+     * 创建线程池
+     */
+    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("fullSync-worker-%d").build()
+        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
+        return ThreadPoolExecutor(
+            corePoolSize, corePoolSize * 2, 60, TimeUnit.SECONDS,
+            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
+        ).apply { this.allowCoreThreadTimeOut(true) }
+    }
 }
