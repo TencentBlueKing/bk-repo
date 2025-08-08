@@ -56,7 +56,7 @@ class WebsocketConfiguration(
     private val websocketService: WebsocketService,
     private val jwtAuthProperties: JwtAuthProperties,
     private val authenticationManager: AuthenticationManager,
-    private val webSocketMetrics: WebSocketMetrics
+    private val webSocketMetrics: WebSocketMetrics,
 ) : WebSocketMessageBrokerConfigurer {
 
     override fun configureMessageBroker(config: MessageBrokerRegistry) {
