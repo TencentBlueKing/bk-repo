@@ -9,7 +9,6 @@ import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ReplicaRecordCleanupJobProperties
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -26,7 +25,6 @@ import kotlin.reflect.KClass
  * 根据分发计划设置的 保留天数，历史数据默认为 30 天
  */
 @Component
-@EnableConfigurationProperties(ReplicaRecordCleanupJobProperties::class)
 class ReplicaRecordCleanupJob(
     properties: ReplicaRecordCleanupJobProperties,
 ) : DefaultContextMongoDbJob<ReplicaRecordCleanupJob.ReplicaTask>(properties) {

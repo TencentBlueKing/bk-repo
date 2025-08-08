@@ -36,8 +36,8 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
+import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -45,7 +45,7 @@ import java.time.LocalDateTime
 
 @DisplayName("空闲节点归档Job测试")
 @DataMongoTest
-@EnableConfigurationProperties(IdleNodeArchiveJobProperties::class)
+@Import(IdleNodeArchiveJobProperties::class)
 @TestMethodOrder(MethodOrderer.MethodName::class)
 class IdleNodeArchiveJobTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,

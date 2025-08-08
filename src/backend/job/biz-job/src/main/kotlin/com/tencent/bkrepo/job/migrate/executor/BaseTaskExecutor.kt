@@ -138,7 +138,7 @@ abstract class BaseTaskExecutor(
                         command.run()
                         // 更新任务状态
                         if (state != dstState) {
-                            migrateRepoStorageTaskDao.updateState(id, state, dstState, lastModifiedDate)
+                            migrateRepoStorageTaskDao.updateState(id!!, state, dstState, lastModifiedDate)
                             val elapsed = HumanReadable.time(System.nanoTime() - startNanoTime)
                             logger.info("$state task[$projectId/$repoName] success, elapsed[$elapsed]")
                         }
@@ -146,7 +146,7 @@ abstract class BaseTaskExecutor(
                         val elapsed = HumanReadable.time(System.nanoTime() - startNanoTime)
                         logger.error("$state task[$projectId/$repoName] failed, elapsed[$elapsed]", exception)
                     } finally {
-                        executingTaskRecorder.remove(id)
+                        executingTaskRecorder.remove(id!!)
                     }
                 }
             } catch (e: RejectedExecutionException) {

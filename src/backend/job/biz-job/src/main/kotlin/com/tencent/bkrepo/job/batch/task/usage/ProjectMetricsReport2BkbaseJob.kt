@@ -44,7 +44,6 @@ import com.tencent.bkrepo.job.pojo.project.TProjectMetricsDailyRecord
 import com.tencent.bkrepo.job.pojo.project.TRepoMetrics
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -60,7 +59,6 @@ import kotlin.reflect.KClass
  * 导出项目运营数据到bkbase
  */
 @Component
-@EnableConfigurationProperties(ProjectMetricsReport2BkbaseJobProperties::class)
 class ProjectMetricsReport2BkbaseJob(
     val properties: ProjectMetricsReport2BkbaseJobProperties,
     val messageSupplier: MessageSupplier

@@ -42,6 +42,7 @@ class PolarisUtil(
         if (storageProperties.polarisAddresses.isNotEmpty()) {
             configuration = ConfigurationImpl()
             configuration.setDefault()
+            configuration.global.api.isReportEnable = false
             configuration.global.statReporter.isEnable = false
             configuration.global.traceReporter.isEnable = false
             configuration.global.serverConnector.addresses = storageProperties.polarisAddresses

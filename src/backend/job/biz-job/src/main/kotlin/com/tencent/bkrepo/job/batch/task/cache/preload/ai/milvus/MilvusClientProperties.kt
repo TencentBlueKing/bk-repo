@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("spring.ai.vectorstore.milvus.client")
-data class MilvusClientProperties(
+class MilvusClientProperties(
     var host: String = "localhost",
     var port: Int = 19530,
     var uri: String? = null,

@@ -30,8 +30,10 @@ package com.tencent.bkrepo.job.config.properties
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 
+@Component
 @ConfigurationProperties(value = "job.idle-node-archive")
 class IdleNodeArchiveJobProperties(
     override var enabled: Boolean = false,

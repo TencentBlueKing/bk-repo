@@ -31,14 +31,12 @@ import com.tencent.bkrepo.common.artifact.cache.service.impl.ArtifactAccessRecor
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ArtifactAccessRecordCleanupJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 
 /**
  * 制品访问记录清理
  */
 @Component
-@EnableConfigurationProperties(ArtifactAccessRecordCleanupJobProperties::class)
 class ArtifactAccessRecordCleanupJob(
     properties: ArtifactAccessRecordCleanupJobProperties,
     private val recorder: ArtifactAccessRecorder?,

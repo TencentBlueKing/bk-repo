@@ -32,11 +32,9 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.MigrateRepoStorageJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 
 @Component
-@EnableConfigurationProperties(MigrateRepoStorageJobProperties::class)
 class MigrateRepoStorageJob(
     properties: MigrateRepoStorageJobProperties,
     private val migrateRepoStorageService: MigrateRepoStorageService

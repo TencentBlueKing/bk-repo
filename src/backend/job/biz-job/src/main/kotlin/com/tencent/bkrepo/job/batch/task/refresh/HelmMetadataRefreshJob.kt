@@ -38,7 +38,6 @@ import com.tencent.bkrepo.job.TYPE
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.HelmMetadataRefreshJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
@@ -49,7 +48,6 @@ import kotlin.reflect.KClass
  * 读取helm仓库对应节点的chart.yaml信息写入对应节点元数据中，主要用于历史数据刷新
  */
 @Component
-@EnableConfigurationProperties(HelmMetadataRefreshJobProperties::class)
 class HelmMetadataRefreshJob(
     private val properties: HelmMetadataRefreshJobProperties,
     private val helmClient: HelmClient

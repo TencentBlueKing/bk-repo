@@ -38,7 +38,6 @@ import com.tencent.bkrepo.job.TYPE
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.HelmReplicationRefreshJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -51,7 +50,6 @@ import kotlin.reflect.KClass
  * 当没有事件的场景下， 同步helm仓库后用于index文件刷新
  */
 @Component
-@EnableConfigurationProperties(HelmReplicationRefreshJobProperties::class)
 class HelmReplicationRefreshJob(
     private val properties: HelmReplicationRefreshJobProperties,
     private val helmClient: HelmClient

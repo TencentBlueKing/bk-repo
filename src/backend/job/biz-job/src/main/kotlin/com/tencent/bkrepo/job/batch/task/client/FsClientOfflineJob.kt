@@ -33,7 +33,6 @@ import com.tencent.bkrepo.job.config.properties.FsClientOfflineProperties
 import com.tencent.bkrepo.job.pojo.client.Client
 import com.tencent.bkrepo.job.pojo.client.DailyClient
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -43,7 +42,6 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
 @Component
-@EnableConfigurationProperties(FsClientOfflineProperties::class)
 class FsClientOfflineJob(
     properties: FsClientOfflineProperties,
     private val mongoTemplate: MongoTemplate

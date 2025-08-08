@@ -29,7 +29,9 @@ package com.tencent.bkrepo.job.batch.task.project
 
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(value = "job.bkci-project-metadata-sync")
 class BkciProjectMetadataSyncJobProperties(
     override var enabled: Boolean = false,

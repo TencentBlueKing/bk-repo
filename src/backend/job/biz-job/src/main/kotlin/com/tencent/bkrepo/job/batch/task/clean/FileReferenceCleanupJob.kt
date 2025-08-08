@@ -53,7 +53,6 @@ import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobPropertie
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.job.exception.RepoMigratingException
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -70,7 +69,6 @@ import kotlin.reflect.KClass
  * 清理引用=0的文件
  */
 @Component
-@EnableConfigurationProperties(FileReferenceCleanupJobProperties::class)
 @Suppress("UnstableApiUsage")
 class FileReferenceCleanupJob(
     private val storageService: StorageService,

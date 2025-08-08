@@ -30,15 +30,10 @@ package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClient
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus.MilvusClientProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-@EnableConfigurationProperties(
-    AiProperties::class,
-    MilvusClientProperties::class
-)
 @ConditionalOnProperty("job.artifact-access-log-embedding.enabled")
 class SpringAiConfiguration {
 

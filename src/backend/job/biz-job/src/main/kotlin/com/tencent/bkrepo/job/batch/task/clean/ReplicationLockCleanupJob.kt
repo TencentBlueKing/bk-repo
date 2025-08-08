@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ReplicationLockCleanupJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
@@ -46,7 +45,6 @@ import java.time.LocalDateTime
  * 清除replication服务生成的已使用完成的数据库锁
  */
 @Component
-@EnableConfigurationProperties(ReplicationLockCleanupJobProperties::class)
 class ReplicationLockCleanupJob(
     properties: ReplicationLockCleanupJobProperties,
     private val mongoTemplate: MongoTemplate

@@ -32,14 +32,12 @@ import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanServi
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ArtifactPreloadPlanExecuteJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 
 /**
  * 执行预加载计划将制品加载到缓存中
  */
 @Component
-@EnableConfigurationProperties(ArtifactPreloadPlanExecuteJobProperties::class)
 class ArtifactPreloadPlanExecuteJob(
     properties: ArtifactPreloadPlanExecuteJobProperties,
     private val preloadPlanService: ArtifactPreloadPlanService?,

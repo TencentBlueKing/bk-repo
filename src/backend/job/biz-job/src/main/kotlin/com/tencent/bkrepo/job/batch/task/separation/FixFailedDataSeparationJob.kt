@@ -54,7 +54,6 @@ import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -66,7 +65,6 @@ import java.time.Duration
  * 根据配置进行数据降冷
  */
 @Component
-@EnableConfigurationProperties(FixFailedDataSeparationJobProperties::class)
 class FixFailedDataSeparationJob(
     val properties: FixFailedDataSeparationJobProperties,
     private val mongoTemplate: MongoTemplate,

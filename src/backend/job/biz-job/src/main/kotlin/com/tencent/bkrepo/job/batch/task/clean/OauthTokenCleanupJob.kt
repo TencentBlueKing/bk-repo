@@ -6,7 +6,6 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.OauthTokenCleanupJobProperties
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -19,7 +18,6 @@ import kotlin.reflect.KClass
 
 
 @Component
-@EnableConfigurationProperties(OauthTokenCleanupJobProperties::class)
 class OauthTokenCleanupJob(
     private val properties: OauthTokenCleanupJobProperties
 ) : DefaultContextMongoDbJob<OauthTokenCleanupJob.OauthToken>(properties) {

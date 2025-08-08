@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(value = "job.artifact-cleanup")
-data class ArtifactCleanupJobProperties(
+class ArtifactCleanupJobProperties(
     override var enabled: Boolean = false,
     // 如配置项目，则不清理该项目下的仓库
     var projectList: List<String> = listOf(),

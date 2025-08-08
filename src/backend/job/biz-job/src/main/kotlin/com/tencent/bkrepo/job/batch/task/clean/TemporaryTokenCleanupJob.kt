@@ -30,7 +30,6 @@ package com.tencent.bkrepo.job.batch.task.clean
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.TemporaryTokenCleanupJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -43,7 +42,6 @@ import java.time.LocalDateTime
  * Temporary token 清理任务
  */
 @Component
-@EnableConfigurationProperties(TemporaryTokenCleanupJobProperties::class)
 class TemporaryTokenCleanupJob(
     private val properties: TemporaryTokenCleanupJobProperties,
     private val mongoTemplate: MongoTemplate

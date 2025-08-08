@@ -30,8 +30,10 @@ package com.tencent.bkrepo.job.config.properties
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.scheduling.annotation.Scheduled
+import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
+@Component
 @ConfigurationProperties("job.node-report")
 class NodeReport2BkbaseJobProperties(
     override var enabled: Boolean = false,

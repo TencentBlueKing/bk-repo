@@ -28,7 +28,9 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.storage-cache-index-sync")
 class StorageCacheIndexSyncJobProperties(
     override var cron: String = "0 0 6 * * ?",

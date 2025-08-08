@@ -28,7 +28,9 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.artifact-preload-plan-execute")
 class ArtifactPreloadPlanExecuteJobProperties(
     override var cron: String = "0 0/1 * * * ?",

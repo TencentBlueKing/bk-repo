@@ -32,10 +32,12 @@ import com.tencent.bkrepo.common.artifact.constant.LOG
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.constant.REPORT
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
 /**
  * 无变更项目空目录清理任务配置项
  */
+@Component
 @ConfigurationProperties("job.inactive-project-empty-folder-cleanup")
 class InactiveProjectEmptyFolderCleanupJobProperties(
     override var enabled: Boolean = true,

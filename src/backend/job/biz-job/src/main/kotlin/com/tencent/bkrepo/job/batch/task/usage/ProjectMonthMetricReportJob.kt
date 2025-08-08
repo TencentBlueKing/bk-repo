@@ -42,7 +42,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -57,7 +56,6 @@ import java.util.concurrent.TimeUnit
  * 上报每月用量
  */
 @Component
-@EnableConfigurationProperties(ProjectMonthMetricReportJobProperties::class)
 class ProjectMonthMetricReportJob(
     val properties: ProjectMonthMetricReportJobProperties,
     private val mongoTemplate: MongoTemplate

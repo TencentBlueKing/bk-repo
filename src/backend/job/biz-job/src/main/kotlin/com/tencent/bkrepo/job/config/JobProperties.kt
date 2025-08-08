@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job")
-data class JobProperties(
+class JobProperties(
     /**
      * 节点亲和的任务集合，未配置时节点可调度任意任务，配置后节点将只能执行配置的任务
      * key为节点IP，value为任务名称集合

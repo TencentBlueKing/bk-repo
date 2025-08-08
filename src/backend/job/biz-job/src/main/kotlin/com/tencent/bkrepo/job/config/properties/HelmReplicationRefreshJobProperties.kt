@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(value = "job.helm-replication-refresh")
-data class HelmReplicationRefreshJobProperties(
+class HelmReplicationRefreshJobProperties(
     override var enabled: Boolean = false,
     override var fixedDelay: Long = 60 * 1000L,
     override var initialDelay: Long = 60 * 1000L
