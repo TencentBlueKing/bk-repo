@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.analyst.service
 
 import com.tencent.bkrepo.analyst.pojo.ScanTask
+import com.tencent.bkrepo.analyst.pojo.ScanTaskWaitingTime
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.analyst.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.analyst.pojo.request.FileScanResultOverviewRequest
@@ -155,4 +156,9 @@ interface ScanTaskService {
      * @return 制品扫描结果预览信息
      */
     fun subtaskLicenseOverview(subtaskId: String): FileLicensesResultOverview
+
+    /**
+     * 获取完成扫描任务的预估等待时间
+     */
+    fun taskWaitTime(taskId: String): ScanTaskWaitingTime
 }

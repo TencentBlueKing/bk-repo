@@ -55,14 +55,14 @@ object HumanReadable {
         return size(speed.toLong()) + "/s"
     }
 
-    fun time(nano: Long): String {
+    fun time(nano: Long, format: String = "%.4g"): String {
         val unit = chooseUnit(nano)
         val value = nano.toDouble() / TimeUnit.NANOSECONDS.convert(1, unit)
-        return String.format(Locale.ROOT, "%.4g", value) + " " + abbreviate(unit)
+        return String.format(Locale.ROOT, format, value) + " " + abbreviate(unit)
     }
 
-    fun time(time: Long, unit: TimeUnit): String {
-        return time(unit.toNanos(time))
+    fun time(time: Long, unit: TimeUnit, format: String = "%.4g"): String {
+        return time(unit.toNanos(time), format)
     }
 
     private fun chooseUnit(nano: Long): TimeUnit {

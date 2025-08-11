@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.analyst.api
 
 import com.tencent.bkrepo.analyst.pojo.ScanTask
+import com.tencent.bkrepo.analyst.pojo.ScanTaskWaitingTime
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.pojo.license.SpdxLicenseInfo
 import com.tencent.bkrepo.analyst.pojo.request.ReportResultRequest
@@ -112,4 +113,10 @@ interface ScanClient {
      * */
     @GetMapping("/task/{taskId}")
     fun getTask(@PathVariable taskId: String): Response<ScanTask>
+
+    /**
+     * 查询task完成预估等待时间
+     * */
+    @GetMapping("/task/{taskId}/waitingTime")
+    fun getTaskWaitingTime(@PathVariable taskId: String): Response<ScanTaskWaitingTime>
 }

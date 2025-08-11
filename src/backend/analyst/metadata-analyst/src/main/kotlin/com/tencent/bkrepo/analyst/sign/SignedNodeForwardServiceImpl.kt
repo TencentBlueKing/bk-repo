@@ -28,11 +28,14 @@
 package com.tencent.bkrepo.analyst.sign
 
 import com.tencent.bkrepo.analyst.api.ScanClient
+import com.tencent.bkrepo.analyst.pojo.ScanTaskWaitingTime
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
@@ -59,6 +62,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
 import java.util.Base64
+import java.util.concurrent.TimeUnit
 
 class SignedNodeForwardServiceImpl(
     private val signProperties: SignProperties,
@@ -84,16 +88,44 @@ class SignedNodeForwardServiceImpl(
             createRepoIfNotExist(projectId)
             val forwardNode = nodeService.getNodeDetail(
                 ArtifactInfo(node.projectId, signProperties.signedRepoName, traceableApkPath)
-            ) ?: getOldForwardNode(traceableApkPath, config)
-            forwardNode ?: let {
-                createApkDefenderTaskIfNot(node, config, userId)
-                throw ErrorCodeException(
-                    messageCode = SignedNodeForwardMessageCode.SIGNED_NODE_NOT_FOUND,
-                    status = HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS,
-                )
-            }
+            ) ?: getOldForwardNode(traceableApkPath, config) ?: throw throwException(node, config, userId)
+            logger.info("forward node: ${forwardNode.fullPath}, ${forwardNode.createdDate}")
             clearTask(node, userId)
             return forwardNode
+        }
+    }
+
+    private fun throwException(
+        node: NodeDetail,
+        config: SignConfig,
+        userId: String
+    ): ErrorCodeException {
+        val waitingTime = try {
+            createApkDefenderTaskIfNot(node, config, userId)
+        } catch (e: Exception) {
+            logger.warn("get signed task waiting time failed: $e")
+            return ErrorCodeException(
+                messageCode = SignedNodeForwardMessageCode.SIGN_TASK_EXECUTING,
+                StringPool.UNKNOWN,
+                StringPool.UNKNOWN,
+                status = HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS,
+            )
+        }
+        return if (waitingTime.order > 0) {
+            ErrorCodeException(
+                messageCode = SignedNodeForwardMessageCode.SIGN_TASK_IN_QUEUE,
+                waitingTime.order,
+                HumanReadable.time(waitingTime.waitingTime, TimeUnit.SECONDS, TIME_FORMAT),
+                waitingTime.expireDay,
+                status = HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS,
+            )
+        } else {
+            ErrorCodeException(
+                messageCode = SignedNodeForwardMessageCode.SIGN_TASK_EXECUTING,
+                HumanReadable.time(waitingTime.waitingTime, TimeUnit.SECONDS, TIME_FORMAT),
+                waitingTime.expireDay,
+                status = HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS,
+            )
         }
     }
 
@@ -171,7 +203,7 @@ class SignedNodeForwardServiceImpl(
     /**
      * 创建apk加固任务，如果已存在任务，则不创建
      * */
-    private fun createApkDefenderTaskIfNot(node: NodeDetail, config: SignConfig, userId: String) {
+    private fun createApkDefenderTaskIfNot(node: NodeDetail, config: SignConfig, userId: String): ScanTaskWaitingTime {
         with(node) {
             val key = getKey(userId)
             val metadata = metadataService.listMetadata(projectId, repoName, fullPath)
@@ -179,7 +211,7 @@ class SignedNodeForwardServiceImpl(
                 val task = scanClient.getTask(it.toString()).data ?: error("Request error")
                 if (task.scanning > 0) {
                     logger.info("User[$userId]'s apk defender task[$it] in process.")
-                    return
+                    return scanClient.getTaskWaitingTime(task.taskId).data!!
                 }
             }
             val rules = ArrayList<Rule>()
@@ -216,6 +248,8 @@ class SignedNodeForwardServiceImpl(
             )
             metadataService.saveMetadata(createMetadataRequest)
             logger.info("Save task metadata successful.")
+            Thread.sleep(TimeUnit.SECONDS.toMillis(3))
+            return scanClient.getTaskWaitingTime(task.taskId).data!!
         }
     }
 
@@ -225,5 +259,6 @@ class SignedNodeForwardServiceImpl(
 
     companion object {
         private val logger = LoggerFactory.getLogger(SignedNodeForwardServiceImpl::class.java)
+        private const val TIME_FORMAT = "%.2g"
     }
 }
