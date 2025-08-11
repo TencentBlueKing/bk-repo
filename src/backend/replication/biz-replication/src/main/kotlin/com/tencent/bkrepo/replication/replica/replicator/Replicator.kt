@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.replicator
 
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -65,6 +66,14 @@ interface Replicator {
         context: ReplicaContext,
         packageSummary: PackageSummary,
         packageVersion: PackageVersion
+    ): Boolean
+
+    /**
+     * 删除package
+     */
+    fun replicaDeletedPackage(
+        context: ReplicaContext,
+        packageVersionDeleteSummary: PackageVersionDeleteSummary
     ): Boolean
 
     /**

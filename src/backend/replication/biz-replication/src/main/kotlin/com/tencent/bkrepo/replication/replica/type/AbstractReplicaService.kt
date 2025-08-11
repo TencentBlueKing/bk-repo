@@ -199,6 +199,28 @@ abstract class AbstractReplicaService(
     }
 
     /**
+     * 同步删除package数据
+     */
+    protected fun replicaByDeletedPackage(replicaContext: ReplicaContext, constraint: PackageConstraint) {
+        with(replicaContext) {
+            try {
+                // 查询本地包信息
+                val packageSummary = localDataManager.findPackageByKey(
+                    projectId = localProjectId,
+                    repoName = taskObject.localRepoName,
+                    packageKey = constraint.packageKey!!
+                )
+                replicaByPackage(this, packageSummary, constraint.versions)
+                replicaDeletedNode(this, nodeInfo)
+            } catch (throwable: Throwable) {
+                logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
+                setRunOnceTaskFailedRecordMetrics(this, throwable, pathConstraint = constraint)
+                throw throwable
+            }
+        }
+    }
+
+    /**
      * 同步删除节点数据
      */
     protected fun replicaByDeletedNode(replicaContext: ReplicaContext, constraint: PathConstraint) {
@@ -324,11 +346,7 @@ abstract class AbstractReplicaService(
                 artifactName = node.fullPath,
             )
             runActionAndPrintLog(replicaExecutionContext, record) {
-                when (replicaExecutionContext.detail.conflictStrategy) {
-                    ConflictStrategy.SKIP -> false
-                    ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
-                    else -> replicaContext.replicator.replicaDeletedNode(replicaContext, node)
-                }
+                replicaContext.replicator.replicaDeletedNode(replicaContext, node)
             }
         }
     }
@@ -354,6 +372,28 @@ abstract class AbstractReplicaService(
                     ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
                     else -> replicaContext.replicator.replicaFile(replicaContext, node)
                 }
+            }
+        }
+    }
+
+
+    /**
+     * 同步删除package
+     */
+    private fun replicaDeletedPackage(
+        replicaContext: ReplicaContext,
+        packageSummary: PackageSummary,
+        versionNames: List<String>? = null,
+    ) {
+        with(replicaContext) {
+            val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
+            val record = ReplicationRecord(path = node.fullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = node.fullPath,
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicaContext.replicator.replicaDeletedPackage(replicaContext, node)
             }
         }
     }
@@ -413,6 +453,31 @@ abstract class AbstractReplicaService(
                 size = it.size
             )
             replicaPackageVersion(replicaExecutionContext, packageSummary, it)
+        }
+    }
+
+    /**
+     * 同步删除的版本
+     */
+    private fun replicaDeletedPackageVersion(
+        context: ReplicaExecutionContext,
+        packageSummary: PackageSummary,
+        version: PackageVersion,
+    ) {
+        with(context) {
+            val record = ReplicationRecord(
+                packageName = packageSummary.name,
+                version = version.name,
+                size = version.size.toString()
+            )
+            val fullPath = "${packageSummary.name}-${version.name}"
+            runActionAndPrintLog(context, record) {
+                when (context.detail.conflictStrategy) {
+                    ConflictStrategy.SKIP -> false
+                    ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
+                    else -> replicator.replicaDeletedPackage(replicaContext, packageSummary, version)
+                }
+            }
         }
     }
 

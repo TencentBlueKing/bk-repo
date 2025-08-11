@@ -54,6 +54,9 @@ class FederationArtifactEventConsumer(
         return setOf(
             EventType.NODE_CREATED,
             EventType.NODE_DELETED,
+            EventType.VERSION_CREATED,
+            EventType.VERSION_DELETED,
+            EventType.VERSION_UPDATED
         )
     }
 

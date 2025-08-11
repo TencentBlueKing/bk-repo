@@ -32,6 +32,8 @@ import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
+import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -157,5 +159,15 @@ interface ArtifactReplicaClient {
     @PostMapping("/package/version/create")
     fun replicaPackageVersionCreatedRequest(
         @RequestBody request: PackageVersionCreateRequest,
+    ): Response<Void>
+
+    @PostMapping("/package/delete")
+    fun replicaPackageDeleteRequest(
+        @RequestBody request: PackageDeleteRequest,
+    ): Response<Void>
+
+    @PostMapping("/package/version/delete")
+    fun replicaPackageVersionDeleteRequest(
+        @RequestBody request: PackageVersionDeleteRequest,
     ): Response<Void>
 }

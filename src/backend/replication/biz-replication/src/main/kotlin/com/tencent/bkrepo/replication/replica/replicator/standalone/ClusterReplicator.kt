@@ -129,6 +129,7 @@ class ClusterReplicator(
 
     override fun replicaPackage(context: ReplicaContext, packageSummary: PackageSummary) {
         // do nothing
+
     }
 
     override fun replicaPackageVersion(
@@ -179,6 +180,12 @@ class ClusterReplicator(
             )
             artifactReplicaClient!!.replicaPackageVersionCreatedRequest(request)
         }
+        return true
+    }
+
+    override fun replicaDeletedPackage(
+        context: ReplicaContext, packageSummary: PackageSummary, packageVersion: PackageVersion
+    ): Boolean {
         return true
     }
 

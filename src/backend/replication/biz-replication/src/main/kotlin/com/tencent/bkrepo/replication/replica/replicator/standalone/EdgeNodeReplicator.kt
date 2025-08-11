@@ -105,6 +105,12 @@ class EdgeNodeReplicator(
         }
     }
 
+    override fun replicaDeletedPackage(
+        context: ReplicaContext, packageSummary: PackageSummary, packageVersion: PackageVersion
+    ): Boolean {
+        return true
+    }
+
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
             val sha256 = node.sha256.orEmpty()
