@@ -76,6 +76,12 @@ class RemoteReplicator : Replicator {
         return ArtifactPushMappings.push(packageSummary, packageVersion, context)
     }
 
+    override fun replicaDeletedPackage(
+        context: ReplicaContext, packageSummary: PackageSummary, packageVersion: PackageVersion
+    ): Boolean {
+        return true
+    }
+
     /**
      * 只针对version中元数据 sourceType不是ArtifactChannel.PROXY的package才推送
      */

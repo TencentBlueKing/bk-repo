@@ -81,3 +81,7 @@ object HashShardingUtils : ShardingUtils {
         return if (n < 0) 1 else if (n >= MAXIMUM_CAPACITY) MAXIMUM_CAPACITY else n + 1
     }
 }
+
+fun main() {
+    println(HashShardingUtils.shardingSequenceFor("tencent", 256))
+}

@@ -42,6 +42,9 @@ import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.executor.FederationFileThreadPoolExecutor
@@ -187,6 +190,39 @@ class FederationReplicator(
                 source = getCurrentClusterName(localProjectId, localRepoName, task.name)
             )
             artifactReplicaClient!!.replicaPackageVersionCreatedRequest(request)
+        }
+        return true
+    }
+
+    override fun replicaDeletedPackage(
+        context: ReplicaContext,
+        packageVersionDeleteSummary: PackageVersionDeleteSummary,
+    ): Boolean {
+        with(context) {
+            if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return false
+
+            if (packageVersionDeleteSummary.versionName.isNullOrEmpty()) {
+                // 构建包删除请求
+                val packageDeleteRequest = PackageDeleteRequest(
+                    projectId = remoteProjectId,
+                    repoName = remoteRepoName,
+                    packageKey = packageVersionDeleteSummary.packageKey,
+                    source = getCurrentClusterName(localProjectId, localRepoName, task.name),
+                    deletedDate = packageVersionDeleteSummary.deletedDate
+                )
+                artifactReplicaClient!!.replicaPackageDeleteRequest(packageDeleteRequest)
+            } else {
+                // 构建包版本删除请求
+                val versionDeleteRequest = PackageVersionDeleteRequest(
+                    projectId = remoteProjectId,
+                    repoName = remoteRepoName,
+                    packageKey = packageVersionDeleteSummary.packageKey,
+                    versionName = packageVersionDeleteSummary.versionName!!,
+                    source = getCurrentClusterName(localProjectId, localRepoName, task.name),
+                    deletedDate = packageVersionDeleteSummary.deletedDate
+                )
+                artifactReplicaClient!!.replicaPackageVersionDeleteRequest(versionDeleteRequest)
+            }
         }
         return true
     }
@@ -425,6 +461,7 @@ class FederationReplicator(
         val size: Long?,
         val sha256: String,
         val md5: String,
+        val crc64ecma: String? = null,
         val nodeMetadata: List<MetadataModel>,
         val operator: String,
         val createdBy: String,
