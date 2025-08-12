@@ -209,22 +209,12 @@ class MavenRemoteRepository(
             context.putAttribute("isArtifact", isArtifact)
             context.putAttribute("packaging", packaging)
         }
-        if (fullPath.isSnapshotMetadataUri() && fullPath.checksumType() == null) {
+        if (fullPath.isSnapshotMetadataUri()) {
             artifactFile.getInputStream().use { MetadataXpp3Reader().read(it) }?.versioning?.snapshot?.run {
                 timestamp?.takeIf { it.isNotBlank() }?.let {
                     context.putAttribute(SNAPSHOT_TIMESTAMP, timestamp.replace(".", ""))
                 }
                 context.putAttribute(SNAPSHOT_BUILD_NUMBER, buildNumber)
-            }
-        }
-        if (fullPath.isSnapshotMetadataChecksumUri()) {
-            val metadataNode = nodeService.getNodeDetail(
-                ArtifactInfo(
-                    context.projectId, context.repoName, fullPath.substringBeforeLast(".")
-                )
-            )
-            metadataNode?.nodeMetadata?.find { it.key == SNAPSHOT_TIMESTAMP }?.value?.let {
-                context.putAttribute(SNAPSHOT_TIMESTAMP, it)
             }
         }
         if (fullPath.checksumType() == null) {
