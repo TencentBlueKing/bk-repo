@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.api.util
 
+import com.fasterxml.jackson.core.StreamReadConstraints
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.module.SimpleModule
@@ -77,6 +78,11 @@ object JsonUtils {
         enable(SerializationFeature.INDENT_OUTPUT)
         disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+        factory.setStreamReadConstraints(
+            StreamReadConstraints.builder()
+                .maxStringLength(DataSize.ofMegabytes(100).toBytes().toInt())
+                .build()
+        )
     }
 }
 

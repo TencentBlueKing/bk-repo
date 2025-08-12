@@ -28,11 +28,13 @@
 package com.tencent.bkrepo.job.migrate.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import java.time.Duration
 
+@Component
 @ConfigurationProperties("migrate")
-data class MigrateRepoStorageProperties(
+class MigrateRepoStorageProperties(
     /**
      * 允许同时迁移的制品数量
      */

@@ -43,7 +43,6 @@ import com.tencent.bkrepo.job.config.properties.ArchivedNodeCompleteJobPropertie
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -61,7 +60,6 @@ import kotlin.reflect.KClass
  * 4. 完成文件数据归档。
  * */
 @Component
-@EnableConfigurationProperties(ArchivedNodeCompleteJobProperties::class)
 class ArchivedNodeCompleteJob(
     val properties: ArchivedNodeCompleteJobProperties,
     private val archiveClient: ArchiveClient,

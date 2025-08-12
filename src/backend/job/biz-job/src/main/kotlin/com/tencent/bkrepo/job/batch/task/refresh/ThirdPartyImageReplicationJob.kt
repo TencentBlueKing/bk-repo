@@ -34,7 +34,6 @@ import com.tencent.bkrepo.job.config.properties.ThirdPartyImageReplicationJobPro
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.oci.api.OciClient
 import com.tencent.bkrepo.oci.pojo.third.OciReplicationRecordInfo
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
 import kotlin.reflect.KClass
@@ -43,7 +42,6 @@ import kotlin.reflect.KClass
  * 生成
  */
 @Component
-@EnableConfigurationProperties(ThirdPartyImageReplicationJobProperties::class)
 class ThirdPartyImageReplicationJob(
     private val properties: ThirdPartyImageReplicationJobProperties,
     private val ociClient: OciClient
