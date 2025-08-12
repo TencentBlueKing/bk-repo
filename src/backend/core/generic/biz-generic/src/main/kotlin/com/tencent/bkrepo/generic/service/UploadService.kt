@@ -70,8 +70,8 @@ import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_CRC64ECMA
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
-import com.tencent.bkrepo.generic.constant.HEADER_FILE_SIZE
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
+import com.tencent.bkrepo.generic.constant.HEADER_SIZE
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.SeparateBlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
@@ -294,7 +294,7 @@ class UploadService(
         val totalSize = blockInfoList.sumOf { it.size }
 
         // 验证节点大小是否与块总大小一致
-        val fileSize = getLongHeader(HEADER_FILE_SIZE).takeIf { it > 0L }
+        val fileSize = getLongHeader(HEADER_SIZE).takeIf { it > 0L }
             ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND)
         if (fileSize != totalSize) {
             throw ErrorCodeException(GenericMessageCode.NODE_DATA_ERROR, artifactInfo)
