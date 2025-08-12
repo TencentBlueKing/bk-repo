@@ -209,9 +209,11 @@ class MavenRemoteRepository(
             context.putAttribute("isArtifact", isArtifact)
             context.putAttribute("packaging", packaging)
         }
-        if (fullPath.isSnapshotMetadataUri()) {
+        if (fullPath.isSnapshotMetadataUri() && fullPath.checksumType() == null) {
             artifactFile.getInputStream().use { MetadataXpp3Reader().read(it) }?.versioning?.snapshot?.run {
-                context.putAttribute(SNAPSHOT_TIMESTAMP, timestamp.replace(".", ""))
+                timestamp?.takeIf { it.isNotBlank() }?.let {
+                    context.putAttribute(SNAPSHOT_TIMESTAMP, timestamp.replace(".", ""))
+                }
                 context.putAttribute(SNAPSHOT_BUILD_NUMBER, buildNumber)
             }
         }
