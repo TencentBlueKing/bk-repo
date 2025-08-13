@@ -206,11 +206,13 @@ abstract class AbstractReplicaService(
         replicaContext: ReplicaContext,
         packageVersionDeleteSummary: PackageVersionDeleteSummary
     ) {
+        val packageKey = packageVersionDeleteSummary.packageKey
+        val versionName = packageVersionDeleteSummary.versionName
         try {
             replicaDeletedPackage(replicaContext, packageVersionDeleteSummary)
         } catch (throwable: Throwable) {
             logger.error(
-                "replicaByDeletedPackage ${packageVersionDeleteSummary.packageKey}|${packageVersionDeleteSummary.versionName} failed, error is ${throwable.message}"
+                "replicaByDeletedPackage $packageKey|$versionName failed, error: ${throwable.message}"
             )
             throw throwable
         }

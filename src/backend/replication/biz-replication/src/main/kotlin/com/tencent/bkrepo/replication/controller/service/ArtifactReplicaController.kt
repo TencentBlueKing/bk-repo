@@ -124,7 +124,13 @@ class ArtifactReplicaController(
     }
 
     override fun replicaNodeCreateRequest(request: NodeCreateRequest): Response<NodeDetail> {
-        federatedNodeDeletedCheck(request.projectId, request.repoName, request.fullPath, request.createdDate!!, request.source)
+        federatedNodeDeletedCheck(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            fullPath = request.fullPath,
+            compareDate = request.createdDate!!,
+            source = request.source
+        )
         return ResponseBuilder.success(nodeService.createNode(request))
     }
 
