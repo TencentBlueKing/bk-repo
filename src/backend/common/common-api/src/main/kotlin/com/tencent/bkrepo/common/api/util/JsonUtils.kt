@@ -80,7 +80,7 @@ object JsonUtils {
         disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
         factory.setStreamReadConstraints(
             StreamReadConstraints.builder()
-                .maxStringLength(DataSize.ofMegabytes(100).toBytes().toInt())
+                .maxStringLength(Int.MAX_VALUE)
                 .build()
         )
     }
