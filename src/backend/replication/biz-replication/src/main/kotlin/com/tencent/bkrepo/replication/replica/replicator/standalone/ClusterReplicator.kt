@@ -42,6 +42,7 @@ import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
@@ -184,7 +185,8 @@ class ClusterReplicator(
     }
 
     override fun replicaDeletedPackage(
-        context: ReplicaContext, packageSummary: PackageSummary, packageVersion: PackageVersion
+        context: ReplicaContext,
+        packageVersionDeleteSummary: PackageVersionDeleteSummary
     ): Boolean {
         return true
     }
