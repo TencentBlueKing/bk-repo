@@ -3,4 +3,5 @@ server.port: 25805
 pypi:
   domain: ${cluster.self.url}/pypi
 
+# TODO 配置项在单体包中不生效
 request.trailing.slash.enable: false
