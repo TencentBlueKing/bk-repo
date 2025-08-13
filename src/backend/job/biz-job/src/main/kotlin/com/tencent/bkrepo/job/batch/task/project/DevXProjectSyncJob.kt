@@ -3,11 +3,11 @@ package com.tencent.bkrepo.job.batch.task.project
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.metadata.model.TProject
+import com.tencent.bkrepo.common.metadata.pojo.webhook.BkCiDevXEnabledPayload
 import com.tencent.bkrepo.common.metadata.service.webhook.BkciWebhookListener
 import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.common.metadata.pojo.webhook.BkCiDevXEnabledPayload
 import com.tencent.devops.api.pojo.Response
 import okhttp3.Request
 import org.slf4j.LoggerFactory
@@ -32,15 +32,7 @@ class DevXProjectSyncJob(
                 .header("X-Bkapi-Authorization", headerStr())
                 .get()
                 .build()
-            val devXProjects = client.newCall(request).execute().use {
-                val data = it.body?.string()
-                if (!it.isSuccessful) {
-                    logger.error("request url [${request.url}] failed, code[${it.code}], message[$data]")
-                    emptyList()
-                } else{
-                    data?.readJsonString<Response<List<DevXProject>>>()?.data ?: emptyList()
-                }
-            }
+            val devXProjects = getDevXProjects(request)
             if (devXProjects.isEmpty()) {
                 break
             }
@@ -52,6 +44,23 @@ class DevXProjectSyncJob(
                 }
             }
             page++
+        }
+    }
+
+    private fun getDevXProjects(request: Request): List<DevXProject> {
+        return try {
+            client.newCall(request).execute().use {
+                val data = it.body?.string()
+                if (!it.isSuccessful) {
+                    logger.error("request url [${request.url}] failed, code[${it.code}], message[$data]")
+                    emptyList()
+                } else {
+                    data?.readJsonString<Response<List<DevXProject>>>()?.data ?: emptyList()
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("get devx projects[${request.url}] failed: ", e)
+            emptyList()
         }
     }
 
