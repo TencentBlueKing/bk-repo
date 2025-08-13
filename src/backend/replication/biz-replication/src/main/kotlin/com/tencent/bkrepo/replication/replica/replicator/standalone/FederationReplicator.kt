@@ -200,7 +200,6 @@ class FederationReplicator(
     ): Boolean {
         with(context) {
             if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return false
-
             if (packageVersionDeleteSummary.versionName.isNullOrEmpty()) {
                 // 构建包删除请求
                 val packageDeleteRequest = PackageDeleteRequest(

@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.replica.type.federation
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
@@ -97,7 +98,21 @@ class FederationBasedReplicaService(
                 }
 
                 EventType.VERSION_DELETED -> {
+                    val packageKey = event.data["packageKey"].toString()
+                    val packageName = event.data["packageName"].toString()
+                    val deleted = event.data["deletedDate"]?.toString()
+                    val packageVersion = event.data["packageVersion"]?.toString()
+                    if (deleted.isNullOrEmpty()) return
 
+                    val packageVersionDeleteSummary = PackageVersionDeleteSummary(
+                        projectId = localProjectId,
+                        repoName = localRepoName,
+                        packageName = packageName,
+                        packageKey = packageKey,
+                        versionName = packageVersion,
+                        deletedDate = deleted
+                    )
+                    replicaByDeletedPackage(this, packageVersionDeleteSummary)
                 }
 
                 else -> throw UnsupportedOperationException()
