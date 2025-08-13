@@ -21,5 +21,8 @@ class MediaArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getVirtualRepository() = SpringContextUtils.getBean<MediaVirtualRepository>()
 
     override fun getAuthSecurityCustomizer() =
-        HttpAuthSecurityCustomizer { httpAuthSecurity -> httpAuthSecurity.withPrefix("/media") }
+        HttpAuthSecurityCustomizer { httpAuthSecurity ->
+            httpAuthSecurity.excludePattern("/api/v1/user/login").excludePattern("/api/v1/job/update")
+                .withPrefix("/media")
+        }
 }
