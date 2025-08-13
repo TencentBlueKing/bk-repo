@@ -264,7 +264,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
     import { Base64 } from 'js-base64'
-    import { isOutDisplayType, isPic, isText } from '@repository/utils/file'
+    import { isOutDisplayType, isText } from '@repository/utils/file'
 
     export default {
         name: 'RepoGeneric',
@@ -505,7 +505,7 @@
             },
             renderHeader (h, { column }) {
                 const elements = [h('span', column.label)]
-                if (this.localRepo) {
+                if (this.localRepo && this.repoName !== 'pipeline') {
                     elements.push(h('i', { class: `ml5 devops-icon ${this.sortDirection === 'DESC' ? 'icon-down-shape' : 'icon-up-shape'}` }))
                 }
                 return h('div', {
@@ -527,7 +527,7 @@
                                     direction: this.sortDirection
                                 }
                                 this.sortParams.push(sortParam)
-                                this.handlerPaginationChange()
+                                this.handlerPaginationChange({ current: this.pagination.current })
                             }
                         }
                     }
@@ -644,7 +644,7 @@
                             name: v.metadata?.displayName || v.name
                         }
                     })
-                    if (this.repoName === 'pipeline' && !this.inFolderSearchName) {
+                    if (this.repoName === 'pipeline' && !this.inFolderSearchName && !this.selectedTreeNode?.fullPath) {
                         const originData = this.artifactoryList
                         const direction = this.sortParams.some(param => {
                             return param.direction === 'ASC'
@@ -690,7 +690,7 @@
                                 }
                             })
                         }
-                        this.artifactoryList = originData
+                        this.artifactoryList = originData.slice(this.pagination.limit * (this.pagination.current - 1), this.pagination.limit * this.pagination.current)
                     }
                     const key = this.userInfo.name + 'SelectedPaths'
                     const originPathKey = this.userInfo.name + 'originPath'
