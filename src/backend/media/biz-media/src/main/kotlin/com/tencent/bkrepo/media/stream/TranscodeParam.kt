@@ -9,5 +9,5 @@ data class TranscodeParam(
     var inputFileName: String, // 源文件名
     var outputFileName: String, // 输出文件名
     var extraParams: String, // 额外参数
-    var extraFiles: List<String>?, // 额外文件
+    var extraFiles: List<Map<String, String>>?, // 额外文件
 )
