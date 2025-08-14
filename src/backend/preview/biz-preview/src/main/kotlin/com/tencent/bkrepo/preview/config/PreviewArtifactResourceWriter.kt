@@ -105,7 +105,7 @@ class PreviewArtifactResourceWriter(
             storageProperties.response.mimeMappings
         )
         response.characterEncoding = resource.characterEncoding
-        response.contentType = mediaType
+        response.contentType = determineCharset(mediaType, resource.characterEncoding)
         response.status = resource.status?.value ?: resolveStatus(request)
         response.setContentLengthLong(range.length)
         response.setHeader(HttpHeaders.ACCEPT_RANGES, StringPool.BYTES)
