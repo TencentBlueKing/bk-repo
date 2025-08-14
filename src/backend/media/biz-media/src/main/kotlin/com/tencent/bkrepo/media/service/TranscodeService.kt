@@ -36,9 +36,17 @@ class TranscodeService(
     /**
      * 视频转码
      * */
-    fun transcode(artifactInfos: List<ArtifactInfo>, transcodeConfig: TranscodeConfig, userId: String) {
-        val transcodeParam = artifactInfos.map { generateTranscodeParam(it, transcodeConfig, userId) }
-        logger.info("Add transcode task for artifact[$artifactInfos] param[${transcodeParam.toJsonString()}]")
+    fun transcode(
+        artifactInfo: ArtifactInfo,
+        transcodeConfig: TranscodeConfig,
+        userId: String,
+        extraFiles: List<ArtifactInfo>?,
+    ) {
+        val transcodeParam = generateTranscodeParam(artifactInfo, transcodeConfig, userId)
+        transcodeParam.extraFiles = extraFiles?.map { generateTranscodeParam(it, transcodeConfig, userId).inputUrl }
+        logger.info(
+            "Add transcode task for artifact[$artifactInfo][$extraFiles] param[${transcodeParam.toJsonString()}]"
+        )
         TranscodeHelper.addTask(transcodeConfig.jobId, transcodeParam)
     }
 
@@ -108,6 +116,7 @@ class TranscodeService(
                 inputFileName = artifactInfo.getResponseName(),
                 outputFileName = outputArtifactInfo.getResponseName(),
                 extraParams = transcodeConfig.extraParams.orEmpty(),
+                extraFiles = null
             )
         }
     }

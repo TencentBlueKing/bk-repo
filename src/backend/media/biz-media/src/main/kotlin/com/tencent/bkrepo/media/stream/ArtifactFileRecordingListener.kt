@@ -43,9 +43,9 @@ class ArtifactFileRecordingListener(
             artifactFile.finish()
             clientMouseArtifactFile.finish()
             if (clientMouseArtifactFile.getSize() == 0L) {
-                fileConsumer.accept(mapOf(name to artifactFile))
+                fileConsumer.accept(name, artifactFile, null)
             } else {
-                fileConsumer.accept(mapOf(name to artifactFile, clientMouseName to clientMouseArtifactFile))
+                fileConsumer.accept(name, artifactFile, mapOf(clientMouseName to clientMouseArtifactFile))
             }
         } finally {
             artifactFile.delete()

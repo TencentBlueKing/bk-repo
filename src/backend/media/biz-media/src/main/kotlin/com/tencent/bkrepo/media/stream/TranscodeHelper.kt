@@ -17,7 +17,7 @@ class TranscodeHelper(jobScheduleClient: JobScheduleClient) {
 
         fun addTask(
             jobId: String,
-            transcodeParam: List<TranscodeParam>,
+            transcodeParam: TranscodeParam,
         ) {
             val jobParam = transcodeParam.toJsonString()
             jobScheduleClient.triggerJob(jobId, jobParam)
