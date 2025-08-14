@@ -469,9 +469,11 @@ class MavenLocalRepository(
                 sendSeparationRecoveryEvent(
                     artifactInfo.projectId, artifactInfo.repoName, originalFullPath, context.repo.type.name
                 )
+                artifactInfo.setArtifactMappingUri(originalFullPath)
                 return null
             }
             if (node == null) {
+                artifactInfo.setArtifactMappingUri(originalFullPath)
                 sendSeparationRecoveryEvent(
                     artifactInfo.projectId, artifactInfo.repoName, originalFullPath, context.repo.type.name
                 )

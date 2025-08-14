@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.batch.task.stat
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
 import com.tencent.bkrepo.job.config.properties.ActiveProjectRepoMetricsStatJobProperties
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.springframework.stereotype.Component
 
 /**
@@ -39,11 +40,12 @@ import org.springframework.stereotype.Component
 class ActiveProjectRepoMetricsStatJob(
     properties: ActiveProjectRepoMetricsStatJobProperties,
     activeProjectService: ActiveProjectService,
-) : ProjectRepoMetricsStatJob(properties, activeProjectService) {
+    private val separationTaskService: SeparationTaskService,
+) : ProjectRepoMetricsStatJob(properties, activeProjectService, true, separationTaskService) {
 
     override fun statProjectCheck(
         projectId: String,
-        context: ProjectRepoMetricsStatJobContext
+        context: ProjectRepoMetricsStatJobContext,
     ): Boolean {
         return context.statProjects[projectId] != null
     }

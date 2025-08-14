@@ -32,8 +32,8 @@ import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
-import com.tencent.bkrepo.repository.pojo.webhook.BkCiDevXEnabledPayload
-import com.tencent.bkrepo.repository.service.webhook.BkciWebhookListener
+import com.tencent.bkrepo.common.metadata.pojo.webhook.BkCiDevXEnabledPayload
+import com.tencent.bkrepo.common.metadata.service.webhook.BkciWebhookListener
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.apache.commons.codec.digest.HmacUtils

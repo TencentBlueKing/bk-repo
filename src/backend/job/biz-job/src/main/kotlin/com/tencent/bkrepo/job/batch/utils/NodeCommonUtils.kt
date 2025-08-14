@@ -54,7 +54,7 @@ class NodeCommonUtils(
         lateinit var migrateRepoStorageService: MigrateRepoStorageService
         lateinit var separationTaskService: SeparationTaskService
         private const val COLLECTION_NAME_PREFIX = "node_"
-        private const val SEPARATION_COLLECTION_NAME_PREFIX = "separation_node_"
+        const val SEPARATION_COLLECTION_NAME_PREFIX = "separation_node_"
         private const val FILE_REFERENCE_COLLECTION_NAME_PREFIX = "file_reference_"
         private val workPool = ThreadPoolExecutor(
             Runtime.getRuntime().availableProcessors(),

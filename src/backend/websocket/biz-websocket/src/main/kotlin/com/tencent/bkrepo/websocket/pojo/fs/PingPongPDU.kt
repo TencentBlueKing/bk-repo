@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,13 +25,11 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.webhook
+package com.tencent.bkrepo.websocket.pojo.fs
 
-import com.tencent.bkrepo.repository.pojo.webhook.BkCiDevXEnabledPayload
-
-interface BkciWebhookListener {
-    /**
-     * devx开启时调用
-     */
-    fun onDevXEnabled(payload: BkCiDevXEnabledPayload)
-}
+data class PingPongPDU(
+    val workspaceName: String,
+    val timestamp: Long,
+    var sessionId: String? = null,
+    var type: String? = null
+)

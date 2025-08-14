@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 Tencent.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,50 +25,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.pojo.webhook
+package com.tencent.bkrepo.websocket.dispatch.push
 
-/**
- * 蓝盾开启DevX时发送的Webhook Payload
- */
-data class BkCiDevXEnabledPayload(
-    /**
-     * 项目名称
-     */
-    val projectName: String,
-    /**
-     * 项目代码（蓝盾项目Id）
-     */
-    val projectCode: String,
-    /**
-     * 事业群ID
-     */
-    val bgId: String?,
-    /**
-     * 事业群名字
-     */
-    val bgName: String?,
-    /**
-     * 中心ID
-     */
-    val centerId: String?,
-    /**
-     * 中心名称
-     */
-    val centerName: String?,
-    /**
-     * 部门ID
-     */
-    val deptId: String?,
-    /**
-     * 部门名称
-     */
-    val deptName: String?,
-    /**
-     * 英文缩写
-     */
-    val englishName: String,
-    /**
-     * 运营产品ID
-     */
-    val productId: Int?,
+import com.tencent.bkrepo.websocket.pojo.fs.PingPongPDU
+
+class PongPDUTransferPush(
+    pongPDU: PingPongPDU,
+) : TransferPush(
+    topic = "/topic/clipboard/pong/${pongPDU.sessionId}",
+    data = pongPDU
 )

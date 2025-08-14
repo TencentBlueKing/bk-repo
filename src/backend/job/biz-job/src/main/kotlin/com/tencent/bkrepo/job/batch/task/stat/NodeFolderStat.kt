@@ -38,6 +38,8 @@ import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
 import com.tencent.bkrepo.job.pojo.FolderInfo
+import com.tencent.bkrepo.job.pojo.stat.StatNode
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -55,7 +57,8 @@ import org.springframework.stereotype.Component
 class NodeFolderStat(
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>,
-) {
+    private val separationTaskService: SeparationTaskService,
+) : SeparationStatBaseJob(mongoTemplate, separationTaskService) {
 
     fun buildNode(
         id: String,
@@ -65,8 +68,8 @@ class NodeFolderStat(
         size: Long,
         projectId: String,
         repoName: String,
-    ): Node {
-        return Node(
+    ): StatNode {
+        return StatNode(
             id = id,
             projectId = projectId,
             repoName = repoName,
@@ -78,7 +81,7 @@ class NodeFolderStat(
     }
 
     fun collectNode(
-        node: Node,
+        node: StatNode,
         context: NodeFolderJobContext,
         useMemory: Boolean,
         keyPrefix: String,
@@ -123,7 +126,7 @@ class NodeFolderStat(
         fullPath: String,
         size: Long,
         context: NodeFolderJobContext,
-        collectionName: String? = null
+        collectionName: String? = null,
     ) {
         val key = FolderUtils.buildCacheKey(
             collectionName = collectionName, projectId = projectId, repoName = repoName, fullPath = fullPath
@@ -194,7 +197,7 @@ class NodeFolderStat(
         context: NodeFolderJobContext,
         collectionName: String,
         projectId: String = StringPool.EMPTY,
-        runCollection: Boolean = false
+        runCollection: Boolean = false,
     ) {
         if (context.folderCache.isEmpty()) {
             return
@@ -245,7 +248,7 @@ class NodeFolderStat(
         keyPrefix: String,
         collectionName: String,
         projectId: String = StringPool.EMPTY,
-        runCollection: Boolean = false
+        runCollection: Boolean = false,
     ) {
         val keySuffix = if (runCollection) {
             FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)
@@ -310,7 +313,7 @@ class NodeFolderStat(
         key: String,
         entry: Map.Entry<ByteArray, ByteArray>,
         folderInfo: FolderInfo,
-        hashOps: HashOperations<String, String, String>
+        hashOps: HashOperations<String, String, String>,
     ): StatInfo {
         val size: Long
         val nodeNum: Long
@@ -340,7 +343,7 @@ class NodeFolderStat(
         repoName: String,
         fullPath: String,
         size: Long,
-        nodeNum: Long
+        nodeNum: Long,
     ): org.springframework.data.util.Pair<Query, UpdateDefinition> {
         val query = Query(
             Criteria.where(PROJECT).isEqualTo(projectId)
@@ -353,17 +356,6 @@ class NodeFolderStat(
             .set(NODE_NUM, nodeNum)
         return org.springframework.data.util.Pair.of(query, update)
     }
-
-    data class Node(
-        val id: String,
-        val folder: Boolean,
-        val path: String,
-        val fullPath: String,
-        val size: Long,
-        val projectId: String,
-        val repoName: String,
-    )
-
 
     data class StatInfo(
         var size: Long,
