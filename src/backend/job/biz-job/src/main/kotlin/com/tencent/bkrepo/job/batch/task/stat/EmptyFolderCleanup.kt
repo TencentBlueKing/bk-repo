@@ -41,6 +41,8 @@ import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
 import com.tencent.bkrepo.job.pojo.FolderInfo
+import com.tencent.bkrepo.job.pojo.stat.StatNode
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -58,7 +60,8 @@ import java.time.LocalDateTime
 class EmptyFolderCleanup(
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>,
-) {
+    private val separationTaskService: SeparationTaskService,
+) : SeparationStatBaseJob(mongoTemplate, separationTaskService) {
 
     fun buildNode(
         id: String,
@@ -68,8 +71,8 @@ class EmptyFolderCleanup(
         size: Long,
         projectId: String,
         repoName: String,
-    ): Node {
-        return Node(
+    ): StatNode {
+        return StatNode(
             id = id,
             projectId = projectId,
             repoName = repoName,
@@ -85,13 +88,13 @@ class EmptyFolderCleanup(
     }
 
     fun collectEmptyFolderWithMemory(
-        row: Node,
+        row: StatNode,
         context: EmptyFolderCleanupJobContext,
         useMemory: Boolean,
         keyPrefix: String,
         collectionName: String? = null,
         cacheNumLimit: Long,
-        ) {
+    ) {
         if (row.folder) {
             val folderKey = FolderUtils.buildCacheKey(
                 collectionName = collectionName, projectId = row.projectId,
@@ -137,7 +140,7 @@ class EmptyFolderCleanup(
         projectId: String = StringPool.EMPTY,
         collectionName: String? = null,
         cacheNumLimit: Long,
-        ) {
+    ) {
         if (!force && context.folders.size < cacheNumLimit) return
         if (context.folders.isEmpty()) return
         val movedToRedis: MutableList<String> = mutableListOf()
@@ -285,7 +288,7 @@ class EmptyFolderCleanup(
         key: String,
         entry: Map.Entry<ByteArray, ByteArray>,
         folderInfo: FolderInfo,
-        hashOps: HashOperations<String, String, String>
+        hashOps: HashOperations<String, String, String>,
     ): StatInfo {
         val id: String
         val nodeNum: Long
@@ -326,7 +329,7 @@ class EmptyFolderCleanup(
         projectId: String,
         repoName: String,
         path: String,
-        collectionName: String
+        collectionName: String,
     ): Boolean {
         val nodePath = PathUtils.toPath(path)
         val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
@@ -374,7 +377,7 @@ class EmptyFolderCleanup(
         projectId: String,
         context: EmptyFolderCleanupJobContext,
         collectionName: String,
-        runCollection: Boolean = false
+        runCollection: Boolean = false,
     ) {
         val prefix = if (runCollection) {
             FolderUtils.buildCacheKey(collectionName = collectionName, projectId = StringPool.EMPTY)
@@ -387,21 +390,10 @@ class EmptyFolderCleanup(
         }
     }
 
-    data class Node(
-        val id: String,
-        val folder: Boolean,
-        val path: String,
-        val fullPath: String,
-        val size: Long,
-        val projectId: String,
-        val repoName: String,
-    )
-
     data class StatInfo(
         var id: String?,
         var nodeNum: Long
     )
-
 
     companion object {
         private val logger = LoggerFactory.getLogger(EmptyFolderCleanup::class.java)

@@ -51,7 +51,9 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.stereotype.Component
+import org.springframework.util.unit.DataSize
 import org.springframework.web.reactive.function.client.ClientResponse
+import org.springframework.web.reactive.function.client.ExchangeStrategies
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Flux
@@ -82,7 +84,13 @@ class DevxWorkspaceUtils(
             val provider = ConnectionProvider.builder("DevX").maxIdleTime(Duration.ofSeconds(30L)).build()
             val client = HttpClient.create(provider).responseTimeout(Duration.ofSeconds(15L))
             val connector = ReactorClientHttpConnector(client)
-            WebClient.builder().clientConnector(connector).build()
+            val bufferSize = DataSize.ofMegabytes(32).toBytes().toInt()
+
+            val strategies = ExchangeStrategies.builder().codecs { configurer ->
+                    configurer.defaultCodecs().maxInMemorySize(bufferSize)
+                }.build()
+
+            WebClient.builder().clientConnector(connector).exchangeStrategies(strategies).build()
         }
 
         private val illegalIp by lazy {
