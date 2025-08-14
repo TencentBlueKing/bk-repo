@@ -45,7 +45,10 @@ class TranscodeService(
         val transcodeParam = generateTranscodeParam(artifactInfo, transcodeConfig, userId)
         transcodeParam.extraFiles = extraFiles?.map {
             val p = generateTranscodeParam(it, transcodeConfig, userId)
-            mapOf(p.inputFileName to p.inputUrl)
+            mapOf(
+                "inputFileName" to p.inputFileName,
+                "inputUrl" to p.inputUrl
+            )
         }
         logger.info(
             "Add transcode task for artifact[$artifactInfo][$extraFiles] param[${transcodeParam.toJsonString()}]"
