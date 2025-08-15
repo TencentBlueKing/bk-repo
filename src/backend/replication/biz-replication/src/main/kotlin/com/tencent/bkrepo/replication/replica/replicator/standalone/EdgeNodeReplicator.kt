@@ -36,6 +36,7 @@ import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterArtifactReplicationHandler
 import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
@@ -106,7 +107,8 @@ class EdgeNodeReplicator(
     }
 
     override fun replicaDeletedPackage(
-        context: ReplicaContext, packageSummary: PackageSummary, packageVersion: PackageVersion
+        context: ReplicaContext,
+        packageVersionDeleteSummary: PackageVersionDeleteSummary
     ): Boolean {
         return true
     }
