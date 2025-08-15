@@ -75,7 +75,7 @@ abstract class AbstractScanExecutorResultManager : ScanExecutorResultManager {
                 return deletedCount
             }
 
-            val result = resultItemDao.deleteBy(credentialsKey, sha256, scannerName)
+            val result = resultItemDao.deleteBy(credentialsKey, sha256, scannerName, currentBatchSize?.toInt())
             deletedCount += result.deletedCount
 
             if (currentBatchSize != null) {
