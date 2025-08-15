@@ -104,7 +104,7 @@ class PreviewArtifactResourceWriter(
             name,
             storageProperties.response.mimeMappings
         )
-        response.characterEncoding = resource.characterEncoding
+        response.characterEncoding = determineCharset(mediaType, resource.characterEncoding)
         response.contentType = mediaType
         response.status = resource.status?.value ?: resolveStatus(request)
         response.setContentLengthLong(range.length)
