@@ -113,19 +113,6 @@ class ArtifactTransferListener(
                 serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
                 traceId = TraceHeaderUtils.buildB3Header()
             )
-            if (SecurityUtils.getUserId() != SYSTEM_USER) {
-                projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
-            }
-            if (artifactMetricsProperties.collectByLog) {
-                logger.info(
-                    toJson(
-                        ArtifactTransferRecordLog(
-                            record = record,
-                            commonTag = commonTagProvider.ifAvailable?.provide().orEmpty()
-                        )
-                    )
-                )
-            }
             queue.offer(record)
             ArtifactMetrics.getUploadedDistributionSummary().record(throughput.bytes.toDouble())
         }
@@ -161,22 +148,9 @@ class ArtifactTransferListener(
                 serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
                 traceId = TraceHeaderUtils.buildB3Header()
             )
-            if (SecurityUtils.getUserId() != SYSTEM_USER) {
-                projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
-            }
             ArtifactMetrics.getDownloadedDistributionSummary().record(throughput.bytes.toDouble())
             recordAccessTimeDistribution(artifactResource)
             artifactCacheMetrics.record(artifactResource)
-            if (artifactMetricsProperties.collectByLog) {
-                logger.info(
-                    toJson(
-                        ArtifactTransferRecordLog(
-                            record = record,
-                            commonTag = commonTagProvider.ifAvailable?.provide().orEmpty()
-                        )
-                    )
-                )
-            }
             queue.offer(record)
         }
     }
