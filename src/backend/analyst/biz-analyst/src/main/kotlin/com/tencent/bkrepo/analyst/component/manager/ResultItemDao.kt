@@ -39,9 +39,10 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 
 abstract class ResultItemDao<T : ResultItem<*>> : ScannerSimpleMongoDao<T>() {
 
-    fun deleteBy(credentialsKey: String?, sha256: String, scanner: String): DeleteResult {
-        val criteria = buildCriteria(credentialsKey, sha256, scanner)
-        return remove(Query(criteria))
+    fun deleteBy(credentialsKey: String?, sha256: String, scanner: String, batchSize: Int? = null): DeleteResult {
+        val query = Query(buildCriteria(credentialsKey, sha256, scanner))
+        batchSize?.let { query.limit(it) }
+        return remove(query)
     }
 
     fun pageBy(

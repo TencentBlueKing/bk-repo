@@ -103,6 +103,16 @@ data class ScannerProperties(
      * 扫描结果中来源于不同组件的相同漏洞ID和许可证ID是否仅计数1次
      */
     var uniqueCounting: Boolean = false,
+
+    /**
+     * 清理批大小
+     */
+    var cleanBatchSize: Int = 1000,
+
+    /**
+     * 每秒清理批次限制
+     */
+    var cleanBatchPerSeconds: Double = 10.0,
 ) {
     companion object {
         /**

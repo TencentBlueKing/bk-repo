@@ -29,7 +29,9 @@ package com.tencent.bkrepo.analyst.job
 
 import com.tencent.bkrepo.analyst.AnalystBaseTest
 import com.tencent.bkrepo.analyst.UT_SCANNER
+import com.tencent.bkrepo.analyst.component.manager.standard.dao.LicenseResultDao
 import com.tencent.bkrepo.analyst.component.manager.standard.dao.SecurityResultDao
+import com.tencent.bkrepo.analyst.component.manager.standard.dao.SensitiveResultDao
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.dao.ArchiveSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.FileScanResultDao
@@ -40,11 +42,13 @@ import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.impl.ScannerServiceImpl
 import com.tencent.bkrepo.analyst.utils.buildArchiveSubScanTask
 import com.tencent.bkrepo.analyst.utils.buildFileResult
+import com.tencent.bkrepo.analyst.utils.buildLicenseResult
 import com.tencent.bkrepo.analyst.utils.buildPlanSubScanTask
 import com.tencent.bkrepo.analyst.utils.buildScanPlan
 import com.tencent.bkrepo.analyst.utils.buildScanResult
 import com.tencent.bkrepo.analyst.utils.buildScanTask
 import com.tencent.bkrepo.analyst.utils.buildSecurityResult
+import com.tencent.bkrepo.analyst.utils.buildSensitiveResult
 import com.tencent.bkrepo.analyst.utils.randomSha256
 import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
@@ -79,6 +83,8 @@ class ScanTaskCleanupJobTest @Autowired constructor(
     private val scannerService: ScannerService,
     private val scanTaskCleanupJob: ScanTaskCleanupJob,
     private val securityResultDao: SecurityResultDao,
+    private val sensitiveResultDao: SensitiveResultDao,
+    private val licenseResultDao: LicenseResultDao,
 ) : AnalystBaseTest() {
 
     @BeforeAll
@@ -99,6 +105,7 @@ class ScanTaskCleanupJobTest @Autowired constructor(
     fun `test clean`() {
         mockData(LocalDateTime.now().minusDays(7))
         scannerProperties.reportKeepDuration = Duration.ofDays(1L)
+        scannerProperties.cleanBatchSize = 2
         val context = ScanTaskCleanupJob.CleanContext()
         scanTaskCleanupJob.doClean(context)
         assert(context)
@@ -164,12 +171,16 @@ class ScanTaskCleanupJobTest @Autowired constructor(
                 fileScanResultDao.insert(fileResult)
 
                 // insert reports
+                sensitiveResultDao.insert(buildSensitiveResult(archiveSubtask.sha256))
+                licenseResultDao.insert(buildLicenseResult(archiveSubtask.sha256))
                 securityResultDao.insert(buildSecurityResult(archiveSubtask.sha256))
                 securityResultDao.insert(buildSecurityResult(archiveSubtask.sha256, "test"))
             } else {
                 planArtifactLatestSubScanTaskDao.insert(buildPlanSubScanTask(archiveSubtask))
                 fileScanResultDao.insert(buildFileResult(now, archiveSubtask.sha256, archiveSubtask.parentScanTaskId))
                 // insert reports
+                sensitiveResultDao.insert(buildSensitiveResult(archiveSubtask.sha256))
+                licenseResultDao.insert(buildLicenseResult(archiveSubtask.sha256))
                 securityResultDao.insert(buildSecurityResult(archiveSubtask.sha256))
             }
         }
@@ -210,7 +221,7 @@ class ScanTaskCleanupJobTest @Autowired constructor(
 
         // reports
         assertEquals(4L, securityResultDao.count(Query()))
-        assertEquals(40L, context.reportResultCount.get())
+        assertEquals(120L, context.reportResultCount.get())
 
         // plan
         val plan = scanPlanDao.findOne(Query())!!

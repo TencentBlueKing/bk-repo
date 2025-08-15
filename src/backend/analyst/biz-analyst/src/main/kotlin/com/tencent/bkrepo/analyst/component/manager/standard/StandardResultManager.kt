@@ -109,12 +109,9 @@ class StandardResultManager(
         }
     }
 
-    override fun clean(credentialsKey: String?, sha256: String, scannerName: String): Long {
-        var deletedCount = 0L
-        deletedCount += securityResultDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
-        deletedCount += licenseResultDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
-        deletedCount += sensitiveResultDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
-        return deletedCount
+    override fun clean(credentialsKey: String?, sha256: String, scannerName: String, batchSize: Int?): Long {
+        val resultItemDaoList = listOf(securityResultDao, licenseResultDao, sensitiveResultDao)
+        return clean(resultItemDaoList, credentialsKey, sha256, scannerName, batchSize)
     }
 
     private fun loadLicenseResults(

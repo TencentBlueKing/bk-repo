@@ -74,7 +74,7 @@ class ScancodeResultManager @Autowired constructor(
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
     }
 
-    override fun clean(credentialsKey: String?, sha256: String, scannerName: String): Long {
-        return scancodeItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
+    override fun clean(credentialsKey: String?, sha256: String, scannerName: String, batchSize: Int?): Long {
+        return scancodeItemDao.deleteBy(credentialsKey, sha256, scannerName, batchSize).deletedCount
     }
 }

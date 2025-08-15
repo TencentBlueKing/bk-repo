@@ -121,13 +121,9 @@ class ArrowheadResultManager @Autowired constructor(
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records.map { it.data })
     }
 
-    override fun clean(credentialsKey: String?, sha256: String, scannerName: String): Long {
-        var deletedCount = 0L
-        deletedCount += applicationItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
-        deletedCount += checkSecItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
-        deletedCount += cveSecItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
-        deletedCount += sensitiveItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
-        return deletedCount
+    override fun clean(credentialsKey: String?, sha256: String, scannerName: String, batchSize: Int?): Long {
+        val resultItemDaoList = listOf(applicationItemDao, checkSecItemDao, cveSecItemDao, sensitiveItemDao)
+        return clean(resultItemDaoList, credentialsKey, sha256, scannerName, batchSize)
     }
 
     private fun loadApplicationItems(

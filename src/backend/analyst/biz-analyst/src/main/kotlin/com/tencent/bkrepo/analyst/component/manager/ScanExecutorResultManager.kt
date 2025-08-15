@@ -77,6 +77,7 @@ interface ScanExecutorResultManager {
      * @param credentialsKey 被扫描文件所在存储， 为null时表示在默认存储
      * @param sha256 被扫描文件sha256
      * @param scannerName 使用的扫描器
+     * @param batchSize 批量清理大小
      *
      * @return 清理的结果数量
      */
@@ -84,5 +85,6 @@ interface ScanExecutorResultManager {
         credentialsKey: String?,
         sha256: String,
         scannerName: String,
+        batchSize: Int?,
     ): Long
 }
