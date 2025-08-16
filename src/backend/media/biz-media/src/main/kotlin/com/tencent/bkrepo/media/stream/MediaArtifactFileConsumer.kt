@@ -25,21 +25,29 @@ class MediaArtifactFileConsumer(
 
     private val startTime = System.currentTimeMillis()
     override fun accept(t: File) {
-        accept(t.toArtifactFile(), t.name)
+        accept(t.name, t.toArtifactFile(), null)
     }
 
     override fun accept(file: File, name: String) {
-        accept(file.toArtifactFile(), name)
+        accept(name, file.toArtifactFile(), null)
     }
 
-    override fun accept(file: ArtifactFile, name: String) {
+    override fun accept(name: String, file: ArtifactFile, extraFiles: Map<String, ArtifactFile>?) {
+        val artifactInfo = genAndStoreArtifactInfos(name, file)
+        val extraArtifactFiles = extraFiles?.map { (name, file) ->
+            genAndStoreArtifactInfos(name, file)
+        }
+        if (transcodeConfig != null) {
+            transcodeService.transcode(artifactInfo, transcodeConfig, userId, extraArtifactFiles)
+        }
+    }
+
+    fun genAndStoreArtifactInfos(name: String, file: ArtifactFile): ArtifactInfo {
         val filePath = "$path/$name"
         val artifactInfo = ArtifactInfo(repo.projectId, repo.name, filePath)
         val nodeCreateRequest = buildNodeCreateRequest(artifactInfo, file, userId, author)
         storageManager.storeArtifactFile(nodeCreateRequest, file, repo.storageCredentials)
-        if (transcodeConfig != null) {
-            transcodeService.transcode(artifactInfo, transcodeConfig, userId)
-        }
+        return artifactInfo
     }
 
     private fun buildNodeCreateRequest(

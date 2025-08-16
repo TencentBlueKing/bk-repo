@@ -3,6 +3,7 @@ package com.tencent.bkrepo.media.service
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -35,10 +36,24 @@ class TranscodeService(
     /**
      * 视频转码
      * */
-    fun transcode(artifactInfo: ArtifactInfo, transcodeConfig: TranscodeConfig, userId: String) {
+    fun transcode(
+        artifactInfo: ArtifactInfo,
+        transcodeConfig: TranscodeConfig,
+        userId: String,
+        extraFiles: List<ArtifactInfo>?,
+    ) {
         val transcodeParam = generateTranscodeParam(artifactInfo, transcodeConfig, userId)
+        transcodeParam.extraFiles = extraFiles?.map {
+            val p = generateTranscodeParam(it, transcodeConfig, userId)
+            mapOf(
+                "inputFileName" to p.inputFileName,
+                "inputUrl" to p.inputUrl
+            )
+        }
+        logger.info(
+            "Add transcode task for artifact[$artifactInfo][$extraFiles] param[${transcodeParam.toJsonString()}]"
+        )
         TranscodeHelper.addTask(transcodeConfig.jobId, transcodeParam)
-        logger.info("Add transcode task for artifact[$artifactInfo]")
     }
 
     /**
@@ -107,6 +122,7 @@ class TranscodeService(
                 inputFileName = artifactInfo.getResponseName(),
                 outputFileName = outputArtifactInfo.getResponseName(),
                 extraParams = transcodeConfig.extraParams.orEmpty(),
+                extraFiles = null
             )
         }
     }
@@ -131,7 +147,7 @@ class TranscodeService(
         val outputToken = createAccessToken(output, userId)
         val downloadUrl = "$host/media/user/transcode/download$input?token=$inputToken"
         val callbackUrl = "$host/media/user/transcode/upload$output?token=$outputToken" +
-            "&origin=${input.getArtifactFullPath()}&originToken=$inputToken"
+                "&origin=${input.getArtifactFullPath()}&originToken=$inputToken"
         return Pair(downloadUrl, callbackUrl)
     }
 
