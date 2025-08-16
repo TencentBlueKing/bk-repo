@@ -65,6 +65,7 @@ import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Component
 import java.net.Inet4Address
 import java.net.InetAddress
+import java.util.concurrent.TimeUnit
 
 /**
  * DevX环境bkci webhook监听器
@@ -175,6 +176,7 @@ class DevXBkciWebhookListener(
         repoName: String,
         remoteRepoName: String,
         display: Boolean,
+        retry: Int = 3
     ) {
         val configuration = CompositeConfiguration(
             ProxyConfiguration(
@@ -203,6 +205,11 @@ class DevXBkciWebhookListener(
         } catch (e: Exception) {
             if (e is ErrorCodeException && e.messageCode == ArtifactMessageCode.REPOSITORY_EXISTED) {
                 logger.info("repo[$projectId/$repoName] already exists")
+            } else if (e is ErrorCodeException && e.messageCode == ArtifactMessageCode.PROJECT_NOT_FOUND) {
+                if (retry > 0) {
+                    Thread.sleep(TimeUnit.SECONDS.toMillis(3))
+                    createLocalCompositeRepo(projectId, repoName, remoteRepoName, display, retry - 1)
+                }
             } else {
                 logger.error("create repo[$projectId/$repoName] failed", e)
             }
