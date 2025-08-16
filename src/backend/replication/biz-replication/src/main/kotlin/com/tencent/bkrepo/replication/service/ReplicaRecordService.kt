@@ -87,6 +87,13 @@ interface ReplicaRecordService {
     fun updateRecordDetailProgress(detailId: String, progress: ReplicaProgress)
 
     /**
+     * 更新文件同步详情进度
+     * @param detailId 同步详情id
+     * @param progress 同步进度
+     */
+    fun updateRecordDetailProgress(detailId: String, fileSuccess: Boolean)
+
+    /**
      * 完成同步详情
      * @param detailId 记录id
      * @param result 执行结果
