@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.maven.service
 
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.maven.dao.MavenMetadataDao
 import com.tencent.bkrepo.maven.model.TMavenMetadataRecord
@@ -8,6 +10,7 @@ import com.tencent.bkrepo.maven.pojo.MavenGAVC
 import com.tencent.bkrepo.maven.pojo.MavenMetadataSearchPojo
 import com.tencent.bkrepo.maven.pojo.MavenVersion
 import com.tencent.bkrepo.maven.pojo.metadata.MavenMetadataRequest
+import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -226,6 +229,23 @@ class MavenMetadataService(
             .and(TMavenMetadataRecord::classifier.name).isNull
         val query = Query(criteria)
         return mavenMetadataDao.find(query, TMavenMetadataRecord::class.java)
+    }
+
+    fun getByPage(request: MavenGroupSearchRequest): Page<TMavenMetadataRecord> {
+        val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(request.projectId)
+            .and(TMavenMetadataRecord::repoName.name).`is`(request.repoName)
+            .apply {
+                request.groupId?.let { and(TMavenMetadataRecord::groupId.name).`is`(it) }
+                request.artifactId?.let { and(TMavenMetadataRecord::artifactId.name).`is`(it) }
+                request.version?.let { and(TMavenMetadataRecord::version.name).`is`(it) }
+            }
+        val pageRequest = Pages.ofRequest(request.pageNumber, request.pageSize)
+        val query = Query(criteria).with(pageRequest)
+        val countQuery = Query.of(query).limit(0).skip(0)
+        val totalRecords = mavenMetadataDao.count(countQuery)
+        val metadataRecords = mavenMetadataDao.find(query, TMavenMetadataRecord::class.java)
+        val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
+        return Page(pageNumber + 1, query.limit, totalRecords, metadataRecords)
     }
 
     fun update(request: MavenMetadataRequest) {

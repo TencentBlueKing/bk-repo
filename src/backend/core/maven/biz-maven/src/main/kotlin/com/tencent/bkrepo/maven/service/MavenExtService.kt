@@ -9,13 +9,16 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
+import com.tencent.bkrepo.maven.pojo.response.MavenGroupResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
 @Service
 class MavenExtService(
-    private val nodeSearchService: NodeSearchService
+    private val nodeSearchService: NodeSearchService,
+    private val mavenMetadataService: MavenMetadataService,
 ) {
 
     @Value("\${maven.domain:http://127.0.0.1:25803}")
@@ -93,5 +96,23 @@ class MavenExtService(
             rule = rule
         )
         return ResponseBuilder.success(nodeSearchService.search(queryModel))
+    }
+
+
+    fun searchGroup(request: MavenGroupSearchRequest): Page<MavenGroupResponse> {
+        val result = mavenMetadataService.getByPage(request)
+        return Page(
+            pageNumber = request.pageNumber,
+            pageSize = request.pageSize,
+            totalRecords = result.totalRecords,
+            totalPages = result.totalPages,
+            records = result.records.map { metadata ->
+                MavenGroupResponse(
+                    groupId = metadata.groupId,
+                    artifactId = metadata.artifactId,
+                    version = metadata.version
+                )
+            }
+        )
     }
 }
