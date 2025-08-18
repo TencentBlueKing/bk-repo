@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.preview.service.impl
 
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
@@ -62,12 +63,14 @@ class OfficeFilePreviewImpl(
     private val officeToPdfService: OfficeToPdfService,
     private val fileTransferService: FileTransferService,
     private val previewFileCacheService: PreviewFileCacheServiceImpl,
-    private val nodeService: NodeService
+    private val nodeService: NodeService,
+    private val enableMultiTenant: EnableMultiTenantProperties
 ) : AbstractFilePreview(
     config,
     fileTransferService,
     previewFileCacheService,
-    nodeService
+    nodeService,
+    enableMultiTenant
 ) {
     /**
      * 转换文件，比如docx转成pdf
