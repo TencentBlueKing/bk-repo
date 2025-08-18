@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 Tencent.  All rights reserved.
+ * Copyright (C) 2022 Tencent. All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,13 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.service.webhook
+package com.tencent.bkrepo.job.pojo.stat
 
-import com.tencent.bkrepo.repository.pojo.webhook.BkCiDevXEnabledPayload
 
-interface BkciWebhookListener {
-    /**
-     * devx开启时调用
-     */
-    fun onDevXEnabled(payload: BkCiDevXEnabledPayload)
+data class StatNode(
+    val id: String,
+    val projectId: String,
+    val repoName: String,
+    val folder: Boolean,
+    val fullPath: String,
+    val path: String,
+    val size: Long,
+    val nodeNum: Long? = null,
+    ) {
+    constructor(map: Map<String, Any?>) : this(
+        map[StatNode::id.name].toString(),
+        map[StatNode::projectId.name].toString(),
+        map[StatNode::repoName.name].toString(),
+        map[StatNode::folder.name] as Boolean,
+        map[StatNode::fullPath.name].toString(),
+        map[StatNode::path.name].toString(),
+        map[StatNode::size.name].toString().toLongOrNull() ?: 0,
+        map[StatNode::nodeNum.name]?.toString()?.toLong(),
+        )
 }

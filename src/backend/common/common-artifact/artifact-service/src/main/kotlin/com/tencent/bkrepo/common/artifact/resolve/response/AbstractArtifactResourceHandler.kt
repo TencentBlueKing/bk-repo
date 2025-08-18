@@ -29,16 +29,17 @@ package com.tencent.bkrepo.common.artifact.resolve.response
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
 import com.tencent.bkrepo.common.artifact.metrics.RecordAbleInputStream
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
-import com.tencent.bkrepo.common.storage.config.StorageProperties
-import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import org.slf4j.LoggerFactory
@@ -164,7 +165,18 @@ abstract class AbstractArtifactResourceHandler(
         return if (isRangeRequest) HttpStatus.PARTIAL_CONTENT.value else HttpStatus.OK.value
     }
 
+    /**
+     * 判断charset,一些媒体类型设置了charset会影响其表现，如application/vnd.android.package-archive
+     * */
+    protected fun determineCharset(mediaType: String, defaultCharset: String): String? {
+        return if (binaryMediaTypes.contains(mediaType) ||
+            storageProperties.response.binaryMediaTypes.contains(mediaType)
+        ) null
+        else defaultCharset
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractArtifactResourceHandler::class.java)
+        private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK, MediaTypes.APPLICATION_WASM)
     }
 }

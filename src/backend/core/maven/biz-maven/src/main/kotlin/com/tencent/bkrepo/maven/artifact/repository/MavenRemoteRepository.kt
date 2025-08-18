@@ -61,7 +61,6 @@ import com.tencent.bkrepo.maven.util.MavenGAVCUtils.mavenGAVC
 import com.tencent.bkrepo.maven.util.MavenGAVCUtils.toMavenGAVC
 import com.tencent.bkrepo.maven.util.MavenStringUtils.checksumType
 import com.tencent.bkrepo.maven.util.MavenStringUtils.formatSeparator
-import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotMetadataChecksumUri
 import com.tencent.bkrepo.maven.util.MavenStringUtils.isSnapshotMetadataUri
 import com.tencent.bkrepo.repository.api.StageClient
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
@@ -109,16 +108,17 @@ class MavenRemoteRepository(
         logger.info("Remote download url: $downloadUrl, network config: ${remoteConfiguration.network}")
 
         // 尝试远程下载
-        val response = try {
-            httpClient.newCall(request).execute()
+        return try {
+            httpClient.newCall(request).execute().use { response ->
+                if (checkResponse(response)) {
+                    onDownloadResponse(context, response)
+                } else {
+                    getCacheArtifactResource(context)
+                }
+            }
         } catch (e: Exception) {
             logger.warn("An error occurred while sending request $downloadUrl", e)
-            null
-        }
-
-        return when {
-            response != null && checkResponse(response) -> onDownloadResponse(context, response)
-            else -> getCacheArtifactResource(context)
+            getCacheArtifactResource(context)
         }
     }
 
@@ -211,18 +211,10 @@ class MavenRemoteRepository(
         }
         if (fullPath.isSnapshotMetadataUri()) {
             artifactFile.getInputStream().use { MetadataXpp3Reader().read(it) }?.versioning?.snapshot?.run {
-                context.putAttribute(SNAPSHOT_TIMESTAMP, timestamp.replace(".", ""))
+                timestamp?.takeIf { it.isNotBlank() }?.let {
+                    context.putAttribute(SNAPSHOT_TIMESTAMP, timestamp.replace(".", ""))
+                }
                 context.putAttribute(SNAPSHOT_BUILD_NUMBER, buildNumber)
-            }
-        }
-        if (fullPath.isSnapshotMetadataChecksumUri()) {
-            val metadataNode = nodeService.getNodeDetail(
-                ArtifactInfo(
-                    context.projectId, context.repoName, fullPath.substringBeforeLast(".")
-                )
-            )
-            metadataNode?.nodeMetadata?.find { it.key == SNAPSHOT_TIMESTAMP }?.value?.let {
-                context.putAttribute(SNAPSHOT_TIMESTAMP, it)
             }
         }
         if (fullPath.checksumType() == null) {
