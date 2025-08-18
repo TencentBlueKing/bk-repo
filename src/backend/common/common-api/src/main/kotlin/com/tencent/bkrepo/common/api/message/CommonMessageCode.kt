@@ -65,6 +65,7 @@ enum class CommonMessageCode(private val key: String) : MessageCode {
     ACQUIRE_LOCK_FAILED("acquire.lock.failed"),
     RATE_LIMITER_OVERLOAD("rate.limiter.overload"),
     REQUEST_URL_NOT_FOUND("request.url.not-found"),
+    PARAMETER_VALIDATION_FAILED("parameter.validation.failed"),
     ;
 
     override fun getBusinessCode() = ordinal + 1
