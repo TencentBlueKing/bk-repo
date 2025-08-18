@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
@@ -63,12 +64,14 @@ class CompressFilePreviewImpl(
     previewFileCacheService: PreviewFileCacheServiceImpl,
     private val nodeService: NodeService,
     private val storageManager: StorageManager,
-    private val artifactResourceWriter: ArtifactResourceWriter
+    private val artifactResourceWriter: ArtifactResourceWriter,
+    private val enableMultiTenant: EnableMultiTenantProperties
 ) : AbstractFilePreview(
     config,
     fileTransferService,
     previewFileCacheService,
-    nodeService
+    nodeService,
+    enableMultiTenant
 ) {
 
     override fun filePreviewHandle(fileAttribute: FileAttribute) {

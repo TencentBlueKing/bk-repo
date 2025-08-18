@@ -36,12 +36,14 @@ import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PREVIEW_ARTIFACT_TO_FILE
@@ -54,18 +56,20 @@ import com.tencent.bkrepo.preview.pojo.FileAttribute
 import com.tencent.bkrepo.preview.pojo.cache.PreviewFileCacheInfo
 import com.tencent.bkrepo.preview.utils.DownloadUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import javax.servlet.http.HttpServletRequest
-import org.springframework.stereotype.Component
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
+import javax.servlet.http.HttpServletRequest
+import org.springframework.stereotype.Component
 
 @Component
 class FileTransferService(
     private val config: PreviewConfig,
     private val downloadUtils: DownloadUtils,
-    private val repositoryService: RepositoryService
+    private val repositoryService: RepositoryService,
+    private val createIfAbsentService: CreateIfAbsentService,
+    private val enableMultiTenant: EnableMultiTenantProperties
 ) : ArtifactService() {
 
     /**
@@ -134,9 +138,17 @@ class FileTransferService(
     fun upload(fileAttribute: FileAttribute, sourcePath: String): NodeDetail {
         val file = File(sourcePath)
         require(file.exists()) { "The file does not exist, $sourcePath" }
-        // 准备要上传的信息,如果是bkrepo文件，预览文件保存在原仓库，否则保存在自定义仓库中
-        val projectId = config.projectId
+        // 新版本统一保存在自定义仓库中
+        var projectId = config.projectId
         val repoName = config.repoName
+
+        // 多租户模式下，启动时没创建仓库、项目
+        if (enableMultiTenant.enabled) {
+            createIfAbsentService.createProjectIfAbsent()
+            createIfAbsentService.createRepoIfAbsent()
+            projectId = "${ProjectServiceHelper.getTenantId()}.$projectId"
+        }
+
         val artifactInfo = ArtifactInfo(projectId!!, repoName!!, buildArtifactUri(fileAttribute))
         setFileTransferAttribute(artifactInfo, fileAttribute, true)
         val artifactFile = ArtifactFileFactory.build(file.inputStream(), file.length())
