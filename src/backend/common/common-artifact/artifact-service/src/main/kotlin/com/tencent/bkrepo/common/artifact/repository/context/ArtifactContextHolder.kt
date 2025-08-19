@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.artifact.repository.context
 
 import com.google.common.cache.CacheBuilder
-import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
@@ -44,7 +43,6 @@ import com.tencent.bkrepo.common.artifact.constant.REPO_KEY
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.constant.REPO_RATE_LIMIT_KEY
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
-import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -52,14 +50,11 @@ import com.tencent.bkrepo.common.artifact.repository.composite.CompositeReposito
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.proxy.ProxyRepository
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.config.RateLimitProperties
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import jakarta.servlet.http.HttpServletRequest
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
@@ -71,8 +66,7 @@ class ArtifactContextHolder(
     compositeRepository: CompositeRepository,
     proxyRepository: ProxyRepository,
     artifactClient: ArtifactClient,
-    httpAuthSecurity: ObjectProvider<HttpAuthSecurity>,
-    nodeForwardService: ObjectProvider<NodeForwardService>,
+    httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
 ) {
 
     init {
@@ -81,7 +75,6 @@ class ArtifactContextHolder(
         Companion.proxyRepository = proxyRepository
         Companion.artifactClient = artifactClient
         Companion.httpAuthSecurity = httpAuthSecurity
-        Companion.nodeForwardService = nodeForwardService
         require(artifactConfigurers.isNotEmpty()) { "No ArtifactConfigurer found!" }
         artifactConfigurers.forEach {
             artifactConfigurerMap[it.getRepositoryType()] = it
@@ -89,13 +82,11 @@ class ArtifactContextHolder(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactContextHolder::class.java)
         private lateinit var artifactConfigurers: List<ArtifactConfigurer>
         private lateinit var compositeRepository: CompositeRepository
         private lateinit var proxyRepository: ProxyRepository
         private lateinit var artifactClient: ArtifactClient
         private lateinit var httpAuthSecurity: ObjectProvider<HttpAuthSecurity>
-        private lateinit var nodeForwardService: ObjectProvider<NodeForwardService>
 
 
         private const val RECEIVE_RATE_LIMIT_OF_REPO = "receiveRateLimit"
@@ -292,34 +283,6 @@ class ArtifactContextHolder(
             )
             nodeDetail?.let { request.setAttribute(attrKey, nodeDetail) }
             return nodeDetail
-        }
-
-        /**
-         * 判断是否需要forward
-         *
-         * @param node 待下载node
-         * @param storageCredentials 待下载node所在存储
-         * @param userId 正在下载的用户id
-         *
-         * @return 不需要forward时返回null，需要时候返回forward node与其所在存储
-         */
-        fun getForwardNodeDetail(
-            node: NodeDetail,
-            storageCredentials: StorageCredentials?,
-            userId: String = SecurityUtils.getUserId(),
-        ): Pair<NodeDetail, StorageCredentials?>? {
-            val forwardNode: NodeDetail = nodeForwardService.ifAvailable?.forward(node, userId) ?: return null
-            logger.info("Load[${node.identity()}] forward to [${forwardNode.identity()}].")
-            ActionAuditContext.current().addExtendData("alphaApkSha256", forwardNode.sha256)
-            ActionAuditContext.current().addExtendData("alphaApkMd5", forwardNode.md5)
-            val forwardNodeStorageCredentials = if (forwardNode.repoName == node.repoName) {
-                storageCredentials
-            } else {
-                val repo = getRepoDetail(RepositoryId(forwardNode.projectId, forwardNode.repoName))
-                logger.info("use forward node storage credentials[${repo.storageCredentials?.key}]")
-                repo.storageCredentials
-            }
-            return Pair(forwardNode, forwardNodeStorageCredentials)
         }
 
         /**
