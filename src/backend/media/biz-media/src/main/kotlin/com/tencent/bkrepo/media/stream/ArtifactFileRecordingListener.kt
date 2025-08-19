@@ -2,7 +2,6 @@ package com.tencent.bkrepo.media.stream
 
 import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedArtifactFile
 import com.tencent.bkrepo.media.TYPE_CLIENT_MOUSE_DATA
-import com.tencent.bkrepo.media.TYPE_VIDEO_DATA
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.util.Locale
 
