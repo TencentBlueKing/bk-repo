@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.preview.config.startup
 
 import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
+import com.tencent.bkrepo.preview.service.CreateIfAbsentService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments

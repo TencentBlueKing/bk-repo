@@ -92,7 +92,8 @@ class CreateIfAbsentService(
                 configuration = buildRepoConfig()
             )
             val createdRepo = repositoryService.createRepo(req)
-            logger.info("Created repository successfully, projectId: ${createdRepo.projectId}, repoName: ${createdRepo.name}")
+            logger.info("Created repository successfully, projectId: ${createdRepo.projectId}, " +
+                    "repoName: ${createdRepo.name}")
             return
         }
 
