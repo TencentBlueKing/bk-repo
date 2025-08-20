@@ -432,7 +432,13 @@ auth:
     allowDefaultPwd: true
     ## 指定realm类型，支持local/devops
     realm: local
-    ## realm 指定为devops或者bkiamv3配置
+    ## realm 用户管理接口
+    bkUserServer:
+    ## 接口调用公共参数
+    bkAppCode: bk_repo
+    bkAppSecret:
+    ## 是否启用用户管理校验
+    enableBkUser: false
     ## 权限v3-rbac相关配置
     iam: 
       callbackUser: bk_iam

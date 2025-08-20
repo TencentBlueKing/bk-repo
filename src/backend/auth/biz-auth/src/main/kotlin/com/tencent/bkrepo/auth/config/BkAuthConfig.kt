@@ -9,7 +9,7 @@ class BkAuthConfig {
     /**
      * bk auth 服务器地址
      */
-    @Value("\${auth.bkAuthServer:}")
+    @Value("\${auth.bkUserServer:}")
     var bkAuthServer: String = ""
 
     /**
