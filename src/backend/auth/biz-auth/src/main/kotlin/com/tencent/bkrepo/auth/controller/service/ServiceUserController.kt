@@ -67,11 +67,6 @@ class ServiceUserController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    @Deprecated("仅用于兼容旧接口", ReplaceWith("userInfoById"))
-    override fun detail(uid: String): Response<User?> {
-        return ResponseBuilder.success(userService.getUserById(uid))
-    }
-
     override fun addUserRole(uid: String, rid: String): Response<User?> {
         val result = userService.addUserToRole(uid, rid)
         return ResponseBuilder.success(result)
@@ -88,6 +83,10 @@ class ServiceUserController @Autowired constructor(
 
     override fun userInfoById(uid: String): Response<UserInfo?> {
         return ResponseBuilder.success(userService.getUserInfoById(uid))
+    }
+
+    override fun userInfoByIdAndTenantId(uid: String, tenantId: String?): Response<UserInfo?> {
+        return ResponseBuilder.success(userService.getUserInfoByIdAndTenantId(uid, tenantId))
     }
 
     override fun userPwdById(uid: String): Response<String?> {

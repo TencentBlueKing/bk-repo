@@ -63,10 +63,6 @@ class UserHelper constructor(
         return userDao.findFirstByUserId(userId) != null
     }
 
-    fun getTenantId(): String? {
-        return HttpContextHolder.getRequestOrNull()?.getHeader(TENANT_ID)
-    }
-
     fun checkUserRoleBind(userId: String, roleId: String): Boolean {
         userDao.findFirstByUserIdAndRoles(userId, roleId) ?: run {
             logger.warn("user [$userId,$roleId]  not exist.")

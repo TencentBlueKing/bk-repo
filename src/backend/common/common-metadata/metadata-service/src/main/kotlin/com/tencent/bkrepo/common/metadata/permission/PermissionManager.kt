@@ -154,7 +154,8 @@ open class PermissionManager(
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         if (isReadPublicOrSystemRepoCheck(
                 action, repoInfo, public, userId
-            )) {
+            )
+        ) {
             return
         }
         checkPermission(
@@ -190,7 +191,8 @@ open class PermissionManager(
         val repoInfo = queryRepositoryInfo(projectId, repoName)
         if (isReadPublicOrSystemRepoCheck(
                 action, repoInfo, public, userId
-            )) {
+            )
+        ) {
             return
         }
         // 禁止批量下载流水线节点
@@ -503,14 +505,14 @@ open class PermissionManager(
                 }
                 logger.info(
                     "check external permission error, url[${request.url}], project[$projectId], repo[$repoName]," +
-                        " nodes$paths, code[${it.code}], response[$content]"
+                            " nodes$paths, code[${it.code}], response[$content]"
                 )
                 throw PermissionException(errorMsg)
             }
         } catch (e: IOException) {
             logger.error(
                 "check external permission error," + "url[${request.url}], project[$projectId], " +
-                    "repo[$repoName], nodes$paths, $e"
+                        "repo[$repoName], nodes$paths, $e"
             )
             throw PermissionException(errorMsg)
         }
@@ -567,14 +569,15 @@ open class PermissionManager(
      * 判断是否为管理员
      */
     open fun isAdminUser(userId: String): Boolean {
+        val tenantId = SecurityUtils.getTenantId()
         return if (!httpAuthProperties.adminCacheEnabled) {
-            userResource.userInfoById(userId).data?.admin == true
+            userResource.userInfoByIdAndTenantId(userId, tenantId).data?.admin == true
         } else {
             try {
                 adminUsersCache.get(ADMIN_USER).contains(userId)
             } catch (e: Exception) {
                 logger.warn("search admin user cache error: ${e.message}")
-                userResource.userInfoById(userId).data?.admin == true
+                userResource.userInfoByIdAndTenantId(userId, tenantId).data?.admin == true
             }
         }
     }

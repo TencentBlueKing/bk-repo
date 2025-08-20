@@ -44,7 +44,8 @@ class PrincipalManager(
     }
 
     private fun isAdminUser(userId: String): Boolean {
-        return serviceUserClient.userInfoById(userId).data?.admin == true
+        val tenantId = SecurityUtils.getTenantId()
+        return serviceUserClient.userInfoByIdAndTenantId(userId, tenantId).data?.admin == true
     }
 
     companion object {

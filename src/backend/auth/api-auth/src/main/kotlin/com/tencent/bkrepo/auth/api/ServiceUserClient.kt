@@ -66,14 +66,6 @@ interface ServiceUserClient {
     @PostMapping("/create/project")
     fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean>
 
-    @Operation(summary = "用户详情")
-    @GetMapping("/detail/{uid}")
-    @Deprecated("仅用于兼容旧接口", ReplaceWith("userInfoById"))
-    fun detail(
-        @Parameter(name = "用户id")
-        @PathVariable uid: String
-    ): Response<User?>
-
     @Operation(summary = "新增用户所属角色")
     @PostMapping("/role/{uid}/{rid}")
     fun addUserRole(
@@ -102,6 +94,13 @@ interface ServiceUserClient {
     @GetMapping("/userinfo/{uid}")
     fun userInfoById(
         @PathVariable uid: String
+    ): Response<UserInfo?>
+
+    @Operation(summary = "用户info ")
+    @GetMapping("/userinfo")
+    fun userInfoByIdAndTenantId(
+        @RequestParam uid: String,
+        @RequestParam tenantId: String?
     ): Response<UserInfo?>
 
     @Operation(summary = "获取用户pwd ")

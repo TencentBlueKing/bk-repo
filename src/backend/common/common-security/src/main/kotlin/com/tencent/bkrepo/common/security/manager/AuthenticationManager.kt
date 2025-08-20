@@ -37,6 +37,7 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
@@ -97,8 +98,10 @@ class AuthenticationManager {
      * 当用户不存在时返回`null`
      */
     fun findUserAccount(userId: String): UserInfo? {
-        return serviceUserClient.userInfoById(userId).data
+        val tenantId = SecurityUtils.getTenantId()
+        return serviceUserClient.userInfoByIdAndTenantId(userId, tenantId).data
     }
+
     /**
      * 根据用户id[userId]查询用户密码
      * 当用户不存在时返回`null`

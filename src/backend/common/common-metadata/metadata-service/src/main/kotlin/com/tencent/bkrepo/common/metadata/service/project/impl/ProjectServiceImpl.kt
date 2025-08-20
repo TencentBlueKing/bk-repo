@@ -57,6 +57,7 @@ import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper.buildUpdate
 import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper.convert
 import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper.validate
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
@@ -157,7 +158,7 @@ class ProjectServiceImpl(
         // 校验租户信息
         if (enableMultiTenant.enabled) {
             validateTenantId()
-            val tenantId = ProjectServiceHelper.getTenantId()
+            val tenantId = SecurityUtils.getTenantId()
             val projectId = "$tenantId.$name"
             return projectDao.findByName(projectId) != null
         }
@@ -175,7 +176,7 @@ class ProjectServiceImpl(
         if (enableMultiTenant.enabled) {
             validateTenantId()
         }
-        val project = request.buildProject(ProjectServiceHelper.getTenantId())
+        val project = request.buildProject(SecurityUtils.getTenantId())
         return try {
             projectDao.insert(project)
             request.name = project.name
@@ -238,7 +239,7 @@ class ProjectServiceImpl(
     }
 
     private fun validateTenantId() {
-        if (ProjectServiceHelper.getTenantId().isNullOrEmpty()) {
+        if (SecurityUtils.getTenantId().isNullOrEmpty()) {
             logger.warn("empty TenantId")
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "tenantId")
         }

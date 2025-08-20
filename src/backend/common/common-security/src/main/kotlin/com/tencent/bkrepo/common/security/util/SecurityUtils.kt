@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.api.constant.MS_REQUEST_KEY
 import com.tencent.bkrepo.common.api.constant.MS_REQUEST_SRC_CLUSTER
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.TENANT_ID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -64,6 +65,13 @@ object SecurityUtils {
      */
     fun getPlatformId(): String? {
         return HttpContextHolder.getRequestOrNull()?.getAttribute(PLATFORM_KEY) as? String
+    }
+
+    /**
+     * 获取租户ID
+     */
+    fun getTenantId(): String? {
+        return HttpContextHolder.getRequestOrNull()?.getHeader(TENANT_ID)
     }
 
     /**
