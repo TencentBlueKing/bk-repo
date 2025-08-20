@@ -9,7 +9,7 @@ data class ArchiveCredentialsProperties(
     /**
      * 归档实例
      * */
-    var cos: StorageCredentials = InnerCosCredentials(),
+    var cos: InnerCosCredentials = InnerCosCredentials(),
     /**
      * 归档类型
      * */
