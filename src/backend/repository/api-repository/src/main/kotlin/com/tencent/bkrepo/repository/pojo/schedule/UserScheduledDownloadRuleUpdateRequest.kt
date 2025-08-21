@@ -23,6 +23,8 @@ data class UserScheduledDownloadRuleUpdateRequest(
     val conflictStrategy: ScheduledDownloadConflictStrategy? = null,
     @get:Schema(title = "是否启用")
     val enabled: Boolean? = null,
+    @get:Schema(title = "是否解压")
+    val extracted: Boolean? = null,
     @get:Schema(title = "适用平台")
     val platform: Platform? = null,
     @JsonIgnore
