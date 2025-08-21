@@ -23,6 +23,8 @@ data class UserScheduledDownloadRuleCreateRequest(
     val conflictStrategy: ScheduledDownloadConflictStrategy = ScheduledDownloadConflictStrategy.OVERWRITE,
     @get:Schema(title = "是否启用")
     val enabled: Boolean = true,
+    @get:Schema(title = "是否解压")
+    val extracted: Boolean = false,
     @get:Schema(title = "适用平台类型")
     val platform: Platform = Platform.ALL,
     @get:Schema(title = "规则生效范围")
