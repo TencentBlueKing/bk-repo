@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.metadata.interceptor.impl
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.FORBID_REASON
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -37,9 +38,12 @@ class NodeForbiddenStatusInterceptor : NodeMetadataInterceptor(DownloadIntercept
 
     override fun forbiddenException(projectId: String, artifact: NodeDetail): Exception {
         return ErrorCodeException(
-            ArtifactMessageCode.ARTIFACT_FORBIDDEN,
-            artifact.fullPath,
-            artifact.metadata[FORBID_REASON]?.toString().orEmpty()
+            messageCode = ArtifactMessageCode.ARTIFACT_FORBIDDEN,
+            params = arrayOf(
+                artifact.fullPath,
+                artifact.metadata[FORBID_REASON]?.toString().orEmpty(),
+            ),
+            status = HttpStatus.FORBIDDEN,
         )
     }
 }
