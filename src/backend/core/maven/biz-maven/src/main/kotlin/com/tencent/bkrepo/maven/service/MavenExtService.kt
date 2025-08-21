@@ -11,7 +11,6 @@ import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
-import com.tencent.bkrepo.maven.pojo.response.MavenGroupResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 

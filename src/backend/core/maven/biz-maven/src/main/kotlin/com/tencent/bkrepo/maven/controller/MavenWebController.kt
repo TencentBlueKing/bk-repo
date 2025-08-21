@@ -47,7 +47,6 @@ import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
 import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
-import com.tencent.bkrepo.maven.pojo.response.MavenGroupResponse
 import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
 import com.tencent.bkrepo.maven.service.MavenExtService
 import com.tencent.bkrepo.maven.service.MavenService
