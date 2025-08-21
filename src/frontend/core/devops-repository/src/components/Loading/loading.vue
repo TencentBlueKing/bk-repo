@@ -108,6 +108,7 @@ body .bk-dialog-wrapper .bk-dialog-body {
     }
     .subMessage{
         margin-top: 10px;
+
     }
     @keyframes rotate-loading {
         0% {
