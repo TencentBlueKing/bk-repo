@@ -134,7 +134,7 @@ class MavenWebController(
         return ResponseBuilder.success(mavenService.searchJar(request))
     }
 
-    override fun searchGroup(request: MavenGroupSearchRequest): Response<Page<MavenGroupResponse>> {
+    override fun searchGroup(request: MavenGroupSearchRequest): Response<Page<String>> {
         return ResponseBuilder.success(mavenExtService.searchGroup(request))
     }
 }

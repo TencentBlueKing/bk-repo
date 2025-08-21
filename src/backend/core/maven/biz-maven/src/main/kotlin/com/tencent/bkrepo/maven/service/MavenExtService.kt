@@ -99,20 +99,22 @@ class MavenExtService(
     }
 
 
-    fun searchGroup(request: MavenGroupSearchRequest): Page<MavenGroupResponse> {
-        val result = mavenMetadataService.getByPage(request)
-        return Page(
-            pageNumber = request.pageNumber,
-            pageSize = request.pageSize,
-            totalRecords = result.totalRecords,
-            totalPages = result.totalPages,
-            records = result.records.map { metadata ->
-                MavenGroupResponse(
-                    groupId = metadata.groupId,
-                    artifactId = metadata.artifactId,
-                    version = metadata.version
-                )
+    fun searchGroup(request: MavenGroupSearchRequest): Page<String> {
+        with(request) {
+            val field = when {
+                groupId.isNullOrEmpty() && artifactId.isNullOrEmpty() && version.isNullOrEmpty() -> "groupId"
+                !groupId.isNullOrEmpty() && artifactId.isNullOrEmpty() -> "artifactId"
+                !groupId.isNullOrEmpty() && !artifactId.isNullOrEmpty() -> "version"
+                else -> "groupId"
             }
-        )
+            val result = mavenMetadataService.getByPage(request, field)
+            return Page(
+                pageNumber = pageNumber,
+                pageSize = pageSize,
+                totalRecords = result.totalRecords,
+                totalPages = result.totalPages,
+                records = result.records
+            )
+        }
     }
 }

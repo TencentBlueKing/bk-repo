@@ -2,7 +2,6 @@ package com.tencent.bkrepo.maven.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.maven.dao.MavenMetadataDao
 import com.tencent.bkrepo.maven.model.TMavenMetadataRecord
@@ -19,6 +18,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -231,7 +231,9 @@ class MavenMetadataService(
         return mavenMetadataDao.find(query, TMavenMetadataRecord::class.java)
     }
 
-    fun getByPage(request: MavenGroupSearchRequest): Page<TMavenMetadataRecord> {
+    fun getByPage(request: MavenGroupSearchRequest, field: String): Page<String> {
+        val pageNumber = if (request.pageNumber < 0) 0 else request.pageNumber
+        val pageSize = if (request.pageSize < 0) 0 else request.pageSize
         val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(request.projectId)
             .and(TMavenMetadataRecord::repoName.name).`is`(request.repoName)
             .apply {
@@ -239,13 +241,17 @@ class MavenMetadataService(
                 request.artifactId?.let { and(TMavenMetadataRecord::artifactId.name).`is`(it) }
                 request.version?.let { and(TMavenMetadataRecord::version.name).`is`(it) }
             }
-        val pageRequest = Pages.ofRequest(request.pageNumber, request.pageSize)
-        val query = Query(criteria).with(pageRequest)
-        val countQuery = Query.of(query).limit(0).skip(0)
-        val totalRecords = mavenMetadataDao.count(countQuery)
-        val metadataRecords = mavenMetadataDao.find(query, TMavenMetadataRecord::class.java)
-        val pageNumber = if (query.limit == 0) 0 else (query.skip / query.limit).toInt()
-        return Page(pageNumber + 1, query.limit, totalRecords, metadataRecords)
+        val matchStage = Aggregation.match(criteria)
+        val groupStage = Aggregation.group(field).first(field).`as`(field)
+        val aggregation = Aggregation.newAggregation(
+            matchStage, groupStage,
+            Aggregation.skip(pageNumber * pageSize),
+            Aggregation.limit(pageSize.toLong())
+        )
+        val results = mavenMetadataDao.determineMongoTemplate().aggregate(
+            aggregation, TMavenMetadataRecord::class.java, HashMap::class.java
+        ).mappedResults.map { it[field]?.toString() ?: "" }
+        return Page(pageNumber, pageSize, 0, results)
     }
 
     fun update(request: MavenMetadataRequest) {

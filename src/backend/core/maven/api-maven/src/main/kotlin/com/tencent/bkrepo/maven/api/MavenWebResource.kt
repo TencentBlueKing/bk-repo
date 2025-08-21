@@ -96,6 +96,6 @@ interface MavenWebResource {
 
     @Operation(summary = "maven group search")
     @PostMapping("/search/group")
-    fun searchGroup(@RequestBody request: MavenGroupSearchRequest): Response<Page<MavenGroupResponse>>
+    fun searchGroup(@RequestBody request: MavenGroupSearchRequest): Response<Page<String>>
 
 }
