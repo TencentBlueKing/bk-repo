@@ -21,6 +21,7 @@ import com.tencent.bkrepo.media.stream.TranscodeParam
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.time.Duration
 
 /**
  * 视频转码服务
@@ -159,6 +160,7 @@ class TranscodeService(
                 fullPathSet = setOf(getArtifactFullPath()),
                 type = TokenType.ALL,
                 createdBy = userId,
+                expireSeconds = Duration.ofDays(7).seconds,
             )
             return tokenService.createToken(tokenRequest).firstOrNull().orEmpty()
         }
