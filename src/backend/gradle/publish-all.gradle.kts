@@ -31,9 +31,15 @@
 val allJarRepo: String? by project
 val allJarUsername: String? by project
 val allJarPassword: String? by project
+val publishBiz: String? by project
 
 allprojects {
-    if (!name.startsWith("boot-") && !name.startsWith("biz-") && childProjects.isEmpty()) {
+    val condition = if (publishBiz == "true") {
+        !name.startsWith("boot-") && childProjects.isEmpty()
+    } else {
+        !name.startsWith("boot-") && !name.startsWith("biz-") && childProjects.isEmpty()
+    }
+    if (condition) {
         apply(plugin = "com.tencent.devops.publish")
         configure<PublishingExtension> {
             repositories {

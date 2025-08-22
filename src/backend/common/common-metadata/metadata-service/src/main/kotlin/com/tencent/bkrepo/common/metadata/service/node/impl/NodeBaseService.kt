@@ -364,7 +364,7 @@ abstract class NodeBaseService(
                 .and(TNode::deleted).isEqualTo(null)
                 .and(TNode::fullPath).isEqualTo(node.fullPath)
                 .and(TNode::folder).isEqualTo(false)
-            val query = Query(criteria).withHint(TNode.FULL_PATH_IDX)
+            val query = Query(criteria)
             val update = Update().set(TNode::lastAccessDate.name, accessDate)
             nodeDao.updateFirst(query, update)
             logger.info("Update node access time [$this] success.")

@@ -15,10 +15,10 @@ import com.tencent.bkrepo.nuget.constant.VERSION
 import com.tencent.bkrepo.nuget.exception.NugetArtifactReceiveException
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetPublishArtifactInfo
 import com.tencent.bkrepo.nuget.util.DecompressUtil.resolverNuspec
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.multipart.MultipartHttpServletRequest
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(NugetPublishArtifactInfo::class)

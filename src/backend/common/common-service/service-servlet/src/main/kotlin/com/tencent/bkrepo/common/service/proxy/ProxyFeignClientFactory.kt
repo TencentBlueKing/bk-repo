@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.common.service.proxy
 
+import com.tencent.bkrepo.common.api.util.okhttp.CertTrustManager
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager
 import feign.Client
 import feign.Feign
 import feign.Logger

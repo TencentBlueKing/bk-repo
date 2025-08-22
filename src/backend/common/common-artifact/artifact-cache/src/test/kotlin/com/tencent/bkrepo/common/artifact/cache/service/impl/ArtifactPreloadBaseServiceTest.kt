@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadConfiguration
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
@@ -41,13 +42,14 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import io.micrometer.core.instrument.MeterRegistry
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -56,7 +58,10 @@ import kotlin.contracts.ExperimentalContracts
 @ExperimentalContracts
 @DataMongoTest
 @ImportAutoConfiguration(
-    ArtifactPreloadConfiguration::class, StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class
+    ArtifactPreloadConfiguration::class,
+    StorageAutoConfiguration::class,
+    TaskExecutionAutoConfiguration::class,
+    ArtifactMetricsConfiguration::class
 )
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.properties"])
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -67,14 +72,17 @@ open class ArtifactPreloadBaseServiceTest(
     protected val storageProperties: StorageProperties,
 ) {
 
-    @MockBean
+    @MockitoBean
     protected lateinit var nodeService: NodeService
 
-    @MockBean
+    @MockitoBean
     protected lateinit var repositoryService: RepositoryService
 
-    @MockBean
+    @MockitoBean
     protected lateinit var storageCredentialService: StorageCredentialService
+
+    @MockitoBean
+    protected lateinit var meterRegistry: MeterRegistry
 
     protected fun createTempArtifactFile(size: Long): ArtifactFile {
         val tempFile = File.createTempFile("preload-", ".tmp")

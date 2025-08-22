@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.svn.utils
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 object SvnProxyHelper {
     fun getRepoId(request: HttpServletRequest): RepositoryId? {

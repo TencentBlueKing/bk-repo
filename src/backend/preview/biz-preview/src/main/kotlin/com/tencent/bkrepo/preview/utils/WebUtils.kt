@@ -32,10 +32,9 @@
 package com.tencent.bkrepo.preview.utils
 
 import io.mola.galimatias.GalimatiasParseException
-import javax.servlet.ServletRequest
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.ServletRequest
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
-import org.springframework.util.Base64Utils
 import org.springframework.util.StringUtils
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.util.HtmlUtils
@@ -45,7 +44,7 @@ import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import java.util.HashMap
+import java.util.Base64
 import java.util.regex.Pattern
 
 object WebUtils {
@@ -305,10 +304,12 @@ object WebUtils {
          * 有些 Base64 实现可能每 76 个字符插入换行符，也一并去掉
          */
         return String(
-                Base64Utils.decodeFromString(source!!.replace(" ".toRegex(), "+")
-                    .replace("\n".toRegex(), "")),
-                charsets!!
-            )
+            Base64.getDecoder().decode(
+                source!!.replace(" ".toRegex(), "+")
+                    .replace("\n".toRegex(), "")
+            ),
+            charsets!!
+        )
     }
 
     /**

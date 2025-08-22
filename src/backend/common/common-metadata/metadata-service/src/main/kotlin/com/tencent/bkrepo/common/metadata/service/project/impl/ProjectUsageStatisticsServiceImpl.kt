@@ -33,15 +33,16 @@ import com.google.common.cache.LoadingCache
 import com.google.common.util.concurrent.RateLimiter
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.pojo.Page
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.metadata.dao.project.ProjectUsageStatisticsDao
+import com.tencent.bkrepo.common.metadata.model.TProjectUsageStatistics
 import com.tencent.bkrepo.common.metadata.pojo.project.ProjectUsageStatistics
 import com.tencent.bkrepo.common.metadata.pojo.project.ProjectUsageStatisticsListOption
 import com.tencent.bkrepo.common.metadata.properties.ProjectUsageStatisticsProperties
-import com.tencent.bkrepo.common.metadata.dao.project.ProjectUsageStatisticsDao
-import com.tencent.bkrepo.common.metadata.model.TProjectUsageStatistics
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.scheduling.annotation.Scheduled
@@ -56,7 +57,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.LongAdder
 import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import javax.annotation.PreDestroy
 import kotlin.concurrent.withLock
 
 @Service
@@ -177,8 +177,8 @@ class ProjectUsageStatisticsServiceImpl(
         } else {
             logger.error(
                 "cache flush executor termination timeout after $waitMinutes minutes, " +
-                        "cache size[${cache.size()}, " +
-                        "executor active[${executor.activeCount}, queue[${executor.queue.size}]]]"
+                    "cache size[${cache.size()}, " +
+                    "executor active[${executor.activeCount}, queue[${executor.queue.size}]]]"
             )
         }
     }

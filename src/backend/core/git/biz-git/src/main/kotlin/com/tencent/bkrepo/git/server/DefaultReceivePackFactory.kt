@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.git.server
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
+import jakarta.servlet.http.HttpServletRequest
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.transport.ReceivePack
-import javax.servlet.http.HttpServletRequest
 
 class DefaultReceivePackFactory {
 

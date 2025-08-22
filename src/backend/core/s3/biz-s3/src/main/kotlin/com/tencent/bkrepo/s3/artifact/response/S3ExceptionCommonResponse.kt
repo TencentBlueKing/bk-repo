@@ -39,14 +39,14 @@ import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
 import com.tencent.bkrepo.s3.constant.DEFAULT_ENCODING
 import com.tencent.bkrepo.s3.constant.S3HttpHeaders
 import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.dom4j.Document
 import org.dom4j.DocumentHelper
 import org.dom4j.Element
 import org.dom4j.io.OutputFormat
 import org.dom4j.io.XMLWriter
 import java.io.StringWriter
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * s3请求异常时，返回处理

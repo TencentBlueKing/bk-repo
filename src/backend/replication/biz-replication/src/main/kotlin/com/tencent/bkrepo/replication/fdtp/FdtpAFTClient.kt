@@ -35,6 +35,7 @@ import com.tencent.bkrepo.fdtp.codec.DefaultFdtpHeaderFrame
 import com.tencent.bkrepo.fdtp.codec.FdtpChunkStream
 import com.tencent.bkrepo.fdtp.codec.FdtpHeaderNames
 import com.tencent.bkrepo.fdtp.codec.FdtpHeaders
+import io.micrometer.tracing.Tracer
 import io.netty.channel.ChannelProgressiveFuture
 import io.netty.channel.ChannelProgressivePromise
 import io.netty.handler.stream.ChunkedFile
@@ -42,13 +43,12 @@ import io.netty.handler.stream.ChunkedStream
 import io.netty.util.concurrent.DefaultPromise
 import io.netty.util.concurrent.GenericProgressiveFutureListener
 import io.netty.util.concurrent.Promise
+import org.slf4j.LoggerFactory
+import org.springframework.beans.BeansException
 import java.io.File
 import java.io.InputStream
 import java.net.ConnectException
 import java.net.InetSocketAddress
-import org.slf4j.LoggerFactory
-import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.Tracer
 
 /**
  * 使用fdtp协议传输artifact file

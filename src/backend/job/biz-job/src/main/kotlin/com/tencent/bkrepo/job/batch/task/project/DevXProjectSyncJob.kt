@@ -1,11 +1,11 @@
 package com.tencent.bkrepo.job.batch.task.project
 
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.metadata.model.TProject
 import com.tencent.bkrepo.common.metadata.pojo.webhook.BkCiDevXEnabledPayload
 import com.tencent.bkrepo.common.metadata.service.webhook.BkciWebhookListener
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.devops.api.pojo.Response

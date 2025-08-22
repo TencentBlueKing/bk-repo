@@ -41,11 +41,11 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service
 import java.time.Duration
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 边缘节点重定向服务
@@ -75,9 +75,9 @@ class EdgeNodeRedirectService(
         }
 
         return !(node == null ||
-                node.clusterNames.isNullOrEmpty() ||
-                node.clusterNames!!.contains(selfClusterName) ||
-                getEdgeClusterName(context) == null)
+            node.clusterNames.isNullOrEmpty() ||
+            node.clusterNames!!.contains(selfClusterName) ||
+            getEdgeClusterName(context) == null)
     }
 
     /**

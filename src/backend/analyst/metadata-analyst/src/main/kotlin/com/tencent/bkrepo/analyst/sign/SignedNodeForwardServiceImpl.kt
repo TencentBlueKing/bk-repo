@@ -58,7 +58,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
-import java.util.*
+import java.util.Base64
 
 class SignedNodeForwardServiceImpl(
     private val signProperties: SignProperties,

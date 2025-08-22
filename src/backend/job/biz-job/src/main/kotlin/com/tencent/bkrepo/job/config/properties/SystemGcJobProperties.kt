@@ -28,10 +28,12 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 
+@Component
 @ConfigurationProperties(value = "job.system-gc")
-data class SystemGcJobProperties(
+class SystemGcJobProperties(
     override var cron: String = "0 0 0 * * ?",
     /**
      * 处理文件大小阈值
