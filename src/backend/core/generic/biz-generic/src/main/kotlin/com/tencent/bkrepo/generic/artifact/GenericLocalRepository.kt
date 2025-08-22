@@ -513,10 +513,12 @@ class GenericLocalRepository(
                 return downloadFolder(this, node)
             }
             downloadIntercept(this, node)
-            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
-            val responseName = artifactInfo.getResponseName()
 
-            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+            val (load, loadStorage) = ArtifactContextHolder.getForwardNodeDetail(node, storageCredentials, userId)
+                ?: Pair(node, storageCredentials)
+            val inputStream = storageManager.loadArtifactInputStream(load, loadStorage) ?: return null
+            val responseName = artifactInfo.getResponseName()
+            return ArtifactResource(inputStream, responseName, load, ArtifactChannel.LOCAL, useDisposition)
         }
     }
 
