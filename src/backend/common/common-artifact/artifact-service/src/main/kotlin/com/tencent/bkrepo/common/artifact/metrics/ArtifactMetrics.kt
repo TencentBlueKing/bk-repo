@@ -149,18 +149,18 @@ class ArtifactMetrics(
          * 用于计算上传实时流量
          * */
         fun getUploadingCounters(receiver: ArtifactDataReceiver): List<Counter> {
-            val limitUploadingCounter = Counter.builder(ARTIFACT_LIMIT_UPLOADING_SIZE)
-                .description(ARTIFACT_LIMIT_UPLOADING_SIZE_DESC)
-                .tags(tagProvider.getTags(receiver, true))
-                .baseUnit(BYTES)
-                .register(meterRegistry)
-                .apply { lruMeterFilter.access(this.id) }
+//            val limitUploadingCounter = Counter.builder(ARTIFACT_LIMIT_UPLOADING_SIZE)
+//                .description(ARTIFACT_LIMIT_UPLOADING_SIZE_DESC)
+//                .tags(tagProvider.getTags(receiver, true))
+//                .baseUnit(BYTES)
+//                .register(meterRegistry)
+//                .apply { lruMeterFilter.access(this.id) }
             val uploadingCounter = Counter.builder(ARTIFACT_UPLOADING_SIZE)
                 .description(ARTIFACT_UPLOADING_SIZE_DESC)
                 .tags(tagProvider.getTags(receiver))
                 .baseUnit(BYTES)
                 .register(meterRegistry)
-            return listOf(limitUploadingCounter, uploadingCounter)
+            return listOf(uploadingCounter)
         }
 
         /**
