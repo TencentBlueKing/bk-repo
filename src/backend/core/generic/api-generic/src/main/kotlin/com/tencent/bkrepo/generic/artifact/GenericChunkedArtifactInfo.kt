@@ -36,5 +36,6 @@ class GenericChunkedArtifactInfo(
     val uuid: String? = null,
     val md5: String? = null,
     val sha256: String? = null,
-    val size: Long? = null
+    val crc64ecma: String? = null,
+    val size: Long? = null,
 ) : ArtifactInfo(projectId, repoName, artifactUri)

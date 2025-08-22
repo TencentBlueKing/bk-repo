@@ -29,8 +29,10 @@ package com.tencent.bkrepo.websocket.controller
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.websocket.constant.SESSION_ID
 import com.tencent.bkrepo.websocket.pojo.fs.CopyPDU
 import com.tencent.bkrepo.websocket.pojo.fs.PastePDU
+import com.tencent.bkrepo.websocket.pojo.fs.PingPongPDU
 import com.tencent.bkrepo.websocket.service.ClipboardService
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor
@@ -42,9 +44,23 @@ class ClipboardController(
     private val clipboardService: ClipboardService
 ) {
 
+    @MessageMapping("/ping")
+    fun ping(pingPDU: PingPongPDU, accessor: SimpMessageHeaderAccessor) {
+        val userId = accessor.sessionAttributes?.get(USER_KEY)?.toString() ?: ANONYMOUS_USER
+        pingPDU.sessionId = accessor.sessionAttributes?.get(SESSION_ID)?.toString()
+        clipboardService.ping(userId, pingPDU)
+    }
+
+    @MessageMapping("/pong")
+    fun pong(pongPDU: PingPongPDU, accessor: SimpMessageHeaderAccessor) {
+        val userId = accessor.sessionAttributes?.get(USER_KEY)?.toString() ?: ANONYMOUS_USER
+        clipboardService.pong(userId, pongPDU)
+    }
+
     @MessageMapping("/copy")
     fun copy(copyPDU: CopyPDU, accessor: SimpMessageHeaderAccessor) {
         val userId = accessor.sessionAttributes?.get(USER_KEY)?.toString() ?: ANONYMOUS_USER
+        copyPDU.sessionId = accessor.sessionAttributes?.get(SESSION_ID)?.toString()
         clipboardService.copy(userId, copyPDU)
     }
 

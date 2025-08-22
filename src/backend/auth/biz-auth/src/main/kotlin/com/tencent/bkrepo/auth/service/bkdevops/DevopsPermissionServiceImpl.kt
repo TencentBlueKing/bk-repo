@@ -127,7 +127,7 @@ class DevopsPermissionServiceImpl constructor(
         return super.listPermissionPath(userId, projectId, repoName)
     }
 
-    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String> {
+    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
         if (isDevopsProjectAdmin(userId, projectId)) return emptyList()
         return super.listNoPermissionPath(userId, projectId, repoName)
     }

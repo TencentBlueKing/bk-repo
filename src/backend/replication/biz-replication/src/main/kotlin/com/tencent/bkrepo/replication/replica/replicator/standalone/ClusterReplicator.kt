@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
+import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
@@ -41,11 +42,11 @@ import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterArtifactReplicationHandler
-import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
+import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterArtifactReplicationHandler
+import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -60,7 +61,6 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
 /**
@@ -71,13 +71,14 @@ import java.util.concurrent.TimeUnit
 class ClusterReplicator(
     private val localDataManager: LocalDataManager,
     private val artifactReplicationHandler: ClusterArtifactReplicationHandler,
-    private val replicationProperties: ReplicationProperties
+    private val replicationProperties: ReplicationProperties,
 ) : Replicator {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
     private var version: String = DEFAULT_VERSION
 
-    private val remoteRepoCache = ConcurrentHashMap<String, RepositoryDetail>()
+    private val remoteRepoCache = CacheBuilder.newBuilder().maximumSize(50)
+        .expireAfterWrite(60, TimeUnit.SECONDS).build<String, RepositoryDetail>()
 
     override fun checkVersion(context: ReplicaContext) {
         with(context) {
@@ -109,7 +110,7 @@ class ClusterReplicator(
             if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return
             val localRepo = localDataManager.findRepoByName(localProjectId, localRepoName, localRepoType.name)
             val key = buildRemoteRepoCacheKey(cluster, remoteProjectId, remoteRepoName)
-            context.remoteRepo = remoteRepoCache.getOrPut(key) {
+            remoteRepoCache.getIfPresent(key) ?: let {
                 val request = RepoCreateRequest(
                     projectId = remoteProjectId,
                     name = remoteRepoName,
@@ -120,8 +121,9 @@ class ClusterReplicator(
                     configuration = localRepo.configuration,
                     operator = localRepo.createdBy
                 )
-                artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
+                remoteRepoCache.put(key, artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!)
             }
+            context.remoteRepo = remoteRepoCache.getIfPresent(key)
         }
     }
 
@@ -132,7 +134,7 @@ class ClusterReplicator(
     override fun replicaPackageVersion(
         context: ReplicaContext,
         packageSummary: PackageSummary,
-        packageVersion: PackageVersion
+        packageVersion: PackageVersion,
     ): Boolean {
         with(context) {
             // 外部集群仓库没有project/repoName
@@ -205,7 +207,8 @@ class ClusterReplicator(
                                     name = it.fullPath,
                                     size = it.size,
                                     sha256 = it.sha256,
-                                    md5 = it.md5
+                                    md5 = it.md5,
+                                    crc64ecma = it.crc64ecma,
                                 ),
                                 pushType = type,
                                 downGrade = downGrade
@@ -262,8 +265,10 @@ class ClusterReplicator(
                 TimeUnit.SECONDS.sleep(1)
                 costTime++
             }
-            logger.info("the result of storage consistency check for $sha256 is $checkResult," +
-                            " costTime: $costTime seconds")
+            logger.info(
+                "the result of storage consistency check for $sha256 is $checkResult," +
+                    " costTime: $costTime seconds"
+            )
         }
     }
 
@@ -294,6 +299,7 @@ class ClusterReplicator(
                 size = node.size,
                 sha256 = node.sha256!!,
                 md5 = node.md5!!,
+                crc64ecma = node.crc64ecma,
                 nodeMetadata = metadata,
                 operator = node.createdBy,
                 createdBy = node.createdBy,

@@ -112,6 +112,7 @@ class StreamService(
         } else {
             getTranscodeConfig(projectId)
         }
+        val streamTranscodeConfig = transcodeConfig?.copy(extraParams = transcodeExtraParams)
         transcodeConfig?.let { it.extraParams = transcodeExtraParams }
         val fileConsumer = MediaArtifactFileConsumer(
             storageManager,
@@ -120,7 +121,7 @@ class StreamService(
             userId,
             author,
             STREAM_PATH,
-            transcodeConfig,
+            streamTranscodeConfig,
         )
         val recordingListener = if (remux) {
             RemuxRecordingListener(credentials.upload.location, scheduler, saveType, fileConsumer)

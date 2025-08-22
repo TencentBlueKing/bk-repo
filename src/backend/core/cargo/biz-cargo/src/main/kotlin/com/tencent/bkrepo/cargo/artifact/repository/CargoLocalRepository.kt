@@ -120,6 +120,7 @@ class CargoLocalRepository(
                 size = artifactFile!!.getSize(),
                 sha256 = artifactFile.getFileSha256(),
                 md5 = artifactFile.getFileMd5(),
+                crc64ecma = artifactFile.getFileCrc64ecma(),
                 operator = userId,
                 overwrite = true,
                 nodeMetadata = convertToMetadata(cargoMetadata!!)
@@ -187,6 +188,7 @@ class CargoLocalRepository(
                 size = jsonFile.getSize(),
                 sha256 = jsonFile.getFileSha256(),
                 md5 = jsonFile.getFileMd5(),
+                crc64ecma = jsonFile.getFileCrc64ecma(),
                 operator = userId,
                 overwrite = true,
             )

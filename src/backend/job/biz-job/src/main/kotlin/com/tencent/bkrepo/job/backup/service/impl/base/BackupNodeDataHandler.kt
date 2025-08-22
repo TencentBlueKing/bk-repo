@@ -169,6 +169,7 @@ class BackupNodeDataHandler(
                 },
                 sha256 = it.sha256,
                 md5 = it.md5,
+                crc64ecma = it.crc64ecma,
                 metadata = metadata,
                 nodeMetadata = it.metadata,
                 copyFromCredentialsKey = it.copyFromCredentialsKey,
