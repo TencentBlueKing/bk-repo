@@ -41,9 +41,11 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.fsNode
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.MoveCopyContext
+import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.buildDstBlockNode
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.buildDstNode
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.canIgnore
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.preCheck
@@ -56,6 +58,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Query
+import java.time.format.DateTimeFormatter
 
 /**
  * 节点移动/拷贝接口实现
@@ -68,6 +71,7 @@ open class RNodeMoveCopySupport(
     private val repositoryDao = nodeBaseService.repositoryDao
     private val storageCredentialService = nodeBaseService.storageCredentialService
     private val quotaService = nodeBaseService.quotaService
+    private val blockNodeService = nodeBaseService.blockNodeService
 
     override suspend fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         val dstNode = moveCopy(moveRequest, true)
@@ -145,6 +149,8 @@ open class RNodeMoveCopySupport(
                         ?: DEFAULT_STORAGE_CREDENTIALS_KEY
                 dstNode.copyIntoCredentialsKey = dstCredentials?.key ?: DEFAULT_STORAGE_CREDENTIALS_KEY
             }
+            // 创建dst block node，此处只需要复制，如果是move操作在src node被删除时对应的src block node也会一起删除
+            copyBlockNode(context, srcNode, dstFullPath)
             // 创建dst节点
             nodeBaseService.doCreate(dstNode, dstRepo)
             // move操作，创建dst节点后，还需要删除src节点
@@ -277,6 +283,22 @@ open class RNodeMoveCopySupport(
             // 创建dst父目录
             nodeBaseService.mkdirs(dstProjectId, dstRepoName, dstPath, operator)
             doMoveCopy(context, srcNode, dstPath, dstName)
+        }
+    }
+
+    private suspend fun copyBlockNode(context: MoveCopyContext, srcNode: TNode, dstFullPath: String) {
+        if (srcNode.folder || fsNode(srcNode)) {
+            return
+        }
+        val srcBlocks = blockNodeService.listAllBlocks(
+            srcNode.projectId,
+            srcNode.repoName,
+            srcNode.fullPath,
+            srcNode.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
+        )
+
+        srcBlocks.forEach { block ->
+            blockNodeService.createBlock(buildDstBlockNode(context, block, dstFullPath), context.dstCredentials)
         }
     }
 

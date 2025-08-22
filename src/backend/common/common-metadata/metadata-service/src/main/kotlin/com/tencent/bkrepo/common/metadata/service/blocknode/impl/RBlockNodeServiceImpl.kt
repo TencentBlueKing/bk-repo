@@ -78,6 +78,15 @@ class RBlockNodeServiceImpl(
         return rBlockNodeDao.find(query)
     }
 
+    override suspend fun listAllBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        createdDate: String
+    ): List<TBlockNode> {
+        return rBlockNodeDao.find(BlockNodeQueryHelper.listQuery(projectId, repoName, fullPath, createdDate, null))
+    }
+
     override suspend fun deleteBlocks(
         projectId: String,
         repoName: String,
