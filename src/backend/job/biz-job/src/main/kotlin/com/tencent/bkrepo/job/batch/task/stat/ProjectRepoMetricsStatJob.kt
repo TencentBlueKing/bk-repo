@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.job.batch.task.stat
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.NAME
@@ -39,6 +38,7 @@ import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
+import com.tencent.bkrepo.job.batch.context.ArchiveNodeStatJobContext
 import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
@@ -55,6 +55,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 /**
@@ -100,7 +101,7 @@ open class ProjectRepoMetricsStatJob(
             val metric = getOrCreateMetric(context, projectId, nodeCollectionName)
             processCollections(collectionList, row, metric)
             // 减掉指定项目归档大小
-            adjustArchiveMetricsIfNeeded(projectId, name, collectionList, metric)
+            adjustArchiveMetricsIfNeeded(projectId, name, metric)
         }
     }
 
@@ -149,11 +150,10 @@ open class ProjectRepoMetricsStatJob(
     private fun adjustArchiveMetricsIfNeeded(
         projectId: String,
         repoName: String,
-        collections: List<String>,
         metric: ProjectRepoMetricsStatJobContext.ProjectMetrics
     ) {
         if (properties.ignoreArchiveProjects.contains(projectId)) {
-            val (num, size) = getArchiveInfo(projectId, repoName, collections)
+            val (num, size) = getArchiveInfo(projectId, repoName)
             logger.info("Archive info: project $projectId, repo $repoName, num $num, size $size")
             with(metric.repoMetrics[repoName]!!) {
                 this.num.add(-num)
@@ -195,7 +195,7 @@ open class ProjectRepoMetricsStatJob(
         statDate: LocalDateTime,
         projectMetric: TProjectMetrics,
     ) {
-        if (projectMetric.capSize <=0 && projectMetric.nodeNum <=0) return
+        if (projectMetric.capSize <= 0 && projectMetric.nodeNum <= 0) return
         // insert project repo metrics
         val criteria = Criteria.where(CREATED_DATE).isEqualTo(statDate).and(PROJECT).`is`(projectMetric.projectId)
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_PROJECT_METRICS)
@@ -215,19 +215,17 @@ open class ProjectRepoMetricsStatJob(
      * 获取归档信息
      * @return Pair(归档数,归档大小)
      * */
-    private fun getArchiveInfo(projectId: String, repoName: String, collectionList: List<String>): Pair<Long, Long> {
+    private fun getArchiveInfo(projectId: String, repoName: String): Pair<Long, Long> {
         var num = 0L
         var size = 0L
-        collectionList.forEach {collectionName ->
-            val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
-                .and(REPO).isEqualTo(repoName)
-                .and(ARCHIVED).isEqualTo(true)
-                .and(DELETED_DATE).isEqualTo(null)
-            val query = Query.query(criteria).cursorBatchSize(BATCH_SIZE)
-            mongoTemplate.find(query, StatNode::class.java, collectionName).forEach {
-                num++
-                size += it.size
-            }
+        val query = Query(Criteria.where(NAME).isEqualTo(projectId))
+        val project = mongoTemplate.find(query, Project::class.java, COLLECTION_NAME_PROJECT).firstOrNull()
+            ?: return Pair(0, 0)
+        val projectArchiveStatInfo = project.metadata.find { it.key == ARCHIVED }
+            as? ConcurrentHashMap<String, ArchiveNodeStatJobContext.RepoArchiveInfo> ?: return Pair(0, 0)
+        projectArchiveStatInfo[repoName]?.let {
+            num += it.num.toLong()
+            size += it.size.toLong()
         }
         return Pair(num, size)
     }
