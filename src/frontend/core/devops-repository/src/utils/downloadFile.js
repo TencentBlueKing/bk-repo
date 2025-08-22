@@ -24,7 +24,7 @@ export function customizeDownloadFile (projectId, repoName, fullPaths) {
             )
             // 将iso8859-1的字符转化为中文字符
             fileName = decodeURI(escape(fileName))
-    
+
             const link = document.createElement('a')
             link.href = blobUrl
             link.style.display = 'none'

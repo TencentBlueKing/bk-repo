@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -73,6 +73,8 @@ data class NodeDetail(
     val sha256: String? = nodeInfo.sha256,
     @get:Schema(title = "文件md5")
     val md5: String? = nodeInfo.md5,
+    @get:Schema(title = "文件crc64ecma")
+    val crc64ecma: String? = nodeInfo.crc64ecma,
     @get:Schema(title = "元数据")
     val metadata: Map<String, Any> = nodeInfo.metadata.orEmpty(),
     @get:Schema(title = "元数据")
@@ -87,6 +89,8 @@ data class NodeDetail(
     val archived: Boolean? = nodeInfo.archived,
     @get:Schema(title = "是否压缩")
     val compressed: Boolean? = nodeInfo.compressed,
+    @get:Schema(title = "联邦仓库同步来源集群id")
+    val federatedSource: String? = nodeInfo.federatedSource,
 ) {
     /**
      * 获取node所属package的name

@@ -1,7 +1,7 @@
 --[[
 Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
 
-Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+Copyright (C) 2019 Tencent.  All rights reserved.
 
 BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
 
@@ -26,12 +26,14 @@ ck = require("resty.cookie")
 http = require("resty.http")
 stringUtil = require("util.string_util")
 logUtil = require("util.log_util")
+redisUtil = require("util.redis_util")
 md5 = require("resty.md5")
 arrayUtil = require("util.array_util")
 cookieUtil = require("util.cookie_util")
 urlUtil = require("util.url_util")
 oauthUtil = require("util.oauth_util")
 hostUtil = require("util.host_util")
+healthUtil = require("util.health_util")
 
 math.randomseed(os.time())
 uuid.seed()

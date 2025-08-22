@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,7 +28,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -55,8 +55,10 @@
 package com.tencent.bkrepo.job.separation.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 import java.time.Duration
 
+@Component
 @ConfigurationProperties("separation")
 data class DataSeparationConfig(
     // 当前时间到（当前时间-keepDays）为热数据，不允许拆分，避免误操作将所有数据进行降冷

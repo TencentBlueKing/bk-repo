@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit
  */
 class TokenBucketRateLimiter(
     private val permitsPerSecond: Double,
+    private val keepConnection: Boolean = true,
 ) : RateLimiter {
 
     private val guavaRateLimiter = com.google.common.util.concurrent.RateLimiter.create(permitsPerSecond)
@@ -54,5 +55,9 @@ class TokenBucketRateLimiter(
 
     override fun getLimitPerSecond(): Long {
         return permitsPerSecond.toLong()
+    }
+
+    override fun keepConnection(): Boolean {
+        return keepConnection
     }
 }

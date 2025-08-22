@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -38,9 +38,11 @@ import com.tencent.bkrepo.fs.server.utils.DevxWorkspaceUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import kotlinx.coroutines.reactor.awaitSingle
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 
+@Component
 class DevXAccessFilter(
     private val devXProperties: DevXProperties
 ) : CoHandlerFilterFunction {

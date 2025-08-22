@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,15 +30,15 @@ package com.tencent.bkrepo.common.service.otel.util
 import com.tencent.bkrepo.common.api.constant.BKREPO_TRACE
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import io.micrometer.tracing.Tracer
 import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.Tracer
 
 object TraceHeaderUtils {
 
     fun buildB3Header(): String {
         val trace = try {
             SpringContextUtils.getBean<Tracer>()
-        } catch (_ : BeansException) {
+        } catch (_: BeansException) {
             null
         }
 
@@ -49,11 +49,11 @@ object TraceHeaderUtils {
     fun setResponseHeader() {
         val trace = try {
             SpringContextUtils.getBean<Tracer>()
-        } catch (_ : BeansException) {
+        } catch (_: BeansException) {
             null
         }
         val context = trace?.currentSpan()?.context()
         val response = HttpContextHolder.getResponseOrNull()
-        context?.let {response?.setHeader(BKREPO_TRACE, context.traceId())}
+        context?.let { response?.setHeader(BKREPO_TRACE, context.traceId()) }
     }
 }

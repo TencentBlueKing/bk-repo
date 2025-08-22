@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.storage.core
 
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.artifact.stream.ZeroInputStream
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.message.HealthCheckFailedException
@@ -49,7 +50,7 @@ abstract class HealthCheckSupport : AbstractStorageSupport() {
 
     override fun checkHealth(storageCredentials: StorageCredentials?) {
         val credentials = getCredentialsOrDefault(storageCredentials)
-        val future = healthCheckExecutor.submit(Callable { doCheckHealth(credentials) })
+        val future = healthCheckExecutor.submit(Callable { doCheckHealth(credentials) }.trace())
         try {
             future.get(storageProperties.monitor.timeout.seconds, TimeUnit.SECONDS)
         } catch (ignored: TimeoutException) {

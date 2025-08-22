@@ -1,7 +1,7 @@
 --[[
 Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
 
-Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+Copyright (C) 2019 Tencent.  All rights reserved.
 
 BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
 
@@ -21,21 +21,21 @@ local _M = {}
 
 --[[判断str是否以substr结尾。是返回true，否返回false，失败返回失败信息]]
 function _M:endswith(str, substr)
-  if str == nil or substr == nil then
-    return nil, "the string or the sub-string parameter is nil"
-  end
-  local str_tmp = string.reverse(str)
-  local substr_tmp = string.reverse(substr)
-  if string.find(str_tmp, substr_tmp) ~= 1 then
-    return false
-  else
-    return true
-  end
+    if str == nil or substr == nil then
+        return nil, "the string or the sub-string parameter is nil"
+    end
+    local str_tmp = string.reverse(str)
+    local substr_tmp = string.reverse(substr)
+    if string.find(str_tmp, substr_tmp) ~= 1 then
+        return false
+    else
+        return true
+    end
 end
 
 --[[判断str是否以substr开始。是返回true，否返回false，失败返回失败信息]]
 function _M:startswith(str, substr)
-  return string.sub(str, 1, string.len(substr)) == substr
+    return string.sub(str, 1, string.len(substr)) == substr
 end
 
 function _M:split (str, sep)
@@ -49,5 +49,12 @@ function _M:split (str, sep)
     return t
 end
 
+function _M:getValue(var)
+    local varType = type(var)
+    if varType == "table" then
+        return var[1]
+    end
+    return var
+end
 
 return _M

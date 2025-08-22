@@ -8,10 +8,11 @@
             <div class="sideslider-content flex-column">
                 <bk-form class="p20 flex-1" form-type="vertical">
                     <bk-form-item :label="$t('artifactName')">
-                        <bk-input v-model="filter.name"></bk-input>
+                        <bk-input v-model="filter.name" :placeholder="$t('pleaseInput')"></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('repo')">
                         <bk-select
+                            :placeholder="$t('pleaseSelect')"
                             v-model="filter.repoName"
                             searchable>
                             <bk-option-group
@@ -29,12 +30,14 @@
                     </bk-form-item>
                     <bk-form-item v-if="!scanType.includes('LICENSE')" :label="$t('riskLevel')">
                         <bk-select
+                            :placeholder="$t('pleaseSelect')"
                             v-model="filter.highestLeakLevel">
                             <bk-option v-for="[id] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="$t(`leakLevelEnum.${id}`)"></bk-option>
                         </bk-select>
                     </bk-form-item>
                     <bk-form-item :label="$t('scanStatus')">
                         <bk-select
+                            :placeholder="$t('pleaseSelect')"
                             v-model="filter.status">
                             <bk-option v-for="[id] in Object.entries(scanStatusEnum)" :key="id" :id="id" :name="$t(`scanStatusEnum.${id}`)"></bk-option>
                         </bk-select>

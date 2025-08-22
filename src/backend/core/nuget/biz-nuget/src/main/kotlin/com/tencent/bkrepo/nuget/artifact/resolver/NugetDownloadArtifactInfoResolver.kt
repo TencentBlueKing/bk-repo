@@ -9,9 +9,9 @@ import com.tencent.bkrepo.nuget.constant.NUSPEC
 import com.tencent.bkrepo.nuget.constant.PACKAGE
 import com.tencent.bkrepo.nuget.constant.VERSION
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDownloadArtifactInfo
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(NugetDownloadArtifactInfo::class)

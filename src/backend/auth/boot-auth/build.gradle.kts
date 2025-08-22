@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,7 +31,7 @@
 
 dependencies {
     implementation(project(":auth:biz-auth"))
-    testImplementation("it.ozimov:embedded-redis:${Versions.EmbeddedRedis}") {
+    testImplementation("com.github.codemonstur:embedded-redis:${Versions.EmbeddedRedis}") {
         exclude("org.slf4j", "slf4j-simple")
     }
 }

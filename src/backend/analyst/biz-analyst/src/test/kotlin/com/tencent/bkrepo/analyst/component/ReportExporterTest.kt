@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -92,6 +92,19 @@ class ReportExporterTest {
         assertEquals(1, reportSlots[3].componentLicenses.size)
         // sensitive
         assertEquals(2, reportSlots[4].sensitiveContents.size)
+    }
+
+    @Test
+    fun testExceedMaxReportSize() {
+        // 准备数据
+        val messageSupplier = mockk<MessageSupplier>()
+        every { messageSupplier.delegateToSupplier<Report>(any(), any(), any(), any(), any()) }.returns(Unit)
+        val reportExporter = ReportExporter(properties.copy(maxReportSize = 1), messageSupplier)
+        reportExporter.export(buildSubScanTask("taskId", NODE_SHA256), buildScanExecutorResult())
+        // 报告数量超过限制，不上报
+        verify(exactly = 0) {
+            messageSupplier.delegateToSupplier<Report>(any(), any(), any(), any(), any())
+        }
     }
 
     @Test

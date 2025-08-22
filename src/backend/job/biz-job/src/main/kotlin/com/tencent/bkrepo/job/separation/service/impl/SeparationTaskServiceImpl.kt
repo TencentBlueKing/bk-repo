@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -33,10 +33,12 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.job.RESTORE
 import com.tencent.bkrepo.job.SEPARATE
+import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils.Companion.SEPARATION_COLLECTION_NAME_PREFIX
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
@@ -78,10 +80,12 @@ class SeparationTaskServiceImpl(
                     val task = buildSeparationTask(request)
                     createTask(task)
                 }
+
                 RESTORE -> {
                     restoreTaskCheck(request.projectId, request.repoName)
                     createRestoreTask(request)
                 }
+
                 else -> {
                     logger.warn("unsupported task type $type")
                     throw BadRequestException(
@@ -111,7 +115,7 @@ class SeparationTaskServiceImpl(
         projectId: String?,
         repoName: String?,
         taskType: String?,
-        pageRequest: PageRequest
+        pageRequest: PageRequest,
     ): Page<SeparationTask> {
         val count = separationTaskDao.count(state, projectId, repoName, taskType)
         val records = separationTaskDao.find(state, projectId, repoName, taskType, pageRequest).map { it.toDto() }
@@ -128,6 +132,26 @@ class SeparationTaskServiceImpl(
         val exist = separationTaskDao.exist(projectId, repoName, SeparationTaskState.FINISHED.name)
         val failedExist = separationFailedRecordDao.exist(projectId, repoName)
         return exist || failedExist
+    }
+
+    override fun findProjectList(): List<String> {
+        val criteria = Criteria.where(TSeparationTask::projectId.name).exists(true)
+            .and(TSeparationTask::type.name).isEqualTo(SEPARATE)
+        val query = Query(criteria)
+        return mongoTemplate.findDistinct(
+            query, TSeparationTask::projectId.name, TSeparationTask::class.java, String::class.java
+        )
+    }
+
+    override fun findSeparationCollectionList(projectId: String): List<String> {
+        val result = mutableListOf<String>()
+        findDistinctSeparationDate(projectId).forEach { date ->
+            val separationNodeCollection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
+                MonthRangeShardingUtils.shardingSequenceFor(date, 1)
+            )
+            result.add(separationNodeCollection)
+        }
+        return result
     }
 
     private fun restoreTaskCheck(
@@ -261,7 +285,7 @@ class SeparationTaskServiceImpl(
     private fun buildSeparationTask(
         request: SeparationTaskRequest,
         restoreDate: LocalDateTime? = null,
-        userId: String = SecurityUtils.getUserId()
+        userId: String = SecurityUtils.getUserId(),
     ): TSeparationTask {
         with(request) {
             val userId = userId

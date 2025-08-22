@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -44,8 +44,8 @@ object AuthenticationUtil {
             val params = wwwAuthenticate.split("\",")
             params.forEach {
                 val param = it.split(Regex("="),2)
-                val name = param.first()
-                val value = param.last().replace("\"", "")
+                val name = param.first().trim()
+                val value = param.last().trim().replace("\"", "")
                 map[name] = value
             }
             AuthenticationProperty(

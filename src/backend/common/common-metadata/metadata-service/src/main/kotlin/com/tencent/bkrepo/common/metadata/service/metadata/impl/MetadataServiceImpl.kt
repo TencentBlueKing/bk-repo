@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -56,6 +56,7 @@ import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
@@ -74,7 +75,8 @@ import org.springframework.transaction.annotation.Transactional
 class MetadataServiceImpl(
     private val nodeDao: NodeDao,
     private val repositoryProperties: RepositoryProperties,
-    private val ciPermissionManager: CIPermissionManager
+    private val ciPermissionManager: CIPermissionManager,
+    private val metadataLabelCacheService: MetadataLabelCacheService
 ) : MetadataService {
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
@@ -97,6 +99,7 @@ class MetadataServiceImpl(
                 metadata,
                 MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
             )
+            checkEnumTypeMetadata(projectId, newMetadata)
             checkIfModifyPipelineMetadata(node, newMetadata.map { it.key })
             checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
             node.metadata = if (replace) {
@@ -155,6 +158,11 @@ class MetadataServiceImpl(
 
     fun checkNodeCluster(node: TNode) {
         return
+    }
+
+    fun checkEnumTypeMetadata(projectId: String, metadata: MutableList<TMetadata>) {
+        val metadataList = metadata.map { MetadataModel(it.key, it.value) }
+        metadataLabelCacheService.checkEnumMetadataLabel(projectId, metadataList)
     }
 
     private fun checkIfModifyPipelineMetadata(node: TNode, newMetadataKeys: Collection<String>) {

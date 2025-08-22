@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -54,12 +54,11 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.config.RateLimitProperties
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
 import java.util.concurrent.TimeUnit
-import javax.servlet.http.HttpServletRequest
-import kotlin.collections.set
 
 @Suppress("LateinitUsage", "LongParameterList", "TooManyFunctions") // 静态成员通过init构造函数初始化
 class ArtifactContextHolder(

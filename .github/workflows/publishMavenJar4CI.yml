@@ -14,12 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up JDK 1.8
-        uses: actions/setup-java@v1
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
         with:
-          java-version: 1.8
+          distribution: "temurin"
+          java-version: "17"
       - name: Cache Gradle packages
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
@@ -27,7 +28,6 @@ jobs:
       - name: Gradle Build
         working-directory: src/backend
         env:
-          MAVEN_REPO_DEPLOY_URL: "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           ORG_GRADLE_PROJECT_signingKey: ${{ secrets.SIGNING_KEY }}
@@ -37,7 +37,4 @@ jobs:
           echo "GITHUB_REF=${GITHUB_REF}"
           repo_version=${GITHUB_REF##*/v}
           echo "repo_version=${repo_version}"
-          ./gradlew publishAllPublicationsToAllJarRepository -Drepo_version=${repo_version} \
-          -PallJarRepo=${MAVEN_REPO_DEPLOY_URL} \
-          -PallJarUsername=${SONATYPE_USERNAME} \
-          -PallJarPassword=${SONATYPE_PASSWORD}
+          ./gradlew publishToSonatype closeSonatypeStagingRepository -Drepo_version=${repo_version} --stacktrace

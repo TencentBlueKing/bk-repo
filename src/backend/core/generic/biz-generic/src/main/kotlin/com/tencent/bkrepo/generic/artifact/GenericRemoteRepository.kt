@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -158,13 +158,14 @@ class GenericRemoteRepository(
         return UrlFormatter.format(configuration.url, artifactUri, queryString)
     }
 
-    override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
+    override fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactContext): ArtifactResource? {
         return storageManager.loadArtifactInputStream(cacheNode, context.repositoryDetail.storageCredentials)?.run {
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
             }
             val artifactName = context.artifactInfo.getResponseName()
-            ArtifactResource(this, artifactName, cacheNode, ArtifactChannel.PROXY, context.useDisposition)
+            val useDisposition = if (context is ArtifactDownloadContext) context.useDisposition else false
+            ArtifactResource(this, artifactName, cacheNode, ArtifactChannel.PROXY, useDisposition)
         }
     }
 

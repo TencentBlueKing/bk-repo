@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,8 +32,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.cloud.stream.provisioning.ConsumerDestination
 import org.springframework.integration.endpoint.MessageProducerSupport
 import org.springframework.integration.support.MessageBuilder
-import org.springframework.util.Base64Utils
 import java.io.File
+import java.util.Base64
 
 class FileMessageProducer(
     private val fileBinderProperties: FileBinderProperties,
@@ -68,7 +68,7 @@ class FileMessageProducer(
     private fun callback(line: String) {
         try {
             val contentBytes = line.toByteArray()
-            val bytes = Base64Utils.decode(contentBytes)
+            val bytes = Base64.getDecoder().decode(contentBytes)
             val msg = MessageBuilder.withPayload(bytes).build()
             this.sendMessage(msg)
         } catch (e: Exception) {

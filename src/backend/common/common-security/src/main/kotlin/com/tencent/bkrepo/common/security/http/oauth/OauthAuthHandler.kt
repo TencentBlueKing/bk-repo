@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -38,8 +38,8 @@ import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import com.tencent.bkrepo.common.security.util.RsaUtils
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
-import javax.servlet.http.HttpServletRequest
 
 open class OauthAuthHandler(
     val authenticationManager: AuthenticationManager,

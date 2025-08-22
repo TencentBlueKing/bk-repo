@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,9 +31,8 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import io.undertow.servlet.spec.HttpServletRequestImpl
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
-import javax.servlet.http.HttpServletRequest
 
 
 @Component
@@ -52,11 +51,11 @@ class GenericChunkedArtifactInfoResolver : ArtifactInfoResolver {
             .removePrefix("/temporary/$projectId/$repoName")
         // 解析UUID
         val uuid = requestUrl.replaceBefore("/chunked/uploads", StringPool.EMPTY)
-            .removePrefix("/chunked/uploads/").removeSuffix("/")
-        val params = (request as HttpServletRequestImpl).queryParameters
-        val size = params?.get("size")?.first?.toLongOrNull()
-        val sha256 = params?.get("sha256")?.first
-        val md5 = params?.get("md5")?.first
+            .removePrefix("/chunked/uploads").removeSuffix("/").removePrefix("/")
+        val size = request.getParameterValues("size")?.firstOrNull()?.toLongOrNull()
+        val sha256 = request.getParameterValues("sha256")?.firstOrNull()
+        val md5 = request.getParameterValues("md5")?.firstOrNull()
+        val crc64ecma = request.getParameterValues("crc64ecma")?.firstOrNull()
         return GenericChunkedArtifactInfo(
             projectId = projectId,
             repoName = repoName,
@@ -64,6 +63,7 @@ class GenericChunkedArtifactInfoResolver : ArtifactInfoResolver {
             uuid = uuid,
             md5 = md5,
             sha256 = sha256,
+            crc64ecma = crc64ecma,
             size = size
         )
     }

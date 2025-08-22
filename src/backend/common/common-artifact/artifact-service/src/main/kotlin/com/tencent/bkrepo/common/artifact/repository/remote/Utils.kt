@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,13 +29,13 @@ package com.tencent.bkrepo.common.artifact.repository.remote
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.NetworkProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCredentialsConfiguration
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.okhttp.TokenAuthInterceptor
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest

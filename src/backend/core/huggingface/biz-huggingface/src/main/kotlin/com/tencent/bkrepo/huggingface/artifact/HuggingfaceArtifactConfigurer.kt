@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -60,7 +60,7 @@ class HuggingfaceArtifactConfigurer : ArtifactConfigurerSupport() {
     override fun getAuthSecurityCustomizer() = HttpAuthSecurityCustomizer { httpAuthSecurity ->
         val authenticationManager = httpAuthSecurity.authenticationManager!!
         httpAuthSecurity.addHttpAuthHandler(HfAuthHandler(authenticationManager))
-        httpAuthSecurity.withPrefix("/huggingface")
+        httpAuthSecurity.withPrefix("/huggingface").excludePattern("/lfs/**")
     }
 
     @Bean

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
 import com.tencent.bkrepo.repository.pojo.node.NodeDeletedPoint
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeRestoreResult
+import java.time.LocalDateTime
 
 /**
  * 节点恢复接口
@@ -67,4 +68,9 @@ interface NodeRestoreOperation {
      * 根据上下文恢复被删除节点
      * */
     fun restoreNode(restoreContext: RestoreContext): NodeRestoreResult
+
+    /**
+     * 查询被删除的节点详情
+     */
+    fun getDeletedNodeDetail(projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime): NodeDetail?
 }

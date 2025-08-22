@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -62,6 +62,8 @@ data class NodeCreateRequest(
     val sha256: String? = null,
     @get:Schema(title = "文件md5")
     val md5: String? = null,
+    @get:Schema(title = "文件crc64ecma")
+    val crc64ecma: String? = null,
     @get:Schema(title = "元数据信息")
     @Deprecated("仅用于兼容旧接口", replaceWith = ReplaceWith("nodeMetadata"))
     val metadata: Map<String, Any>? = null,
@@ -74,5 +76,7 @@ data class NodeCreateRequest(
     override val lastModifiedBy: String? = null,
     override var lastModifiedDate: LocalDateTime? = null,
     @get:Schema(title = "是否SEPARATE_UPLOAD")
-    val separate: Boolean = false
+    val separate: Boolean = false,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 ) : NodeRequest, ServiceRequest, AuditableRequest

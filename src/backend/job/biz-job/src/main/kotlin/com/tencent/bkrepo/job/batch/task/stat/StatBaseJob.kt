@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.PROJECT
 import com.tencent.bkrepo.job.REPO
@@ -40,6 +40,8 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.batch.utils.StatUtils.specialRepoRunCheck
 import com.tencent.bkrepo.job.config.properties.StatJobProperties
+import com.tencent.bkrepo.job.pojo.stat.StatNode
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
@@ -58,6 +60,7 @@ open class StatBaseJob(
     private val mongoTemplate: MongoTemplate,
     private val properties: StatJobProperties,
     private val executor: ThreadPoolTaskExecutor,
+    private val separationTaskService: SeparationTaskService
 ) : DefaultContextJob(properties) {
 
     private fun queryNodes(
@@ -97,7 +100,6 @@ open class StatBaseJob(
             } while (querySize == properties.batchSize)
         }.apply {
             val elapsedTime = HumanReadable.time(this)
-            onRunProjectFinished(collection, projectId, context)
             logger.info(
                 "${this@StatBaseJob.javaClass.simpleName} " +
                     "project $projectId run completed, elapse $elapsedTime"
@@ -121,15 +123,28 @@ open class StatBaseJob(
         extraCriteria: Criteria? = null
     ) {
         val futureList = mutableListOf<Future<Unit>>()
-        executeStat(activeProjects, futureList) {
-            val collectionName = COLLECTION_NODE_PREFIX +
-                MongoShardingUtils.shardingSequence(it, SHARDING_COUNT)
-            queryNodes(
-                projectId = it, collection = collectionName,
-                context = jobContext, extraCriteria = extraCriteria
-            )
+        executeStat(activeProjects, futureList) { projectId ->
+            val normalNodeCollectionName = COLLECTION_NODE_PREFIX +
+                MongoShardingUtils.shardingSequence(projectId, SHARDING_COUNT)
+            val collectionList = buildCollectionList(projectId, normalNodeCollectionName)
+            collectionList.forEach { collectionName ->
+                queryNodes(
+                    projectId = projectId,
+                    collection = collectionName,
+                    context = jobContext,
+                    extraCriteria = extraCriteria
+                )
+            }
+            onRunProjectFinished(normalNodeCollectionName, projectId, jobContext)
         }
         futureList.forEach { it.get() }
+    }
+
+    private fun buildCollectionList(projectId: String, nodeCollection: String): List<String> {
+        val collectionList = mutableListOf<String>()
+        collectionList.add(nodeCollection)
+        collectionList.addAll(separationTaskService.findSeparationCollectionList(projectId))
+        return collectionList
     }
 
     private fun executeStat(
@@ -166,16 +181,6 @@ open class StatBaseJob(
             )
         )
     }
-
-    data class StatNode(
-        val id: String,
-        val folder: Boolean,
-        val path: String,
-        val fullPath: String,
-        val size: Long,
-        val projectId: String,
-        val repoName: String,
-    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(StatBaseJob::class.java)

@@ -50,10 +50,10 @@
             @cancel="cancel">
             <bk-form :label-width="80" :model="editRoleConfig" :rules="rules" ref="roleForm">
                 <bk-form-item :label="$t('roleName')" :required="true" property="name" error-display-type="normal">
-                    <bk-input v-model.trim="editRoleConfig.name" maxlength="32" show-word-limit></bk-input>
+                    <bk-input v-model.trim="editRoleConfig.name" maxlength="32" show-word-limit :placeholder="$t('pleaseInput')"></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('description')">
-                    <bk-input type="textarea" v-model.trim="editRoleConfig.description" maxlength="200"></bk-input>
+                    <bk-input type="textarea" v-model.trim="editRoleConfig.description" maxlength="200" :placeholder="$t('pleaseInput')"></bk-input>
                 </bk-form-item>
                 <bk-form-item :label="$t('staffing')">
                     <bk-button icon="plus" @click="showAddDialog">{{ $t('add') + $t('space') + $t('user') }}</bk-button>

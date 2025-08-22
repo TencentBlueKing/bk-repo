@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -39,18 +39,16 @@ import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.NodeCopyJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
-import java.time.Duration
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
+import java.time.Duration
 import kotlin.reflect.KClass
 
 @Component
-@EnableConfigurationProperties(NodeCopyJobProperties::class)
 class NodeCopyJob(
     private val storageService: StorageService,
     private val fileReferenceService: FileReferenceService,

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -78,8 +78,8 @@ class PreviewArtifactResourceWriter(
         responseRateLimitCheck()
         downloadRateLimitCheck(resource)
         val request = HttpContextHolder.getRequest()
-        var toFile = request.getAttribute(PREVIEW_ARTIFACT_TO_FILE)
-        return if (toFile as Boolean) {
+        val toFile = request.getAttribute(PREVIEW_ARTIFACT_TO_FILE)
+        return if (toFile as? Boolean == true) {
             return writeSingleArtifactToFile(resource)
         } else {
             TraceHeaderUtils.setResponseHeader()
@@ -104,7 +104,7 @@ class PreviewArtifactResourceWriter(
             name,
             storageProperties.response.mimeMappings
         )
-        response.characterEncoding = resource.characterEncoding
+        response.characterEncoding = determineCharset(mediaType, resource.characterEncoding)
         response.contentType = mediaType
         response.status = resource.status?.value ?: resolveStatus(request)
         response.setContentLengthLong(range.length)

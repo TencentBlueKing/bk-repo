@@ -23,11 +23,11 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @DisplayName("DDC过期Ref清理测试")
 @DataMongoTest
@@ -36,10 +36,10 @@ class ExpiredDdcRefCleanupJobTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
 ) : JobBaseTest() {
 
-    @MockBean
+    @MockitoBean
     private lateinit var nodeService: NodeService
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
     @Test

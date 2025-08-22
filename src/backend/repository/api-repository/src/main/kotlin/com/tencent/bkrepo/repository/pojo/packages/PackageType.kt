@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,23 +31,31 @@
 
 package com.tencent.bkrepo.repository.pojo.packages
 
+import com.tencent.bkrepo.repository.constant.CREATED_DATE
+import com.tencent.bkrepo.repository.constant.ORDINAL
+
 /**
  * 包类型
  */
-enum class PackageType {
-    DOCKER,
-    MAVEN,
-    PYPI,
-    NPM,
-    HELM,
-    RDS,
-    COMPOSER,
-    RPM,
-    NUGET,
-    GIT,
-    CONAN,
-    OCI,
-    OHPM,
-    CARGO,
-    HUGGINGFACE,
+enum class PackageType(val schema: String, val versionSortProperty: String = ORDINAL) {
+    DOCKER("docker", CREATED_DATE),
+    MAVEN("gav"),
+    PYPI("pypi"),
+    NPM("npm"),
+    HELM("helm"),
+    RDS("rds"),
+    COMPOSER("composer"),
+    RPM("rpm"),
+    NUGET("nuget"),
+    GIT("git"),
+    CONAN("conan"),
+    OCI("oci", CREATED_DATE),
+    OHPM("ohpm"),
+    CARGO("cargo"),
+    HUGGINGFACE("huggingface", CREATED_DATE),
+    ;
+
+    companion object {
+        fun fromSchema(schema: String) = values().find { it.schema == schema }
+    }
 }

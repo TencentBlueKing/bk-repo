@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -81,4 +81,14 @@ data class ArtifactMetricsProperties(
      * 允许上报未知项目信息
      * */
     var allowUnknownProjectExport: Boolean = false,
+
+    /**
+     * 配置在在统计流量时固定在LruMeterFilter中不被淘汰的仓库
+     */
+    var pinnedRepositories: Set<String> = emptySet(),
+
+    /**
+     * 是否开启实例带宽指标上报
+     */
+    var enableInstanceBandwidthMetrics: Boolean = false
 )

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -33,8 +33,8 @@ package com.tencent.bkrepo.preview.utils
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response

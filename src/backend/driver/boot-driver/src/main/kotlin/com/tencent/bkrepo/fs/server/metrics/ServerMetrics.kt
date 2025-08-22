@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,8 +30,10 @@ package com.tencent.bkrepo.fs.server.metrics
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
+import org.springframework.stereotype.Component
 import java.util.concurrent.atomic.AtomicInteger
 
+@Component
 class ServerMetrics : MeterBinder {
     var downloadingCount = AtomicInteger(0)
     var uploadingCount = AtomicInteger(0)

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.BEARER_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -40,6 +41,7 @@ import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import com.tencent.bkrepo.common.service.util.HeaderUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactInfo
 import com.tencent.bkrepo.huggingface.config.HuggingfaceProperties
 import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
@@ -93,6 +95,7 @@ class ObjectService(
                 userId = userInfo.userId
             )
         }
+        HttpContextHolder.getRequest().setAttribute(USER_KEY, userInfo.userId)
         val context = ArtifactUploadContext(file)
         repository.upload(context)
     }

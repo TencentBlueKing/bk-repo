@@ -57,6 +57,11 @@
           <span> {{ scope.row.moduleName }}</span>
         </template>
       </el-table-column>
+      <el-table-column prop="keepConnection" label="是否保持连接">
+        <template slot-scope="scope">
+          <span> {{ scope.row.keepConnection ? "是":"否" }}</span>
+        </template>
+      </el-table-column>
       <el-table-column align="right">
         <template slot="header">
           <el-button type="primary" @click="showCreateOrUpdateDialog(true)">创建</el-button>

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -79,7 +79,6 @@ import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.constant.FULL_PATH
-import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
@@ -121,6 +120,7 @@ class CargoLocalRepository(
                 size = artifactFile!!.getSize(),
                 sha256 = artifactFile.getFileSha256(),
                 md5 = artifactFile.getFileMd5(),
+                crc64ecma = artifactFile.getFileCrc64ecma(),
                 operator = userId,
                 overwrite = true,
                 nodeMetadata = convertToMetadata(cargoMetadata!!)
@@ -168,7 +168,6 @@ class CargoLocalRepository(
                 cargoMetadata = cargoMetadata,
                 size = size,
                 fullPath = fullPath,
-                metadataList = convertToMetadata(cargoMetadata)
             )
             packageService.createPackageVersion(packageVersionCreateRequest).apply {
                 logger.info("user: [$userId] create package version [$packageVersionCreateRequest] success!")
@@ -189,6 +188,7 @@ class CargoLocalRepository(
                 size = jsonFile.getSize(),
                 sha256 = jsonFile.getFileSha256(),
                 md5 = jsonFile.getFileMd5(),
+                crc64ecma = jsonFile.getFileCrc64ecma(),
                 operator = userId,
                 overwrite = true,
             )
@@ -226,17 +226,7 @@ class CargoLocalRepository(
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ): PackageDownloadRecord? {
-        with(context.artifactInfo as CargoArtifactInfo) {
-            if (crateName.isNullOrEmpty() || crateVersion.isNullOrEmpty()) {
-                return null
-            }
-            return PackageDownloadRecord(
-                context.projectId, context.repoName, PackageKeys.ofCargo(crateName), crateVersion
-            )
-        }
-
-    }
+    ) = commonService.buildDownloadRecord(context.userId, context.artifactInfo as CargoArtifactInfo)
 
     override fun remove(context: ArtifactRemoveContext) {
         commonService.removeCargoRelatedNode(context)

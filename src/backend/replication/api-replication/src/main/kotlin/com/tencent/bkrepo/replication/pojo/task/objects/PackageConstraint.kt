@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -45,4 +45,5 @@ data class PackageConstraint(
     val packageRegex: List<String>? = null,
     @get:Schema(title = "包版本正则匹配规则")
     val versionRegex: List<String>? = null,
+    val deletedDate: String? = null,
 )

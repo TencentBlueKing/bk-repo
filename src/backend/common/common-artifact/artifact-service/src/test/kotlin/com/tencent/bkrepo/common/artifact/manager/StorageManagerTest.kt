@@ -3,6 +3,7 @@ package com.tencent.bkrepo.common.artifact.manager
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
+import com.tencent.bkrepo.common.artifact.util.Constant.UT_CRC64_ECMA
 import com.tencent.bkrepo.common.artifact.util.Constant.UT_PROJECT_ID
 import com.tencent.bkrepo.common.artifact.util.Constant.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.util.Constant.UT_SHA256
@@ -30,9 +31,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.util.ReflectionUtils
 import java.io.File
 
@@ -48,19 +49,19 @@ import java.io.File
 class StorageManagerTest @Autowired constructor(
     private val storageManager: StorageManager,
 ) {
-    @MockBean
+    @MockitoBean
     private lateinit var fileReferenceService: FileReferenceService
 
-    @MockBean
+    @MockitoBean
     private lateinit var nodeService: NodeService
 
-    @MockBean
+    @MockitoBean
     private lateinit var pluginManager: PluginManager
 
-    @MockBean
+    @MockitoBean
     private lateinit var storageService: StorageService
 
-    @MockBean
+    @MockitoBean
     private lateinit var nodeResourceFactory: NodeResourceFactory
 
     @BeforeEach
@@ -142,6 +143,7 @@ class StorageManagerTest @Autowired constructor(
         overwrite = false,
         size = size,
         sha256 = sha256,
+        crc64ecma = UT_CRC64_ECMA,
         md5 = "md5",
     )
 

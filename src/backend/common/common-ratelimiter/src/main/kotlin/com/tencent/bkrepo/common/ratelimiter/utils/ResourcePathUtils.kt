@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -35,17 +35,21 @@ import java.net.URISyntaxException
 object ResourcePathUtils {
 
     /**
-     * 分割路径， 支持带template变量路径
+     * 分割路径，支持带template变量路径，并处理URL编码和连续斜杠
      */
     @Throws(InvalidResourceException::class)
     fun tokenizeResourcePath(resourcePath: String): List<String> {
         if (resourcePath.isBlank()) {
             return emptyList()
         }
-        if (!resourcePath.startsWith("/")) {
+        // 解码URL编码的路径
+        val decodedPath = java.net.URLDecoder.decode(resourcePath, "UTF-8")
+        // 规范化路径，替换连续的/或%2F为单个/
+        val normalizedPath = decodedPath.replace(Regex("[/]+"), "/")
+        if (!normalizedPath.startsWith("/")) {
             throw InvalidResourceException("invalid resource path: $resourcePath")
         }
-        val dirs = resourcePath.split("/").toTypedArray()
+        val dirs = normalizedPath.split("/").toTypedArray()
         val dirList: MutableList<String> = ArrayList()
         for (i in dirs.indices) {
             if (dirs[i].contains("?")

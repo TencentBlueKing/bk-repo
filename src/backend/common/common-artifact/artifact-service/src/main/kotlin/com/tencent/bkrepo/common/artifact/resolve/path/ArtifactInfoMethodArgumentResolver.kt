@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.constant.ARTIFACT_INFO_KEY
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.MethodParameter
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.bind.support.WebDataBinderFactory
@@ -43,7 +44,6 @@ import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 import kotlin.reflect.KClass
 
 /**

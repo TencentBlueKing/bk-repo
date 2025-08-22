@@ -42,6 +42,7 @@
                 </bk-form-item>
                 <bk-form-item :label="$t('scanStatus')">
                     <bk-select
+                        :placeholder="$t('pleaseSelect')"
                         v-model="exportStatus"
                         :clearable="false">
                         <bk-option id="ALL" :name="$t('total')"></bk-option>
@@ -236,7 +237,7 @@
                     position: 'bottom-right',
                     theme: 'success'
                 })
-                const url = `/web/analyst/api/scan/plan/export?${params.toString()}`
+                const url = `/web/analyst/api/scan/plan/export?${params.toString()}&x-bkrepo-project-id=${this.scanPlan.projectId}`
                 window.open(url, '_self')
             }
         }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,15 +32,15 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.undertow.servlet.spec.HttpServletRequestImpl
+import jakarta.servlet.Filter
+import jakarta.servlet.FilterChain
+import jakarta.servlet.ServletRequest
+import jakarta.servlet.ServletResponse
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.net.URLDecoder
 import java.net.URLEncoder
-import javax.servlet.Filter
-import javax.servlet.FilterChain
-import javax.servlet.ServletRequest
-import javax.servlet.ServletResponse
-import javax.servlet.http.HttpServletResponse
 
 class OtelWebFilter : Filter {
 
@@ -59,7 +59,7 @@ class OtelWebFilter : Filter {
                 logger.warn("illegal url: $url, request method: ${request.method}")
                 try {
                     request.exchange.requestURI = URLEncoder.encode(
-                        URLDecoder.decode(request.exchange.requestURI.replace("+",  "%2b"), Charsets.UTF_8.name()),
+                        URLDecoder.decode(request.exchange.requestURI.replace("+", "%2b"), Charsets.UTF_8.name()),
                         Charsets.UTF_8.name()
                     ).replace("+", "%20").replace("%2f", "/")
                 } catch (e: Exception) {

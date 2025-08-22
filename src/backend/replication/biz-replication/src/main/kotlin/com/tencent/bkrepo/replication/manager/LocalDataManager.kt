@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
@@ -215,6 +216,12 @@ class LocalDataManager(
         return nodeService.getDeletedNodeDetail(ArtifactInfo(projectId, repoName, fullPath)).firstOrNull()
     }
 
+    fun findDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime
+    ): NodeDetail? {
+        return nodeService.getDeletedNodeDetail(projectId, repoName, fullPath, deleted)
+    }
+
     /**
      * 查找节点
      */
@@ -231,7 +238,7 @@ class LocalDataManager(
         sha256: String
     ): FileInfo {
         val queryModel = NodeQueryBuilder()
-            .select(NODE_FULL_PATH, SIZE, MD5)
+            .select(NODE_FULL_PATH, SIZE, MD5, TNode::crc64ecma.name)
             .projectId(projectId)
             .repoName(repoName)
             .sha256(sha256)
@@ -244,7 +251,8 @@ class LocalDataManager(
         return FileInfo(
             sha256 = sha256,
             md5 = result.records[0][MD5].toString(),
-            size = result.records[0][SIZE].toString().toLong()
+            size = result.records[0][SIZE].toString().toLong(),
+            crc64ecma = result.records[0][TNode::crc64ecma.name]?.toString(),
         )
     }
 
@@ -347,6 +355,7 @@ class LocalDataManager(
         var expireDate: LocalDateTime? = null,
         var sha256: String? = null,
         var md5: String? = null,
+        var crc64ecma: String? = null,
         var deleted: LocalDateTime? = null,
         var copyFromCredentialsKey: String? = null,
         var copyIntoCredentialsKey: String? = null,
@@ -357,7 +366,8 @@ class LocalDataManager(
         var compressed: Boolean? = null,
         var projectId: String,
         var repoName: String,
-        var id: String? = null
+        var id: String? = null,
+        var federatedSource: String? = null,
     )
 
     private fun convert(node: Node?): NodeInfo? {
@@ -380,6 +390,7 @@ class LocalDataManager(
                 },
                 sha256 = it.sha256,
                 md5 = it.md5,
+                crc64ecma = it.crc64ecma,
                 metadata = null,
                 nodeMetadata = it.metadata,
                 copyFromCredentialsKey = it.copyFromCredentialsKey,

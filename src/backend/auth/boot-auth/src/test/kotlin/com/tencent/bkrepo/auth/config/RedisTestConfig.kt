@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.auth.config
 
+import jakarta.annotation.PostConstruct
+import jakarta.annotation.PreDestroy
 import org.springframework.boot.test.context.TestConfiguration
 import redis.embedded.RedisServer
-import javax.annotation.PostConstruct
-import javax.annotation.PreDestroy
 
 @TestConfiguration
 class RedisTestConfig {

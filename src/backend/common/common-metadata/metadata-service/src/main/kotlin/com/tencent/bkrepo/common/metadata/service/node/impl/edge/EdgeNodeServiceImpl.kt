@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -35,11 +35,13 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
 import com.tencent.bkrepo.common.metadata.pojo.node.RestoreContext
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeArchiveSupport
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeCompressSupport
 import com.tencent.bkrepo.common.metadata.service.node.impl.NodeDeleteSupport
@@ -92,7 +94,9 @@ class EdgeNodeServiceImpl(
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
     override val projectService: ProjectService,
+    override val metadataCustomizer: MetadataCustomizer?,
     val archiveClient: ArchiveClient,
+    override val metadataLabelCacheService: MetadataLabelCacheService
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -106,7 +110,9 @@ class EdgeNodeServiceImpl(
     routerControllerProperties,
     blockNodeService,
     projectService,
-    clusterProperties
+    metadataCustomizer,
+    clusterProperties,
+    metadataLabelCacheService,
 ) {
     override fun computeSize(
         artifact: ArtifactInfo,
@@ -156,7 +162,7 @@ class EdgeNodeServiceImpl(
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
-        projectId: String, repoName: String, fullPath: String, operator: String
+        projectId: String, repoName: String, fullPath: String, operator: String,
     ) {
         return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
             projectId, repoName, fullPath, operator
@@ -169,8 +175,9 @@ class EdgeNodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
+        source: String?,
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator)
+        return NodeDeleteSupport(this).deleteByPath(projectId, repoName, fullPath, operator, source)
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -189,7 +196,7 @@ class EdgeNodeServiceImpl(
         date: LocalDateTime,
         operator: String,
         path: String,
-        decreaseVolume: Boolean
+        decreaseVolume: Boolean,
     ): NodeDeleteResult {
         ignoreException(
             projectId = projectId,
@@ -206,7 +213,7 @@ class EdgeNodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
-        nodeId: String
+        nodeId: String,
     ): NodeDeleteResult {
         return NodeDeleteSupport(this).deleteNodeById(projectId, repoName, fullPath, operator, nodeId)
     }
@@ -259,6 +266,12 @@ class EdgeNodeServiceImpl(
 
     override fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
         return NodeRestoreSupport(this).getDeletedNodeDetail(artifact)
+    }
+
+    override fun getDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime,
+    ): NodeDetail? {
+        return NodeRestoreSupport(this).getDeletedNodeDetail(projectId, repoName, fullPath, deleted)
     }
 
     override fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail? {

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -119,7 +119,7 @@ class BlobChunkedServiceImpl(
         projectId: String, repoName: String,
         credentials: StorageCredentials, sha256: String,
         artifactFile: ArtifactFile, uuid: String,
-        size: Long?, md5: String?
+        size: Long?, md5: String?, crc64ecma: String?
     ) {
         storageService.append(
             appendId = uuid,
@@ -128,7 +128,7 @@ class BlobChunkedServiceImpl(
         )
         // 当传递了 md5和size 以后，分块文件合并时不计算 sha256 与 md5,只校验 size 是否一致
         val originalFileInfo = if (size != null && md5 != null) {
-            FileInfo(sha256, md5, size)
+            FileInfo(sha256, md5, size, crc64ecma)
         } else {
             null
         }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -37,7 +37,9 @@ import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterPacka
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.ClusterResource
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.model.TRepository
@@ -63,12 +65,14 @@ class CenterPackageServiceImpl(
     packageDao: PackageDao,
     packageVersionDao: PackageVersionDao,
     packageSearchInterpreter: PackageSearchInterpreter,
-    private val clusterProperties: ClusterProperties
+    metadataCustomizer: MetadataCustomizer?,
+    private val clusterProperties: ClusterProperties,
 ) : PackageServiceImpl(
     repositoryDao,
     packageDao,
     packageVersionDao,
     packageSearchInterpreter,
+    metadataCustomizer,
 ) {
     override fun buildPackage(request: PackageVersionCreateRequest): TPackage {
         return super.buildPackage(request).also { addSrcClusterToResource(it) }
@@ -100,8 +104,13 @@ class CenterPackageServiceImpl(
         }
     }
 
-    override fun buildPackageVersion(request: PackageVersionCreateRequest, packageId: String): TPackageVersion {
-        return super.buildPackageVersion(request, packageId).also { addSrcClusterToResource(it) }
+    override fun buildPackageVersion(
+        request: PackageVersionCreateRequest,
+        packageVersionMetadata: List<TMetadata>,
+        packageId: String
+    ): TPackageVersion {
+        return super.buildPackageVersion(request, packageVersionMetadata, packageId)
+            .also { addSrcClusterToResource(it) }
     }
 
     override fun buildPackageVersion(

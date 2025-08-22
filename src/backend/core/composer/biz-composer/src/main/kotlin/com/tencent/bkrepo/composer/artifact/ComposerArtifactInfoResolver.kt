@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -34,9 +34,8 @@ package com.tencent.bkrepo.composer.artifact
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
-import io.undertow.servlet.spec.HttpServletRequestImpl
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(ComposerArtifactInfo::class)
@@ -49,8 +48,6 @@ class ComposerArtifactInfoResolver : ArtifactInfoResolver {
     ): ArtifactInfo {
         // 包名
         val uri = request.servletPath.removePrefix("/$projectId/$repoName")
-        // 用户设置的参数
-        val parameters = (request as HttpServletRequestImpl).exchange.pathParameters
         return ComposerArtifactInfo(projectId, repoName, uri)
     }
 }

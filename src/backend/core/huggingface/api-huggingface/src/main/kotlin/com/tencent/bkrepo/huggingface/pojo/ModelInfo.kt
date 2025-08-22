@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.huggingface.pojo
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
 
@@ -54,7 +55,7 @@ data class ModelInfo(
     val securityRepoStatus: Map<String, Any>?
 )
 
-
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class RepoSibling(
     val rfilename: String,
     val size: Long?,

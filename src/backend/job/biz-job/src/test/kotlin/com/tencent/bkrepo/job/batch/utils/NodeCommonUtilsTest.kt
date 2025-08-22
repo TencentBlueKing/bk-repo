@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -53,9 +53,9 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 
@@ -65,28 +65,28 @@ import java.time.LocalDateTime
 class NodeCommonUtilsTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
 ) : JobBaseTest() {
-    @MockBean
+    @MockitoBean
     private lateinit var routerControllerClient: RouterControllerClient
 
-    @MockBean
+    @MockitoBean
     lateinit var servicePermissionClient: ServicePermissionClient
 
-    @MockBean
+    @MockitoBean
     lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
-    @MockBean
+    @MockitoBean
     lateinit var messageSupplier: MessageSupplier
 
-    @MockBean
+    @MockitoBean
     lateinit var archiveClient: ArchiveClient
 
-    @MockBean
+    @MockitoBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
-    @MockBean
+    @MockitoBean
     lateinit var separationTaskService: SeparationTaskService
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
     private val nodeCollectionName = "node_${HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)}"

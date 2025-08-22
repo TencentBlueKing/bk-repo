@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,21 +31,28 @@
 
 package com.tencent.bkrepo.opdata.model
 
+import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.opdata.config.OpArchiveOrGcProperties
+import com.tencent.bkrepo.opdata.model.GcInfoModel.Companion.BATCH_SIZE
+import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.stream
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
+
 @Service
 class ArchiveInfoModel @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
+    private val opArchiveOrGcProperties: OpArchiveOrGcProperties,
 ) {
 
     private var archiveInfo: Map<String, Array<Long>> = emptyMap()
@@ -61,30 +68,64 @@ class ArchiveInfoModel @Autowired constructor(
     }
 
     @Scheduled(cron = "0 0 4 * * ?")
+    @SchedulerLock(name = "ArchiveInfoStatJob", lockAtMostFor = "PT24H")
     fun refresh() {
         archiveInfo = stat()
     }
 
     private fun stat(): Map<String, Array<Long>> {
+        if (!opArchiveOrGcProperties.archiveEnabled) return emptyMap()
         logger.info("Start update archive metrics.")
-        // 遍历节点表
+        val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
         val criteria = Criteria.where("archived").isEqualTo(true)
             .and("deleted").isEqualTo(null)
-        val query = Query(criteria)
-        val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
-        GcInfoModel.forEachCollectionAsync {
-            val nodes = mongoTemplate.find<Node>(query, it)
-            for (node in nodes) {
-                val repo = "${node.projectId}/${node.repoName}"
-                // array info: [archiveNum,archiveSize]
-                val longs = statistics.getOrPut(repo) { arrayOf(AtomicLong(), AtomicLong()) }
-                longs[0].incrementAndGet()
-                longs[1].addAndGet(node.size)
-            }
+
+        if (opArchiveOrGcProperties.archiveProjects.isEmpty()) {
+            processAllProjects(statistics, criteria)
+        } else {
+            processSpecificProjects(statistics, criteria)
         }
+
         statistics[SUM] = GcInfoModel.reduce(statistics)
         logger.info("Update archive metrics successful.")
         return statistics.mapValues { arrayOf(it.value[0].get(), it.value[1].get()) }
+    }
+
+    private fun processAllProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, criteria: Criteria) {
+        // 处理所有项目的归档数据
+        val query = Query(criteria).cursorBatchSize(BATCH_SIZE)
+        // 遍历节点表
+        GcInfoModel.forEachCollectionAsync { collection ->
+            processNodes(query, collection, statistics)
+        }
+    }
+
+    private fun processSpecificProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, criteria: Criteria) {
+        // 处理指定项目的归档数据
+        opArchiveOrGcProperties.archiveProjects.forEach { project ->
+            val collection = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
+            val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
+                .cursorBatchSize(BATCH_SIZE)
+            processNodes(query, collection, statistics)
+        }
+    }
+
+    private fun processNodes(
+        query: Query, collection: String, statistics: ConcurrentHashMap<String, Array<AtomicLong>>
+    ) {
+        mongoTemplate.stream<Node>(query, collection).use { nodes ->
+            nodes.forEach { node ->
+                updateStatistics(statistics, node)
+            }
+        }
+    }
+
+    private fun updateStatistics(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, node: Node) {
+        val repo = "${node.projectId}/${node.repoName}"
+        // 数组信息: [归档文件数量, 归档文件总大小]
+        val counts = statistics.getOrPut(repo) { arrayOf(AtomicLong(), AtomicLong()) }
+        counts[0].incrementAndGet()
+        counts[1].addAndGet(node.size)
     }
 
     data class Node(

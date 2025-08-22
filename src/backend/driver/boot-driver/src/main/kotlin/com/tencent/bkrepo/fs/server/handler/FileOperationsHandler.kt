@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -54,6 +54,7 @@ import org.springframework.core.io.buffer.DefaultDataBufferFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ZeroCopyHttpOutputMessage
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
@@ -67,6 +68,7 @@ import java.net.URI
  *
  * 处理文件操作请求
  * */
+@Component
 class FileOperationsHandler(
     private val fileOperationService: FileOperationService,
     private val nodeService: RNodeService

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,15 +31,25 @@
 
 package com.tencent.bkrepo.huggingface.artifact
 
+import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.huggingface.constants.NAME_KEY
 import com.tencent.bkrepo.huggingface.constants.ORGANIZATION_KEY
+import com.tencent.bkrepo.huggingface.constants.PACKAGE_KEY
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
 import com.tencent.bkrepo.huggingface.constants.TYPE_KEY
+import com.tencent.bkrepo.huggingface.constants.VERSION
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
+import kotlin.collections.component1
+import kotlin.collections.component2
 
 @Component
 @Resolver(HuggingfaceArtifactInfo::class)
@@ -50,6 +60,18 @@ class HuggingfaceArtifactInfoResolver : ArtifactInfoResolver {
         artifactUri: String,
         request: HttpServletRequest
     ): HuggingfaceArtifactInfo {
+        val requestUrl = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
+        if (requestUrl.contains("/ext/package/") || requestUrl.contains("/ext/version/")) {
+            val (type, hfRepoId) = request.getParameter(PACKAGE_KEY)?.let { PackageKeys.resolveHuggingface(it) }
+                ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, PACKAGE_KEY)
+            val version = request.getParameter(VERSION)
+            Preconditions.checkNotBlank(hfRepoId, PACKAGE_KEY)
+            if (requestUrl.contains("/ext/version/")) {
+                Preconditions.checkNotBlank(version, VERSION)
+            }
+            val (org, name) = hfRepoId.split(StringPool.SLASH)
+            return HuggingfaceArtifactInfo(projectId, repoName, org, name, version, type, artifactUri)
+        }
         val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>
         val origanization = attributes[ORGANIZATION_KEY].toString()
         val name = attributes[NAME_KEY].toString()

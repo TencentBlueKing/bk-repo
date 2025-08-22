@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -35,7 +35,7 @@ import com.tencent.bkrepo.cargo.listener.operation.CargoPackageUploadOperation
 import com.tencent.bkrepo.cargo.listener.operation.CargoPackageYankOperation
 import com.tencent.bkrepo.cargo.pool.CargoThreadPoolExecutor
 import com.tencent.bkrepo.cargo.service.impl.CommonService
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor

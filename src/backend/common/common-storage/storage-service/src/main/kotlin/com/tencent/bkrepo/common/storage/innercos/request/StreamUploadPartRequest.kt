@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.storage.innercos.PARAMETER_UPLOAD_ID
 import com.tencent.bkrepo.common.storage.innercos.http.Headers.Companion.CONTENT_LENGTH
 import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.common.storage.innercos.http.InputStreamRequestBody
+import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadRecordAbleInputStream
 import okhttp3.RequestBody
 import java.io.InputStream
 
@@ -55,7 +56,7 @@ data class StreamUploadPartRequest(
     }
 
     override fun buildRequestBody(): RequestBody {
-        val inputStream = BoundedInputStream(inputStream, partSize)
+        val inputStream = CosUploadRecordAbleInputStream(BoundedInputStream(inputStream, partSize))
         return InputStreamRequestBody(inputStream, partSize)
     }
 }

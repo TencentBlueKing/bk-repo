@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -57,6 +57,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
+import java.time.format.DateTimeFormatter
 
 object ObjectBuilderUtil {
 
@@ -91,7 +92,6 @@ object ObjectBuilderUtil {
         cargoMetadata: CargoMetadata,
         size: Long,
         fullPath: String,
-        metadataList: List<MetadataModel>
     ): PackageVersionCreateRequest {
         return buildPackageVersionCreateRequest(
             projectId = projectId,
@@ -100,7 +100,6 @@ object ObjectBuilderUtil {
             version = cargoMetadata.vers,
             description = cargoMetadata.description,
             size = size,
-            metadataList = metadataList,
             fullPath = fullPath,
             userId = userId,
         )
@@ -115,7 +114,6 @@ object ObjectBuilderUtil {
         description: String? = null,
         size: Long,
         fullPath: String,
-        metadataList: List<MetadataModel> = emptyList()
     ): PackageVersionCreateRequest {
         return PackageVersionCreateRequest(
             projectId = projectId,
@@ -129,7 +127,6 @@ object ObjectBuilderUtil {
             manifestPath = null,
             artifactPath = fullPath,
             stageTag = null,
-            packageMetadata = metadataList,
             overwrite = true,
             createdBy = userId
         )
@@ -150,6 +147,7 @@ object ObjectBuilderUtil {
             size = artifactFile.getSize(),
             sha256 = artifactFile.getFileSha256(),
             md5 = artifactFile.getFileMd5(),
+            crc64ecma = artifactFile.getFileCrc64ecma(),
             overwrite = true,
             operator = operator
         )
@@ -205,10 +203,10 @@ object ObjectBuilderUtil {
                 projectId = projectId,
                 repoName = repoName,
                 downloadCount = packageVersion.downloads,
-                createdBy = createdBy,
-                createdDate = createdDate,
-                lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate
+                createdBy = packageVersion.createdBy,
+                createdDate = packageVersion.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedBy = packageVersion.lastModifiedBy,
+                lastModifiedDate = packageVersion.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
             )
         }
     }

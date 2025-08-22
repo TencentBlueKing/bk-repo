@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,14 +32,17 @@ import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder.success
+import com.tencent.bkrepo.opdata.pojo.bandwidth.BandwidthInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.service.OpServiceService
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -49,7 +52,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/services")
 @Principal(PrincipalType.ADMIN)
 class OpServiceController @Autowired constructor(
-    private val opServiceService: OpServiceService
+    private val opServiceService: OpServiceService,
 ) {
 
     /**
@@ -74,7 +77,7 @@ class OpServiceController @Autowired constructor(
     @LogOperate(type = "SERVICE_INSTANCE")
     fun instance(
         @PathVariable serviceName: String,
-        @PathVariable instanceId: String
+        @PathVariable instanceId: String,
     ): Response<InstanceInfo> {
         return success(opServiceService.instance(serviceName, instanceId))
     }
@@ -86,7 +89,7 @@ class OpServiceController @Autowired constructor(
     @LogOperate(type = "SERVICE_INSTANCE_DOWN")
     fun downInstance(
         @PathVariable serviceName: String,
-        @PathVariable instanceId: String
+        @PathVariable instanceId: String,
     ): Response<InstanceInfo> {
         return success(opServiceService.changeInstanceStatus(serviceName, instanceId, true))
     }
@@ -98,8 +101,46 @@ class OpServiceController @Autowired constructor(
     @LogOperate(type = "SERVICE_INSTANCE_UP")
     fun upInstance(
         @PathVariable serviceName: String,
-        @PathVariable instanceId: String
+        @PathVariable instanceId: String,
     ): Response<InstanceInfo> {
         return success(opServiceService.changeInstanceStatus(serviceName, instanceId, false))
+    }
+
+
+    /**
+     * 获取服务当前带宽大小
+     */
+    @GetMapping("/{serviceName}/bandwidth")
+    @LogOperate(type = "SERVICE_INSTANCE_BANDWIDTH_LIST")
+    fun serviceBandwidth(@PathVariable("serviceName") serviceName: String): Response<List<BandwidthInfo>> {
+        return success(opServiceService.serviceBandwidth(serviceName))
+    }
+
+    /**
+     * 根据服务和ip删除对应存储的带宽数据
+     */
+    @DeleteMapping("/{serviceName}/bandwidth/{hostIp}/delete")
+    @LogOperate(type = "SERVICE_INSTANCE_UP")
+    fun deleteBandwidthDataByServiceAndIp(
+        @PathVariable serviceName: String,
+        @PathVariable hostIp: String,
+    ): Response<Void> {
+        opServiceService.deleteDataByServiceAndIp(serviceName, hostIp)
+        return success()
+    }
+
+    /**
+     * 根据发服务获取带宽最小的ip列表
+     */
+    @GetMapping("/{serviceName}/bandwidth/ips")
+    @LogOperate(type = "SERVICE_INSTANCE_BANDWIDTH_IP_LIST")
+    fun serviceBandwidthIps(
+        @PathVariable("serviceName") serviceName: String,
+        @RequestParam(required = false, defaultValue = "300")
+        activeSeconds: Long = 300,
+        @RequestParam(required = false, defaultValue = "false")
+        returnAll: Boolean = false,
+    ): Response<List<String>> {
+        return success(opServiceService.serviceBandwidthIps(serviceName, activeSeconds, returnAll))
     }
 }

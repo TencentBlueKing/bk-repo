@@ -9,6 +9,12 @@ import com.tencent.bkrepo.git.constant.GitMessageCode
 import com.tencent.bkrepo.git.internal.CodeRepositoryResolver
 import com.tencent.bkrepo.git.server.DefaultReceivePackFactory
 import com.tencent.bkrepo.git.server.SmartOutputStream
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN
+import jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR
+import jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
+import jakarta.servlet.http.HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE
 import org.eclipse.jgit.errors.CorruptObjectException
 import org.eclipse.jgit.errors.PackProtocolException
 import org.eclipse.jgit.errors.UnpackException
@@ -21,6 +27,7 @@ import org.eclipse.jgit.http.server.ServletUtils
 import org.eclipse.jgit.http.server.ServletUtils.consumeRequestBody
 import org.eclipse.jgit.http.server.resolver.DefaultUploadPackFactory
 import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.storage.pack.PackConfig
 import org.eclipse.jgit.transport.InternalHttpServerGlue
 import org.eclipse.jgit.transport.PacketLineOut
 import org.eclipse.jgit.transport.ReceivePack
@@ -37,13 +44,6 @@ import java.text.MessageFormat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
-import javax.servlet.http.HttpServletResponse.SC_FORBIDDEN
-import javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR
-import javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED
-import javax.servlet.http.HttpServletResponse.SC_UNSUPPORTED_MEDIA_TYPE
-import org.eclipse.jgit.storage.pack.PackConfig
 
 /**
  * Git服务

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -258,7 +258,7 @@ open class NodeMoveCopySupport(
             val listOption = NodeListOption(includeFolder = true, includeMetadata = true, deep = true, sort = false)
             val query = buildSubNodesQuery(this, srcRootNodePath, listOption)
             // 目录下的节点 -> 创建好的目录
-            nodeDao.stream(query).stream().forEach {
+            nodeDao.stream(query).forEach {
                 doMoveCopy(this, it, it.path.replaceFirst(srcRootNodePath, dstRootNodePath), it.name)
             }
         }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.svn.interceptor
 
-import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXAccessInterceptor
+import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.svn.utils.SvnProxyHelper.getRepoId
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 class SvnDevXAccessInterceptor(devxProperties: DevXProperties) : DevXAccessInterceptor(devxProperties) {
     override fun getProjectId(request: HttpServletRequest): String? {

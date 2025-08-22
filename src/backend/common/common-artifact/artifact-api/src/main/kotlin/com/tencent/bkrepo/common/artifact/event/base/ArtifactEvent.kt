@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -60,7 +60,11 @@ open class ArtifactEvent(
     /**
      * 附属数据
      */
-    open val data: Map<String, Any> = mapOf()
+    open val data: Map<String, Any> = mapOf(),
+    /**
+     * 来源， 正常上传或者是联邦同步
+     */
+    open val source: String? = null,
 ) {
     override fun toString(): String {
         return "ArtifactEvent(type=$type, projectId='$projectId', repoName='$repoName', " +

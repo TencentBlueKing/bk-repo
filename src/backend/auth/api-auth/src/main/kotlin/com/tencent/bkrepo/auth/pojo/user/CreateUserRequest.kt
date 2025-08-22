@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -54,5 +54,7 @@ data class CreateUserRequest(
     @get:Schema(title = "邮箱")
     val email: String? = null,
     @get:Schema(title = "联系电话")
-    val phone: String? = null
+    val phone: String? = null,
+    @get:Schema(title = "租户ID")
+    val tenantId: String? = null
 )

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -36,7 +36,7 @@ dependencies {
     api(project(":common:common-bksync"))
     api(project(":common:common-storage:storage-api"))
     api(project(":common:common-artifact:artifact-api"))
-
+    api("io.micrometer:micrometer-core")
     api("commons-codec:commons-codec")
     api("commons-io:commons-io")
     implementation("org.springframework.retry:spring-retry")
@@ -47,10 +47,9 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml")
     implementation("com.tencent.polaris:polaris-discovery-factory")
     implementation("com.tencent.bk.sdk:crypto-java-sdk")
-    compileOnly("io.micrometer:micrometer-core")
     compileOnly("org.springframework.boot:spring-boot-starter-data-redis")
     testImplementation(project(":common:common-redis"))
-    testImplementation("it.ozimov:embedded-redis:${Versions.EmbeddedRedis}") {
+    testImplementation("com.github.codemonstur:embedded-redis:${Versions.EmbeddedRedis}") {
         exclude("org.slf4j", "slf4j-simple")
     }
     testImplementation("org.mockito.kotlin:mockito-kotlin")

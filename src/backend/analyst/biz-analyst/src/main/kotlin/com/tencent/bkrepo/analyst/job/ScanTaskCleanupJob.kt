@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.job
 
+import com.google.common.util.concurrent.RateLimiter
 import com.tencent.bkrepo.analyst.component.manager.ScanExecutorResultManager
 import com.tencent.bkrepo.analyst.configuration.ScannerProperties
 import com.tencent.bkrepo.analyst.dao.ArchiveSubScanTaskDao
@@ -89,7 +90,8 @@ class ScanTaskCleanupJob(
                 Duration.ofDays(DEFAULT_LOCK_AT_MOST_FOR_DAYS),
                 Duration.ofSeconds(1L),
             )
-            lockingTaskExecutor.executeWithLock(Runnable { doClean(CleanContext()) }, lockConfiguration)
+            val rateLimiter = RateLimiter.create(scannerProperties.cleanBatchPerSeconds)
+            lockingTaskExecutor.executeWithLock(Runnable { doClean(CleanContext(rateLimiter)) }, lockConfiguration)
         }
     }
 
@@ -223,12 +225,21 @@ class ScanTaskCleanupJob(
             return
         }
         matchedResultManagers.forEach {
-            val cleanedCount = it.clean(subtask.credentialsKey, subtask.sha256, subtask.scanner)
-            context.reportResultCount.addAndGet(cleanedCount)
+            while (true) {
+                context.rateLimiter?.acquire()
+                val cleanedCount = it.clean(
+                    subtask.credentialsKey, subtask.sha256, subtask.scanner, scannerProperties.cleanBatchSize
+                )
+                context.reportResultCount.addAndGet(cleanedCount)
+                if (cleanedCount < scannerProperties.cleanBatchSize) {
+                    break
+                }
+            }
         }
     }
 
     data class CleanContext(
+        val rateLimiter: RateLimiter? = null,
         val taskCount: AtomicLong = AtomicLong(0L),
         val archivedSubtaskCount: AtomicLong = AtomicLong(0L),
         val planArtifactTaskCount: AtomicLong = AtomicLong(0L),

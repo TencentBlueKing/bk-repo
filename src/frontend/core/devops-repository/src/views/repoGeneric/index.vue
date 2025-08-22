@@ -112,7 +112,7 @@
                     <bk-table-column :selectable="selectable" type="selection" width="60"></bk-table-column>
                     <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip>
                         <template #default="{ row }">
-                            <div @click="previewFile(row)">
+                            <div>
                                 <Icon class="table-svg mr5" size="16" :name="row.folder ? 'folder' : getIconName(row.name)" />
                                 <span
                                     class="hover-btn disabled"
@@ -264,7 +264,7 @@
     import previewBasicFileDialog from './previewBasicFileDialog'
     import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
     import { Base64 } from 'js-base64'
-    import { isOutDisplayType, isPic, isText } from '@repository/utils/file'
+    import { isOutDisplayType, isText } from '@repository/utils/file'
 
     export default {
         name: 'RepoGeneric',
@@ -358,6 +358,9 @@
             },
             community () {
                 return RELEASE_MODE === 'community'
+            },
+            enableMultipleTypeFilePreview () {
+                return RELEASE_MODE === 'community' || RELEASE_MODE === 'tencent'
             },
             searchFileName () {
                 return this.$route.query.fileName
@@ -502,7 +505,7 @@
             },
             renderHeader (h, { column }) {
                 const elements = [h('span', column.label)]
-                if (this.localRepo) {
+                if (this.localRepo && this.repoName !== 'pipeline') {
                     elements.push(h('i', { class: `ml5 devops-icon ${this.sortDirection === 'DESC' ? 'icon-down-shape' : 'icon-up-shape'}` }))
                 }
                 return h('div', {
@@ -524,7 +527,7 @@
                                     direction: this.sortDirection
                                 }
                                 this.sortParams.push(sortParam)
-                                this.handlerPaginationChange()
+                                this.handlerPaginationChange({ current: this.pagination.current })
                             }
                         }
                     }
@@ -641,7 +644,7 @@
                             name: v.metadata?.displayName || v.name
                         }
                     })
-                    if (this.repoName === 'pipeline' && !this.inFolderSearchName) {
+                    if (this.repoName === 'pipeline' && !this.inFolderSearchName && !this.selectedTreeNode?.fullPath) {
                         const originData = this.artifactoryList
                         const direction = this.sortParams.some(param => {
                             return param.direction === 'ASC'
@@ -687,7 +690,7 @@
                                 }
                             })
                         }
-                        this.artifactoryList = originData
+                        this.artifactoryList = originData.slice(this.pagination.limit * (this.pagination.current - 1), this.pagination.limit * this.pagination.current)
                     }
                     const key = this.userInfo.name + 'SelectedPaths'
                     const originPathKey = this.userInfo.name + 'originPath'
@@ -818,9 +821,7 @@
                     this.$set(item, 'loading', false)
                 })
             },
-            // 单击table打开预览
             previewFile (row) {
-                if (row.folder || !this.community) return
                 if (isOutDisplayType(row.fullPath)) {
                     const isLocal = this.localRepo
                     const typeParam = isLocal ? 'local/' : 'remote/'
@@ -854,7 +855,12 @@
             },
             // 双击table打开文件夹
             openFolder (row) {
-                if (!row.folder) return
+                if (!row.folder) {
+                    if (this.enableMultipleTypeFilePreview) {
+                        this.previewFile(row)
+                    }
+                    return
+                }
                 if (this.searchFileName) {
                     // 搜索中打开文件夹
                     this.inFolderSearchName = ''
@@ -1049,7 +1055,7 @@
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
-                        '/web' + url,
+                        '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
                         '_self'
                     )
                 }).catch(e => {
@@ -1111,7 +1117,7 @@
                         this.timer = null
                         this.$refs.loading.isShow = false
                         window.open(
-                            '/web' + url,
+                            '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
                             '_self'
                         )
                     }).catch(e => {
@@ -1307,91 +1313,60 @@
                 })
             },
             async handlerPreviewBasicsFile (row) {
+                if (this.enableMultipleTypeFilePreview) {
+                    this.previewFile(row)
+                    return
+                }
                 const isLocal = this.localRepo
-                let extraParam = 0
-                if (!isLocal) {
-                    const res = this.splitBkRepoRemoteUrl(this.currentRepo.configuration.url)
-                    const remotePath = res.baseUrl + '/generic/' + res.projectId + '/' + res.repoName + row.fullPath
-                    const object = {
-                        url: remotePath
-                    }
-                    const json = JSON.stringify(object)
-                    extraParam = Base64.encode(json)
-                }
-                if (!isText(row.fullPath) && !isPic(row.fullPath)) {
-                    this.$refs.previewOfficeFileDialog.repoName = row.repoName
-                    this.$refs.previewOfficeFileDialog.projectId = row.projectId
-                    this.$refs.previewOfficeFileDialog.filePath = row.fullPath
-                    this.$refs.previewOfficeFileDialog.repoType = isLocal ? 'local' : 'remote'
-                    this.$refs.previewOfficeFileDialog.extraParam = isLocal ? '' : extraParam
-                    this.$refs.previewOfficeFileDialog.setDialogData({
-                        show: true,
-                        title: row.name,
-                        isLoading: true
-                    })
-                    this.$refs.previewOfficeFileDialog.setData()
-                } else if (isPic(row.fullPath)) {
-                    this.$refs.previewBasicFileDialog.setDialogData({
-                        show: true,
-                        title: row.name,
-                        isLoading: true,
-                        repoName: row.repoName,
-                        repoType: isLocal ? 'local' : 'remote',
-                        extraParam: extraParam,
-                        filePath: row.fullPath
-                    })
-                    this.$refs.previewBasicFileDialog.setPic()
-                } else {
-                    this.$refs.previewBasicFileDialog.setDialogData({
-                        show: true,
-                        title: row.name,
-                        isLoading: true,
-                        repoName: row.repoName,
-                        repoType: isLocal ? 'local' : 'remote',
-                        extraParam: extraParam,
-                        filePath: row.fullPath
-                    })
-                    const res = await this.previewBasicFile({
-                        projectId: this.projectId,
-                        repoName: this.repoName,
-                        path: row.fullPath
-                    }).catch(e => {
-                        if (e.status === 403) {
-                            this.getPermissionUrl({
-                                body: {
+                this.$refs.previewBasicFileDialog.setDialogData({
+                    show: true,
+                    title: row.name,
+                    isLoading: true,
+                    repoName: row.repoName,
+                    repoType: isLocal ? 'local' : 'remote',
+                    extraParam: 0,
+                    filePath: row.fullPath
+                })
+                const res = await this.previewBasicFile({
+                    projectId: this.projectId,
+                    repoName: this.repoName,
+                    path: row.fullPath
+                }).catch(e => {
+                    if (e.status === 403) {
+                        this.getPermissionUrl({
+                            body: {
+                                projectId: this.projectId,
+                                action: 'READ',
+                                resourceType: 'NODE',
+                                uid: this.userInfo.name,
+                                repoName: this.repoName,
+                                path: row.fullPath
+                            }
+                        }).then(res => {
+                            if (res !== '') {
+                                this.showIamDenyDialog = true
+                                this.showData = {
                                     projectId: this.projectId,
-                                    action: 'READ',
-                                    resourceType: 'NODE',
-                                    uid: this.userInfo.name,
                                     repoName: this.repoName,
-                                    path: row.fullPath
+                                    action: 'READ',
+                                    path: row.fullPath,
+                                    url: res
                                 }
-                            }).then(res => {
-                                if (res !== '') {
-                                    this.showIamDenyDialog = true
-                                    this.showData = {
-                                        projectId: this.projectId,
-                                        repoName: this.repoName,
-                                        action: 'READ',
-                                        path: row.fullPath,
-                                        url: res
-                                    }
-                                } else {
-                                    this.$bkMessage({
-                                        theme: 'error',
-                                        message: e.message
-                                    })
-                                }
-                            })
-                        } else {
-                            this.$bkMessage({
-                                theme: 'error',
-                                message: e.message
-                            })
-                        }
-                    })
-                    this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
-                }
+                            } else {
+                                this.$bkMessage({
+                                    theme: 'error',
+                                    message: e.message
+                                })
+                            }
+                        })
+                    } else {
+                        this.$bkMessage({
+                            theme: 'error',
+                            message: e.message
+                        })
+                    }
+                })
+                this.$refs.previewBasicFileDialog.setData(typeof (res) === 'string' ? res : JSON.stringify(res))
             },
             async handlerPreviewCompressedFile (row) {
                 if (row.size > 1073741824) {
@@ -1478,7 +1453,7 @@
             },
 
             getBtnDisabled (name) {
-                return this.community ? isOutDisplayType(name) : isText(name)
+                return this.enableMultipleTypeFilePreview ? isOutDisplayType(name) : isText(name)
             },
             // 文件夹内部的搜索，根据文件名或文件夹名搜索
             inFolderSearchFile () {

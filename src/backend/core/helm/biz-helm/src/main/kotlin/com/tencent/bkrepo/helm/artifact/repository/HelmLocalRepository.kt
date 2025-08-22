@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -158,6 +158,7 @@ class HelmLocalRepository(
                 size = getLongAttribute(SIZE),
                 sha256 = getArtifactSha256(),
                 md5 = getArtifactMd5(),
+                crc64ecma = getArtifactCrc64ecma(),
                 operator = userId,
                 nodeMetadata = parseMetaData(context)?.map { MetadataModel(key = it.key, value = it.value) },
                 overwrite = isOverwrite(fullPath, isForce)

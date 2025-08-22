@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -36,12 +36,12 @@ const val BKREPO_PREFIX = "X-BKREPO-"
 const val HEADER_OVERWRITE = BKREPO_PREFIX + "OVERWRITE"
 const val HEADER_SHA256 = BKREPO_PREFIX + "SHA256"
 const val HEADER_MD5 = BKREPO_PREFIX + "MD5"
+const val HEADER_CRC64ECMA = BKREPO_PREFIX + "CRC64ECMA"
 const val HEADER_EXPIRES = BKREPO_PREFIX + "EXPIRES"
 const val HEADER_SIZE = BKREPO_PREFIX + "SIZE"
 const val HEADER_UPLOAD_ID = BKREPO_PREFIX + "UPLOAD-ID"
 const val HEADER_SEQUENCE = BKREPO_PREFIX + "SEQUENCE"
 const val HEADER_OFFSET = BKREPO_PREFIX + "OFFSET"
-const val HEADER_FILE_SIZE = BKREPO_PREFIX + "SIZE"
 const val HEADER_OLD_FILE_PATH = BKREPO_PREFIX + "OLD-FILE-PATH"
 
 const val BKREPO_META_PREFIX = "X-BKREPO-META-"

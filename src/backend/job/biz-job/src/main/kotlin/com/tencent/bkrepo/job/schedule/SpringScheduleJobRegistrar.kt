@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.job.schedule
 
 import org.slf4j.LoggerFactory
-import org.springframework.boot.task.TaskSchedulerBuilder
+import org.springframework.boot.task.ThreadPoolTaskSchedulerBuilder
 import org.springframework.scheduling.config.CronTask
 import org.springframework.scheduling.config.FixedDelayTask
 import org.springframework.scheduling.config.FixedRateTask
@@ -39,7 +39,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar
  * Spring调度任务注册
  * */
 class SpringScheduleJobRegistrar(
-    private val builder: TaskSchedulerBuilder,
+    private val builder: ThreadPoolTaskSchedulerBuilder,
 ) : JobRegistrar {
     private var initial = false
     lateinit var taskRegistrar: ScheduledTaskRegistrar

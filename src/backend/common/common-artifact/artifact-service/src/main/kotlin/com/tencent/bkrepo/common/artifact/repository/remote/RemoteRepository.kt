@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -101,7 +101,10 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             val response = httpClient.newCall(request).execute()
             return if (checkResponse(response)) {
                 onDownloadResponse(context, response)
-            } else null
+            } else {
+                response.close()
+                null
+            }
         }
     }
 
@@ -136,22 +139,27 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      * 尝试读取缓存的远程构件
      */
     fun getCacheArtifactResource(context: ArtifactDownloadContext): ArtifactResource? {
+        val (cacheNode, isExpired) = getCacheInfo(context) ?: return null
+        return if (isExpired) null else loadArtifactResource(cacheNode, context)
+    }
+
+    /**
+     * 获取缓存的远程构件节点及过期状态
+     */
+    protected fun getCacheInfo(context: ArtifactContext): Pair<NodeDetail, Boolean>? {
         if (!shouldCache(context)) {
             return null
         }
 
         val cacheNode = findCacheNodeDetail(context)
-        if (cacheNode == null || cacheNode.folder) return null
-
-        return if (!isExpired(cacheNode, context.getRemoteConfiguration().cache.expiration)) {
-            loadArtifactResource(cacheNode, context)
-        } else null
+        return if (cacheNode == null || cacheNode.folder) null else
+            Pair(cacheNode, isExpired(cacheNode, context.getRemoteConfiguration().cache.expiration))
     }
 
     /**
      * 加载要返回的资源
      */
-    open fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactDownloadContext): ArtifactResource? {
+    open fun loadArtifactResource(cacheNode: NodeDetail, context: ArtifactContext): ArtifactResource? {
         return storageManager.loadFullArtifactInputStream(cacheNode, context.storageCredentials)?.run {
             if (logger.isDebugEnabled) {
                 logger.debug("Cached remote artifact[${context.artifactInfo}] is hit.")
@@ -165,16 +173,22 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     protected fun isExpired(cacheNode: NodeDetail, expiration: Long): Boolean {
         if (expiration <= 0) {
-            return false
+            return isExpiredForNonPositiveValue()
         }
         val createdDate = LocalDateTime.parse(cacheNode.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         return Duration.between(createdDate, LocalDateTime.now()).toMinutes() >= expiration
     }
 
     /**
+     * expiration 为0或负数时表示是否过期
+     * @see [com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCacheConfiguration.expiration]
+     */
+    protected open fun isExpiredForNonPositiveValue(): Boolean = false
+
+    /**
      * 尝试获取缓存的远程构件节点
      */
-    open fun findCacheNodeDetail(context: ArtifactDownloadContext): NodeDetail? {
+    open fun findCacheNodeDetail(context: ArtifactContext): NodeDetail? {
         with(context) {
             return nodeService.getNodeDetail(artifactInfo)
         }
@@ -197,7 +211,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         context: ArtifactDownloadContext,
         response: Response,
         useDisposition: Boolean = false,
-        syncCache: Boolean = true
+        syncCache: Boolean = true,
     ): ArtifactResource {
         return if (syncCache) {
             syncCacheResponse(response, context, useDisposition)
@@ -209,7 +223,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     private fun syncCacheResponse(
         response: Response,
         context: ArtifactDownloadContext,
-        useDisposition: Boolean
+        useDisposition: Boolean,
     ): ArtifactResource {
         val artifactFile = createTempFile(response.body!!)
         val size = artifactFile.getSize()
@@ -227,19 +241,18 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     private fun asyncCacheResponse(
         response: Response,
         context: ArtifactDownloadContext,
-        useDisposition: Boolean
+        useDisposition: Boolean,
     ): ArtifactResource {
         if (response.header(HttpHeaders.TRANSFER_ENCODING) == "chunked") {
             throw ErrorCodeException(PARAMETER_INVALID, "Transfer-Encoding: chunked was not supported")
         }
         val contentLength = response.header(HttpHeaders.CONTENT_LENGTH)!!.toLong()
-        val range = resolveContentRange(response.header(HttpHeaders.CONTENT_RANGE)) ?: Range.full(contentLength)
+        val contentRange = resolveContentRange(response.header(HttpHeaders.CONTENT_RANGE))
+        val range = contentRange ?: Range.full(contentLength)
 
         val request = HttpContextHolder.getRequestOrNull()
-        val artifactStream = if (range.isEmpty() || request?.method == HEAD.name) {
-            // 返回空文件
-            response.close()
-            ArtifactInputStream(EmptyInputStream.INSTANCE, range)
+        val artifactStream = if (contentRange?.isEmpty() == true || request?.method == HEAD.name) {
+            onEmptyResponse(response, range, context)
         } else {
             // 返回文件内容
             response.body!!.byteStream().artifactStream(range).apply {
@@ -261,6 +274,16 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             channel = ArtifactChannel.LOCAL,
             useDisposition = useDisposition,
         )
+    }
+
+    protected open fun onEmptyResponse(
+        response: Response,
+        range: Range,
+        context: ArtifactDownloadContext,
+    ): ArtifactInputStream {
+        // 返回空文件
+        response.close()
+        return ArtifactInputStream(EmptyInputStream.INSTANCE, range)
     }
 
     /**
@@ -297,7 +320,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
      */
     open fun safeSearchParents(
         repositoryDetail: RepositoryDetail,
-        artifactInfo: ArtifactInfo
+        artifactInfo: ArtifactInfo,
     ): List<Any> {
         return emptyList()
     }
@@ -344,6 +367,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             fullPath = context.artifactInfo.getArtifactFullPath(),
             size = artifactFile.getSize(),
             sha256 = artifactFile.getFileSha256(),
+            crc64ecma = artifactFile.getFileCrc64ecma(),
             md5 = artifactFile.getFileMd5(),
             overwrite = true,
             operator = context.userId
@@ -366,7 +390,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     protected fun createHttpClient(
         configuration: RemoteConfiguration,
         addInterceptor: Boolean = true,
-        followRedirect: Boolean = false
+        followRedirect: Boolean = false,
     ): OkHttpClient {
         return buildOkHttpClient(configuration, addInterceptor, followRedirect).build()
     }

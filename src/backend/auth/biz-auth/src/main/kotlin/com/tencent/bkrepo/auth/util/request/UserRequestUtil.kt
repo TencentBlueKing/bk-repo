@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -72,7 +72,7 @@ object UserRequestUtil {
         )
     }
 
-    fun convToTUser(request: CreateUserRequest, hashPwd: String): TUser {
+    fun convToTUser(request: CreateUserRequest, hashPwd: String, tenantId: String?): TUser {
         return TUser(
             userId = request.userId,
             name = request.name,
@@ -86,7 +86,8 @@ object UserRequestUtil {
             email = request.email,
             phone = request.phone,
             createdDate = LocalDateTime.now(),
-            lastModifiedDate = LocalDateTime.now()
+            lastModifiedDate = LocalDateTime.now(),
+            tenantId = tenantId
         )
     }
 

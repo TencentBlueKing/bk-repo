@@ -1,7 +1,7 @@
 --[[
 Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
 
-Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+Copyright (C) 2019 Tencent.  All rights reserved.
 
 BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
 
@@ -21,7 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 local allow_services = { "auth", "repository", "generic", "docker", "oci", "maven", "job",
                          "helm", "pypi", "opdata", "rpm", "s3", "git", "npm", "fs-server", "analyst",
                          "replication", "git", "nuget", "composer", "media", "ddc", "conan", "job-schedule",
-                         "websocket", "preview", "huggingface" ,"driver" }
+                         "websocket", "preview", "huggingface", "driver" }
 local service_name = ngx.var.service
 
 if not arrayUtil:isInArray(service_name, allow_services) then
@@ -45,40 +45,6 @@ if service_name == "" then
     return
 end
 
--- 访问限制api --
-local security_paths = config.security_paths
-if security_paths ~= nil and #security_paths ~= 0 then
-    local is_secure = false
-    local method = ngx.req.get_method()
-    local path = ngx.var.uri
-    for _, item in ipairs(security_paths) do
-        local pathPattern = "/web/" .. service_name .. item.path
-        if service_name == "fs-server" then
-             pathPattern = "/web/fs%-server" .. item.path
-        end
-        if string.find(path, "^" .. pathPattern) ~= nil and service_name == item.service and method == item.method then
-            is_secure = true
-        end
-    end
-    if is_secure == false then
-        ngx.exit(422)
-        return
-    end
-end
-
--- 访问限制的工具
-local access_util = nil
-
--- 限制访问频率
-if access_util then
-    local access_result, err = access_util:isAccess()
-    if not access_result then
-        ngx.log(ngx.STDERR, "request excess!")
-        ngx.exit(503)
-        return
-    end
-end
-
 -- 哪些服务需要转到容器中 --
 local service_in_container = config.service_in_container
 if service_in_container ~= nil and string.find(service_in_container, service_name) ~= nil then
@@ -86,10 +52,40 @@ if service_in_container ~= nil and string.find(service_in_container, service_nam
     return
 end
 
+-- 异常故障转移
+if config.env and healthUtil:get_cluster_health_status(config.env) then
+    local back_target = healthUtil:get_target_by_random(config.env)
+    if back_target ~= nil then
+        ngx.var.target = back_target .. "/" .. service_name
+        return
+    end
+end
+
+local router_by_project = true
+if ngx.var.pass_router_by_project ~= nil and ngx.var.pass_router_by_project == "true" then
+    router_by_project = false
+end
+
+if router_by_project then
+    -- 路由表转发
+    local env, router_target = healthUtil:get_target_by_project()
+    if env then
+        ngx.var.target = router_target .. "/" .. service_name
+        return
+    end
+end
+
+
+-- 校验endpoint与method开放访问 --
+if healthUtil:check_path(service_name) == false then
+    ngx.exit(422)
+    return
+end
+
+
 ngx.var.target = hostUtil:get_addr(service_name)
 
 if ngx.var.assembly ~= nil and ngx.var.assembly ~= "" then
     ngx.var.target = ngx.var.target .. "/" .. service_name
 end
-
 

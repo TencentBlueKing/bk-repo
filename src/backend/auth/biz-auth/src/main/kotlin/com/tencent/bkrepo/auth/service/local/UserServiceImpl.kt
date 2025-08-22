@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -111,7 +111,9 @@ class UserServiceImpl constructor(
         } else {
             DataDigestUtils.md5FromStr(request.pwd!!)
         }
-        val userRequest = UserRequestUtil.convToTUser(request, hashPwd)
+        val tenantIdFromHeader = userHelper.getTenantId()
+        val tenantId = if (tenantIdFromHeader.isNullOrEmpty()) request.tenantId else tenantIdFromHeader
+        val userRequest = UserRequestUtil.convToTUser(request, hashPwd, tenantId)
         try {
             userDao.insert(userRequest)
         } catch (ignore: DuplicateKeyException) {
@@ -172,11 +174,11 @@ class UserServiceImpl constructor(
         return true
     }
 
-    override fun listUser(rids: List<String>): List<User> {
+    override fun listUser(rids: List<String>, tenantId: String?): List<User> {
         logger.debug("list user rids : [$rids]")
         return if (rids.isEmpty()) {
             // 排除被锁定的用户
-            userDao.getUserNotLocked().map { UserRequestUtil.convToUser(it) }
+            userDao.getUserNotLocked(tenantId).map { UserRequestUtil.convToUser(it) }
         } else {
             userDao.findAllByRolesIn(rids).map { UserRequestUtil.convToUser(it) }
         }
@@ -231,6 +233,24 @@ class UserServiceImpl constructor(
         logger.info("create token userId : [$userId]")
         val token = UserRequestUtil.generateToken()
         return addUserToken(userId, token, null)
+    }
+
+    override fun createOrUpdateUser(userId: String, name: String, tenantId: String?) {
+        logger.info("create or update user : [$userId,$name,$tenantId]")
+        if (!userHelper.isUserExist(userId)) {
+            val userName = name.ifEmpty { userId }
+            val createRequest = CreateUserRequest(userId = userId, name = userName, tenantId = tenantId)
+            createUser(createRequest)
+        } else {
+            val updateUserRequest = UpdateUserRequest(name = userId)
+            if (name.isNotEmpty()) {
+                updateUserRequest.name = name
+            }
+            tenantId?.let {
+                updateUserRequest.tenantId = tenantId
+            }
+            updateUserById(userId, updateUserRequest)
+        }
     }
 
     override fun addUserToken(userId: String, name: String, expiredAt: String?): Token? {

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -134,12 +134,13 @@ class UserServiceTest {
         // 创建角色
         val roleId = createRole()!!
         val rids = listOf(roleId)
-        var listUser = userService.listUser(rids)
+        val tenantId = null
+        var listUser = userService.listUser(rids, tenantId)
         Assertions.assertTrue(listUser.size >= 0)
         // 创建用户关联角色
         userService.createUser(createUserRequest())
         userService.addUserToRole(userId, roleId)
-        listUser = userService.listUser(rids)
+        listUser = userService.listUser(rids, tenantId)
         Assertions.assertEquals(listUser.size, 1)
     }
 

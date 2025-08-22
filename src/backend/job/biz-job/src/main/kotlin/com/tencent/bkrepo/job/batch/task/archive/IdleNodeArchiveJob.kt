@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -43,7 +43,6 @@ import com.tencent.bkrepo.job.config.properties.IdleNodeArchiveJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.inValues
@@ -63,7 +62,6 @@ import kotlin.reflect.KClass
  * 4. 如果未被使用，则进行归档。
  * */
 @Component
-@EnableConfigurationProperties(IdleNodeArchiveJobProperties::class)
 class IdleNodeArchiveJob(
     private val properties: IdleNodeArchiveJobProperties,
     private val archiveClient: ArchiveClient,

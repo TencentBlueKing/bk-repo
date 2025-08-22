@@ -8,7 +8,9 @@
         :title="($t('preview') + ' - ' + previewDialog.title)">
         <div v-if="previewDialog.isLoading" style="windt: 100%;" v-bkloading="{ isLoading: previewDialog.isLoading }"></div>
         <div v-else>
-            <img v-if="imgShow" :src="imgUrl" style="max-width: 100%; max-height: 100%;" />
+            <div v-if="imgShow" style="width: 100%; height: 100%">
+                <img id="image" :src="imgUrl" alt="Picture" style="max-width: 100%; max-height: 100%;">
+            </div>
             <div class="preview-file-tips" v-if="!imgShow">{{ $t('previewFileTips') }}</div>
             <textarea v-if="!imgShow" v-model="basicFileText" class="textarea" readonly></textarea>
         </div>
@@ -21,6 +23,7 @@
         getPreviewLocalOfficeFileInfo,
         getPreviewRemoteOfficeFileInfo
     } from '@repository/utils/previewOfficeFile'
+    import Viewer from "viewerjs";
 
     export default {
         name: 'PreviewBasicFileDialog',
@@ -44,13 +47,16 @@
         computed: {
             projectId () {
                 return this.$route.params.projectId
+            },
+            enableMultipleTypeFilePreview () {
+                return RELEASE_MODE === 'community' || RELEASE_MODE === 'tencent'
             }
         },
         methods: {
             setData (data) {
                 this.basicFileText = data
                 this.previewDialog.isLoading = false
-                if (RELEASE_MODE !== 'community') return
+                if (!this.enableMultipleTypeFilePreview) return
                 if (this.previewDialog.repoType === 'local') {
                     getPreviewLocalOfficeFileInfo(this.projectId, this.previewDialog.repoName, '/' + this.previewDialog.filePath).then(res => {
                         if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
@@ -107,12 +113,21 @@
             dealDate (res) {
                 this.previewDialog.isLoading = false
                 this.imgUrl = URL.createObjectURL(res.data)
+                this.$nextTick(() => {
+                    const viewer = new Viewer(document.getElementById('image'), {
+                        inline: true,
+                        viewed () {
+                            viewer.zoomTo(1)
+                        }
+                    })
+                })
             }
         }
     }
 </script>
 
 <style lang="scss" scoped>
+@import 'viewerjs/dist/viewer.css';
     .preview-file-tips {
         margin-bottom: 10px;
         color: #707070;

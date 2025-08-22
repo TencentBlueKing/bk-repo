@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,24 +32,19 @@
 plugins {
     id("com.tencent.devops.boot") version Versions.DevopsBoot
     id("com.tencent.devops.publish") version Versions.DevopsBoot apply false
+    id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
 }
 
 allprojects {
     group = Release.Group
     version = (System.getProperty("repo_version") ?: Release.Version) +
-            if (System.getProperty("snapshot") == "true") "-SNAPSHOT" else "-RELEASE"
+        if (System.getProperty("snapshot") == "true") "-SNAPSHOT" else "-RELEASE"
 
     apply(plugin = "com.tencent.devops.boot")
     apply(plugin = "jacoco")
 
     dependencyManagement {
         applyMavenExclusions(false)
-
-        imports {
-            mavenBom("org.springframework.cloud:spring-cloud-sleuth-otel-dependencies:${Versions.SleuthOtel}")
-            // 升级devops boot版本后，stream启动报错。参考https://github.com/spring-cloud/spring-cloud-function/issues/940
-            mavenBom("org.springframework.cloud:spring-cloud-function-dependencies:${Versions.SpringCloudFunction}")
-        }
         dependencies {
             dependency("com.github.zafarkhaja:java-semver:${Versions.JavaSemver}")
             dependency("net.javacrumbs.shedlock:shedlock-spring:${Versions.Shedlock}")
@@ -61,7 +56,7 @@ allprojects {
             dependency("org.apache.commons:commons-compress:${Versions.CommonsCompress}:")
             dependency("commons-io:commons-io:${Versions.CommonsIO}")
             dependency("com.squareup.okhttp3:okhttp:${Versions.OKhttp}")
-            dependency("com.google.guava:guava:${Versions.Guava}")
+            dependency("com.google.protobuf:protobuf-java:${Versions.ProtobufJava}")
             dependency("com.google.protobuf:protobuf-java-util:${Versions.ProtobufJava}")
             dependency("com.tencent.polaris:polaris-discovery-factory:${Versions.Polaris}")
             dependency("org.apache.commons:commons-text:${Versions.CommonsText}")
@@ -80,6 +75,23 @@ allprojects {
             dependency("com.tencent.devops:devops-schedule-server:${Versions.DevopsBootSNAPSHOT}")
             dependency("com.tencent.devops:devops-schedule-model-mongodb:${Versions.DevopsBootSNAPSHOT}")
             dependency("com.tencent.devops:devops-schedule-worker:${Versions.DevopsBootSNAPSHOT}")
+            dependency("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x:${Versions.EmbeddedMongo}")
+            // pulsar-client中依赖的版本太旧，和otel trace中的版本冲突
+            dependency("io.opentelemetry:opentelemetry-api-incubator:1.43.0-alpha")
+            // mongodb server版本过低，主动降级驱动
+            dependencySet("org.mongodb:5.1.4") {
+                entry("bson")
+                entry("bson-record-codec")
+                entry("mongodb-driver-sync")
+                entry("mongodb-driver-core")
+                entry("mongodb-driver-reactivestreams")
+            }
+            // redis server版本过低，主动降级
+            dependency("io.lettuce:lettuce-core:6.3.2.RELEASE")
+            // spring-boot-starter-test:3.4.0依赖版本2.5.1有cve漏洞，升级框架后可以移除
+            dependency("net.minidev:json-smart:2.5.2")
+            // spring-cloud-starter-config:4.2.0依赖版本5.4.1有cve漏洞，升级框架后可以移除
+            dependency("org.apache.httpcomponents.client5:httpclient5:5.4.4")
         }
     }
 
@@ -87,12 +99,13 @@ allprojects {
         exclude(group = "log4j", module = "log4j")
         exclude(group = "org.slf4j", module = "slf4j-log4j12")
         exclude(group = "commons-logging", module = "commons-logging")
+        exclude(group = "io.swagger")
         exclude(group = "org.springframework.boot", module = "spring-boot-starter-tomcat")
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions {
-            freeCompilerArgs = listOf("-java-parameters")
+        compilerOptions {
+            freeCompilerArgs.set(listOf("-java-parameters"))
         }
     }
 
@@ -104,9 +117,30 @@ allprojects {
         dependsOn(tasks.getByName("test"))
     }
 
+    tasks.test {
+        jvmArgs = listOf("--add-opens=java.base/java.nio=ALL-UNNAMED")
+        testLogging {
+            events("passed", "skipped", "failed")
+            showStackTraces = true
+            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        }
+    }
+
     if (isBootProject(this)) {
         tasks.named("copyToRelease") {
             dependsOn(tasks.named("bootJar"))
+        }
+    }
+}
+
+nexusPublishing {
+    repositories {
+        // see https://central.sonatype.org/publish/publish-portal-ossrh-staging-api/#configuration
+        sonatype {
+            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
+            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
+            username.set(System.getenv("SONATYPE_USERNAME"))
+            password.set(System.getenv("SONATYPE_PASSWORD"))
         }
     }
 }

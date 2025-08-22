@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -40,6 +40,7 @@ import java.util.concurrent.locks.ReentrantLock
 class LeakyRateLimiter(
     private val rate: Double,
     private val capacity: Long,
+    private val keepConnection: Boolean = true,
 ) : RateLimiter {
 
     // 计算的起始时间
@@ -69,6 +70,10 @@ class LeakyRateLimiter(
 
     override fun getLimitPerSecond(): Long {
         return (rate * capacity).toLong()
+    }
+
+    override fun keepConnection(): Boolean {
+        return keepConnection
     }
 
     private fun allow(permits: Long): Boolean {

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,7 +32,7 @@ package com.tencent.bkrepo.websocket.pojo.fs
  */
 data class CopyPDU(
     val projectId: String,
-    val userId: String,
+    var userId: String,
     val workspaceName: String,
     val files: Map<String, Long>,
     val timestamp: Long,
@@ -40,4 +40,6 @@ data class CopyPDU(
     val strategy: ConflictStrategy = ConflictStrategy.OVERWRITE,
     var token: String? = null,
     var envHashId: String? = null,
+    var zone: String? = null,
+    var sessionId: String? = null,
 )

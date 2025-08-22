@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.huggingface.service
 
 import com.mongodb.DuplicateKeyException
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
@@ -45,6 +46,7 @@ import com.tencent.bkrepo.huggingface.pojo.RepoUpdateRequest
 import com.tencent.bkrepo.huggingface.pojo.RepoUrl
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageCreateRequest
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageUpdateRequest
@@ -137,16 +139,35 @@ class RepoService(
     fun delete(request: RepoDeleteRequest) {
         val userId = SecurityUtils.getUserId()
         val packageKey = PackageKeys.ofHuggingface(request.type, request.repoId)
-        packageService.findPackageByKey(request.projectId, request.repoName, packageKey)
-            ?: throw HfRepoNotFoundException(request.repoId)
-        val deleteRequest = NodeDeleteRequest(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            fullPath = "/${request.repoId}",
-            operator = userId
-        )
-        nodeService.deleteNode(deleteRequest)
-        packageService.deletePackage(request.projectId, request.repoName, packageKey)
+        if (request.revision == null) {
+            // 删除repo(package)
+            packageService.findPackageByKey(request.projectId, request.repoName, packageKey)
+                ?: throw HfRepoNotFoundException(request.repoId)
+            packageService.deletePackage(request.projectId, request.repoName, packageKey)
+            nodeService.deleteNode(
+                NodeDeleteRequest(
+                    projectId = request.projectId,
+                    repoName = request.repoName,
+                    fullPath = "/${request.repoId}",
+                    operator = userId,
+                )
+            )
+        } else {
+            // 删除revision(version)
+            packageService.findVersionByName(request.projectId, request.repoName, packageKey, request.revision!!)
+                ?: throw VersionNotFoundException("${request.repoId}/${request.revision}")
+            packageService.deleteVersion(request.projectId, request.repoName, packageKey, request.revision!!)
+            val deleteRequest = NodesDeleteRequest(
+                projectId = request.projectId,
+                repoName = request.repoName,
+                fullPaths = listOf(
+                    "/${request.repoId}/resolve/${request.revision}",
+                    "/${request.repoId}/info/${request.revision}"
+                ),
+                operator = userId
+            )
+            nodeService.deleteNodes(deleteRequest)
+        }
     }
 
     private fun checkRepository(projectId: String, repoName: String): RepositoryDetail {

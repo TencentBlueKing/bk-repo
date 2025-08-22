@@ -228,6 +228,7 @@ export default {
             xhr.setRequestHeader('X-BKREPO-EXPIRES', headers['X-BKREPO-EXPIRES'])
             xhr.setRequestHeader('X-CSRFToken', cookies.get((MODE_CONFIG === 'ci' || MODE_CONFIG === 'saas') ? 'bk_token' : 'bkrepo_ticket'))
             xhr.setRequestHeader('Accept-Language', cookies.get('blueking_language') || 'zh-CN')
+            xhr.setRequestHeader('X-BKREPO-PROJECT-ID', window.repositoryVue.$router.currentRoute.params?.projectId)
             xhr.addEventListener('error', e => reject(e.target.response))
             xhr.send(body)
         })
@@ -391,6 +392,13 @@ export default {
                     date: date
                 }
             }
+        )
+    },
+
+    getCorrectFolder (_, { path }) {
+        return Vue.prototype.$ajax.post(
+            `${prefix}/node/correct/folders`,
+            path
         )
     }
 }

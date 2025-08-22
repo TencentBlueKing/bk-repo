@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -99,6 +99,20 @@ data class ScannerProperties(
      * 扫描结果报告保留时间，为0时表示不清理
      */
     var reportKeepDuration: Duration = Duration.ofDays(0L),
+    /**
+     * 扫描结果中来源于不同组件的相同漏洞ID和许可证ID是否仅计数1次
+     */
+    var uniqueCounting: Boolean = false,
+
+    /**
+     * 清理批大小
+     */
+    var cleanBatchSize: Int = 1000,
+
+    /**
+     * 每秒清理批次限制
+     */
+    var cleanBatchPerSeconds: Double = 10.0,
 ) {
     companion object {
         /**

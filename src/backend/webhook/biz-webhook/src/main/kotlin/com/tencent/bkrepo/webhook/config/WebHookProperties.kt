@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -36,5 +36,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class WebHookProperties(
     var maxRequests: Int? = null,
     var maxRequestsPerHost: Int? = null,
-    var filterProjectRepoKey: MutableList<String> = mutableListOf()
+    var filterProjectRepoKey: MutableList<String> = mutableListOf(),
+    /**
+     * 是否允许依赖源仓库的节点事件触发webhook
+     */
+    var triggeredByNodeEventOfPackageSupportedRepo: Boolean = true,
 )

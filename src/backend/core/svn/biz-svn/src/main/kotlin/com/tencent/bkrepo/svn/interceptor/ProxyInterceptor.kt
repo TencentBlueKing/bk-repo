@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,18 +27,18 @@
 
 package com.tencent.bkrepo.svn.interceptor
 
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil
 import com.tencent.bkrepo.common.service.util.proxy.ProxyCallHandler
 import com.tencent.bkrepo.svn.utils.SvnProxyHelper.getRepoId
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.web.servlet.HandlerInterceptor
 import java.util.concurrent.TimeUnit
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 class ProxyInterceptor(private val proxyHandler: ProxyCallHandler) : HandlerInterceptor {
     private val client = HttpClientBuilderFactory.create()

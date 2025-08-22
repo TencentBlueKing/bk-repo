@@ -90,7 +90,7 @@
                 const url = `/generic/${this.cardData.projectId}/${this.cardData.repoName}/${this.cardData.fullPath}?download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
-                        '/web' + url,
+                        '/web' + url + `&x-bkrepo-project-id=${this.cardData.projectId}`,
                         '_self'
                     )
                 }).catch(e => {

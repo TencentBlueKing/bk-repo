@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -61,7 +61,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.util.unit.DataSize
 import java.time.LocalDateTime
 import kotlin.contracts.ExperimentalContracts
@@ -77,7 +77,7 @@ class ArtifactPreloadPlanServiceImplTest @Autowired constructor(
     private val preloadPlanService: ArtifactPreloadPlanServiceImpl,
 ) : ArtifactPreloadBaseServiceTest(properties, storageService, fileLocator, storageProperties) {
 
-    @MockBean
+    @MockitoBean
     private lateinit var artifactCacheMetrics: ArtifactCacheMetrics
 
     @BeforeAll

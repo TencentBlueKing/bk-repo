@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -81,7 +81,8 @@ object ProjectServiceHelper {
                 lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 metadata = it.metadata,
                 credentialsKey = it.credentialsKey,
-                rbacFlag = rbacFlag
+                rbacFlag = rbacFlag,
+                tenantId = it.tenantId
             )
         }
     }

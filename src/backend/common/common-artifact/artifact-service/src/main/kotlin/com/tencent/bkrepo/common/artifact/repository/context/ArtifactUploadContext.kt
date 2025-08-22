@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -190,6 +190,15 @@ open class ArtifactUploadContext : ArtifactContext {
      */
     fun getArtifactSha256(name: String? = null): String {
         return getArtifactFile(name).getFileSha256()
+    }
+
+    /**
+     * 返回名为[name]的构件crc64ecma校验值
+     *
+     * [name]为`null`或不传值则返回二进制流文件的crc64ecma
+     */
+    fun getArtifactCrc64ecma(name: String? = null): String {
+        return getArtifactFile(name).getFileCrc64ecma()
     }
 
     /**

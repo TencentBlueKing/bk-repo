@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.common.api.util
 
-import sun.net.util.IPAddressUtil
-
 object IpUtils {
 
     private val cidrParseRegex = Regex("(.*)/(.*)")
@@ -45,7 +43,7 @@ object IpUtils {
     }
 
     fun ipv4ToLong(ip: String): Long {
-        val bytes = IPAddressUtil.textToNumericFormatV4(ip) ?: throw IllegalArgumentException("$ip is invalid")
+        val bytes = textToNumericFormatV4(ip) ?: throw IllegalArgumentException("$ip is invalid")
         var ret = 0L
         bytes.forEach {
             ret = ret shl 8 or (it.toInt() and 0xFF).toLong()
@@ -63,4 +61,46 @@ object IpUtils {
         val mask = 0xFFFFFFFF shl (32 - mastInt)
         return cidrIp to mask
     }
+
+    fun textToNumericFormatV4(ip: String): ByteArray? {
+        // 步骤 1: 正则验证 IPv4 格式（禁止主机名，避免触发 DNS）
+        if (!isStrictIPv4(ip)) return null
+
+        // 步骤 2: 手动解析为字节数组
+        return parseIPv4ToBytes(ip)
+    }
+
+    /**
+     * 严格匹配 IPv4 格式（纯数字，无 DNS 解析）
+     * 规则：
+     * - 四段数字，用点分隔
+     * - 每段 0-255
+     * - 禁止前导零（如 "192.016.0.1" 无效）
+     */
+    private fun isStrictIPv4(ip: String): Boolean {
+        val ipv4Pattern =
+            "^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$"
+        return ip.matches(ipv4Pattern.toRegex())
+    }
+
+    /**
+     * 将已验证的 IPv4 字符串转换为字节数组
+     */
+    private fun parseIPv4ToBytes(ip: String): ByteArray? {
+        val parts = ip.split(".")
+        if (parts.size != 4) return null
+
+        return try {
+            ByteArray(4).apply {
+                parts.forEachIndexed { i, part ->
+                    val value = part.toInt()
+                    if (value !in 0..255) throw NumberFormatException()
+                    this[i] = value.toByte()
+                }
+            }
+        } catch (e: NumberFormatException) {
+            null
+        }
+    }
+
 }

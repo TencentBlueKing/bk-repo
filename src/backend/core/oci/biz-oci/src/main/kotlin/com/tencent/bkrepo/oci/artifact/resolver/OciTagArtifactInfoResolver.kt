@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -41,9 +41,9 @@ import com.tencent.bkrepo.oci.constant.OCI_TAG
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.DOCKER_CATALOG_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo.Companion.TAGS_LIST_SUFFIX
 import com.tencent.bkrepo.oci.pojo.artifact.OciTagArtifactInfo
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(OciTagArtifactInfo::class)
@@ -64,9 +64,11 @@ class OciTagArtifactInfoResolver : ArtifactInfoResolver {
                 val tag = request.getParameter(OCI_TAG) ?: StringPool.EMPTY
                 OciTagArtifactInfo(projectId, repoName, packageName, tag)
             }
+
             requestURL.contains(DOCKER_CATALOG_SUFFIX) -> {
                 OciTagArtifactInfo(projectId, repoName, StringPool.EMPTY, StringPool.EMPTY)
             }
+
             else -> {
                 val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
                 val packageName = requestUrl.replaceAfterLast("/tags", StringPool.EMPTY).removeSuffix("/tags")

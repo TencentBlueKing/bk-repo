@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -143,6 +143,11 @@ open class StreamArtifactFile(
     override fun getFileSha256(): String {
         init()
         return receiver.listener.getSha256()
+    }
+
+    override fun getFileCrc64ecma(): String {
+        init()
+        return receiver.listener.getCrc64ecma()
     }
 
     override fun delete() {

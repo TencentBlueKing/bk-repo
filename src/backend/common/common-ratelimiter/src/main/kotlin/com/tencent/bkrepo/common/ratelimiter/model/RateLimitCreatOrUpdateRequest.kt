@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -50,5 +50,7 @@ data class RateLimitCreatOrUpdateRequest(
     // 指定机器上运行
     var targets: List<String>? = emptyList(),
     // 模块名
-    var moduleName: List<String>
+    var moduleName: List<String>,
+    // 是否保持连接
+    var keepConnection: Boolean = true,
 )

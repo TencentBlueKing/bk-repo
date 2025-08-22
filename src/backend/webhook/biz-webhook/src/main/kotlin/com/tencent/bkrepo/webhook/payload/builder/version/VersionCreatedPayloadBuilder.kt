@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -45,10 +45,16 @@ class VersionCreatedPayloadBuilder(
 ) {
 
     override fun build(event: ArtifactEvent): VersionCreatedEventPayload {
+        val packageKey = event.data["packageKey"].toString()
         return VersionCreatedEventPayload(
             user = getUser(event.userId),
-            packageVersion = getPackageVersion(event.projectId, event.repoName,
-                event.data["packageKey"].toString(), event.data["packageVersion"].toString())
+            packageKey = packageKey,
+            packageVersion = getPackageVersion(
+                projectId = event.projectId,
+                repoName = event.repoName,
+                packageKey = packageKey,
+                version = event.data["packageVersion"].toString()
+            )
         )
     }
 

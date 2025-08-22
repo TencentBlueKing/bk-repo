@@ -169,6 +169,7 @@ class BackupNodeDataHandler(
                 },
                 sha256 = it.sha256,
                 md5 = it.md5,
+                crc64ecma = it.crc64ecma,
                 metadata = metadata,
                 nodeMetadata = it.metadata,
                 copyFromCredentialsKey = it.copyFromCredentialsKey,
@@ -178,6 +179,7 @@ class BackupNodeDataHandler(
                 clusterNames = it.clusterNames,
                 archived = it.archived,
                 compressed = it.compressed,
+                federatedSource = it.federatedSource,
             )
         }
     }
@@ -210,6 +212,7 @@ class BackupNodeDataHandler(
             .set(NodeDetailInfo::metadata.name, nodeInfo.metadata)
             .set(NodeDetailInfo::archived.name, nodeInfo.archived)
             .set(NodeDetailInfo::compressed.name, nodeInfo.compressed)
+            .set(NodeDetailInfo::federatedSource.name, nodeInfo.federatedSource)
 
         mongoTemplate.updateFirst(nodeQuery, update, nodeCollectionName)
         logger.info(
@@ -268,6 +271,7 @@ class BackupNodeDataHandler(
             .set(NodeDetailInfo::md5.name, record.md5)
             .set(NodeDetailInfo::size.name, record.size)
             .set(NodeDetailInfo::id.name, record.id)
+            .set(NodeDetailInfo::federatedSource.name, record.federatedSource)
         mongoTemplate.updateFirst(existNodeQuery, update, collectionName)
     }
 

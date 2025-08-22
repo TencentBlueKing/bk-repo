@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -51,7 +51,7 @@ interface UserService {
 
     fun createUserToRepo(request: CreateUserToRepoRequest): Boolean
 
-    fun listUser(rids: List<String>): List<User>
+    fun listUser(rids: List<String>, tenantId: String?): List<User>
 
     fun deleteById(userId: String): Boolean
 
@@ -66,6 +66,8 @@ interface UserService {
     fun removeUserFromRoleBatch(idList: List<String>, roleId: String): Boolean
 
     fun createToken(userId: String): Token?
+
+    fun createOrUpdateUser(userId: String, name: String, tenantId: String?)
 
     fun addUserToken(userId: String, name: String, expiredAt: String?): Token?
 

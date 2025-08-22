@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMetrics
 import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
@@ -48,6 +49,7 @@ import org.springframework.context.annotation.Import
     ArtifactMetrics::class,
     ArtifactWebMvcTagsContributor::class,
     ArtifactCacheMetrics::class,
+    InstanceBandWidthMetrics::class,
 )
 @EnableConfigurationProperties(ArtifactMetricsProperties::class)
 class ArtifactMetricsConfiguration {

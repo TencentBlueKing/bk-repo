@@ -23,7 +23,9 @@ const localeAliasMap = {
     us: 'en-US',
     // 设置蓝鲸cookie使用
     'zh-CN': 'zh-cn',
-    'en-US': 'en'
+    'en-US': 'en',
+    ja: 'ja',
+    'ja-JP': 'ja'
 }
 
 const BK_CI_DOMAIN = location.host.split('.').slice(1).join('.')
@@ -117,8 +119,9 @@ function importAll (r) {
         const matchLocaleKey = key.match(/\/([\w-]+)?\.json$/)
         const localeKey = (matchLocaleKey ? matchLocaleKey[1] : '')
         if (localeKey) {
+            const target = localeKey === 'ja' ? 'ja-JP' : localeKey
             acc[localeKey] = {
-                ...lang[localeKey.replace('-', '')],
+                ...lang[target.replace('-', '')],
                 ...mod
             }
             localeList.push({

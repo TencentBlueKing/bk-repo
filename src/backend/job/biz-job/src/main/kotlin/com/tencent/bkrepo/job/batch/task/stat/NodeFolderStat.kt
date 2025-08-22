@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -38,12 +38,15 @@ import com.tencent.bkrepo.job.batch.context.NodeFolderJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.FolderUtils.extractFolderInfoFromCacheKey
 import com.tencent.bkrepo.job.pojo.FolderInfo
+import com.tencent.bkrepo.job.pojo.stat.StatNode
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.UpdateDefinition
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.redis.core.HashOperations
 import org.springframework.data.redis.core.RedisTemplate
@@ -54,7 +57,8 @@ import org.springframework.stereotype.Component
 class NodeFolderStat(
     private val mongoTemplate: MongoTemplate,
     private val redisTemplate: RedisTemplate<String, String>,
-) {
+    private val separationTaskService: SeparationTaskService,
+) : SeparationStatBaseJob(mongoTemplate, separationTaskService) {
 
     fun buildNode(
         id: String,
@@ -64,8 +68,8 @@ class NodeFolderStat(
         size: Long,
         projectId: String,
         repoName: String,
-    ): Node {
-        return Node(
+    ): StatNode {
+        return StatNode(
             id = id,
             projectId = projectId,
             repoName = repoName,
@@ -77,13 +81,13 @@ class NodeFolderStat(
     }
 
     fun collectNode(
-        node: Node,
+        node: StatNode,
         context: NodeFolderJobContext,
         useMemory: Boolean,
         keyPrefix: String,
         collectionName: String? = null,
         cacheNumLimit: Long,
-        ) {
+    ) {
         //只统计非目录类节点；没有根目录这个节点，不需要统计
         if (node.path == PathUtils.ROOT) {
             return
@@ -122,7 +126,7 @@ class NodeFolderStat(
         fullPath: String,
         size: Long,
         context: NodeFolderJobContext,
-        collectionName: String? = null
+        collectionName: String? = null,
     ) {
         val key = FolderUtils.buildCacheKey(
             collectionName = collectionName, projectId = projectId, repoName = repoName, fullPath = fullPath
@@ -142,7 +146,7 @@ class NodeFolderStat(
         force: Boolean = false,
         collectionName: String?,
         cacheNumLimit: Long,
-        ) {
+    ) {
         if (!force && context.folderCache.size < cacheNumLimit) return
         if (context.folderCache.isEmpty()) return
         val movedToRedis: MutableList<String> = mutableListOf()
@@ -193,7 +197,7 @@ class NodeFolderStat(
         context: NodeFolderJobContext,
         collectionName: String,
         projectId: String = StringPool.EMPTY,
-        runCollection: Boolean = false
+        runCollection: Boolean = false,
     ) {
         if (context.folderCache.isEmpty()) {
             return
@@ -203,7 +207,7 @@ class NodeFolderStat(
         } else {
             FolderUtils.buildCacheKey(projectId = projectId, repoName = StringPool.EMPTY)
         }
-        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
+        val updateList = ArrayList<org.springframework.data.util.Pair<Query, UpdateDefinition>>()
         val storedKeys = mutableSetOf<String>()
         for (entry in context.folderCache) {
             if (!entry.key.startsWith(prefix)) continue
@@ -244,7 +248,7 @@ class NodeFolderStat(
         keyPrefix: String,
         collectionName: String,
         projectId: String = StringPool.EMPTY,
-        runCollection: Boolean = false
+        runCollection: Boolean = false,
     ) {
         val keySuffix = if (runCollection) {
             FolderUtils.buildCacheKey(collectionName = collectionName, projectId = projectId)
@@ -263,7 +267,7 @@ class NodeFolderStat(
         collectionName: String?,
     ) {
         val hashOps = redisTemplate.opsForHash<String, String>()
-        val updateList = ArrayList<org.springframework.data.util.Pair<Query, Update>>()
+        val updateList = ArrayList<org.springframework.data.util.Pair<Query, UpdateDefinition>>()
         val options = ScanOptions.scanOptions().build()
         redisTemplate.execute { connection ->
             val hashCommands = connection.hashCommands()
@@ -309,7 +313,7 @@ class NodeFolderStat(
         key: String,
         entry: Map.Entry<ByteArray, ByteArray>,
         folderInfo: FolderInfo,
-        hashOps: HashOperations<String, String, String>
+        hashOps: HashOperations<String, String, String>,
     ): StatInfo {
         val size: Long
         val nodeNum: Long
@@ -339,8 +343,8 @@ class NodeFolderStat(
         repoName: String,
         fullPath: String,
         size: Long,
-        nodeNum: Long
-    ): org.springframework.data.util.Pair<Query, Update> {
+        nodeNum: Long,
+    ): org.springframework.data.util.Pair<Query, UpdateDefinition> {
         val query = Query(
             Criteria.where(PROJECT).isEqualTo(projectId)
                 .and(REPO).isEqualTo(repoName)
@@ -352,17 +356,6 @@ class NodeFolderStat(
             .set(NODE_NUM, nodeNum)
         return org.springframework.data.util.Pair.of(query, update)
     }
-
-    data class Node(
-        val id: String,
-        val folder: Boolean,
-        val path: String,
-        val fullPath: String,
-        val size: Long,
-        val projectId: String,
-        val repoName: String,
-    )
-
 
     data class StatInfo(
         var size: Long,

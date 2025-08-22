@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,12 +30,12 @@ package com.tencent.bkrepo.replication.service.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.api.util.UrlFormatter.addProtocol
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.replication.api.ReplicaTaskOperationClient
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -196,7 +196,8 @@ class RemoteNodeServiceImpl(
             userId = SecurityUtils.getUserId(),
             packageType = repositoryDetail.type.name,
             packageName = packageName,
-            realIpAddress = null
+            realIpAddress = null,
+            source = null
         )
         eventBasedReplicaJobExecutor.execute(taskDetail, event)
     }

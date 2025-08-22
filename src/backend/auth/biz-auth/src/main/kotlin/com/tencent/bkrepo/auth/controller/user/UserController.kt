@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -53,6 +53,7 @@ import com.tencent.bkrepo.auth.util.RequestUtil.buildRepoAdminRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
@@ -61,6 +62,8 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import jakarta.servlet.http.Cookie
 import org.bouncycastle.crypto.CryptoException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -76,7 +79,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.Base64
-import javax.servlet.http.Cookie
 
 @RestController
 @RequestMapping(AUTH_API_USER_PREFIX)
@@ -84,6 +86,7 @@ class UserController @Autowired constructor(
     private val userService: UserService,
     private val roleService: RoleService,
     private val jwtProperties: JwtAuthProperties,
+    private val projectService: ProjectService,
     permissionService: PermissionService
 ) : OpenResource(permissionService) {
 
@@ -127,11 +130,19 @@ class UserController @Autowired constructor(
 
     @Operation(summary = "用户列表")
     @GetMapping("/list")
-    fun listUser(@RequestBody rids: List<String>?): Response<List<UserResult>> {
+    fun listUser(
+        @Parameter(name = "项目ID")
+        @RequestParam projectId: String?,
+        @RequestBody rids: List<String>?
+    ): Response<List<UserResult>> {
         if (rids != null && rids.isNotEmpty()) {
             preCheckUserAdmin()
         }
-        val result = userService.listUser(rids.orEmpty()).map {
+        var tenantId: String? = null
+        projectId?.let {
+            tenantId = projectService.getProjectInfo(projectId)?.tenantId
+        }
+        val result = userService.listUser(rids.orEmpty(), tenantId).map {
             UserResult(it.userId, it.name)
         }
         return ResponseBuilder.success(result)
@@ -277,6 +288,9 @@ class UserController @Autowired constructor(
             "displayName" to name,
             "tenantId" to tenantId.orEmpty()
         )
+        bkUserId?.let {
+            userService.createOrUpdateUser(bkUserId, name, tenantId)
+        }
         return ResponseBuilder.success(result)
     }
 

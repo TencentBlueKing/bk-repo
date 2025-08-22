@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -34,7 +34,9 @@ import java.util.concurrent.atomic.LongAdder
 class NodeFolderJobContext(
     // 用于内存缓存下存储目录统计信息
     var folderCache: ConcurrentHashMap<String, FolderMetrics> = ConcurrentHashMap(),
-    var activeProjects: Map<String, Boolean> = emptyMap()
+    var activeProjects: Map<String, Boolean> = emptyMap(),
+    // 记录对应node表下有哪些项目进行了降冷操作
+    var separationProjects: Map<String, Set<String>> = emptyMap(),
 ) : JobContext() {
 
     data class FolderMetrics(

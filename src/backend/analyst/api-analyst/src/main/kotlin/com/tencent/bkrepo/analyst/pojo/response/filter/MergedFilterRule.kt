@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -135,8 +135,9 @@ data class MergedFilterRule(
         return includeRule.isEmpty() && ignoreRule.isEmpty() && minSeverityLevel == null
     }
 
-    private fun match(set: Set<String>?, item: String?): Boolean {
-        return set?.isEmpty() == true || !set.isNullOrEmpty() && item in set
+    private fun match(set: Set<String>?, item: String?, ignoreCase: Boolean = true): Boolean {
+        return set?.isEmpty() == true ||
+                !set.isNullOrEmpty() && set.any { it.equals(item, ignoreCase = ignoreCase) }
     }
 
     companion object {

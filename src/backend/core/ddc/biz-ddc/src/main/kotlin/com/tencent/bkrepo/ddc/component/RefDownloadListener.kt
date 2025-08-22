@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,7 +30,7 @@ package com.tencent.bkrepo.ddc.component
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.ddc.config.DdcProperties
 import com.tencent.bkrepo.ddc.event.RefDownloadedEvent
 import com.tencent.bkrepo.ddc.pojo.RefId

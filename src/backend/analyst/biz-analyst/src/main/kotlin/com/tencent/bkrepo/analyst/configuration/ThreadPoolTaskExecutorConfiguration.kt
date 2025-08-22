@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.analyst.configuration
 
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
-import org.springframework.boot.task.TaskExecutorBuilder
+import org.springframework.boot.task.ThreadPoolTaskExecutorBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Lazy
@@ -46,7 +46,7 @@ class ThreadPoolTaskExecutorConfiguration {
         ]
     )
     @Primary
-    fun applicationTaskExecutor(builder: TaskExecutorBuilder): ThreadPoolTaskExecutor {
+    fun applicationTaskExecutor(builder: ThreadPoolTaskExecutorBuilder): ThreadPoolTaskExecutor {
         return builder.build()
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -38,5 +38,7 @@ enum class ReplicaType {
     // 只执行一次，手动调用执行
     RUN_ONCE,
     // 边缘节点主动拉取的同步任务
-    EDGE_PULL
+    EDGE_PULL,
+    // 联邦仓库同步
+    FEDERATION
 }

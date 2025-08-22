@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -42,9 +42,9 @@ import com.tencent.bkrepo.oci.constant.PACKAGE_KEY
 import com.tencent.bkrepo.oci.constant.VERSION
 import com.tencent.bkrepo.oci.pojo.artifact.OciDeleteArtifactInfo
 import com.tencent.bkrepo.oci.util.OciUtils
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(OciDeleteArtifactInfo::class)
@@ -82,6 +82,7 @@ class OciDeleteArtifactInfoResolver(
                 val version = request.getParameter(VERSION)
                 OciDeleteArtifactInfo(projectId, repoName, packageName, version)
             }
+
             else -> {
                 // 客户端请求删除版本
                 val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>

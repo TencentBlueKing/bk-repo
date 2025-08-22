@@ -35,8 +35,8 @@
     "eslint-plugin-vue": "9.28.0",
     "eslint-webpack-plugin": "^3.2.0",
     "gulp": "^5.0.0",
-    "husky": "^3.0.7",
-    "lerna": "8.1.8",
+    "husky": "^9.1.7",
+    "lerna": "8.2.4",
     "lint-staged": "^15.2.10",
     "mini-css-extract-plugin": "~2.4.5",
     "ora": "^3.4.0",
@@ -50,7 +50,7 @@
     "webpack": "^5.71.0",
     "webpack-bundle-analyzer": "^4.10.2",
     "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.1.0"
+    "webpack-dev-server": "^5.2.2"
   },
   "scripts": {
     "start": "npm install",
@@ -69,5 +69,15 @@
   "workspaces": [
     "core/devops-repository",
     "core/devops-op"
-  ]
+  ],
+  "resolutions": {
+    "yorkie": "npm:husky@^9.1.7",
+    "cross-spawn": "7.0.6",
+    "lodash": "^4.17.21",
+    "micromatch": "^4.0.8",
+    "svg-sprite-loader/**/micromatch": "^4.0.8",
+    "svg-sprite-loader/**/braces": "3.0.3",
+    "webpack-dev-server": "^5.2.2",
+    "form-data": "^4.0.4"
+  }
 }

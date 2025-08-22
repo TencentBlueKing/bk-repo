@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,12 +29,12 @@ package com.tencent.bkrepo.common.ratelimiter.algorithm
 
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.redis.LuaScript
-import java.time.Duration
-import kotlin.system.measureTimeMillis
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.data.redis.core.script.DefaultRedisScript
+import java.time.Duration
+import kotlin.system.measureTimeMillis
 
 /**
  * 分布式滑动窗口算法实现
@@ -44,6 +44,7 @@ class DistributedSlidingWindowRateLimiter(
     private val limit: Long,
     private val duration: Duration,
     private val redisTemplate: RedisTemplate<String, String>,
+    private val keepConnection: Boolean = true,
 ) : RateLimiter {
     override fun tryAcquire(permits: Long): Boolean {
         try {
@@ -68,7 +69,7 @@ class DistributedSlidingWindowRateLimiter(
             if (logger.isDebugEnabled) {
                 logger.debug(
                     "acquire distributed sliding window rateLimiter" +
-                            " elapsed time: $elapsedTime ms, acquireResult: $acquireResult"
+                        " elapsed time: $elapsedTime ms, acquireResult: $acquireResult"
                 )
             }
             return acquireResult
@@ -90,6 +91,10 @@ class DistributedSlidingWindowRateLimiter(
 
     override fun getLimitPerSecond(): Long {
         return limit / duration.seconds
+    }
+
+    override fun keepConnection(): Boolean {
+        return keepConnection
     }
 
     companion object {

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -38,11 +38,10 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import java.lang.Exception
 
 object JsonUtil {
 
-    val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
+    val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule.Builder().build())
     private const val packages = "packages"
     private const val dist = "dist"
     private const val url = "url"

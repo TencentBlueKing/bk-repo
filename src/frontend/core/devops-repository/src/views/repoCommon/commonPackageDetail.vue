@@ -311,7 +311,7 @@
                 const url = `/repository/api/version/download/${this.projectId}/${this.repoName}?packageKey=${this.packageKey}&version=${encodeURIComponent(row.name)}&download=true`
                 this.$ajax.head(url).then(() => {
                     window.open(
-                        '/web' + url,
+                        '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
                         '_self'
                     )
                 }).catch(e => {
@@ -340,7 +340,7 @@
                         this.timer = null
                         this.$refs.loading.isShow = false
                         window.open(
-                            '/web' + url,
+                            '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
                             '_self'
                         )
                     }).catch(e => {

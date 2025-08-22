@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -50,4 +50,9 @@ interface FileHashAccessor {
      * 获取文件数据的sha256校验值
      */
     fun getFileSha256(): String
+
+    /**
+     * 获取文件数据的Crc64ecma校验值
+     */
+    fun getFileCrc64ecma(): String
 }

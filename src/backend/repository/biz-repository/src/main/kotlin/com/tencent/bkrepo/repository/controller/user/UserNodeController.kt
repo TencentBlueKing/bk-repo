@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -77,6 +77,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeArchiveRestoreRequest
+import com.tencent.bkrepo.repository.pojo.node.user.UserNodeFolderCheckRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.user.UserNodeRenameRequest
@@ -85,6 +86,7 @@ import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.constraints.Size
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -96,7 +98,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
-import javax.validation.constraints.Size
 
 @Tag(name = "节点用户接口")
 @RestController
@@ -236,7 +237,7 @@ class UserNodeController(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestBody
-        @Size(max = 200, message = "操作个数必须在0和200之间")
+        @Size(max = 200, message = "{node.batch.delete.count.limit}")
         fullPaths: List<String>,
     ): Response<NodeDeleteResult> {
         val nodesDeleteRequest = NodesDeleteRequest(
@@ -671,6 +672,20 @@ class UserNodeController(
                 operator = userId,
             )
             return ResponseBuilder.success(nodeService.restoreNode(restoreRequest))
+        }
+    }
+
+    @Operation(summary = "检查并返回有效的文件夹路径")
+    @PostMapping("/correct/folders")
+    fun checkFolders(
+        @RequestAttribute userId: String,
+        @RequestBody request: UserNodeFolderCheckRequest,
+    ): Response<List<String>> {
+        with(request) {
+            permissionManager.checkRepoPermission(PermissionAction.MANAGE, projectId, repoName, userId = userId)
+            return ResponseBuilder.success (
+                fullPaths.filter { nodeService.checkFolderExists(projectId, repoName, it) }
+            )
         }
     }
 

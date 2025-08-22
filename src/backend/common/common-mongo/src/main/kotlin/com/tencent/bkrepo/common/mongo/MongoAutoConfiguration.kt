@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,9 +31,11 @@
 
 package com.tencent.bkrepo.common.mongo
 
+import com.tencent.bkrepo.common.mongo.actuate.MongoHealthIndicator
 import com.tencent.bkrepo.common.mongo.dao.util.MongoSslUtils
 import com.tencent.bkrepo.common.mongo.properties.MongoSslProperties
 import org.slf4j.LoggerFactory
+import org.springframework.boot.actuate.health.HealthIndicator
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.mongo.MongoClientSettingsBuilderCustomizer
 import org.springframework.boot.autoconfigure.mongo.MongoProperties
@@ -128,6 +130,11 @@ class MongoAutoConfiguration {
                 }
             }
         }
+    }
+
+    @Bean
+    fun mongoHealthIndicator(mongoTemplate: MongoTemplate): HealthIndicator {
+        return MongoHealthIndicator(mongoTemplate)
     }
 
     companion object {

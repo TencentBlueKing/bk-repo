@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.job.batch.context
 
 import com.tencent.bkrepo.job.batch.base.JobContext
-import com.tencent.bkrepo.job.batch.task.stat.ProjectRepoMetricsStatJob
 import com.tencent.bkrepo.job.pojo.project.TProjectMetrics
 import com.tencent.bkrepo.job.pojo.project.TRepoMetrics
+import com.tencent.bkrepo.job.pojo.stat.StatNode
 import java.time.LocalDateTime
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.LongAdder
@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.LongAdder
 data class ProjectRepoMetricsStatJobContext(
     var metrics: ConcurrentHashMap<String, ProjectMetrics> = ConcurrentHashMap(),
     var statDate: LocalDateTime,
-    var statProjects: Map<String, Boolean> = emptyMap()
+    var statProjects: Map<String, Boolean> = emptyMap(),
 ) : JobContext() {
 
     override fun toString(): String {
@@ -49,9 +49,9 @@ data class ProjectRepoMetricsStatJobContext(
         val projectId: String,
         var nodeNum: LongAdder = LongAdder(),
         var capSize: LongAdder = LongAdder(),
-        val repoMetrics: ConcurrentHashMap<String, RepoMetrics> = ConcurrentHashMap()
+        val repoMetrics: ConcurrentHashMap<String, RepoMetrics> = ConcurrentHashMap(),
     ) {
-        fun addRepoMetrics(row: ProjectRepoMetricsStatJob.Node, repoType: String, credentialsKey: String) {
+        fun addRepoMetrics(row: StatNode, repoType: String, credentialsKey: String) {
 
             val repo = repoMetrics.getOrPut(row.repoName) { RepoMetrics(row.repoName, credentialsKey, type = repoType) }
             if (!row.folder) {
@@ -65,7 +65,7 @@ data class ProjectRepoMetricsStatJobContext(
 
         fun toDO(
             active: Boolean,
-            statDate: LocalDateTime = LocalDateTime.now()
+            statDate: LocalDateTime = LocalDateTime.now(),
         ): TProjectMetrics {
             val repoMetrics = ArrayList<TRepoMetrics>(repoMetrics.size)
             this.repoMetrics.values.forEach { repo ->

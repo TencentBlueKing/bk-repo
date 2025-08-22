@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -68,6 +68,7 @@ import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
@@ -88,6 +89,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.message.StorageErrorException
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
 import com.tencent.bkrepo.generic.constant.BKREPO_META
@@ -95,6 +97,7 @@ import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
+import com.tencent.bkrepo.generic.constant.HEADER_CRC64ECMA
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OFFSET
@@ -126,6 +129,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
@@ -137,8 +141,8 @@ import java.util.Base64
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import javax.servlet.http.HttpServletRequest
 import kotlin.reflect.full.memberProperties
+import kotlin.system.measureNanoTime
 
 @Component
 class GenericLocalRepository(
@@ -148,6 +152,7 @@ class GenericLocalRepository(
     private val ciPermissionManager: CIPermissionManager,
     private val blockNodeService: BlockNodeService,
     private val storageProperties: StorageProperties,
+    private val metadataLabelCacheService: MetadataLabelCacheService
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -163,6 +168,8 @@ class GenericLocalRepository(
         checkNodeExist(context)
         // 检查是否是覆盖流水线构件
         checkIfOverwritePipelineArtifact(context)
+        // 检查元数据是否合规
+        checkMetadataLabel(context)
         // 校验sha256
         val calculatedSha256 = context.getArtifactSha256()
         val uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256)
@@ -174,6 +181,12 @@ class GenericLocalRepository(
         val uploadMd5 = HeaderUtils.getHeader(HEADER_MD5)
         if (uploadMd5 != null && !calculatedMd5.equals(uploadMd5, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
+        }
+        // 校验crc64ecma
+        val calculatedCrc64ecma = context.getArtifactSha256()
+        val uploadCrc64ecma = HeaderUtils.getHeader(HEADER_CRC64ECMA)
+        if (uploadCrc64ecma != null && !calculatedCrc64ecma.equals(uploadCrc64ecma, true)) {
+            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "crc64ecma")
         }
         // 二次检查，防止接收文件过程中，有并发上传成功的情况
         checkNodeExist(context)
@@ -191,14 +204,17 @@ class GenericLocalRepository(
                 }
                 onSeparateUpload(context, uploadId)
             }
+
             isBlockUpload(uploadId, sequence) -> {
                 this.blockUpload(uploadId, sequence!!, context)
                 context.response.contentType = MediaTypes.APPLICATION_JSON
                 context.response.writer.println(ResponseBuilder.success().toJsonString())
             }
+
             isChunkedUpload(uploadType) -> {
                 chunkedUpload(context)
             }
+
             else -> {
                 val nodeDetail = storageManager.storeArtifactFile(
                     buildNodeCreateRequest(context),
@@ -228,6 +244,7 @@ class GenericLocalRepository(
                 nodeFullPath = artifactInfo.getArtifactFullPath(),
                 startPos = offset ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND),
                 sha256 = sha256,
+                crc64ecma = getArtifactCrc64ecma(),
                 projectId = projectId,
                 repoName = repoName,
                 size = blockArtifactFile.getSize(),
@@ -235,19 +252,24 @@ class GenericLocalRepository(
                 expireDate = calculateExpiryDateTime(expires)
             )
 
-            storageService.store(sha256, blockArtifactFile, storageCredentials)
-
+            val nanoTime = measureNanoTime { storageService.store(sha256, blockArtifactFile, storageCredentials) }
             val blockNodeInfo = blockNodeService.createBlock(blockNode, storageCredentials)
+            val throughput = Throughput(blockArtifactFile.getSize(), nanoTime)
+            logger.info(
+                "Success to store block node file uploadId[$uploadId] sha256[$sha256] " +
+                        "crc64ecma[${getArtifactCrc64ecma()}] offset[$offset], $throughput."
+            )
 
             // Set response content type and write success response
             context.response.contentType = MediaTypes.APPLICATION_JSON
             context.response.writer.println(
                 ResponseBuilder.success(
                     SeparateBlockInfo(
-                        blockNodeInfo.size,
-                        blockNodeInfo.sha256,
-                        blockNodeInfo.startPos,
-                        blockNodeInfo.uploadId
+                        size = blockNodeInfo.size,
+                        sha256 = blockNodeInfo.sha256,
+                        crc64ecma = blockNodeInfo.crc64ecma,
+                        startPos = blockNodeInfo.startPos,
+                        uploadId = blockNodeInfo.uploadId,
                     )
                 ).toJsonString()
             )
@@ -320,7 +342,8 @@ class GenericLocalRepository(
         val sequence = HeaderUtils.getHeader(HEADER_SEQUENCE)?.toInt()
         val uploadType = HeaderUtils.getHeader(HEADER_UPLOAD_TYPE)
         if (!overwrite && !isBlockUpload(uploadId, sequence)
-            && !isChunkedUpload(uploadType) && !isSeparateUpload(uploadType)) {
+            && !isChunkedUpload(uploadType) && !isSeparateUpload(uploadType)
+        ) {
             with(context.artifactInfo) {
                 nodeService.getNodeDetail(this)?.let {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
@@ -515,6 +538,7 @@ class GenericLocalRepository(
             if (notExistNodes.isNotEmpty()) {
                 throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
             }
+            nodes.filter { !it.folder }.forEach { downloadIntercept(this, it) }
             val (folderNodes, fileNodes) = nodes.partition { it.folder }
             // 添加所有目录节点的子节点, 检查文件数量和大小总和, 下载拦截
             val allNodes = getSubNodes(
@@ -570,7 +594,7 @@ class GenericLocalRepository(
                 )
                 val records =
                     nodeService.listNodePage(ArtifactInfo(folder.projectId, folder.repoName, folder.fullPath), option)
-                    .records.takeUnless { it.isEmpty() }?.map { NodeDetail(it) } ?: break
+                        .records.takeUnless { it.isEmpty() }?.map { NodeDetail(it) } ?: break
                 records.filterNot { it.folder }.forEach { downloadIntercept(context, it) }
                 totalSize += records.sumOf { it.size }
                 checkFileTotalSize(totalSize)
@@ -845,8 +869,8 @@ class GenericLocalRepository(
     private fun chunkedUpload(context: ArtifactUploadContext) {
         logger.info("chunked upload method ${context.request.method} ")
         val responseProperty = when (context.request.method) {
-            HttpMethod.PATCH.name -> patchUpload(context)
-            HttpMethod.PUT.name -> putUpload(context)
+            HttpMethod.PATCH.name() -> patchUpload(context)
+            HttpMethod.PUT.name() -> putUpload(context)
             else -> null
         } ?: return
         uploadResponse(responseProperty, context.response)
@@ -874,6 +898,7 @@ class GenericLocalRepository(
                 ChunkedUploadUtils.RangeStatus.ILLEGAL_RANGE -> {
                     Pair(length.toLong(), HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
                 }
+
                 ChunkedUploadUtils.RangeStatus.READY_TO_APPEND -> {
                     val patchLen = storageService.append(
                         appendId = uuid!!,
@@ -886,6 +911,7 @@ class GenericLocalRepository(
                     )
                     Pair(patchLen, HttpStatus.ACCEPTED)
                 }
+
                 else -> {
                     logger.info(
                         "Part of file with sha256 $sha256 in repo $projectId|$repoName " +
@@ -918,7 +944,7 @@ class GenericLocalRepository(
 
             // 当传递了 md5和size 以后，分块文件合并时不计算 sha256 与 md5,只校验 size 是否一致
             val originalFileInfo = if (sha256 != null && md5 != null) {
-                FileInfo(sha256!!, md5!!, size!!)
+                FileInfo(sha256!!, md5!!, size!!, crc64ecma)
             } else {
                 null
             }
@@ -941,6 +967,7 @@ class GenericLocalRepository(
             val nodeRequest = buildNodeCreateRequest(context).copy(
                 sha256 = fileInfo.sha256,
                 md5 = fileInfo.md5,
+                crc64ecma = fileInfo.crc64ecma,
                 size = fileInfo.size
             )
             ActionAuditContext.current().setInstance(nodeRequest)
@@ -952,6 +979,11 @@ class GenericLocalRepository(
     private fun calculateExpiryDateTime(expireDuration: Duration): LocalDateTime {
         val hoursToAdd = expireDuration.toHours().takeIf { it > 0 } ?: 12 // 如果 expireDuration <= 0，则使用 12 小时
         return LocalDateTime.now().plusHours(hoursToAdd)
+    }
+
+    private fun checkMetadataLabel(context: ArtifactUploadContext) {
+        val metadataList = resolveMetadata(context.request)
+        metadataLabelCacheService.checkEnumMetadataLabel(context.projectId, metadataList)
     }
 
 

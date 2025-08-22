@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -145,6 +145,10 @@ class RemoteReplicator : Replicator {
 
     override fun replicaDir(context: ReplicaContext, node: NodeInfo) {
         // 暂时不支持同步目录到外部集群
+    }
+
+    override fun replicaDeletedNode(context: ReplicaContext, node: NodeInfo): Boolean {
+        return true
     }
 
     companion object {

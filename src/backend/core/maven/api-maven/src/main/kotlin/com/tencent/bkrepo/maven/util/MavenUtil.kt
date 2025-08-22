@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,6 +30,7 @@ package com.tencent.bkrepo.maven.util
 import com.google.common.io.ByteStreams
 import com.google.common.io.CharStreams
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.maven.enum.HashType
 import org.apache.commons.lang3.StringUtils
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -68,5 +69,21 @@ object MavenUtil {
     fun extractPath(packageKey: String): String {
         val (artifactId, groupId) = extractGroupIdAndArtifactId(packageKey)
         return StringUtils.join(groupId.split("."), "/") + "/$artifactId"
+    }
+
+
+    /**
+     * 判断请求是否为checksum请求，并返回类型
+     */
+    fun checksumType(artifactFullPath: String): HashType? {
+        var type: HashType? = null
+        for (hashType in HashType.values()) {
+            val suffix = ".${hashType.ext}"
+            if (artifactFullPath.endsWith(suffix)) {
+                type = hashType
+                break
+            }
+        }
+        return type
     }
 }

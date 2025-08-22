@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -42,7 +42,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -57,7 +56,6 @@ import java.util.concurrent.TimeUnit
  * 上报每月用量
  */
 @Component
-@EnableConfigurationProperties(ProjectMonthMetricReportJobProperties::class)
 class ProjectMonthMetricReportJob(
     val properties: ProjectMonthMetricReportJobProperties,
     private val mongoTemplate: MongoTemplate

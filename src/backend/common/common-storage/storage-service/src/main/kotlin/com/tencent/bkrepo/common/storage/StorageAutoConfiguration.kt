@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
+import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadMetrics
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.common.storage.s3.S3Storage
@@ -69,6 +70,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Import(
     StorageUtils::class,
     StorageCacheIndexConfiguration::class,
+    CosUploadMetrics::class,
 )
 class StorageAutoConfiguration {
 
@@ -108,14 +110,7 @@ class StorageAutoConfiguration {
 
     @Bean
     fun storageHealthMonitorHelper(storageProperties: StorageProperties): StorageHealthMonitorHelper {
-        val map = ConcurrentHashMap<String, StorageHealthMonitor>()
-        val location = storageProperties
-            .defaultStorageCredentials().upload.location
-        map[location] = StorageHealthMonitor(
-            storageProperties,
-            location,
-        )
-        return StorageHealthMonitorHelper(map)
+        return StorageHealthMonitorHelper(ConcurrentHashMap<String, StorageHealthMonitor>())
     }
 
     @Bean

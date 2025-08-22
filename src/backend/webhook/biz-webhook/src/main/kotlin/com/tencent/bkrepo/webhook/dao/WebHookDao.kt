@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,6 +30,7 @@ package com.tencent.bkrepo.webhook.dao
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.webhook.constant.AssociationType
 import com.tencent.bkrepo.webhook.model.TWebHook
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -42,7 +43,7 @@ class WebHookDao : SimpleMongoDao<TWebHook>() {
         val query = Query(
             Criteria.where(TWebHook::associationType.name).isEqualTo(type)
                 .apply { id?.let { and(TWebHook::associationId.name).isEqualTo(id) } }
-        )
+        ).with(Sort.by(Sort.Direction.DESC, TWebHook::createdDate.name))
         return this.find(query)
     }
 }

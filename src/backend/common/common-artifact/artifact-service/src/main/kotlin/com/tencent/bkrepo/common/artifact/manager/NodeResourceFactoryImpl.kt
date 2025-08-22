@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.replication.api.ClusterNodeClient
+import com.tencent.bkrepo.replication.constant.FEDERATED
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 
@@ -73,6 +74,11 @@ class NodeResourceFactoryImpl(
         if (isFsFile(nodeInfo)) {
             return FsNodeResource(nodeInfo, blockNodeService, range, storageService, storageCredentials)
         }
+        if (isFederating(nodeInfo)) {
+            val clusterInfo = getClusterInfo(nodeInfo.federatedSource!!)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, nodeInfo.federatedSource!!)
+            return RemoteNodeResource(digest, range, storageCredentials, clusterInfo, storageService)
+        }
         if (clusterProperties.role == ClusterNodeType.EDGE &&
             clusterProperties.architecture != ClusterArchitecture.COMMIT_EDGE) {
             return RemoteNodeResource(digest, range, storageCredentials, centerClusterInfo, storageService)
@@ -93,6 +99,12 @@ class NodeResourceFactoryImpl(
         )
     }
 
+    private fun isFederating(node: NodeInfo): Boolean {
+        val federatedMetadata = node.nodeMetadata?.firstOrNull { it.key == FEDERATED }
+        val federated = federatedMetadata?.value as? Boolean ?: true
+        return !node.federatedSource.isNullOrEmpty() && !federated
+    }
+
     private fun isFsFile(node: NodeInfo): Boolean {
         return node.metadata?.containsKey(FS_ATTR_KEY) == true
     }
@@ -106,7 +118,7 @@ class NodeResourceFactoryImpl(
     }
 
     private fun getClusterInfo(name: String): ClusterInfo? {
-        return clusterNodeClient.getCluster(name).data?.let {
+        return clusterNodeClient.getClusterInfo(name).data?.let {
             ClusterInfo(
                 url = it.url,
                 certificate = it.certificate.orEmpty(),

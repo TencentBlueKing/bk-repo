@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -78,6 +78,35 @@ class ResourcePathUtilsTest {
         } catch (e: InvalidResourceException) {
             fail("tokenizeUrlPath should not throw InvalidResourceException.")
         }
+    }
+
+    @Test
+    fun `test tokenizeResourcePath with URL encoded path`() {
+        val path = "/a%2Fb"
+        val result = ResourcePathUtils.tokenizeResourcePath(path)
+        assertEquals(listOf("a", "b"), result)
+    }
+
+    @Test
+    fun `test tokenizeResourcePath with consecutive slashes`() {
+        val path = "/a//b"
+        val result = ResourcePathUtils.tokenizeResourcePath(path)
+        assertEquals(listOf("a", "b"), result)
+    }
+
+    @Test
+    fun `test tokenizeResourcePath with mixed path`() {
+        val path = "/a%2Fb//c"
+        val result = ResourcePathUtils.tokenizeResourcePath(path)
+        assertEquals(listOf("a", "b", "c"), result)
+    }
+
+
+    @Test
+    fun `test tokenizeResourcePath with consecutive URL encoded path`() {
+        val path = "%2Fa%2Fb%2F%2Fc"
+        val result = ResourcePathUtils.tokenizeResourcePath(path)
+        assertEquals(listOf("a", "b", "c"), result)
     }
 
     @Test

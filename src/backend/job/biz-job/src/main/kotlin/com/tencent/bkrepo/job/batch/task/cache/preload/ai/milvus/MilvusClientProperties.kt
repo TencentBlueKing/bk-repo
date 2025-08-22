@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai.milvus
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("spring.ai.vectorstore.milvus.client")
-data class MilvusClientProperties(
+class MilvusClientProperties(
     var host: String = "localhost",
     var port: Int = 19530,
     var uri: String? = null,

@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.git.server
 
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
+import org.eclipse.jgit.util.HttpSupport
+import org.eclipse.jgit.util.TemporaryBuffer
 import java.io.IOException
 import java.io.OutputStream
 import java.util.zip.GZIPOutputStream
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
-import org.eclipse.jgit.util.HttpSupport
-import org.eclipse.jgit.util.TemporaryBuffer
 
 open class SmartOutputStream(
     private val req: HttpServletRequest,

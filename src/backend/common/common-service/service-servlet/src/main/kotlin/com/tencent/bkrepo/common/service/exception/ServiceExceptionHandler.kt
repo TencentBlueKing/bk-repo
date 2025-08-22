@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.service.exception
 
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
+import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import com.tencent.bkrepo.common.service.log.LoggerHolder.logException
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -51,7 +51,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
  * 服务调用异常处理
  */
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
-@ConditionalOnMicroService
+@ConditionalOnNotAssembly
 @RestControllerAdvice
 class ServiceExceptionHandler {
 

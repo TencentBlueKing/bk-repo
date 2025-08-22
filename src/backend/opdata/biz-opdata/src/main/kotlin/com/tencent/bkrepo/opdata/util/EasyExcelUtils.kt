@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,6 +31,7 @@ import com.alibaba.excel.EasyExcel
 import com.alibaba.excel.write.metadata.style.WriteCellStyle
 import com.alibaba.excel.write.style.HorizontalCellStyleStrategy
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import jakarta.servlet.http.HttpServletResponse
 import org.apache.poi.ss.usermodel.HorizontalAlignment
 import org.apache.poi.ss.usermodel.VerticalAlignment
 import org.slf4j.LoggerFactory
@@ -38,7 +39,6 @@ import java.io.IOException
 import java.net.URLEncoder
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import javax.servlet.http.HttpServletResponse
 
 object EasyExcelUtils {
 

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.artifact.metrics.filter.LruMeterFilter
+import com.tencent.bkrepo.common.artifact.metrics.filter.RepositoryPinnedChecker
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import io.micrometer.core.instrument.Counter
@@ -63,7 +65,9 @@ class ArtifactMetrics(
 
     override fun bindTo(meterRegistry: MeterRegistry) {
         Companion.meterRegistry = meterRegistry
-        lruMeterFilter = LruMeterFilter(METER_LIMIT_PREFIX, Companion.meterRegistry, properties.maxMeters)
+        lruMeterFilter = LruMeterFilter(
+            METER_LIMIT_PREFIX, Companion.meterRegistry, properties.maxMeters, RepositoryPinnedChecker(properties)
+        )
         Companion.meterRegistry.config().meterFilter(lruMeterFilter)
         Gauge.builder(ARTIFACT_UPLOADING_COUNT, uploadingCount) { it.get().toDouble() }
             .description(ARTIFACT_UPLOADING_COUNT_DESC)
@@ -94,7 +98,7 @@ class ArtifactMetrics(
     companion object {
         private val logger = LoggerFactory.getLogger(ArtifactMetrics::class.java)
         private lateinit var tagProvider: ArtifactTransferTagProvider
-        private lateinit var meterRegistry: MeterRegistry
+        lateinit var meterRegistry: MeterRegistry
         private lateinit var lruMeterFilter: LruMeterFilter
         private lateinit var properties: ArtifactMetricsProperties
         private const val MAX_ATIME = 30.0

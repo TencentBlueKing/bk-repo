@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -53,6 +53,7 @@ import com.tencent.bkrepo.common.artifact.util.TransferUserAgentUtil
 import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.slf4j.LoggerFactory
@@ -108,7 +109,9 @@ class ArtifactTransferListener(
                     builderAgentList = artifactMetricsProperties.builderAgentList,
                     clientAgentList = artifactMetricsProperties.clientAgentList
                 ).name,
-                userId = SecurityUtils.getUserId().md5()
+                userId = SecurityUtils.getUserId().md5(),
+                serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
+                traceId = TraceHeaderUtils.buildB3Header()
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
@@ -154,7 +157,9 @@ class ArtifactTransferListener(
                     builderAgentList = artifactMetricsProperties.builderAgentList,
                     clientAgentList = artifactMetricsProperties.clientAgentList
                 ).name,
-                userId = SecurityUtils.getUserId().md5()
+                userId = SecurityUtils.getUserId().md5(),
+                serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
+                traceId = TraceHeaderUtils.buildB3Header()
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
@@ -211,7 +216,9 @@ class ArtifactTransferListener(
                     builderAgentList = artifactMetricsProperties.builderAgentList,
                     clientAgentList = artifactMetricsProperties.clientAgentList
                 ).name,
-                userId = SecurityUtils.getUserId().md5()
+                userId = SecurityUtils.getUserId().md5(),
+                serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
+                traceId = TraceHeaderUtils.buildB3Header()
             )
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -74,7 +74,14 @@ data class Result(
      * 敏感信息分析结果
      */
     val sensitiveResults: List<SensitiveResult>? = null
-)
+) {
+    fun totalSize(): Int {
+        val securityResultSize = securityResults?.size ?: 0
+        val licenseResultSize = licenseResults?.size ?: 0
+        val sensitiveResultSize = sensitiveResults?.size ?: 0
+        return securityResultSize + licenseResultSize + sensitiveResultSize
+    }
+}
 
 /**
  * 漏洞分析结果

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -49,5 +49,40 @@ abstract class AbstractScanExecutorResultManager : ScanExecutorResultManager {
     ) {
         resultItemDao.deleteBy(credentialsKey, sha256, scanner)
         resultItemDao.insert(resultItems)
+    }
+
+    /**
+     * 批量清理报告
+     *
+     * @param resultItemDaoList 不同类型报告Dao
+     * @param sha256 制品sha256
+     * @param scannerName 扫描器名
+     * @param batchSize 清理批大小
+     *
+     * @return 清理的报告数量
+     */
+    protected fun clean(
+        resultItemDaoList: List<ResultItemDao<*>>,
+        credentialsKey: String?,
+        sha256: String,
+        scannerName: String,
+        batchSize: Int?
+    ): Long {
+        var deletedCount = 0L
+        var currentBatchSize = batchSize?.toLong()
+        for (resultItemDao in resultItemDaoList) {
+            if (currentBatchSize != null && currentBatchSize <= 0) {
+                return deletedCount
+            }
+
+            val result = resultItemDao.deleteBy(credentialsKey, sha256, scannerName, currentBatchSize?.toInt())
+            deletedCount += result.deletedCount
+
+            if (currentBatchSize != null) {
+                currentBatchSize -= result.deletedCount
+            }
+        }
+
+        return deletedCount
     }
 }

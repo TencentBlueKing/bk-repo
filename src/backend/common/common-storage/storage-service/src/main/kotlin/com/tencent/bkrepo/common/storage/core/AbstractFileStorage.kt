@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -72,7 +72,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         val cacheLoader = object : CacheLoader<Credentials, Client>() {
             override fun load(credentials: Credentials): Client = onCreateClient(credentials)
         }
-        CacheBuilder.newBuilder().maximumSize(MAX_CACHE_CLIENT).build(cacheLoader)
+        CacheBuilder.newBuilder().maximumSize(storageProperties.clientCacheSize).build(cacheLoader)
     }
 
     init {
@@ -243,7 +243,6 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractFileStorage::class.java)
-        private const val MAX_CACHE_CLIENT = 10L
         private const val RETRY_MAX_ATTEMPTS = 5
         private const val RETRY_INITIAL_INTERVAL = 1000L
         private const val RETRY_MAX_INTERVAL = 20 * 1000L

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,11 +27,11 @@
 
 package com.tencent.bkrepo.replication.replica.type.edge
 
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
 import com.tencent.bkrepo.replication.model.TReplicaTask

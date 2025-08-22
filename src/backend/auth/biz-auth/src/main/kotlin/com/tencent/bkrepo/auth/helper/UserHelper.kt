@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -42,7 +42,9 @@ import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
 import com.tencent.bkrepo.auth.util.request.RoleRequestUtil
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.TENANT_ID
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.slf4j.LoggerFactory
 
 class UserHelper constructor(
@@ -55,6 +57,14 @@ class UserHelper constructor(
             logger.warn("user [$userId] not exist.")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
         }
+    }
+
+    fun isUserExist(userId: String): Boolean {
+        return userDao.findFirstByUserId(userId) != null
+    }
+
+    fun getTenantId(): String? {
+        return HttpContextHolder.getRequestOrNull()?.getHeader(TENANT_ID)
     }
 
     fun checkUserRoleBind(userId: String, roleId: String): Boolean {
