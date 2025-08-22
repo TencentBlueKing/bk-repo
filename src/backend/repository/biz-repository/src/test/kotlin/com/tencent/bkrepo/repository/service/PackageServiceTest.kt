@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,23 +32,23 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
+import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
+import com.tencent.bkrepo.common.metadata.model.TPackage
+import com.tencent.bkrepo.common.metadata.model.TPackageVersion
+import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
+import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.repository.UT_PACKAGE_KEY
 import com.tencent.bkrepo.repository.UT_PACKAGE_NAME
 import com.tencent.bkrepo.repository.UT_PACKAGE_VERSION
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
 import com.tencent.bkrepo.repository.UT_REPO_NAME
 import com.tencent.bkrepo.repository.UT_USER
-import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
-import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
-import com.tencent.bkrepo.common.metadata.model.TPackage
-import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
-import com.tencent.bkrepo.common.metadata.search.packages.PackageSearchInterpreter
-import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -58,10 +58,10 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @DisplayName("包服务测试")
 @DataMongoTest
@@ -75,7 +75,7 @@ class PackageServiceTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate
 ) : ServiceBaseTest() {
 
-    @MockBean
+    @MockitoBean
     private lateinit var packageSearchInterpreter: PackageSearchInterpreter
 
     @BeforeAll
@@ -95,6 +95,11 @@ class PackageServiceTest @Autowired constructor(
         val request = buildCreateRequest(version = "0.0.1-SNAPSHOT", overwrite = false)
         packageService.createPackageVersion(request)
         val tPackage = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
+        val tPackageVersion = packageService.findVersionByName(
+            UT_PROJECT_ID, UT_REPO_NAME, request.packageKey, request.versionName
+        )
+        Assertions.assertNotNull(tPackageVersion)
+        Assertions.assertEquals("value", tPackageVersion!!.metadata["key"])
         Assertions.assertNotNull(tPackage)
         Assertions.assertEquals(UT_USER, tPackage!!.createdBy)
         Assertions.assertEquals(UT_USER, tPackage.lastModifiedBy)

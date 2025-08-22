@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -251,11 +251,6 @@ class RepositoryServiceImpl(
                 repositoryDao.insert(repository)
                 val event = buildCreatedEvent(repoCreateRequest)
                 publishEvent(event)
-                messageSupplier.delegateToSupplier(
-                    data = event,
-                    topic = event.topic,
-                    key = event.getFullResourceKey(),
-                )
                 logger.info("Create repository [$repoCreateRequest] success.")
                 convertToDetail(repository)!!
             } catch (exception: DuplicateKeyException) {
@@ -298,11 +293,6 @@ class RepositoryServiceImpl(
         }
         val event = buildUpdatedEvent(repoUpdateRequest)
         publishEvent(event)
-        messageSupplier.delegateToSupplier(
-            data = event,
-            topic = event.topic,
-            key = event.getFullResourceKey(),
-        )
         logger.info("Update repository[$repoUpdateRequest] success.")
     }
 

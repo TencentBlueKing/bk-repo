@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.common.storage.innercos.http
 
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
@@ -47,7 +47,7 @@ object CosHttpClient {
     private const val WRITE_TIMEOUT = 30L
     private const val READ_TIMEOUT = 30L
 
-    private val client = OkHttpClient().newBuilder()
+    private val client = HttpClientBuilderFactory.create()
         .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
         .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
         .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)

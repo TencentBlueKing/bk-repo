@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -38,10 +38,10 @@ import com.tencent.bkrepo.common.artifact.util.TransferUserAgentUtil
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import javax.servlet.http.HttpServletRequest
 
 class BkAuditRequestProvider(
     private val artifactMetricsProperties: ArtifactMetricsProperties,
@@ -85,6 +85,7 @@ class BkAuditRequestProvider(
             TransferUserAgent.BK_WEB -> AccessTypeEnum.WEB
             TransferUserAgent.BUILDER,
             TransferUserAgent.BK_CLIENT -> AccessTypeEnum.CONSOLE
+
             TransferUserAgent.OPENAPI -> AccessTypeEnum.API
             else -> AccessTypeEnum.OTHER
         }

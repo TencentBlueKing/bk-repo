@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -33,6 +33,7 @@ package com.tencent.bkrepo.replication.config
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.replication.replica.type.event.ArtifactEventConsumer
+import com.tencent.bkrepo.replication.replica.type.federation.FederationArtifactEventConsumer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.function.Consumer
@@ -43,10 +44,19 @@ class ReplicationConsumerConfig {
     // 之前继承Consumer方式框架升级后会报错，https://github.com/spring-cloud/spring-cloud-stream/issues/2704
     @Bean("artifactEventReplication")
     fun artifactEventConsumer(
-        artifactEventConsumer: ArtifactEventConsumer
+        artifactEventConsumer: ArtifactEventConsumer,
     ): Consumer<ArtifactEvent> {
         return Consumer {
             artifactEventConsumer.accept(it)
+        }
+    }
+
+    @Bean("artifactEventFederation")
+    fun federationArtifactEventConsumer(
+        federationArtifactEventConsumer: FederationArtifactEventConsumer,
+    ): Consumer<ArtifactEvent> {
+        return Consumer {
+            federationArtifactEventConsumer.accept(it)
         }
     }
 }

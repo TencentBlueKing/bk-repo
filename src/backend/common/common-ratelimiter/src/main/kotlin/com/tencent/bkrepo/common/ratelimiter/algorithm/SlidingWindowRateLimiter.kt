@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -44,6 +44,7 @@ import java.util.concurrent.locks.ReentrantLock
 class SlidingWindowRateLimiter(
     private val limit: Long,
     private val duration: Duration,
+    private val keepConnection: Boolean = true,
 ) : RateLimiter {
 
     private val lock: Lock = ReentrantLock()
@@ -82,6 +83,10 @@ class SlidingWindowRateLimiter(
         return limit / duration.seconds
     }
 
+    override fun keepConnection(): Boolean {
+        return keepConnection
+    }
+
     private fun allow(permits: Long): Boolean {
         val currentTimeMillis = System.currentTimeMillis()
         // 1. 计算当前时间窗口
@@ -112,7 +117,7 @@ class SlidingWindowRateLimiter(
 
     data class WindowInfo(
         var time: Long = System.currentTimeMillis(),
-        var count: Long = 0
+        var count: Long = 0,
     )
 
 }

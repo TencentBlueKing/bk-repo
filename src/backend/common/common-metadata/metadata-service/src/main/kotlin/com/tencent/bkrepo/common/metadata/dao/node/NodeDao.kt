@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -94,6 +94,13 @@ class NodeDao : HashShardingMongoDao<TNode>() {
             return true
         }
         return this.exists(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))
+    }
+
+    fun checkFolder(projectId: String, repoName: String, fullPath: String): Boolean {
+        if (PathUtils.isRoot(fullPath)) {
+            return true
+        }
+        return this.exists(NodeQueryHelper.nodeFolderQuery(projectId, repoName, fullPath))
     }
 
     /**

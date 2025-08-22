@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,13 +27,14 @@
 
 package com.tencent.bkrepo.repository.service
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
+import com.tencent.bkrepo.common.metadata.dao.metadata.MetadataLabelDao
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataLabelService
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
-import com.tencent.bkrepo.repository.dao.repository.MetadataLabelRepository
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelRequest
-import com.tencent.bkrepo.repository.service.metadata.MetadataLabelService
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
@@ -47,7 +48,7 @@ import org.springframework.context.annotation.Import
 @DisplayName("元数据标签服务测试")
 @DataMongoTest
 @Import(
-    MetadataLabelRepository::class
+    MetadataLabelDao::class
 )
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class MetadataLabelServiceTest @Autowired constructor(
@@ -78,7 +79,11 @@ class MetadataLabelServiceTest @Autowired constructor(
                 "FAILED" to "#FF000",
                 "SUCCESS" to "#00EE00"
             ),
-            display = true
+            enumType = false,
+            category = null,
+            display = true,
+            enableColorConfig = true,
+            description = StringPool.EMPTY,
         )
         assertThrows<ErrorCodeException> { metadataLabelService.create(invalidColorRequest) }
     }
@@ -94,7 +99,11 @@ class MetadataLabelServiceTest @Autowired constructor(
                 "FAILED" to "#000000",
                 "SUCCESS" to "#000000"
             ),
-            display = true
+            enumType = false,
+            category = null,
+            display = true,
+            enableColorConfig = true,
+            description = StringPool.EMPTY,
         )
         metadataLabelService.update(updateRequest)
         val metadataLabel = metadataLabelService.detail(updateRequest.projectId, updateRequest.labelKey)
@@ -117,6 +126,10 @@ class MetadataLabelServiceTest @Autowired constructor(
             "FAILED" to "#FF0000",
             "SUCCESS" to "#00EE00"
         ),
-        display = true
+        display = true,
+        enumType = false,
+        category = null,
+        enableColorConfig = true,
+        description = StringPool.EMPTY,
     )
 }

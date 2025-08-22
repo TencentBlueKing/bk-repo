@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -38,6 +38,7 @@ class NodeCopiedEvent(
     override val repoName: String,
     override val resourceKey: String,
     override val userId: String,
+    override val source: String?,
     val dstProjectId: String,
     val dstRepoName: String,
     val dstFullPath: String
@@ -51,5 +52,6 @@ class NodeCopiedEvent(
         "dstProjectId" to dstProjectId,
         "dstRepoName" to dstRepoName,
         "dstFullPath" to dstFullPath
-    )
+    ),
+    source = source
 )

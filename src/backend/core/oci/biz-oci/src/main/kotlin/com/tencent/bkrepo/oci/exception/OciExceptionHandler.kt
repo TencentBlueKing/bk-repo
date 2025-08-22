@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -49,7 +49,7 @@ import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_MESSAGE
 import com.tencent.bkrepo.oci.pojo.response.OciErrorResponse
 import com.tencent.bkrepo.oci.pojo.response.OciResponse
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -156,7 +156,7 @@ class OciExceptionHandler(
         val uri = HttpContextHolder.getRequest().requestURI
         logger.warn(
             "User[$userId] access oci resource[$uri] failed[${exception.javaClass.simpleName}]:" +
-                    " ${responseObject.message}"
+                " ${responseObject.message}"
         )
     }
 

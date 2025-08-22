@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,15 +32,13 @@ import com.tencent.bkrepo.analyst.pojo.AutoScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
-import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact
-import com.tencent.bkrepo.analyst.pojo.rule.RuleArtifact.Companion.RULE_FIELD_LATEST_VERSION
 import com.tencent.bkrepo.analyst.service.ProjectScanConfigurationService
 import com.tencent.bkrepo.analyst.service.ScanService
 import com.tencent.bkrepo.analyst.service.ScannerService
 import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import com.tencent.bkrepo.analyst.utils.RuleConverter
+import com.tencent.bkrepo.analyst.utils.RuleUtil
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.constant.PUBLIC_GLOBAL_PROJECT
 import com.tencent.bkrepo.common.artifact.constant.PUBLIC_VULDB_REPO
@@ -48,11 +46,8 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.query.matcher.RuleMatcher
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
@@ -249,25 +244,18 @@ class AnalystScanEventConsumer(
 
         with(event) {
             if (event.type == EventType.NODE_CREATED) {
-                val valuesToMatch = mapOf(
-                    NodeDetail::projectId.name to projectId,
-                    NodeDetail::repoName.name to repoName,
-                    RuleArtifact::name.name to resourceKey.substringAfterLast(CharPool.SLASH)
-                )
-                return RuleMatcher.match(rule, valuesToMatch)
+                return RuleUtil.match(rule, projectId, repoName, resourceKey)
             }
 
             if ((event.type == EventType.VERSION_CREATED || event.type == EventType.VERSION_UPDATED)) {
-                val valuesToMatch = mapOf<String, Any>(
-                    PackageSummary::projectId.name to projectId,
-                    PackageSummary::repoName.name to repoName,
-                    PackageSummary::type.name to data[VersionCreatedEvent::packageType.name] as String,
-                    RuleArtifact::name.name to data[VersionCreatedEvent::packageName.name] as String,
-                    RuleArtifact::version.name to data[VersionCreatedEvent::packageVersion.name] as String,
-                    // 默认当前正在创建的是最新版本
-                    RULE_FIELD_LATEST_VERSION to true
+                return RuleUtil.match(
+                    rule,
+                    projectId,
+                    repoName,
+                    data[VersionCreatedEvent::packageType.name] as String,
+                    data[VersionCreatedEvent::packageName.name] as String,
+                    data[VersionCreatedEvent::packageVersion.name] as String
                 )
-                return RuleMatcher.match(rule, valuesToMatch)
             }
         }
 

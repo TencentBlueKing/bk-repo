@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.UpdateDefinition
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.size
@@ -72,15 +73,15 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
     fun findByProjectIdAndRepoName(
         projectId: String,
         repoName: String,
-        planType: String,
+        planType: String? = null,
         scanOnNewArtifact: Boolean = true,
         includeEmptyRepoNames: Boolean = true
     ): List<TScanPlan> {
         val criteria = Criteria
             .where(TScanPlan::projectId.name).isEqualTo(projectId)
             .and(TScanPlan::scanOnNewArtifact.name).isEqualTo(scanOnNewArtifact)
-            .and(TScanPlan::type.name).isEqualTo(planType)
             .and(TScanPlan::deleted.name).isEqualTo(null)
+        planType?.let { criteria.and(TScanPlan::type.name).isEqualTo(it) }
         if (!includeEmptyRepoNames) {
             criteria.and(TScanPlan::repoNames.name).isEqualTo(repoName)
         } else {
@@ -184,7 +185,7 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
      * @param planOverviewMap key 为扫描方案id， value为扫描预览结果
      */
     fun decrementScanResultOverview(planOverviewMap: Map<String, Map<String, Number>>) {
-        val updates = ArrayList<org.springframework.data.util.Pair<Query, Update>>(planOverviewMap.size)
+        val updates = ArrayList<org.springframework.data.util.Pair<Query, UpdateDefinition>>(planOverviewMap.size)
         for (entry in planOverviewMap) {
             val planId = entry.key
             val overview = entry.value

@@ -2,7 +2,7 @@
     <main class="create-node-container" v-bkloading="{ isLoading }">
         <bk-form class="mb20 plan-form" :label-width="120" :model="planForm" :rules="rules" ref="planForm">
             <bk-form-item :label="$t('planName')" :required="true" property="name" error-display-type="normal">
-                <bk-input class="w480" v-model.trim="planForm.name" maxlength="32" show-word-limit :disabled="disabled"></bk-input>
+                <bk-input :placeholder="$t('pleaseInput')" class="w480" v-model.trim="planForm.name" maxlength="32" show-word-limit :disabled="disabled"></bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('synchronizationPolicy')"
                 :property="{ 'SPECIFIED_TIME': 'time', 'CRON_EXPRESSION': 'cron' }[planForm.executionStrategy]"
@@ -87,6 +87,7 @@
             </bk-form-item>
             <bk-form-item :label="$t('targetNode')" :required="true" property="remoteClusterIds" error-display-type="normal">
                 <bk-select
+                    :placeholder="$t('pleaseSelect')"
                     class="w480"
                     v-model="planForm.remoteClusterIds"
                     searchable
@@ -112,6 +113,7 @@
             <bk-form-item :label="$t('description')">
                 <bk-input
                     class="w480"
+                    :placeholder="$t('pleaseInput')"
                     v-model.trim="planForm.description"
                     type="textarea"
                     :rows="6"
@@ -241,11 +243,11 @@
              * */
             isDisabledExecutionStrategy () {
                 let isDisabled = false
-            
+
                 if (this.routeName === 'editPlan') {
                     const { executionStrategy } = this.planForm
                     const executionStatus = ['IMMEDIATELY', 'SPECIFIED_TIME', 'CRON_EXPRESSION'].includes(executionStrategy)
-                    
+
                     if (executionStrategy === 'REAL_TIME' && executionStatus === false) {
                         isDisabled = true
                         this.isDisabledRealTime = false

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -37,11 +37,13 @@ import com.tencent.bkrepo.common.security.util.JwtUtils
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import org.slf4j.LoggerFactory
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component
 import java.time.Duration
 import kotlin.concurrent.thread
 
-@Component // 使用kotlin时，spring aop对@Import导入的bean不生效
+@Component
+@EnableConfigurationProperties(ServiceAuthProperties::class)
 class ServiceAuthManager(
     properties: ServiceAuthProperties,
 ) {

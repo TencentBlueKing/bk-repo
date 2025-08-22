@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.huggingface.pojo
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
 
@@ -41,7 +42,7 @@ data class DatasetInfo(
     val disabled: Boolean,
     val tags: List<String>,
     val citation: String?,
-    val description: String,
+    val description: String?,
     val downloads: Int,
     val likes: Int,
     val cardData: CardData?,
@@ -50,9 +51,12 @@ data class DatasetInfo(
     val usedStorage: Long
 )
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class CardData(
-    val license: String,
-    val configs: List<Config>
+    val license: String?,
+    @JsonProperty("dataset_info")
+    val datasetInfo: DatasetInfoDetail?,
+    val configs: List<Config>?
 )
 
 data class Config(
@@ -66,4 +70,26 @@ data class Config(
 data class DataFile(
     val split: String,
     val path: String
+)
+
+data class DatasetInfoDetail(
+    val features: List<Feature>,
+    val splits: List<Split>,
+    @JsonProperty("download_size")
+    val downloadSize: Long,
+    @JsonProperty("dataset_size")
+    val datasetSize: Long,
+)
+
+data class Feature(
+    val name: String,
+    val dtype: String,
+)
+
+data class Split(
+    val name: String,
+    @JsonProperty("num_bytes")
+    val numBytes: Long,
+    @JsonProperty("num_examples")
+    val numExamples: Long,
 )

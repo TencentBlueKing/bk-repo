@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -101,7 +101,12 @@ data class StorageProperties(
     /**
      * polaris服务地址列表
      */
-    var polarisAddresses: List<String> = emptyList()
+    var polarisAddresses: List<String> = emptyList(),
+
+    /**
+     * fileStorageClient缓存大小
+     */
+    var clientCacheSize: Long = 32,
 
 ) {
     fun defaultStorageCredentials(): StorageCredentials {

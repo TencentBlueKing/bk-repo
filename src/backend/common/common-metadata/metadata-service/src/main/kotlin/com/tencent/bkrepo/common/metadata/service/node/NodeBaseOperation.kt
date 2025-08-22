@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -82,6 +82,11 @@ interface NodeBaseOperation {
      * 判断节点是否存在
      */
     fun checkExist(artifact: ArtifactInfo): Boolean
+
+    /**
+     *  判断文件夹是否存在
+     */
+    fun checkFolderExists(projectId: String, repoName: String, fullPath: String): Boolean
 
     /**
      * 判断节点列表是否存在

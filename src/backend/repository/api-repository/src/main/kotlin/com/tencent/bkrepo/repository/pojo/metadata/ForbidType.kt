@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,11 +30,21 @@ package com.tencent.bkrepo.repository.pojo.metadata
 /**
  * 制品禁用类型
  */
-enum class ForbidType {
+enum class ForbidType(val reason: String = FORBID_REASON_NONE) {
     // 扫描中被禁用
     SCANNING,
     // 未通过质量规则被禁用
-    QUALITY_UNPASS,
+    QUALITY_UNPASS(FORBID_REASON_QUALITY_ISSUE),
     // 手动禁用
-    MANUAL
+    MANUAL,
+    // 未扫描时禁用
+    NOT_SCANNED(FORBID_REASON_NOT_SCANNED),
+    // 未禁用
+    NONE;
 }
+
+const val FORBID_REASON_NONE = ""
+
+const val FORBID_REASON_NOT_SCANNED = "Not scanned"
+
+const val FORBID_REASON_QUALITY_ISSUE = "Not pass quality rules"

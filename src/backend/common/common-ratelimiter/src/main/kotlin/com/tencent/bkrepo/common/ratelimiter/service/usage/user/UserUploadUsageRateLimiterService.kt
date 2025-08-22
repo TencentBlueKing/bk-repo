@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -39,9 +39,9 @@ import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserUploadUsageRate
 import com.tencent.bkrepo.common.ratelimiter.service.AbstractRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 用户上传容量限流器实现, 针对user、project和repo
@@ -91,6 +91,7 @@ open class UserUploadUsageRateLimiterService(
                 }
                 length
             }
+
             else -> 0
         }
     }

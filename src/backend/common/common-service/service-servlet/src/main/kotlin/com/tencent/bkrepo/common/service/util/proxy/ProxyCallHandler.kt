@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.common.service.util.proxy
 
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import okhttp3.Request
 import okhttp3.Response
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 interface ProxyCallHandler {
     fun before(proxyRequest: HttpServletRequest, proxyResponse: HttpServletResponse, request: Request): Request

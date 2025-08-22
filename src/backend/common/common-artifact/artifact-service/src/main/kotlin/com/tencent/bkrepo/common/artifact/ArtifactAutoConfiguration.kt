@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
 import com.tencent.bkrepo.common.artifact.manager.ArtifactManagerConfiguration
+import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionConfiguration
 import com.tencent.bkrepo.common.artifact.repository.ArtifactContextConfiguration
@@ -56,7 +57,10 @@ import org.springframework.context.annotation.PropertySource
 @Configuration
 @PropertySource("classpath:common-artifact.properties")
 @AutoConfigureAfter(InfluxMetricsExportAutoConfiguration::class)
-@EnableConfigurationProperties(ViewModelProperties::class)
+@EnableConfigurationProperties(
+    ViewModelProperties::class,
+    SignProperties::class
+)
 @ConditionalOnWebApplication
 @Import(
     ArtifactContextConfiguration::class,

@@ -29,6 +29,7 @@
                         <span class="ml10 flex-1 text-overflow" :title="row.key">{{ row.key }}</span>
                         <div class="ml10" style="width:200px" @click.stop="">
                             <bk-select
+                                :placeholder="$t('pleaseSelect')"
                                 size="small"
                                 searchable
                                 multiple

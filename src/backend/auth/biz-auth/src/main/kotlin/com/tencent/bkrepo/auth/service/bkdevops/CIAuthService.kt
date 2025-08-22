@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.service.bkdevops
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
@@ -88,7 +89,10 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
             }
             resourcePermissionCache.put(cacheKey, hasPermission)
             hasPermission
-        } catch (exception: Exception) {
+        } catch (exception: InvalidFormatException) {
+            logger.info("validateProjectUsers  url is $url, error: ", exception)
+            false
+        }catch (exception: Exception) {
             logger.error("validateProjectUsers url is $url, error: ", exception)
             false
         }
@@ -101,7 +105,6 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
             logger.debug("match in cache: $cacheKey|$cacheResult")
             return cacheResult
         }
-
         val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/$projectCode" +
                 "/users/$user/checkProjectManager"
         return try {
@@ -112,6 +115,9 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
             logger.debug("validateProjectManager url[$url], result[${apiResponse.content}]")
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
+        } catch (exception: InvalidFormatException) {
+            logger.info("validateProjectManager  url is $url, error: ", exception)
+            false
         } catch (exception: Exception) {
             logger.error("validateProjectManager url is $url, error: ", exception)
             false
@@ -160,6 +166,9 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
             }
             resourcePermissionCache.put(cacheKey, hasPermission)
             hasPermission
+        } catch (exception: InvalidFormatException) {
+            logger.info("validateProjectSuperAdmin  url is $url, error: ", exception)
+            false
         } catch (exception: Exception) {
             logger.error("validateProjectSuperAdmin error: [$exception]")
             false
@@ -191,6 +200,9 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
             logger.debug("validateUserResourcePermission,requestUrl: [$url], result : [${apiResponse.content}]")
             resourcePermissionCache.put(cacheKey, responseObject.data)
             responseObject.data
+        } catch (exception: InvalidFormatException) {
+            logger.info("validateUserResourcePermission  url is $url, error: ", exception)
+            false
         } catch (exception: Exception) {
             logger.error("validateUserResourcePermission error:", exception)
             false
@@ -200,16 +212,19 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
     fun getUserResourceByPermission(
         user: String, projectCode: String, action: BkAuthPermission, resourceType: BkAuthResourceType
     ): List<String> {
+        val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/permission/" +
+                "projects/$projectCode/action/instance?" +
+                "action=${action.value}&resourceType=${resourceType.value}"
         return try {
-            val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/permission/" +
-                    "projects/$projectCode/action/instance?" +
-                    "action=${action.value}&resourceType=${resourceType.value}"
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthListResponse>(apiResponse.content)
             logger.debug("getUserResourceByPermission, requestUrl: [$url], result : [${apiResponse.content}]")
             return responseObject.data
+        } catch (exception: InvalidFormatException) {
+            logger.info("getUserResourceByPermission  url is $url, error: ", exception)
+            emptyList()
         } catch (exception: Exception) {
             logger.error("getUserResourceByPermission error: ", exception)
             emptyList()
@@ -217,14 +232,17 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
     }
 
     fun getProjectListByUser(user: String): List<String> {
+        val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/users/$user"
         return try {
-            val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/users/$user"
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_UID, user).get().build()
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthListResponse>(apiResponse.content)
             logger.debug("getProjectListByUser, requestUrl: [$url], result : [${apiResponse.content}]")
             return responseObject.data
+        } catch (exception: InvalidFormatException) {
+            logger.info("getProjectListByUser  url is $url, error: ", exception)
+            emptyList()
         } catch (exception: Exception) {
             logger.error("getProjectListByUser error: ", exception)
             emptyList()
@@ -232,8 +250,8 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
     }
 
     fun getRoleAndUserByProject(projectCode: String): List<BkciRoleResult> {
+        val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/$projectCode/users"
         return try {
-            val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/$projectCode/users"
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .get().build()
             logger.debug("getRoleAndUserByProject, requestUrl: [$url]")
@@ -241,6 +259,9 @@ class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsA
             val responseObject = objectMapper.readValue<BkciRoleListResponse>(apiResponse.content)
             logger.debug("getRoleAndUserByProject, requestUrl: [$url], result : [${apiResponse.content}]")
             return responseObject.data
+        } catch (exception: InvalidFormatException) {
+            logger.info("getProjectListByUser  url is $url, error: ", exception)
+            emptyList()
         } catch (exception: Exception) {
             logger.error("getRoleAndUserByProject error : ", exception)
             emptyList()

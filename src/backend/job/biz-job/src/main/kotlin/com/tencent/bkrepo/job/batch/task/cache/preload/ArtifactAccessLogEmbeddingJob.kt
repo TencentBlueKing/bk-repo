@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,10 +30,10 @@ package com.tencent.bkrepo.job.batch.task.cache.preload
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
-import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
@@ -47,7 +47,6 @@ import com.tencent.bkrepo.job.config.properties.ArtifactAccessLogEmbeddingJobPro
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findOne
@@ -64,7 +63,6 @@ import kotlin.math.abs
 import kotlin.system.measureTimeMillis
 
 @Component
-@EnableConfigurationProperties(ArtifactAccessLogEmbeddingJobProperties::class)
 @ConditionalOnProperty("job.artifact-access-log-embedding.enabled")
 class ArtifactAccessLogEmbeddingJob(
     private val aiProperties: AiProperties,

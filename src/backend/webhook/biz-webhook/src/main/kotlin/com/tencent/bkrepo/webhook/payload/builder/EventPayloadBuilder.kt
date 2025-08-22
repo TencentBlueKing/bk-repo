@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,9 +29,11 @@ package com.tencent.bkrepo.webhook.payload.builder
 
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
 import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
 import org.springframework.beans.factory.annotation.Autowired
@@ -46,7 +48,20 @@ abstract class EventPayloadBuilder(
     abstract fun build(event: ArtifactEvent): CommonEventPayload
 
     fun getUser(userId: String): UserInfo {
-        return userResource.userInfoById(userId).data
-            ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_USER_NOT_FOUND)
+        return if (userId == SYSTEM_USER || userId == ANONYMOUS_USER) {
+            UserInfo(
+                userId = userId,
+                name = userId,
+                email = null,
+                phone = null,
+                createdDate = null,
+                locked = false,
+                admin = false,
+                group = false,
+            )
+        } else {
+            userResource.userInfoById(userId).data
+                ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_USER_NOT_FOUND)
+        }
     }
 }

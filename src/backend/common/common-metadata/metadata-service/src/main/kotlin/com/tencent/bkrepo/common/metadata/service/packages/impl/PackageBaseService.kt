@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.ClusterResource
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.model.TRepository
@@ -148,7 +149,11 @@ abstract class PackageBaseService(
         )
     }
 
-    protected open fun buildPackageVersion(request: PackageVersionCreateRequest, packageId: String) = with(request) {
+    protected open fun buildPackageVersion(
+        request: PackageVersionCreateRequest,
+        packageVersionMetadata: List<TMetadata>,
+        packageId: String
+    ) = with(request) {
         TPackageVersion(
             createdBy = createdBy,
             createdDate = LocalDateTime.now(),
@@ -163,7 +168,7 @@ abstract class PackageBaseService(
             artifactPath = artifactPath,
             artifactPaths = artifactPath?.let { mutableSetOf(it) },
             stageTag = stageTag.orEmpty(),
-            metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
+            metadata = packageVersionMetadata,
             tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
             extension = request.extension.orEmpty()
         )
@@ -204,7 +209,7 @@ abstract class PackageBaseService(
      */
     private fun calculateOrdinal(versionName: String): Long {
         return try {
-            SemVersion.parse(versionName).ordinal()
+            SemVersion.parse(versionName.removePrefix("v")).ordinal()
         } catch (exception: IllegalArgumentException) {
             LOWEST_ORDINAL
         }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -47,6 +47,8 @@ data class ScanQuality(
     val forbidScanUnFinished: Boolean?,
     @get:Schema(title = "质量规则未通过是否禁用制品")
     val forbidQualityUnPass: Boolean?,
+    @get:Schema(title = "是否禁用未扫描的制品")
+    val forbidNotScanned: Boolean?,
     @get:Schema(title = "许可是否推荐使用")
     val recommend: Boolean?,
     @get:Schema(title = "许可是否合规")
@@ -63,6 +65,7 @@ data class ScanQuality(
             low = map[Level.LOW.levelName] as? Long,
             forbidScanUnFinished = map[ScanQuality::forbidScanUnFinished.name] as? Boolean,
             forbidQualityUnPass = map[ScanQuality::forbidQualityUnPass.name] as? Boolean,
+            forbidNotScanned = map[ScanQuality::forbidNotScanned.name] as? Boolean,
             recommend = map[ScanQuality::recommend.name] as? Boolean,
             compliance = map[ScanQuality::compliance.name] as? Boolean,
             unknown = map[ScanQuality::unknown.name] as? Boolean

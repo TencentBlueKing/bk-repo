@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -49,13 +49,14 @@ object NodeEventFactory {
     /**
      * 节点创建事件
      */
-    fun buildCreatedEvent(node: TNode): NodeCreatedEvent {
+    fun buildCreatedEvent(node: TNode, source: String? = null): NodeCreatedEvent {
         with(node) {
             return NodeCreatedEvent(
                 projectId = projectId,
                 repoName = repoName,
                 resourceKey = fullPath,
-                userId = node.createdBy
+                userId = node.createdBy,
+                source = source
             )
         }
     }
@@ -67,13 +68,17 @@ object NodeEventFactory {
         projectId: String,
         repoName: String,
         fullPath: String,
-        userId: String
+        userId: String,
+        deletedDate: String,
+        source: String? = null
     ): NodeDeletedEvent {
         return NodeDeletedEvent(
             projectId = projectId,
             repoName = repoName,
             resourceKey = fullPath,
-            userId = userId
+            userId = userId,
+            deletedDate = deletedDate,
+            source = source
         )
     }
 
@@ -84,14 +89,18 @@ object NodeEventFactory {
         projectId: String,
         repoName: String,
         fullPaths: List<String>,
-        userId: String
+        userId: String,
+        deletedDate: String,
+        source: String? = null
     ): List<NodeDeletedEvent> {
         return fullPaths.map {
             NodeDeletedEvent(
                 projectId = projectId,
                 repoName = repoName,
                 resourceKey = it,
-                userId = userId
+                userId = userId,
+                deletedDate = deletedDate,
+                source = source
             )
         }
     }
@@ -106,7 +115,8 @@ object NodeEventFactory {
                 repoName = repoName,
                 resourceKey = fullPath,
                 userId = operator,
-                newFullPath = newFullPath
+                newFullPath = newFullPath,
+                source = source
             )
         }
     }
@@ -123,7 +133,8 @@ object NodeEventFactory {
                 userId = operator,
                 dstProjectId = destProjectId ?: projectId,
                 dstRepoName = destRepoName ?: repoName,
-                dstFullPath = destFullPath
+                dstFullPath = destFullPath,
+                source = source
             )
         }
     }
@@ -140,7 +151,8 @@ object NodeEventFactory {
                 userId = operator,
                 dstProjectId = destProjectId ?: projectId,
                 dstRepoName = destRepoName ?: repoName,
-                dstFullPath = destFullPath
+                dstFullPath = destFullPath,
+                source = source
             )
         }
     }
@@ -155,7 +167,8 @@ object NodeEventFactory {
                 repoName = repoName,
                 resourceKey = fullPath,
                 userId = operator,
-                metadata = nodeMetadata?.associate { Pair(it.key, it.value) }.orEmpty()
+                metadata = nodeMetadata?.associate { Pair(it.key, it.value) }.orEmpty(),
+                source = source
             )
         }
     }
@@ -170,7 +183,8 @@ object NodeEventFactory {
                 repoName = repoName,
                 resourceKey = fullPath,
                 userId = operator,
-                keys = keyList
+                keys = keyList,
+                source = source
             )
         }
     }

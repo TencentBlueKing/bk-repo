@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -36,7 +36,9 @@ import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
+import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
@@ -44,6 +46,7 @@ import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactInfo
+import com.tencent.bkrepo.huggingface.constants.BASE64_ENCODING
 import com.tencent.bkrepo.huggingface.constants.COMMIT_ID_HEADER
 import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_DEL_FILE
 import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_DEL_FOLDER
@@ -51,6 +54,7 @@ import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_FILE
 import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_HEADER
 import com.tencent.bkrepo.huggingface.constants.COMMIT_OP_LFS
 import com.tencent.bkrepo.huggingface.constants.LFS_UPLOAD_MODE
+import com.tencent.bkrepo.huggingface.constants.REVISION_MAIN
 import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
 import com.tencent.bkrepo.huggingface.exception.OperationNotSupportException
 import com.tencent.bkrepo.huggingface.exception.RevisionNotFoundException
@@ -66,6 +70,7 @@ import com.tencent.bkrepo.huggingface.pojo.user.CommitHeader
 import com.tencent.bkrepo.huggingface.pojo.user.CommitLfsFile
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -76,6 +81,7 @@ import org.eclipse.jgit.ignore.FastIgnoreRule
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.util.Base64
 
 @Service
 class UploadService(
@@ -185,7 +191,7 @@ class UploadService(
     }
 
     private fun checkRevision(request: PreUploadRequest, revision: String) {
-        if (revision != "main") {
+        if (revision != REVISION_MAIN) {
             logger.warn(
                 "package[${request.repoId}] in [${request.projectId}/${request.repoName}] " +
                     "commit from $revision"
@@ -248,7 +254,7 @@ class UploadService(
     ) {
         with(artifactInfo) {
             val packageKey = PackageKeys.ofHuggingface(type.toString(), getRepoId())
-            if (baseRevision == "main") {
+            if (baseRevision == REVISION_MAIN) {
                 packageService.findPackageByKey(projectId, repoName, packageKey)
                     ?.let { copyBaseRevisionNode(it.latest, artifactInfo) }
             } else {
@@ -278,11 +284,34 @@ class UploadService(
     /**
      * 普通文件上传
      * 使用此方式还是lfs上传取决于preupload接口中返回的uploadMode
+     * 即使preupload返回的uploadMode为lfs，客户端仍然以此方式上传空文件
      */
     private fun storeNode(artifactInfo: HuggingfaceArtifactInfo, commitFile: CommitFile) {
         with(artifactInfo) {
-            logger.error("store regular file: /${getRepoId()}/resolve/${getRevision()}/${commitFile.path}")
-            throw OperationNotSupportException()
+            val fullPath = "/${getRepoId()}/resolve/${getRevision()}/${commitFile.path}"
+            logger.info("store regular file: $fullPath")
+            val decodedContent = when (commitFile.encoding.lowercase()) {
+                BASE64_ENCODING -> Base64.getDecoder().decode(commitFile.content)
+                else -> {
+                    logger.error("unsupported regular file encoding: ${commitFile.encoding}")
+                    throw OperationNotSupportException()
+                }
+            }
+            val regularFile = ArtifactFileFactory.build(decodedContent.inputStream())
+            val nodeCreateRequest = NodeCreateRequest(
+                projectId = projectId,
+                repoName = repoName,
+                folder = false,
+                fullPath = fullPath,
+                size = regularFile.getSize(),
+                sha256 = regularFile.getFileSha256(),
+                md5 = regularFile.getFileMd5(),
+                crc64ecma = regularFile.getFileCrc64ecma(),
+                operator = SecurityUtils.getUserId(),
+                overwrite = true,
+            )
+            val storageCredentials = ArtifactContextHolder.getRepoDetail()!!.storageCredentials
+            storageManager.storeArtifactFile(nodeCreateRequest, regularFile, storageCredentials)
         }
     }
 

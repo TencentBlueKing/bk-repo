@@ -18,6 +18,7 @@
                 <bk-option v-for="[id] in Object.entries(leakLevelEnum)" :key="id" :id="id" :name="$t(`leakLevelEnum.${id}`)"></bk-option>
             </bk-select>
             <bk-select
+                :placeholder="$t('pleaseSelect')"
                 v-if="subtaskOverview.scannerType === 'standard'"
                 class="ml10 input-common"
                 :clearable="false"
@@ -216,7 +217,7 @@
                     position: 'bottom-right',
                     theme: 'success'
                 })
-                const url = `/web/analyst/api/scan/export/artifact/leak/${this.projectId}/${this.subtaskOverview.recordId}?x-bkrepo-project-id=${this.scanPlan.projectId}`
+                const url = `/web/analyst/api/scan/export/artifact/leak/${this.projectId}/${this.subtaskOverview.recordId}?x-bkrepo-project-id=${this.projectId}`
                 window.open(url, '_self')
             }
         }

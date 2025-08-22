@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -42,5 +42,11 @@ data class RateLimiterProperties(
     var rules: List<ResourceLimit> = mutableListOf(),
     // 只对指定url进行从request body解析项目仓库信息
     var specialUrls: List<String> = emptyList(),
-    var bandwidthProperties: BandwidthProperties = BandwidthProperties()
+    var bandwidthProperties: BandwidthProperties = BandwidthProperties(),
+    // 是否开启项目访问白名单
+    var projectWhiteListEnabled: Boolean = false,
+    // 项目访问白名单。 当开启白名单访问后，只有在白名单列表上的项目才允许访问
+    var projectWhiteList: List<String> = emptyList(),
+    // 针对开启访问白名单的场景下，部分url没有办法获取到项目信息时，直接放通
+    var specialUrlsIgnoreProjectWhiteList: List<String> = emptyList()
 )

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -58,6 +58,7 @@ import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo.Companion.GENERIC
 import com.tencent.bkrepo.generic.artifact.GenericChunkedArtifactInfo
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD_CLIENT
+import com.tencent.bkrepo.generic.constant.HEADER_CRC64ECMA
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OLD_FILE_PATH
 import com.tencent.bkrepo.generic.constant.HEADER_SHA256
@@ -286,7 +287,7 @@ class TemporaryAccessController(
         temporaryAccessService.uploadArtifact(artifactInfo, artifactFile)
 
         // TODO 如果PUT请求没有发起，token如何让其失效
-        if (HttpContextHolder.getRequest().method == HttpMethod.PUT.name) {
+        if (HttpContextHolder.getRequest().method == HttpMethod.PUT.name()) {
             temporaryAccessService.decrementPermits(tokenInfo)
         }
     }
@@ -346,6 +347,7 @@ class TemporaryAccessController(
         @RequestHeader(HEADER_UPLOAD_ID) uploadId: String,
         @RequestHeader(HEADER_SHA256) sha256: String? = null,
         @RequestHeader(HEADER_MD5) md5: String? = null,
+        @RequestHeader(HEADER_CRC64ECMA, required = false) crc64ecma: String? = null,
         @RequestHeader(HEADER_SIZE) size: Long? = null,
         @ArtifactPathVariable artifactInfo: GenericArtifactInfo,
         @RequestParam token: String
@@ -355,7 +357,7 @@ class TemporaryAccessController(
         val tokenInfo = temporaryAccessService.validateToken(token, artifactInfo, TokenType.UPLOAD)
         uploadService.completeBlockUpload(
             userId, uploadId, artifactInfo,
-            sha256, md5, size, false
+            sha256, md5, crc64ecma, size, false
         )
         temporaryAccessService.decrementPermits(tokenInfo)
         return ResponseBuilder.success()

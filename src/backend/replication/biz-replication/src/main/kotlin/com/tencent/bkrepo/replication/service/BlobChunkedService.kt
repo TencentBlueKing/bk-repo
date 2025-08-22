@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -55,6 +55,6 @@ interface BlobChunkedService {
         projectId: String, repoName: String,
         credentials: StorageCredentials, sha256: String,
         artifactFile: ArtifactFile, uuid: String,
-        size: Long?, md5: String?
+        size: Long?, md5: String?, crc64ecma: String?
     )
 }

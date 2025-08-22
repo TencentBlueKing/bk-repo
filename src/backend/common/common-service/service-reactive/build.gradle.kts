@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,9 +28,9 @@
 dependencies {
     api(project(":common:common-service:service-base"))
     api("com.tencent.devops:devops-boot-starter-service-reactive")
-    api("org.springframework.cloud:spring-cloud-sleuth-brave")
     api(project(":common:common-security")) {
         exclude(module = "service-servlet")
     }
     api("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter")
+    api("io.projectreactor.kotlin:reactor-kotlin-extensions")
 }

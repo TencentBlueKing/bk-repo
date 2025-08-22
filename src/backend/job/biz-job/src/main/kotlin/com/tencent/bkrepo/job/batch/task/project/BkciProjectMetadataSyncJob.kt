@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,14 +28,13 @@
 package com.tencent.bkrepo.job.batch.task.project
 
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import okhttp3.Request
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -46,7 +45,6 @@ import java.time.Duration
  * 定时从蓝盾同步项目元数据
  */
 @Component
-@EnableConfigurationProperties(BkciProjectMetadataSyncJobProperties::class)
 class BkciProjectMetadataSyncJob(
     private val properties: BkciProjectMetadataSyncJobProperties,
 ) : DefaultContextMongoDbJob<BkciProjectMetadataSyncJob.Project>(properties) {

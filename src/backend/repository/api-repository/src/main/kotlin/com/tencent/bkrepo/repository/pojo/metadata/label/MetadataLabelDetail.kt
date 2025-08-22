@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,9 +32,14 @@ import java.time.LocalDateTime
 data class MetadataLabelDetail(
     val labelKey: String,
     val labelColorMap: Map<String, String>,
+    val enumType: Boolean,
     val display: Boolean,
+    val category: String?,
+    val system: Boolean,
+    val enableColorConfig: Boolean,
+    val description: String,
     val createdBy: String,
-    val createdDate: LocalDateTime,
+    val createdDate: LocalDateTime = LocalDateTime.now(),
     val lastModifiedBy: String,
-    val lastModifiedDate: LocalDateTime
+    val lastModifiedDate: LocalDateTime = LocalDateTime.now()
 )

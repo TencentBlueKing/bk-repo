@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.RNodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RRepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.RFileReferenceService
 import com.tencent.bkrepo.common.metadata.service.project.RProjectService
@@ -60,6 +61,7 @@ class RNodeServiceImpl(
     override val authClient: RAuthClient,
     override val blockNodeService: RBlockNodeService,
     override val projectService: RProjectService,
+    override val metadataCustomizer: MetadataCustomizer?,
 ) : RNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -70,7 +72,8 @@ class RNodeServiceImpl(
     messageSupplier,
     authClient,
     blockNodeService,
-    projectService
+    projectService,
+    metadataCustomizer,
 ) {
 
     override suspend fun computeSize(

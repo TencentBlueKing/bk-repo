@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -34,6 +34,7 @@ import io.netty.bootstrap.Bootstrap
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.util.concurrent.DefaultThreadFactory
 import org.springframework.beans.factory.DisposableBean
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Component
 import java.net.InetSocketAddress
 import java.net.URL
@@ -43,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap
  * fdtp-aft client工厂
  * */
 @Component
+@ConditionalOnProperty("fdtp.server.enabled")
 class FdtpAFTClientFactory(fdtpAuthManager: FdtpAuthManager, clientProperties: FdtpClientProperties) :
     DisposableBean {
     private val group = NioEventLoopGroup(

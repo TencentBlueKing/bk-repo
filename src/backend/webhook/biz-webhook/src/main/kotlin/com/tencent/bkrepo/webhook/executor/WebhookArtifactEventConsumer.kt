@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,9 +30,10 @@ package com.tencent.bkrepo.webhook.executor
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.webhook.config.WebHookProperties
 import com.tencent.bkrepo.webhook.constant.AssociationType
 import com.tencent.bkrepo.webhook.dao.WebHookDao
@@ -52,7 +53,8 @@ import java.util.regex.Pattern
 class WebhookArtifactEventConsumer(
     private val webHookDao: WebHookDao,
     private val webHookExecutor: WebHookExecutor,
-    private val webHookProperties: WebHookProperties
+    private val webHookProperties: WebHookProperties,
+    private val repositoryService: RepositoryService,
 ) {
 
     private val executors = ThreadPoolExecutor(
@@ -122,7 +124,16 @@ class WebhookArtifactEventConsumer(
                 return false
             }
         }
-        return true
+        return if (webHookProperties.triggeredByNodeEventOfPackageSupportedRepo) {
+            true
+        } else {
+            val repoDetail = repositoryService.getRepoDetail(event.projectId, event.repoName)
+            if (repoDetail?.type?.supportPackage == true) {
+                packageEvents.contains(event.type)
+            } else {
+                nodeEvents.contains(event.type)
+            }
+        }
     }
 
     private fun matchResourceKey(resourceKeyPattern: String?, resourceKey: String): Boolean {
@@ -141,5 +152,23 @@ class WebhookArtifactEventConsumer(
 
     companion object {
         private val logger = LoggerFactory.getLogger(WebhookArtifactEventConsumer::class.java)
+        private val packageEvents = setOf(
+            EventType.VERSION_CREATED,
+            EventType.VERSION_DELETED,
+            EventType.VERSION_DOWNLOAD,
+            EventType.VERSION_UPDATED,
+            EventType.VERSION_STAGED,
+        )
+        private val nodeEvents = setOf(
+            EventType.NODE_CREATED,
+            EventType.NODE_DELETED,
+            EventType.NODE_MOVED,
+            EventType.NODE_RENAMED,
+            EventType.NODE_COPIED,
+            EventType.NODE_DOWNLOADED,
+            EventType.NODE_CLEAN,
+            EventType.NODE_UPDATE_ACCESS_DATE,
+            EventType.NODE_SEPARATION_RECOVERY,
+        )
     }
 }

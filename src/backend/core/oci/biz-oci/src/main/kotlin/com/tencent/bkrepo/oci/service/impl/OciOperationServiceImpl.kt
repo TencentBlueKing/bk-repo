@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -115,6 +115,7 @@ import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import com.tencent.bkrepo.repository.pojo.search.PackageQueryBuilder
 import com.tencent.devops.plugin.api.PluginManager
 import com.tencent.devops.plugin.api.applyExtension
+import jakarta.servlet.http.HttpServletRequest
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -125,11 +126,10 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.nio.charset.Charset
-import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Date
 import java.util.Locale
-import javax.servlet.http.HttpServletRequest
 
 @Service
 class OciOperationServiceImpl(
@@ -239,8 +239,10 @@ class OciOperationServiceImpl(
         with(artifactInfo) {
             val manifestFolder = OciLocationUtils.buildManifestVersionFolderPath(packageName, version)
             val blobsFolder = OciLocationUtils.blobVersionFolderLocation(version, packageName)
-                logger.info("Will delete blobsFolder [$blobsFolder] and manifestFolder $manifestFolder " +
-                                "in package $packageName|$version in repo [$projectId/$repoName]")
+            logger.info(
+                "Will delete blobsFolder [$blobsFolder] and manifestFolder $manifestFolder " +
+                    "in package $packageName|$version in repo [$projectId/$repoName]"
+            )
             // 删除manifestFolder
             deleteNode(projectId, repoName, manifestFolder, userId)
             // 删除blobs
@@ -356,7 +358,7 @@ class OciOperationServiceImpl(
     override fun deleteVersion(userId: String, artifactInfo: OciArtifactInfo) {
         logger.info(
             "Try to delete the package [${artifactInfo.packageName}/${artifactInfo.version}] " +
-                    "in repo ${artifactInfo.getRepoIdentify()}"
+                "in repo ${artifactInfo.getRepoIdentify()}"
         )
         remove(userId, artifactInfo)
     }
@@ -406,7 +408,8 @@ class OciOperationServiceImpl(
             val newNodeRequest = request.copy(
                 size = fileInfo.size,
                 md5 = fileInfo.md5,
-                sha256 = fileInfo.sha256
+                sha256 = fileInfo.sha256,
+                crc64ecma = fileInfo.crc64ecma,
             )
             ActionAuditContext.current().setInstance(newNodeRequest)
             nodeService.createNode(newNodeRequest)
@@ -428,7 +431,7 @@ class OciOperationServiceImpl(
     ) {
         logger.info(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
-                    "in repo ${ociArtifactInfo.getRepoIdentify()}"
+                "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
         // https://github.com/docker/docker-ce/blob/master/components/engine/distribution/push_v2.go
         // docker 客户端上传manifest时先按照schema2的格式上传，
@@ -537,13 +540,12 @@ class OciOperationServiceImpl(
             metadata = metadata,
             userId = SecurityUtils.getUserId()
         )
-        try{
+        try {
             metadataService.saveMetadata(metadataSaveRequest)
         } catch (ignore: Exception) {
             // 并发情况下会出现节点找不到问题
         }
     }
-
 
 
     /**
@@ -824,7 +826,7 @@ class OciOperationServiceImpl(
         return when (artifactInfo) {
             is OciManifestArtifactInfo -> {
                 // 根据类型解析实际存储路径，manifest获取路径有tag/digest
-                if (artifactInfo.isValidDigest){
+                if (artifactInfo.isValidDigest) {
                     return getNodeByDigest(
                         projectId = artifactInfo.projectId,
                         repoName = artifactInfo.repoName,
@@ -834,6 +836,7 @@ class OciOperationServiceImpl(
                 }
                 return "/${artifactInfo.packageName}/${artifactInfo.reference}/manifest.json"
             }
+
             is OciBlobArtifactInfo -> {
                 val digestStr = artifactInfo.digest ?: StringPool.EMPTY
                 return getNodeByDigest(
@@ -842,6 +845,7 @@ class OciOperationServiceImpl(
                     digestStr = digestStr
                 )?.fullPath
             }
+
             else -> null
         }
     }
@@ -913,16 +917,18 @@ class OciOperationServiceImpl(
         result.records.forEach {
             val imageName = it[OCI_PACKAGE_NAME] as String
             val lastModifiedBy = it[LAST_MODIFIED_BY] as String
-            val lastModifiedDate = it[LAST_MODIFIED_DATE] as Long
-            val downLoadCount = it[DOWNLOADS] as Int
+            val lastModifiedDate = it[LAST_MODIFIED_DATE]
+            val localLastModifiedDate = if (lastModifiedDate is Date) {
+                LocalDateTime.ofInstant(lastModifiedDate.toInstant(), ZoneId.systemDefault())
+            } else null
+            val downLoadCount = it[DOWNLOADS] as Long
             val description = it[DESCRIPTION] as String? ?: StringPool.EMPTY
-            val localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(lastModifiedDate), ZoneId.systemDefault())
             data.add(
                 OciImage(
                     name = imageName,
                     lastModifiedBy = lastModifiedBy,
-                    lastModifiedDate = localDateTime.toString(),
-                    downloadCount = downLoadCount.toLong(),
+                    lastModifiedDate = localLastModifiedDate?.toString() ?: StringPool.EMPTY,
+                    downloadCount = downLoadCount,
                     logoUrl = StringPool.EMPTY,
                     description = description
                 )
@@ -1026,7 +1032,7 @@ class OciOperationServiceImpl(
                 ArtifactInfo(repoInfo.projectId, repoInfo.name, oldDockerFullPath)
             ) ?: return false
         }
-        val refreshedMetadat = manifestNode.nodeMetadata.firstOrNull { it.key == BLOB_PATH_REFRESHED_KEY}
+        val refreshedMetadat = manifestNode.nodeMetadata.firstOrNull { it.key == BLOB_PATH_REFRESHED_KEY }
         if (refreshedMetadat != null) {
             logger.info("$manifestPath has been refreshed, ignore it")
             return true
@@ -1054,10 +1060,6 @@ class OciOperationServiceImpl(
     }
 
 
-
-
-
-
     private fun buildImagePackagePullContext(
         projectId: String,
         repoName: String,
@@ -1068,33 +1070,39 @@ class OciOperationServiceImpl(
             is RemoteConfiguration -> {
                 try {
                     val remoteUrl = UrlFormatter.addProtocol(config.url)
-                    result.add(ImagePackagePullContext(
-                        projectId = projectId,
-                        repoName = repoName,
-                        remoteUrl = remoteUrl,
-                        userName = config.credentials.username,
-                        password = config.credentials.password
-                    ))
+                    result.add(
+                        ImagePackagePullContext(
+                            projectId = projectId,
+                            repoName = repoName,
+                            remoteUrl = remoteUrl,
+                            userName = config.credentials.username,
+                            password = config.credentials.password
+                        )
+                    )
                 } catch (e: Exception) {
                     logger.warn("illegal remote url ${config.url} for repo $projectId|$repoName")
                 }
             }
+
             is CompositeConfiguration -> {
                 config.proxy.channelList.forEach {
                     try {
                         val remoteUrl = UrlFormatter.addProtocol(it.url)
-                        result.add(ImagePackagePullContext(
-                            projectId = projectId,
-                            repoName = repoName,
-                            remoteUrl = remoteUrl,
-                            userName = it.username,
-                            password = it.password
-                        ))
+                        result.add(
+                            ImagePackagePullContext(
+                                projectId = projectId,
+                                repoName = repoName,
+                                remoteUrl = remoteUrl,
+                                userName = it.username,
+                                password = it.password
+                            )
+                        )
                     } catch (e: Exception) {
                         logger.warn("illegal proxy url ${it.url} for repo $projectId|$repoName")
                     }
                 }
             }
+
             else -> throw UnsupportedOperationException()
         }
         return result

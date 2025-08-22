@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -82,7 +82,7 @@ open class RouterControllerAspect(
         /*
         * 只重定向get请求，如果项目或者用户没有指定路由策略，则不进行重定向。
         * */
-        if (request.method != HttpMethod.GET.name || !hasPolicy(user, artifactInfo.projectId)) {
+        if (request.method != HttpMethod.GET.name() || !hasPolicy(user, artifactInfo.projectId)) {
             return proceedingJoinPoint.proceed()
         }
         with(artifactInfo) {

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -50,7 +50,6 @@ import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
@@ -73,7 +72,6 @@ import kotlin.reflect.KClass
  * 根据仓库配置的清理策略清理对应仓库下的制品
  */
 @Component
-@EnableConfigurationProperties(ArtifactCleanupJobProperties::class)
 class ArtifactCleanupJob(
     private val properties: ArtifactCleanupJobProperties,
     private val nodeService: NodeService,

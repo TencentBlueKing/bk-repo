@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,25 +27,29 @@
 
 package com.tencent.bkrepo.common.service.otel.mongodb
 
+import com.mongodb.MongoClientSettings
 import com.mongodb.client.internal.MongoClientImpl
+import io.micrometer.observation.ObservationRegistry
+import io.micrometer.tracing.otel.bridge.OtelTracer
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
-import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
+import org.springframework.boot.autoconfigure.mongo.MongoClientSettingsBuilderCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.mongodb.observability.ContextProviderFactory
+import org.springframework.data.mongodb.observability.MongoObservationCommandListener
+
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(value = ["spring.sleuth.enabled"], matchIfMissing = true)
+@ConditionalOnProperty(value = ["management.tracing.enabled"])
 @ConditionalOnClass(OtelTracer::class, MongoClientImpl::class)
 class OtelMongoConfiguration {
 
     @Bean
-    fun dbMongoSpanCustomizer(): TraceMongoSpanCustomizer {
-        return DBMongoSpanCustomizer()
-    }
-
-    @Bean
-    fun netMongoSpanCustomizer(): TraceMongoSpanCustomizer {
-        return NetMongoSpanCustomizer()
+    fun mongoMetricsSynchronousContextProvider(registry: ObservationRegistry): MongoClientSettingsBuilderCustomizer {
+        return MongoClientSettingsBuilderCustomizer { clientSettingsBuilder: MongoClientSettings.Builder? ->
+            clientSettingsBuilder!!.contextProvider(ContextProviderFactory.create(registry))
+                .addCommandListener(MongoObservationCommandListener(registry))
+        }
     }
 }

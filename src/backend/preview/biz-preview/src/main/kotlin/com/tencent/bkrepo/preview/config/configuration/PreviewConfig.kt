@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -288,4 +288,9 @@ class PreviewConfig {
      */
     @Value("\${preview.watermark.angle:10}")
     val watermarkAngle = "10"
+    /**
+     * 压缩报告文件名
+     */
+    @Value("\${preview.compressed.report.filename:bkrepo_compressed_report.zip}")
+    val compressedReportFilename = "bkrepo_compressed_report.zip"
 }

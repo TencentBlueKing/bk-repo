@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.preview.service
 
-import javax.annotation.PreDestroy
+import jakarta.annotation.PreDestroy
 import org.apache.commons.lang3.StringUtils
 import org.jodconverter.core.office.InstalledOfficeManagerHolder
 import org.jodconverter.core.office.OfficeUtils
@@ -51,7 +51,7 @@ import java.io.IOException
  */
 @Component
 class OfficePluginManager {
-    private var officeManager: LocalOfficeManager ? = null
+    private var officeManager: LocalOfficeManager? = null
 
     @Value("\${preview.office.plugin.server.ports:2001,2002}")
     private val serverPorts = "2001,2002"
@@ -99,7 +99,7 @@ class OfficePluginManager {
             officeManager?.start()
             InstalledOfficeManagerHolder.setInstance(officeManager)
         } catch (e: Exception) {
-            logger.error("The office component fails to start, check whether the office component is available",e)
+            logger.error("The office component fails to start, check whether the office component is available", e)
         }
     }
 

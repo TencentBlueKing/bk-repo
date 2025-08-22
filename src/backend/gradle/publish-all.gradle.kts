@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,9 +31,15 @@
 val allJarRepo: String? by project
 val allJarUsername: String? by project
 val allJarPassword: String? by project
+val publishBiz: String? by project
 
 allprojects {
-    if (!name.startsWith("boot-") && !name.startsWith("biz-") && childProjects.isEmpty()) {
+    val condition = if (publishBiz == "true") {
+        !name.startsWith("boot-") && childProjects.isEmpty()
+    } else {
+        !name.startsWith("boot-") && !name.startsWith("biz-") && childProjects.isEmpty()
+    }
+    if (condition) {
         apply(plugin = "com.tencent.devops.publish")
         configure<PublishingExtension> {
             repositories {

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.webhook.executor
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.webhook.config.WebHookProperties
 import com.tencent.bkrepo.webhook.constant.WebHookRequestStatus
 import com.tencent.bkrepo.webhook.dao.WebHookLogDao
@@ -47,7 +47,6 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.BeanFactory
 import org.springframework.cloud.endpoint.event.RefreshEvent
 import org.springframework.context.event.EventListener
 import org.springframework.core.annotation.Order
@@ -65,10 +64,9 @@ class WebHookExecutor(
     private val eventPayloadFactory: EventPayloadFactory,
     private val webHookProperties: WebHookProperties,
     private val webHookMetrics: WebHookMetrics,
-    private val beanFactory: BeanFactory
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create(beanFactory = beanFactory).build()
+    private val httpClient = HttpClientBuilderFactory.create().build()
 
     init {
         httpClient.dispatcher.maxRequests = webHookProperties.maxRequests ?: 200
@@ -114,14 +112,14 @@ class WebHookExecutor(
     }
 
     fun asyncExecutor(event: ArtifactEvent, webHook: TWebHook) {
-        val payload = try {
-            eventPayloadFactory.build(event)
-        }catch (e :Exception) {
-            logger.warn("webhook build payload error, event[$event], error: ${e.message}")
+        val (payload, request) = try {
+            val payload = eventPayloadFactory.build(event)
+            payload to buildRequest(webHook, payload)
+        } catch (e: Exception) {
+            logger.warn("webhook build payload or request error, event[$event], error: ${e.message}")
             webHookLogDao.insert(buildWebHookErrorLog(event, webHook, e))
             return
         }
-        val request = buildRequest(webHook, payload)
         val startTimestamp = System.currentTimeMillis()
         val log = buildWebHookLog(webHook, request, payload)
         webHookMetrics.executingCount.incrementAndGet()

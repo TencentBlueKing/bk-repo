@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 
 /**
@@ -85,6 +86,14 @@ open class NodeRestoreSupport(
                 listOf(convertToDetail(deletedNode)!!)
             }
         }
+    }
+
+    override fun getDeletedNodeDetail(
+        projectId: String, repoName: String, fullPath: String, deleted: LocalDateTime
+    ): NodeDetail? {
+        val query = nodeDeletedPointQuery(projectId, repoName, fullPath, deleted)
+        val node = nodeDao.findOne(query)
+        return convertToDetail(node)
     }
 
     override fun getDeletedNodeDetailBySha256(projectId: String, repoName: String, sha256: String): NodeDetail? {

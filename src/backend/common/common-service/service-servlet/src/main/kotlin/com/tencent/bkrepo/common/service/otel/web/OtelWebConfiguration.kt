@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,22 +27,14 @@
 
 package com.tencent.bkrepo.common.service.otel.web
 
-import io.opentelemetry.sdk.trace.SpanProcessor
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
-import io.opentelemetry.sdk.trace.export.BatchSpanProcessorBuilder
-import io.opentelemetry.sdk.trace.export.SpanExporter
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.web.servlet.FilterRegistrationBean
-import org.springframework.cloud.sleuth.autoconfig.otel.OtelProcessorProperties
-import org.springframework.cloud.sleuth.autoconfig.otel.SpanProcessorProvider
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
-import java.util.concurrent.TimeUnit
 
 @Configuration
-@ConditionalOnProperty(value = ["spring.sleuth.enabled"], matchIfMissing = true)
+@ConditionalOnProperty(value = ["management.tracing.enabled"], matchIfMissing = true)
 class OtelWebConfiguration {
 
     @Bean
@@ -52,41 +44,5 @@ class OtelWebConfiguration {
         registrationBean.order = Ordered.HIGHEST_PRECEDENCE
         registrationBean.addUrlPatterns("/*")
         return registrationBean
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    fun otelBatchSpanProcessorProvider(otelProcessorProperties: OtelProcessorProperties): SpanProcessorProvider {
-        return object : SpanProcessorProvider {
-            override fun toSpanProcessor(spanExporter: SpanExporter): SpanProcessor {
-                val builder = BatchSpanProcessor.builder(spanExporter)
-                setBuilderProperties(otelProcessorProperties, builder)
-                return builder.build()
-            }
-
-            fun setBuilderProperties(
-                otelProcessorProperties: OtelProcessorProperties,
-                builder: BatchSpanProcessorBuilder
-            ) {
-                if (otelProcessorProperties.batch.exporterTimeout != null) {
-                    builder.setExporterTimeout(
-                        otelProcessorProperties.batch.exporterTimeout,
-                        TimeUnit.MILLISECONDS
-                    )
-                }
-                if (otelProcessorProperties.batch.maxExportBatchSize != null) {
-                    builder.setMaxExportBatchSize(otelProcessorProperties.batch.maxExportBatchSize)
-                }
-                if (otelProcessorProperties.batch.maxQueueSize != null) {
-                    builder.setMaxQueueSize(otelProcessorProperties.batch.maxQueueSize)
-                }
-                if (otelProcessorProperties.batch.scheduleDelay != null) {
-                    builder.setScheduleDelay(
-                        otelProcessorProperties.batch.scheduleDelay,
-                        TimeUnit.MILLISECONDS
-                    )
-                }
-            }
-        }
     }
 }

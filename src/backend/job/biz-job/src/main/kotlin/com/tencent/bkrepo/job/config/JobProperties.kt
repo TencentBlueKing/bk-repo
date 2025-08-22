@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job")
-data class JobProperties(
+class JobProperties(
     /**
      * 节点亲和的任务集合，未配置时节点可调度任意任务，配置后节点将只能执行配置的任务
      * key为节点IP，value为任务名称集合

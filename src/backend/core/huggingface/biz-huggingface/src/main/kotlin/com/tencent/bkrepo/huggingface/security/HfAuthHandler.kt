@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -33,13 +33,14 @@ import com.tencent.bkrepo.common.security.http.core.HttpAuthHandler
 import com.tencent.bkrepo.common.security.http.credentials.AnonymousCredentials
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
 import com.tencent.bkrepo.common.security.manager.AuthenticationManager
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 class HfAuthHandler(
     val authenticationManager: AuthenticationManager
 ) : HttpAuthHandler {
     override fun extractAuthCredentials(request: HttpServletRequest): HttpAuthCredentials {
-        val token = request.getHeader(HttpHeaders.AUTHORIZATION)?.removePrefix(BEARER_AUTH_PREFIX)
+        val token = request.getHeader(HttpHeaders.AUTHORIZATION)?.takeIf { it.startsWith(BEARER_AUTH_PREFIX) }
+            ?.removePrefix(BEARER_AUTH_PREFIX)
             ?: return AnonymousCredentials()
         return HfAuthCredentials(token)
     }

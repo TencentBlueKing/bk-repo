@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactInfo
+import com.tencent.bkrepo.huggingface.artifact.HuggingfaceRevisionInfo
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -49,12 +50,14 @@ class DownloadController : ArtifactService() {
         repository.download(context)
     }
 
-    @GetMapping("/{projectId}/{repoName}/api/{type}s/{organization}/{name}",
-        "/{projectId}/{repoName}/api/{type}s/{organization}/{name}/revision/{revision}")
+    @GetMapping(
+        "/{projectId}/{repoName}/api/{type}s/{organization}/{name}",
+        "/{projectId}/{repoName}/api/{type}s/{organization}/{name}/revision/{revision}",
+    )
     @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
     fun info(
-        @ArtifactPathVariable artifactInfo: HuggingfaceArtifactInfo
-    ) : Any? {
+        @ArtifactPathVariable artifactInfo: HuggingfaceRevisionInfo,
+    ): Any? {
         return repository.query(ArtifactQueryContext())
     }
 }

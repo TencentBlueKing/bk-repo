@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -81,8 +81,8 @@ class TrivyResultManager @Autowired constructor(
         return Page(page.pageNumber, page.pageSize, page.totalRecords, page.records)
     }
 
-    override fun clean(credentialsKey: String?, sha256: String, scannerName: String): Long {
-        return vulnerabilityItemDao.deleteBy(credentialsKey, sha256, scannerName).deletedCount
+    override fun clean(credentialsKey: String?, sha256: String, scannerName: String, batchSize: Int?): Long {
+        return vulnerabilityItemDao.deleteBy(credentialsKey, sha256, scannerName, batchSize).deletedCount
     }
 
     private fun replace(

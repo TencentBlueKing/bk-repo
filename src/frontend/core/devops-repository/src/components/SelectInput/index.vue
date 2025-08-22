@@ -1,6 +1,7 @@
 <template>
     <div class="select-input-container flex-align-center">
         <bk-select class="select-container"
+            :placeholder="$t('pleaseSelect')"
             :value="select"
             :clearable="false"
             :disabled="disabled"

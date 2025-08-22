@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -81,6 +81,11 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
     abstract fun entityClass(): KClass<Entity>
 
     /**
+     * 表开始执行前置操作
+     * */
+    open fun onRunCollectionStart(collectionName: String, context: Context) {}
+
+    /**
      * 表执行结束回调
      * */
     open fun onRunCollectionFinished(collectionName: String, context: Context) {}
@@ -144,6 +149,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
             logger.info("Job[${getJobName()}] already stopped.")
             return
         }
+        onRunCollectionStart(collectionName, context)
         logger.info("Job[${getJobName()}]: Start collection $collectionName.")
         val pageSize = batchSize
         var querySize: Int
@@ -166,7 +172,7 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
                 if (data.isEmpty()) {
                     break
                 }
-                if (concurrentLevel >= JobConcurrentLevel.ROW) {
+                if (concurrentLevel == JobConcurrentLevel.ROW) {
                     runAsync(data) { runRow(it, collectionName, context) }
                 } else {
                     data.forEach { runRow(it, collectionName, context) }

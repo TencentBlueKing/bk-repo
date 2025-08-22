@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -75,7 +75,7 @@ open class NodeDeleteSupport(
             if (PathUtils.isRoot(fullPath)) {
                 throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Can't delete root node.")
             }
-            return deleteByPath(projectId, repoName, fullPath, operator)
+            return deleteByPath(projectId, repoName, fullPath, operator, source)
         }
     }
 
@@ -131,11 +131,12 @@ open class NodeDeleteSupport(
         projectId: String,
         repoName: String,
         fullPath: String,
-        operator: String
+        operator: String,
+        source: String?,
     ): NodeDeleteResult {
         val criteria = buildCriteria(projectId, repoName, fullPath)
         val query = Query(criteria)
-        return delete(query, operator, criteria, projectId, repoName, listOf(fullPath))
+        return delete(query, operator, criteria, projectId, repoName, listOf(fullPath), source = source)
     }
 
     override fun deleteByPaths(
@@ -208,6 +209,7 @@ open class NodeDeleteSupport(
 
         if (deletedNum == 0L) return NodeDeleteResult(0L, 0L, deleteTime)
 
+        publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator, deleteTime.toString(), null))
         logger.info(
             "Delete old block base node: $fullPath, operator: $operator, delete num : $deletedNum, " +
                     "delete time: $deleteTime success"
@@ -222,7 +224,8 @@ open class NodeDeleteSupport(
         projectId: String,
         repoName: String,
         fullPaths: List<String>? = null,
-        decreaseVolume: Boolean = true
+        decreaseVolume: Boolean = true,
+        source: String? = null
     ): NodeDeleteResult {
         var deletedNum = 0L
         var deletedSize = 0L
@@ -254,7 +257,7 @@ open class NodeDeleteSupport(
                 if (routerControllerProperties.enabled) {
                     routerControllerClient.removeNodes(projectId, repoName, fullPath)
                 }
-                publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator))
+                publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator, deleteTime.toString(), source))
             }
         } catch (exception: DuplicateKeyException) {
             logger.warn("Delete node[$resourceKey] by [$operator] error: [${exception.message}]")

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -34,11 +34,11 @@ package com.tencent.bkrepo.common.service.util
 import com.tencent.bkrepo.common.api.constant.CLIENT_ADDRESS
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import java.util.StringTokenizer
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 object HttpContextHolder {
     fun getRequest(): HttpServletRequest {

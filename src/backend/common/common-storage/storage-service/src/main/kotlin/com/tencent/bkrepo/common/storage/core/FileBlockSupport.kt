@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.storage.core
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
+import com.tencent.bkrepo.common.artifact.hash.crc64ecma
 import com.tencent.bkrepo.common.artifact.hash.md5
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -268,11 +269,11 @@ abstract class FileBlockSupport : CleanupSupport() {
     private fun storeMergedFile(file: File, credentials: StorageCredentials, fileInfo: FileInfo? = null): FileInfo {
         val size = file.length()
         val realFileInfo = if (fileInfo == null) {
-            FileInfo(file.sha256(), file.md5(), size)
+            FileInfo(file.sha256(), file.md5(), size, file.crc64ecma())
         } else {
             if (fileInfo.size != size)
                 throw IllegalArgumentException("Merged file is broken!")
-            FileInfo(fileInfo.sha256, fileInfo.md5, size)
+            FileInfo(fileInfo.sha256, fileInfo.md5, size, fileInfo.crc64ecma)
         }
         val path = fileLocator.locate(realFileInfo.sha256)
         if (!doExist(path, realFileInfo.sha256, credentials)) {

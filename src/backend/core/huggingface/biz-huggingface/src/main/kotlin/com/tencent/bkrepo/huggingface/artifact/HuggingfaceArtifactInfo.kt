@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -29,10 +29,12 @@ package com.tencent.bkrepo.huggingface.artifact
 
 import com.tencent.bkrepo.common.api.constant.StringPool.SLASH
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
 
-class HuggingfaceArtifactInfo(
+open class HuggingfaceArtifactInfo(
     projectId: String,
     repoName: String,
     val organization: String,
@@ -55,7 +57,7 @@ class HuggingfaceArtifactInfo(
         return "$organization/$name"
     }
 
-    fun getRevision(): String? {
+    open fun getRevision(): String? {
         val request = HttpContextHolder.getRequestOrNull()
         return request?.getAttribute(REVISION_KEY)?.toString() ?: revision
     }
@@ -63,4 +65,8 @@ class HuggingfaceArtifactInfo(
     override fun getArtifactFullPath(): String {
         return "/$organization/$name/resolve/${getRevision()}$artifactUri"
     }
+
+    override fun getArtifactVersion() = getRevision()
+
+    fun getPackageKey() = PackageKeys.ofHuggingface(type ?: REPO_TYPE_MODEL, getRepoId())
 }

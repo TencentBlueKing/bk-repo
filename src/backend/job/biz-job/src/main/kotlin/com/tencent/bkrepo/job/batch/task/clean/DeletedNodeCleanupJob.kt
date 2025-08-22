@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -52,7 +52,6 @@ import com.tencent.bkrepo.job.config.properties.DeletedNodeCleanupJobProperties
 import com.tencent.bkrepo.job.config.properties.MigrateRepoStorageJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -69,7 +68,6 @@ import kotlin.reflect.KClass
  * 清理被标记为删除的node，同时减少文件引用
  */
 @Component
-@EnableConfigurationProperties(DeletedNodeCleanupJobProperties::class)
 class DeletedNodeCleanupJob(
     private val properties: DeletedNodeCleanupJobProperties,
     private val migrateProperties: MigrateRepoStorageJobProperties,
@@ -166,21 +164,9 @@ class DeletedNodeCleanupJob(
         val query = Query.query(Criteria.where(ID).isEqualTo(node.id))
         var result: DeleteResult? = null
         try {
-            if (node.sha256.isNullOrEmpty() || node.sha256 == FAKE_SHA256) return
-            try {
-                val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
-                val deletedDays = node.deleted?.let { Duration.between(it, LocalDateTime.now()).toDays() } ?: 0
-                val keepRefLostNode = deletedDays < properties.keepRefLostNodeDays
-                // 需要保留Node用于排查问题时不补偿创建引用，避免引用创建后node记录可以被正常删除
-                val createIfNotExists = !keepRefLostNode
-                if (!decrementFileReferences(node.sha256, credentialsKey, createIfNotExists)) {
-                    logger.warn("Clean up node fail collection[$collectionName], node[$node]")
-                    return
-                }
-            } catch (e: UncheckedExecutionException) {
-                require(e.cause is RepoNotFoundException)
-                logger.warn("repo ${node.projectId}|${node.repoName} was deleted!")
-                handleNodeWithUnknownRepo(node.sha256)
+            if (!decrementFileReferences(node)) {
+                logger.warn("Clean up node fail collection[$collectionName], node[$node]")
+                return
             }
             result = mongoTemplate.remove(query, collectionName)
         } catch (ignored: Exception) {
@@ -188,6 +174,26 @@ class DeletedNodeCleanupJob(
         }
 
         context.fileCount.addAndGet(result?.deletedCount ?: 0)
+    }
+
+    private fun decrementFileReferences(node: Node): Boolean {
+        if (node.sha256.isNullOrEmpty() || node.sha256 == FAKE_SHA256) {
+            return true
+        }
+
+        try {
+            val credentialsKey = getCredentialsKey(node.projectId, node.repoName)
+            val deletedDays = node.deleted?.let { Duration.between(it, LocalDateTime.now()).toDays() } ?: 0
+            val keepRefLostNode = deletedDays < properties.keepRefLostNodeDays
+            // 需要保留Node用于排查问题时不补偿创建引用，避免引用创建后node记录可以被正常删除
+            val createIfNotExists = !keepRefLostNode
+            return decrementFileReferences(node.sha256, credentialsKey, createIfNotExists)
+        } catch (e: UncheckedExecutionException) {
+            require(e.cause is RepoNotFoundException)
+            logger.warn("repo ${node.projectId}|${node.repoName} was deleted!")
+            handleNodeWithUnknownRepo(node.sha256)
+            return true
+        }
     }
 
     private fun decrementFileReferences(sha256: String, credentialsKey: String?, createIfNotExists: Boolean): Boolean {

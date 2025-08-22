@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,7 +30,6 @@ package com.tencent.bkrepo.job.batch.task.clean
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ShareRecordCleanJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.where
@@ -42,7 +41,6 @@ import java.time.LocalDateTime
  * Share record 清理任务
  */
 @Component
-@EnableConfigurationProperties(ShareRecordCleanJobProperties::class)
 class ShareRecordCleanupJob(
     private val properties: ShareRecordCleanJobProperties,
     private val mongoTemplate: MongoTemplate

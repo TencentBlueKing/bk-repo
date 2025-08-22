@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -94,6 +94,12 @@ class UrlRateLimitRuleTest : BaseRuleTest() {
     )
     private val l11 = ResourceLimit(
         algo = Algorithms.FIXED_WINDOW.name, resource = "/project3/",
+        limitDimension = LimitDimension.URL.name, limit = 52428800,
+        duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
+    )
+
+    private val l12 = ResourceLimit(
+        algo = Algorithms.FIXED_WINDOW.name, resource = "/bkrepo/pipeline/p-axxxxx*",
         limitDimension = LimitDimension.URL.name, limit = 52428800,
         duration = Duration.ofSeconds(1), scope = WorkScope.LOCAL.name
     )
@@ -224,6 +230,22 @@ class UrlRateLimitRuleTest : BaseRuleTest() {
         assertEquals(actualInfo?.resource, "/project3/xxxx/")
 
 
+        resInfo = ResInfo("%2Fproject2%2Fs.txt")
+        actualInfo = urlRateLimitRule.getRateLimitRule(resInfo)
+        assertEqualsLimitInfo(actualInfo?.resourceLimit, l4)
+        assertEquals(actualInfo?.resource, "%2Fproject2%2Fs.txt")
+        urlRateLimitRule.addRateLimitRule(l12)
+
+
+        resInfo = ResInfo("/bkrepo/pipeline%2Fp-axxxxxcccsdd%2Fb-ddxcc%2Fs.txt")
+        actualInfo = urlRateLimitRule.getRateLimitRule(resInfo)
+        assertEqualsLimitInfo(actualInfo?.resourceLimit, l12)
+        assertEquals(actualInfo?.resource, "/bkrepo/pipeline%2Fp-axxxxxcccsdd%2Fb-ddxcc%2Fs.txt")
+
+        resInfo = ResInfo("/bkrepo/pipeline%2Fp-bxxxxxcccsdd%2Fb-ddxcc%2Fs.txt")
+        actualInfo = urlRateLimitRule.getRateLimitRule(resInfo)
+        assertEqualsLimitInfo(actualInfo?.resourceLimit, l1)
+        assertEquals(actualInfo?.resource, "/bkrepo/pipeline%2Fp-bxxxxxcccsdd%2Fb-ddxcc%2Fs.txt")
     }
 
     @Test

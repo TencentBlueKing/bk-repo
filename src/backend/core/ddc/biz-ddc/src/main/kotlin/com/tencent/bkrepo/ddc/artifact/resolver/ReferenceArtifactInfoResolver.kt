@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -34,9 +34,9 @@ import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARI
 import com.tencent.bkrepo.ddc.artifact.ReferenceArtifactInfo.Companion.PATH_VARIABLE_REF_ID
 import com.tencent.bkrepo.ddc.controller.LegacyReferencesController.Companion.LEGACY_PREFIX
 import com.tencent.bkrepo.ddc.pojo.RefKey
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(ReferenceArtifactInfo::class)

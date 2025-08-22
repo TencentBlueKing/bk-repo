@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -39,7 +39,7 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 
 object XmlConvertUtil {
 
-    private val xmlMapper = XmlMapper().registerModule(KotlinModule()) as XmlMapper
+    private val xmlMapper = XmlMapper().registerModule(KotlinModule.Builder().build()) as XmlMapper
 
     init {
         xmlMapper.enable(SerializationFeature.INDENT_OUTPUT)
@@ -57,7 +57,7 @@ object XmlConvertUtil {
     }
 
     fun methodResponse2Xml(methodResponse: MethodResponse): String {
-        val xmlMapper = XmlMapper().registerModule(KotlinModule()) as XmlMapper
+        val xmlMapper = XmlMapper().registerModule(KotlinModule.Builder().build()) as XmlMapper
         xmlMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL)
         xmlMapper.enable(MapperFeature.USE_STD_BEAN_NAMING)
         return xmlMapper.writeValueAsString(methodResponse)

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,15 +27,20 @@
 
 package com.tencent.bkrepo.common.service.actuator
 
-import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
+import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
+import com.tencent.bkrepo.common.service.config.CustomActuatorMetricsConfig
+import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.config.MeterFilter
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-@ConditionalOnMicroService
+@EnableConfigurationProperties(CustomActuatorMetricsConfig::class)
+@ConditionalOnNotAssembly
 class ActuatorConfiguration {
 
     @Value(SERVICE_NAME)
@@ -48,10 +53,21 @@ class ActuatorConfiguration {
     private lateinit var host: String
 
     @Bean
-    fun metricsCommonTags(commonTagProvider: CommonTagProvider): MeterRegistryCustomizer<MeterRegistry> {
+    fun metricsCommonTags(
+        customActuatorMetricsConfig: CustomActuatorMetricsConfig,
+        commonTagProvider: CommonTagProvider,
+    ): MeterRegistryCustomizer<MeterRegistry> {
         return MeterRegistryCustomizer { registry ->
             commonTagProvider.provide().forEach {
                 registry.config().commonTags(it.key, it.value)
+            }
+            val validFilterList = customActuatorMetricsConfig.filterList.filter { it.isNotBlank() }
+            if (validFilterList.isNotEmpty()) {
+                registry.config().meterFilter(MeterFilter.deny { id: Meter.Id ->
+                    // 过滤掉指定的前缀的指标
+                    val metricName = id.name
+                    validFilterList.any { metricName.startsWith(it) }
+                })
             }
         }
     }

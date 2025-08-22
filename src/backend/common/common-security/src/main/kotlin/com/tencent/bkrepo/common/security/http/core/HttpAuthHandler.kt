@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -33,8 +33,8 @@ package com.tencent.bkrepo.common.security.http.core
 
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.credentials.HttpAuthCredentials
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 
 /**
  * http请求认证处理器
@@ -82,5 +82,5 @@ interface HttpAuthHandler {
     /**
      * 认证成功回调
      */
-    fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) { }
+    fun onAuthenticateSuccess(request: HttpServletRequest, response: HttpServletResponse, userId: String) {}
 }

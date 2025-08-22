@@ -17,7 +17,6 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.config.properties.StorageReconcileJobProperties
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query
@@ -31,7 +30,6 @@ import java.nio.charset.StandardCharsets
  * 只要数据库存在文件引用，就不会删除实际存储。
  * */
 @Component
-@EnableConfigurationProperties(StorageReconcileJobProperties::class)
 @Suppress("UnstableApiUsage")
 class StorageReconcileJob(
     private val properties: StorageReconcileJobProperties,

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -66,7 +66,13 @@ class NpmArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getExceptionResponseTranslator() = object : ExceptionResponseTranslator {
         override fun translate(payload: Response<*>, request: ServerHttpRequest, response: ServerHttpResponse): Any {
-            return if (ArtifactContextHolder.getRepoDetailOrNull()?.type == RepositoryType.OHPM) {
+            val repoType = try {
+                ArtifactContextHolder.getRepoDetailOrNull()?.type
+            } catch (_: Exception) {
+                // 升级spring后404会抛异常，由程序自行处理
+                return StringPool.EMPTY
+            }
+            return if (repoType == RepositoryType.OHPM) {
                 OhpmResponse.error(HttpContextHolder.getResponse().status, payload.message.orEmpty())
             } else {
                 NpmErrorResponse(payload.message.orEmpty(), StringPool.EMPTY)

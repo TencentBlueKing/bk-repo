@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(value = "job.distributed-docker-image-cleanup")
-data class DistributedDockerImageCleanupJobProperties(
+class DistributedDockerImageCleanupJobProperties(
     override var enabled: Boolean = false,
     var repositoryTypes: List<String> = listOf("OCI", "DOCKER"),
     // 保留分发的镜像天数

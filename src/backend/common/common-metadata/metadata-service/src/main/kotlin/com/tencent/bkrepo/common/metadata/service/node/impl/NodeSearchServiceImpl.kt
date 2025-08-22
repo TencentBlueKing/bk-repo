@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.search.node.NodeQueryContext
 import com.tencent.bkrepo.common.metadata.search.node.NodeQueryInterpreter
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
@@ -64,7 +65,8 @@ class NodeSearchServiceImpl(
     private val nodeDao: NodeDao,
     private val nodeQueryInterpreter: NodeQueryInterpreter,
     private val repositoryService: RepositoryService,
-    private val repositoryProperties: RepositoryProperties
+    private val repositoryProperties: RepositoryProperties,
+    private val metadataLabelCacheService: MetadataLabelCacheService,
 ) : NodeSearchService {
 
     override fun search(queryModel: QueryModel): Page<Map<String, Any?>> {
@@ -133,9 +135,11 @@ class NodeSearchServiceImpl(
         }
         if (time > repositoryProperties.slowLogTimeThreshold) {
             logger.warn("search node slow log, " +
-                "query[${query.toJsonString().replace(System.lineSeparator(), "")}], " +
+                "query[${query.queryObject.toJsonString().replace(System.lineSeparator(), "")}], " +
                 "cost ${HumanReadable.time(time, TimeUnit.MILLISECONDS)}")
         }
+        val projectId = nodeList.firstOrNull()?.get(NodeInfo::projectId.name)?.toString()
+        val metadataLabels = projectId?.let { metadataLabelCacheService.listAll(it) } ?: emptyList()
         // metadata格式转换，并排除id字段
         nodeList.forEach {
             it.remove("_id")
@@ -150,7 +154,7 @@ class NodeSearchServiceImpl(
             }
             it[NodeInfo::metadata.name]?.let { metadata ->
                 it[NodeInfo::metadata.name] = MetadataUtils.convert(metadata as List<Map<String, Any>>)
-                it[NodeInfo::nodeMetadata.name] = MetadataUtils.convertToMetadataModel(metadata)
+                it[NodeInfo::nodeMetadata.name] = MetadataUtils.convertToMetadataModel(metadata, metadataLabels)
             }
         }
         return nodeList

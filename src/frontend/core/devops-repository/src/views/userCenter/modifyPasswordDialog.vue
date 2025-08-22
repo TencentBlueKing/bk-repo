@@ -15,6 +15,7 @@
                     :native-attributes="{
                         autocomplete: 'current-password'
                     }"
+                    :placeholder="$t('pleaseInput')"
                     left-icon="bk-icon icon-lock">
                 </bk-input>
             </bk-form-item>
@@ -40,6 +41,7 @@
                     :native-attributes="{
                         autocomplete: 'new-password'
                     }"
+                    :placeholder="$t('pleaseInput')"
                     left-icon="bk-icon icon-lock">
                 </bk-input>
             </bk-form-item>

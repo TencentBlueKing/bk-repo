@@ -1,4 +1,4 @@
 spring.application.name: replication
 server.port: 25903
 fdtp.server.port: 25903
-fdtp.server.enabled: true
+fdtp.server.enabled: false

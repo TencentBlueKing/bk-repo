@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -664,6 +664,7 @@ class DataRestorerImpl(
             size = node.size,
             sha256 = node.sha256,
             md5 = node.md5,
+            crc64ecma = node.crc64ecma,
             nodeNum = node.nodeNum,
             metadata = node.metadata,
             createdBy = node.createdBy,
@@ -676,6 +677,7 @@ class DataRestorerImpl(
             clusterNames = node.clusterNames,
             archived = node.archived,
             compressed = node.compressed,
+            federatedSource = node.federatedSource
         )
     }
 

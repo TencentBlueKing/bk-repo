@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -42,15 +42,18 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.constant.FAKE_CRC64_ECMA
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
@@ -108,12 +111,15 @@ abstract class NodeBaseService(
     open val routerControllerProperties: RouterControllerProperties,
     open val blockNodeService: BlockNodeService,
     open val projectService: ProjectService,
+    open val metadataCustomizer: MetadataCustomizer?,
+    open val metadataLabelCacheService: MetadataLabelCacheService,
 ) : NodeService {
 
     override fun getNodeDetail(artifact: ArtifactInfo, repoType: String?): NodeDetail? {
         with(artifact) {
             val node = nodeDao.findNode(projectId, repoName, getArtifactFullPath())
-            return convertToDetail(node)
+            val metadataLabels = metadataLabelCacheService.listAll(projectId)
+            return convertToDetail(node, metadataLabels)
         }
     }
 
@@ -176,6 +182,10 @@ abstract class NodeBaseService(
         return nodeDao.exists(artifact.projectId, artifact.repoName, artifact.getArtifactFullPath())
     }
 
+    override fun checkFolderExists(projectId: String, repoName: String, fullPath: String): Boolean {
+        return nodeDao.checkFolder(projectId, repoName, fullPath)
+    }
+
     override fun listExistFullPath(projectId: String, repoName: String, fullPathList: List<String>): List<String> {
         val queryList = fullPathList.map { PathUtils.normalizeFullPath(it) }.filter { !PathUtils.isRoot(it) }
         val nodeQuery = NodeQueryHelper.nodeQuery(projectId, repoName, queryList)
@@ -198,7 +208,7 @@ abstract class NodeBaseService(
             // 创建节点
             val node = buildTNode(this)
             doCreate(node, separate = separate)
-            afterCreate(repo, node)
+            afterCreate(repo, node, source)
             logger.info("Create node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
             return convertToDetail(node)!!
         }
@@ -231,6 +241,7 @@ abstract class NodeBaseService(
                 overwrite = overwrite,
                 sha256 = FAKE_SHA256,
                 md5 = FAKE_MD5,
+                crc64ecma = FAKE_CRC64_ECMA,
                 nodeMetadata = nodeMetadata?.let { it + metadata } ?: metadata,
                 operator = operator,
             )
@@ -240,7 +251,10 @@ abstract class NodeBaseService(
     }
 
     open fun buildTNode(request: NodeCreateRequest): TNode {
-        return NodeBaseServiceHelper.buildTNode(request, repositoryProperties.allowUserAddSystemMetadata)
+        val metadata = NodeBaseServiceHelper.resolveMetadata(
+            request, metadataCustomizer, repositoryProperties.allowUserAddSystemMetadata
+        )
+        return NodeBaseServiceHelper.buildTNode(request, metadata)
     }
 
     private fun getTotalNodeNum(artifact: ArtifactInfo, query: Query): Long {
@@ -283,10 +297,10 @@ abstract class NodeBaseService(
         }
     }
 
-    private fun afterCreate(repo: TRepository, node: TNode) {
+    fun afterCreate(repo: TRepository, node: TNode, source: String?) {
         with(node) {
             if (isGenericRepo(repo)) {
-                publishEvent(buildCreatedEvent(node))
+                publishEvent(buildCreatedEvent(node, source))
                 createRouter(this)
             }
             reportNode2Bkbase(node)
@@ -350,7 +364,7 @@ abstract class NodeBaseService(
                 .and(TNode::deleted).isEqualTo(null)
                 .and(TNode::fullPath).isEqualTo(node.fullPath)
                 .and(TNode::folder).isEqualTo(false)
-            val query = Query(criteria).withHint(TNode.FULL_PATH_IDX)
+            val query = Query(criteria)
             val update = Update().set(TNode::lastAccessDate.name, accessDate)
             nodeDao.updateFirst(query, update)
             logger.info("Update node access time [$this] success.")
@@ -444,7 +458,7 @@ abstract class NodeBaseService(
 
             if (separate) {
                 // 删除旧节点，并检查旧节点是否被删除，防止并发删除
-                val currentVersion = metadata!![UPLOADID_KEY].toString()
+                val currentVersion = nodeMetadata?.first { it.key == UPLOADID_KEY }!!.value.toString()
                 val oldNodeId = currentVersion.substringAfter("/")
 
                 if (oldNodeId == FAKE_SEPARATE) {

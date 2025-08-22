@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -52,4 +52,14 @@ interface SeparationTaskService {
     fun reInitTaskState(taskId: String)
 
     fun repoSeparationCheck(projectId: String, repoName: String): Boolean
+
+    /**
+     * 查询出存在降冷任务的项目列表
+     */
+    fun findProjectList(): List<String>
+
+    /**
+     * 根据项目查询出对应降冷表列表
+     */
+    fun findSeparationCollectionList(projectId: String): List<String>
 }

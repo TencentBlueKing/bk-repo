@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,18 +31,18 @@
 
 package com.tencent.bkrepo.repository.search.software.packages
 
-import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
-import com.tencent.bkrepo.common.query.interceptor.QueryContext
-import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.metadata.search.common.MetadataRuleInterceptor
 import com.tencent.bkrepo.common.metadata.search.common.SelectFieldInterceptor
 import com.tencent.bkrepo.common.metadata.search.packages.PackageQueryContext
+import com.tencent.bkrepo.common.query.builder.MongoQueryInterpreter
+import com.tencent.bkrepo.common.query.interceptor.QueryContext
+import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.search.software.interceptor.SoftwareModelValidateInterceptor
 import com.tencent.bkrepo.repository.search.software.interceptor.SoftwareRepoNameRuleInterceptor
 import com.tencent.bkrepo.repository.search.software.interceptor.SoftwareRepoTypeRuleInterceptor
+import jakarta.annotation.PostConstruct
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
-import javax.annotation.PostConstruct
 
 @Component
 class SoftwarePackageSearchInterpreter(

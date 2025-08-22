@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,26 +31,24 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.devops.api.http.HttpHeaders
 import com.tencent.devops.api.pojo.Response
 import okhttp3.Request
 import okio.IOException
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.BeanFactory
 import java.util.concurrent.TimeUnit
 
 open class CIPermissionManager(
-    beanFactory: BeanFactory,
     private val ciPermissionProperties: CIPermissionProperties
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create(beanFactory = beanFactory)
+    private val httpClient = HttpClientBuilderFactory.create()
         .connectTimeout(10L, TimeUnit.SECONDS)
         .readTimeout(10L, TimeUnit.SECONDS)
         .build()

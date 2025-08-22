@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,6 +32,8 @@ import com.tencent.bkrepo.common.api.constant.ensurePrefix
 import com.tencent.bkrepo.common.service.util.proxy.DefaultProxyCallHandler
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil.Companion.headers
 import com.tencent.bkrepo.svn.config.SvnProperties
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Request
@@ -47,8 +49,6 @@ import org.xml.sax.helpers.XMLFilterImpl
 import org.xml.sax.helpers.XMLReaderFactory
 import java.io.InputStream
 import java.io.OutputStream
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.sax.SAXSource
 import javax.xml.transform.stream.StreamResult

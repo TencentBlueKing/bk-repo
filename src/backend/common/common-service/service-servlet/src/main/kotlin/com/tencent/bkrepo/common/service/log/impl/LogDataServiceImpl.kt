@@ -50,25 +50,60 @@ class LogDataServiceImpl : LogDataService {
         var endPosition = minOf(fileSize, startPosition + maxSize) // 计算读取的结束位置
 
         RandomAccessFile(logFile, "r").use { raf ->
-            raf.seek(startPosition)
+            // 定位到最近的换行符，确保从一行的起点开始读取
+            val adjustedStartPosition = adjustStartPosition(raf, startPosition)
+
+            raf.seek(adjustedStartPosition)
 
             // 读取内容
-            val buffer = ByteArray((endPosition - startPosition).toInt())
+            val buffer = ByteArray((endPosition - adjustedStartPosition).toInt())
             raf.read(buffer)
             // 直接处理字节数组，避免创建完整字符串
             val lastNewline = buffer.indexOfLast { it == '\n'.code.toByte() }
             val (contentBytes, newEndPos) = if (endPosition < fileSize && lastNewline != -1) {
-                buffer.copyOfRange(0, lastNewline + 1) to (startPosition + lastNewline + 1)
+                buffer.copyOfRange(0, lastNewline + 1) to (adjustedStartPosition + lastNewline + 1)
             } else if (endPosition < fileSize) {
-                byteArrayOf() to startPosition // 内容不完整时返回空
+                byteArrayOf() to adjustedStartPosition // 内容不完整时返回空
             } else {
                 buffer to endPosition
             }
-            val content = String(contentBytes)
+            // 过滤掉非法字符
+            val filteredContent = String(contentBytes)
+                .replace(Regex("[\\x00-\\x09\\x0B-\\x1F\\x7F]"), "")  // 过滤除换行符外的控制字符
+                .replace(Regex("\\x12"), "")
             val lastUpdateLabel = parseTimestampFromLastLineOptimized(contentBytes) ?: LocalDateTime.now().toString()
-            return LogData(endPosition, content, lastUpdateLabel)
+            return LogData(endPosition, filteredContent, lastUpdateLabel)
         }
     }
+
+    private fun adjustStartPosition(raf: RandomAccessFile, startPosition: Long): Long {
+        if (startPosition == 0L) return 0L
+
+        raf.seek(startPosition - 1)
+        if (raf.readByte() == '\n'.code.toByte()) {
+            return startPosition
+        }
+
+        return findNearestNewline(raf, startPosition - 1)
+    }
+
+    private fun findNearestNewline(raf: RandomAccessFile, offset: Long): Long {
+        val buffer = ByteArray(1024)
+        var currentOffset = offset
+        while (currentOffset >= 0) {
+            val readSize = minOf(1024L, currentOffset + 1).toInt()
+            raf.seek(currentOffset - readSize + 1)
+            raf.read(buffer, 0, readSize)
+            for (i in readSize - 1 downTo 0) {
+                if (buffer[i] == '\n'.code.toByte()) {
+                    return currentOffset - readSize + 1 + i + 1
+                }
+            }
+            currentOffset -= readSize
+        }
+        return 0L
+    }
+
 
     private fun parseTimestampFromLastLineOptimized(bytes: ByteArray): String? {
         if (bytes.isEmpty()) return null

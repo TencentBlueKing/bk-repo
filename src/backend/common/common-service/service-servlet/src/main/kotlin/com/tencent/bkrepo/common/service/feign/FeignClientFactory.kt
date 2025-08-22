@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -37,6 +37,9 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.constant.ensureSuffix
 import com.tencent.bkrepo.common.api.constant.urlEncode
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
+import com.tencent.bkrepo.common.api.util.okhttp.CertTrustManager.createSSLSocketFactory
+import com.tencent.bkrepo.common.api.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
+import com.tencent.bkrepo.common.api.util.okhttp.CertTrustManager.trustAllHostname
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -52,9 +55,6 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.service.util.UrlUtils
-import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.createSSLSocketFactory
-import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.disableValidationSSLSocketFactory
-import com.tencent.bkrepo.common.service.util.okhttp.CertTrustManager.trustAllHostname
 import feign.Client
 import feign.Feign
 import feign.Logger

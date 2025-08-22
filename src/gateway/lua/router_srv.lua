@@ -1,7 +1,7 @@
 --[[
 Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
 
-Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+Copyright (C) 2019 Tencent.  All rights reserved.
 
 BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
 
@@ -45,6 +45,13 @@ if service_name == "" then
     return
 end
 
+-- 哪些服务需要转到容器中 --
+local service_in_container = config.service_in_container
+if service_in_container ~= nil and string.find(service_in_container, service_name) ~= nil then
+    ngx.var.target = config.container_url .. "/" .. service_name
+    return
+end
+
 -- 异常故障转移
 if config.env and healthUtil:get_cluster_health_status(config.env) then
     local back_target = healthUtil:get_target_by_random(config.env)
@@ -54,31 +61,31 @@ if config.env and healthUtil:get_cluster_health_status(config.env) then
     end
 end
 
--- 路由表转发
-local env, router_target = hostUtil:get_target_by_project()
-if router_target  then
-    ngx.var.target = router_target .. "/" .. service_name
-    return
+local router_by_project = true
+if ngx.var.pass_router_by_project ~= nil and ngx.var.pass_router_by_project == "true" then
+    router_by_project = false
+end
+
+if router_by_project then
+    -- 路由表转发
+    local env, router_target = healthUtil:get_target_by_project()
+    if env then
+        ngx.var.target = router_target .. "/" .. service_name
+        return
+    end
 end
 
 
 -- 校验endpoint与method开放访问 --
-if healthUtil:check_path() == false then
+if healthUtil:check_path(service_name) == false then
     ngx.exit(422)
     return
 end
 
--- 哪些服务需要转到容器中 --
-local service_in_container = config.service_in_container
-if service_in_container ~= nil and string.find(service_in_container, service_name) ~= nil then
-    ngx.var.target = config.container_url .. "/" .. service_name
-    return
-end
 
 ngx.var.target = hostUtil:get_addr(service_name)
 
 if ngx.var.assembly ~= nil and ngx.var.assembly ~= "" then
     ngx.var.target = ngx.var.target .. "/" .. service_name
 end
-
 

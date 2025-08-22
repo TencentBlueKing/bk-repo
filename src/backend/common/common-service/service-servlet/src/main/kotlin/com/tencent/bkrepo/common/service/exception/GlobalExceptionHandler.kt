@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.service.exception
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
@@ -54,6 +55,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException
 import org.springframework.web.context.request.async.DeferredResult
+import org.springframework.web.method.annotation.HandlerMethodValidationException
+import org.springframework.web.servlet.NoHandlerFoundException
 
 /**
  * 全局统一异常处理
@@ -161,6 +164,28 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
             HttpContextHolder.getResponse().contentType = MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
             return response(exception)
         }
+    }
+
+    @ExceptionHandler(NoHandlerFoundException::class)
+    fun handleException(exception: NoHandlerFoundException): Response<Void> {
+        val errorCodeException = ErrorCodeException(
+            status = HttpStatus.NOT_FOUND,
+            messageCode = CommonMessageCode.REQUEST_URL_NOT_FOUND,
+            params = arrayOf(exception.requestURL)
+        )
+        return response(errorCodeException)
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException::class)
+    fun handleException(exception: HandlerMethodValidationException): Response<Void> {
+        val message = exception.parameterValidationResults.firstOrNull()
+            ?.resolvableErrors?.firstOrNull()?.defaultMessage ?: StringPool.EMPTY
+        val errorCodeException = ErrorCodeException(
+            status = HttpStatus.BAD_REQUEST,
+            messageCode = CommonMessageCode.PARAMETER_VALIDATION_FAILED,
+            params = arrayOf(message)
+        )
+        return response(errorCodeException)
     }
 
     @ExceptionHandler(Exception::class)

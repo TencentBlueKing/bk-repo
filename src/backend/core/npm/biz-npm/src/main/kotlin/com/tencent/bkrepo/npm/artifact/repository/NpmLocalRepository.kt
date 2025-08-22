@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -122,6 +122,7 @@ class NpmLocalRepository(
             size = context.getArtifactFile().getSize(),
             sha256 = context.getArtifactSha256(),
             md5 = context.getArtifactMd5(),
+            crc64ecma = context.getArtifactCrc64ecma(),
             operator = context.userId,
             overwrite = name != NPM_PACKAGE_TGZ_FILE
         )
@@ -634,6 +635,7 @@ class NpmLocalRepository(
             size = file.getSize(),
             sha256 = sha256,
             md5 = md5,
+            crc64ecma = file.getFileCrc64ecma(),
             overwrite = true,
             operator = context.userId
         )

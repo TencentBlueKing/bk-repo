@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -37,12 +37,20 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 open class EventConsumer {
 
     /**
+     * 消息来源判断
+     */
+    open fun sourceCheck(message: ArtifactEvent): Boolean = false
+
+    /**
      * 允许接收的事件类型
      */
     open fun getAcceptTypes(): Set<EventType> = emptySet()
 
     fun accept(message: ArtifactEvent) {
         if (!getAcceptTypes().contains(message.type)) {
+            return
+        }
+        if (sourceCheck(message)) {
             return
         }
         action(message)

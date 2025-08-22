@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,10 +31,11 @@
 
 package com.tencent.bkrepo.common.service.async
 
-import org.springframework.boot.task.TaskExecutorCustomizer
-import org.springframework.boot.task.TaskSchedulerCustomizer
+import org.springframework.boot.task.ThreadPoolTaskExecutorCustomizer
+import org.springframework.boot.task.ThreadPoolTaskSchedulerCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.task.support.ContextPropagatingTaskDecorator
 import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.scheduling.annotation.EnableScheduling
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
@@ -46,16 +47,18 @@ import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 class AsyncConfiguration {
 
     @Bean
-    fun taskExecutorCustomizer(): TaskExecutorCustomizer {
-        return TaskExecutorCustomizer {
+    fun taskExecutorCustomizer(): ThreadPoolTaskExecutorCustomizer {
+        return ThreadPoolTaskExecutorCustomizer {
             it.setRejectedExecutionHandler(CallerRunsPolicy())
+            it.setTaskDecorator(ContextPropagatingTaskDecorator())
         }
     }
 
     @Bean
-    fun taskSchedulerCustomizer(): TaskSchedulerCustomizer {
-        return TaskSchedulerCustomizer {
+    fun taskSchedulerCustomizer(): ThreadPoolTaskSchedulerCustomizer {
+        return ThreadPoolTaskSchedulerCustomizer {
             it.setRejectedExecutionHandler(CallerRunsPolicy())
+            it.setTaskDecorator(ContextPropagatingTaskDecorator())
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2023 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -73,14 +73,14 @@ class K8SHelper(k8sProp: KubernetesExecutionClusterProperties) {
             type = "kubernetes.io/dockerconfigjson"
             data = mapOf(".dockerconfigjson" to dockerConfigJson.encodeToByteArray())
         }
-        coreV1Api.createNamespacedSecret(namespace, pullSecret, null, null, null)
+        coreV1Api.createNamespacedSecret(namespace, pullSecret, null, null, null, null)
         logger.info("Success to create secret[$secretName] on $namespace.")
         return pullSecret
     }
 
     fun getSecret(secretName: String): V1Secret? {
         return try {
-            coreV1Api.readNamespacedSecret(secretName, namespace, null, null, null)
+            coreV1Api.readNamespacedSecret(secretName, namespace, null)
         } catch (e: ApiException) {
             logger.info("Can't get secret[$secretName],cause ${e.message}")
             null

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -65,7 +65,6 @@ import org.mockito.Mockito
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findOne
@@ -73,37 +72,38 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.util.concurrent.atomic.AtomicInteger
 
 @DisplayName("文件引用清理Job测试")
 @DataMongoTest
 class FileReferenceCleanupJobTest : JobBaseTest() {
 
-    @MockBean
+    @MockitoBean
     lateinit var storageService: StorageService
 
-    @MockBean
+    @MockitoBean
     lateinit var storageCredentialService: StorageCredentialService
 
-    @MockBean
+    @MockitoBean
     lateinit var archiveClient: ArchiveClient
 
-    @MockBean
+    @MockitoBean
     lateinit var repositoryService: RepositoryService
 
-    @MockBean
+    @MockitoBean
     private lateinit var messageSupplier: MessageSupplier
 
-    @MockBean
+    @MockitoBean
     private lateinit var servicePermissionClient: ServicePermissionClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var routerControllerClient: RouterControllerClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
-    @MockBean
+    @MockitoBean
     lateinit var jobSnapshotRepository: JobSnapshotRepository
 
     @Autowired
@@ -124,7 +124,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     @Autowired
     lateinit var fileReferenceCleanupJobProperties: FileReferenceCleanupJobProperties
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
     @BeforeEach

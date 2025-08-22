@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -46,6 +46,9 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
+import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
 
 /**
  * 元数据工具类
@@ -82,14 +85,20 @@ object MetadataUtils {
         return metadataList?.associate { it.key to it.value }.orEmpty()
     }
 
-    fun toList(metadataList: List<TMetadata>?): List<MetadataModel> {
+    fun toList(
+        metadataList: List<TMetadata>?,
+        metadataLabels: List<MetadataLabelDetail> = emptyList()
+    ): List<MetadataModel> {
         return metadataList?.map {
             MetadataModel(
                 key = it.key,
                 value = it.value,
                 system = it.system,
                 description = it.description,
-                link = it.link
+                link = it.link,
+                color = metadataLabels.find {
+                    label -> label.labelKey == it.key && label.enableColorConfig && label.display
+                }?.labelColorMap?.get(it.value)
             )
         }.orEmpty()
     }
@@ -127,12 +136,30 @@ object MetadataUtils {
         return result
     }
 
+    fun generateForbidMetadata(
+        forbid: Boolean,
+        reason: String = "",
+        type: ForbidType = ForbidType.MANUAL,
+        user: String = SecurityUtils.getUserId(),
+    ): MutableList<MetadataModel> {
+        return mutableListOf(
+            MetadataModel(key = FORBID_STATUS, value = forbid, system = true),
+            MetadataModel(key = FORBID_REASON, value = reason, system = true),
+            MetadataModel(key = FORBID_USER, value = user, system = true),
+            MetadataModel(key = FORBID_TYPE, value = type.name, system = true)
+        )
+    }
+
+
     fun convert(metadataList: List<Map<String, Any>>): Map<String, Any> {
         return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
             .associate { it.getValue("key").toString() to it.getValue("value") }
     }
 
-    fun convertToMetadataModel(metadataList: List<Map<String, Any>>): List<MetadataModel> {
+    fun convertToMetadataModel(
+        metadataList: List<Map<String, Any>>,
+        metadataLabels: List<MetadataLabelDetail>
+    ): List<MetadataModel> {
         return metadataList.filter { it.containsKey("key") && it.containsKey("value") }
             .map {
                 val key = it.getValue(TMetadata::key.name).toString()
@@ -140,7 +167,17 @@ object MetadataUtils {
                 val system = it[TMetadata::system.name] as Boolean? ?: false
                 val description = it[TMetadata::description.name]?.toString()
                 val link = it[TMetadata::link.name]?.toString()
-                MetadataModel(key = key, value = value, system = system, description = description, link = link)
+                val color = metadataLabels.find {
+                    label -> label.labelKey == key && label.enableColorConfig && label.display
+                }?.labelColorMap?.get(value)
+                MetadataModel(
+                    key = key,
+                    value = value,
+                    system = system,
+                    description = description,
+                    link = link,
+                    color = color
+                )
             }
     }
 
@@ -155,6 +192,19 @@ object MetadataUtils {
             )
             checkReservedKey(key, system)
             return tMetadata
+        }
+    }
+
+    fun compatibleConvertToModel(
+        metadataMap: Map<String, Any>?,
+        metadataModels: List<MetadataModel>?
+    ): MutableList<MetadataModel> {
+        return if (!metadataModels.isNullOrEmpty()) {
+            metadataModels.toMutableList()
+        } else if (!metadataMap.isNullOrEmpty()) {
+            metadataMap.mapTo(ArrayList(metadataMap.size)) { MetadataModel(key = it.key, value = it.value) }
+        } else {
+            ArrayList()
         }
     }
 

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,6 +30,7 @@ package com.tencent.bkrepo.fs.server.handler
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.metadata.constant.FAKE_CRC64_ECMA
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.NodeAttribute
@@ -65,6 +66,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.buildAndAwait
@@ -75,6 +77,7 @@ import reactivefeign.client.ReadTimeoutException
  *
  * 处理节点操作的请求
  * */
+@Component
 class NodeOperationsHandler(
     private val fileNodeService: FileNodeService,
     private val fsService: FsService,
@@ -280,6 +283,7 @@ class NodeOperationsHandler(
                 fullPath = fullPath,
                 sha256 = FAKE_SHA256,
                 md5 = FAKE_MD5,
+                crc64ecma = FAKE_CRC64_ECMA,
                 nodeMetadata = listOf(fsAttr),
                 operator = user
             )

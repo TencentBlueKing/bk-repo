@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -34,7 +34,6 @@ import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexPro
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexerManager
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.config.properties.StorageCacheIndexEvictJobProperties
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.stereotype.Component
 
@@ -42,7 +41,6 @@ import org.springframework.stereotype.Component
  * 定时执行缓存淘汰，淘汰索引器中缓存的同时会删除对应的缓存文件
  */
 @Component
-@EnableConfigurationProperties(StorageCacheIndexEvictJobProperties::class)
 class StorageCacheIndexEvictJob(
     properties: StorageCacheIndexEvictJobProperties,
     storageProperties: StorageProperties,

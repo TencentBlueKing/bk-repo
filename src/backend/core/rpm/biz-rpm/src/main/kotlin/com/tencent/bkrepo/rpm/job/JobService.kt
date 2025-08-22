@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -205,15 +205,16 @@ class JobService(
             val xmlRepodataArtifact = ArtifactFileFactory.build(xmlRepodataInputStream)
             // 保存repodata 节点
             val xmlRepomdNode = NodeCreateRequest(
-                repo.projectId,
-                repo.name,
-                "$repoDataPath/repomd.xml",
-                false,
-                0L,
-                true,
-                xmlRepodataArtifact.getSize(),
-                xmlRepodataArtifact.getFileSha256(),
-                xmlRepodataArtifact.getFileMd5()
+                projectId = repo.projectId,
+                repoName = repo.name,
+                fullPath = "$repoDataPath/repomd.xml",
+                folder = false,
+                expires = 0L,
+                overwrite = true,
+                size = xmlRepodataArtifact.getSize(),
+                sha256 = xmlRepodataArtifact.getFileSha256(),
+                md5 = xmlRepodataArtifact.getFileMd5(),
+                crc64ecma = xmlRepodataArtifact.getFileCrc64ecma(),
             )
             store(xmlRepomdNode, xmlRepodataArtifact, repo)
         }
@@ -250,15 +251,16 @@ class JobService(
             }
 
             val xmlGZNode = NodeCreateRequest(
-                repo.projectId,
-                repo.name,
-                fullPath,
-                false,
-                0L,
-                true,
-                xmlGZArtifact.getSize(),
-                xmlGZArtifact.getFileSha256(),
-                xmlGZArtifact.getFileMd5(),
+                projectId = repo.projectId,
+                repoName = repo.name,
+                fullPath = fullPath,
+                folder = false,
+                expires = 0L,
+                overwrite = true,
+                size = xmlGZArtifact.getSize(),
+                sha256 = xmlGZArtifact.getFileSha256(),
+                md5 = xmlGZArtifact.getFileMd5(),
+                crc64ecma = xmlGZArtifact.getFileCrc64ecma(),
                 nodeMetadata = metadata
             )
             store(xmlGZNode, xmlGZArtifact, repo)
@@ -502,6 +504,7 @@ class JobService(
             size = mapData["size"].toString().toLong(),
             sha256 = mapData["sha256"] as String,
             md5 = mapData["md5"] as String,
+            crc64ecma = mapData["crc64ecma"] as? String,
             projectId = mapData["projectId"] as String,
             repoName = mapData["repoName"] as String,
             metadata = if (mapData["metadata"] == null) {

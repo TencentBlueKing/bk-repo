@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2024 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2024 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -27,13 +27,11 @@
 
 package com.tencent.bkrepo.common.service.feign
 
-import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import org.springframework.context.annotation.Configuration
 import reactivefeign.spring.config.EnableReactiveFeignClients
 
 @Configuration
-@ConditionalOnMicroService
 @ConditionalOnNotAssembly
 @EnableReactiveFeignClients(basePackages = ["com.tencent.bkrepo"])
 class RClientConfiguration

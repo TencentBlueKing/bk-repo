@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -127,6 +127,7 @@ class PypiLocalRepository(
             size = artifactFile.getSize(),
             sha256 = sha256,
             md5 = md5,
+            crc64ecma = artifactFile.getFileCrc64ecma(),
             operator = context.userId,
             nodeMetadata = metadata
         )

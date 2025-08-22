@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.stream.ChunkedFuture
 import com.tencent.bkrepo.common.api.stream.ChunkedFutureInputStream
 import com.tencent.bkrepo.common.api.stream.EnhanceFileChunkedFutureWrapper
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
@@ -99,6 +100,7 @@ import java.nio.file.Paths
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -117,13 +119,19 @@ class CosClient(val credentials: InnerCosCredentials) {
     /**
      * 分片上传使用的执行器
      */
-    private val uploadThreadPool = Executors.newFixedThreadPool(config.uploadWorkers)
+    private val uploadThreadPool = ThreadPoolExecutor(
+        config.uploadWorkers,
+        config.uploadWorkers,
+        60, TimeUnit.SECONDS,
+        LinkedBlockingQueue(),
+        ThreadFactoryBuilder().setNameFormat("CosClientUp-${credentials.key}-%d").build(),
+    ).apply { this.allowCoreThreadTimeOut(true) }
 
     /**
      * 分块下载使用的执行器。可以为null,为null则不使用分块下载
      * */
     private val downloadThreadPool: ThreadPoolExecutor? = if (config.downloadWorkers > 0) {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("CosClient-${credentials.key}-%d").build()
+        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("CosClientDown-${credentials.key}-%d").build()
         // 因为客户端存储凭证可以动态更新，所以为了避免产生过多线程数，这里设置allowCoreThreadTimeOut为true
         ThreadPoolExecutor(
             config.downloadWorkers,
@@ -354,7 +362,7 @@ class CosClient(val credentials: InnerCosCredentials) {
                     PartETag(partNumber, CosHttpClient.execute(putObjectRequest, UploadPartResponseHandler()).eTag)
                 }
             }
-        }
+        }.trace()
     }
 
     private fun multipartUpload(key: String, file: File, storageClass: String?): PutObjectResponse {
@@ -396,7 +404,7 @@ class CosClient(val credentials: InnerCosCredentials) {
                     CosHttpClient.execute(httpRequest, UploadPartResponseHandler().enableSpeedSlowLog())
                 PartETag(cosRequest.partNumber, uploadPartResponse.eTag)
             }
-        }
+        }.trace()
     }
 
     private fun completeMultipartUpload(
@@ -571,7 +579,7 @@ class CosClient(val credentials: InnerCosCredentials) {
             return
         }
         logger.info("Path[$path] has downloading count $count.")
-        val cleanTask = Runnable { cleanTempPath(activeCount, path) }
+        val cleanTask = Runnable { cleanTempPath(activeCount, path) }.trace()
         cleanerExecutors.schedule(cleanTask, DOWNLOADING_TEMP_FILE_CLEANUP_DELAY, TimeUnit.MILLISECONDS)
     }
 

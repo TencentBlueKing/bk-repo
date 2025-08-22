@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -33,11 +33,20 @@ rootProject.name = "bk-repo-backend"
 
 pluginManagement {
     repositories {
+        val snapshotsRepo = maven {
+            name = "MavenSnapshot"
+            url = java.net.URI("https://oss.sonatype.org/content/repositories/snapshots/")
+            mavenContent {
+                snapshotsOnly()
+            }
+        }
         if (System.getenv("GITHUB_WORKFLOW") == null) {
+            snapshotsRepo
             maven(url = "https://mirrors.tencent.com/nexus/repository/gradle-plugins/")
             maven(url = "https://mirrors.tencent.com/nexus/repository/maven-public")
             maven(url = "https://repo.spring.io/milestone")
         } else {
+            snapshotsRepo
             mavenCentral()
             maven(url = "https://repo.spring.io/milestone")
             gradlePluginPortal()

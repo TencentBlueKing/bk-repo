@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -31,10 +31,11 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADING_SIZE
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_SIZE
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
 import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadMetrics.Companion.COS_ASYNC_UPLOADING_SIZE
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
-import io.micrometer.prometheus.PrometheusMeterRegistry
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.redis.core.RedisTemplate
@@ -50,6 +51,7 @@ import kotlin.system.measureTimeMillis
 class InstanceBandWidthMetrics(
     private val redisTemplate: RedisTemplate<String, String>,
     private val taskScheduler: ThreadPoolTaskScheduler,
+    private val artifactMetricsProperties: ArtifactMetricsProperties
 ) {
 
     @Value(INSTANCE_IP)
@@ -74,6 +76,7 @@ class InstanceBandWidthMetrics(
 
     fun refreshBandWidthData() {
         try {
+            if (!artifactMetricsProperties.enableInstanceBandwidthMetrics) return
             storeBandWidth()
         } catch (e: Exception) {
             logger.warn("refresh bandwidth data failed, error: ${e.message}")

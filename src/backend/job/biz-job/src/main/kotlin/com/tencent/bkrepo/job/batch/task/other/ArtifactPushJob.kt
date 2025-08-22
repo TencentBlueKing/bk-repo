@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -37,7 +37,6 @@ import com.tencent.bkrepo.job.config.properties.ArtifactPushJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.replication.api.ArtifactPushClient
 import com.tencent.bkrepo.replication.pojo.remote.request.ArtifactPushRequest
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -50,7 +49,6 @@ import kotlin.reflect.KClass
  * 用于将新上传/更新的制品推送到远端仓库
  */
 @Component
-@EnableConfigurationProperties(ArtifactPushJobProperties::class)
 class ArtifactPushJob(
     private val properties: ArtifactPushJobProperties,
     private val artifactPushClient: ArtifactPushClient

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -35,7 +35,6 @@ import com.tencent.bkrepo.job.config.properties.ProjectDailyAvgMetricsJobPropert
 import com.tencent.bkrepo.job.pojo.project.TProjectMetricsDailyAvgRecord
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -53,7 +52,6 @@ import java.time.format.DateTimeFormatter
  * 根据每日用量采点数据生成每日平均用量
  */
 @Component
-@EnableConfigurationProperties(ProjectDailyAvgMetricsJobProperties::class)
 class ProjectDailyAvgMetricsJob(
     val properties: ProjectDailyAvgMetricsJobProperties,
     private val mongoTemplate: MongoTemplate
@@ -135,7 +133,7 @@ class ProjectDailyAvgMetricsJob(
             usage = usage,
             bgName = projectInfo.metadata.firstOrNull { it.key == ProjectMetadata.KEY_BG_NAME }?.value as? String
                 ?: StringPool.EMPTY,
-            flag = covertToFlag(projectInfo.name, bgId, productId, enabled),
+            flag = covertToFlag(projectInfo.name, enabled),
             costDateDay = yesterday.format(
                 DateTimeFormatter.ofPattern("yyyyMMdd")
             ),
@@ -158,23 +156,13 @@ class ProjectDailyAvgMetricsJob(
         return update
     }
 
-    private fun covertToFlag(
-        projectId: String,
-        bgId: String,
-        productId: Int?,
-        enabled: Boolean
-    ): Boolean {
+    private fun covertToFlag(projectId: String, enabled: Boolean): Boolean {
         val streamReport = if (properties.reportStream) {
             true
         } else {
             !projectId.startsWith(GIT_PROJECT_PREFIX)
         }
-        return if (properties.bgIds.isEmpty()) {
-            streamReport && bgId.isNotBlank() && productId != null && enabled
-        } else {
-            streamReport && properties.bgIds.contains(bgId)
-                && bgId.isNotBlank() && productId != null && enabled
-        }
+        return streamReport && enabled
     }
 
     private fun convertToCostDate(yesterday: LocalDateTime): String {

@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2021 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -71,6 +71,7 @@ internal class StorageHealthMonitorTest {
             enabled = true,
             fallbackLocation = "temp-fallback",
             interval = Duration.ofSeconds(5),
+            failedInterval = Duration.ofSeconds(1),
             timeout = Duration.ofSeconds(10),
             timesToRestore = 5,
             timesToFallback = 2

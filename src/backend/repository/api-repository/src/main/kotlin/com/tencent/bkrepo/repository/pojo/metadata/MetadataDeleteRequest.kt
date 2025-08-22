@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -51,5 +51,7 @@ data class MetadataDeleteRequest(
     @get:Schema(title = "待删除的元数据key列表", required = true)
     val keyList: Set<String>,
     @get:Schema(title = "操作用户")
-    override val operator: String = SYSTEM_USER
+    override val operator: String = SYSTEM_USER,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null
 ) : NodeRequest, ServiceRequest

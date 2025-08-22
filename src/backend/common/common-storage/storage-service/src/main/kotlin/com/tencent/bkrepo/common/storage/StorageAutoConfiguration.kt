@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2020 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2020 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -110,14 +110,7 @@ class StorageAutoConfiguration {
 
     @Bean
     fun storageHealthMonitorHelper(storageProperties: StorageProperties): StorageHealthMonitorHelper {
-        val map = ConcurrentHashMap<String, StorageHealthMonitor>()
-        val location = storageProperties
-            .defaultStorageCredentials().upload.location
-        map[location] = StorageHealthMonitor(
-            storageProperties,
-            location,
-        )
-        return StorageHealthMonitorHelper(map)
+        return StorageHealthMonitorHelper(ConcurrentHashMap<String, StorageHealthMonitor>())
     }
 
     @Bean

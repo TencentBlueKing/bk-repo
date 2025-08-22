@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2019 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -30,12 +30,12 @@ package com.tencent.bkrepo.repository.controller.user
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.metadata.MetadataLabelService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelRequest
 import com.tencent.bkrepo.repository.pojo.metadata.label.UserLabelCreateRequest
 import com.tencent.bkrepo.repository.pojo.metadata.label.UserLabelUpdateRequest
-import com.tencent.bkrepo.repository.service.metadata.MetadataLabelService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -66,7 +66,11 @@ class UserMetadataLabelController(
             projectId = projectId,
             labelKey = userLabelCreateRequest.labelKey,
             labelColorMap = userLabelCreateRequest.labelColorMap,
-            display = userLabelCreateRequest.display
+            display = userLabelCreateRequest.display,
+            enumType = userLabelCreateRequest.enumType,
+            enableColorConfig = userLabelCreateRequest.enableColorConfig,
+            category = userLabelCreateRequest.category,
+            description = userLabelCreateRequest.description,
         )
         metadataLabelService.create(request)
         return ResponseBuilder.success()
@@ -84,9 +88,36 @@ class UserMetadataLabelController(
             projectId = projectId,
             labelKey = labelKey,
             labelColorMap = userLabelUpdateRequest.labelColorMap,
-            display = userLabelUpdateRequest.display
+            display = userLabelUpdateRequest.display,
+            enumType = userLabelUpdateRequest.enumType,
+            enableColorConfig = userLabelUpdateRequest.enableColorConfig,
+            category = userLabelUpdateRequest.category,
+            description = userLabelUpdateRequest.description,
         )
         metadataLabelService.update(request)
+        return ResponseBuilder.success()
+    }
+
+    @Operation(summary = "批量保存")
+    @PostMapping("/batch/{projectId}")
+    fun batchSave(
+        @PathVariable projectId: String,
+        @RequestBody userRequests: List<UserLabelCreateRequest>
+    ): Response<Void> {
+        permissionManager.checkProjectPermission(PermissionAction.MANAGE, projectId)
+        val requests = userRequests.map {
+            MetadataLabelRequest(
+                projectId = projectId,
+                labelKey = it.labelKey,
+                labelColorMap = it.labelColorMap,
+                display = it.display,
+                enumType = it.enumType,
+                enableColorConfig = it.enableColorConfig,
+                category = it.category,
+                description = it.description,
+            )
+        }
+        metadataLabelService.batchSave(projectId, requests)
         return ResponseBuilder.success()
     }
 
