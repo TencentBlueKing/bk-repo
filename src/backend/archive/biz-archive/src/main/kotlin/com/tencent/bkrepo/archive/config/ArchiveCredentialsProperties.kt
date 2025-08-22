@@ -3,7 +3,6 @@ package com.tencent.bkrepo.archive.config
 import com.tencent.bkrepo.archive.constant.ArchiveRestoreTier
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
-import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 
 data class ArchiveCredentialsProperties(
     /**

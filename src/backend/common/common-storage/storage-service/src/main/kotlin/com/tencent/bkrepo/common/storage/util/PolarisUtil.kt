@@ -50,7 +50,8 @@ class PolarisUtil(
             configuration.global.traceReporter.isEnable = false
             configuration.global.serverConnector.addresses = storageProperties.polarisAddresses
             configuration.consumer.localCache.persistDir = System.getProperty("java.io.tmpdir")
-            configuration.consumer.serviceRouter.chain = listOf(ROUTER_TYPE_METADATA, ROUTER_TYPE_RULE_BASED, ROUTER_TYPE_NEAR_BY)
+            configuration.consumer.serviceRouter.chain =
+                listOf(ROUTER_TYPE_METADATA, ROUTER_TYPE_RULE_BASED, ROUTER_TYPE_NEAR_BY)
             consumerAPI = DiscoveryAPIFactory.createConsumerAPIByConfig(configuration)
         }
     }
