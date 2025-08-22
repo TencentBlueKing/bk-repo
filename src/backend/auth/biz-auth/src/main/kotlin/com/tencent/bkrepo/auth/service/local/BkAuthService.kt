@@ -1,0 +1,53 @@
+package com.tencent.bkrepo.auth.service.local
+
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.tencent.bkrepo.auth.config.BkAuthConfig
+import com.tencent.bkrepo.auth.pojo.BkAuthUserResponse
+import com.tencent.bkrepo.auth.util.HttpUtils
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.api.util.toJsonString
+import okhttp3.Request
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
+import java.util.concurrent.TimeUnit
+
+class BkAuthService {
+
+    @Autowired
+    lateinit var bkAuthConfig: BkAuthConfig
+
+    private val okHttpClient = okhttp3.OkHttpClient.Builder().connectTimeout(3L, TimeUnit.SECONDS)
+        .readTimeout(5L, TimeUnit.SECONDS)
+        .writeTimeout(5L, TimeUnit.SECONDS).build()
+
+    fun checkBkUserDetail(userId: String, tenantId: String): Boolean {
+        if (!bkAuthConfig.enableBkUser) return false
+        if (tenantId == null) return false
+        val url = "${bkAuthConfig.bkAuthServer}/api/bk-user/prod/api/v3/open/tenant/users/{bk_username}/" + userId
+        val authHeader = mapOf(
+            "bk_app_code" to bkAuthConfig.bkAppCode,
+            "bk_app_secret" to bkAuthConfig.bkAppSecret
+        ).toJsonString()
+        try {
+            val request = Request.Builder().url(url).header("X-Bkapi-Authorization", authHeader)
+                .header("X-Bk-Tenant-Id", tenantId).get().build()
+            logger.debug("checkBkUserDetail, requestUrl: [$url]")
+            val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
+            logger.debug("checkBkUserDetail, requestUrl: [$url], result : [${apiResponse.content}]")
+            if (apiResponse.code == HttpStatus.OK.value) {
+                val responseObject = JsonUtils.objectMapper.readValue<BkAuthUserResponse>(apiResponse.content)
+                if (responseObject.data["bk_username"] == userId) {
+                    return true
+                }
+            }
+        } catch (exception: Exception) {
+            logger.error("checkBkUserDetail error : ", exception)
+        }
+        return false
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(BkAuthService::class.java)
+    }
+}

@@ -29,14 +29,13 @@ package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.common.api.constant.CLOSED_SOURCE_PREFIX
 import com.tencent.bkrepo.common.api.constant.CODE_PROJECT_PREFIX
-import com.tencent.bkrepo.common.api.constant.TENANT_ID
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.metadata.model.TProject
 import com.tencent.bkrepo.common.metadata.model.TProjectMetrics
-import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
@@ -147,10 +146,6 @@ object ProjectServiceHelper {
         return enabled
     }
 
-    fun getTenantId(): String? {
-        return HttpContextHolder.getRequestOrNull()?.getHeader(TENANT_ID)
-    }
-
     fun buildListQuery(): Query {
         val criteria1 = TProject::name.regex("^$CLOSED_SOURCE_PREFIX")
         val criteria2 = TProject::name.regex("^$CODE_PROJECT_PREFIX")
@@ -172,7 +167,7 @@ object ProjectServiceHelper {
         names: List<String>,
         option: ProjectListOption?
     ): Query {
-        val tenantId = getTenantId()
+        val tenantId = SecurityUtils.getTenantId()
         val query = Query.query(
             where(TProject::name).`in`(names)
                 .apply { option?.displayNames?.let { and(TProject::displayName).`in`(option.displayNames!!) } }

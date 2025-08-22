@@ -56,6 +56,7 @@ import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.util.DesensitizedUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
@@ -75,7 +76,10 @@ class UserServiceImpl constructor(
     lateinit var projectService: ProjectService
 
     @Autowired
-    lateinit var bkAuthConfig: DevopsAuthConfig
+    lateinit var devopsAuthConfig: DevopsAuthConfig
+
+    @Autowired
+    lateinit var bkAuthService: BkAuthService
 
     private val userHelper by lazy { UserHelper(userDao, roleRepository) }
 
@@ -111,7 +115,7 @@ class UserServiceImpl constructor(
         } else {
             DataDigestUtils.md5FromStr(request.pwd!!)
         }
-        val tenantIdFromHeader = userHelper.getTenantId()
+        val tenantIdFromHeader = SecurityUtils.getTenantId()
         val tenantId = if (tenantIdFromHeader.isNullOrEmpty()) request.tenantId else tenantIdFromHeader
         val userRequest = UserRequestUtil.convToTUser(request, hashPwd, tenantId)
         try {
@@ -325,11 +329,25 @@ class UserServiceImpl constructor(
         return UserRequestUtil.convToUser(user)
     }
 
+    override fun getUserInfoByIdAndTenantId(userId: String, tenantId: String?): UserInfo? {
+        logger.debug("get user userId : [$userId]")
+        var user = userDao.findFirstByUserId(userId)
+        if (user == null && tenantId != null) {
+            if (bkAuthService.checkBkUserDetail(userId, tenantId)) {
+                val createRequest = CreateUserRequest(userId = userId, name = userId, tenantId = tenantId)
+                createUser(createRequest)
+            }
+            user = userDao.findFirstByUserId(userId)
+        }
+        if (user == null) return null
+        return UserRequestUtil.convToUserInfo(user)
+    }
+
     override fun findUserByUserToken(userId: String, pwd: String): User? {
         logger.debug("find user userId : [$userId]")
-        if (pwd == DEFAULT_PASSWORD && !bkAuthConfig.allowDefaultPwd) {
+        if (pwd == DEFAULT_PASSWORD && !devopsAuthConfig.allowDefaultPwd) {
             logger.warn("login with default password [$userId]")
-            if (!bkAuthConfig.userIdSet.split(",").contains(userId)) {
+            if (!devopsAuthConfig.userIdSet.split(",").contains(userId)) {
                 logger.warn("login with default password not in list[$userId]")
                 return null
             }
