@@ -4,10 +4,12 @@ import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo.Companion.DEFAULT_STREAM_MAPPING_URI
+import com.tencent.bkrepo.media.pojo.transcode.TranscodeReportData
 import com.tencent.bkrepo.media.service.TokenService
 import com.tencent.bkrepo.media.service.TranscodeService
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
@@ -75,5 +77,16 @@ class TranscodeController(
         @RequestBody transcodeConfig: TranscodeConfig,
     ) {
         transcodeService.transcode(artifactInfo, transcodeConfig, userId, null)
+    }
+
+    /**
+     * 上报转码任务状态和信息
+     */
+    @PostMapping("/job/report/$DEFAULT_STREAM_MAPPING_URI")
+    fun jobReport(
+        artifactInfo: MediaArtifactInfo,
+        @RequestBody data: TranscodeReportData,
+    ) {
+        transcodeService.jobReport(artifactInfo, data)
     }
 }

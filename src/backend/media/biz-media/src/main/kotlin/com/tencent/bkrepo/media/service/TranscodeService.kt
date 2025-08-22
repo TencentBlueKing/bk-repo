@@ -15,13 +15,17 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.config.MediaProperties
+import com.tencent.bkrepo.media.dao.MediaTranscodeJobDao
+import com.tencent.bkrepo.media.model.TMediaTranscodeJob
+import com.tencent.bkrepo.media.pojo.transcode.MediaTranscodeJobStatus
+import com.tencent.bkrepo.media.pojo.transcode.TranscodeReportData
 import com.tencent.bkrepo.media.stream.TranscodeConfig
-import com.tencent.bkrepo.media.stream.TranscodeHelper
 import com.tencent.bkrepo.media.stream.TranscodeParam
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.Duration
+import java.time.LocalDateTime
 
 /**
  * 视频转码服务
@@ -31,6 +35,7 @@ class TranscodeService(
     private val tokenService: TokenService,
     private val mediaProperties: MediaProperties,
     private val metadataService: MetadataService,
+    private val mediaTranscodeJobDao: MediaTranscodeJobDao
 ) :
     ArtifactService() {
 
@@ -52,9 +57,20 @@ class TranscodeService(
             )
         }
         logger.info(
-            "Add transcode task for artifact[$artifactInfo][$extraFiles] param[${transcodeParam.toJsonString()}]"
+            "add transcode task for artifact[$artifactInfo][$extraFiles],param[${transcodeParam.toJsonString()}]"
         )
-        TranscodeHelper.addTask(transcodeConfig.jobId, transcodeParam)
+        mediaTranscodeJobDao.insert(
+            TMediaTranscodeJob(
+                id = null,
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fileName = artifactInfo.getResponseName(),
+                status = MediaTranscodeJobStatus.QUEUE,
+                param = transcodeParam.toJsonString(),
+                createdDate = LocalDateTime.now(),
+                updateTime = LocalDateTime.now()
+            )
+        )
     }
 
     /**
@@ -99,6 +115,18 @@ class TranscodeService(
             repository.remove(removeContext)
             logger.info("Delete origin file[$originArtifactInfo]")
         }
+    }
+
+    /**
+     * 上报转码任务状态和监控信息
+     */
+    fun jobReport(artifactInfo: ArtifactInfo, data: TranscodeReportData) {
+        mediaTranscodeJobDao.updateStatus(
+            projectId = artifactInfo.repoName,
+            repoName = artifactInfo.projectId,
+            fileName = artifactInfo.getArtifactName(),
+            status = data.status,
+        )
     }
 
     private fun generateTranscodeParam(
