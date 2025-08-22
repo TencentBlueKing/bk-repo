@@ -29,8 +29,10 @@ package com.tencent.bkrepo.job.batch.task.ddc
 
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 import java.time.Duration
 
+@Component
 @ConfigurationProperties(value = "job.expired-ddc-ref-cleanup")
 class ExpiredDdcRefCleanupJobProperties(
     override var cron: String = "0 0 0 * * ?",

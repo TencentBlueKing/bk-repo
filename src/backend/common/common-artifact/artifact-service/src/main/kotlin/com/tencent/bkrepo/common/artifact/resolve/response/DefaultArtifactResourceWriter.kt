@@ -51,6 +51,8 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import java.io.IOException
@@ -60,8 +62,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * ArtifactResourceWriter默认实现
@@ -186,7 +186,7 @@ open class DefaultArtifactResourceWriter(
         request: HttpServletRequest,
         response: HttpServletResponse
     ): Throughput {
-        if (request.method == HttpMethod.HEAD.name) {
+        if (request.method == HttpMethod.HEAD.name()) {
             return Throughput.EMPTY
         }
         var rateLimitFlag = false

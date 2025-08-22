@@ -86,6 +86,7 @@ import com.tencent.bkrepo.repository.pojo.software.ProjectPackageOverview
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.constraints.Size
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -97,7 +98,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
-import javax.validation.constraints.Size
 
 @Tag(name = "节点用户接口")
 @RestController
@@ -237,7 +237,7 @@ class UserNodeController(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestBody
-        @Size(max = 200, message = "操作个数必须在0和200之间")
+        @Size(max = 200, message = "{node.batch.delete.count.limit}")
         fullPaths: List<String>,
     ): Response<NodeDeleteResult> {
         val nodesDeleteRequest = NodesDeleteRequest(

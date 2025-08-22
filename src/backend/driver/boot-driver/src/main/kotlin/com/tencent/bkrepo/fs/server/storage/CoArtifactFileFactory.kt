@@ -34,10 +34,12 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
+import org.springframework.stereotype.Component
 
 /**
  * 制品文件工厂
  * */
+@Component
 class CoArtifactFileFactory(
     storageProperties: StorageProperties,
     storageHealthMonitorHelper: StorageHealthMonitorHelper

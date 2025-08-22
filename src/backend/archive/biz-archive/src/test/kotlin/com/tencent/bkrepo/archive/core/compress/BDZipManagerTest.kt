@@ -23,8 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import reactor.core.publisher.Mono
 import java.time.Duration
 import java.time.LocalDateTime
@@ -40,7 +40,7 @@ class BDZipManagerTest @Autowired constructor(
     private val compressFileRepository: CompressFileRepository,
 ) : BaseTest() {
 
-    @MockBean
+    @MockitoBean
     lateinit var fileReferenceService: FileReferenceService
 
     private val timeout = Duration.ofSeconds(10)
@@ -96,7 +96,7 @@ class BDZipManagerTest @Autowired constructor(
             status = CompressStatus.CREATED,
             chainLength = 1,
 
-        )
+            )
         storageService.store(artifactFile1.getFileSha256(), artifactFile1, null)
         storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)
         compressFileRepository.save(file)
@@ -201,7 +201,7 @@ class BDZipManagerTest @Autowired constructor(
                 status = CompressStatus.CREATED,
                 chainLength = 1,
 
-            )
+                )
             storageService.store(artifactFile2.getFileSha256(), artifactFile2, null)
             compressFileRepository.save(file)
             fileList.add(file)

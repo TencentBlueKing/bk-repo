@@ -9,12 +9,12 @@ import com.tencent.bkrepo.common.artifact.pojo.configuration.proxy.ProxyConfigur
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.service.util.proxy.DefaultProxyCallHandler
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import okhttp3.Response
 import org.slf4j.LoggerFactory
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 class ProxyInterceptor : HandlerInterceptor {
     private val lfsProxyHandler = LfsProxyHandler()

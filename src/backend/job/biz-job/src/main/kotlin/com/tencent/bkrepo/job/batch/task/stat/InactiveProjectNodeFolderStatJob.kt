@@ -42,7 +42,6 @@ import com.tencent.bkrepo.job.batch.utils.StatUtils.specialRepoRunCheck
 import com.tencent.bkrepo.job.config.properties.InactiveProjectNodeFolderStatJobProperties
 import com.tencent.bkrepo.job.pojo.stat.StatNode
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
@@ -54,7 +53,6 @@ import kotlin.reflect.KClass
  * 非活跃项目下目录大小以及文件个数统计
  */
 @Component
-@EnableConfigurationProperties(InactiveProjectNodeFolderStatJobProperties::class)
 class InactiveProjectNodeFolderStatJob(
     private val properties: InactiveProjectNodeFolderStatJobProperties,
     private val activeProjectService: ActiveProjectService,

@@ -35,8 +35,6 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
-import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -55,10 +53,8 @@ import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTaskState
 import com.tencent.bkrepo.job.model.TNode
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import org.mockito.ArgumentMatchers.anyString
-import org.mockito.Mockito
-import org.mockito.kotlin.anyOrNull
-import org.mockito.kotlin.whenever
+import io.mockk.every
+import io.mockk.mockkObject
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -227,29 +223,29 @@ object MigrateTestUtils {
     }
 
     fun mockRepositoryCommonUtils(storageKey: String? = UT_STORAGE_CREDENTIALS_KEY, oldCredentialsKey: String? = null) {
-        val repositoryService = Mockito.mock(RepositoryService::class.java)
-        val storageCredentialService = Mockito.mock(StorageCredentialService::class.java)
         val storageCredentials = InnerCosCredentials(key = storageKey)
-        whenever(repositoryService.getRepoDetail(anyString(), anyString(), anyOrNull())).thenReturn(
-            RepositoryDetail(
-                projectId = UT_PROJECT_ID,
-                name = UT_REPO_NAME,
-                storageCredentials = storageCredentials,
-                type = RepositoryType.GENERIC,
-                category = RepositoryCategory.LOCAL,
-                public = false,
-                description = "",
-                configuration = LocalConfiguration(),
-                createdBy = "",
-                createdDate = "",
-                lastModifiedBy = "",
-                lastModifiedDate = "",
-                oldCredentialsKey = oldCredentialsKey,
-                quota = 0,
-                used = 0,
+        mockkObject(RepositoryCommonUtils)
+        every { RepositoryCommonUtils.getStorageCredentials(anyNullable()) }.returns(storageCredentials)
+        every { RepositoryCommonUtils.getRepositoryDetail(any(), any(), anyNullable()) }
+            .returns(
+                RepositoryDetail(
+                    projectId = UT_PROJECT_ID,
+                    name = UT_REPO_NAME,
+                    storageCredentials = storageCredentials,
+                    type = RepositoryType.GENERIC,
+                    category = RepositoryCategory.LOCAL,
+                    public = false,
+                    description = "",
+                    configuration = LocalConfiguration(),
+                    createdBy = "",
+                    createdDate = "",
+                    lastModifiedBy = "",
+                    lastModifiedDate = "",
+                    oldCredentialsKey = oldCredentialsKey,
+                    quota = 0,
+                    used = 0,
+                )
             )
-        )
-        whenever(storageCredentialService.findByKey(anyOrNull())).thenReturn(storageCredentials)
-        RepositoryCommonUtils.updateService(repositoryService, storageCredentialService)
+
     }
 }

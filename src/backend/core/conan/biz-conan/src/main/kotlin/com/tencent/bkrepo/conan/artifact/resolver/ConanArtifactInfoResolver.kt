@@ -38,9 +38,9 @@ import com.tencent.bkrepo.conan.constant.REVISION
 import com.tencent.bkrepo.conan.constant.USERNAME
 import com.tencent.bkrepo.conan.constant.VERSION
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Resolver(ConanArtifactInfo::class)
 @Component
