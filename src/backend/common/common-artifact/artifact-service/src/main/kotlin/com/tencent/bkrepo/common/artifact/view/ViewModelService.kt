@@ -41,6 +41,7 @@ import com.tencent.bkrepo.repository.pojo.list.ListViewObject
 import com.tencent.bkrepo.repository.pojo.list.RowItem
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import org.apache.commons.text.StringEscapeUtils
+import org.springframework.web.filter.UrlHandlerFilter
 import java.io.PrintWriter
 import java.net.URLEncoder.encode
 
@@ -49,9 +50,15 @@ class ViewModelService(
 ) {
 
     fun trailingSlash(serviceName: String) {
+        val request = HttpContextHolder.getRequest()
+        // 如果request是TrailingSlashHttpServletRequest，说明requestURI以/结尾，
+        // 被org.springframework.web.filter.UrlHandlerFilter处理过
+        if (trailingSlashHttpServletRequestClass?.isInstance(request) == true) {
+            return
+        }
         val host = viewModelProperties.domain
         val builder = StringBuilder(UrlFormatter.format(host, serviceName))
-        val url = builder.append(HttpContextHolder.getRequest().requestURI).toString()
+        val url = builder.append(request.requestURI).toString()
         if (!url.endsWith(UNIX_SEPARATOR)) {
             HttpContextHolder.getResponse().sendRedirect("$url/")
         }
@@ -173,5 +180,8 @@ class ViewModelService(
             </body>
             </html>
         """
+
+        private val trailingSlashHttpServletRequestClass =
+            UrlHandlerFilter::class.nestedClasses.find { it.simpleName == "TrailingSlashHttpServletRequest" }
     }
 }

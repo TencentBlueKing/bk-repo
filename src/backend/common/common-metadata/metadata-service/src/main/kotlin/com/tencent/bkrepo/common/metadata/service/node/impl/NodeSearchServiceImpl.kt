@@ -135,7 +135,7 @@ class NodeSearchServiceImpl(
         }
         if (time > repositoryProperties.slowLogTimeThreshold) {
             logger.warn("search node slow log, " +
-                "query[${query.toJsonString().replace(System.lineSeparator(), "")}], " +
+                "query[${query.queryObject.toJsonString().replace(System.lineSeparator(), "")}], " +
                 "cost ${HumanReadable.time(time, TimeUnit.MILLISECONDS)}")
         }
         val projectId = nodeList.firstOrNull()?.get(NodeInfo::projectId.name)?.toString()

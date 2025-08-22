@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(value = "job.distributed-docker-image-cleanup")
-data class DistributedDockerImageCleanupJobProperties(
+class DistributedDockerImageCleanupJobProperties(
     override var enabled: Boolean = false,
     var repositoryTypes: List<String> = listOf("OCI", "DOCKER"),
     // 保留分发的镜像天数

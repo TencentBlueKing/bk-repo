@@ -28,7 +28,9 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.third-party-image-replication")
 class ThirdPartyImageReplicationJobProperties(
     override var enabled: Boolean = true,

@@ -32,8 +32,8 @@
 package com.tencent.bkrepo.s3.artifact.utils
 
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import io.micrometer.tracing.Tracer
 import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.Tracer
 
 class ContextUtil {
     companion object {

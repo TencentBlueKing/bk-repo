@@ -605,8 +605,8 @@ class OciRegistryLocalRepository(
 
     private fun buildRedisStr(first: String, second: String, third: String? = null, crc64Ecma: String? = null): String {
         var result = first + StringPool.COLON + second
-        third?.let { result = result + StringPool.COLON + third }
         crc64Ecma?.let { result = result + StringPool.COLON + it }
+        third?.let { result = result + StringPool.COLON + third }
         return result
     }
 
@@ -615,7 +615,7 @@ class OciRegistryLocalRepository(
         return when {
             values.size < 3 -> null
             values.size == 3 -> FileInfo(sha256 = values[0], md5 = values[1], size = values[2].toLong())
-            else -> FileInfo(sha256 = values[0], md5 = values[1], size = values[2].toLong(), crc64ecma = values[3])
+            else -> FileInfo(sha256 = values[0], md5 = values[1], crc64ecma = values[2], size = values[3].toLong())
         }
     }
 

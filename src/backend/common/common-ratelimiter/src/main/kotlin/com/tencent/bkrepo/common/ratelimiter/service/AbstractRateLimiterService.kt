@@ -64,6 +64,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserUploadUsageRate
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.ratelimiter.utils.RateLimiterBuilder
 import com.tencent.bkrepo.common.service.servlet.MultipleReadHttpRequest
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -75,7 +76,6 @@ import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
 import org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE
 import java.util.concurrent.ConcurrentHashMap
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 限流器抽象实现
@@ -501,7 +501,7 @@ abstract class AbstractRateLimiterService(
 
     companion object {
         val logger: Logger = LoggerFactory.getLogger(AbstractRateLimiterService::class.java)
-        val UPLOAD_REQUEST_METHOD = listOf(HttpMethod.POST.name, HttpMethod.PUT.name, HttpMethod.PATCH.name)
-        val DOWNLOAD_REQUEST_METHOD = listOf(HttpMethod.GET.name)
+        val UPLOAD_REQUEST_METHOD = listOf(HttpMethod.POST.name(), HttpMethod.PUT.name(), HttpMethod.PATCH.name())
+        val DOWNLOAD_REQUEST_METHOD = listOf(HttpMethod.GET.name())
     }
 }

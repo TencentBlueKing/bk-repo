@@ -56,7 +56,7 @@ open class OciArtifactInfo(
         const val BOLBS_URL = "/v2/{projectId}/{repoName}/**/blobs/{digest}"
 
         // blobs upload
-        const val BOLBS_UPLOAD_FIRST_STEP_URL = "/v2/{projectId}/{repoName}/**/blobs/uploads/"
+        const val BOLBS_UPLOAD_FIRST_STEP_URL = "/v2/{projectId}/{repoName}/**/blobs/uploads"
         const val BOLBS_UPLOAD_SECOND_STEP_URL = "/v2/{projectId}/{repoName}/**/blobs/uploads/{uuid}"
 
         // tags get

@@ -28,8 +28,10 @@
 package com.tencent.bkrepo.job.batch.task.cache.preload.ai
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 import java.time.Duration
 
+@Component
 @ConfigurationProperties("spring.ai")
 data class AiProperties(
     /**

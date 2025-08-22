@@ -38,11 +38,10 @@ import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import java.lang.Exception
 
 object JsonUtil {
 
-    val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
+    val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule.Builder().build())
     private const val packages = "packages"
     private const val dist = "dist"
     private const val url = "url"

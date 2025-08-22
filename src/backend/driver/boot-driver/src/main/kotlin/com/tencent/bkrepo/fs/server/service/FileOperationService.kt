@@ -51,14 +51,15 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeSetLengthRequest
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
 import org.springframework.core.io.buffer.DataBuffer
 import org.springframework.core.io.buffer.DataBufferUtils
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.bodyToFlow
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicLong
 
+@Component
 class FileOperationService(
     private val storageManager: CoStorageManager,
     private val fileNodeService: FileNodeService,

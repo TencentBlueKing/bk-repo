@@ -31,7 +31,8 @@
 
 package com.tencent.bkrepo.common.service.condition
 
-import org.springframework.cloud.client.SpringCloudApplication
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.autoconfigure.pulsar.PulsarAutoConfiguration
 
-@SpringCloudApplication
+@SpringBootApplication(exclude = [PulsarAutoConfiguration::class])
 annotation class MicroService

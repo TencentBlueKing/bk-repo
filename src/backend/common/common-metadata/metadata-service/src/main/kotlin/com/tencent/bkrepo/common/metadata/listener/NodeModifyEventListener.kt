@@ -46,11 +46,11 @@ import com.tencent.bkrepo.common.artifact.event.node.NodeRenamedEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.path.PathUtils.combineFullPath
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.context.event.EventListener
@@ -75,24 +75,24 @@ import java.util.concurrent.atomic.LongAdder
 class NodeModifyEventListener(
     private val nodeService: NodeService,
     private val nodeDao: NodeDao,
-    )  {
+) {
 
-    private val cache: LoadingCache<Triple<String, String, String>, Pair<LongAdder, LongAdder>>
-    = CacheBuilder.newBuilder()
-        .maximumSize(1000)
-        .expireAfterWrite(1, TimeUnit.MINUTES)
-        .removalListener<Triple<String, String, String>, Pair<LongAdder, LongAdder>> {
-            if (it.cause == RemovalCause.REPLACED) return@removalListener
-            logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
-            nodeDao.incSizeAndNodeNumOfFolder(
-                projectId = it.key!!.first,
-                repoName = it.key!!.second,
-                fullPath = it.key!!.third,
-                size = it.value.first.sumThenReset(),
-                nodeNum = it.value.second.sumThenReset()
-            )
-        }
-        .build(CacheLoader.from { _ -> Pair(LongAdder(), LongAdder()) })
+    private val cache: LoadingCache<Triple<String, String, String>, Pair<LongAdder, LongAdder>> =
+        CacheBuilder.newBuilder()
+            .maximumSize(1000)
+            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .removalListener<Triple<String, String, String>, Pair<LongAdder, LongAdder>> {
+                if (it.cause == RemovalCause.REPLACED) return@removalListener
+                logger.info("remove ${it.key}, ${it.value}, cause ${it.cause}, Thread ${Thread.currentThread().name}")
+                nodeDao.incSizeAndNodeNumOfFolder(
+                    projectId = it.key!!.first,
+                    repoName = it.key!!.second,
+                    fullPath = it.key!!.third,
+                    size = it.value!!.first.sumThenReset(),
+                    nodeNum = it.value!!.second.sumThenReset()
+                )
+            }
+            .build(CacheLoader.from { _ -> Pair(LongAdder(), LongAdder()) })
 
     /**
      * 允许接收的事件类型
@@ -134,13 +134,12 @@ class NodeModifyEventListener(
      */
     private fun ignoreProjectOrRepoCheck(projectId: String, repoName: String): Boolean {
         IGNORE_PROJECT_PREFIX_LIST.forEach {
-            if (projectId.startsWith(it)){
+            if (projectId.startsWith(it)) {
                 return true
             }
         }
         return false
     }
-
 
 
     /**
@@ -160,6 +159,7 @@ class NodeModifyEventListener(
                 )
                 modifiedNodeList.add(deletedNode)
             }
+
             EventType.NODE_CREATED -> {
                 require(event is NodeCreatedEvent)
                 val createdNode = ModifiedNodeInfo(
@@ -169,6 +169,7 @@ class NodeModifyEventListener(
                 )
                 modifiedNodeList.add(createdNode)
             }
+
             EventType.NODE_RENAMED -> {
                 require(event is NodeRenamedEvent)
                 // 节点重命名逻辑和其他操作不同，它会对旧节点下的目录删除，然后新建，但是对于非目录节点是进行更新动作，而不是删除再新建
@@ -181,6 +182,7 @@ class NodeModifyEventListener(
                 )
                 modifiedNodeList.add(renamedNode)
             }
+
             EventType.NODE_MOVED -> {
                 require(event is NodeMovedEvent)
                 // 1 move空目录，2 move到已存在目录, 3 move到新目录 4 同路径，跳过  5 src为dst目录下的子节点，跳过
@@ -203,6 +205,7 @@ class NodeModifyEventListener(
                 modifiedNodeList.add(createdNode)
                 modifiedNodeList.add(deletedNode)
             }
+
             EventType.NODE_COPIED -> {
                 require(event is NodeCopiedEvent)
                 // 1 copy空目录， 2 copy到已存在目录，3 copy到新目录  4 同路径，跳过  5 src为dst目录下的子节点，跳过
@@ -217,6 +220,7 @@ class NodeModifyEventListener(
                 )
                 modifiedNodeList.add(createdNode)
             }
+
             EventType.NODE_CLEAN -> {
                 require(event is NodeCleanEvent)
                 val deletedNode = ModifiedNodeInfo(
@@ -228,6 +232,7 @@ class NodeModifyEventListener(
                 )
                 modifiedNodeList.add(deletedNode)
             }
+
             else -> throw UnsupportedOperationException()
         }
         modifiedNodeList.forEach {
@@ -254,12 +259,16 @@ class NodeModifyEventListener(
                 ?: nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull() ?: return
         }
 
-        logger.info("start to stat modified node size with fullPath ${node.fullPath}" +
-                        " in repo ${node.projectId}|${node.repoName}")
+        logger.info(
+            "start to stat modified node size with fullPath ${node.fullPath}" +
+                " in repo ${node.projectId}|${node.repoName}"
+        )
         if (node.folder) {
             val sourceNodes = filterSourceNodesFromMoveOrCopy(modifiedNode)
-            logger.info("the size of node ${modifiedNode.srcFullPath} is ${sourceNodes?.size}" +
-                            " in repo ${modifiedNode.srcProjectId}|${modifiedNode.srcRepoName}")
+            logger.info(
+                "the size of node ${modifiedNode.srcFullPath} is ${sourceNodes?.size}" +
+                    " in repo ${modifiedNode.srcProjectId}|${modifiedNode.srcRepoName}"
+            )
             if (sourceNodes != null && sourceNodes.isEmpty()) return
             findAndCacheSubFolders(
                 artifactInfo = artifactInfo,
@@ -413,7 +422,7 @@ class NodeModifyEventListener(
         deleted: String? = null
     ): Query {
         val criteria = where(TNode::projectId).isEqualTo(projectId)
-        .and(TNode::repoName).isEqualTo(repoName)
+            .and(TNode::repoName).isEqualTo(repoName)
             .apply {
                 if (deleted.isNullOrEmpty()) {
                     this.and(TNode::deleted).isEqualTo(null)
@@ -422,9 +431,9 @@ class NodeModifyEventListener(
                     this.and(TNode::deleted).gte(LocalDateTime.parse(deleted))
                 }
             }
-        .and(TNode::fullPath).regex("^${PathUtils.escapeRegex(srcRootNodePath)}")
-        .and(TNode::folder).isEqualTo(false)
-        .and(TNode::path).ne(PathUtils.ROOT)
+            .and(TNode::fullPath).regex("^${PathUtils.escapeRegex(srcRootNodePath)}")
+            .and(TNode::folder).isEqualTo(false)
+            .and(TNode::path).ne(PathUtils.ROOT)
         return Query(criteria).withHint(TNode.FULL_PATH_IDX)
     }
 
