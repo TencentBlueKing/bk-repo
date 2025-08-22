@@ -258,7 +258,7 @@ open class NodeMoveCopySupport(
             val listOption = NodeListOption(includeFolder = true, includeMetadata = true, deep = true, sort = false)
             val query = buildSubNodesQuery(this, srcRootNodePath, listOption)
             // 目录下的节点 -> 创建好的目录
-            nodeDao.stream(query).stream().forEach {
+            nodeDao.stream(query).forEach {
                 doMoveCopy(this, it, it.path.replaceFirst(srcRootNodePath, dstRootNodePath), it.name)
             }
         }

@@ -39,7 +39,6 @@ import com.tencent.bkrepo.job.batch.task.ddc.ExpiredDdcRefCleanupJob.Companion.C
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.DdcBlobRefCountCorrectJobProperties
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -52,7 +51,6 @@ import java.nio.charset.StandardCharsets
  * 仅处理blob-ref关系已删除，但是blob.refCount不为0的情况
  */
 @Component
-@EnableConfigurationProperties(DdcBlobRefCountCorrectJobProperties::class)
 @Suppress("UnstableApiUsage")
 class DdcBlobRefCountCorrectJob(
     private val properties: DdcBlobRefCountCorrectJobProperties,

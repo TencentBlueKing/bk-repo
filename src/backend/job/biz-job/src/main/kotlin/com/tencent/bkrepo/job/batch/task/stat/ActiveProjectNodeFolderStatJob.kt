@@ -37,7 +37,6 @@ import com.tencent.bkrepo.job.config.properties.ActiveProjectNodeFolderStatJobPr
 import com.tencent.bkrepo.job.pojo.stat.StatNode
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
@@ -48,7 +47,6 @@ import java.time.Duration
  * 活跃项目下目录大小以及文件个数统计
  */
 @Component
-@EnableConfigurationProperties(ActiveProjectNodeFolderStatJobProperties::class)
 class ActiveProjectNodeFolderStatJob(
     val properties: ActiveProjectNodeFolderStatJobProperties,
     executor: ThreadPoolTaskExecutor,

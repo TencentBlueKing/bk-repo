@@ -7,9 +7,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.cloud.client.ServiceInstance
-import org.springframework.cloud.client.loadbalancer.AsyncLoadBalancerAutoConfiguration
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient
-import org.springframework.cloud.client.loadbalancer.LoadBalancerProperties
 import org.springframework.cloud.client.loadbalancer.LoadBalancerUriTools
 import org.springframework.cloud.loadbalancer.annotation.LoadBalancerClients
 import org.springframework.cloud.loadbalancer.blocking.client.BlockingLoadBalancerClient
@@ -30,7 +28,6 @@ import java.net.URI
 @AutoConfigureAfter(LoadBalancerAutoConfiguration::class)
 @AutoConfigureBefore(
     org.springframework.cloud.client.loadbalancer.LoadBalancerAutoConfiguration::class,
-    AsyncLoadBalancerAutoConfiguration::class,
     BlockingLoadBalancerClientAutoConfiguration::class
 )
 @ConditionalOnClass(RestTemplate::class)
@@ -41,19 +38,18 @@ class LoadBalancerClientAutoConfiguration {
     @Primary
     fun blockingLoadBalancerClient(
         loadBalancerClientFactory: LoadBalancerClientFactory?,
-        properties: LoadBalancerProperties?
     ): LoadBalancerClient {
         logger.info("Init LoadBalancerClient.")
-        return CustomLoadBalancerClient(loadBalancerClientFactory, properties)
+        return CustomLoadBalancerClient(loadBalancerClientFactory)
     }
 
     private class CustomLoadBalancerClient(
         loadBalancerClientFactory: LoadBalancerClientFactory?,
-        properties: LoadBalancerProperties?
-    ) : BlockingLoadBalancerClient(loadBalancerClientFactory, properties) {
+    ) : BlockingLoadBalancerClient(loadBalancerClientFactory) {
         override fun reconstructURI(serviceInstance: ServiceInstance, original: URI): URI {
             return LoadBalancerUriTools.reconstructURI(
-                Ipv6CapableDelegatingServiceInstance(serviceInstance), original)
+                Ipv6CapableDelegatingServiceInstance(serviceInstance), original
+            )
         }
     }
 

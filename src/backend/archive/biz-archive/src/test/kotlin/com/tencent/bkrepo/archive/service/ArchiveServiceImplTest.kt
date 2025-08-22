@@ -28,8 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 @DataMongoTest
@@ -40,7 +40,7 @@ class ArchiveServiceImplTest @Autowired constructor(
     private val archiveFileDao: ArchiveFileDao,
 ) : BaseTest() {
 
-    @MockBean
+    @MockitoBean
     private lateinit var storageService: StorageService
 
     @BeforeAll

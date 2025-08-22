@@ -54,7 +54,7 @@ import com.tencent.bkrepo.preview.pojo.FileAttribute
 import com.tencent.bkrepo.preview.pojo.cache.PreviewFileCacheInfo
 import com.tencent.bkrepo.preview.utils.DownloadUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import java.io.File
 import java.time.LocalDateTime

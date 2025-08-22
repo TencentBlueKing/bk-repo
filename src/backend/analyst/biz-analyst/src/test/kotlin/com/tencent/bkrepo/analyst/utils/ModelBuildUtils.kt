@@ -33,8 +33,10 @@ import com.tencent.bkrepo.analyst.UT_CREDENTIALS_KEY
 import com.tencent.bkrepo.analyst.UT_PLAN_ID
 import com.tencent.bkrepo.analyst.UT_SCANNER
 import com.tencent.bkrepo.analyst.UT_USER
+import com.tencent.bkrepo.analyst.component.manager.standard.model.TLicenseResult
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResult
 import com.tencent.bkrepo.analyst.component.manager.standard.model.TSecurityResultData
+import com.tencent.bkrepo.analyst.component.manager.standard.model.TSensitiveResult
 import com.tencent.bkrepo.analyst.model.TArchiveSubScanTask
 import com.tencent.bkrepo.analyst.model.TFileScanResult
 import com.tencent.bkrepo.analyst.model.TScanPlan
@@ -239,6 +241,22 @@ fun buildSecurityResult(sha256: String, scanner: String = UT_SCANNER) = TSecurit
     sha256 = sha256,
     scanner = scanner,
     data = TSecurityResultData(vulId = "", severity = "CRITICAL")
+)
+
+fun buildSensitiveResult(sha256: String, scanner: String = UT_SCANNER) = TSensitiveResult(
+    id = null,
+    credentialsKey = UT_CREDENTIALS_KEY,
+    sha256 = sha256,
+    scanner = scanner,
+    data = SensitiveResult(path = "/a/b/c.txt", content = "xxx")
+)
+
+fun buildLicenseResult(sha256: String, scanner: String = UT_SCANNER) = TLicenseResult(
+    id = null,
+    credentialsKey = UT_CREDENTIALS_KEY,
+    sha256 = sha256,
+    scanner = scanner,
+    data = LicenseResult(path = "/a/b/c.txt", licenseName = "MIT")
 )
 
 fun randomSha256(): String {

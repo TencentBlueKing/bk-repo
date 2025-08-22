@@ -36,16 +36,16 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 @DisplayName("空闲节点归档Job测试")
 @DataMongoTest
-@EnableConfigurationProperties(IdleNodeArchiveJobProperties::class)
+@Import(IdleNodeArchiveJobProperties::class)
 @TestMethodOrder(MethodOrderer.MethodName::class)
 class IdleNodeArchiveJobTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
@@ -56,31 +56,31 @@ class IdleNodeArchiveJobTest @Autowired constructor(
     @Autowired
     lateinit var repositoryCommonUtils: RepositoryCommonUtils
 
-    @MockBean
+    @MockitoBean
     private lateinit var messageSupplier: MessageSupplier
 
-    @MockBean
+    @MockitoBean
     private lateinit var servicePermissionClient: ServicePermissionClient
 
-    @MockBean
+    @MockitoBean
     lateinit var repositoryService: RepositoryService
 
-    @MockBean
+    @MockitoBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
-    @MockBean
+    @MockitoBean
     private lateinit var routerControllerClient: RouterControllerClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var archiveClient: ArchiveClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var fileReferenceService: FileReferenceService
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
     @BeforeEach
@@ -100,12 +100,14 @@ class IdleNodeArchiveJobTest @Autowired constructor(
             buildRepo(UT_PROJECT_ID_2)
         )
 
-        whenever(repositoryService.updateStorageCredentialsKey(anyString(), anyString(), anyString())).then {  }
-        whenever(repositoryService.unsetOldStorageCredentialsKey(anyString(), anyString())).then {  }
-        whenever(archiveClient.get(any(), anyOrNull())).thenReturn(Response<ArchiveFile?>(
-            data = null,
-            code = 0
-        ))
+        whenever(repositoryService.updateStorageCredentialsKey(anyString(), anyString(), anyString())).then { }
+        whenever(repositoryService.unsetOldStorageCredentialsKey(anyString(), anyString())).then { }
+        whenever(archiveClient.get(any(), anyOrNull())).thenReturn(
+            Response<ArchiveFile?>(
+                data = null,
+                code = 0
+            )
+        )
     }
 
     @Test
@@ -121,7 +123,7 @@ class IdleNodeArchiveJobTest @Autowired constructor(
         // 执行测试
         assertEquals(SHARDING_COUNT, job.collectionNames().size)
         // 模拟配置
-        properties.projectArchiveCredentialsKeys =  mapOf(
+        properties.projectArchiveCredentialsKeys = mapOf(
             UT_PROJECT_ID_1 to "AKID_TEST",
             UT_PROJECT_ID_2 to "AKID_TEST2"
         )

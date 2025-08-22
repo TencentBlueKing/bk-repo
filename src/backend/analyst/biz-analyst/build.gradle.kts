@@ -42,8 +42,9 @@ dependencies {
     implementation(project(":common:common-lock"))
     implementation(project(":common:common-job"))
     implementation(project(":common:common-statemachine"))
-    implementation("io.kubernetes:client-java:${Versions.KubernetesClient}")
+    implementation("io.kubernetes:client-java")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("io.mockk:mockk")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }

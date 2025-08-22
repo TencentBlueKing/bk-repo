@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.webhook.executor
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.webhook.config.WebHookProperties
 import com.tencent.bkrepo.webhook.constant.WebHookRequestStatus
 import com.tencent.bkrepo.webhook.dao.WebHookLogDao
@@ -47,7 +47,6 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.Response
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.BeanFactory
 import org.springframework.cloud.endpoint.event.RefreshEvent
 import org.springframework.context.event.EventListener
 import org.springframework.core.annotation.Order
@@ -65,10 +64,9 @@ class WebHookExecutor(
     private val eventPayloadFactory: EventPayloadFactory,
     private val webHookProperties: WebHookProperties,
     private val webHookMetrics: WebHookMetrics,
-    private val beanFactory: BeanFactory
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create(beanFactory = beanFactory).build()
+    private val httpClient = HttpClientBuilderFactory.create().build()
 
     init {
         httpClient.dispatcher.maxRequests = webHookProperties.maxRequests ?: 200

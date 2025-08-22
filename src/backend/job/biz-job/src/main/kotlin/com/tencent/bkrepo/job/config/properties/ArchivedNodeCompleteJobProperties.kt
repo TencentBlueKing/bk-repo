@@ -28,8 +28,10 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 import java.time.Duration
 
+@Component
 @ConfigurationProperties(value = "job.archived-node-complete")
 class ArchivedNodeCompleteJobProperties(
     override var cron: String = "0 0 0/1 * * ?",

@@ -32,7 +32,7 @@
           </span>
         </template>
       </el-table-column>
-      <el-table-column key="progress"  label="进度" align="center">
+      <el-table-column key="progress" label="进度" align="center">
         <template slot-scope="scope">
           <span>
             {{ formatProgress(scope.row) }}
@@ -79,7 +79,7 @@
 import { formatNormalDate } from '@/utils/date'
 import { convertFileSize } from '@/utils/file'
 import CreateMigrateTaskDialog from '@/views/migration/components/CreateMigrateTaskDialog'
-import {queryMigrateTask} from "@/api/migrate";
+import { queryMigrateTask } from '@/api/migrate'
 export default {
   name: 'MigrateRepoStorageTaskConfig',
   components: { CreateMigrateTaskDialog },
@@ -166,7 +166,7 @@ export default {
       if (!data.totalCount || data.totalCount === 0 || !data.migratedCount) {
         return '0%(0/0)'
       }
-      return Math.round(data.migratedCount / data.totalCount * 10000) / 100 + '%('+ data.migratedCount + '/' + data.totalCount + ')';
+      return Math.round(data.migratedCount / data.totalCount * 10000) / 100 + '%(' + data.migratedCount + '/' + data.totalCount + ')'
     },
     formatState(data) {
       for (let i = 0; i < this.options.length; i++) {

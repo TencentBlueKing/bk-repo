@@ -146,11 +146,17 @@ class DefaultPreloadPlanExecutor(
     }
 
     private fun updateExecutor() {
-        if (preloadProperties.preloadConcurrency != executor.corePoolSize) {
+        if (preloadProperties.preloadConcurrency == executor.corePoolSize) {
+            return
+        }
+        if (preloadProperties.preloadConcurrency > executor.corePoolSize) {
+            executor.maximumPoolSize = preloadProperties.preloadConcurrency
+            executor.corePoolSize = preloadProperties.preloadConcurrency
+        } else {
             executor.corePoolSize = preloadProperties.preloadConcurrency
             executor.maximumPoolSize = preloadProperties.preloadConcurrency
-            logger.info("update executor pool size to ${preloadProperties.preloadConcurrency} success")
         }
+        logger.info("update executor pool size to ${preloadProperties.preloadConcurrency} success")
     }
 
     companion object {

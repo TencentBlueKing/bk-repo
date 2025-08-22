@@ -36,7 +36,6 @@ import com.tencent.bkrepo.job.config.properties.ActiveProjectEmptyFolderCleanupJ
 import com.tencent.bkrepo.job.pojo.stat.StatNode
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
@@ -47,7 +46,6 @@ import java.time.Duration
  * 空目录清理job
  */
 @Component
-@EnableConfigurationProperties(ActiveProjectEmptyFolderCleanupJobProperties::class)
 class ActiveProjectEmptyFolderCleanupJob(
     val properties: ActiveProjectEmptyFolderCleanupJobProperties,
     executor: ThreadPoolTaskExecutor,

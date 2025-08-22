@@ -46,10 +46,10 @@ import com.tencent.bkrepo.npm.constants.NAME
 import com.tencent.bkrepo.npm.constants.PASSWORD
 import com.tencent.bkrepo.npm.exception.NpmLoginFailException
 import com.tencent.bkrepo.npm.pojo.auth.NpmAuthResponse
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.MediaType
 import java.security.Key
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * npm登录handler

@@ -70,6 +70,11 @@ data class TScheduledDownloadRule(
     var enabled: Boolean = false,
 
     /**
+     * 是否解压zip包
+     */
+    var extracted: Boolean = false,
+
+    /**
      * 预约下载规则所属平台
      */
     var platform: Platform = Platform.ALL,

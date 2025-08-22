@@ -39,8 +39,8 @@ import com.tencent.bkrepo.maven.constants.MAVEN_METADATA_FILE_NAME
 import com.tencent.bkrepo.maven.constants.PACKAGE_KEY
 import com.tencent.bkrepo.maven.constants.VERSION
 import com.tencent.bkrepo.maven.util.MavenUtil
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(MavenDeleteArtifactInfo::class)
@@ -67,6 +67,7 @@ class MavenDeleteArtifactInfoResolver : ArtifactInfoResolver {
                 val version = request.getParameter(VERSION)
                 MavenDeleteArtifactInfo(projectId, repoName, url, packageKey, version)
             }
+
             else -> MavenDeleteArtifactInfo(projectId, repoName, artifactUri, StringPool.EMPTY, StringPool.EMPTY)
         }
     }
