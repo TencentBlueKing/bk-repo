@@ -61,6 +61,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
 import io.mockk.every
 import io.mockk.mockkObject
+import jakarta.servlet.http.HttpServletRequest
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
@@ -78,7 +79,6 @@ import org.springframework.context.annotation.Import
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import javax.servlet.http.HttpServletRequest
 
 
 @DisplayName("节点自定义查询测试")
