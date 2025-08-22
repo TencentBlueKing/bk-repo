@@ -107,7 +107,7 @@ class StreamService(
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
         val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
         val transcodeConfig = getTranscodeConfig(projectId)
-        transcodeConfig?.let { it.extraParams = transcodeExtraParams }
+        val streamTranscodeConfig = transcodeConfig?.copy(extraParams = transcodeExtraParams)
         val fileConsumer = MediaArtifactFileConsumer(
             storageManager,
             transcodeService,
@@ -115,7 +115,7 @@ class StreamService(
             userId,
             author,
             STREAM_PATH,
-            transcodeConfig,
+            streamTranscodeConfig,
         )
         val recordingListener = if (remux) {
             RemuxRecordingListener(credentials.upload.location, scheduler, saveType, fileConsumer)
