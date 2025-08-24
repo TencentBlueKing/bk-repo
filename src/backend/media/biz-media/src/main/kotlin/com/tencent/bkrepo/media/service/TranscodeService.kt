@@ -67,7 +67,7 @@ class TranscodeService(
                 fileName = artifactInfo.getResponseName(),
                 status = MediaTranscodeJobStatus.QUEUE,
                 param = transcodeParam.toJsonString(),
-                createdDate = LocalDateTime.now(),
+                createdTime = LocalDateTime.now(),
                 updateTime = LocalDateTime.now()
             )
         )

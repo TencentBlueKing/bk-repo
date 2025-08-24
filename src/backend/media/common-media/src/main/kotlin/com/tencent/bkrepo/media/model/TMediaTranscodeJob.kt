@@ -54,6 +54,6 @@ data class TMediaTranscodeJob(
     @Indexed(name = "media_transcode_status_idx", background = true)
     var status: MediaTranscodeJobStatus,
     var param: String,
-    var createdDate: LocalDateTime,
+    var createdTime: LocalDateTime,
     var updateTime: LocalDateTime,
 )
