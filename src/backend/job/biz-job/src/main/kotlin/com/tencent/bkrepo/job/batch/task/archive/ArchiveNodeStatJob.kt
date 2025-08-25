@@ -105,7 +105,7 @@ class ArchiveNodeStatJob(
                 val query = Query.query(Criteria.where(NAME).isEqualTo(projectName))
                 mongoTemplate.find(query, Project::class.java).firstOrNull()?.let { project ->
                     val metadataMap = project.metadata.associateByTo(HashMap()) { it.key }
-                    val newMetadata = ProjectMetadata(ARCHIVE_STAT_INFO, repoArchiveInfo)
+                    val newMetadata = ProjectMetadata(ARCHIVE_STAT_INFO, repoArchiveInfo.toJsonString())
                     metadataMap[newMetadata.key] = newMetadata
                     val update = Update().set(Project::metadata.name, metadataMap.values)
                     mongoTemplate.updateFirst(query, update, COLLECTION_PROJECT)
@@ -132,7 +132,7 @@ class ArchiveNodeStatJob(
         private val logger = LoggerFactory.getLogger(ArchiveNodeStatJob::class.java)
         private const val COLLECTION_NAME_PREFIX = "node_"
         private const val COLLECTION_PROJECT = "project"
-        private const val ARCHIVE_STAT_INFO = "archiveStatInfo"
+        const val ARCHIVE_STAT_INFO = "archiveStatInfo"
 
     }
 }
