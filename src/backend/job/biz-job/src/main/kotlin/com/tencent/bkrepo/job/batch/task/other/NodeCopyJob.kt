@@ -27,18 +27,20 @@
 
 package com.tencent.bkrepo.job.batch.task.other
 
-import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
+import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
-import com.tencent.bkrepo.job.batch.base.MongoDbBatchJob
-import com.tencent.bkrepo.job.batch.context.NodeCopyJobContext
+import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
+import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
+import com.tencent.bkrepo.job.batch.utils.TimeUtils.parseMongoDateTimeStr
 import com.tencent.bkrepo.job.config.properties.NodeCopyJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
-import com.tencent.bkrepo.repository.constant.DEFAULT_STORAGE_CREDENTIALS_KEY
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -46,14 +48,16 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
 import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.reflect.KClass
 
 @Component
 class NodeCopyJob(
     private val storageService: StorageService,
-    private val fileReferenceService: FileReferenceService,
+    private val blockNodeService: BlockNodeService,
     properties: NodeCopyJobProperties
-) : MongoDbBatchJob<NodeCopyJob.NodeCopyData, NodeCopyJobContext>(properties) {
+) : DefaultContextMongoDbJob<NodeCopyJob.NodeCopyData>(properties) {
 
     override fun start(): Boolean {
         return super.start()
@@ -77,33 +81,28 @@ class NodeCopyJob(
 
     override fun entityClass(): KClass<NodeCopyData> = NodeCopyData::class
 
-    override fun createJobContext(): NodeCopyJobContext = NodeCopyJobContext()
-
-    override fun run(row: NodeCopyData, collectionName: String, context: NodeCopyJobContext) {
+    override fun run(row: NodeCopyData, collectionName: String, context: JobContext) {
         var digest: String? = null
         var srcCredentials: StorageCredentials? = null
         var dstCredentials: StorageCredentials? = null
         try {
             digest = row.sha256
             srcCredentials = RepositoryCommonUtils.getStorageCredentials(row.copyFromCredentialsKey)
-            val repositoryDetail = RepositoryCommonUtils.getRepositoryDetail(row.projectId, row.repoName)
-            dstCredentials = repositoryDetail.storageCredentials
-            fileReferenceCheck(dstCredentials, row, digest)
-            val targetCopy = TargetCopy(targetCredentialsKey = dstCredentials?.key, digest = digest)
-            if (context.alreadyCopySet.contains(targetCopy)) {
-                afterCopySuccess(row, collectionName)
-                return
-            }
-            if (storageService.exist(digest, srcCredentials)) {
-                safeCopy(digest, srcCredentials, dstCredentials)
-                afterCopySuccess(row, collectionName)
-                context.alreadyCopySet.add(targetCopy)
+            dstCredentials = RepositoryCommonUtils.getRepositoryDetail(row.projectId, row.repoName).storageCredentials
+            if (digest == FAKE_SHA256) {
+                val nodeCreateDateTimeStr = row.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                blockNodeService
+                    .listAllBlocks(row.projectId, row.repoName, row.fullPath, nodeCreateDateTimeStr)
+                    .forEach { safeCopy(it.sha256, srcCredentials, dstCredentials) }
             } else {
-                context.fileMissing.incrementAndGet()
-                logger.warn("File[$digest] is missing on [$srcCredentials], skip copy.")
+                safeCopy(digest, srcCredentials, dstCredentials)
             }
+            afterCopySuccess(row, collectionName)
         } catch (e: Exception) {
-            throw JobExecuteException("Failed to copy file[$digest] from [$srcCredentials] to [$dstCredentials].", e)
+            throw JobExecuteException(
+                "Failed to copy file[${row.projectId}/${row.repoName}/${row.fullPath}] sha256[$digest] " +
+                        "from [$srcCredentials] to [$dstCredentials].", e
+            )
         }
     }
 
@@ -126,30 +125,10 @@ class NodeCopyJob(
         val sha256: String by map
         val projectId: String by map
         val repoName: String by map
+        val fullPath: String by map
+        val createdDate: LocalDateTime = parseMongoDateTimeStr(map[TNode::createdDate.name].toString())!!
         val copyFromCredentialsKey: String by map
         val copyIntoCredentialsKey: String by map
-    }
-
-    /**
-     * 文件引用核对
-     * 拷贝时的存储实例与当前仓库的存储实例不同，说明仓库已经迁移到其他存储实例，
-     * 则原先增加引用的存储实例，文件引用要减1还原
-     * 当前存储实例引用加1
-     * */
-    private fun fileReferenceCheck(
-        dstCredentials: StorageCredentials?,
-        node: NodeCopyData,
-        digest: String
-    ) {
-        var dstCredentialsKey: String? = dstCredentials?.key ?: DEFAULT_STORAGE_CREDENTIALS_KEY
-        if (dstCredentialsKey != node.copyIntoCredentialsKey) {
-            fileReferenceService.decrement(digest, node.copyIntoCredentialsKey)
-            if (dstCredentialsKey == DEFAULT_STORAGE_CREDENTIALS_KEY) {
-                // 还原为默认存储key为null
-                dstCredentialsKey = null
-            }
-            fileReferenceService.increment(digest, dstCredentialsKey)
-        }
     }
 
     /**
@@ -160,13 +139,11 @@ class NodeCopyJob(
             val update = Update().set(node::copyFromCredentialsKey.name, null)
                 .set(node::copyIntoCredentialsKey.name, null)
             mongoTemplate.updateFirst(Query(Criteria(ID).isEqualTo(id)), update, collectionName)
+            with(node) {
+                logger.info("copy node[$projectId/$repoName/$fullPath success, digest[$sha256]]")
+            }
         }
     }
-
-    data class TargetCopy(
-        val targetCredentialsKey: String?,
-        val digest: String
-    )
 
     companion object {
         private val logger = LoggerHolder.jobLogger

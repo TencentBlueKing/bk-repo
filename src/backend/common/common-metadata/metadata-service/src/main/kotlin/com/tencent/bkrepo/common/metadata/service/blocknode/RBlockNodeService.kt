@@ -47,6 +47,16 @@ interface RBlockNodeService {
     ): List<TBlockNode>
 
     /**
+     * 获取指定路径所有分块
+     */
+    suspend fun listAllBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        createdDate: String
+    ): List<TBlockNode>
+
+    /**
      * 创建分块
      * */
     suspend fun createBlock(

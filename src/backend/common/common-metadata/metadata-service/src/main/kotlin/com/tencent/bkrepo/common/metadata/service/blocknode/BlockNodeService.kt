@@ -48,6 +48,11 @@ interface BlockNodeService {
     ): List<TBlockNode>
 
     /**
+     * 获取指定路径所有分块
+     */
+    fun listAllBlocks(projectId: String, repoName: String, fullPath: String, createdDate: String): List<TBlockNode>
+
+    /**
      * 查询出当前版本内的分块
      */
     fun listBlocksInUploadId(

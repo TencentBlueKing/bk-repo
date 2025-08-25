@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils.toPath
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -76,6 +77,28 @@ object NodeMoveCopyHelper {
             }
 
             return dstNode
+        }
+    }
+
+    fun buildDstBlockNode(
+        context: MoveCopyContext,
+        blockNode: TBlockNode,
+        dstFullPath: String
+    ): TBlockNode {
+        with(context) {
+            val dstBlockNode = blockNode.copy(
+                id = null,
+                projectId = dstProjectId,
+                repoName = dstRepoName,
+                nodeFullPath = dstFullPath,
+            )
+            // move操作，create信息保留
+            if (move) {
+                dstBlockNode.createdBy = operator
+                dstBlockNode.createdDate = LocalDateTime.now()
+            }
+
+            return dstBlockNode
         }
     }
 
