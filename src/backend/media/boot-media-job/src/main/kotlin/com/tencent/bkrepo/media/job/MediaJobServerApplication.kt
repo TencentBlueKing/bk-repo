@@ -33,11 +33,13 @@ package com.tencent.bkrepo.media.job
 
 import com.tencent.bkrepo.common.service.condition.MicroService
 import org.springframework.boot.runApplication
+import org.springframework.context.annotation.ComponentScan
 
 /**
  * 通用文件微服务启动类
  */
 @MicroService
+@ComponentScan(basePackages = ["com.tencent.bkrepo.media.job", "com.tencent.bkrepo.media.common"])
 class MediaJobServerApplication
 
 fun main(args: Array<String>) {

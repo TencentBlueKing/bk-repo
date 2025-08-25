@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.media.model
+package com.tencent.bkrepo.media.common.model
 
 import org.springframework.data.mongodb.core.mapping.Document
 

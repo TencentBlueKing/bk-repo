@@ -29,9 +29,9 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.media.model
+package com.tencent.bkrepo.media.common.model
 
-import com.tencent.bkrepo.media.pojo.transcode.MediaTranscodeJobStatus
+import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.index.Indexed

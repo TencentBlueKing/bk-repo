@@ -1,9 +1,9 @@
-package com.tencent.bkrepo.media.dao
+package com.tencent.bkrepo.media.common.dao
 
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.media.model.TMediaTranscodeJob
-import com.tencent.bkrepo.media.pojo.transcode.MediaTranscodeJobStatus
+import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
+import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Query

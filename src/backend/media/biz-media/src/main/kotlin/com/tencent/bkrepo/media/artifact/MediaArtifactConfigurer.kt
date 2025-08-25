@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.media.artifact.MediaArtifactInfo.Companion.DEFAULT_STREAM_MAPPING_URI
 import com.tencent.bkrepo.media.artifact.repository.MediaLocalRepository
 import com.tencent.bkrepo.media.artifact.repository.MediaRemoteRepository
 import com.tencent.bkrepo.media.artifact.repository.MediaVirtualRepository

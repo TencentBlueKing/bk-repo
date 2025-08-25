@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.media.pojo.transcode
+package com.tencent.bkrepo.media.common.pojo.transcode
 
 data class TranscodeReportData(
     val status: MediaTranscodeJobStatus

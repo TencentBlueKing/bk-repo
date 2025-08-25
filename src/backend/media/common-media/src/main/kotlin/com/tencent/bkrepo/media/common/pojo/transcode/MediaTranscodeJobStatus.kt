@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.media.pojo.transcode
+package com.tencent.bkrepo.media.common.pojo.transcode
 
 enum class MediaTranscodeJobStatus {
     WAITING, // 在数据库等待

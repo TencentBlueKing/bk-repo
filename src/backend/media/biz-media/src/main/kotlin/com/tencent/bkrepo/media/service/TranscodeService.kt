@@ -15,10 +15,10 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.config.MediaProperties
-import com.tencent.bkrepo.media.dao.MediaTranscodeJobDao
-import com.tencent.bkrepo.media.model.TMediaTranscodeJob
-import com.tencent.bkrepo.media.pojo.transcode.MediaTranscodeJobStatus
-import com.tencent.bkrepo.media.pojo.transcode.TranscodeReportData
+import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
+import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
+import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
+import com.tencent.bkrepo.media.common.pojo.transcode.TranscodeReportData
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import com.tencent.bkrepo.media.stream.TranscodeParam
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -65,7 +65,7 @@ class TranscodeService(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
                 fileName = artifactInfo.getResponseName(),
-                status = MediaTranscodeJobStatus.QUEUE,
+                status = MediaTranscodeJobStatus.WAITING,
                 param = transcodeParam.toJsonString(),
                 createdTime = LocalDateTime.now(),
                 updateTime = LocalDateTime.now()
@@ -122,9 +122,9 @@ class TranscodeService(
      */
     fun jobReport(artifactInfo: ArtifactInfo, data: TranscodeReportData) {
         mediaTranscodeJobDao.updateStatus(
-            projectId = artifactInfo.repoName,
-            repoName = artifactInfo.projectId,
-            fileName = artifactInfo.getArtifactName(),
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            fileName = artifactInfo.getResponseName(),
             status = data.status,
         )
     }
@@ -136,7 +136,7 @@ class TranscodeService(
     ): TranscodeParam {
         with(transcodeConfig) {
             val outputArtifactInfo = covertOutputArtifactInfo(artifactInfo, scale)
-            val (inputUrl, callbackUrl) = generateUrl(
+            val (inputUrl, callbackUrl, reportUrl) = generateUrl(
                 artifactInfo,
                 outputArtifactInfo,
                 mediaProperties.repoHost,
@@ -145,6 +145,7 @@ class TranscodeService(
             return TranscodeParam(
                 inputUrl = inputUrl,
                 callbackUrl = callbackUrl,
+                reportUrl = reportUrl,
                 scale = scale,
                 videoCodec = videoCodec,
                 audioCodec = audioCodec,
@@ -171,13 +172,14 @@ class TranscodeService(
         output: ArtifactInfo,
         host: String,
         userId: String,
-    ): Pair<String, String> {
+    ): Triple<String, String, String> {
         val inputToken = createAccessToken(input, userId)
         val outputToken = createAccessToken(output, userId)
         val downloadUrl = "$host/media/user/transcode/download$input?token=$inputToken"
         val callbackUrl = "$host/media/user/transcode/upload$output?token=$outputToken" +
                 "&origin=${input.getArtifactFullPath()}&originToken=$inputToken"
-        return Pair(downloadUrl, callbackUrl)
+        val reportUrl = "$host/media/user/transcode/job/report$input?token=$inputToken"
+        return Triple(downloadUrl, callbackUrl, reportUrl)
     }
 
     private fun createAccessToken(artifactInfo: ArtifactInfo, userId: String): String {

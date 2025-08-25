@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.media.job.cron
 
-import com.tencent.bkrepo.media.dao.MediaTranscodeJobDao
-import com.tencent.bkrepo.media.dao.TranscodeJobConfigDao
+import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
+import com.tencent.bkrepo.media.common.dao.TranscodeJobConfigDao
 import com.tencent.bkrepo.media.job.service.TranscodeJobService
-import com.tencent.bkrepo.media.model.TMediaTranscodeJobConfig
+import com.tencent.bkrepo.media.common.model.TMediaTranscodeJobConfig
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.core.SimpleLock
@@ -44,7 +44,7 @@ class TranscodeCronJob @Autowired constructor(
             return
         }
 
-        logger.info("starting transcode job maxJob:$maxJobCount, currentJobCount:$currentJobCount")
+        logger.debug("starting transcode job maxJob:$maxJobCount, currentJobCount:$currentJobCount")
 
         var wasExecuted = false
         lockProvider.lock(getLockConfiguration()).ifPresent {
@@ -54,7 +54,7 @@ class TranscodeCronJob @Autowired constructor(
             wasExecuted = true
         }
         if (!wasExecuted) {
-            logger.info("Job mediaTranscodeCronJob already execution")
+            logger.warn("Job mediaTranscodeCronJob already execution")
         }
     }
 

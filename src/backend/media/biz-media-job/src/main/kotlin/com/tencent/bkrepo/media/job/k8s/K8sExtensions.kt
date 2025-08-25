@@ -11,14 +11,3 @@ fun ApiException.buildMessage(): String {
         .appendLine(responseBody)
     return builder.toString()
 }
-
-fun <T> CoreV1Api.exec(block: () -> T?): T? {
-    try {
-        return block()
-    } catch (e: ApiException) {
-        if (e.code == HttpStatus.NOT_FOUND.value()) {
-            return null
-        }
-        throw e
-    }
-}

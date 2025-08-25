@@ -1,14 +1,13 @@
 package com.tencent.bkrepo.media.job.service
 
-import com.tencent.bkrepo.media.dao.MediaTranscodeJobDao
+import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
 import com.tencent.bkrepo.media.job.k8s.K8sHelper
 import com.tencent.bkrepo.media.job.k8s.K8sProperties
 import com.tencent.bkrepo.media.job.k8s.buildMessage
-import com.tencent.bkrepo.media.job.k8s.exec
 import com.tencent.bkrepo.media.job.k8s.limits
 import com.tencent.bkrepo.media.job.k8s.requests
-import com.tencent.bkrepo.media.model.TMediaTranscodeJob
-import com.tencent.bkrepo.media.model.TMediaTranscodeJobConfig
+import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
+import com.tencent.bkrepo.media.common.model.TMediaTranscodeJobConfig
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.BatchV1Api
@@ -28,6 +27,7 @@ import io.kubernetes.client.openapi.models.V1VolumeMount
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.http.HttpStatus
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.time.ZoneOffset
@@ -41,21 +41,16 @@ class TranscodeJobService @Autowired constructor(
 
     private val k8sClient: ApiClient by lazy { createK8sHandler() }
 
-    @Async("transcodeJobPool")
+    @Async
     fun startJob(config: TMediaTranscodeJobConfig) {
-        logger.info("start transcodeJob")
         val job = mediaTranscodeJobDao.findAndQueueOldestWaitingJob() ?: run {
-            logger.info("no waiting job to run")
+            logger.debug("no waiting job to run")
             return
         }
 
-        var jobName = "${job.projectId}-" +
-                "${job.repoName}-" +
-                "${job.fileName.split(".").first()}-" +
-                "${job.id}-" +
-                "${job.updateTime.toInstant(ZoneOffset.ofHours(8)).toEpochMilli()}".lowercase()
+        var jobName = "${job.id}-${job.updateTime.toInstant(ZoneOffset.ofHours(8)).toEpochMilli()}".lowercase()
         if (jobName.length > 63) {
-            jobName = jobName.substring(63)
+            jobName = jobName.substring(0, 63)
         }
         val api = CoreV1Api(k8sClient)
         try {
@@ -69,7 +64,7 @@ class TranscodeJobService @Autowired constructor(
                         null
                     )
                 } == null) {
-                logger.error("configmap $configMapName not found error")
+                logger.error("configmap ${k8sProperties.namespace}:$configMapName not found error")
                 return
             }
             createK8sJob(BatchV1Api(k8sClient), jobName, config, job)
@@ -95,16 +90,13 @@ class TranscodeJobService @Autowired constructor(
             .command(PYTHON_CMD)
             .env(
                 listOf(
-                    V1EnvVar().name("MEDIA_JOB_PROJECT_ID").value(job.projectId),
-                    V1EnvVar().name("MEDIA_JOB_REPO_NAME").value(job.repoName),
-                    V1EnvVar().name("MEDIA_JOB_FILE_NAME").value(job.fileName),
                     V1EnvVar().name("MEDIA_JOB_JOB_PARAM").value(job.param)
                 )
             )
             .volumeMounts(
                 listOf(
                     V1VolumeMount()
-                        .name("script_volume")
+                        .name("script-volume")
                         .mountPath("$WORK_SPACE/$CMD")
                         .subPath(CMD)
                         .readOnly(true)
@@ -125,7 +117,7 @@ class TranscodeJobService @Autowired constructor(
                 }
             )
         val scriptVolume = V1Volume()
-            .name("script_volume")
+            .name("script-volume")
             .configMap(
                 V1ConfigMapVolumeSource()
                     .name(SCRIPT_CONFIG_MAP_NAME)
@@ -151,9 +143,6 @@ class TranscodeJobService @Autowired constructor(
             .kind("Job")
             .metadata(metadata)
             .spec(jobSpec)
-
-        // 7. 调用 API 创建 Job
-        println("Creating job '$jobName' in namespace '${k8sProperties.namespace}'...")
         val result = api.createNamespacedJob(
             k8sProperties.namespace,
             kJob,
@@ -161,11 +150,23 @@ class TranscodeJobService @Autowired constructor(
             null,
             null,
         )
-        logger.info("successfully created job $jobName status: ${result.status}")
+        logger.info("created job $jobName in namespace '${k8sProperties.namespace}' status: ${result.status}")
     }
 
     private fun createK8sHandler(): ApiClient {
         return K8sHelper.createClient(k8sProperties)
+    }
+
+    private fun <T> CoreV1Api.exec(block: () -> T?): T? {
+        try {
+            return block()
+        } catch (e: ApiException) {
+            if (e.code == HttpStatus.NOT_FOUND.value()) {
+                logger.warn("k8s exec not found, ${e.responseBody}")
+                return null
+            }
+            throw e
+        }
     }
 
     companion object {

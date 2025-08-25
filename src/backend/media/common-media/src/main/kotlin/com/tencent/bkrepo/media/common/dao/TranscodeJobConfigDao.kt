@@ -1,7 +1,7 @@
-package com.tencent.bkrepo.media.dao
+package com.tencent.bkrepo.media.common.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
-import com.tencent.bkrepo.media.model.TMediaTranscodeJobConfig
+import com.tencent.bkrepo.media.common.model.TMediaTranscodeJobConfig
 import org.springframework.stereotype.Repository
 
 @Repository
