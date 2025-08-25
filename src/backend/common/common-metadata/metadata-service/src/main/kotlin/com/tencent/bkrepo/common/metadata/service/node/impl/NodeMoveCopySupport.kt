@@ -293,7 +293,7 @@ open class NodeMoveCopySupport(
     }
 
     private fun copyBlockNode(context: MoveCopyContext, srcNode: TNode, dstFullPath: String) {
-        if (srcNode.folder || fsNode(srcNode)) {
+        if (srcNode.folder || !fsNode(srcNode)) {
             return
         }
         val srcBlocks = blockNodeService.listAllBlocks(

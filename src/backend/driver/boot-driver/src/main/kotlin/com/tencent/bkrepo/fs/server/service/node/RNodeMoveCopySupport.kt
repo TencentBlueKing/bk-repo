@@ -287,7 +287,7 @@ open class RNodeMoveCopySupport(
     }
 
     private suspend fun copyBlockNode(context: MoveCopyContext, srcNode: TNode, dstFullPath: String) {
-        if (srcNode.folder || fsNode(srcNode)) {
+        if (srcNode.folder || !fsNode(srcNode)) {
             return
         }
         val srcBlocks = blockNodeService.listAllBlocks(
