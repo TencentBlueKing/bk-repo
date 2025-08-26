@@ -57,8 +57,13 @@ class FsNodeResource(
              * 1.当前仓库存储实例 (正常情况)
              * 2.拷贝存储实例（节点快速拷贝场景）
              * */
-            return storageService.load(blocks, range, storageCredentials)
-                ?: loadFromCopyIfNecessary(node, blocks, range)
+            val copyFromCredentialsKey = node.copyFromCredentialsKey
+            return storageService.load(blocks, range) { regionResource ->
+                val input = storageService.loadResource(regionResource, storageCredentials)
+                    ?: loadFromCopyIfNecessary(regionResource, copyFromCredentialsKey)
+                check(input != null) { "Block[${regionResource.digest}] miss." }
+                input
+            }
         }
     }
 
@@ -67,13 +72,16 @@ class FsNodeResource(
      * 还在本地文件系统上，这时拷贝节点就会从源存储去加载数据。
      * */
     private fun loadFromCopyIfNecessary(
-        node: NodeInfo,
-        blocks: List<RegionResource>,
-        range: Range,
+        resource: RegionResource,
+        copyFromCredentialsKey: String?,
     ): ArtifactInputStream? {
-        node.copyFromCredentialsKey?.let {
-            logger.info("load data [${node.projectId}/${node.repoName}/${node.fullPath}] from copy credentialsKey[$it]")
-            return storageService.load(blocks, range, storageCredentialService.findByKey(it))
+        copyFromCredentialsKey?.let {
+            if (logger.isDebugEnabled) {
+                logger.debug(
+                    "load region [${node.projectId}/${node.repoName}/${node.fullPath}] from copy credentialsKey[$it]"
+                )
+            }
+            return storageService.loadResource(resource, storageCredentialService.findByKey(it))
         }
         return null
     }
