@@ -2,6 +2,7 @@ package com.tencent.bkrepo.media.job.k8s
 
 import io.kubernetes.client.informer.SharedInformerFactory
 import io.kubernetes.client.openapi.ApiClient
+import io.kubernetes.client.openapi.Configuration.setDefaultApiClient
 import io.kubernetes.client.util.ClientBuilder
 import io.kubernetes.client.util.Config
 import io.kubernetes.client.util.credentials.AccessTokenAuthentication
@@ -30,6 +31,7 @@ class KubernetesConfig @Autowired constructor(
         client.setVerifyingSsl(false)
         // Informer 需要长连接，所以不设置超时
         client.setReadTimeout(0)
+        setDefaultApiClient(client);
         return client
     }
 
