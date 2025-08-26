@@ -31,7 +31,6 @@ class KubernetesConfig @Autowired constructor(
         client.setVerifyingSsl(false)
         // Informer 需要长连接，所以不设置超时
         client.setReadTimeout(0)
-        setDefaultApiClient(client)
         return client
     }
 
