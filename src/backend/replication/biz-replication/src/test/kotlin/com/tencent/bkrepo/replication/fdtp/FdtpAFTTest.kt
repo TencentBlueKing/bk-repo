@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.fdtp
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
 import com.tencent.bkrepo.common.artifact.hash.sha256
+import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
@@ -61,6 +62,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.Mockito
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.cloud.loadbalancer.support.SimpleObjectProvider
 import java.io.ByteArrayInputStream
 import java.util.concurrent.ConcurrentHashMap
@@ -104,6 +106,7 @@ class FdtpAFTTest {
             proxyRepository,
             artifactClient,
             httpAuthSecurity,
+            Mockito.mock(ObjectProvider::class.java) as ObjectProvider<NodeForwardService>
         )
         val helper = StorageHealthMonitorHelper(ConcurrentHashMap())
         ArtifactFileFactory(StorageProperties(), helper, limitCheckService)
