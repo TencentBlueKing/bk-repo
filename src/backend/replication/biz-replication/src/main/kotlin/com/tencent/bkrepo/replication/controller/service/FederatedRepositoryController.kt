@@ -39,9 +39,8 @@ class FederatedRepositoryController(
     private val federationRepositoryService: FederationRepositoryService,
 ) : FederatedRepositoryClient {
 
-    override fun createFederatedConfig(request: FederatedRepositoryConfigRequest): Response<Void> {
-        federationRepositoryService.saveFederationRepositoryConfig(request)
-        return ResponseBuilder.success()
+    override fun createFederatedConfig(request: FederatedRepositoryConfigRequest): Response<Boolean> {
+        return ResponseBuilder.success(federationRepositoryService.saveFederationRepositoryConfig(request))
     }
 
     override fun deleteConfig(projectId: String, repoName: String, key: String): Response<Void> {

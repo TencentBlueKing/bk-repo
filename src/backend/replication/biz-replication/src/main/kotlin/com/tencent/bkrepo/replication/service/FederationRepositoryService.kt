@@ -45,7 +45,7 @@ interface FederationRepositoryService {
     /**
      * 在联邦集群上创建对应集群信息以及任务存储联邦仓库配置
      */
-    fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest)
+    fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest): Boolean
 
     /**
      * 根据项目id和仓库名称和federationId查询相关联的联邦仓库配置
