@@ -224,11 +224,15 @@ open class ProjectRepoMetricsStatJob(
             ?: return Pair(0, 0)
         val repoArchiveStatInfoStr = project.metadata.find { it.key == ARCHIVE_STAT_INFO }?.value?.toString()
             ?: return Pair(0, 0)
-        val repoArchiveStatInfo =
-            repoArchiveStatInfoStr.readJsonString<ConcurrentHashMap<String, RepoArchiveStatInfo>>()
-        repoArchiveStatInfo[repoName]?.let {
-            num += it.num
-            size += it.size
+        try {
+            val repoArchiveStatInfo =
+                repoArchiveStatInfoStr.readJsonString<ConcurrentHashMap<String, RepoArchiveStatInfo>>()
+            repoArchiveStatInfo[repoName]?.let {
+                num += it.num
+                size += it.size
+            }
+        } catch (e: Exception) {
+            logger.error("get archive info error", e)
         }
         return Pair(num, size)
     }
