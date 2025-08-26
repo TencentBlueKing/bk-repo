@@ -34,8 +34,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.cloud.consul.config.ConsulConfigProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.stereotype.Component
 
-@Configuration(proxyBeanMethods = false)
+@Component
 @ConditionalOnProperty(value = ["spring.cloud.consul.enabled"], matchIfMissing = true)
 @ConditionalOnClass(ConsulClient::class)
 class ConsulConfigClientConfiguration {
