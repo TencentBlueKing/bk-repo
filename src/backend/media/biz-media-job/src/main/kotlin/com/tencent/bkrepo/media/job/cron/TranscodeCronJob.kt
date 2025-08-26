@@ -4,6 +4,7 @@ import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
 import com.tencent.bkrepo.media.common.dao.TranscodeJobConfigDao
 import com.tencent.bkrepo.media.job.service.TranscodeJobService
 import com.tencent.bkrepo.media.common.model.TMediaTranscodeJobConfig
+import com.tencent.bkrepo.media.job.config.MediaJobProperties
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.core.SimpleLock
@@ -15,11 +16,9 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Duration
 
-/**
- * 定时下发转码任务
- */
 @Component
 class TranscodeCronJob @Autowired constructor(
+    private val mediaJobProperties: MediaJobProperties,
     private val mediaTranscodeJobDao: MediaTranscodeJobDao,
     private val transcodeJobConfigDao: TranscodeJobConfigDao,
     private val transcodeJobService: TranscodeJobService,
@@ -30,6 +29,9 @@ class TranscodeCronJob @Autowired constructor(
 
     private var lock: SimpleLock? = null
 
+    /**
+     * 定时下发转码任务
+     */
     @Scheduled(fixedDelay = 1 * 1000)
     fun startTranscodeJob() {
         // 判断是否超出最大任务数上线
@@ -64,6 +66,13 @@ class TranscodeCronJob @Autowired constructor(
         } catch (e: Exception) {
             logger.error("Job mediaTranscodeCronJob start error", e)
         }
+    }
+
+    @Scheduled(cron = "0 0 1 * * ?")
+    fun performCleanup() {
+        logger.info("performCleanup scheduled cleanup of old successful jobs...")
+        val result = mediaTranscodeJobDao.deleteOldSuccessfulJobs(mediaJobProperties.cleanSuccessJobDays)
+        logger.info("performCleanup cleanup. Deleted ${result.deletedCount} jobs.")
     }
 
     /**

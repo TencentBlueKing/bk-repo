@@ -1,9 +1,11 @@
 package com.tencent.bkrepo.media.common.dao
 
+import com.mongodb.client.result.DeleteResult
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
 import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
+import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Query
@@ -12,7 +14,10 @@ import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import org.springframework.data.mongodb.core.query.Criteria.where as strWhere
 
 @Repository
 class MediaTranscodeJobDao : SimpleMongoDao<TMediaTranscodeJob>() {
@@ -54,11 +59,32 @@ class MediaTranscodeJobDao : SimpleMongoDao<TMediaTranscodeJob>() {
         return findAndModify(query, update, options, TMediaTranscodeJob::class.java)
     }
 
-    fun initJob(id: String): UpdateResult {
-        val query = Query(where(TMediaTranscodeJob::id).isEqualTo(id))
+    fun updateJobStatus(id: String, status: MediaTranscodeJobStatus): UpdateResult {
+        val query = Query(strWhere("_id").isEqualTo(ObjectId(id)))
         val update = Update()
-            .set(TMediaTranscodeJob::status.name, MediaTranscodeJobStatus.INIT)
+            .set(TMediaTranscodeJob::status.name, status)
             .currentDate(TMediaTranscodeJob::updateTime.name)
         return updateFirst(query, update)
+    }
+
+    fun updateJobsStatus(ids: Set<String>, status: MediaTranscodeJobStatus): UpdateResult {
+        val query = Query(strWhere("_id").`in`(ids.map { ObjectId(it) }))
+        val update = Update()
+            .set(TMediaTranscodeJob::status.name, status)
+            .currentDate(TMediaTranscodeJob::updateTime.name)
+        return updateFirst(query, update)
+    }
+
+    /**
+     * 删除一周前更新且状态为 SUCCESS 的作业。
+     */
+    fun deleteOldSuccessfulJobs(day: Long): DeleteResult {
+        val outTime = Instant.now().minus(day, ChronoUnit.DAYS)
+        val query = Query(
+            where(TMediaTranscodeJob::status).isEqualTo(MediaTranscodeJobStatus.SUCCESS)
+                .and(TMediaTranscodeJob::updateTime).lt(outTime)
+        )
+        val deleteResult = remove(query)
+        return deleteResult
     }
 }

@@ -1,13 +1,12 @@
 package com.tencent.bkrepo.media.job.service
 
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
-import com.tencent.bkrepo.media.job.k8s.K8sHelper
 import com.tencent.bkrepo.media.job.k8s.K8sProperties
-import com.tencent.bkrepo.media.job.k8s.buildMessage
 import com.tencent.bkrepo.media.job.k8s.limits
 import com.tencent.bkrepo.media.job.k8s.requests
 import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
 import com.tencent.bkrepo.media.common.model.TMediaTranscodeJobConfig
+import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.BatchV1Api
@@ -26,21 +25,17 @@ import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.http.HttpStatus
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.time.ZoneOffset
 
 @Service
-@EnableConfigurationProperties(K8sProperties::class)
 class TranscodeJobService @Autowired constructor(
+    private val apiClient: ApiClient,
     private val k8sProperties: K8sProperties,
     private val mediaTranscodeJobDao: MediaTranscodeJobDao
 ) {
-
-    private val k8sClient: ApiClient by lazy { createK8sHandler() }
-
     @Async
     fun startJob(config: TMediaTranscodeJobConfig) {
         val job = mediaTranscodeJobDao.findAndQueueOldestWaitingJob() ?: run {
@@ -52,7 +47,7 @@ class TranscodeJobService @Autowired constructor(
         if (jobName.length > 63) {
             jobName = jobName.substring(0, 63)
         }
-        val api = CoreV1Api(k8sClient)
+        val api = CoreV1Api(apiClient)
         try {
             val configMapName = SCRIPT_CONFIG_MAP_NAME
             if (api.exec {
@@ -67,13 +62,13 @@ class TranscodeJobService @Autowired constructor(
                 logger.error("configmap ${k8sProperties.namespace}:$configMapName not found error")
                 return
             }
-            createK8sJob(BatchV1Api(k8sClient), jobName, config, job)
+            createK8sJob(BatchV1Api(apiClient), jobName, config, job)
         } catch (e: ApiException) {
             logger.error(e.buildMessage())
             throw e
         }
 
-        mediaTranscodeJobDao.initJob(job.id!!)
+        mediaTranscodeJobDao.updateJobStatus(job.id!!, MediaTranscodeJobStatus.INIT)
     }
 
     private fun createK8sJob(
@@ -84,6 +79,8 @@ class TranscodeJobService @Autowired constructor(
     ) {
         val metadata = V1ObjectMeta()
             .name(jobName)
+            .namespace(k8sProperties.namespace)
+            .labels(TRANSCODE_JOB_LABEL)
         val container = V1Container()
             .name("transcoder")
             .image(config.image)
@@ -143,18 +140,14 @@ class TranscodeJobService @Autowired constructor(
             .kind("Job")
             .metadata(metadata)
             .spec(jobSpec)
-        val result = api.createNamespacedJob(
+        api.createNamespacedJob(
             k8sProperties.namespace,
             kJob,
             null,
             null,
             null,
         )
-        logger.info("created job $jobName in namespace '${k8sProperties.namespace}' status: ${result.status}")
-    }
-
-    private fun createK8sHandler(): ApiClient {
-        return K8sHelper.createClient(k8sProperties)
+        logger.info("created job $jobName in namespace ${k8sProperties.namespace}")
     }
 
     private fun <T> CoreV1Api.exec(block: () -> T?): T? {
@@ -169,6 +162,18 @@ class TranscodeJobService @Autowired constructor(
         }
     }
 
+    private fun ApiException.buildMessage(): String {
+        val builder = StringBuilder().append(code)
+            .appendLine("[$message]")
+            .appendLine(responseHeaders)
+            .appendLine(responseBody)
+        return builder.toString()
+    }
+
+    fun restartJob(ids: Set<String>) {
+        mediaTranscodeJobDao.updateJobsStatus(ids, MediaTranscodeJobStatus.WAITING)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(TranscodeJobService::class.java)
 
@@ -178,5 +183,6 @@ class TranscodeJobService @Autowired constructor(
         private const val CMD = "run.py"
         private val PYTHON_CMD =
             listOf("/bin/bash", "-c", "source /opt/conda/bin/activate media && python $CMD")
+        val TRANSCODE_JOB_LABEL = mapOf("app" to "BKREPO_MEDIA_TRANSCODE_JOB")
     }
 }
