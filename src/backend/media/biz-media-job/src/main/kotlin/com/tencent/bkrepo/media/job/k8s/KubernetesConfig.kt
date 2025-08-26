@@ -18,11 +18,16 @@ class KubernetesConfig @Autowired constructor(
 ) {
 
     @Bean
-    fun apiClient() = createClient(k8sProperties)
+    fun apiClient(): ApiClient {
+        val client = createClient(k8sProperties)
+        client.setVerifyingSsl(false)
+        return client
+    }
 
     @Bean
     fun informerClient(): ApiClient {
         val client = createClient(k8sProperties)
+        client.setVerifyingSsl(false)
         // Informer 需要长连接，所以不设置超时
         client.setReadTimeout(0)
         return client
