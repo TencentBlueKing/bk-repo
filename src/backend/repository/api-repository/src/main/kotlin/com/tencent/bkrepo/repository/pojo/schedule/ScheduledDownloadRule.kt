@@ -26,6 +26,8 @@ data class ScheduledDownloadRule(
     var conflictStrategy: ScheduledDownloadConflictStrategy,
     @get:Schema(title = "是否启用")
     val enabled: Boolean,
+    @get:Schema(title = "是否解压")
+    val extracted: Boolean,
     @get:Schema(title = "规则所属平台")
     val platform: Platform,
     @get:Schema(title = "规则生效范围")

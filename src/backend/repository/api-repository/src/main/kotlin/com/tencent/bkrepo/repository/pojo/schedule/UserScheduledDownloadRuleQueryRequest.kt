@@ -17,6 +17,8 @@ data class UserScheduledDownloadRuleQueryRequest(
     val metadataRules: Set<MetadataRule>? = null,
     @get:Schema(title = "是否启用")
     val enabled: Boolean? = null,
+    @get:Schema(title = "是否解压")
+    val extracted: Boolean? = null,
     @get:Schema(title = "适用平台")
     val platform: Platform? = null,
     @get:Schema(title = "页码")

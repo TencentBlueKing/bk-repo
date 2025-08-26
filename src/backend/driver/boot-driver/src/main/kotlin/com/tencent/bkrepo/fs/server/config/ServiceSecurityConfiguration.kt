@@ -30,7 +30,6 @@ package com.tencent.bkrepo.fs.server.config
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.security.constant.MS_AUTH_HEADER_SECURITY_TOKEN
 import com.tencent.bkrepo.common.security.service.ServiceAuthManager
-import com.tencent.bkrepo.common.security.service.ServiceAuthProperties
 import com.tencent.bkrepo.common.service.exception.GlobalExceptionHandler
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler
@@ -42,7 +41,7 @@ import reactivefeign.client.ReactiveHttpRequestInterceptor
 /**
  * 服务间的安全配置
  * */
-@Import(ServiceAuthManager::class, ServiceAuthProperties::class)
+@Import(ServiceAuthManager::class)
 @Configuration
 class ServiceSecurityConfiguration {
 

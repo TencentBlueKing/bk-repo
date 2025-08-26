@@ -60,6 +60,7 @@ class ScheduledDownloadRuleServiceImpl(
                     downloadDir = downloadDir,
                     conflictStrategy = conflictStrategy,
                     enabled = enabled,
+                    extracted = extracted,
                     platform = platform,
                     scope = scope
                 )
@@ -101,6 +102,7 @@ class ScheduledDownloadRuleServiceImpl(
             downloadDir?.let { oldRule.downloadDir = it }
             conflictStrategy?.let { oldRule.conflictStrategy = it }
             enabled?.let { oldRule.enabled = it }
+            extracted?.let { oldRule.extracted = it }
             platform?.let { oldRule.platform = it }
 
             logger.info("[$operator] update scheduled rule[${oldRule.id}] of project[${oldRule.projectId}] success ")
@@ -218,6 +220,7 @@ class ScheduledDownloadRuleServiceImpl(
                 criteria.andOperator(metadataCriteria)
             }
             enabled?.let { criteria.and(TScheduledDownloadRule::enabled.name).isEqualTo(it) }
+            extracted?.let { criteria.and(TScheduledDownloadRule::extracted.name).isEqualTo(it) }
 
             if (platform != null && platform != Platform.ALL) {
                 criteria.orOperator(
@@ -273,6 +276,7 @@ class ScheduledDownloadRuleServiceImpl(
             downloadDir = downloadDir,
             conflictStrategy = conflictStrategy,
             enabled = enabled,
+            extracted = extracted,
             platform = platform,
             scope = scope,
         )

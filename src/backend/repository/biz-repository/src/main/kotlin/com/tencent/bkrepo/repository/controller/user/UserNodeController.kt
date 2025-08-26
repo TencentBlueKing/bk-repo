@@ -237,7 +237,7 @@ class UserNodeController(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @RequestBody
-        @Size(max = 200, message = "操作个数必须在0和200之间")
+        @Size(max = 200, message = "{node.batch.delete.count.limit}")
         fullPaths: List<String>,
     ): Response<NodeDeleteResult> {
         val nodesDeleteRequest = NodesDeleteRequest(

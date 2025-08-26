@@ -2,7 +2,7 @@
   <el-dialog title="创建项目配置" :visible.sync="showDialog" :before-close="close">
     <el-form ref="form" :model="projectConfig" status-icon>
       <el-form-item ref="project-form-item" label="项目ID" prop="projectId" :rules="[{ required: true, message: '项目ID不能为空'}]">
-        <el-input :disabled="!createMode" v-model="projectConfig.projectId" />
+        <el-input v-model="projectConfig.projectId" :disabled="!createMode" />
       </el-form-item>
       <el-form-item
         label="环境"
