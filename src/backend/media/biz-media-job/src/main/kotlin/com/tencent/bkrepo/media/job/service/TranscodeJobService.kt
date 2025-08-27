@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.media.job.service
 
+import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
 import com.tencent.bkrepo.media.job.k8s.K8sProperties
 import com.tencent.bkrepo.media.job.k8s.limits
@@ -7,6 +8,7 @@ import com.tencent.bkrepo.media.job.k8s.requests
 import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
 import com.tencent.bkrepo.media.common.model.TMediaTranscodeJobConfig
 import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
+import com.tencent.bkrepo.media.common.pojo.transcode.TranscodeReportData
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.BatchV1Api
@@ -172,6 +174,18 @@ class TranscodeJobService @Autowired constructor(
 
     fun restartJob(ids: Set<String>) {
         mediaTranscodeJobDao.updateJobsStatus(ids, MediaTranscodeJobStatus.WAITING)
+    }
+
+    /**
+     * 上报转码任务状态和监控信息
+     */
+    fun jobReport(artifactInfo: ArtifactInfo, data: TranscodeReportData) {
+        mediaTranscodeJobDao.updateStatus(
+            projectId = artifactInfo.projectId,
+            repoName = artifactInfo.repoName,
+            fileName = artifactInfo.getResponseName(),
+            status = data.status,
+        )
     }
 
     companion object {

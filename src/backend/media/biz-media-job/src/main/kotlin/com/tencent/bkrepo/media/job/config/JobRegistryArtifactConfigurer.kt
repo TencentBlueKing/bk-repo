@@ -47,6 +47,6 @@ class JobRegistryArtifactConfigurer : ArtifactConfigurerSupport() {
 
     override fun getAuthSecurityCustomizer() =
         HttpAuthSecurityCustomizer { httpAuthSecurity ->
-            httpAuthSecurity.withPrefix("/media/job")
+            httpAuthSecurity.withPrefix("/media-job")
         }
 }

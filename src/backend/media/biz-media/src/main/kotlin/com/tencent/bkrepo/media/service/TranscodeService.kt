@@ -18,7 +18,6 @@ import com.tencent.bkrepo.media.config.MediaProperties
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
 import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
 import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
-import com.tencent.bkrepo.media.common.pojo.transcode.TranscodeReportData
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import com.tencent.bkrepo.media.stream.TranscodeParam
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -117,18 +116,6 @@ class TranscodeService(
         }
     }
 
-    /**
-     * 上报转码任务状态和监控信息
-     */
-    fun jobReport(artifactInfo: ArtifactInfo, data: TranscodeReportData) {
-        mediaTranscodeJobDao.updateStatus(
-            projectId = artifactInfo.projectId,
-            repoName = artifactInfo.repoName,
-            fileName = artifactInfo.getResponseName(),
-            status = data.status,
-        )
-    }
-
     private fun generateTranscodeParam(
         artifactInfo: ArtifactInfo,
         transcodeConfig: TranscodeConfig,
@@ -178,7 +165,7 @@ class TranscodeService(
         val downloadUrl = "$host/media/user/transcode/download$input?token=$inputToken"
         val callbackUrl = "$host/media/user/transcode/upload$output?token=$outputToken" +
                 "&origin=${input.getArtifactFullPath()}&originToken=$inputToken"
-        val reportUrl = "$host/media/user/transcode/job/report$input?token=$inputToken"
+        val reportUrl = "$host/media-job/user/media/job/report$input?token=$inputToken"
         return Triple(downloadUrl, callbackUrl, reportUrl)
     }
 
