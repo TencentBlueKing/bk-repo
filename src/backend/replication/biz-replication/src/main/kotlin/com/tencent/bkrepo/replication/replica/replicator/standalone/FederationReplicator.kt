@@ -31,6 +31,7 @@ import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
@@ -53,6 +54,7 @@ import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterAr
 import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -235,17 +237,19 @@ class FederationReplicator(
             return if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
                 // 异步执行
                 executor.execute {
-                    try {
-                        pushFileToFederatedCluster(this, node)
-                        completeFileReplicaRecord(context)
-                    } catch (throwable: Throwable) {
-                        logger.error(
-                            "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
-                                "${node.projectId}|${node.repoName} failed, error is" +
-                                " ${Throwables.getStackTraceAsString(throwable)}"
-                        )
-                        completeFileReplicaRecord(context, false)
-                    }
+                    Runnable {
+                        try {
+                            pushFileToFederatedCluster(this, node)
+                            completeFileReplicaRecord(context)
+                        } catch (throwable: Throwable) {
+                            logger.error(
+                                "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
+                                    "${node.projectId}|${node.repoName} failed, error is" +
+                                    " ${Throwables.getStackTraceAsString(throwable)}"
+                            )
+                            completeFileReplicaRecord(context, false)
+                        }
+                    }.trace()
                 }
                 true
             } else {
@@ -330,9 +334,15 @@ class FederationReplicator(
                 }
 
                 // 3. 通过文件传输完成标识
-                artifactReplicaClient!!.replicaMetadataSaveRequest(
-                    buildMetadataSaveRequest(context, node, task.name)
-                )
+                if (node.deleted != null) {
+                    artifactReplicaClient!!.replicaMetadataSaveRequestForDeletedNode(
+                        buildDeletedNodeMetadataSaveRequest(context, node, task.name)
+                    )
+                } else {
+                    artifactReplicaClient!!.replicaMetadataSaveRequest(
+                        buildMetadataSaveRequest(context, node, task.name)
+                    )
+                }
                 true
             }
         }
@@ -498,6 +508,22 @@ class FederationReplicator(
                 source = getCurrentClusterName(localProjectId, localRepoName, task.name)
             )
         }
+    }
+
+    private fun buildDeletedNodeMetadataSaveRequest(
+        context: ReplicaContext,
+        node: NodeInfo,
+        taskName: String,
+    ): DeletedNodeMetadataSaveRequest {
+        return DeletedNodeMetadataSaveRequest(
+            projectId = context.remoteProjectId!!,
+            repoName = context.remoteRepoName!!,
+            fullPath = node.fullPath,
+            nodeMetadata = listOf(MetadataModel(FEDERATED, true, true)),
+            operator = node.createdBy,
+            source = getCurrentClusterName(node.projectId, node.repoName, taskName),
+            deleted = LocalDateTime.parse(node.deleted, DateTimeFormatter.ISO_DATE_TIME)
+        )
     }
 
     private fun buildMetadataSaveRequest(

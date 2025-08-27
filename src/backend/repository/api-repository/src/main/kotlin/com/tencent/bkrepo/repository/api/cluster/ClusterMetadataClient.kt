@@ -29,6 +29,7 @@ package com.tencent.bkrepo.repository.api.cluster
 
 import com.tencent.bkrepo.common.api.constant.REPOSITORY_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import io.swagger.v3.oas.annotations.Operation
@@ -55,4 +56,9 @@ interface ClusterMetadataClient {
     @Operation(summary = "添加禁用元数据")
     @PostMapping("/forbid")
     fun addForbidMetadata(@RequestBody request: MetadataSaveRequest): Response<Void>
+
+
+    @Operation(summary = "创建/更新元数据列表")
+    @PostMapping("/save/deletd")
+    fun saveMetadataForDeletedNode(@RequestBody request: DeletedNodeMetadataSaveRequest): Response<Void>
 }

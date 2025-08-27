@@ -50,6 +50,7 @@ import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
+import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
@@ -215,6 +216,11 @@ class ArtifactReplicaController(
 
     override fun replicaMetadataSaveRequest(request: MetadataSaveRequest): Response<Void> {
         metadataService.saveMetadata(request)
+        return ResponseBuilder.success()
+    }
+
+    override fun replicaMetadataSaveRequestForDeletedNode(request: DeletedNodeMetadataSaveRequest): Response<Void> {
+        metadataService.saveMetadataForDeletedNode(request)
         return ResponseBuilder.success()
     }
 

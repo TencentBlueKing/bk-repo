@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -139,21 +140,24 @@ class FederationRepositoryServiceImpl(
             throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_FULL_SYNC_RUNNING)
         }
         try {
+            // TODO 这里锁释放的时候任务还没执行完成
             // 使用线程池异步执行同步任务
             executor.submit {
-                try {
-                    // TODO 多个任务并发执行
-                    federationRepository.federatedClusters.forEach {
-                        val taskInfo = replicaTaskService.getByTaskId(it.taskId!!)
-                        taskInfo?.let { task ->
-                            val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
-                            federationManualReplicaJobExecutor.execute(taskDetail)
+                Runnable {
+                    try {
+                        // TODO 多个任务并发执行
+                        federationRepository.federatedClusters.forEach {
+                            val taskInfo = replicaTaskService.getByTaskId(it.taskId!!)
+                            taskInfo?.let { task ->
+                                val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
+                                federationManualReplicaJobExecutor.execute(taskDetail)
+                            }
                         }
+                    } finally {
+                        unlock(projectId, repoName, federationId, lock)
+                        logger.info("Released lock for federation sync: $federationId")
                     }
-                } finally {
-                    unlock(projectId, repoName, federationId, lock)
-                    logger.info("Released lock for federation sync: $federationId")
-                }
+                }.trace()
             }
         } catch (ignore: Exception) {
             logger.error("Failed to full sync federation repository, error: ${ignore.message}")
