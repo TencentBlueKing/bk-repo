@@ -59,7 +59,7 @@ class ConsulRegistryClient constructor(
         return res.use {
             parseResAndThrowExceptionOnRequestFailed(res) { res ->
                 res.body!!.string().readJsonString<Map<String, List<String>>>().map {
-                    ServiceInfo(it.key, emptyList())
+                    ServiceInfo(it.key, instances(it.key))
                 }
             }
         }

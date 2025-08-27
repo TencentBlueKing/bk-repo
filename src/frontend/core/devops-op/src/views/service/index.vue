@@ -9,6 +9,15 @@
         label="服务名"
         width="180"
       />
+      <el-table-column
+        prop="instances"
+        label="实例数"
+        width="180"
+      >
+        <template slot-scope="scope">
+          {{ scope.row.instances.length }}
+        </template>
+      </el-table-column>
       <el-table-column label="操作">
         <template slot-scope="scope">
           <el-button type="primary" size="mini" @click="toInstance(scope.row.name)">详情</el-button>
