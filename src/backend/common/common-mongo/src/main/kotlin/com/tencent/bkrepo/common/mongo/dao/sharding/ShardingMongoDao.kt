@@ -162,7 +162,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         return shardingUtils.shardingCountFor(shardingKey.count)
     }
 
-    private fun determineShardingColumn(): String {
+    open fun determineShardingColumn(): String {
         val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
         if (shardingKey.column.isNotEmpty()) {
             return shardingKey.column
