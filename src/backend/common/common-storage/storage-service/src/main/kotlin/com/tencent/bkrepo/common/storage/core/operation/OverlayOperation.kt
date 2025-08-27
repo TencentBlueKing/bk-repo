@@ -31,11 +31,23 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
+import java.io.InputStream
 
 interface OverlayOperation {
     fun load(
         blocks: List<RegionResource>,
         range: Range,
+        storageCredentials: StorageCredentials?
+    ): ArtifactInputStream?
+
+    fun load(
+        blocks: List<RegionResource>,
+        range: Range,
+        loader: (RegionResource) -> InputStream,
+    ): ArtifactInputStream?
+
+    fun loadResource(
+        resource: RegionResource,
         storageCredentials: StorageCredentials?
     ): ArtifactInputStream?
 }
