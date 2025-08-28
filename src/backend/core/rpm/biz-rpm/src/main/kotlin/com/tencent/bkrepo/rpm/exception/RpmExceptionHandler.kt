@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.rpm.exception
 
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.rpm.pojo.RpmExceptionResponse
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -46,48 +47,56 @@ class RpmExceptionHandler {
     @ExceptionHandler(RpmRequestParamMissException::class)
     @ResponseStatus(HttpStatus.PRECONDITION_FAILED)
     fun handleException(exception: RpmRequestParamMissException): RpmExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return RpmExceptionResponse(HttpStatus.PRECONDITION_FAILED.toString(), exception.message)
     }
 
     @ExceptionHandler(RpmIndexTypeResolveException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: RpmIndexTypeResolveException): RpmExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
     }
 
     @ExceptionHandler(RpmIndexNotFoundException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: RpmIndexNotFoundException): RpmExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
     }
 
     @ExceptionHandler(RpmConfNotFoundException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: RpmConfNotFoundException): RpmExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
     }
 
     @ExceptionHandler(RpmArtifactMetadataResolveException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: RpmArtifactMetadataResolveException): RpmExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
     }
 
     @ExceptionHandler(RpmVersionNotFoundException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: RpmVersionNotFoundException): RpmExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return RpmExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
     }
 
     @ExceptionHandler(RpmArtifactFormatNotSupportedException::class)
     @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
     fun handleException(exception: RpmArtifactFormatNotSupportedException): RpmExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return RpmExceptionResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE.toString(), exception.message)
     }
 
     @ExceptionHandler(RpmRepoDataException::class)
     @ResponseStatus(HttpStatus.PRECONDITION_FAILED)
     fun handleException(exception: RpmRepoDataException): RpmExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return RpmExceptionResponse(HttpStatus.PRECONDITION_FAILED.toString(), exception.message)
     }
 }
