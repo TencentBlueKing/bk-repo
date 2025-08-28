@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties(value = "job.ddc-blob-ref-count-correct")
-class DdcBlobRefCountCorrectJobPropertie: MongodbJobProperties() {
+class DdcBlobRefCountCorrectJobProperties: MongodbJobProperties() {
     override var cron: String = "0 0 1 * * ?"
     /**
      * 预期blob与ref关系总数
