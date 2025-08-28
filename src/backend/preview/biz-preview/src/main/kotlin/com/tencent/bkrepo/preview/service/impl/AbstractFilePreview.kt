@@ -59,6 +59,7 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 处理office文件
@@ -67,9 +68,11 @@ abstract class AbstractFilePreview(
     private val config: PreviewConfig,
     private val fileTransferService: FileTransferService,
     private val previewFileCacheService: PreviewFileCacheServiceImpl,
-    private val nodeService: NodeService,
-    private val enableMultiTenant: EnableMultiTenantProperties
+    private val nodeService: NodeService
 ) : FilePreview {
+
+    @Autowired
+    lateinit var enableMultiTenant: EnableMultiTenantProperties
 
     override fun filePreviewHandle(fileAttribute: FileAttribute) {
         // 下载文件, 存在临时目录

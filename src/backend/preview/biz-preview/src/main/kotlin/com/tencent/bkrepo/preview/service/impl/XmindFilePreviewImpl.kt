@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.preview.service.impl
 
-import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.service.FileTransferService
@@ -46,12 +45,10 @@ class XmindFilePreviewImpl(
     private val config: PreviewConfig,
     private val fileTransferService: FileTransferService,
     private val previewFileCacheService: PreviewFileCacheServiceImpl,
-    private val nodeService: NodeService,
-    private val enableMultiTenant: EnableMultiTenantProperties
+    private val nodeService: NodeService
 ) : AbstractFilePreview(
     config,
     fileTransferService,
     previewFileCacheService,
-    nodeService,
-    enableMultiTenant
+    nodeService
 )

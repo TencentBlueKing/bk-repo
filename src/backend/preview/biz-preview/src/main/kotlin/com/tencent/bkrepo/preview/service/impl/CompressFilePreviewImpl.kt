@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
@@ -46,6 +45,8 @@ import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.pojo.FileAttribute
 import com.tencent.bkrepo.preview.service.FileTransferService
 import com.tencent.bkrepo.preview.service.cache.impl.PreviewFileCacheServiceImpl
+import java.io.BufferedInputStream
+import java.io.InputStream
 import org.apache.commons.compress.archivers.ArchiveEntry
 import org.apache.commons.compress.archivers.ArchiveException
 import org.apache.commons.compress.archivers.ArchiveInputStream
@@ -54,8 +55,6 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.apache.commons.compress.utils.IOUtils
 import org.springframework.stereotype.Service
 import org.springframework.util.unit.DataSize
-import java.io.BufferedInputStream
-import java.io.InputStream
 
 @Service
 class CompressFilePreviewImpl(
@@ -64,14 +63,12 @@ class CompressFilePreviewImpl(
     previewFileCacheService: PreviewFileCacheServiceImpl,
     private val nodeService: NodeService,
     private val storageManager: StorageManager,
-    private val artifactResourceWriter: ArtifactResourceWriter,
-    private val enableMultiTenant: EnableMultiTenantProperties
+    private val artifactResourceWriter: ArtifactResourceWriter
 ) : AbstractFilePreview(
     config,
     fileTransferService,
     previewFileCacheService,
-    nodeService,
-    enableMultiTenant
+    nodeService
 ) {
 
     override fun filePreviewHandle(fileAttribute: FileAttribute) {

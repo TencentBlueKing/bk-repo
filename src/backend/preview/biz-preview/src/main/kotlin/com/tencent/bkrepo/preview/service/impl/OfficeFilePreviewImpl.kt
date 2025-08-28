@@ -31,7 +31,6 @@
 
 package com.tencent.bkrepo.preview.service.impl
 
-import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
@@ -42,9 +41,6 @@ import com.tencent.bkrepo.preview.service.FileTransferService
 import com.tencent.bkrepo.preview.service.OfficeToPdfService
 import com.tencent.bkrepo.preview.service.cache.impl.PreviewFileCacheServiceImpl
 import com.tencent.bkrepo.preview.utils.EncodingDetects
-import org.jodconverter.core.office.OfficeException
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.FileInputStream
@@ -53,6 +49,9 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
+import org.jodconverter.core.office.OfficeException
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 
 /**
  * 处理office文件
@@ -63,14 +62,12 @@ class OfficeFilePreviewImpl(
     private val officeToPdfService: OfficeToPdfService,
     private val fileTransferService: FileTransferService,
     private val previewFileCacheService: PreviewFileCacheServiceImpl,
-    private val nodeService: NodeService,
-    private val enableMultiTenant: EnableMultiTenantProperties
+    private val nodeService: NodeService
 ) : AbstractFilePreview(
     config,
     fileTransferService,
     previewFileCacheService,
-    nodeService,
-    enableMultiTenant
+    nodeService
 ) {
     /**
      * 转换文件，比如docx转成pdf
