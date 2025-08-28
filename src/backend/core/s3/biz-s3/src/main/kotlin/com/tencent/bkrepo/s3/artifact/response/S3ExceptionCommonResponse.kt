@@ -33,6 +33,7 @@ package com.tencent.bkrepo.s3.artifact.response
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
@@ -88,6 +89,7 @@ class S3ExceptionCommonResponse {
         }
 
         private fun setResponseHeaders(response: HttpServletResponse) {
+            TraceHeaderUtils.setResponseHeader()
             response.setHeader(S3HttpHeaders.X_AMZ_REQUEST_ID, ContextUtil.getTraceId())
             response.setHeader(S3HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
             response.setHeader(HttpHeaders.CONTENT_TYPE, "application/xml")

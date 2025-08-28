@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.huggingface.exception
 
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.huggingface.constants.ERROR_CODE_HEADER
 import com.tencent.bkrepo.huggingface.constants.ERROR_MSG_HEADER
@@ -41,6 +42,7 @@ class HfExceptionHandler {
     @ExceptionHandler(HfException::class)
     fun response(exception: HfException) {
         val response = HttpContextHolder.getResponse()
+        TraceHeaderUtils.setResponseHeader()
         response.status = exception.status.value
         response.setHeader(ERROR_CODE_HEADER, exception.errorCode.code)
         response.setHeader(
@@ -52,6 +54,7 @@ class HfExceptionHandler {
     @ExceptionHandler(HfApiException::class)
     fun response(exception: HfApiException) {
         val response = HttpContextHolder.getResponse()
+        TraceHeaderUtils.setResponseHeader()
         response.status = exception.status
         response.setHeader(ERROR_CODE_HEADER, exception.errorCode)
         response.setHeader(ERROR_MSG_HEADER, exception.errorMessage)
