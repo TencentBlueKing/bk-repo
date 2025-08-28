@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.pojo
 
+
 data class BkAuthUserResponse(
-    val data: Map<String, String>
+    val data: List<Map<String, String>>
 )

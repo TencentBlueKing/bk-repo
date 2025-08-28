@@ -21,10 +21,11 @@ class BkAuthService {
         .readTimeout(5L, TimeUnit.SECONDS)
         .writeTimeout(5L, TimeUnit.SECONDS).build()
 
-    fun checkBkUserDetail(userId: String, tenantId: String): Boolean {
+    fun checkBkUserExist(userId: String, tenantId: String): Boolean {
         if (!bkAuthConfig.enableBkUser) return false
         if (tenantId == null) return false
-        val url = "${bkAuthConfig.bkAuthServer}/api/bk-user/prod/api/v3/open/tenant/users/{bk_username}/" + userId
+        val url =
+            "${bkAuthConfig.bkAuthServer}/api/bk-user/prod/api/v3/open/tenant/users/-/display_info/?bk_usernames=$userId"
         val authHeader = mapOf(
             "bk_app_code" to bkAuthConfig.bkAppCode,
             "bk_app_secret" to bkAuthConfig.bkAppSecret
@@ -32,17 +33,17 @@ class BkAuthService {
         try {
             val request = Request.Builder().url(url).header("X-Bkapi-Authorization", authHeader)
                 .header("X-Bk-Tenant-Id", tenantId).get().build()
-            logger.debug("checkBkUserDetail, requestUrl: [$url]")
+            logger.debug("checkBkUserExist, requestUrl: [$url]")
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
-            logger.debug("checkBkUserDetail, requestUrl: [$url], result : [${apiResponse.content}]")
+            logger.debug("checkBkUserExist, requestUrl: [$url], result : [${apiResponse.content}]")
             if (apiResponse.code == HttpStatus.OK.value) {
                 val responseObject = JsonUtils.objectMapper.readValue<BkAuthUserResponse>(apiResponse.content)
-                if (responseObject.data["bk_username"] == userId) {
+                if (responseObject.data.isNotEmpty() && responseObject.data[0]["bk_username"] == userId) {
                     return true
                 }
             }
         } catch (exception: Exception) {
-            logger.error("checkBkUserDetail error : ", exception)
+            logger.error("checkBkUserExist error : ", exception)
         }
         return false
     }

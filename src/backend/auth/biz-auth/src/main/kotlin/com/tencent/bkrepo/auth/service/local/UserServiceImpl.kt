@@ -333,7 +333,7 @@ class UserServiceImpl constructor(
         logger.debug("get user userId : [$userId]")
         var user = userDao.findFirstByUserId(userId)
         if (user == null && tenantId != null) {
-            if (bkAuthService.checkBkUserDetail(userId, tenantId)) {
+            if (bkAuthService.checkBkUserExist(userId, tenantId)) {
                 val createRequest = CreateUserRequest(userId = userId, name = userId, tenantId = tenantId)
                 createUser(createRequest)
             }
