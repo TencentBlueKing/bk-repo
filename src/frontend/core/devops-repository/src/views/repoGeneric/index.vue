@@ -1070,7 +1070,7 @@
                         this.$refs.loading.cancelMessage = this.$t('downloadLater')
                         this.$refs.loading.subMessage = resJson.message
                         this.$refs.loading.message = this.$t('backUpMessage', { 0: row.name })
-                        this.timerDownload( url, row.fullPath, row.name)
+                        this.timerDownload(url, row.fullPath, row.name)
                     } else if (response.status === 403) {
                         this.getPermissionUrl({
                             body: {
@@ -1115,6 +1115,7 @@
                 })
             },
             timerDownload (url, fullPath, name) {
+                if (this.timer) return
                 this.timer = setInterval(async () => {
                     try {
                         const response = await fetch('/web' + url, {
