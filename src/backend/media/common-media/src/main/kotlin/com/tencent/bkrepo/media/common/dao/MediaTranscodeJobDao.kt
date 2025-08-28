@@ -72,7 +72,7 @@ class MediaTranscodeJobDao : SimpleMongoDao<TMediaTranscodeJob>() {
         val update = Update()
             .set(TMediaTranscodeJob::status.name, status)
             .currentDate(TMediaTranscodeJob::updateTime.name)
-        return updateFirst(query, update)
+        return updateMulti(query, update)
     }
 
     /**
