@@ -31,7 +31,8 @@ object HttpUtils {
                 }
             } catch (e: Exception) {
                 if (currentRetry > 0) {
-                    logger.warn("HTTP request failed, retrying ${retry - currentRetry + 1}/$retry, url=${request.url}, cause: ${e.message}")
+                    logger.warn("HTTP request failed, retrying ${retry - currentRetry + 1}/$retry, " +
+                                    "url=${request.url}, cause: ${e.message}")
                     Thread.sleep(retryDelayMs)
                     currentRetry--
                 } else {
