@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.replication-lock-cleanup")
-class ReplicationLockCleanupJobProperties(
-    override var cron: String = "0 0 4/24 * * ?",
-) : MongodbJobProperties()
+class ReplicationLockCleanupJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 4/24 * * ?"
+}

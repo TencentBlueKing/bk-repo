@@ -32,8 +32,8 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.third-party-image-replication")
-class ThirdPartyImageReplicationJobProperties(
-    override var enabled: Boolean = true,
-    override var fixedDelay: Long = 60 * 1000L,
+class ThirdPartyImageReplicationJobProperties: MongodbJobProperties() {
+    override var enabled: Boolean = true
+    override var fixedDelay: Long = 60 * 1000L
     override var initialDelay: Long = 60 * 1000L
-) : MongodbJobProperties()
+}

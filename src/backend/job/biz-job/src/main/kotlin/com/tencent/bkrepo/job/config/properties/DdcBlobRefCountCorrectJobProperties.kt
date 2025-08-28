@@ -32,15 +32,15 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties(value = "job.ddc-blob-ref-count-correct")
-class DdcBlobRefCountCorrectJobProperties(
-    override var cron: String = "0 0 1 * * ?",
+class DdcBlobRefCountCorrectJobPropertie: MongodbJobProperties() {
+    override var cron: String = "0 0 1 * * ?"
     /**
      * 预期blob与ref关系总数
      */
-    var expectedRefs: Long = 10_000_000,
+    var expectedRefs: Long = 10_000_000
     /**
      * 布隆过滤器的误报率。
      * 误报率较高，会导致更多的数据库查询，但不影响节点清理的正确性，误报率越低，消耗的内存越大。
      * */
-    var fpp: Double = 0.0001,
-) : MongodbJobProperties()
+    var fpp: Double = 0.0001
+}

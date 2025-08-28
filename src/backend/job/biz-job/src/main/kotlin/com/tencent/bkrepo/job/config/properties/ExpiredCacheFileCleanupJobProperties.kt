@@ -34,12 +34,12 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.expired-cache-file-cleanup")
-class ExpiredCacheFileCleanupJobProperties(
-    override var cron: String = "0 0 4 * * ?",
+class ExpiredCacheFileCleanupJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 4 * * ?"
     @NestedConfigurationProperty
-    var repoConfig: RepositoryExpireConfig = RepositoryExpireConfig(),
+    var repoConfig: RepositoryExpireConfig = RepositoryExpireConfig()
     /**
      * 忽略的存储凭据，这些存储的缓存将不执行清理
      */
     var ignoredStorageCredentialsKeys: Set<String> = emptySet()
-) : MongodbJobProperties()
+}
