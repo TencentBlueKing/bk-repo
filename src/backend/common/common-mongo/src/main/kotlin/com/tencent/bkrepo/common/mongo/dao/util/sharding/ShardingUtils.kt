@@ -31,7 +31,7 @@ interface ShardingUtils {
 
     fun shardingCountFor(i: Int): Int
 
-    fun shardingSequenceFor(value: Any, shardingCount: Int): Int
+    fun shardingSequenceFor(values: List<Any>, shardingCount: Int): Int
 
-    fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int>
+    fun shardingSequencesFor(values: List<Any>, shardingCount: Int): Set<Int>
 }

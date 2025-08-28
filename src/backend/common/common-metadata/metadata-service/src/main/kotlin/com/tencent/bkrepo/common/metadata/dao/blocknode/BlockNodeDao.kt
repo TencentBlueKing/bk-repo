@@ -36,18 +36,21 @@ import org.springframework.stereotype.Repository
 
 @Repository
 @Conditional(SyncCondition::class)
-class BlockNodeDao(private val blockNodeProperties: BlockNodeProperties) : HashShardingMongoDao<TBlockNode>() {
-    override fun determineShardingColumn(): String {
-        if (blockNodeProperties.collectionName.isNotEmpty() && blockNodeProperties.shardingKey.isNotEmpty()) {
-            return blockNodeProperties.shardingKey
-        }
-        return super.determineShardingColumn()
-    }
+class BlockNodeDao(private val blockNodeProperties: BlockNodeProperties? = null) : HashShardingMongoDao<TBlockNode>() {
 
     override fun determineCollectionName(): String {
-        if (blockNodeProperties.collectionName.isNotEmpty() && blockNodeProperties.shardingKey.isNotEmpty()) {
+        if (blockNodeProperties != null && blockNodeProperties.collectionName.isNotEmpty()) {
             return blockNodeProperties.collectionName
         }
         return super.determineCollectionName()
+    }
+
+    override fun updateShardingCountIfNecessary() {
+        val shardingCount = blockNodeProperties?.shardingCount
+        if (shardingCount != null) {
+            this.shardingCount = shardingCount
+        } else {
+            super.updateShardingCountIfNecessary()
+        }
     }
 }

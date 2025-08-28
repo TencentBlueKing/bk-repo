@@ -36,12 +36,16 @@ object MonthRangeShardingUtils : ShardingUtils {
         return -1
     }
 
-    override fun shardingSequenceFor(value: Any, shardingCount: Int): Int {
+    override fun shardingSequenceFor(values: List<Any>, shardingCount: Int): Int {
+        require(values.size == 1)
+        val value = values.first()
         require(value is LocalDateTime)
         return calculateSequence(value)
     }
 
-    override fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int> {
+    override fun shardingSequencesFor(values: List<Any>, shardingCount: Int): Set<Int> {
+        require(values.size == 1)
+        val value = values.first()
         require(value is Document && value.size == 2)
         val startValue = (value["\$gte"] ?: value["\$gt"]) as LocalDateTime
         val endValue = (value["\$lte"] ?: value["\$lt"]) as LocalDateTime

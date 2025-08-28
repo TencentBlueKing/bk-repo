@@ -34,11 +34,13 @@ package com.tencent.bkrepo.common.mongo.dao.sharding
 import com.mongodb.BasicDBList
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.api.mongo.ShardingKey
+import com.tencent.bkrepo.common.api.mongo.ShardingKeys
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
 import com.tencent.bkrepo.common.mongo.dao.util.sharding.ShardingUtils
 import jakarta.annotation.PostConstruct
 import org.apache.commons.lang3.reflect.FieldUtils
+import org.apache.commons.lang3.reflect.FieldUtils.getAllFieldsList
 import org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation
 import org.bson.Document
 import org.slf4j.LoggerFactory
@@ -53,6 +55,7 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.index.IndexDefinition
 import org.springframework.data.mongodb.core.query.Query
 import java.lang.reflect.Field
+import java.lang.reflect.Modifier
 
 /**
  * mongodb 支持分表的数据访问层抽象类
@@ -68,14 +71,9 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     private val fixedShardingCount: Int? = null
 
     /**
-     * 分表Field
+     * 分表Field，key为列名
      */
-    protected val shardingField: Field
-
-    /**
-     * 分表列名
-     */
-    private val shardingColumn: String
+    protected val shardingFields: LinkedHashMap<String, Field>
 
     /**
      * 分表数
@@ -96,9 +94,8 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
             "Only one field could be annotated with ShardingKey annotation but find ${fieldsWithShardingKey.size}!"
         }
 
-        this.shardingField = fieldsWithShardingKey[0]
-        this.shardingColumn = determineShardingColumn()
-        this.shardingCount = determineShardingCount()
+        this.shardingFields = determineShardingFields(classType)
+        this.shardingCount = determineShardingCount(classType)
     }
 
     @PostConstruct
@@ -142,8 +139,8 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         }
     }
 
-    private fun shardingKeyToCollectionName(shardValue: Any): String {
-        val shardingSequence = shardingUtils.shardingSequenceFor(shardValue, shardingCount)
+    private fun shardingKeyToCollectionName(shardValues: List<Any>): String {
+        val shardingSequence = shardingUtils.shardingSequenceFor(shardValues, shardingCount)
         return parseSequenceToCollectionName(shardingSequence)
     }
 
@@ -151,28 +148,64 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         return collectionName + "_" + sequence
     }
 
-    private fun updateShardingCountIfNecessary() {
+    open fun updateShardingCountIfNecessary() {
         if (fixedShardingCount != null) {
             this.shardingCount = fixedShardingCount
         }
     }
 
-    private fun determineShardingCount(): Int {
-        val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-        return shardingUtils.shardingCountFor(shardingKey.count)
+    private fun determineShardingFields(clazz: Class<*>): LinkedHashMap<String, Field> {
+        val shardingKeysAnnotation = clazz.getAnnotation(ShardingKeys::class.java)
+        val fieldsWithShardingKey = getFieldsListWithAnnotation(clazz, ShardingKey::class.java)
+        require(fieldsWithShardingKey.size <= 1) {
+            "Only one property could be annotated with ShardingKey annotation but find ${fieldsWithShardingKey.size}!"
+        }
+
+        // sharding key不存在
+        val hasShardingKeys = shardingKeysAnnotation != null && shardingKeysAnnotation.columns.isNotEmpty()
+        if (!hasShardingKeys && fieldsWithShardingKey.isEmpty()) {
+            throw IllegalArgumentException("No ShardingKey found for ${clazz.name}")
+        }
+
+        // 存在多个sharding key
+        if (hasShardingKeys && fieldsWithShardingKey.isNotEmpty()) {
+            throw IllegalArgumentException("ShardingKey of ${clazz.name} conflict")
+        }
+
+        // 单个字段作为sharding key
+        if (fieldsWithShardingKey.isNotEmpty()) {
+            val shardingField = fieldsWithShardingKey[0]
+            val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
+            val column = shardingKey.column.ifEmpty { determineColumnName(shardingField) }
+            return linkedMapOf(column to shardingField)
+        }
+
+        // 多个字段作为sharding key
+        if (shardingKeysAnnotation.columns.distinct().size != shardingKeysAnnotation.columns.size) {
+            throw IllegalArgumentException(
+                "Duplicate ShardingKeys ${shardingKeysAnnotation.columns.joinToString(",")}]"
+            )
+        }
+
+        val columnFieldMap = columnFiledMap(classType)
+        val shardingColumnFieldMap = LinkedHashMap<String, Field>(shardingKeysAnnotation.columns.size)
+        shardingKeysAnnotation.columns.forEach { shardingColumnFieldMap[it] = columnFieldMap[it]!! }
+        return shardingColumnFieldMap
     }
 
-    open fun determineShardingColumn(): String {
-        val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-        if (shardingKey.column.isNotEmpty()) {
-            return shardingKey.column
+    private fun determineShardingCount(clazz: Class<*>): Int {
+        val fieldsWithShardingKey = getFieldsListWithAnnotation(clazz, ShardingKey::class.java)
+        if (fieldsWithShardingKey.isNotEmpty()) {
+            val shardingKey = AnnotationUtils.getAnnotation(fieldsWithShardingKey[0], ShardingKey::class.java)!!
+            return shardingUtils.shardingCountFor(shardingKey.count)
         }
-        val fieldJavaClass = org.springframework.data.mongodb.core.mapping.Field::class.java
-        val fieldAnnotation = AnnotationUtils.getAnnotation(shardingField, fieldJavaClass)
-        if (fieldAnnotation != null && fieldAnnotation.value.isNotEmpty()) {
-            return fieldAnnotation.value
+
+        val shardingKeysAnnotation = clazz.getAnnotation(ShardingKeys::class.java)
+        if (shardingKeysAnnotation != null) {
+            return shardingUtils.shardingCountFor(shardingKeysAnnotation.count)
         }
-        return shardingField.name
+
+        throw IllegalArgumentException("Determine sharding count failed, no ShardingKey found for ${clazz.name}")
     }
 
     override fun determineCollectionName(): String {
@@ -188,17 +221,20 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     }
 
     override fun determineCollectionName(entity: E): String {
-        val shardingValue = FieldUtils.readField(shardingField, entity, true)
-        requireNotNull(shardingValue) { "Sharding value can not be empty !" }
+        val shardingValues = shardingFields.map {
+            val shardingValue = FieldUtils.readField(it.value, entity, true)
+            requireNotNull(shardingValue) { "Sharding value can not be empty !" }
+            shardingValue
+        }
 
-        return shardingKeyToCollectionName(shardingValue)
+        return shardingKeyToCollectionName(shardingValues)
     }
 
     override fun determineCollectionName(query: Query): String {
-        val shardingValue = determineCollectionName(query.queryObject)
-        requireNotNull(shardingValue) { "Sharding value can not empty !" }
+        val shardingValues = shardingValuesOf(query.queryObject)
+        requireNotNull(shardingValues) { "Sharding value can not empty !" }
 
-        return shardingKeyToCollectionName(shardingValue)
+        return shardingKeyToCollectionName(shardingValues)
     }
 
     override fun determineCollectionName(aggregation: Aggregation): String {
@@ -214,26 +250,16 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         }
 
         requireNotNull(shardingValue) { "sharding value can not be empty!" }
-        return shardingKeyToCollectionName(shardingValue)
+        return shardingKeyToCollectionName(listOf(shardingValue))
     }
 
-    fun determineCollectionName(document: Document): Any? {
-        for ((key, value) in document) {
-            if (key == shardingColumn) return value
-            if (key == "\$and") {
-                require(value is BasicDBList)
-                determineCollectionName(value)?.let { return it }
-            }
+    fun shardingValuesOf(document: Document): List<Any>? {
+        val shardingValues = ArrayList<Any>(shardingFields.keys.size)
+        for (column in shardingFields.keys) {
+            val columnShardingValue = shardingValueOf(document, column) ?: return null
+            shardingValues.add(columnShardingValue)
         }
-        return null
-    }
-
-    private fun determineCollectionName(list: BasicDBList): Any? {
-        for (element in list) {
-            require(element is Document)
-            determineCollectionName(element)?.let { return it }
-        }
-        return null
+        return shardingValues
     }
 
     override fun <T> findAll(clazz: Class<T>): List<T> {
@@ -302,9 +328,48 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         return determineMongoTemplate().insert(entityCollection, determineCollectionName(entityCollection.first()))
     }
 
+    private fun shardingValueOf(document: Document, column: String): Any? {
+        for ((key, value) in document) {
+            if (key == column) return value
+            if (key == "\$and") {
+                require(value is BasicDBList)
+                for (element in value) {
+                    require(element is Document)
+                    shardingValueOf(element, column)?.let { return it }
+                }
+            }
+        }
+        return null
+    }
+
     private fun checkCollectionConsistency(entityCollection: Collection<E>) {
         val sequences = entityCollection.map { determineCollectionName(it) }.distinct()
         require(sequences.size == 1)
+    }
+
+    private fun columnFiledMap(clazz: Class<*>): Map<String, Field> {
+        val columnFieldMap = HashMap<String, Field>()
+        val allFields = getAllFieldsList(clazz)
+        for (field in allFields) {
+            if (Modifier.isStatic(field.modifiers)) {
+                continue
+            }
+            val columnName = determineColumnName(field)
+            if (columnFieldMap.contains(columnName)) {
+                continue
+            }
+            columnFieldMap[columnName] = field
+        }
+        return columnFieldMap
+    }
+
+    private fun determineColumnName(field: Field): String {
+        val fieldJavaClass = org.springframework.data.mongodb.core.mapping.Field::class.java
+        val fieldAnnotation = AnnotationUtils.getAnnotation(field, fieldJavaClass)
+        if (fieldAnnotation != null && fieldAnnotation.value.isNotEmpty()) {
+            return fieldAnnotation.value
+        }
+        return field.name
     }
 
     abstract fun determineShardingUtils(): ShardingUtils

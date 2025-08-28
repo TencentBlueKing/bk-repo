@@ -55,16 +55,20 @@ object HashShardingUtils : ShardingUtils {
     }
 
     /**
-     * 计算[value]对应的sharding sequence
+     * 计算[values]对应的sharding sequence
      *
      * [shardingCount]表示分表数量，计算出的结果范围为[0, shardingCount)
      */
-    override fun shardingSequenceFor(value: Any, shardingCount: Int): Int {
-        val hashCode = value.hashCode()
-        return hashCode and shardingCount - 1
+    override fun shardingSequenceFor(values: List<Any>, shardingCount: Int): Int {
+        require(values.isNotEmpty())
+        var h = 0
+        values.forEach { value ->
+            h = 31 * h + value.hashCode()
+        }
+        return h and shardingCount - 1
     }
 
-    override fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int> {
+    override fun shardingSequencesFor(values: List<Any>, shardingCount: Int): Set<Int> {
         throw UnsupportedOperationException()
     }
 
