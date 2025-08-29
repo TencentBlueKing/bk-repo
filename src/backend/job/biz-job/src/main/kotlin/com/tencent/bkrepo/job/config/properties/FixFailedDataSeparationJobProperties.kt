@@ -33,8 +33,8 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.fix-failed-data-separation")
-class FixFailedDataSeparationJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = Scheduled.CRON_DISABLED,
+class FixFailedDataSeparationJobProperties: MongodbJobProperties() {
+    override var enabled: Boolean = false
+    override var cron: String = Scheduled.CRON_DISABLED
     var triedTimes: Int = 2
-) : MongodbJobProperties(enabled)
+}

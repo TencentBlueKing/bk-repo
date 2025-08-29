@@ -30,9 +30,9 @@ package com.tencent.bkrepo.job.config.properties
 /**
  * 存储缓存索引相关任务配置
  */
-open class StorageCacheIndexJobProperties(
+open class StorageCacheIndexJobProperties: BatchJobProperties() {
     /**
      * 忽略的存储凭据
      */
-    var ignoredStorageCredentialsKeys: Set<String> = emptySet(),
-) : BatchJobProperties()
+    var ignoredStorageCredentialsKeys: Set<String> = emptySet()
+}

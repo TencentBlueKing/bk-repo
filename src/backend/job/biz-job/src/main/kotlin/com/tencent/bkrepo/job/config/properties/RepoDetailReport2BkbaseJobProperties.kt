@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.repo-detail-report")
-class RepoDetailReport2BkbaseJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = Scheduled.CRON_DISABLED,
-) : MongodbJobProperties(enabled)
+class RepoDetailReport2BkbaseJobProperties: MongodbJobProperties() {
+    override var enabled: Boolean = false
+    override var cron: String = Scheduled.CRON_DISABLED
+}

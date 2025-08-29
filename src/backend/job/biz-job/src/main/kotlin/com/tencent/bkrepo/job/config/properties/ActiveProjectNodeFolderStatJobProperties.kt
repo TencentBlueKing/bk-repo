@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 @ConfigurationProperties("job.active-project-node-folder-stat")
-class ActiveProjectNodeFolderStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0/30 * * * ?",
-    ) : StatJobProperties()
+class ActiveProjectNodeFolderStatJobProperties : StatJobProperties() {
+    override var enabled: Boolean = true
+    override var cron: String = "0 0/30 * * * ?"
+}

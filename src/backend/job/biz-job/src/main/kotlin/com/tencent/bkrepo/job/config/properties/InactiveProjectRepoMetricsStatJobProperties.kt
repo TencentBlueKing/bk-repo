@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 @ConfigurationProperties("job.inactive-project-repo-metrics-stat")
-class InactiveProjectRepoMetricsStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 0/6 * * ?",
-) : ProjectRepoMetricsStatJobProperties()
+class InactiveProjectRepoMetricsStatJobProperties: ProjectRepoMetricsStatJobProperties() {
+    override var enabled: Boolean = true
+    override var cron: String = "0 0 0/6 * * ?"
+}

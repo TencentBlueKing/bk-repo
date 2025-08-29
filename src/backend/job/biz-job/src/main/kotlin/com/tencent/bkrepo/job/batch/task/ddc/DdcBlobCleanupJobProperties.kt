@@ -33,6 +33,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties(value = "job.ddc-blob-cleanup")
-class DdcBlobCleanupJobProperties(
-    override var cron: String = "0 0 3 * * ?",
-) : MongodbJobProperties()
+class DdcBlobCleanupJobProperties : MongodbJobProperties() {
+    override var cron: String = "0 0 3 * * ?"
+}

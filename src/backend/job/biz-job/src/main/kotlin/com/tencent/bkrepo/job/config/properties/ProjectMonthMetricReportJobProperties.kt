@@ -33,15 +33,15 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.project-month-metric-report")
-class ProjectMonthMetricReportJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = Scheduled.CRON_DISABLED,
-    var monthList: MutableList<String> = mutableListOf(),
-    var dayList: MutableList<String> = mutableListOf(),
-    var overwrite: Boolean = false,
-    var reportServiceName: String = "",
-    var reportHost: String = "",
-    var reportUrl: String = "",
-    var reportPlatformKey: String = "",
+class ProjectMonthMetricReportJobProperties: MongodbJobProperties() {
+    override var enabled: Boolean = false
+    override var cron: String = Scheduled.CRON_DISABLED
+    var monthList: MutableList<String> = mutableListOf()
+    var dayList: MutableList<String> = mutableListOf()
+    var overwrite: Boolean = false
+    var reportServiceName: String = ""
+    var reportHost: String = ""
+    var reportUrl: String = ""
+    var reportPlatformKey: String = ""
     var batchUploadSize: Int = 50
-) : MongodbJobProperties(enabled)
+}

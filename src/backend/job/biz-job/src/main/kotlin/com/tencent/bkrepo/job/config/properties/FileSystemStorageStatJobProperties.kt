@@ -5,6 +5,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.file-system-storage-stat")
-class FileSystemStorageStatJobProperties(
+class FileSystemStorageStatJobProperties: BatchJobProperties() {
     override var cron: String = "0 0 5 * * ?"
-): BatchJobProperties()
+}

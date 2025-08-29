@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.file-synchronize")
-class FileSynchronizeJobProperties(
+class FileSynchronizeJobProperties: BatchJobProperties() {
     override var cron: String = "0 0 */1 * * ?"
-) : BatchJobProperties()
+}

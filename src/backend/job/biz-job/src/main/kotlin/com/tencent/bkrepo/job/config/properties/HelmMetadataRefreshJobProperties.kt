@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties(value = "job.helm-metadata-refresh")
-class HelmMetadataRefreshJobProperties(
+class HelmMetadataRefreshJobProperties: MongodbJobProperties() {
     override var cron: String = "0 0 4/24 * * ?"
-): MongodbJobProperties()
+}

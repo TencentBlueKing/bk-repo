@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties(value = "job.archived-node-restore")
-class ArchivedNodeRestoreJobProperties(
-    override var cron: String = "0 0 0/1 * * ?",
-) : MongodbJobProperties()
+class ArchivedNodeRestoreJobProperties : MongodbJobProperties() {
+    override var cron: String = "0 0 0/1 * * ?"
+}

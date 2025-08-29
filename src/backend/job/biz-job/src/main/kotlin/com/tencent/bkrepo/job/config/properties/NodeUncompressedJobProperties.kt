@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties(value = "job.node-uncompress")
-class NodeUncompressedJobProperties(
-    override var cron: String = "0 0 0/1 * * ?",
-) : MongodbJobProperties()
+class NodeUncompressedJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 0/1 * * ?"
+}

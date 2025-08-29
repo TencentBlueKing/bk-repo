@@ -32,8 +32,8 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.fs-client-clean")
-class FsClientCleanJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0 7 1/1 * ?",
+class FsClientCleanJobProperties: MongodbJobProperties() {
+    override var enabled: Boolean = true
+    override var cron: String = "0 0 7 1/1 * ?"
     var reserveDays: Long = 7
-) : MongodbJobProperties()
+}

@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties(value = "job.deleted-repository-cleanup")
-class DeletedRepositoryCleanupJobProperties(
-    override var cron: String = "0 0 2 * * ?",
-): MongodbJobProperties()
+class DeletedRepositoryCleanupJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 2 * * ?"
+}

@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.repo-refresh")
-class RepoRefreshJobProperties(
+class RepoRefreshJobProperties: RepoJobProperties() {
     override var cron: String = "0 0 4/24 * * ?"
-) : RepoJobProperties()
+}

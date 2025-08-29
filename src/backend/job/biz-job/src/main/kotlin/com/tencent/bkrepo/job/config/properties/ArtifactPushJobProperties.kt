@@ -32,12 +32,12 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.artifact-push")
-class ArtifactPushJobProperties(
-    override var enabled: Boolean = true,
+class ArtifactPushJobProperties : MongodbJobProperties() {
+    override var enabled: Boolean = true
     /**
      * 需要进行远端分发集群推送的仓库类型
      * */
-    var repositoryTypes: List<String> = listOf("HELM", "OCI", "DOCKER"),
-    override var fixedDelay: Long = 60 * 1000L,
+    var repositoryTypes: List<String> = listOf("HELM", "OCI", "DOCKER")
+    override var fixedDelay: Long = 60 * 1000L
     override var initialDelay: Long = 60 * 1000L
-) : MongodbJobProperties()
+}

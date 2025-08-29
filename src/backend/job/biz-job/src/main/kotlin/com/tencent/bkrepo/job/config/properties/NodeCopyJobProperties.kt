@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.node-copy")
-class NodeCopyJobProperties(
+class NodeCopyJobProperties: MongodbJobProperties() {
     override var cron: String = "0 0 4/6 * * ?"
-) : MongodbJobProperties()
+}

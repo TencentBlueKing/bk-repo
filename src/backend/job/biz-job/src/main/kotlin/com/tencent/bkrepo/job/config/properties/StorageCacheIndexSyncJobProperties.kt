@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.storage-cache-index-sync")
-class StorageCacheIndexSyncJobProperties(
-    override var cron: String = "0 0 6 * * ?",
-) : StorageCacheIndexJobProperties()
+class StorageCacheIndexSyncJobProperties: StorageCacheIndexJobProperties() {
+    override var cron: String = "0 0 6 * * ?"
+}
