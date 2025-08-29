@@ -30,8 +30,8 @@ package com.tencent.bkrepo.common.mongo.reactive.dao
 import com.mongodb.BasicDBList
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.api.mongo.ShardingKey
+import com.tencent.bkrepo.common.mongo.api.util.sharding.ShardingUtils
 import com.tencent.bkrepo.common.mongo.util.MongoIndexResolver
-import com.tencent.bkrepo.common.mongo.util.ShardingUtils
 import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.reactor.awaitSingle
 import org.apache.commons.lang3.reflect.FieldUtils

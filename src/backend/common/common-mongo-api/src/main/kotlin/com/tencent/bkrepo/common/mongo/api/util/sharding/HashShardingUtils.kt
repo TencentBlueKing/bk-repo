@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.dao.util.sharding
+package com.tencent.bkrepo.common.mongo.api.util.sharding
 
 import org.slf4j.LoggerFactory
 
@@ -52,6 +52,14 @@ object HashShardingUtils : ShardingUtils {
             logger.warn("Bad initial sharding count: [$i], converted to: [$result]")
         }
         return result
+    }
+
+    override fun shardingSequenceFor(value: Any, shardingCount: Int): Int {
+        return shardingSequenceFor(listOf(value), shardingCount)
+    }
+
+    override fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int> {
+        throw UnsupportedOperationException()
     }
 
     /**

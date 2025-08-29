@@ -30,9 +30,6 @@
  */
 
 dependencies {
-    api(project(":common:common-mongo-api"))
-    api("org.springframework.boot:spring-boot-starter-data-mongodb")
-    implementation("org.apache.commons:commons-lang3")
-    implementation("com.google.guava:guava")
-    api("org.springframework.boot:spring-boot-starter-actuator")
+    api(project(":common:common-api"))
+    implementation("org.mongodb:bson")
 }

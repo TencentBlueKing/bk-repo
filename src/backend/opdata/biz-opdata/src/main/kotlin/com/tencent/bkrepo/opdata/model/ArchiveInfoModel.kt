@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.opdata.config.OpArchiveOrGcProperties
 import com.tencent.bkrepo.opdata.model.GcInfoModel.Companion.BATCH_SIZE
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT

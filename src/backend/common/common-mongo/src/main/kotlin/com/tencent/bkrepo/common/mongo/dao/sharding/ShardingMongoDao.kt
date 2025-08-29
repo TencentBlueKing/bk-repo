@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.api.mongo.ShardingKey
 import com.tencent.bkrepo.common.api.mongo.ShardingKeys
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.ShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.ShardingUtils
 import jakarta.annotation.PostConstruct
 import org.apache.commons.lang3.reflect.FieldUtils
 import org.apache.commons.lang3.reflect.FieldUtils.getAllFieldsList
@@ -238,25 +238,24 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     }
 
     override fun determineCollectionName(aggregation: Aggregation): String {
-        var shardingValue: Any? = null
-        val pipeline = aggregation.toPipeline(Aggregation.DEFAULT_CONTEXT)
-        for (document in pipeline) {
-            if (document.containsKey("\$match")) {
-                val subDocument = document["\$match"]
-                require(subDocument is Document)
-                shardingValue = subDocument["projectId"]
-                break
-            }
-        }
-
-        requireNotNull(shardingValue) { "sharding value can not be empty!" }
-        return shardingKeyToCollectionName(listOf(shardingValue))
+        val shardingValues = shardingValuesOf(aggregation)
+        require(!shardingValues.isNullOrEmpty()) { "sharding values can not be empty!" }
+        return shardingKeyToCollectionName(shardingValues)
     }
 
     fun shardingValuesOf(document: Document): List<Any>? {
         val shardingValues = ArrayList<Any>(shardingFields.keys.size)
         for (column in shardingFields.keys) {
             val columnShardingValue = shardingValueOf(document, column) ?: return null
+            shardingValues.add(columnShardingValue)
+        }
+        return shardingValues
+    }
+
+    fun shardingValuesOf(aggregation: Aggregation): List<Any>? {
+        val shardingValues = ArrayList<Any>(shardingFields.keys.size)
+        for (column in shardingFields.keys) {
+            val columnShardingValue = shardingValueOf(aggregation, column) ?: return null
             shardingValues.add(columnShardingValue)
         }
         return shardingValues
@@ -326,6 +325,22 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         }
         checkCollectionConsistency(entityCollection)
         return determineMongoTemplate().insert(entityCollection, determineCollectionName(entityCollection.first()))
+    }
+
+    private fun shardingValueOf(aggregation: Aggregation, column: String): Any? {
+        val pipeline = aggregation.toPipeline(Aggregation.DEFAULT_CONTEXT)
+        for (document in pipeline) {
+            if (!document.containsKey("\$match")) {
+                continue
+            }
+            val subDocument = document["\$match"]
+            require(subDocument is Document)
+            val shardingValue = shardingValueOf(subDocument, column)
+            if (shardingValue != null) {
+                return  shardingValue
+            }
+        }
+        return null
     }
 
     private fun shardingValueOf(document: Document, column: String): Any? {

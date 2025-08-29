@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.dao.util.sharding
+package com.tencent.bkrepo.common.mongo.api.util.sharding
 
 import org.bson.Document
 import java.time.LocalDateTime
@@ -34,6 +34,14 @@ object MonthRangeShardingUtils : ShardingUtils {
 
     override fun shardingCountFor(i: Int): Int {
         return -1
+    }
+
+    override fun shardingSequenceFor(value: Any, shardingCount: Int): Int {
+        return shardingSequenceFor(listOf(value), shardingCount)
+    }
+
+    override fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int> {
+        return shardingSequencesFor(listOf(value), shardingCount)
     }
 
     override fun shardingSequenceFor(values: List<Any>, shardingCount: Int): Int {

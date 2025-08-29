@@ -33,7 +33,7 @@ package com.tencent.bkrepo.opdata.model
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.retry
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.opdata.config.OpArchiveOrGcProperties
 import com.tencent.bkrepo.replication.constant.SHA256
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
