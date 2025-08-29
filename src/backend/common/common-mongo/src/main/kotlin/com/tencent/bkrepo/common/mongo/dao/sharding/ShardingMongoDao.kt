@@ -31,22 +31,18 @@
 
 package com.tencent.bkrepo.common.mongo.dao.sharding
 
-import com.mongodb.BasicDBList
-import com.tencent.bkrepo.common.api.mongo.ShardingDocument
-import com.tencent.bkrepo.common.api.mongo.ShardingKey
-import com.tencent.bkrepo.common.api.mongo.ShardingKeys
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.determineShardingCount
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.determineShardingFields
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.shardingValues
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.shardingValuesOf
+import com.tencent.bkrepo.common.mongo.api.util.sharding.ShardingUtils
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
-import com.tencent.bkrepo.common.mongo.api.util.sharding.ShardingUtils
 import jakarta.annotation.PostConstruct
-import org.apache.commons.lang3.reflect.FieldUtils
-import org.apache.commons.lang3.reflect.FieldUtils.getAllFieldsList
-import org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation
-import org.bson.Document
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.annotation.AnnotationUtils
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -55,7 +51,6 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.index.IndexDefinition
 import org.springframework.data.mongodb.core.query.Query
 import java.lang.reflect.Field
-import java.lang.reflect.Modifier
 
 /**
  * mongodb 支持分表的数据访问层抽象类
@@ -89,13 +84,9 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
 
     init {
         @Suppress("LeakingThis")
-        val fieldsWithShardingKey = getFieldsListWithAnnotation(classType, ShardingKey::class.java)
-        require(fieldsWithShardingKey.size == 1) {
-            "Only one field could be annotated with ShardingKey annotation but find ${fieldsWithShardingKey.size}!"
-        }
-
-        this.shardingFields = determineShardingFields(classType)
-        this.shardingCount = determineShardingCount(classType)
+        this.shardingFields = determineShardingFields(classType, customShardingColumns())
+        @Suppress("LeakingThis")
+        this.shardingCount = determineShardingCount(classType, shardingUtils)
     }
 
     @PostConstruct
@@ -140,15 +131,14 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     }
 
     private fun shardingKeyToCollectionName(shardValues: List<Any>): String {
-        val shardingSequence = shardingUtils.shardingSequenceFor(shardValues, shardingCount)
-        return parseSequenceToCollectionName(shardingSequence)
+        return parseSequenceToCollectionName(shardingUtils.shardingSequenceFor(shardValues, shardingCount))
     }
 
     fun parseSequenceToCollectionName(sequence: Int): String {
         return collectionName + "_" + sequence
     }
 
-    open fun updateShardingCountIfNecessary() {
+    protected open fun updateShardingCountIfNecessary() {
         if (fixedShardingCount != null) {
             this.shardingCount = fixedShardingCount
         }
@@ -158,72 +148,8 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         return emptyList()
     }
 
-    private fun determineShardingFields(clazz: Class<*>): LinkedHashMap<String, Field> {
-        val shardingKeysAnnotation = clazz.getAnnotation(ShardingKeys::class.java)
-        val fieldsWithShardingKey = getFieldsListWithAnnotation(clazz, ShardingKey::class.java)
-        require(fieldsWithShardingKey.size <= 1) {
-            "Only one property could be annotated with ShardingKey annotation but find ${fieldsWithShardingKey.size}!"
-        }
-
-        // sharding key不存在
-        val hasShardingKeys = shardingKeysAnnotation != null && shardingKeysAnnotation.columns.isNotEmpty()
-        if (!hasShardingKeys && fieldsWithShardingKey.isEmpty()) {
-            throw IllegalArgumentException("No ShardingKey found for ${clazz.name}")
-        }
-
-        // 存在多个sharding key
-        if (hasShardingKeys && fieldsWithShardingKey.isNotEmpty()) {
-            throw IllegalArgumentException("ShardingKey of ${clazz.name} conflict")
-        }
-
-        val customColumns = customShardingColumns()
-        val columns = if (customColumns.isNotEmpty()) {
-            customColumns
-        } else if (fieldsWithShardingKey.isNotEmpty()) {
-            // 单个字段作为sharding key
-            val shardingField = fieldsWithShardingKey[0]
-            val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-            listOf(shardingKey.column.ifEmpty { determineColumnName(shardingField) })
-        } else {
-            // 多个字段作为sharding key
-            if (shardingKeysAnnotation.columns.distinct().size != shardingKeysAnnotation.columns.size) {
-                throw IllegalArgumentException(
-                    "Duplicate ShardingKeys ${shardingKeysAnnotation.columns.joinToString(",")}]"
-                )
-            }
-            shardingKeysAnnotation.columns.toList()
-        }
-        val columnFieldMap = columnFiledMap(classType)
-        val shardingColumnFieldMap = LinkedHashMap<String, Field>(columns.size)
-        columns.forEach {
-            val field = columnFieldMap[it]
-            requireNotNull(field)
-            shardingColumnFieldMap[it] = field
-        }
-        return shardingColumnFieldMap
-    }
-
-    private fun determineShardingCount(clazz: Class<*>): Int {
-        val fieldsWithShardingKey = getFieldsListWithAnnotation(clazz, ShardingKey::class.java)
-        if (fieldsWithShardingKey.isNotEmpty()) {
-            val shardingKey = AnnotationUtils.getAnnotation(fieldsWithShardingKey[0], ShardingKey::class.java)!!
-            return shardingUtils.shardingCountFor(shardingKey.count)
-        }
-
-        val shardingKeysAnnotation = clazz.getAnnotation(ShardingKeys::class.java)
-        if (shardingKeysAnnotation != null) {
-            return shardingUtils.shardingCountFor(shardingKeysAnnotation.count)
-        }
-
-        throw IllegalArgumentException("Determine sharding count failed, no ShardingKey found for ${clazz.name}")
-    }
-
     override fun determineCollectionName(): String {
-        if (classType.isAnnotationPresent(ShardingDocument::class.java)) {
-            val document = classType.getAnnotation(ShardingDocument::class.java)
-            return document.collection
-        }
-        return super.determineCollectionName()
+        return MongoDaoHelper.determineShardingCollectionName(classType) ?: super.determineCollectionName()
     }
 
     override fun determineMongoTemplate(): MongoTemplate {
@@ -231,42 +157,19 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     }
 
     override fun determineCollectionName(entity: E): String {
-        val shardingValues = shardingFields.map {
-            val shardingValue = FieldUtils.readField(it.value, entity, true)
-            requireNotNull(shardingValue) { "Sharding value can not be empty!" }
-            shardingValue
-        }
-        return shardingKeyToCollectionName(shardingValues)
+        return shardingKeyToCollectionName(shardingValues(entity as Any, shardingFields))
     }
 
     override fun determineCollectionName(query: Query): String {
-        val shardingValues = shardingValuesOf(query.queryObject)
+        val shardingValues = shardingValuesOf(query.queryObject, shardingFields)
         requireNotNull(shardingValues) { "Sharding value can not empty!" }
         return shardingKeyToCollectionName(shardingValues)
     }
 
     override fun determineCollectionName(aggregation: Aggregation): String {
-        val shardingValues = shardingValuesOf(aggregation)
+        val shardingValues = shardingValuesOf(aggregation, shardingFields)
         require(!shardingValues.isNullOrEmpty()) { "Sharding values can not be empty!" }
         return shardingKeyToCollectionName(shardingValues)
-    }
-
-    fun shardingValuesOf(document: Document): List<Any>? {
-        val shardingValues = ArrayList<Any>(shardingFields.keys.size)
-        for (column in shardingFields.keys) {
-            val columnShardingValue = shardingValueOf(document, column) ?: return null
-            shardingValues.add(columnShardingValue)
-        }
-        return shardingValues
-    }
-
-    fun shardingValuesOf(aggregation: Aggregation): List<Any>? {
-        val shardingValues = ArrayList<Any>(shardingFields.keys.size)
-        for (column in shardingFields.keys) {
-            val columnShardingValue = shardingValueOf(aggregation, column) ?: return null
-            shardingValues.add(columnShardingValue)
-        }
-        return shardingValues
     }
 
     override fun <T> findAll(clazz: Class<T>): List<T> {
@@ -335,73 +238,14 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         return determineMongoTemplate().insert(entityCollection, determineCollectionName(entityCollection.first()))
     }
 
-    private fun shardingValueOf(aggregation: Aggregation, column: String): Any? {
-        val pipeline = aggregation.toPipeline(Aggregation.DEFAULT_CONTEXT)
-        for (document in pipeline) {
-            if (!document.containsKey("\$match")) {
-                continue
-            }
-            val subDocument = document["\$match"]
-            require(subDocument is Document)
-            val shardingValue = shardingValueOf(subDocument, column)
-            if (shardingValue != null) {
-                return  shardingValue
-            }
-        }
-        return null
-    }
-
-    private fun shardingValueOf(document: Document, column: String): Any? {
-        for ((key, value) in document) {
-            if (key == column) {
-                return value
-            }
-            if (key != "\$and") {
-                continue
-            }
-            require(value is BasicDBList)
-            for (element in value) {
-                require(element is Document)
-                shardingValueOf(element, column)?.let { return it }
-            }
-        }
-        return null
-    }
-
     private fun checkCollectionConsistency(entityCollection: Collection<E>) {
         val sequences = entityCollection.map { determineCollectionName(it) }.distinct()
         require(sequences.size == 1)
     }
 
-    private fun columnFiledMap(clazz: Class<*>): Map<String, Field> {
-        val columnFieldMap = HashMap<String, Field>()
-        val allFields = getAllFieldsList(clazz)
-        for (field in allFields) {
-            if (Modifier.isStatic(field.modifiers)) {
-                continue
-            }
-            val columnName = determineColumnName(field)
-            if (columnFieldMap.contains(columnName)) {
-                continue
-            }
-            columnFieldMap[columnName] = field
-        }
-        return columnFieldMap
-    }
-
-    private fun determineColumnName(field: Field): String {
-        val fieldJavaClass = org.springframework.data.mongodb.core.mapping.Field::class.java
-        val fieldAnnotation = AnnotationUtils.getAnnotation(field, fieldJavaClass)
-        if (fieldAnnotation != null && fieldAnnotation.value.isNotEmpty()) {
-            return fieldAnnotation.value
-        }
-        return field.name
-    }
-
     abstract fun determineShardingUtils(): ShardingUtils
 
     companion object {
-
         private val logger = LoggerFactory.getLogger(ShardingMongoDao::class.java)
         const val MAX_SHARDING_COUNT_OF_PAGE_QUERY = 256
     }
