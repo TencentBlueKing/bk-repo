@@ -31,8 +31,8 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties(value = "job.archived-node-stat")
-class ArchiveNodeStatJobProperties(
-    override var cron: String = "0 0 4 * * ?",
-    override var enabled: Boolean = false,
-    var archiveProjects: MutableList<String> = ArrayList(),
-) : MongodbJobProperties()
+class ArchiveNodeStatJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 4 * * ?"
+    override var enabled: Boolean = false
+    var archiveProjects: MutableList<String> = ArrayList()
+}
