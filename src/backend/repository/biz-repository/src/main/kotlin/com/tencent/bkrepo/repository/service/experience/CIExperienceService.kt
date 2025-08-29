@@ -36,7 +36,7 @@ class CIExperienceService(
         organization: String? = null,
         version: String? = null
     ): Request.Builder {
-        this.addHeader(DEVOPS_UID, "kurtduan")
+        this.addHeader(DEVOPS_UID, user)
             .addHeader(DEVOPS_BK_TOKEN, properties.ciToken)
         platform?.let { addHeader(DEVOPS_PLATFORM, it) }
         organization?.let { addHeader(DEVOPS_ORGANIZATION, it) }
