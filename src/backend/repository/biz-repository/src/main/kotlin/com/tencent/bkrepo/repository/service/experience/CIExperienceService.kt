@@ -11,7 +11,6 @@ import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceList
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceRequest
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceDetail
-import com.tencent.bkrepo.repository.pojo.experience.AppExperienceInstallPackage
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceChangeLogRequest
 import com.tencent.bkrepo.repository.pojo.experience.PaginationExperienceChangeLog
 import com.tencent.bkrepo.repository.pojo.experience.PaginationExperienceInstallPackages
@@ -45,7 +44,7 @@ class CIExperienceService(
         return this
     }
 
-    fun getAppExperiences(user: String, request: AppExperienceRequest): AppExperienceList {
+    fun getAppExperiences(user: String, request: AppExperienceRequest): DevopsResponse<AppExperienceList> {
         val url = "${properties.ciExperienceServer}/ms/artifactory/api/open/experiences/v3/list"
         try {
             val httpRequest = Request.Builder()
@@ -60,12 +59,7 @@ class CIExperienceService(
                 .build()
             logger.info("getAppExperiences, requestUrl: [$url]")
             val body = HttpUtils.doRequest(okHttpClient, httpRequest, 2, allowHttpStatusSet)
-            val resp = objectMapper.readValue<DevopsResponse<AppExperienceList>>(body)
-            return AppExperienceList(
-                privateExperiences = resp.data?.privateExperiences ?: emptyList(),
-                publicExperiences = resp.data?.publicExperiences ?: emptyList(),
-                redPointCount = resp.data?.redPointCount ?: 0
-            )
+            return objectMapper.readValue<DevopsResponse<AppExperienceList>>(body)
         } catch (exception: Exception) {
             logger.error("getAppExperiences error: ", exception)
             throw ErrorCodeException(RepositoryMessageCode.APP_EXPERIENCE_REQUEST_ERROR)
@@ -76,9 +70,9 @@ class CIExperienceService(
         user: String,
         experienceHashId: String,
         request: AppExperienceRequest
-    ): AppExperienceDetail? {
+    ): DevopsResponse<AppExperienceDetail> {
         val url = "${properties.ciExperienceServer}/ms/artifactory/api/open/experiences/${experienceHashId}/detail"
-        return try {
+        try {
             val httpRequest = Request.Builder()
                 .url(url)
                 .withCommonHeaders(
@@ -91,8 +85,7 @@ class CIExperienceService(
                 .build()
             logger.info("getAppExperienceDetail, requestUrl: [$url]")
             val body = HttpUtils.doRequest(okHttpClient, httpRequest, 2, allowHttpStatusSet)
-            val resp = objectMapper.readValue<DevopsResponse<AppExperienceDetail>>(body)
-            if (resp.status == 0) resp.data else null
+            return objectMapper.readValue<DevopsResponse<AppExperienceDetail>>(body)
         } catch (exception: Exception) {
             logger.error("getAppExperienceDetail error: ", exception)
             throw ErrorCodeException(RepositoryMessageCode.APP_EXPERIENCE_REQUEST_ERROR)
@@ -103,7 +96,7 @@ class CIExperienceService(
         user: String,
         experienceHashId: String,
         request: AppExperienceChangeLogRequest
-    ): PaginationExperienceChangeLog {
+    ): DevopsResponse<PaginationExperienceChangeLog> {
         // 拼接params
         val url = UriComponentsBuilder
             .fromUriString(
@@ -128,12 +121,7 @@ class CIExperienceService(
                 .build()
             logger.info("getAppExperienceChangeLog, requestUrl: [$url]")
             val body = HttpUtils.doRequest(okHttpClient, httpRequest, 2, allowHttpStatusSet)
-            val resp = objectMapper.readValue<DevopsResponse<PaginationExperienceChangeLog>>(body)
-            return if (resp.status == 0) {
-                resp.data ?: PaginationExperienceChangeLog(0, false, emptyList())
-            } else {
-                PaginationExperienceChangeLog(0, false, emptyList())
-            }
+            return objectMapper.readValue<DevopsResponse<PaginationExperienceChangeLog>>(body)
         } catch (exception: Exception) {
             logger.error("getAppExperienceChangeLog error: ", exception)
             throw ErrorCodeException(RepositoryMessageCode.APP_EXPERIENCE_REQUEST_ERROR)
@@ -144,10 +132,10 @@ class CIExperienceService(
         user: String,
         experienceHashId: String,
         request: AppExperienceRequest
-    ): List<AppExperienceInstallPackage> {
+    ): DevopsResponse<PaginationExperienceInstallPackages> {
         val url = properties.ciExperienceServer +
             "/ms/artifactory/api/open/experiences/$experienceHashId/installPackages"
-        return try {
+        try {
             val httpRequest = Request.Builder()
                 .url(url)
                 .withCommonHeaders(
@@ -159,8 +147,7 @@ class CIExperienceService(
                 .build()
             logger.info("getAppExperienceInstallPackages, requestUrl: [$url]")
             val body = HttpUtils.doRequest(okHttpClient, httpRequest, 2, allowHttpStatusSet)
-            val resp = objectMapper.readValue<DevopsResponse<PaginationExperienceInstallPackages>>(body)
-            if (resp.status == 0) resp.data?.records ?: emptyList() else throw Exception(resp.message)
+            return objectMapper.readValue<DevopsResponse<PaginationExperienceInstallPackages>>(body)
         } catch (exception: Exception) {
             logger.error("getAppExperienceInstallPackages error: ", exception)
             throw ErrorCodeException(RepositoryMessageCode.APP_EXPERIENCE_REQUEST_ERROR)
