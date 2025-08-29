@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.path.PathUtils
-import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.CREATED_DATE
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.NAME
@@ -40,6 +40,7 @@ import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
+import com.tencent.bkrepo.job.batch.task.archive.ArchiveNodeStatJob.Companion.ARCHIVE_STAT_INFO
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.MongoShardingUtils
 import com.tencent.bkrepo.job.config.properties.ProjectRepoMetricsStatJobProperties
@@ -55,6 +56,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.reflect.KClass
 
 /**
@@ -100,7 +102,7 @@ open class ProjectRepoMetricsStatJob(
             val metric = getOrCreateMetric(context, projectId, nodeCollectionName)
             processCollections(collectionList, row, metric)
             // 减掉指定项目归档大小
-            adjustArchiveMetricsIfNeeded(projectId, name, collectionList, metric)
+            adjustArchiveMetricsIfNeeded(projectId, name, metric)
         }
     }
 
@@ -149,15 +151,14 @@ open class ProjectRepoMetricsStatJob(
     private fun adjustArchiveMetricsIfNeeded(
         projectId: String,
         repoName: String,
-        collections: List<String>,
         metric: ProjectRepoMetricsStatJobContext.ProjectMetrics
     ) {
         if (properties.ignoreArchiveProjects.contains(projectId)) {
-            val (num, size) = getArchiveInfo(projectId, repoName, collections)
+            val (num, size) = getArchiveInfo(projectId, repoName)
             logger.info("Archive info: project $projectId, repo $repoName, num $num, size $size")
-            with(metric.repoMetrics[repoName]!!) {
-                this.num.add(-num)
-                this.size.add(-size)
+            metric.repoMetrics[repoName]?.let { repoMetric ->
+                repoMetric.num.add(-num)
+                repoMetric.size.add(-size)
             }
             metric.nodeNum.add(-num)
             metric.capSize.add(-size)
@@ -195,7 +196,7 @@ open class ProjectRepoMetricsStatJob(
         statDate: LocalDateTime,
         projectMetric: TProjectMetrics,
     ) {
-        if (projectMetric.capSize <=0 && projectMetric.nodeNum <=0) return
+        if (projectMetric.capSize <= 0 && projectMetric.nodeNum <= 0) return
         // insert project repo metrics
         val criteria = Criteria.where(CREATED_DATE).isEqualTo(statDate).and(PROJECT).`is`(projectMetric.projectId)
         mongoTemplate.remove(Query(criteria), COLLECTION_NAME_PROJECT_METRICS)
@@ -215,19 +216,23 @@ open class ProjectRepoMetricsStatJob(
      * 获取归档信息
      * @return Pair(归档数,归档大小)
      * */
-    private fun getArchiveInfo(projectId: String, repoName: String, collectionList: List<String>): Pair<Long, Long> {
+    private fun getArchiveInfo(projectId: String, repoName: String): Pair<Long, Long> {
         var num = 0L
         var size = 0L
-        collectionList.forEach {collectionName ->
-            val criteria = Criteria.where(PROJECT).isEqualTo(projectId)
-                .and(REPO).isEqualTo(repoName)
-                .and(ARCHIVED).isEqualTo(true)
-                .and(DELETED_DATE).isEqualTo(null)
-            val query = Query.query(criteria).cursorBatchSize(BATCH_SIZE)
-            mongoTemplate.find(query, StatNode::class.java, collectionName).forEach {
-                num++
+        val query = Query(Criteria.where(NAME).isEqualTo(projectId))
+        val project = mongoTemplate.find(query, Project::class.java, COLLECTION_NAME_PROJECT).firstOrNull()
+            ?: return Pair(0, 0)
+        val repoArchiveStatInfoStr = project.metadata.find { it.key == ARCHIVE_STAT_INFO }?.value?.toString()
+            ?: return Pair(0, 0)
+        try {
+            val repoArchiveStatInfo =
+                repoArchiveStatInfoStr.readJsonString<ConcurrentHashMap<String, RepoArchiveStatInfo>>()
+            repoArchiveStatInfo[repoName]?.let {
+                num += it.num
                 size += it.size
             }
+        } catch (e: Exception) {
+            logger.error("get archive info error", e)
         }
         return Pair(num, size)
     }
@@ -255,12 +260,17 @@ open class ProjectRepoMetricsStatJob(
         )
     }
 
+    data class RepoArchiveStatInfo(
+        val repoName: String,
+        var size: Long,
+        var num: Long,
+    )
+
     companion object {
         private val logger = LoggerFactory.getLogger(ProjectRepoMetricsStatJob::class.java)
         private const val COLLECTION_REPOSITORY_NAME = "repository"
         private const val COLLECTION_NODE_PREFIX = "node_"
         private const val COLLECTION_NAME_PROJECT_METRICS = "project_metrics"
         private const val COLLECTION_NAME_PROJECT = "project"
-        private const val ARCHIVED = "archived"
     }
 }
