@@ -48,9 +48,13 @@ class BlockNodeDao(private val blockNodeProperties: BlockNodeProperties? = null)
     override fun updateShardingCountIfNecessary() {
         val shardingCount = blockNodeProperties?.shardingCount
         if (shardingCount != null) {
-            this.shardingCount = shardingCount
+            this.shardingCount = determineShardingUtils().shardingCountFor(shardingCount)
         } else {
             super.updateShardingCountIfNecessary()
         }
+    }
+
+    override fun customShardingColumns(): List<String> {
+        return blockNodeProperties?.shardingColumns ?: super.customShardingColumns()
     }
 }

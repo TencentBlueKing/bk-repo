@@ -154,6 +154,10 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         }
     }
 
+    protected open fun customShardingColumns(): List<String> {
+        return emptyList()
+    }
+
     private fun determineShardingFields(clazz: Class<*>): LinkedHashMap<String, Field> {
         val shardingKeysAnnotation = clazz.getAnnotation(ShardingKeys::class.java)
         val fieldsWithShardingKey = getFieldsListWithAnnotation(clazz, ShardingKey::class.java)
@@ -172,24 +176,30 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
             throw IllegalArgumentException("ShardingKey of ${clazz.name} conflict")
         }
 
-        // 单个字段作为sharding key
-        if (fieldsWithShardingKey.isNotEmpty()) {
+        val customColumns = customShardingColumns()
+        val columns = if (customColumns.isNotEmpty()) {
+            customColumns
+        } else if (fieldsWithShardingKey.isNotEmpty()) {
+            // 单个字段作为sharding key
             val shardingField = fieldsWithShardingKey[0]
             val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-            val column = shardingKey.column.ifEmpty { determineColumnName(shardingField) }
-            return linkedMapOf(column to shardingField)
+            listOf(shardingKey.column.ifEmpty { determineColumnName(shardingField) })
+        } else {
+            // 多个字段作为sharding key
+            if (shardingKeysAnnotation.columns.distinct().size != shardingKeysAnnotation.columns.size) {
+                throw IllegalArgumentException(
+                    "Duplicate ShardingKeys ${shardingKeysAnnotation.columns.joinToString(",")}]"
+                )
+            }
+            shardingKeysAnnotation.columns.toList()
         }
-
-        // 多个字段作为sharding key
-        if (shardingKeysAnnotation.columns.distinct().size != shardingKeysAnnotation.columns.size) {
-            throw IllegalArgumentException(
-                "Duplicate ShardingKeys ${shardingKeysAnnotation.columns.joinToString(",")}]"
-            )
-        }
-
         val columnFieldMap = columnFiledMap(classType)
-        val shardingColumnFieldMap = LinkedHashMap<String, Field>(shardingKeysAnnotation.columns.size)
-        shardingKeysAnnotation.columns.forEach { shardingColumnFieldMap[it] = columnFieldMap[it]!! }
+        val shardingColumnFieldMap = LinkedHashMap<String, Field>(columns.size)
+        columns.forEach {
+            val field = columnFieldMap[it]
+            requireNotNull(field)
+            shardingColumnFieldMap[it] = field
+        }
         return shardingColumnFieldMap
     }
 
@@ -223,23 +233,21 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     override fun determineCollectionName(entity: E): String {
         val shardingValues = shardingFields.map {
             val shardingValue = FieldUtils.readField(it.value, entity, true)
-            requireNotNull(shardingValue) { "Sharding value can not be empty !" }
+            requireNotNull(shardingValue) { "Sharding value can not be empty!" }
             shardingValue
         }
-
         return shardingKeyToCollectionName(shardingValues)
     }
 
     override fun determineCollectionName(query: Query): String {
         val shardingValues = shardingValuesOf(query.queryObject)
-        requireNotNull(shardingValues) { "Sharding value can not empty !" }
-
+        requireNotNull(shardingValues) { "Sharding value can not empty!" }
         return shardingKeyToCollectionName(shardingValues)
     }
 
     override fun determineCollectionName(aggregation: Aggregation): String {
         val shardingValues = shardingValuesOf(aggregation)
-        require(!shardingValues.isNullOrEmpty()) { "sharding values can not be empty!" }
+        require(!shardingValues.isNullOrEmpty()) { "Sharding values can not be empty!" }
         return shardingKeyToCollectionName(shardingValues)
     }
 

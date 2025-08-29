@@ -110,6 +110,7 @@ class MigrateFailedNodeExecutorTest @Autowired constructor(
     @Test
     fun testMigrateFailedNodeFailed() {
         whenever(storageService.copy(anyString(), anyOrNull(), anyOrNull())).then {
+            Thread.sleep(3000)
             throw FileNotFoundException()
         }
 
