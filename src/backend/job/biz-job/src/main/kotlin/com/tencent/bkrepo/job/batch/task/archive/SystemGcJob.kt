@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT

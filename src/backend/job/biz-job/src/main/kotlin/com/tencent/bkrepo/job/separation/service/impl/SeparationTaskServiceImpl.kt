@@ -33,7 +33,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.job.RESTORE

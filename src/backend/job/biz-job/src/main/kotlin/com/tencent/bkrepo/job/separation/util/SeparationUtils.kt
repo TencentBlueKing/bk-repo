@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.job.separation.util
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import java.time.LocalDateTime
 import java.util.concurrent.ArrayBlockingQueue

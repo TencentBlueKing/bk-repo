@@ -26,7 +26,7 @@
  */
 
 dependencies {
-    implementation(project(":common:common-api"))
+    api(project(":common:common-mongo-api"))
     api("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
     api("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.apache.commons:commons-lang3")

@@ -72,6 +72,7 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
         if (logger.isDebugEnabled) {
             logger.debug("Mongo Dao find: [$query], ${query.limit}, ${query.skip}")
         }
+        val shardingField = shardingFields.values.first()
         val list = mutableListOf<T>()
         var collectionNames = determineCollectionNames(query)
         if (!queryWithPage(query)) {
@@ -113,7 +114,7 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
      * 只支持指定表删除
      */
     override fun remove(query: Query): DeleteResult {
-        val shardingValue = determineCollectionName(query.queryObject)
+        val shardingValue = shardingValuesOf(query.queryObject)?.firstOrNull()
         if (shardingValue is Document && shardingValue.size > 1) {
             throw IllegalArgumentException("Remove only works on particular table!")
         }
@@ -178,10 +179,11 @@ abstract class RangeShardingMongoDao<E> : ShardingMongoDao<E>() {
     }
 
     fun determineCollectionNames(query: Query): List<String> {
-        val shardingValue = determineCollectionName(query.queryObject)
+        val shardingValues = shardingValuesOf(query.queryObject)
+        val shardingValue = shardingValues?.firstOrNull()
         require(shardingValue is Document && shardingValue.size == 2) { "Sharding value can not empty !" }
 
-        return shardingUtils.shardingSequencesFor(shardingValue, shardingCount).map { collectionName + "_" + it }
+        return shardingUtils.shardingSequencesFor(shardingValues, shardingCount).map { collectionName + "_" + it }
     }
 
     @Suppress("UNCHECKED_CAST")
