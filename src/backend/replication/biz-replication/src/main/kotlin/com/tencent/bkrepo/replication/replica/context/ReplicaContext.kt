@@ -46,6 +46,7 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
+import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
 import com.tencent.bkrepo.replication.replica.base.interceptor.SignInterceptor
@@ -104,6 +105,10 @@ class ReplicaContext(
     val httpClient: OkHttpClient
 
     var replicaProgress = ReplicaProgress()
+
+    var executeType: TaskExecuteType? = null
+
+    var recordDetailId: String? = null
 
     init {
         cluster = ClusterInfo(

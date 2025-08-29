@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
@@ -112,4 +113,8 @@ interface NodeBaseOperation {
      * 更新节点访问时间
      */
     fun updateNodeAccessDate(updateAccessDateRequest: NodeUpdateAccessDateRequest)
+    /**
+     * 同步已删除节点
+     */
+    fun replicaDeletedNode(request: DeletedNodeReplicationRequest): NodeDetail
 }

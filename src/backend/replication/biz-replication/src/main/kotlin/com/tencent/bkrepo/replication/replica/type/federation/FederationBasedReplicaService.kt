@@ -27,12 +27,12 @@
 
 package com.tencent.bkrepo.replication.replica.type.federation
 
-import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
-import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
+import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
@@ -49,21 +49,30 @@ class FederationBasedReplicaService(
 ) : AbstractReplicaService(replicaRecordService, localDataManager) {
 
     override fun replica(context: ReplicaContext) {
-        with(context) {
-            // 同步仓库
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) {
-                if (task.setting.automaticCreateRemoteRepo) {
-                    // 同步项目信息
-                    replicator.replicaProject(this)
-                    replicator.replicaRepo(this)
-                }
-            }
+        // 全量同步的场景需要同步已删除节点
+        replicaTaskObjects(context)
+    }
+
+    /**
+     * 是否包含所有仓库数据
+     */
+    override fun includeAllData(context: ReplicaContext): Boolean {
+        try {
+            context.event != null
+            return false
+        } catch (e: Exception) {
+            return true
+        }
+    }
+
+    override fun replicaTaskObjectConstraints(replicaContext: ReplicaContext) {
+        with(replicaContext) {
             // 只有非third party集群支持该消息
-            if (context.remoteCluster.type == ClusterNodeType.REMOTE)
+            if (remoteCluster.type == ClusterNodeType.REMOTE)
                 throw UnsupportedOperationException()
+            replicaContext.executeType = TaskExecuteType.DELTA
             when (event.type) {
                 EventType.NODE_DELETED -> {
-
                     val deleted = event.data["deletedDate"]?.toString()
                     val pathConstraint = PathConstraint(event.resourceKey, deletedDate = deleted)
                     replicaByDeletedNode(this, pathConstraint)
@@ -72,6 +81,38 @@ class FederationBasedReplicaService(
                 EventType.NODE_CREATED -> {
                     val pathConstraint = PathConstraint(event.resourceKey)
                     replicaByPathConstraint(this, pathConstraint)
+                }
+
+                EventType.VERSION_CREATED -> {
+                    val packageKey = event.data["packageKey"].toString()
+                    val packageVersion = event.data["packageVersion"].toString()
+                    val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
+                    replicaByPackageConstraint(this, packageConstraint)
+                }
+
+                EventType.VERSION_UPDATED -> {
+                    val packageKey = event.data["packageKey"].toString()
+                    val packageVersion = event.data["packageVersion"].toString()
+                    val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
+                    replicaByPackageConstraint(this, packageConstraint)
+                }
+
+                EventType.VERSION_DELETED -> {
+                    val packageKey = event.data["packageKey"].toString()
+                    val packageName = event.data["packageName"].toString()
+                    val deleted = event.data["deletedDate"]?.toString()
+                    val packageVersion = event.data["packageVersion"]?.toString()
+                    if (deleted.isNullOrEmpty()) return
+
+                    val packageVersionDeleteSummary = PackageVersionDeleteSummary(
+                        projectId = localProjectId,
+                        repoName = localRepoName,
+                        packageName = packageName,
+                        packageKey = packageKey,
+                        versionName = packageVersion,
+                        deletedDate = deleted
+                    )
+                    replicaByDeletedPackage(this, packageVersionDeleteSummary)
                 }
 
                 else -> throw UnsupportedOperationException()

@@ -153,27 +153,28 @@ class CenterNodeDeleteSupport(
         repoName: String,
         fullPath: String,
         operator: String,
-        nodeId: String
+        nodeId: String,
+        deleteTime: LocalDateTime
     ): NodeDeleteResult {
         val clusterName = SecurityUtils.getClusterName()
         if (clusterName.isNullOrEmpty()) {
-            return super.deleteNodeById(projectId, repoName, fullPath, operator, nodeId)
+            return super.deleteNodeById(projectId, repoName, fullPath, operator, nodeId, deleteTime)
         }
 
         val criteria = buildCriteria(projectId, repoName, fullPath).apply {
             and(ID).isEqualTo(nodeId)
         }
         val node = nodeDao.findOne(Query(criteria))
-            ?: return NodeDeleteResult(0,0, LocalDateTime.now())
+            ?: return NodeDeleteResult(0,0, deleteTime)
 
         if (node.folder) {
             return delete(node, operator)
         }
 
-        return if (deleteFileNode(node, operator, nodeId)) {
-            NodeDeleteResult(1, node.size, LocalDateTime.now())
+        return if (deleteFileNode(node, operator, nodeId, deleteTime)) {
+            NodeDeleteResult(1, node.size, deleteTime)
         } else {
-            NodeDeleteResult(0, 0, LocalDateTime.now())
+            NodeDeleteResult(0, 0, deleteTime)
         }
     }
 
@@ -212,7 +213,8 @@ class CenterNodeDeleteSupport(
     private fun deleteFileNode(
         node: TNode,
         operator: String,
-        nodeId: String? = null
+        nodeId: String? = null,
+        deleteTime: LocalDateTime = LocalDateTime.now()
     ): Boolean {
         if (!ClusterUtils.containsSrcCluster(node.clusterNames)) {
             return false
@@ -230,7 +232,7 @@ class CenterNodeDeleteSupport(
 
         // 当 clusterNames 为空时，删除节点
         if (nodeId != null) {
-            super.deleteNodeById(node.projectId, node.repoName, node.fullPath, operator, nodeId)
+            super.deleteNodeById(node.projectId, node.repoName, node.fullPath, operator, nodeId, deleteTime)
         } else {
             super.deleteByFullPathWithoutDecreaseVolume(node.projectId, node.repoName, node.fullPath, operator)
         }
