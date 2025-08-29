@@ -10,5 +10,7 @@ data class TMediaTranscodeJobConfig(
     // 每次同时构建的最大任务数
     var maxJobCount: Int?,
     // 执行任务的镜像
-    var image: String
+    var image: String,
+    // 容器资源限制
+    var resource: String?,
 )

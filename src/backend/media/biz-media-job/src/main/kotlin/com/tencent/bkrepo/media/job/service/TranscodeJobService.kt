@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.media.job.service
 
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
 import com.tencent.bkrepo.media.job.k8s.K8sProperties
@@ -9,6 +10,7 @@ import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
 import com.tencent.bkrepo.media.common.model.TMediaTranscodeJobConfig
 import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import com.tencent.bkrepo.media.common.pojo.transcode.TranscodeReportData
+import com.tencent.bkrepo.media.job.pojo.ResourceLimit
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.BatchV1Api
@@ -83,6 +85,7 @@ class TranscodeJobService @Autowired constructor(
             .name(jobName)
             .namespace(k8sProperties.namespace)
             .labels(TRANSCODE_JOB_LABEL)
+        val resource = config.resource?.readJsonString<ResourceLimit>()
         val container = V1Container()
             .name("transcoder")
             .image(config.image)
@@ -104,14 +107,14 @@ class TranscodeJobService @Autowired constructor(
             .resources(
                 V1ResourceRequirements().apply {
                     limits(
-                        cpu = k8sProperties.limit.limitCpu,
-                        memory = k8sProperties.limit.limitMem,
-                        ephemeralStorage = k8sProperties.limit.limitStorage,
+                        cpu = resource?.limitCpu ?: k8sProperties.limit.limitCpu.toString(),
+                        memory = resource?.limitMem ?: k8sProperties.limit.limitMem.toString(),
+                        ephemeralStorage = resource?.limitStorage ?: k8sProperties.limit.limitStorage.toString(),
                     )
                     requests(
-                        cpu = k8sProperties.limit.requestCpu,
-                        memory = k8sProperties.limit.requestMem,
-                        ephemeralStorage = k8sProperties.limit.requestStorage,
+                        cpu = resource?.requestCpu ?: k8sProperties.limit.requestCpu.toString(),
+                        memory = resource?.requestMem ?: k8sProperties.limit.requestMem.toString(),
+                        ephemeralStorage = resource?.requestStorage ?: k8sProperties.limit.requestStorage.toString(),
                     )
                 }
             )
