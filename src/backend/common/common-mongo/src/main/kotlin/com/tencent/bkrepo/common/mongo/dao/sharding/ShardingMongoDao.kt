@@ -345,13 +345,16 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
 
     private fun shardingValueOf(document: Document, column: String): Any? {
         for ((key, value) in document) {
-            if (key == column) return value
-            if (key == "\$and") {
-                require(value is BasicDBList)
-                for (element in value) {
-                    require(element is Document)
-                    shardingValueOf(element, column)?.let { return it }
-                }
+            if (key == column) {
+                return value
+            }
+            if (key != "\$and") {
+                continue
+            }
+            require(value is BasicDBList)
+            for (element in value) {
+                require(element is Document)
+                shardingValueOf(element, column)?.let { return it }
             }
         }
         return null
