@@ -404,8 +404,9 @@ class ComposerLocalRepository(private val stageService: StageService) : LocalRep
     fun getHost(context: ArtifactContext): String {
         val request = HttpContextHolder.getRequest()
         val scheme = request.scheme
-        val servletPath = request.servletPath.removeSuffix(context.artifactInfo.getArtifactFullPath())
-        return "$scheme://$bkrepoHost/$composerPort$servletPath"
+        val requestPath = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
+            .removeSuffix(context.artifactInfo.getArtifactFullPath())
+        return "$scheme://$bkrepoHost/$composerPort$requestPath"
     }
 
     /**
