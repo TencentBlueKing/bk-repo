@@ -82,6 +82,13 @@ interface ServicePermissionClient {
         @RequestParam repoName: String
     ): Response<ListPathResult>
 
+    @Operation(summary = "创建或查询私有目录")
+    @PostMapping("/personal/path")
+    fun getOrCreatePersonalPath(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String
+    ): Response<String>
+
     @Operation(summary = "校验权限")
     @PostMapping("/check")
     fun checkPermission(

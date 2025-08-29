@@ -38,6 +38,7 @@ import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.query.enums.OperationType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
@@ -76,6 +77,13 @@ class ServicePermissionController @Autowired constructor(
         }
     }
 
+    override fun getOrCreatePersonalPath(
+        projectId: String,
+        repoName: String
+    ): Response<String> {
+        val userId = SecurityUtils.getUserId()
+        return ResponseBuilder.success(permissionService.getOrCreatePersonalPath(projectId, repoName, userId))
+    }
 
     override fun checkPermission(request: CheckPermissionRequest): Response<Boolean> {
         checkRequest(request)
