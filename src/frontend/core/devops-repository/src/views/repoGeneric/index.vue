@@ -1054,7 +1054,7 @@
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
                 fetch('/web' + url, {
-                    headers: { Range: 'bytes=0-1048575' } // 限制范围
+                    headers: { Range: 'bytes=0-1' } // 限制范围
                 }).then(async response => {
                     if (response.ok) {
                         window.open(
@@ -1119,7 +1119,7 @@
                 this.timer = setInterval(async () => {
                     try {
                         const response = await fetch('/web' + url, {
-                            headers: { Range: 'bytes=0-1048575' } // 限制范围
+                            headers: { Range: 'bytes=0-1' } // 限制范围
                         })
                         if (!response.ok) {
                             const resJson = await response.json()
