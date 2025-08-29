@@ -35,6 +35,7 @@ enum class RepositoryMessageCode(private val key: String, private val businessCo
     STORAGE_CREDENTIALS_NOT_FOUND("repository.storage.credentials.not.found", 3),
     METADATA_KEY_RESERVED("repository.metadata.key.reserved", 4),
     PIPELINE_METADATA_UPDATE_NOT_ALLOWED("repository.pipleine.metadata.update.not-allowed", 5),
+    APP_EXPERIENCE_REQUEST_ERROR("repository.app.experience.request.error", 6),
     ;
 
     override fun getBusinessCode() = businessCode
