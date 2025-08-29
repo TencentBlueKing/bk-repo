@@ -1,11 +1,13 @@
 package com.tencent.bkrepo.repository.service.experience
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import com.fasterxml.jackson.module.kotlin.convertValue
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.repository.config.CIExperienceProperties
+import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceList
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceRequest
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceDetail
@@ -19,26 +21,44 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.util.UriComponentsBuilder
-import java.util.concurrent.TimeUnit
 
 @Service
 class CIExperienceService(
     private val properties: CIExperienceProperties
 ) {
-    private val okHttpClient = okhttp3.OkHttpClient.Builder().connectTimeout(3L, TimeUnit.SECONDS)
-        .readTimeout(5L, TimeUnit.SECONDS)
-        .writeTimeout(5L, TimeUnit.SECONDS).build()
+    private val okHttpClient = HttpClientBuilderFactory.create().build()
+
+    /**
+     * 构建通用请求头
+     */
+    private fun Request.Builder.withCommonHeaders(
+        user: String,
+        platform: String? = null,
+        organization: String? = null,
+        version: String? = null
+    ): Request.Builder {
+        this.addHeader(DEVOPS_UID, "kurtduan")
+            .addHeader(DEVOPS_BK_TOKEN, properties.ciToken)
+        platform?.let { addHeader(DEVOPS_PLATFORM, it) }
+        organization?.let { addHeader(DEVOPS_ORGANIZATION, it) }
+        version?.let { addHeader(DEVOPS_VERSION, it) }
+        return this
+    }
 
     fun getAppExperiences(user: String, request: AppExperienceRequest): AppExperienceList {
         val url = "${properties.ciExperienceServer}/ms/artifactory/api/open/experiences/v3/list"
-        return try {
-            val requestBuilder = Request.Builder().url(url)
-                .addHeader(DEVOPS_UID, user)
-                .addHeader(DEVOPS_BK_TOKEN, properties.ciToken)
-            request.platform?.let { requestBuilder.addHeader(DEVOPS_PLATFORM, it) }
-            request.organization?.let { requestBuilder.addHeader(DEVOPS_ORGANIZATION, it) }
-            val httpRequest = requestBuilder.get().build()
-            logger.debug("getAppExperiences, requestUrl: [$url]")
+        try {
+            val httpRequest = Request.Builder()
+                .url(url)
+                .withCommonHeaders(
+                    user = user,
+                    platform = request.platform,
+                    organization = request.organization,
+                    version = request.version
+                )
+                .get()
+                .build()
+            logger.info("getAppExperiences, requestUrl: [$url]")
             val body = HttpUtils.doRequest(okHttpClient, httpRequest, 2, allowHttpStatusSet)
             val resp = objectMapper.readValue<DevopsResponse<AppExperienceList>>(body)
             return AppExperienceList(
@@ -46,12 +66,9 @@ class CIExperienceService(
                 publicExperiences = resp.data?.publicExperiences ?: emptyList(),
                 redPointCount = resp.data?.redPointCount ?: 0
             )
-        } catch (exception: InvalidFormatException) {
-            logger.info("getAppExperiences  url is $url, error: ", exception)
-            EMPTY_EXPERIENCE_LIST
         } catch (exception: Exception) {
             logger.error("getAppExperiences error: ", exception)
-            EMPTY_EXPERIENCE_LIST
+            throw ErrorCodeException(RepositoryMessageCode.APP_EXPERIENCE_REQUEST_ERROR)
         }
     }
 
@@ -62,20 +79,23 @@ class CIExperienceService(
     ): AppExperienceDetail? {
         val url = "${properties.ciExperienceServer}/ms/artifactory/api/open/experiences/${experienceHashId}/detail"
         return try {
-            val requestBuilder = Request.Builder().url(url)
-                .addHeader(DEVOPS_UID, user)
-                .addHeader(DEVOPS_BK_TOKEN, properties.ciToken)
-            request.platform?.let { requestBuilder.addHeader(DEVOPS_PLATFORM, it) }
-            request.organization?.let { requestBuilder.addHeader(DEVOPS_ORGANIZATION, it) }
-            request.version?.let { requestBuilder.addHeader(DEVOPS_VERSION, it) }
-            val httpRequest = requestBuilder.get().build()
-            logger.debug("getAppExperienceDetail, requestUrl: [$url]")
+            val httpRequest = Request.Builder()
+                .url(url)
+                .withCommonHeaders(
+                    user = user,
+                    platform = request.platform,
+                    organization = request.organization,
+                    version = request.version
+                )
+                .get()
+                .build()
+            logger.info("getAppExperienceDetail, requestUrl: [$url]")
             val body = HttpUtils.doRequest(okHttpClient, httpRequest, 2, allowHttpStatusSet)
             val resp = objectMapper.readValue<DevopsResponse<AppExperienceDetail>>(body)
             if (resp.status == 0) resp.data else null
         } catch (exception: Exception) {
             logger.error("getAppExperienceDetail error: ", exception)
-            null
+            throw ErrorCodeException(RepositoryMessageCode.APP_EXPERIENCE_REQUEST_ERROR)
         }
     }
 
@@ -97,14 +117,16 @@ class CIExperienceService(
             })
             .toUriString()
 
-        return try {
-            val requestBuilder = Request.Builder()
+        try {
+            val httpRequest = Request.Builder()
                 .url(url)
-                .addHeader(DEVOPS_UID, user)
-                .addHeader(DEVOPS_BK_TOKEN, properties.ciToken)
-            request.organizationName?.let { requestBuilder.addHeader(DEVOPS_ORGANIZATION, it) }
-            val httpRequest = requestBuilder.get().build()
-            logger.debug("getAppExperienceChangeLog, requestUrl: [$url]")
+                .withCommonHeaders(
+                    user = user,
+                    organization = request.organizationName
+                )
+                .get()
+                .build()
+            logger.info("getAppExperienceChangeLog, requestUrl: [$url]")
             val body = HttpUtils.doRequest(okHttpClient, httpRequest, 2, allowHttpStatusSet)
             val resp = objectMapper.readValue<DevopsResponse<PaginationExperienceChangeLog>>(body)
             return if (resp.status == 0) {
@@ -114,7 +136,7 @@ class CIExperienceService(
             }
         } catch (exception: Exception) {
             logger.error("getAppExperienceChangeLog error: ", exception)
-            PaginationExperienceChangeLog(0, false, emptyList())
+            throw ErrorCodeException(RepositoryMessageCode.APP_EXPERIENCE_REQUEST_ERROR)
         }
     }
 
@@ -126,19 +148,22 @@ class CIExperienceService(
         val url = properties.ciExperienceServer +
             "/ms/artifactory/api/open/experiences/$experienceHashId/installPackages"
         return try {
-            val requestBuilder = Request.Builder().url(url)
-                .addHeader(DEVOPS_UID, user)
-                .addHeader(DEVOPS_BK_TOKEN, properties.ciToken)
-            request.version?.let { requestBuilder.addHeader(DEVOPS_VERSION, it) }
-            request.platform?.let { requestBuilder.addHeader(DEVOPS_PLATFORM, it) }
-            val httpRequest = requestBuilder.get().build()
-            logger.debug("getAppExperienceInstallPackages, requestUrl: [$url]")
+            val httpRequest = Request.Builder()
+                .url(url)
+                .withCommonHeaders(
+                    user = user,
+                    platform = request.platform,
+                    version = request.version
+                )
+                .get()
+                .build()
+            logger.info("getAppExperienceInstallPackages, requestUrl: [$url]")
             val body = HttpUtils.doRequest(okHttpClient, httpRequest, 2, allowHttpStatusSet)
             val resp = objectMapper.readValue<DevopsResponse<PaginationExperienceInstallPackages>>(body)
-            if (resp.status == 0) resp.data?.records ?: emptyList() else emptyList()
+            if (resp.status == 0) resp.data?.records ?: emptyList() else throw Exception(resp.message)
         } catch (exception: Exception) {
             logger.error("getAppExperienceInstallPackages error: ", exception)
-            emptyList()
+            throw ErrorCodeException(RepositoryMessageCode.APP_EXPERIENCE_REQUEST_ERROR)
         }
     }
 
@@ -149,11 +174,6 @@ class CIExperienceService(
         const val DEVOPS_PLATFORM = "X-DEVOPS-PLATFORM"
         const val DEVOPS_VERSION = "X-DEVOPS-APP-VERSION"
         const val DEVOPS_ORGANIZATION = "X-DEVOPS-ORGANIZATION-NAME"
-        private val EMPTY_EXPERIENCE_LIST = AppExperienceList(
-            privateExperiences = emptyList(),
-            publicExperiences = emptyList(),
-            redPointCount = 0
-        )
         private val allowHttpStatusSet =
             setOf(HttpStatus.FORBIDDEN.value, HttpStatus.BAD_REQUEST.value, HttpStatus.NOT_FOUND.value)
 
