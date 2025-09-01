@@ -58,6 +58,7 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
+import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.replica.executor.FederationFullSyncThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.type.federation.FederationManualReplicaJobExecutor
@@ -140,24 +141,21 @@ class FederationRepositoryServiceImpl(
             throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_FULL_SYNC_RUNNING)
         }
         try {
-            // TODO 这里锁释放的时候任务还没执行完成
             // 使用线程池异步执行同步任务
-            executor.submit {
-                Runnable {
-                    try {
-                        // TODO 多个任务并发执行
-                        federationRepository.federatedClusters.forEach {
-                            val taskInfo = replicaTaskService.getByTaskId(it.taskId!!)
-                            taskInfo?.let { task ->
-                                val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
-                                federationManualReplicaJobExecutor.execute(taskDetail)
-                            }
+            executor.execute {
+                try {
+                    // TODO 多个任务并发执行
+                    federationRepository.federatedClusters.forEach {
+                        val taskInfo = replicaTaskService.getByTaskId(it.taskId!!)
+                        taskInfo?.let { task ->
+                            val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
+                            federationManualReplicaJobExecutor.execute(taskDetail)
                         }
-                    } finally {
-                        unlock(projectId, repoName, federationId, lock)
-                        logger.info("Released lock for federation sync: $federationId")
                     }
-                }.trace()
+                } finally {
+                    unlock(projectId, repoName, federationId, lock)
+                    logger.info("Released lock for federation sync: $federationId")
+                }
             }
         } catch (ignore: Exception) {
             logger.error("Failed to full sync federation repository, error: ${ignore.message}")
@@ -169,11 +167,6 @@ class FederationRepositoryServiceImpl(
     private fun paramsCheck(request: FederatedRepositoryCreateRequest) {
         require(request.federatedClusters.isNotEmpty()) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "federatedClusters")
-        }
-        val repo = localDataManager.findRepoByName(request.projectId, request.repoName)
-        if (repo.type != RepositoryType.GENERIC) {
-            logger.warn("Unsupported repo type: ${repo.type}")
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request.repoName)
         }
     }
 
@@ -214,9 +207,9 @@ class FederationRepositoryServiceImpl(
                 request.projectId, request.repoName, fed.projectId, fed.repoName, remoteClusterNode, currentCluster
             )
             // 在目标集群生成对应cluster以及对应同步task
-//            syncFederationConfig(
-//                request.name, federationId, fed.projectId, fed.repoName, remoteClusterNode, federatedClusters
-//            )
+            syncFederationConfig(
+                request.name, federationId, fed.projectId, fed.repoName, remoteClusterNode, federatedClusters
+            )
             // 生成本地同步task
             val taskId = createOrUpdateTask(
                 federationId, request.projectId, request.repoName, fed, remoteClusterNode, federatedNameList
@@ -486,7 +479,7 @@ class FederationRepositoryServiceImpl(
                 replicaObjectType = ReplicaObjectType.REPOSITORY,
                 replicaTaskObjects = replicaTaskObjects,
                 replicaType = ReplicaType.FEDERATION,
-                setting = ReplicaSetting(),
+                setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
                 remoteClusterIds = setOf(clusterInfo.id!!),
                 enabled = federatedCluster.enabled
             )
@@ -499,7 +492,7 @@ class FederationRepositoryServiceImpl(
                 localProjectId = projectId,
                 replicaTaskObjects = replicaTaskObjects,
                 replicaObjectType = ReplicaObjectType.REPOSITORY,
-                setting = ReplicaSetting(),
+                setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
                 remoteClusterIds = setOf(clusterInfo.id!!),
             )
             replicaTaskService.update(taskUpdateRequest)?.let {
