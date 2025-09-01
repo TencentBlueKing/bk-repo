@@ -40,7 +40,7 @@ object HttpUtils {
 
                 val shouldRetry = when {
                     e is IOException -> true
-                    e is RuntimeException && e.message?.contains("connection failed", ignoreCase = true) == true -> true
+                    e is RuntimeException -> true
                     else -> false
                 }
                 
@@ -50,12 +50,16 @@ object HttpUtils {
                     Thread.sleep(retryDelayMs)
                     currentRetry--
                 } else {
-                    if (shouldRetry) {
-                        logger.error("HTTP request finally failed after retries, url=${request.url}", e)
-                    } else {
-                        logger.error("HTTP request failed with non-retryable error, url=${request.url}", e)
+                    val logMessage = when {
+                        shouldRetry -> "HTTP request finally failed after retries, url=${request.url}"
+                        else -> "HTTP request failed with non-retryable error, url=${request.url}"
                     }
-                    throw if (e is RuntimeException) e else RuntimeException("HTTP request error, url=${request.url}", e)
+                    logger.error(logMessage, e)
+
+                    throw when (e) {
+                        is RuntimeException -> e
+                        else -> RuntimeException("HTTP request error, url=${request.url}", e)
+                    }
                 }
             }
         }
