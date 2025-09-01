@@ -125,10 +125,17 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
                 Thread.sleep(2000)
             }
 
-            override fun onPreloadSuccess(plan: ArtifactPreloadPlan, throughput: Throughput?) {}
-            override fun onPreloadFailed(plan: ArtifactPreloadPlan) {}
-            override fun onPreloadFinished(plan: ArtifactPreloadPlan) {}
+            override fun onPreloadSuccess(plan: ArtifactPreloadPlan, throughput: Throughput?) {
+                // No-op
+            }
 
+            override fun onPreloadFailed(plan: ArtifactPreloadPlan) {
+                // No-op
+            }
+
+            override fun onPreloadFinished(plan: ArtifactPreloadPlan) {
+                // No-op
+            }
         }
         assertTrue(preloadPlanExecutor.execute(plan, listener))
         preloadPlanExecutor.execute(plan, listener)
