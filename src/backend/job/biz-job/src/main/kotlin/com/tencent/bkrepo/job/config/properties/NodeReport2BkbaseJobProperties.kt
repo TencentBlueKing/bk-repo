@@ -35,10 +35,10 @@ import java.time.LocalDateTime
 
 @Component
 @ConfigurationProperties("job.node-report")
-class NodeReport2BkbaseJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = Scheduled.CRON_DISABLED,
-    var startCollectionNum: Int = 0,
-    var endCollectionsNum: Int = SHARDING_COUNT,
+class NodeReport2BkbaseJobProperties: MongodbJobProperties() {
+    override var enabled: Boolean = false
+    override var cron: String = Scheduled.CRON_DISABLED
+    var startCollectionNum: Int = 0
+    var endCollectionsNum: Int = SHARDING_COUNT
     var endDateTime: String = LocalDateTime.now().toString()
-) : MongodbJobProperties(enabled)
+}

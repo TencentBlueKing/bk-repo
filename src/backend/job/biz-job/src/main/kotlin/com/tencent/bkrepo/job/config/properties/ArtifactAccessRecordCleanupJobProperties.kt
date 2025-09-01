@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties(value = "job.artifact-access-record-cleanup")
-class ArtifactAccessRecordCleanupJobProperties(
-    override var cron: String = "0 0 0 * * ?",
-) : BatchJobProperties()
+class ArtifactAccessRecordCleanupJobProperties: BatchJobProperties() {
+    override var cron: String = "0 0 0 * * ?"
+}

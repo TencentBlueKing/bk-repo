@@ -39,10 +39,10 @@ import org.springframework.stereotype.Component
  */
 @Component
 @ConfigurationProperties("job.active-project-empty-folder-cleanup")
-class ActiveProjectEmptyFolderCleanupJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0/30 * * * ?",
-    var deletedEmptyFolder: Boolean = false,
+class ActiveProjectEmptyFolderCleanupJobProperties : StatJobProperties() {
+    override var enabled: Boolean = true
+    override var cron: String = "0 0/30 * * * ?"
+    var deletedEmptyFolder: Boolean = false
     // 允许删除空目录的仓库列表
-    var deleteFolderRepos: List<String> = listOf(REPORT, LOG, PIPELINE, CUSTOM),
-) : StatJobProperties()
+    var deleteFolderRepos: List<String> = listOf(REPORT, LOG, PIPELINE, CUSTOM)
+}

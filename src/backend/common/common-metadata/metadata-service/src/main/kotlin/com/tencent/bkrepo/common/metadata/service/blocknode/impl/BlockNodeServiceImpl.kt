@@ -95,6 +95,15 @@ class BlockNodeServiceImpl(
         return blockNodeDao.find(query)
     }
 
+    override fun listAllBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        createdDate: String
+    ): List<TBlockNode> {
+        return blockNodeDao.find(BlockNodeQueryHelper.listQuery(projectId, repoName, fullPath, createdDate, null))
+    }
+
     override fun listBlocksInUploadId(
         projectId: String,
         repoName: String,

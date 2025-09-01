@@ -32,15 +32,15 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.artifact-access-log-embedding")
-class ArtifactAccessLogEmbeddingJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = "0 1 0 * * ?",
+class ArtifactAccessLogEmbeddingJobProperties : MongodbJobProperties() {
+    override var enabled: Boolean = false
+    override var cron: String = "0 1 0 * * ?"
     /**
      * 需要将访问记录保存到向量数据库的项目
      */
-    var projects: Set<String> = emptySet(),
+    var projects: Set<String> = emptySet()
     /**
      * 批量向量化并写入向量数据库的数量
      */
-    var batchToInsert: Int = 500,
-) : MongodbJobProperties(enabled)
+    var batchToInsert: Int = 500
+}

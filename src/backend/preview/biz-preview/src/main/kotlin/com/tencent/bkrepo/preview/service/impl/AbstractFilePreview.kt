@@ -32,7 +32,9 @@
 package com.tencent.bkrepo.preview.service.impl
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import com.tencent.bkrepo.preview.exception.PreviewNotFoundException
@@ -57,6 +59,7 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * 处理office文件
@@ -67,6 +70,9 @@ abstract class AbstractFilePreview(
     private val previewFileCacheService: PreviewFileCacheServiceImpl,
     private val nodeService: NodeService
 ) : FilePreview {
+
+    @Autowired
+    lateinit var enableMultiTenant: EnableMultiTenantProperties
 
     override fun filePreviewHandle(fileAttribute: FileAttribute) {
         // 下载文件, 存在临时目录
@@ -152,7 +158,19 @@ abstract class AbstractFilePreview(
         val projectId = if (fileAttribute.storageType == 0) fileAttribute.projectId else config.projectId
         val repoName = if (fileAttribute.storageType == 0) fileAttribute.repoName else config.repoName
         val md5 = fileAttribute.md5
-        val filePreviewCacheInfo = previewFileCacheService.getCache(md5!!, projectId!!, repoName!!) ?: return null
+        var filePreviewCacheInfo = previewFileCacheService.getCache(
+            md5!!,
+            buildTenantProjectId(projectId!!),
+            repoName!!
+        )
+        // 版本兼容，用config的信息再查一次，新版统一保存在config指定仓库
+        if (filePreviewCacheInfo == null) {
+            filePreviewCacheInfo = previewFileCacheService.getCache(
+                md5,
+                buildTenantProjectId(config.projectId),
+                config.repoName
+            ) ?: return null
+        }
         // 检查节点是否存在
         return if (nodeService.checkExist(
                 ArtifactInfo(
@@ -165,9 +183,23 @@ abstract class AbstractFilePreview(
             filePreviewCacheInfo
         } else {
             // 节点不存在，移除缓存
-            previewFileCacheService.removeCache(md5, projectId, repoName)
-            logger.warn("node does not exist, delete the cache information, key：$md5")
+            previewFileCacheService.removeCache(
+                md5,
+                filePreviewCacheInfo.projectId,
+                filePreviewCacheInfo.repoName
+            )
+            logger.warn("node does not exist, delete the cache information, key：$md5, " +
+                    "project: $filePreviewCacheInfo.projectId, repoName:$filePreviewCacheInfo.repoName")
             null
+        }
+    }
+
+    private fun buildTenantProjectId(projectId: String): String {
+        return if (enableMultiTenant.enabled) {
+            val tenantId = ProjectServiceHelper.getTenantId()
+            if (tenantId.isNullOrEmpty()) projectId else "$tenantId.$projectId"
+        } else {
+            projectId
         }
     }
 

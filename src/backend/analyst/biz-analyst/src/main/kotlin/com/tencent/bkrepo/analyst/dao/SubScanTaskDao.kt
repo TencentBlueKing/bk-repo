@@ -271,6 +271,19 @@ class SubScanTaskDao(
         return page(Query(criteria), Pages.ofRequest(DEFAULT_PAGE_NUMBER, DEFAULT_PAGE_SIZE))
     }
 
+    /**
+     * 获取早于时间的，未完成的子任务
+     */
+    fun tasksCreatedBefore(dateTime: LocalDateTime, dispatcher: String): List<TSubScanTask> {
+        val criteria = Criteria.where(TSubScanTask::createdDate.name).lt(dateTime)
+            .and(TSubScanTask::status.name).inValues(SubScanTaskStatus.UNFINISH_STATUS)
+            .and(TSubScanTask::metadata.name).elemMatch(
+                TaskMetadata::key.isEqualTo(TASK_METADATA_DISPATCHER)
+                    .and(TaskMetadata::value.name).isEqualTo(dispatcher)
+                )
+        return find(Query(criteria))
+    }
+
     private fun buildTimeoutCriteria(): Criteria {
         val heartbeatTimeoutSeconds = scannerProperties.heartbeatTimeout.seconds
         val maxTaskTimeoutSeconds = scannerProperties.maxTaskDuration.seconds
