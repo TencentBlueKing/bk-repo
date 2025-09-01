@@ -1,6 +1,8 @@
 package com.tencent.bkrepo.media.job.service
 
 import com.tencent.bkrepo.media.job.k8s.K8sProperties
+import com.tencent.bkrepo.media.job.service.TranscodeJobService.Companion.TRANSCODE_JOB_APP_LABEL_KEY
+import com.tencent.bkrepo.media.job.service.TranscodeJobService.Companion.TRANSCODE_JOB_APP_LABEL_VALUE
 import io.kubernetes.client.informer.SharedInformerFactory
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.apis.BatchV1Api
@@ -34,7 +36,7 @@ class TranscodeJobInformerController @Autowired constructor(
                     /* allowWatchBookmarks = */ null,
                     /* _continue = */ null,
                     /* fieldSelector = */ null,
-                    /* labelSelector = */ TranscodeJobService.TRANSCODE_JOB_LABEL.toLabelSelector(),
+                    /* labelSelector = */ "$TRANSCODE_JOB_APP_LABEL_KEY=$TRANSCODE_JOB_APP_LABEL_VALUE",
                     /* limit = */ null,
                     /* resourceVersion = */ params.resourceVersion,
                     /* resourceVersionMatch = */ null,
@@ -58,12 +60,6 @@ class TranscodeJobInformerController @Autowired constructor(
         logger.info("Shutting down Informer factory...")
         informerFactory.stopAllRegisteredInformers()
         logger.info("Informer factory shut down.")
-    }
-
-    private fun Map<String, String>.toLabelSelector(): String {
-        val sb = StringBuilder()
-        this.forEach { (k, v) -> sb.append("$k=$v,") }
-        return sb.toString().removeSuffix(",")
     }
 
     companion object {

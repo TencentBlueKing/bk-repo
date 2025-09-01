@@ -66,7 +66,7 @@ class TranscodeJobService @Autowired constructor(
                 logger.error("configmap ${k8sProperties.namespace}:$configMapName not found error")
                 return
             }
-            createK8sJob(BatchV1Api(apiClient), jobName, config, job)
+            createK8sJob(BatchV1Api(apiClient), job.id ?: "", jobName, config, job)
         } catch (e: ApiException) {
             logger.error(e.buildMessage())
             throw e
@@ -77,6 +77,7 @@ class TranscodeJobService @Autowired constructor(
 
     private fun createK8sJob(
         api: BatchV1Api,
+        jobId: String,
         jobName: String,
         config: TMediaTranscodeJobConfig,
         job: TMediaTranscodeJob
@@ -84,7 +85,15 @@ class TranscodeJobService @Autowired constructor(
         val metadata = V1ObjectMeta()
             .name(jobName)
             .namespace(k8sProperties.namespace)
-            .labels(TRANSCODE_JOB_LABEL)
+            .labels(
+                mapOf(
+                    TRANSCODE_JOB_APP_LABEL_KEY to TRANSCODE_JOB_APP_LABEL_VALUE,
+                    TRANSCODE_JOB_ID_LABEL to jobId,
+                    TRANSCODE_JOB_PROJECT_ID to job.projectId,
+                    TRANSCODE_JOB_REPO_NAME to job.repoName,
+                    TRANSCODE_JOB_FILE_NAME to job.fileName,
+                )
+            )
         val resource = config.resource?.readJsonString<ResourceLimit>()
         val container = V1Container()
             .name("transcoder")
@@ -200,6 +209,11 @@ class TranscodeJobService @Autowired constructor(
         private const val CMD = "run.py"
         private val PYTHON_CMD =
             listOf("/bin/bash", "-c", "source /opt/conda/bin/activate media && python $CMD")
-        val TRANSCODE_JOB_LABEL = mapOf("app" to "BKREPO_MEDIA_TRANSCODE_JOB")
+        const val TRANSCODE_JOB_ID_LABEL = "BKREPO_MEDIA_TRANSCODE_JOB_ID"
+        const val TRANSCODE_JOB_PROJECT_ID = "BKREPO_MEDIA_TRANSCODE_JOB_PROJECT_ID"
+        const val TRANSCODE_JOB_REPO_NAME = "BKREPO_MEDIA_TRANSCODE_JOB_REPO_NAME"
+        const val TRANSCODE_JOB_FILE_NAME = "BKREPO_MEDIA_TRANSCODE_JOB_FILE_NAME"
+        const val TRANSCODE_JOB_APP_LABEL_KEY = "app"
+        const val TRANSCODE_JOB_APP_LABEL_VALUE = "BKREPO_MEDIA_TRANSCODE_JOB"
     }
 }
