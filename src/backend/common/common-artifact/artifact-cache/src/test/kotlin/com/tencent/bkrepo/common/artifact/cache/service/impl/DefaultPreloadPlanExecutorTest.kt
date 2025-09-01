@@ -34,12 +34,14 @@ import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.UT_SHA256
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.service.PreloadListener
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.common.storage.util.delete
 import com.tencent.bkrepo.common.storage.util.existReal
@@ -118,10 +120,20 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
     fun testExecutorFull() {
         properties.preloadConcurrency = 1
         val plan = buildPlan()
-        assertTrue(preloadPlanExecutor.execute(plan))
-        preloadPlanExecutor.execute(plan)
-        preloadPlanExecutor.execute(plan)
-        Assertions.assertFalse(preloadPlanExecutor.execute(plan))
+        val listener = object : PreloadListener {
+            override fun onPreloadStart(plan: ArtifactPreloadPlan) {
+                Thread.sleep(2000)
+            }
+
+            override fun onPreloadSuccess(plan: ArtifactPreloadPlan, throughput: Throughput?) {}
+            override fun onPreloadFailed(plan: ArtifactPreloadPlan) {}
+            override fun onPreloadFinished(plan: ArtifactPreloadPlan) {}
+
+        }
+        assertTrue(preloadPlanExecutor.execute(plan, listener))
+        preloadPlanExecutor.execute(plan, listener)
+        preloadPlanExecutor.execute(plan, listener)
+        Assertions.assertFalse(preloadPlanExecutor.execute(plan, listener))
         properties.preloadConcurrency = 8
     }
 
