@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.mongo.reactive.dao
 
-import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper
 import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.determineShardingCount
 import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.determineShardingFields
