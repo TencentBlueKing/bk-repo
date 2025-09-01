@@ -122,7 +122,7 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
         val plan = buildPlan()
         val listener = object : PreloadListener {
             override fun onPreloadStart(plan: ArtifactPreloadPlan) {
-                Thread.sleep(2000)
+                // No-op
             }
 
             override fun onPreloadSuccess(plan: ArtifactPreloadPlan, throughput: Throughput?) {
@@ -135,11 +135,10 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
 
             override fun onPreloadFinished(plan: ArtifactPreloadPlan) {
                 // No-op
+                Thread.sleep(5000)
             }
         }
         assertTrue(preloadPlanExecutor.execute(plan, listener))
-        preloadPlanExecutor.execute(plan, listener)
-        preloadPlanExecutor.execute(plan, listener)
         Assertions.assertFalse(preloadPlanExecutor.execute(plan, listener))
         properties.preloadConcurrency = 8
     }
