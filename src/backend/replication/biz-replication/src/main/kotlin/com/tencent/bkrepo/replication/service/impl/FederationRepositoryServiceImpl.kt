@@ -142,21 +142,23 @@ class FederationRepositoryServiceImpl(
         }
         try {
             // 使用线程池异步执行同步任务
-            executor.execute {
-                try {
-                    // TODO 多个任务并发执行
-                    federationRepository.federatedClusters.forEach {
-                        val taskInfo = replicaTaskService.getByTaskId(it.taskId!!)
-                        taskInfo?.let { task ->
-                            val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
-                            federationManualReplicaJobExecutor.execute(taskDetail)
+            executor.execute (
+                Runnable {
+                    try {
+                        // TODO 多个任务并发执行
+                        federationRepository.federatedClusters.forEach {
+                            val taskInfo = replicaTaskService.getByTaskId(it.taskId!!)
+                            taskInfo?.let { task ->
+                                val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
+                                federationManualReplicaJobExecutor.execute(taskDetail)
+                            }
                         }
+                    } finally {
+                        unlock(projectId, repoName, federationId, lock)
+                        logger.info("Released lock for federation sync: $federationId")
                     }
-                } finally {
-                    unlock(projectId, repoName, federationId, lock)
-                    logger.info("Released lock for federation sync: $federationId")
-                }
-            }
+                }.trace()
+            )
         } catch (ignore: Exception) {
             logger.error("Failed to full sync federation repository, error: ${ignore.message}")
             unlock(projectId, repoName, federationId, lock)

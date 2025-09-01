@@ -236,7 +236,7 @@ class FederationReplicator(
             // 2. 同步文件
             return if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
                 // 异步执行
-                executor.execute {
+                executor.execute (
                     Runnable {
                         try {
                             pushFileToFederatedCluster(this, node)
@@ -250,7 +250,7 @@ class FederationReplicator(
                             completeFileReplicaRecord(context, false)
                         }
                     }.trace()
-                }
+                )
                 true
             } else {
                 // 同步执行
