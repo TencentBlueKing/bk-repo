@@ -29,34 +29,21 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.metrics
+package com.tencent.bkrepo.common.metrics.constant
 
-import com.tencent.bkrepo.common.metrics.constant.COS_ASYNC_UPLOADING_SIZE
-import com.tencent.bkrepo.common.metrics.constant.COS_ASYNC_UPLOADING_SIZE_DESC
-import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.MeterBinder
-import org.springframework.stereotype.Component
+const val JOB_ASYNC_TASK_ACTIVE_COUNT = "job.async.task.active.count"
+const val JOB_ASYNC_TASK_ACTIVE_COUNT_DESC = "异步任务实时数量"
 
-@Suppress("LateinitUsage")
-@Component
-class CosUploadMetrics : MeterBinder {
+const val JOB_ASYNC_TASK_QUEUE_SIZE = "job.async.task.queue.size"
+const val JOB_ASYNC_TASK_QUEUE_SIZE_DESC = "异步任务队列大小"
 
-    override fun bindTo(meterRegistry: MeterRegistry) {
-        Companion.meterRegistry = meterRegistry
-    }
+const val JOB_BATCH_JOB_ACTIVE_COUNT = "job.batch-job.active.count"
+const val JOB_BATCH_JOB_ACTIVE_DESC = "运行中的跑批任务数量"
 
-    companion object {
-        lateinit var meterRegistry: MeterRegistry
-        private const val BYTES = "bytes"
+const val JOB_TASK_COUNT = "job.task.count"
+const val JOB_TASK_COUNT_DESC = "任务执行统计"
+const val JOB_TIME_CONSUME = "job.task.time"
+const val JOB_TIME_CONSUME_DESC = "任务执行时长统计"
 
-        fun getUploadingCounter(): Counter {
-            return Counter.builder(COS_ASYNC_UPLOADING_SIZE)
-                .description(COS_ASYNC_UPLOADING_SIZE_DESC)
-                .baseUnit(BYTES)
-                .register(meterRegistry)
-        }
-
-    }
-
-}
+const val JOB_TASK_RUNNING_STATUS = "job.running.status"
+const val JOB_TASK_RUNNING_STATUS_DESC = "任务执行状态"

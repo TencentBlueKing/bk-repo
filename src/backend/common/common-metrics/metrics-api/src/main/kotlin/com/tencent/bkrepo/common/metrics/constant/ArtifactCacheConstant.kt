@@ -29,34 +29,14 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.metrics
+package com.tencent.bkrepo.common.metrics.constant
 
-import com.tencent.bkrepo.common.metrics.constant.COS_ASYNC_UPLOADING_SIZE
-import com.tencent.bkrepo.common.metrics.constant.COS_ASYNC_UPLOADING_SIZE_DESC
-import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.MeterBinder
-import org.springframework.stereotype.Component
+const val CACHE_COUNT_HIT = "storage.cache.count.hit"
+const val CACHE_COUNT_MISS = "storage.cache.count.miss"
+const val CACHE_COUNT_LARGE_MISS = "storage.cache.miss.large.count"
+const val CACHE_SIZE_LARGE_MISS = "storage.cache.miss.large.size"
+const val CACHE_ACCESS_INTERVAL = "storage.cache.access.interval"
+const val CACHE_ACCESS_FILE_SIZE = "storage.cache.access.file.size"
+const val CACHE_PRELOAD_SIZE = "storage.cache.preload.size"
+const val CACHE_PRELOAD_COUNT = "storage.cache.preload.count"
 
-@Suppress("LateinitUsage")
-@Component
-class CosUploadMetrics : MeterBinder {
-
-    override fun bindTo(meterRegistry: MeterRegistry) {
-        Companion.meterRegistry = meterRegistry
-    }
-
-    companion object {
-        lateinit var meterRegistry: MeterRegistry
-        private const val BYTES = "bytes"
-
-        fun getUploadingCounter(): Counter {
-            return Counter.builder(COS_ASYNC_UPLOADING_SIZE)
-                .description(COS_ASYNC_UPLOADING_SIZE_DESC)
-                .baseUnit(BYTES)
-                .register(meterRegistry)
-        }
-
-    }
-
-}

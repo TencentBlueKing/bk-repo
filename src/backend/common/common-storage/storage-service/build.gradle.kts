@@ -36,6 +36,7 @@ dependencies {
     api(project(":common:common-bksync"))
     api(project(":common:common-storage:storage-api"))
     api(project(":common:common-artifact:artifact-api"))
+    api(project(":common:common-metrics:metrics-api"))
     api("io.micrometer:micrometer-core")
     api("commons-codec:commons-codec")
     api("commons-io:commons-io")

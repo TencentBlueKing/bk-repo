@@ -27,6 +27,12 @@
 
 package com.tencent.bkrepo.ddc.metrics
 
+import com.tencent.bkrepo.common.metrics.constant.DDC_BLOB
+import com.tencent.bkrepo.common.metrics.constant.DDC_REF_BATCH_EXECUTOR_ACTIVE
+import com.tencent.bkrepo.common.metrics.constant.DDC_REF_BATCH_EXECUTOR_QUEUE_SIZE
+import com.tencent.bkrepo.common.metrics.constant.DDC_REF_GETS
+import com.tencent.bkrepo.common.metrics.constant.DDC_REF_LOAD
+import com.tencent.bkrepo.common.metrics.constant.DDC_REF_STORE
 import com.tencent.bkrepo.ddc.config.DdcConfiguration.Companion.BEAN_NAME_REF_BATCH_EXECUTOR
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
@@ -145,14 +151,5 @@ class DdcMeterBinder(
             .register(registry)
             .increment()
 
-    }
-
-    companion object {
-        private const val DDC_REF_GETS = "ddc.ref.gets"
-        private const val DDC_REF_LOAD = "ddc.ref.load"
-        private const val DDC_REF_STORE = "ddc.ref.store"
-        private const val DDC_BLOB = "ddc.blob"
-        private const val DDC_REF_BATCH_EXECUTOR_ACTIVE = "ddc.ref.batch.executor.active.count"
-        private const val DDC_REF_BATCH_EXECUTOR_QUEUE_SIZE = "ddc.ref.batch.executor.queue.size"
     }
 }
