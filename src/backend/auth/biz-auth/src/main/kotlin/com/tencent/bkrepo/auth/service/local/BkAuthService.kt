@@ -33,7 +33,7 @@ class BkAuthService @Autowired constructor(private val bkAuthConfig: BkAuthConfi
         try {
             val request = Request.Builder().url(url).header("X-Bkapi-Authorization", authHeader)
                 .header("X-Bk-Tenant-Id", tenantId).get().build()
-            logger.debug("checkBkUserExist, requestUrl: [$url]")
+            logger.debug("checkBkUserExist, requestUrl: [$url, $authHeader , $tenantId]")
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2)
             logger.debug("checkBkUserExist, requestUrl: [$url], result : [${apiResponse.content}]")
             if (apiResponse.code == HttpStatus.OK.value) {
@@ -43,7 +43,7 @@ class BkAuthService @Autowired constructor(private val bkAuthConfig: BkAuthConfi
                 }
             }
         } catch (exception: Exception) {
-            logger.error("checkBkUserExist error : ", exception)
+            logger.error("checkBkUserExist error : ", url, authHeader, tenantId, exception)
         }
         return false
     }
