@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.npm.pojo.NpmErrorResponse
 import com.tencent.bkrepo.npm.pojo.OhpmResponse
@@ -159,6 +160,7 @@ class NpmExceptionHandler {
             JsonUtils.objectMapper.writeValueAsString(responseObject)
         }
         val response = HttpContextHolder.getResponse()
+        TraceHeaderUtils.setResponseHeader()
         response.contentType = "application/json; charset=utf-8"
         response.writer.println(responseString)
     }

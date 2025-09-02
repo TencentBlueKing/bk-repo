@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.repo-init")
-class RepoInitJobProperties(
-    override var fixedDelay: Long = 60 * 1000L,
+class RepoInitJobProperties: RepoJobProperties() {
+    override var fixedDelay: Long = 60 * 1000L
     override var initialDelay: Long = 60 * 1000L
-) : RepoJobProperties()
+}

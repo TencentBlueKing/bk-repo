@@ -29,16 +29,18 @@ package com.tencent.bkrepo.job.batch.task.project
 
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(value = "job.bkci-project-metadata-sync")
-class BkciProjectMetadataSyncJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = "0 0 0 * * ?",
-    var ignoredProjectPrefix: Set<String> = emptySet(),
-    var ciServer: String = "",
-    var ciToken: String = "",
+class BkciProjectMetadataSyncJobProperties : MongodbJobProperties() {
+    override var enabled: Boolean = false
+    override var cron: String = "0 0 0 * * ?"
+    var ignoredProjectPrefix: Set<String> = emptySet()
+    var ciServer: String = ""
+    var ciToken: String = ""
     /**
      * 是否路由到bkci灰度集群
      */
-    var routeToGray: Boolean = false,
-) : MongodbJobProperties()
+    var routeToGray: Boolean = false
+}

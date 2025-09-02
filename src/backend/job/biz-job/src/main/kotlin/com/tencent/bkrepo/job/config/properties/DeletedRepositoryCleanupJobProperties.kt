@@ -28,8 +28,10 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(value = "job.deleted-repository-cleanup")
-class DeletedRepositoryCleanupJobProperties(
-    override var cron: String = "0 0 2 * * ?",
-): MongodbJobProperties()
+class DeletedRepositoryCleanupJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 2 * * ?"
+}

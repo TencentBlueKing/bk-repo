@@ -28,12 +28,14 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
 /**
  * 活跃项目下目录大小以及文件个数统计
  */
+@Component
 @ConfigurationProperties("job.active-project-node-folder-stat")
-class ActiveProjectNodeFolderStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0/30 * * * ?",
-    ) : StatJobProperties()
+class ActiveProjectNodeFolderStatJobProperties : StatJobProperties() {
+    override var enabled: Boolean = true
+    override var cron: String = "0 0/30 * * * ?"
+}

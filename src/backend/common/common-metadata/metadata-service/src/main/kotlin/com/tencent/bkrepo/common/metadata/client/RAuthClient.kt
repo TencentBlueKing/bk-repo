@@ -124,6 +124,12 @@ interface RAuthClient {
         @RequestParam repoName: String
     ): Mono<Response<ListPathResult>>
 
+    @PostMapping("/permission/personal/path")
+    fun getOrCreatePersonalPath(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String
+    ): Mono<Response<String>>
+
     @PostMapping("/bkiamv3/rbac/group/check")
     fun getExistRbacDefaultGroupProjectIds(
         @Parameter(name = "项目ID列表")

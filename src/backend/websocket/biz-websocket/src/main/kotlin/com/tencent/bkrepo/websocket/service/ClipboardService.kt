@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
@@ -40,14 +41,16 @@ import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.common.security.util.JwtUtils
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.websocket.dispatch.TransferDispatch
 import com.tencent.bkrepo.websocket.dispatch.push.CopyPDUTransferPush
 import com.tencent.bkrepo.websocket.dispatch.push.PastePDUTransferPush
+import com.tencent.bkrepo.websocket.dispatch.push.PingPDUTransferPush
+import com.tencent.bkrepo.websocket.dispatch.push.PongPDUTransferPush
 import com.tencent.bkrepo.websocket.pojo.fs.CopyPDU
 import com.tencent.bkrepo.websocket.pojo.fs.PastePDU
+import com.tencent.bkrepo.websocket.pojo.fs.PingPongPDU
 import com.tencent.devops.api.pojo.Response
 import okhttp3.Request
 import okio.IOException
@@ -60,11 +63,24 @@ class ClipboardService(
     private val devXProperties: DevXProperties,
     private val jwtAuthProperties: JwtAuthProperties,
     private val permissionManager: PermissionManager,
-    private val serviceUserClient: ServiceUserClient
+    private val serviceUserClient: ServiceUserClient,
 ) {
 
     private val httpClient = HttpClientBuilderFactory.create().build()
     private val signingKey = JwtUtils.createSigningKey(jwtAuthProperties.secretKey)
+
+    fun ping(userId: String, pingPDU: PingPongPDU) {
+        logger.info("userId: $userId, PingPDU: $pingPDU")
+        val pingPDUTransferPush = PingPDUTransferPush(pingPDU)
+        transferDispatch.dispatch(pingPDUTransferPush)
+    }
+
+    fun pong(userId: String, pongPDU: PingPongPDU) {
+        logger.info("userId: $userId, PongPDU: $pongPDU")
+        pongPDU.type = "pong"
+        val pongPDUTransferPush = PongPDUTransferPush(pongPDU)
+        transferDispatch.dispatch(pongPDUTransferPush)
+    }
 
     fun copy(userId: String, copyPDU: CopyPDU) {
         logger.info("userId: $userId, CopyPDU: $copyPDU")
@@ -85,8 +101,9 @@ class ClipboardService(
      * 云桌面分享人上传文件时，生成分享人的token
      */
     private fun generateToken(userId: String, copyPDU: CopyPDU): String? {
+        // 客户端有时候获取不到userid，此处作为兜底
         if (userId != copyPDU.userId) {
-            throw PermissionException("can't send copy pdu with userId[${copyPDU.userId}]")
+            copyPDU.userId = userId
         }
         if (devXProperties.groupWorkspaceUrl.isEmpty() || devXProperties.personalWorkspaceUrl.isEmpty()) {
             return null

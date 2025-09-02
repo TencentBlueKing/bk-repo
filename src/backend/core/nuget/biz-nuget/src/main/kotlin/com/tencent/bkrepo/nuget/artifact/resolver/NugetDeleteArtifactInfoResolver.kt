@@ -8,9 +8,9 @@ import com.tencent.bkrepo.nuget.constant.ID
 import com.tencent.bkrepo.nuget.constant.PACKAGE_KEY
 import com.tencent.bkrepo.nuget.constant.VERSION
 import com.tencent.bkrepo.nuget.pojo.artifact.NugetDeleteArtifactInfo
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(NugetDeleteArtifactInfo::class)
@@ -35,6 +35,7 @@ class NugetDeleteArtifactInfoResolver : ArtifactInfoResolver {
                 val version = request.getParameter(VERSION)
                 NugetDeleteArtifactInfo(projectId, repoName, packageKey, version)
             }
+
             else -> {
                 // 客户端请求删除版本
                 val attributes = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as Map<*, *>

@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
+import com.tencent.bkrepo.common.metadata.constant.FAKE_CRC64_ECMA
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.dao.node.RNodeDao
@@ -180,6 +181,7 @@ abstract class RNodeBaseService(
                 overwrite = overwrite,
                 sha256 = FAKE_SHA256,
                 md5 = FAKE_MD5,
+                crc64ecma = FAKE_CRC64_ECMA,
                 nodeMetadata = nodeMetadata?.let { it + metadata } ?: metadata,
                 operator = operator,
             )
@@ -267,7 +269,7 @@ abstract class RNodeBaseService(
                 .and(TNode::deleted).isEqualTo(null)
                 .and(TNode::fullPath).isEqualTo(fullPath)
                 .and(TNode::folder).isEqualTo(false)
-            val query = Query(criteria).withHint(TNode.FULL_PATH_IDX)
+            val query = Query(criteria)
             val update = Update().set(TNode::lastAccessDate.name, accessDate)
             nodeDao.updateFirst(query, update)
             logger.info("Update node access time [$this] success.")

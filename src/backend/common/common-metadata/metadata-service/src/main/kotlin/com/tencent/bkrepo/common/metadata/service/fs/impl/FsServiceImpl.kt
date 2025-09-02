@@ -90,6 +90,7 @@ class FsServiceImpl(
                 size = if (folder) 0 else size ?: 0,
                 sha256 = if (folder) null else sha256,
                 md5 = if (folder) null else md5,
+                crc64ecma = if (folder) null else crc64ecma,
                 metadata = MetadataUtils.compatibleConvertAndCheck(metadata, nodeMetadata),
                 createdBy = createdBy ?: operator,
                 createdDate = createdDate ?: LocalDateTime.now(),

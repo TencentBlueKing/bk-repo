@@ -56,11 +56,14 @@ abstract class LocalRepository : AbstractArtifactRepository() {
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
         with(context) {
-            val node = ArtifactContextHolder.getNodeDetail(artifactInfo)
-            node?.let { downloadIntercept(context, it) }
-            val inputStream = storageManager.loadArtifactInputStream(node, storageCredentials) ?: return null
+            val node = ArtifactContextHolder.getNodeDetail(artifactInfo) ?: return null
+            downloadIntercept(context, node)
+
+            val (load, loadStorage) = ArtifactContextHolder.getForwardNodeDetail(node, storageCredentials, userId)
+                ?: Pair(node, storageCredentials)
+            val inputStream = storageManager.loadArtifactInputStream(load, loadStorage) ?: return null
             val responseName = artifactInfo.getResponseName()
-            return ArtifactResource(inputStream, responseName, node, ArtifactChannel.LOCAL, useDisposition)
+            return ArtifactResource(inputStream, responseName, load, ArtifactChannel.LOCAL, useDisposition)
         }
     }
 
@@ -101,6 +104,7 @@ abstract class LocalRepository : AbstractArtifactRepository() {
             fullPath = context.artifactInfo.getArtifactFullPath(),
             size = context.getArtifactFile().getSize(),
             sha256 = context.getArtifactSha256(),
+            crc64ecma = context.getArtifactCrc64ecma(),
             md5 = context.getArtifactMd5(),
             operator = context.userId
         )

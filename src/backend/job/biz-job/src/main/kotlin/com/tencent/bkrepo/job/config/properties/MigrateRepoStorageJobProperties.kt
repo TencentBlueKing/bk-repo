@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.migrate-repo-storage")
-class MigrateRepoStorageJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = "0 0/5 * * * ?",
-) : BatchJobProperties()
+class MigrateRepoStorageJobProperties: BatchJobProperties() {
+    override var enabled: Boolean = false
+    override var cron: String = "0 0/5 * * * ?"
+}

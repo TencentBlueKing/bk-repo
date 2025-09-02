@@ -60,7 +60,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -69,6 +68,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 @DataMongoTest
@@ -101,26 +101,26 @@ open class ExecutorBaseTest {
     @Autowired
     protected lateinit var executingTaskRecorder: ExecutingTaskRecorder
 
-    @MockBean
+    @MockitoBean
     protected lateinit var fileReferenceService: FileReferenceService
 
-    @MockBean
+    @MockitoBean
     protected lateinit var repositoryService: RepositoryService
 
-    @MockBean
+    @MockitoBean
     protected lateinit var storageCredentialService: StorageCredentialService
 
-    @MockBean
+    @MockitoBean
     protected lateinit var storageService: StorageService
 
-    @MockBean
+    @MockitoBean
     protected lateinit var migrateArchivedFileService: MigrateArchivedFileService
 
-    @MockBean
+    @MockitoBean
     @Qualifier("fileNotFoundAutoFixStrategy")
     private lateinit var fileNotFoundAutoFixStrategy: MigrateFailedNodeAutoFixStrategy
 
-    @MockBean
+    @MockitoBean
     @Qualifier("archivedFileAutoFixStrategy")
     private lateinit var archivedFileAutoFixStrategy: MigrateFailedNodeAutoFixStrategy
 

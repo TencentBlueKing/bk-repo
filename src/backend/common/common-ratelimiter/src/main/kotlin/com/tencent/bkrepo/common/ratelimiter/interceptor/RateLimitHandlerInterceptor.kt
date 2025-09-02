@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.common.ratelimiter.interceptor
 
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.web.servlet.HandlerInterceptor
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * 针对http请求添加限流拦截

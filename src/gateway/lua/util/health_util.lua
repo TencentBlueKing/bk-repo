@@ -20,16 +20,13 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 local _M = {}
 
 --[[判断字符串是否在数组中]]
-function _M:check_path()
+function _M:check_path(service_name)
     local security_paths = config.security_paths
     if security_paths ~= nil and #security_paths ~= 0 then
         local method = ngx.req.get_method()
         local path = ngx.var.uri
         for _, item in ipairs(security_paths) do
-            local pathPattern = "/web/" .. service_name .. item.path
-            if service_name == "fs-server" then
-                pathPattern = "/web/fs%-server" .. item.path
-            end
+            local pathPattern = item.prefix .. service_name .. item.path
             if string.find(path, "^" .. pathPattern) ~= nil and service_name == item.service and method == item.method then
                 return true
             end
@@ -102,13 +99,6 @@ function _M:get_target_by_project()
 
     if not projectId then
         return nil, nil
-    end
-    -- get router from config file
-    if config.project_router and config.router_domain then
-        local env = config.project_router[projectId]
-        if env and config.router_domain[env] then
-            return env, config.router_domain[env]
-        end
     end
     -- get router from cache
     local router_cache = ngx.shared.router_srv_store

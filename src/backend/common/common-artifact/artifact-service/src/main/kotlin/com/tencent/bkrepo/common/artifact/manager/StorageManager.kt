@@ -32,15 +32,12 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryId
-import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveRange
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder.getRequestOrNull
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -48,8 +45,6 @@ import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
-import com.tencent.devops.plugin.api.PluginManager
-import com.tencent.devops.plugin.api.applyExtension
 import org.slf4j.LoggerFactory
 
 /**
@@ -71,7 +66,6 @@ class StorageManager(
     private val nodeService: NodeService,
     private val fileReferenceService: FileReferenceService,
     private val nodeResourceFactory: NodeResourceFactory,
-    private val pluginManager: PluginManager,
 ) {
 
     /**
@@ -142,27 +136,7 @@ class StorageManager(
         node: NodeDetail?,
         storageCredentials: StorageCredentials?,
     ): ArtifactInputStream? {
-        if (node == null) {
-            return null
-        }
-        var forwardNode: NodeDetail? = null
-        pluginManager.applyExtension<NodeForwardExtension> {
-            forwardNode = forward(node, SecurityUtils.getUserId())
-            forwardNode?.let {
-                logger.info("Load[${node.identity()}] forward to [${it.identity()}].")
-                ActionAuditContext.current().addExtendData("alphaApkSha256", it.sha256)
-                ActionAuditContext.current().addExtendData("alphaApkMd5", it.md5)
-            }
-        }
-        val load = forwardNode ?: node
-        val loadStorageCredentials = if (load.repoName == node.repoName) {
-            storageCredentials
-        } else {
-            val repo = ArtifactContextHolder.getRepoDetail(RepositoryId(load.projectId, load.repoName))
-            logger.info("use forward node storage credentials[${repo.storageCredentials?.key}]")
-            repo.storageCredentials
-        }
-        return loadArtifactInputStream(load.nodeInfo, loadStorageCredentials)
+        return loadArtifactInputStream(node?.nodeInfo, storageCredentials)
     }
 
     /**

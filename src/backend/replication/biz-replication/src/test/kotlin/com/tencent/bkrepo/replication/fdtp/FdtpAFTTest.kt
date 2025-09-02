@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.fdtp
 
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
 import com.tencent.bkrepo.common.artifact.hash.sha256
+import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
 import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
@@ -50,14 +51,19 @@ import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.replication.constant.SHA256
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.micrometer.tracing.Tracer
+import io.micrometer.tracing.otel.bridge.OtelTracer
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.mockito.Mockito
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.cloud.loadbalancer.support.SimpleObjectProvider
-import org.springframework.cloud.sleuth.Tracer
-import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 import java.io.ByteArrayInputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -100,6 +106,7 @@ class FdtpAFTTest {
             proxyRepository,
             artifactClient,
             httpAuthSecurity,
+            Mockito.mock(ObjectProvider::class.java) as ObjectProvider<NodeForwardService>
         )
         val helper = StorageHealthMonitorHelper(ConcurrentHashMap())
         ArtifactFileFactory(StorageProperties(), helper, limitCheckService)

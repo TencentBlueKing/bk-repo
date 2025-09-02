@@ -30,10 +30,12 @@ package com.tencent.bkrepo.fs.server.filter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import kotlin.system.measureTimeMillis
 
+@Component
 class ArtifactFileCleanupFilterFunction : CoHandlerFilterFunction {
 
     override suspend fun filter(
@@ -53,7 +55,11 @@ class ArtifactFileCleanupFilterFunction : CoHandlerFilterFunction {
             val artifactFileList = request.exchange()
                 .attributes[CoArtifactFileFactory.ARTIFACT_FILES] as? MutableList<ArtifactFile>
             artifactFileList?.forEach {
-                val absolutePath = it.getFile()?.absolutePath ?: IN_MEMORY
+                val absolutePath = try {
+                    it.getFile()?.absolutePath ?: IN_MEMORY
+                } catch (_: IllegalArgumentException) {
+                    NOT_INIT
+                }
                 measureTimeMillis { it.delete() }.apply {
                     logger.info("Delete temp artifact file [$absolutePath] success, elapse $this ms")
                 }
@@ -66,5 +72,6 @@ class ArtifactFileCleanupFilterFunction : CoHandlerFilterFunction {
     companion object{
         private val logger = LoggerFactory.getLogger(ArtifactFileCleanupFilterFunction::class.java)
         private const val IN_MEMORY = "in memory"
+        private const val NOT_INIT = "not init"
     }
 }

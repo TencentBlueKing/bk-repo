@@ -40,7 +40,6 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.config.properties.ExpiredCacheFileCleanupJobProperties
 import com.tencent.bkrepo.job.metrics.StorageCacheMetrics
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
@@ -51,7 +50,6 @@ import java.time.LocalDateTime
  * 清理缓存文件定时任务
  */
 @Component
-@EnableConfigurationProperties(ExpiredCacheFileCleanupJobProperties::class)
 class ExpiredCacheFileCleanupJob(
     private val properties: ExpiredCacheFileCleanupJobProperties,
     private val mongoTemplate: MongoTemplate,

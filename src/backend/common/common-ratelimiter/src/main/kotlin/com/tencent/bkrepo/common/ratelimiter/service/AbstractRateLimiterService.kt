@@ -64,6 +64,7 @@ import com.tencent.bkrepo.common.ratelimiter.rule.usage.user.UserUploadUsageRate
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.ratelimiter.utils.RateLimiterBuilder
 import com.tencent.bkrepo.common.service.servlet.MultipleReadHttpRequest
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -73,8 +74,8 @@ import org.springframework.http.MediaType
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
+import org.springframework.web.servlet.HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE
 import java.util.concurrent.ConcurrentHashMap
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 限流器抽象实现
@@ -137,10 +138,33 @@ abstract class AbstractRateLimiterService(
         }
     }
 
+    fun whiteListCheck(request: HttpServletRequest) {
+        if (!rateLimiterProperties.projectWhiteListEnabled) {
+            return
+        }
+        try {
+            val (projectId, _) = getRepoInfoFromAttribute(request)
+            if (isInWhiteList(projectId!!)) {
+                logger.debug("Project [$projectId] is in whitelist, skipping rate limit")
+                return
+            }
+        } catch (e: InvalidResourceException) {
+            // 检查url是否在忽略列表中
+            if (rateLimiterProperties.specialUrlsIgnoreProjectWhiteList.contains(
+                    request.getAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE)
+                )) {
+                logger.debug("Request url is in ignore url list, skipping rate limit")
+                return
+            }
+        }
+        throw OverloadException("Project or url is not in whitelist!")
+    }
+
     override fun limit(request: HttpServletRequest, applyPermits: Long?) {
         if (!rateLimiterProperties.enabled) {
             return
         }
+        whiteListCheck(request)
         if (ignoreRequest(request)) return
         if (rateLimitRule == null || rateLimitRule!!.isEmpty()) return
         val resLimitInfo = getResLimitInfoAndResInfo(request).first ?: return
@@ -383,7 +407,7 @@ abstract class AbstractRateLimiterService(
         resLimitInfo: ResLimitInfo,
         applyPermits: Long? = null,
         circuitBreakerPerSecond: Long? = null,
-        action: (RateLimiter, Long) -> Boolean
+        action: (RateLimiter, Long) -> Boolean,
     ) {
         var exception: Exception? = null
         var pass = false
@@ -428,7 +452,7 @@ abstract class AbstractRateLimiterService(
      * 获取对应限流算法实现
      */
     fun getAlgorithmOfRateLimiter(
-        resource: String, resourceLimit: ResourceLimit
+        resource: String, resourceLimit: ResourceLimit,
     ): RateLimiter {
         val limitKey = generateKey(resource, resourceLimit)
         return RateLimiterBuilder.getAlgorithmOfRateLimiter(
@@ -452,9 +476,32 @@ abstract class AbstractRateLimiterService(
         }
     }
 
+    private fun isInWhiteList(projectId: String): Boolean {
+        return rateLimiterProperties.projectWhiteList.any { pattern ->
+            when {
+                isPotentialRegex(pattern) -> {
+                    try {
+                        val regex = Regex(pattern.replace("*", ".*"))
+                        regex.matches(projectId)
+                    } catch (e: Exception) {
+                        logger.warn("Invalid regex pattern [$pattern] in project whitelist")
+                        false
+                    }
+                }
+
+                else -> pattern == projectId
+            }
+        }
+    }
+
+    private fun isPotentialRegex(pattern: String): Boolean {
+        val regexChars = setOf('*', '$', '^', '+', '?', '.', '|', '(', ')', '[', ']', '{', '}')
+        return pattern.any { it in regexChars }
+    }
+
     companion object {
         val logger: Logger = LoggerFactory.getLogger(AbstractRateLimiterService::class.java)
-        val UPLOAD_REQUEST_METHOD = listOf(HttpMethod.POST.name, HttpMethod.PUT.name, HttpMethod.PATCH.name)
-        val DOWNLOAD_REQUEST_METHOD = listOf(HttpMethod.GET.name)
+        val UPLOAD_REQUEST_METHOD = listOf(HttpMethod.POST.name(), HttpMethod.PUT.name(), HttpMethod.PATCH.name())
+        val DOWNLOAD_REQUEST_METHOD = listOf(HttpMethod.GET.name())
     }
 }

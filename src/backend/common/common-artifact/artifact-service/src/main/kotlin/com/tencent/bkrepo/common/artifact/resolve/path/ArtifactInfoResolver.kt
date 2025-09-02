@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.common.artifact.resolve.path
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import javax.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletRequest
 
 /**
  * 构件路径解析

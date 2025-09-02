@@ -33,8 +33,9 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.config.properties.ActiveProjectEmptyFolderCleanupJobProperties
+import com.tencent.bkrepo.job.pojo.stat.StatNode
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Component
@@ -45,14 +46,14 @@ import java.time.Duration
  * 空目录清理job
  */
 @Component
-@EnableConfigurationProperties(ActiveProjectEmptyFolderCleanupJobProperties::class)
 class ActiveProjectEmptyFolderCleanupJob(
     val properties: ActiveProjectEmptyFolderCleanupJobProperties,
     executor: ThreadPoolTaskExecutor,
     private val activeProjectService: ActiveProjectService,
     private val mongoTemplate: MongoTemplate,
     private val emptyFolderCleanup: EmptyFolderCleanup,
-) : StatBaseJob(mongoTemplate, properties, executor) {
+    private val separationTaskService: SeparationTaskService,
+) : StatBaseJob(mongoTemplate, properties, executor, separationTaskService) {
 
     override fun doStart0(jobContext: JobContext) {
         logger.info("start to do empty folder cleanup job for active projects")

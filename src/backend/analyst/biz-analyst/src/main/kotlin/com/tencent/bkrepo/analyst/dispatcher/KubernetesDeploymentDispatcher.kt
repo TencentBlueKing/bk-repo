@@ -119,7 +119,7 @@ class KubernetesDeploymentDispatcher(
                     deployment.metadata!!.name!!,
                     deployment.metadata!!.namespace!!,
                     deployment,
-                    null, null, null
+                    null, null, null, null
                 )
                 logger.info("scale deployment[${deployment.metadata!!.name}] success")
             } catch (e: ApiException) {
@@ -137,8 +137,6 @@ class KubernetesDeploymentDispatcher(
                 deploymentName(),
                 executionCluster.kubernetesProperties.namespace,
                 null,
-                null,
-                null
             )
         } catch (e: ApiException) {
             if (e.code == HttpStatus.NOT_FOUND.value()) {
@@ -226,7 +224,7 @@ class KubernetesDeploymentDispatcher(
                 }
             }
         }
-        val deployment = api!!.createNamespacedDeployment(k8sProps.namespace, body, null, null, null)
+        val deployment = api!!.createNamespacedDeployment(k8sProps.namespace, body, null, null, null, null)
         logger.info("create deployment[$deploymentName] success")
         return deployment
     }

@@ -29,7 +29,6 @@ package com.tencent.bkrepo.common.artifact.resolve.response
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
@@ -52,6 +51,8 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpMethod
 import java.io.IOException
@@ -61,8 +62,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * ArtifactResourceWriter默认实现
@@ -187,7 +186,7 @@ open class DefaultArtifactResourceWriter(
         request: HttpServletRequest,
         response: HttpServletResponse
     ): Throughput {
-        if (request.method == HttpMethod.HEAD.name) {
+        if (request.method == HttpMethod.HEAD.name()) {
             return Throughput.EMPTY
         }
         var rateLimitFlag = false
@@ -240,16 +239,6 @@ open class DefaultArtifactResourceWriter(
     }
 
     /**
-     * 判断charset,一些媒体类型设置了charset会影响其表现，如application/vnd.android.package-archive
-     * */
-    private fun determineCharset(mediaType: String, defaultCharset: String): String? {
-        return if (binaryMediaTypes.contains(mediaType) ||
-            storageProperties.response.binaryMediaTypes.contains(mediaType)
-        ) null
-        else defaultCharset
-    }
-
-    /**
      * 解析e-tag
      */
     private fun resolveETag(node: NodeDetail): String {
@@ -267,6 +256,5 @@ open class DefaultArtifactResourceWriter(
 
     companion object {
         private val logger = LoggerFactory.getLogger(DefaultArtifactResourceWriter::class.java)
-        private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK)
     }
 }

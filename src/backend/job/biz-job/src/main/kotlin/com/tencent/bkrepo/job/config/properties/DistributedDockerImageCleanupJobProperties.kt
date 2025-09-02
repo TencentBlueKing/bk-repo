@@ -28,12 +28,14 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(value = "job.distributed-docker-image-cleanup")
-data class DistributedDockerImageCleanupJobProperties(
-    override var enabled: Boolean = false,
-    var repositoryTypes: List<String> = listOf("OCI", "DOCKER"),
+class DistributedDockerImageCleanupJobProperties: MongodbJobProperties() {
+    override var enabled: Boolean = false
+    var repositoryTypes: List<String> = listOf("OCI", "DOCKER")
     // 保留分发的镜像天数
-    var keepDays: Long = 1,
+    var keepDays: Long = 1
     override var cron: String = "0 0 5 * * ?"
-): MongodbJobProperties()
+}

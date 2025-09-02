@@ -51,9 +51,9 @@
 </template>
 <script>
 import _ from 'lodash'
-import {searchProjects} from '@/api/project'
-import {listRepositories} from '@/api/repository'
-import {createMigrateTask} from "@/api/migrate";
+import { searchProjects } from '@/api/project'
+import { listRepositories } from '@/api/repository'
+import { createMigrateTask } from '@/api/migrate'
 
 export default {
   name: 'EditSeparatorTaskConfigDialog',

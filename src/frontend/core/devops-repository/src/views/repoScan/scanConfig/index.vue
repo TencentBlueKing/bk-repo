@@ -4,12 +4,13 @@
             <bk-tab-panel name="baseInfo" :label="$t('baseSetting')" v-if="!scanBaseInfo.readOnly">
                 <bk-form :label-width="120">
                     <bk-form-item :label="$t('schemeName')">
-                        <bk-input class="w250" v-model.trim="scanBaseInfo.name" maxlength="32" show-word-limit></bk-input>
+                        <bk-input class="w250" v-model.trim="scanBaseInfo.name" maxlength="32" :placeholder="$t('pleaseInput')" show-word-limit></bk-input>
                     </bk-form-item>
                     <bk-form-item :label="$t('schemeType')">{{ $t(`scanTypeEnum.${scanBaseInfo.type}`) }}</bk-form-item>
                     <bk-form-item :label="$t('scanner')">{{ scanBaseInfo.scanner }}</bk-form-item>
                     <bk-form-item :label="$t('description')">
                         <bk-input type="textarea"
+                                  :placeholder="$t('pleaseInput')"
                             class="w480"
                             maxlength="200"
                             :rows="6"
@@ -25,8 +26,7 @@
                 <auto-scan-config :data="scanBaseInfo" @save="ajaxSaveConfig"></auto-scan-config>
             </bk-tab-panel>
             <bk-tab-panel render-directive="if" name="qualityRule" :label="$t('qualityRules')">
-                <scan-quality-rule :project-id="projectId" :plan-id="planId" :scan-types="scanBaseInfo.scanTypes">
-                </scan-quality-rule>
+                <scan-quality-rule :data="scanBaseInfo" :project-id="projectId" :plan-id="planId" :scan-types="scanBaseInfo.scanTypes" />
             </bk-tab-panel>
             <bk-tab-panel render-directive="if" name="ignoreRules" :label="$t('ignoreRules')">
                 <ignore-rule :project-id="projectId" :plan-id="planId">

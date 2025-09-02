@@ -52,4 +52,14 @@ interface SeparationTaskService {
     fun reInitTaskState(taskId: String)
 
     fun repoSeparationCheck(projectId: String, repoName: String): Boolean
+
+    /**
+     * 查询出存在降冷任务的项目列表
+     */
+    fun findProjectList(): List<String>
+
+    /**
+     * 根据项目查询出对应降冷表列表
+     */
+    fun findSeparationCollectionList(projectId: String): List<String>
 }

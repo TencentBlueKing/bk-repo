@@ -38,9 +38,11 @@ dependencies {
     api(project(":common:common-artifact:artifact-service"))
     implementation(project(":common:common-redis"))
     implementation(project(":common:common-artifact:artifact-cache"))
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
     testImplementation("io.mockk:mockk")
     implementation("com.tencent.bk.sdk:bk-notice-java-sdk:${Versions.Notice}")
     implementation(project(":common:common-metadata:metadata-service"))
+    implementation(project(":analyst:metadata-analyst"))
 }

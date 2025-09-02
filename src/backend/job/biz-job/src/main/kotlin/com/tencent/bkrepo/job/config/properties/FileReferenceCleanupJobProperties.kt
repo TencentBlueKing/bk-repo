@@ -28,26 +28,28 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.file-reference-cleanup")
-class FileReferenceCleanupJobProperties(
-    override var cron: String = "0 0 4/6 * * ?",
-    override var sharding: Boolean = true,
+class FileReferenceCleanupJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 4/6 * * ?"
+    override var sharding: Boolean = true
     /**
      * 预期系统节点数
      * */
-    var expectedNodes: Long = 100_000_000, // 1e
+    var expectedNodes: Long = 100_000_000 // 1e
     /**
      * 布隆过滤器的误报率。
      * 误报率较高，会导致更多的数据库查询，但不影响节点清理的正确性，误报率越低，消耗的内存越大。
      * */
-    var fpp: Double = 0.0001,
+    var fpp: Double = 0.0001
     /**
      * 是否试运行，true则表示不会进行任务数据的删除，false会进行实际删除
      * */
-    var dryRun: Boolean = false,
+    var dryRun: Boolean = false
     /**
      * 忽略的存储凭据，这些存储的缓存将不执行清理
      */
-    var ignoredStorageCredentialsKeys: Set<String> = emptySet(),
-) : MongodbJobProperties()
+    var ignoredStorageCredentialsKeys: Set<String> = emptySet()
+}

@@ -95,6 +95,19 @@ class ReportExporterTest {
     }
 
     @Test
+    fun testExceedMaxReportSize() {
+        // 准备数据
+        val messageSupplier = mockk<MessageSupplier>()
+        every { messageSupplier.delegateToSupplier<Report>(any(), any(), any(), any(), any()) }.returns(Unit)
+        val reportExporter = ReportExporter(properties.copy(maxReportSize = 1), messageSupplier)
+        reportExporter.export(buildSubScanTask("taskId", NODE_SHA256), buildScanExecutorResult())
+        // 报告数量超过限制，不上报
+        verify(exactly = 0) {
+            messageSupplier.delegateToSupplier<Report>(any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
     fun testExportFailed() {
         // 准备数据
         val messageSupplier = mockk<MessageSupplier>()

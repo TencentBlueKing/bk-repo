@@ -162,7 +162,7 @@ class UserArtifactPreloadController(
         return ResponseBuilder.success()
     }
 
-    private fun checkPreloadEnabled(
+    private final fun checkPreloadEnabled(
         preloadPlanService: ArtifactPreloadPlanService?,
         preloadStrategyService: ArtifactPreloadStrategyService?
     ) {

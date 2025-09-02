@@ -193,8 +193,9 @@ class OciRegistryLocalRepository(
                 val key = buildRedisStr(DOCKER_REDIS_KEY_PREFIX, context.artifactInfo.getRepoIdentify(), uuid!!)
                 val chunkSha256 = artifactFile.getFileSha256()
                 val chunkMd5 = artifactFile.getFileMd5()
+                val chunkCrc64ecma = artifactFile.getFileCrc64ecma()
                 val chunkSize = artifactFile.getSize().toString()
-                val value = buildRedisStr(chunkSha256, chunkMd5, chunkSize)
+                val value = buildRedisStr(chunkSha256, chunkMd5, chunkSize, chunkCrc64ecma)
                 redisTemplate?.opsForValue()?.set(key, value, KEY_EXPIRED_TIME.toLong(), TimeUnit.SECONDS)
             } catch (e: Exception) {
                 logger.warn("use redis to store temp data failed: ${e.message}")
@@ -306,10 +307,13 @@ class OciRegistryLocalRepository(
             val chunkFileInfo = if (fileInfoStr.isNullOrEmpty()) {
                 null
             } else {
-                val (chunkSha256, chunkMd5, chunkSize) = splitRedisStrValue(fileInfoStr)
-                if (chunkSha256 != null && chunkSha256 == sha256) {
-                    logger.info("blob sha256 $chunkSha256, md5 $chunkMd5, size $chunkSize")
-                    FileInfo(chunkSha256, chunkMd5!!, chunkSize!!.toLong())
+                val fileInfo = splitRedisStrValue(fileInfoStr)
+                if (fileInfo != null && fileInfo.sha256 == sha256) {
+                    logger.info(
+                        "blob sha256 ${fileInfo.sha256}, md5 ${fileInfo.md5}, " +
+                                "size ${fileInfo.size}, crc64ecma ${fileInfo.crc64ecma}"
+                    )
+                    fileInfo
                 } else {
                     null
                 }
@@ -343,7 +347,7 @@ class OciRegistryLocalRepository(
                 if (nodeDetail == null || nodeDetail.sha256 != sha256) {
                     throw e
                 } else {
-                    FileInfo(nodeDetail.sha256!!, nodeDetail.md5!!, nodeDetail.size)
+                    FileInfo(nodeDetail.sha256!!, nodeDetail.md5!!, nodeDetail.size, nodeDetail.crc64ecma)
                 }
             } else {
                 throw e
@@ -599,16 +603,20 @@ class OciRegistryLocalRepository(
         }
     }
 
-    private fun buildRedisStr(first: String, second: String, third: String? = null): String {
+    private fun buildRedisStr(first: String, second: String, third: String? = null, crc64Ecma: String? = null): String {
         var result = first + StringPool.COLON + second
+        crc64Ecma?.let { result = result + StringPool.COLON + it }
         third?.let { result = result + StringPool.COLON + third }
         return result
     }
 
-    private fun splitRedisStrValue(value: String): Triple<String?, String?, String?> {
+    private fun splitRedisStrValue(value: String): FileInfo? {
         val values = value.split(StringPool.COLON)
-        if (values.size < 3) return Triple(null, null, null)
-        return Triple(values.first(), values[1], values.last())
+        return when {
+            values.size < 3 -> null
+            values.size == 3 -> FileInfo(sha256 = values[0], md5 = values[1], size = values[2].toLong())
+            else -> FileInfo(sha256 = values[0], md5 = values[1], crc64ecma = values[2], size = values[3].toLong())
+        }
     }
 
     companion object {

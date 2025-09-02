@@ -50,7 +50,6 @@ import com.tencent.bkrepo.common.metadata.util.PackageEventFactory
 import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildUpdatedEvent
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
-import com.tencent.bkrepo.common.metadata.util.version.SemVersion
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -213,19 +212,13 @@ class PackageServiceImpl(
                     and(TPackage::key).isEqualTo(packageKey)
                 }
             )
-            val latest = if (determineVersionSortProperty(tPackage.key) == ORDINAL) {
-                val currentLatest = tPackage.latest
-                if (currentLatest == null || SemVersion.parse(versionName) > SemVersion.parse(currentLatest)) {
-                    versionName
-                } else null
-            } else versionName
             val update = Update().set(TPackage::lastModifiedBy.name, request.createdBy)
                 .set(TPackage::lastModifiedDate.name, LocalDateTime.now())
                 .set(TPackage::description.name, packageDescription)
                 .set(TPackage::extension.name, packageExtension)
+                .set(TPackage::latest.name, versionName)
                 .set(TPackage::versionTag.name, mergeVersionTag(tPackage.versionTag, versionTag))
                 .set(TPackage::historyVersion.name, tPackage.historyVersion.toMutableSet().apply { add(versionName) })
-                .apply { if (latest != null) set(TPackage::latest.name, latest) }
             // 检查本次上传是创建还是覆盖。
             if (oldVersion != null) {
                 updateExistVersion(

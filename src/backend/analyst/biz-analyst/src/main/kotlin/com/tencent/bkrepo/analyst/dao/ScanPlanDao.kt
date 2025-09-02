@@ -44,6 +44,7 @@ import org.springframework.data.mongodb.core.BulkOperations
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.UpdateDefinition
 import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.size
@@ -184,7 +185,7 @@ class ScanPlanDao : ScannerSimpleMongoDao<TScanPlan>() {
      * @param planOverviewMap key 为扫描方案id， value为扫描预览结果
      */
     fun decrementScanResultOverview(planOverviewMap: Map<String, Map<String, Number>>) {
-        val updates = ArrayList<org.springframework.data.util.Pair<Query, Update>>(planOverviewMap.size)
+        val updates = ArrayList<org.springframework.data.util.Pair<Query, UpdateDefinition>>(planOverviewMap.size)
         for (entry in planOverviewMap) {
             val planId = entry.key
             val overview = entry.value

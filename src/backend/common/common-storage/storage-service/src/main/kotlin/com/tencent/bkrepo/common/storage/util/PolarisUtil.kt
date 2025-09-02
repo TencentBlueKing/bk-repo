@@ -32,6 +32,9 @@ import com.tencent.polaris.api.core.ConsumerAPI
 import com.tencent.polaris.api.rpc.GetOneInstanceRequest
 import com.tencent.polaris.factory.api.DiscoveryAPIFactory
 import com.tencent.polaris.factory.config.ConfigurationImpl
+import com.tencent.polaris.plugins.router.metadata.MetadataRouter.ROUTER_TYPE_METADATA
+import com.tencent.polaris.plugins.router.nearby.NearbyRouter.ROUTER_TYPE_NEAR_BY
+import com.tencent.polaris.plugins.router.rule.RuleBasedRouter.ROUTER_TYPE_RULE_BASED
 import org.slf4j.LoggerFactory
 
 class PolarisUtil(
@@ -42,8 +45,13 @@ class PolarisUtil(
         if (storageProperties.polarisAddresses.isNotEmpty()) {
             configuration = ConfigurationImpl()
             configuration.setDefault()
+            configuration.global.api.isReportEnable = false
+            configuration.global.statReporter.isEnable = false
+            configuration.global.traceReporter.isEnable = false
             configuration.global.serverConnector.addresses = storageProperties.polarisAddresses
             configuration.consumer.localCache.persistDir = System.getProperty("java.io.tmpdir")
+            configuration.consumer.serviceRouter.chain =
+                listOf(ROUTER_TYPE_METADATA, ROUTER_TYPE_RULE_BASED, ROUTER_TYPE_NEAR_BY)
             consumerAPI = DiscoveryAPIFactory.createConsumerAPIByConfig(configuration)
         }
     }

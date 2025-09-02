@@ -55,8 +55,10 @@
 package com.tencent.bkrepo.job.separation.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 import java.time.Duration
 
+@Component
 @ConfigurationProperties("separation")
 data class DataSeparationConfig(
     // 当前时间到（当前时间-keepDays）为热数据，不允许拆分，避免误操作将所有数据进行降冷

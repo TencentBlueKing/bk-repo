@@ -38,7 +38,6 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.ArchivedNodeRestoreJobProperties
 import com.tencent.bkrepo.repository.pojo.node.service.NodeArchiveRequest
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -54,7 +53,6 @@ import kotlin.reflect.KClass
  * 3. 删除归档数据
  * */
 @Component
-@EnableConfigurationProperties(ArchivedNodeRestoreJobProperties::class)
 class ArchivedNodeRestoreJob(
     private val properties: ArchivedNodeRestoreJobProperties,
     private val archiveClient: ArchiveClient,

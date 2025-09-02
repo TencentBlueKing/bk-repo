@@ -30,10 +30,13 @@ package com.tencent.bkrepo.common.artifact.manager.resource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
+import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import org.slf4j.LoggerFactory
 
 /**
  * 文件节点
@@ -43,15 +46,47 @@ class FsNodeResource(
     private val blockNodeService: BlockNodeService,
     private val range: Range,
     private val storageService: StorageService,
-    private val storageCredentials: StorageCredentials?
+    private val storageCredentials: StorageCredentials?,
+    private val storageCredentialService: StorageCredentialService,
 ) : AbstractNodeResource() {
     override fun getArtifactInputStream(): ArtifactInputStream? {
         with(node) {
-            val blocks = blockNodeService.info(
-                nodeDetail = NodeDetail(this),
-                range = range
-            )
-            return storageService.load(blocks, range, storageCredentials)
+            val blocks = blockNodeService.info(nodeDetail = NodeDetail(this), range = range)
+            /*
+             * 顺序查找
+             * 1.当前仓库存储实例 (正常情况)
+             * 2.拷贝存储实例（节点快速拷贝场景）
+             * */
+            val copyFromCredentialsKey = node.copyFromCredentialsKey
+            return storageService.load(blocks, range) { regionResource ->
+                val input = storageService.loadResource(regionResource, storageCredentials)
+                    ?: loadFromCopyIfNecessary(regionResource, copyFromCredentialsKey)
+                check(input != null) { "Block[${regionResource.digest}] miss." }
+                input
+            }
         }
+    }
+
+    /**
+     * 因为支持快速copy，也就是说源节点的数据可能还未完全上传成功，
+     * 还在本地文件系统上，这时拷贝节点就会从源存储去加载数据。
+     * */
+    private fun loadFromCopyIfNecessary(
+        resource: RegionResource,
+        copyFromCredentialsKey: String?,
+    ): ArtifactInputStream? {
+        copyFromCredentialsKey?.let {
+            if (logger.isDebugEnabled) {
+                logger.debug(
+                    "load region [${node.projectId}/${node.repoName}/${node.fullPath}] from copy credentialsKey[$it]"
+                )
+            }
+            return storageService.loadResource(resource, storageCredentialService.findByKey(it))
+        }
+        return null
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(FsNodeResource::class.java)
     }
 }

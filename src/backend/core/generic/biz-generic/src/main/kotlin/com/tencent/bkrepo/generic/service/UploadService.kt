@@ -35,8 +35,10 @@ import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.api.message.CommonMessageCode.REQUEST_DENIED
+import com.tencent.bkrepo.common.api.util.CRC64
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
@@ -48,11 +50,13 @@ import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.NodeAttribute
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getBooleanHeader
+import com.tencent.bkrepo.common.service.util.HeaderUtils.getHeader
 import com.tencent.bkrepo.common.service.util.HeaderUtils.getLongHeader
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -64,9 +68,10 @@ import com.tencent.bkrepo.fs.server.constant.UPLOADID_KEY
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
+import com.tencent.bkrepo.generic.constant.HEADER_CRC64ECMA
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
-import com.tencent.bkrepo.generic.constant.HEADER_FILE_SIZE
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
+import com.tencent.bkrepo.generic.constant.HEADER_SIZE
 import com.tencent.bkrepo.generic.pojo.BlockInfo
 import com.tencent.bkrepo.generic.pojo.SeparateBlockInfo
 import com.tencent.bkrepo.generic.pojo.UploadTransactionInfo
@@ -99,9 +104,7 @@ class UploadService(
 
     fun startBlockUpload(userId: String, artifactInfo: GenericArtifactInfo): UploadTransactionInfo {
         with(artifactInfo) {
-            val expires = getLongHeader(HEADER_EXPIRES)
             val overwrite = getBooleanHeader(HEADER_OVERWRITE)
-            Preconditions.checkArgument(expires >= 0, "expires")
             // 判断文件是否存在
             if (!overwrite && nodeService.checkExist(this)) {
                 logger.warn(
@@ -118,7 +121,7 @@ class UploadService(
             }
             val uploadTransaction = UploadTransactionInfo(
                 uploadId = uploadId,
-                expireSeconds = expires
+                expireSeconds = TRANSACTION_EXPIRES
             )
 
             logger.info("User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success: $uploadId.")
@@ -139,6 +142,14 @@ class UploadService(
                 throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, getArtifactName())
             }
 
+            // 检查node是否已完成关联blockNode，避免在node创建但是尚未关联到对应blockNode时候覆盖上传导致，node与blockNode关联错误
+            val oldBlocks = node?.metadata?.get(UPLOADID_KEY)?.let { uploadId ->
+                blockNodeService.listBlocksInUploadId(projectId, repoName, getArtifactFullPath(), uploadId as String)
+            }
+            if (oldBlocks?.isNotEmpty() == true) {
+                throw ErrorCodeException(REQUEST_DENIED, "node[${getArtifactFullPath()}] is uploading")
+            }
+
             // 生成唯一的 uploadId，作为上传会话的标识
             val uploadId = "${StringPool.uniqueId()}/$oldNodeId"
 
@@ -149,14 +160,20 @@ class UploadService(
             )
             // 记录上传启动的日志
             logger.info(
-                "User[${SecurityUtils.getPrincipal()}] start block upload [$artifactInfo] success, "
+                "User[${SecurityUtils.getPrincipal()}] start separate upload [$artifactInfo] success, "
                         + "version: $uploadId."
             )
             return uploadTransaction
         }
     }
 
-    fun blockBaseNodeCreate(userId: String, artifactInfo: GenericArtifactInfo, uploadId: String) {
+    fun blockBaseNodeCreate(
+        userId: String,
+        artifactInfo: GenericArtifactInfo,
+        uploadId: String,
+        fileSize: Long,
+        crc64ecma: String
+    ) {
         val attributes = NodeAttribute(
             uid = NodeAttribute.NOBODY,
             gid = NodeAttribute.NOBODY,
@@ -167,8 +184,6 @@ class UploadService(
         metadata.add(MetadataModel(UPLOADID_KEY, uploadId, system = true))
         metadata.add(MetadataModel(key = FS_ATTR_KEY, value = attributes))
 
-        val fileSize = getLongHeader(HEADER_FILE_SIZE).takeIf { it > 0L }
-            ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND)
         val request = NodeCreateRequest(
             projectId = artifactInfo.projectId,
             repoName = artifactInfo.repoName,
@@ -176,6 +191,7 @@ class UploadService(
             fullPath = artifactInfo.getArtifactFullPath(),
             sha256 = FAKE_SHA256,
             md5 = FAKE_MD5,
+            crc64ecma = crc64ecma,
             operator = userId,
             size = fileSize,
             overwrite = getBooleanHeader(HEADER_OVERWRITE),
@@ -213,6 +229,7 @@ class UploadService(
         artifactInfo: GenericArtifactInfo,
         sha256: String? = null,
         md5: String? = null,
+        crc64ecma: String? = null,
         size: Long? = null,
         mergeFileFlag: Boolean = true
     ) {
@@ -223,7 +240,7 @@ class UploadService(
                 "sha256 $sha256, md5 $md5, size $size for " +
                         "fullPath ${artifactInfo.getArtifactFullPath()} with uploadId $uploadId"
             )
-            FileInfo(sha256, md5, size)
+            FileInfo(sha256, md5, size, crc64ecma)
         } else {
             null
         }
@@ -277,19 +294,30 @@ class UploadService(
         val totalSize = blockInfoList.sumOf { it.size }
 
         // 验证节点大小是否与块总大小一致
-        if (getLongHeader(HEADER_FILE_SIZE) != totalSize) {
+        val fileSize = getLongHeader(HEADER_SIZE).takeIf { it > 0L }
+            ?: throw ErrorCodeException(GenericMessageCode.BLOCK_HEAD_NOT_FOUND)
+        if (fileSize != totalSize) {
             throw ErrorCodeException(GenericMessageCode.NODE_DATA_ERROR, artifactInfo)
         }
 
+        // 校验crc64
+        val crc64ecma = crc64ecma(blockInfoList)
+        getHeader(HEADER_CRC64ECMA)?.let {
+            if (crc64ecma != it) {
+                throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "crc64ecma")
+            }
+        }
+
+
         // 创建新的基础节点（Base Node）
         try {
-            blockBaseNodeCreate(userId, artifactInfo, uploadId)
+            blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma)
         } catch (e: Exception) {
             logger.error(
                 "Create block base node failed, file path [${artifactInfo.getArtifactFullPath()}], " +
                         "version : $uploadId"
             )
-            abortSeparateBlockUpload(userId, uploadId, artifactInfo)
+            // 用户可能重试complete可以成功，或者重复complete导致创建node冲突，此处不清理避免误删，在定时任务中清理过期的BlockNode
             throw e
         }
 
@@ -299,6 +327,7 @@ class UploadService(
             repoName,
             artifactFullPath
         )
+        logger.info("delete old blocks of node[$projectId/$repoName$artifactFullPath] success, uploadId[$uploadId]")
 
         // 更新节点版本信息为null
         blockNodeService.updateBlockUploadId(
@@ -310,7 +339,7 @@ class UploadService(
 
         // 上传完成，记录日志
         logger.info(
-            "User [$userId] successfully completed block upload [uploadId: $uploadId], " +
+            "User [$userId] successfully completed separate upload [uploadId: $uploadId], " +
                     "file path [${artifactFullPath}]."
         )
     }
@@ -340,9 +369,33 @@ class UploadService(
             uploadId = uploadId
         )
 
-        return blockInfoList.map { blockInfo ->
-            SeparateBlockInfo(blockInfo.size, blockInfo.sha256, blockInfo.startPos, blockInfo.uploadId)
+        return blockInfoList.map {
+            SeparateBlockInfo(
+                size = it.size,
+                sha256 = it.sha256,
+                crc64ecma = it.crc64ecma,
+                startPos = it.startPos,
+                uploadId = it.uploadId,
+            )
         }
+    }
+
+    private fun crc64ecma(blocks: List<TBlockNode>): String {
+        var crc64ecma = 0L
+        blocks.sortedBy { it.startPos }.forEachIndexed { index, block ->
+            val blockCrc64ecma = block.crc64ecma?.let { CRC64.fromUnsignedString(it).value }
+            if (blockCrc64ecma == null) {
+                logger.error("crc64ecma not found for block node[$block]")
+                throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR)
+            }
+            crc64ecma = if (index == 0) {
+                blockCrc64ecma
+            } else {
+                CRC64.combine(crc64ecma, blockCrc64ecma, block.size)
+            }
+        }
+
+        return CRC64(crc64ecma).unsignedStringValue()
     }
 
     private fun checkUploadId(uploadId: String, storageCredentials: StorageCredentials?) {

@@ -5,8 +5,10 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJson
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -31,14 +33,13 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
 import com.tencent.bkrepo.generic.config.GenericProperties
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
+import com.tencent.bkrepo.generic.constant.HEADER_CRC64ECMA
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
 import com.tencent.bkrepo.generic.constant.HEADER_OVERWRITE
@@ -56,7 +57,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.commons.text.similarity.LevenshteinDistance
-import org.apache.pulsar.shade.org.eclipse.util.UrlEncoded
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpMethod
@@ -64,6 +64,7 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.io.InputStream
+import java.net.URLDecoder
 import java.time.LocalDateTime
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
@@ -108,7 +109,7 @@ class DeltaSyncService(
             val md5 = queryMd5 ?: getMd5FromNode(this)
             val signNode = signFileDao.findByDetail(projectId, repoName, md5, blockSize)
                 ?: throw NotFoundException(GenericMessageCode.SIGN_FILE_NOT_FOUND, md5)
-            if (request.method == HttpMethod.HEAD.name) {
+            if (request.method == HttpMethod.HEAD.name()) {
                 return
             }
             val artifactInfo = GenericArtifactInfo(signNode.projectId, signNode.repoName, signNode.fullPath)
@@ -131,7 +132,7 @@ class DeltaSyncService(
                 ArtifactInfo(
                     projectId,
                     repoName,
-                    UrlEncoded.decodeString(oldFilePath, 0, oldFilePath.length, Charsets.UTF_8)
+                    URLDecoder.decode(oldFilePath, Charsets.UTF_8)
                 ),
             )
             if (node == null || node.folder) {
@@ -252,10 +253,12 @@ class DeltaSyncService(
             "ORDER BY dtEventTimeStamp DESC LIMIT 100"
         val url = UrlFormatter.format(bkBaseProperties.domain, "/prod/v3/dataquery/query/")
         val query = QueryRequest(token = bkBaseProperties.token, sql = sql)
-        val authHeader = toJson(mapOf(
-            "bk_app_code" to bkBaseProperties.appCode,
-            "bk_app_secret" to bkBaseProperties.appSecret
-        ))
+        val authHeader = toJson(
+            mapOf(
+                "bk_app_code" to bkBaseProperties.appCode,
+                "bk_app_secret" to bkBaseProperties.appSecret
+            )
+        )
         val requestBody = query.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
         val request = Request.Builder()
             .url(url)
@@ -345,7 +348,7 @@ class DeltaSyncService(
     private fun doPatch(patchContext: PatchContext, heartBeatFuture: ScheduledFuture<*>) {
         with(patchContext) {
             try {
-                verifyCheckSum(uploadMd5, uploadSha256, file)
+                verifyCheckSum(uploadMd5, uploadSha256, uploadCrc64ecma, file)
                 val nodeCreateRequest =
                     buildPatchNewNodeCreateRequest(
                         repositoryDetail,
@@ -414,14 +417,18 @@ class DeltaSyncService(
     /**
      * 验证校验和
      * */
-    private fun verifyCheckSum(md5: String?, sha256: String?, file: ArtifactFile) {
+    private fun verifyCheckSum(md5: String?, sha256: String?, crc64ecma: String?, file: ArtifactFile) {
         val calculatedSha256 = file.getFileSha256()
         val calculatedMd5 = file.getFileMd5()
+        val calculatedCrc64ecma = file.getFileCrc64ecma()
         if (sha256 != null && !calculatedSha256.equals(sha256, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "sha256")
         }
         if (md5 != null && !calculatedMd5.equals(md5, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
+        }
+        if (crc64ecma != null && !calculatedCrc64ecma.equals(crc64ecma, true)) {
+            throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "crc64ecma")
         }
     }
 
@@ -445,6 +452,7 @@ class DeltaSyncService(
             size = file.getSize(),
             sha256 = file.getFileSha256(),
             md5 = file.getFileMd5(),
+            crc64ecma = file.getFileCrc64ecma(),
             operator = userId,
             expires = expires,
             overwrite = overwrite,
@@ -470,6 +478,7 @@ class DeltaSyncService(
             return PatchContext(
                 uploadSha256 = HeaderUtils.getHeader(HEADER_SHA256),
                 uploadMd5 = HeaderUtils.getHeader(HEADER_MD5),
+                uploadCrc64ecma = HeaderUtils.getHeader(HEADER_CRC64ECMA),
                 expires = HeaderUtils.getLongHeader(HEADER_EXPIRES),
                 metadata = repository.resolveMetadata(request),
                 contentLength = request.contentLengthLong,
@@ -501,6 +510,7 @@ class DeltaSyncService(
             fullPath = artifactInfo.getArtifactFullPath(),
             size = file.getSize(),
             sha256 = file.getFileSha256(),
+            crc64ecma = file.getFileCrc64ecma(),
             md5 = file.getFileMd5(),
             operator = userId,
             overwrite = true,
@@ -587,6 +597,7 @@ class DeltaSyncService(
         val emitter: SseEmitter,
         val uploadSha256: String?,
         val uploadMd5: String?,
+        val uploadCrc64ecma: String?,
         val expires: Long,
         val metadata: List<MetadataModel>,
         val repositoryDetail: RepositoryDetail,

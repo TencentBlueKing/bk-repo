@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
@@ -237,7 +238,7 @@ class LocalDataManager(
         sha256: String
     ): FileInfo {
         val queryModel = NodeQueryBuilder()
-            .select(NODE_FULL_PATH, SIZE, MD5)
+            .select(NODE_FULL_PATH, SIZE, MD5, TNode::crc64ecma.name)
             .projectId(projectId)
             .repoName(repoName)
             .sha256(sha256)
@@ -250,7 +251,8 @@ class LocalDataManager(
         return FileInfo(
             sha256 = sha256,
             md5 = result.records[0][MD5].toString(),
-            size = result.records[0][SIZE].toString().toLong()
+            size = result.records[0][SIZE].toString().toLong(),
+            crc64ecma = result.records[0][TNode::crc64ecma.name]?.toString(),
         )
     }
 
@@ -353,6 +355,7 @@ class LocalDataManager(
         var expireDate: LocalDateTime? = null,
         var sha256: String? = null,
         var md5: String? = null,
+        var crc64ecma: String? = null,
         var deleted: LocalDateTime? = null,
         var copyFromCredentialsKey: String? = null,
         var copyIntoCredentialsKey: String? = null,
@@ -387,6 +390,7 @@ class LocalDataManager(
                 },
                 sha256 = it.sha256,
                 md5 = it.md5,
+                crc64ecma = it.crc64ecma,
                 metadata = null,
                 nodeMetadata = it.metadata,
                 copyFromCredentialsKey = it.copyFromCredentialsKey,

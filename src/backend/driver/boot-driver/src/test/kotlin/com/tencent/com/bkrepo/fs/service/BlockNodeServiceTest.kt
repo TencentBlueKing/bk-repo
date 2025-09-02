@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
+import com.tencent.com.bkrepo.fs.UT_CRC64_ECMA
 import com.tencent.com.bkrepo.fs.UT_PROJECT_ID
 import com.tencent.com.bkrepo.fs.UT_REPO_NAME
 import com.tencent.com.bkrepo.fs.UT_USER
@@ -22,12 +23,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 @DataMongoTest
@@ -37,7 +38,7 @@ import java.time.LocalDateTime
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 class BlockNodeServiceTest {
 
-    @MockBean
+    @MockitoBean
     lateinit var nodeDao: RNodeDao
 
     @Autowired
@@ -173,6 +174,7 @@ class BlockNodeServiceTest {
             nodeFullPath = fullPath,
             startPos = startPos,
             sha256 = sha256,
+            crc64ecma = UT_CRC64_ECMA,
             projectId = UT_PROJECT_ID,
             repoName = UT_REPO_NAME,
             size = 1

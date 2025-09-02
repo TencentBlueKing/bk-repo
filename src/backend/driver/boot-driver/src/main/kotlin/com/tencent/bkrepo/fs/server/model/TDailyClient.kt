@@ -52,7 +52,7 @@ data class TDailyClient(
     val version: String,
     val os: String,
     val arch: String,
-    // 包含3个动作 上下线和心跳,心跳一天仅记录最近一条，{start, finish, working}
+    // 包含2个动作 上下线和心跳，{start, finish}
     val action: String,
     val time: LocalDateTime
 ) {

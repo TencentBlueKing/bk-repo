@@ -31,7 +31,6 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TNode
-import com.tencent.bkrepo.common.metadata.service.metadata.MetadataLabelService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
@@ -44,12 +43,12 @@ class CenterMetadataServiceImpl(
     nodeDao: NodeDao,
     repositoryProperties: RepositoryProperties,
     ciPermissionManager: CIPermissionManager,
-    metadataLabelService: MetadataLabelService
+    metadataLabelCacheService: MetadataLabelCacheService
 ) : MetadataServiceImpl(
     nodeDao,
     repositoryProperties,
     ciPermissionManager,
-    metadataLabelService
+    metadataLabelCacheService
 ) {
 
     /**

@@ -28,8 +28,10 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(value = "job.archived-node-restore")
-class ArchivedNodeRestoreJobProperties(
-    override var cron: String = "0 0 0/1 * * ?",
-) : MongodbJobProperties()
+class ArchivedNodeRestoreJobProperties : MongodbJobProperties() {
+    override var cron: String = "0 0 0/1 * * ?"
+}

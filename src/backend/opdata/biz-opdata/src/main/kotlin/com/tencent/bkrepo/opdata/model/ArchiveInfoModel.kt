@@ -31,14 +31,14 @@
 
 package com.tencent.bkrepo.opdata.model
 
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.opdata.config.OpArchiveOrGcProperties
-import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
+import com.tencent.bkrepo.opdata.model.GcInfoModel.Companion.BATCH_SIZE
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
-import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -46,6 +46,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+
 
 @Service
 class ArchiveInfoModel @Autowired constructor(
@@ -55,11 +56,14 @@ class ArchiveInfoModel @Autowired constructor(
 
     private var archiveInfo: Map<String, Array<Long>> = emptyMap()
 
+    @Volatile
+    private var refreshing = false
+
     /**
      * <repo,[archiveNum,archiveSize]>
      * */
     fun info(): Map<String, Array<Long>> {
-        if (archiveInfo.isEmpty()) {
+        if (archiveInfo.isEmpty() && !refreshing) {
             archiveInfo = stat()
         }
         return archiveInfo
@@ -68,54 +72,78 @@ class ArchiveInfoModel @Autowired constructor(
     @Scheduled(cron = "0 0 4 * * ?")
     @SchedulerLock(name = "ArchiveInfoStatJob", lockAtMostFor = "PT24H")
     fun refresh() {
-        if (!opArchiveOrGcProperties.archiveEnabled) return
         archiveInfo = stat()
     }
 
     private fun stat(): Map<String, Array<Long>> {
+        refreshing = true
+        if (!opArchiveOrGcProperties.archiveEnabled) return emptyMap()
         logger.info("Start update archive metrics.")
         val statistics = ConcurrentHashMap<String, Array<AtomicLong>>()
-        val criteria = Criteria.where("archived").isEqualTo(true)
-            .and("deleted").isEqualTo(null)
 
         if (opArchiveOrGcProperties.archiveProjects.isEmpty()) {
-            // 处理所有项目的归档数据
-            val query = Query(criteria)
-            // 遍历节点表
-            GcInfoModel.forEachCollectionAsync { collection ->
-                mongoTemplate.find<Node>(query, collection).forEach { node ->
-                    updateStatistics(statistics, node)
-                }
-            }
+            processAllProjects(statistics)
         } else {
-            // 处理指定项目的归档数据
-            opArchiveOrGcProperties.archiveProjects.forEach { project ->
-                val collectionName = "node_${HashShardingUtils.shardingSequenceFor(project, SHARDING_COUNT)}"
-                val query = Query(Criteria.where("projectId").isEqualTo(project).andOperator(criteria))
-                mongoTemplate.find<Node>(query, collectionName).forEach { node ->
-                    updateStatistics(statistics, node)
-                }
-            }
+            processSpecificProjects(statistics)
         }
 
         statistics[SUM] = GcInfoModel.reduce(statistics)
         logger.info("Update archive metrics successful.")
+        refreshing = false
         return statistics.mapValues { arrayOf(it.value[0].get(), it.value[1].get()) }
     }
 
-    private fun updateStatistics(statistics: ConcurrentHashMap<String, Array<AtomicLong>>, node: Node) {
-        val repo = "${node.projectId}/${node.repoName}"
-        // 数组信息: [归档文件数量, 归档文件总大小]
-        val counts = statistics.getOrPut(repo) { arrayOf(AtomicLong(), AtomicLong()) }
-        counts[0].incrementAndGet()
-        counts[1].addAndGet(node.size)
+    private fun processAllProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>) {
+        // 处理所有项目的归档数据
+        val query = Query().cursorBatchSize(BATCH_SIZE)
+        // 遍历节点表
+        processProject(query, statistics)
     }
 
-    data class Node(
-        val projectId: String,
+    private fun processSpecificProjects(statistics: ConcurrentHashMap<String, Array<AtomicLong>>) {
+        // 处理指定项目的归档数据
+        opArchiveOrGcProperties.archiveProjects.forEach { project ->
+            val query = Query(Criteria.where("name").isEqualTo(project))
+            processProject(query, statistics)
+        }
+    }
+
+    private fun processProject(query: Query, statistics: ConcurrentHashMap<String, Array<AtomicLong>>) {
+        mongoTemplate.find(query, Project::class.java, "project").forEach { project ->
+            val repoArchiveStatInfoStr = project.metadata.find { it.key == "archiveStatInfo" }?.value?.toString()
+                ?: return
+            try {
+                val repoArchiveStatInfo =
+                    repoArchiveStatInfoStr.readJsonString<ConcurrentHashMap<String, RepoArchiveStatInfo>>()
+                updateStatistics(statistics, project.name, repoArchiveStatInfo)
+            } catch (e: Exception) {
+                logger.error("Parse repoArchiveStatInfo failed.", e)
+                return
+            }
+        }
+    }
+
+    private fun updateStatistics(
+        statistics: ConcurrentHashMap<String, Array<AtomicLong>>,
+        projectId: String,
+        projectArchiveInfo: ConcurrentHashMap<String, RepoArchiveStatInfo>
+    ) {
+        projectArchiveInfo.forEach { (repoName, repo) ->
+            val repoStr = "$projectId/$repoName"
+            // 数组信息: [归档文件数量, 归档文件总大小]
+            val counts = statistics.getOrPut(repoStr) { arrayOf(AtomicLong(), AtomicLong()) }
+            counts[0].addAndGet(repo.num)
+            counts[1].addAndGet(repo.size)
+        }
+
+    }
+
+    data class Project(val name: String, val displayName: String, val metadata: List<ProjectMetadata> = emptyList())
+
+    data class RepoArchiveStatInfo(
         val repoName: String,
-        val sha256: String,
-        val size: Long,
+        var size: Long,
+        var num: Long,
     )
 
     companion object {

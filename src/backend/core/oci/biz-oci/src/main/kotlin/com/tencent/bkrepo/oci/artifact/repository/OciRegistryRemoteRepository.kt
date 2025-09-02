@@ -86,6 +86,7 @@ import com.tencent.bkrepo.oci.service.OciOperationService
 import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import jakarta.ws.rs.core.UriBuilder
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -96,7 +97,6 @@ import java.io.InputStream
 import java.net.URL
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
-import javax.ws.rs.core.UriBuilder
 
 @Component
 class OciRegistryRemoteRepository(
@@ -153,7 +153,7 @@ class OciRegistryRemoteRepository(
         val downloadUrl = createRemoteDownloadUrl(context, property)
         logger.info("Remote request $downloadUrl will be sent")
         val tokenKey = buildTokenCacheKey(
-            context.getStringAttribute(PROXY_URL)!!,remoteConfiguration.credentials.username, property.imageName
+            context.getStringAttribute(PROXY_URL)!!, remoteConfiguration.credentials.username, property.imageName
         )
         val request = buildRequest(downloadUrl, remoteConfiguration, tokenCache.getIfPresent(tokenKey))
         try {
@@ -199,7 +199,7 @@ class OciRegistryRemoteRepository(
             addBasicInterceptor = false,
             token = token
         )
-        clientCache.getIfPresent(remoteConfiguration)!!.newCall(requestWithToken).execute().use {responseWithAuth ->
+        clientCache.getIfPresent(remoteConfiguration)!!.newCall(requestWithToken).execute().use { responseWithAuth ->
             return if (checkResponse(responseWithAuth)) {
                 onResponse(context, responseWithAuth)
             } else null
@@ -243,7 +243,7 @@ class OciRegistryRemoteRepository(
         val username = configuration.credentials.username
         val password = configuration.credentials.password
         if (username != null && password != null) {
-            val credentials =  BasicAuthUtils.encode(username, password)
+            val credentials = BasicAuthUtils.encode(username, password)
             this.header(HttpHeaders.AUTHORIZATION, credentials)
         }
         return this
@@ -281,6 +281,7 @@ class OciRegistryRemoteRepository(
                     imageName = artifactInfo.packageName
                 )
             }
+
             is OciTagArtifactInfo -> {
                 val artifactInfo = context.artifactInfo as OciTagArtifactInfo
                 if (artifactInfo.packageName.isBlank()) {
@@ -302,6 +303,7 @@ class OciRegistryRemoteRepository(
                     )
                 }
             }
+
             is OciManifestArtifactInfo -> {
                 val artifactInfo = context.artifactInfo as OciManifestArtifactInfo
                 RemoteRequestProperty(
@@ -310,6 +312,7 @@ class OciRegistryRemoteRepository(
                     imageName = artifactInfo.packageName
                 )
             }
+
             else -> RemoteRequestProperty(url = url, imageName = StringPool.EMPTY)
         }
     }
@@ -330,7 +333,7 @@ class OciRegistryRemoteRepository(
      */
     private fun createCatalogUrl(property: RemoteRequestProperty): String {
         with(property) {
-           return UrlFormatter.buildUrl(url, DOCKER_CATALOG_SUFFIX, params)
+            return UrlFormatter.buildUrl(url, DOCKER_CATALOG_SUFFIX, params)
         }
     }
 
@@ -361,7 +364,7 @@ class OciRegistryRemoteRepository(
         }
         val scope = getScope(proxyUrl, imageName)
         val authProperty = AuthenticationUtil.parseWWWAuthenticateHeader(wwwAuthenticate, scope)
-        if (authProperty == null)  {
+        if (authProperty == null) {
             logger.warn("Auth url can not be parsed from header $wwwAuthenticate!")
             return null
         }
@@ -380,7 +383,7 @@ class OciRegistryRemoteRepository(
                 } catch (ignore: Exception) {
                     StringPool.EMPTY
                 }
-                val errMsg =  "Could not get token from auth service," +
+                val errMsg = "Could not get token from auth service," +
                     " code is ${it.code} and response is $error"
                 logger.warn(errMsg)
                 throw ErrorCodeException(

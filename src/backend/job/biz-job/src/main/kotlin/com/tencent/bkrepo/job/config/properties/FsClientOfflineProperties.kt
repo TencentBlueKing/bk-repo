@@ -32,10 +32,12 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.fs-client-offline")
-data class FsClientOfflineProperties(
-    override var enabled: Boolean = true,
-    override var fixedDelay: Long = 60 * 1000L,
+class FsClientOfflineProperties: MongodbJobProperties() {
+    override var enabled: Boolean = true
+    override var fixedDelay: Long = 60 * 1000L
     override var initialDelay: Long = 60 * 1000L
-): MongodbJobProperties()
+}

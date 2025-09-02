@@ -28,13 +28,15 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 import java.time.Duration
 
+@Component
 @ConfigurationProperties(value = "job.archived-node-complete")
-class ArchivedNodeCompleteJobProperties(
-    override var cron: String = "0 0 0/1 * * ?",
+class ArchivedNodeCompleteJobProperties : MongodbJobProperties() {
+    override var cron: String = "0 0 0/1 * * ?"
     /**
      * 只允许标记最后访问时间与当前时间间隔大于该值的制品为已归档
      */
     var minAccessInterval: Duration = Duration.ofDays(7L)
-) : MongodbJobProperties()
+}

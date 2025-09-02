@@ -36,13 +36,13 @@ import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.ratelimiter.stream.RateCheckContext
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.util.unit.DataSize
 import java.io.InputStream
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 带宽限流器抽象实现
@@ -79,6 +79,7 @@ abstract class AbstractBandwidthRateLimiterService(
         circuitBreakerPerSecond: DataSize,
         rangeLength: Long? = null,
     ): CommonRateLimitInputStream? {
+        whiteListCheck(request)
         val (resLimitInfo, resInfo) = getResLimitInfoAndResInfo(request)
         if (resLimitInfo == null) return null
         logger.info("will check the bandwidth with length $rangeLength of ${resLimitInfo.resource}")
@@ -122,6 +123,7 @@ abstract class AbstractBandwidthRateLimiterService(
         permits: Long,
         circuitBreakerPerSecond: DataSize,
     ) {
+        whiteListCheck(request)
         val resLimitInfo = getResLimitInfoAndResInfo(request).first ?: return
         rateLimitCatch(
             request = request,

@@ -42,13 +42,16 @@ import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.model.TRepository
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.NodeMoveCopyOperation
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.fsNode
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.MoveCopyContext
+import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.buildDstBlockNode
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.buildDstNode
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.canIgnore
 import com.tencent.bkrepo.common.metadata.util.NodeMoveCopyHelper.preCheck
@@ -61,18 +64,20 @@ import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Query
+import java.time.format.DateTimeFormatter
 
 /**
  * 节点移动/拷贝接口实现
  */
 open class NodeMoveCopySupport(
-    private val nodeBaseService: NodeBaseService
+    private val nodeBaseService: NodeBaseService,
 ) : NodeMoveCopyOperation {
 
     private val nodeDao: NodeDao = nodeBaseService.nodeDao
     private val repositoryDao: RepositoryDao = nodeBaseService.repositoryDao
     private val storageCredentialService: StorageCredentialService = nodeBaseService.storageCredentialService
     private val quotaService: QuotaService = nodeBaseService.quotaService
+    private val blockNodeService: BlockNodeService = nodeBaseService.blockNodeService
 
     override fun moveNode(moveRequest: NodeMoveCopyRequest): NodeDetail {
         val dstNode = moveCopy(moveRequest, true)
@@ -150,6 +155,8 @@ open class NodeMoveCopySupport(
                         ?: DEFAULT_STORAGE_CREDENTIALS_KEY
                 dstNode.copyIntoCredentialsKey = dstCredentials?.key ?: DEFAULT_STORAGE_CREDENTIALS_KEY
             }
+            // 创建dst block node，此处只需要复制，如果是move操作在src node被删除时对应的src block node也会一起删除
+            copyBlockNode(context, node, dstFullPath)
             // 创建dst节点
             nodeBaseService.doCreate(dstNode, dstRepo)
             // move操作，创建dst节点后，还需要删除src节点
@@ -258,7 +265,7 @@ open class NodeMoveCopySupport(
             val listOption = NodeListOption(includeFolder = true, includeMetadata = true, deep = true, sort = false)
             val query = buildSubNodesQuery(this, srcRootNodePath, listOption)
             // 目录下的节点 -> 创建好的目录
-            nodeDao.stream(query).stream().forEach {
+            nodeDao.stream(query).forEach {
                 doMoveCopy(this, it, it.path.replaceFirst(srcRootNodePath, dstRootNodePath), it.name)
             }
         }
@@ -282,6 +289,22 @@ open class NodeMoveCopySupport(
             // 创建dst父目录
             nodeBaseService.mkdirs(dstProjectId, dstRepoName, dstPath, operator)
             doMoveCopy(context, srcNode, dstPath, dstName)
+        }
+    }
+
+    private fun copyBlockNode(context: MoveCopyContext, srcNode: TNode, dstFullPath: String) {
+        if (srcNode.folder || !fsNode(srcNode)) {
+            return
+        }
+        val srcBlocks = blockNodeService.listAllBlocks(
+            srcNode.projectId,
+            srcNode.repoName,
+            srcNode.fullPath,
+            srcNode.createdDate.format(DateTimeFormatter.ISO_DATE_TIME)
+        )
+
+        srcBlocks.forEach { block ->
+            blockNodeService.createBlock(buildDstBlockNode(context, block, dstFullPath), context.dstCredentials)
         }
     }
 

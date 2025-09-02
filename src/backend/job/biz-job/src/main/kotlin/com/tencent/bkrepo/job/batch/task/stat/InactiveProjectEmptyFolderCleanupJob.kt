@@ -38,8 +38,8 @@ import com.tencent.bkrepo.job.batch.context.EmptyFolderCleanupJobContext
 import com.tencent.bkrepo.job.batch.utils.FolderUtils
 import com.tencent.bkrepo.job.batch.utils.StatUtils.specialRepoRunCheck
 import com.tencent.bkrepo.job.config.properties.InactiveProjectEmptyFolderCleanupJobProperties
+import com.tencent.bkrepo.job.pojo.stat.StatNode
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Component
@@ -51,18 +51,21 @@ import kotlin.reflect.KClass
  * 非活跃项目下目录大小以及文件个数统计
  */
 @Component
-@EnableConfigurationProperties(InactiveProjectEmptyFolderCleanupJobProperties::class)
 class InactiveProjectEmptyFolderCleanupJob(
     private val properties: InactiveProjectEmptyFolderCleanupJobProperties,
     private val activeProjectService: ActiveProjectService,
     private val emptyFolderCleanup: EmptyFolderCleanup,
-) : DefaultContextMongoDbJob<InactiveProjectEmptyFolderCleanupJob.Node>(properties) {
+) : DefaultContextMongoDbJob<StatNode>(properties) {
 
     override fun collectionNames(): List<String> {
         return (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.toList()
     }
 
     override fun buildQuery(): Query {
+        return Query(buildCriteria())
+    }
+
+    private fun buildCriteria(): Criteria {
         var criteria = Criteria.where(DELETED_DATE).`is`(null)
         if (
             !properties.runAllRepo && !specialRepoRunCheck(properties.specialDay)
@@ -70,25 +73,25 @@ class InactiveProjectEmptyFolderCleanupJob(
         ) {
             criteria = criteria.and(REPO).nin(properties.specialRepos)
         }
-        return Query(criteria)
+        return criteria
     }
 
-    override fun mapToEntity(row: Map<String, Any?>): Node {
-        return Node(row)
+    override fun mapToEntity(row: Map<String, Any?>): StatNode {
+        return StatNode(row)
     }
 
-    override fun entityClass(): KClass<Node> {
-        return Node::class
+    override fun entityClass(): KClass<StatNode> {
+        return StatNode::class
     }
 
     fun statProjectCheck(
         projectId: String,
-        context: EmptyFolderCleanupJobContext
+        context: EmptyFolderCleanupJobContext,
     ): Boolean {
         return context.activeProjects[projectId] != null
     }
 
-    override fun run(row: Node, collectionName: String, context: JobContext) {
+    override fun run(row: StatNode, collectionName: String, context: JobContext) {
         require(context is EmptyFolderCleanupJobContext)
         if (statProjectCheck(row.projectId, context)) return
         val node = emptyFolderCleanup.buildNode(
@@ -118,8 +121,25 @@ class InactiveProjectEmptyFolderCleanupJob(
             temp[it] = true
         }
         return EmptyFolderCleanupJobContext(
-            activeProjects = temp
+            activeProjects = temp,
+            separationProjects = emptyFolderCleanup.buildSeparationProjectList()
         )
+    }
+
+    override fun onRunCollectionStart(collectionName: String, context: JobContext) {
+        require(context is EmptyFolderCleanupJobContext)
+        context.separationProjects[collectionName]?.let { projectSet ->
+            projectSet.filter { context.activeProjects[it] == null }.forEach { projectId ->
+                logger.info("Processing inactive projectId: $projectId in collection: $collectionName")
+                emptyFolderCleanup.processSeparationQuery(
+                    projectId = projectId,
+                    criteria = buildCriteria(),
+                    batchSize = properties.batchSize,
+                    shouldRun = shouldRun(),
+                    processor = { node -> run(node, collectionName, context) }
+                )
+            }
+        }
     }
 
     override fun onRunCollectionFinished(collectionName: String, context: JobContext) {
@@ -165,26 +185,6 @@ class InactiveProjectEmptyFolderCleanupJob(
             )
             emptyFolderCleanup.removeRedisKey(key)
         }
-    }
-
-    data class Node(
-        val id: String,
-        val projectId: String,
-        val repoName: String,
-        val folder: Boolean,
-        val fullPath: String,
-        val path: String,
-        val size: Long
-    ) {
-        constructor(map: Map<String, Any?>) : this(
-            map[Node::id.name].toString(),
-            map[Node::projectId.name].toString(),
-            map[Node::repoName.name].toString(),
-            map[Node::folder.name] as Boolean,
-            map[Node::fullPath.name].toString(),
-            map[Node::path.name].toString(),
-            map[Node::size.name].toString().toLongOrNull() ?: 0,
-        )
     }
 
     companion object {

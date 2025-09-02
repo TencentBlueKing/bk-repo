@@ -39,7 +39,7 @@ data class MetadataLabelDetail(
     val enableColorConfig: Boolean,
     val description: String,
     val createdBy: String,
-    val createdDate: LocalDateTime,
+    val createdDate: LocalDateTime = LocalDateTime.now(),
     val lastModifiedBy: String,
-    val lastModifiedDate: LocalDateTime
+    val lastModifiedDate: LocalDateTime = LocalDateTime.now()
 )
