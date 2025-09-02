@@ -1,12 +1,7 @@
 package com.tencent.bkrepo.repository.service.experience.impl
 
-import com.tencent.bkrepo.repository.pojo.experience.AppExperienceDetail
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceChangeLogRequest
-import com.tencent.bkrepo.repository.pojo.experience.AppExperienceList
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceRequest
-import com.tencent.bkrepo.repository.pojo.experience.DevopsResponse
-import com.tencent.bkrepo.repository.pojo.experience.PaginationExperienceChangeLog
-import com.tencent.bkrepo.repository.pojo.experience.PaginationExperienceInstallPackages
 import com.tencent.bkrepo.repository.service.experience.CIExperienceService
 import com.tencent.bkrepo.repository.service.experience.ExperienceService
 import org.springframework.stereotype.Service
@@ -16,28 +11,28 @@ class ExperienceServiceImpl(
     private val ciExperienceService: CIExperienceService
 ) : ExperienceService {
 
-    override fun list(userId: String, request: AppExperienceRequest): DevopsResponse<AppExperienceList> =
+    override fun list(userId: String, request: AppExperienceRequest): String =
         ciExperienceService.getAppExperiences(userId, request)
 
     override fun getExperienceDetail(
         userId: String,
         experienceId: String,
         request: AppExperienceRequest
-    ): DevopsResponse<AppExperienceDetail> =
+    ): String =
         ciExperienceService.getAppExperienceDetail(userId, experienceId, request)
 
     override fun getExperienceChangeLog(
         userId: String,
         experienceId: String,
         request: AppExperienceChangeLogRequest
-    ): DevopsResponse<PaginationExperienceChangeLog> =
+    ): String =
         ciExperienceService.getAppExperienceChangeLog(userId, experienceId, request)
 
     override fun getExperienceInstallPackages(
         userId: String,
         experienceId: String,
         request: AppExperienceRequest
-    ): DevopsResponse<PaginationExperienceInstallPackages> =
+    ): String =
         ciExperienceService.getAppExperienceInstallPackages(userId, experienceId, request)
 
 }

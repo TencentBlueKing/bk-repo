@@ -1,13 +1,11 @@
 package com.tencent.bkrepo.repository.controller.user
 
-import com.tencent.bkrepo.repository.pojo.experience.AppExperienceDetail
+import com.google.common.net.HttpHeaders
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceChangeLogRequest
-import com.tencent.bkrepo.repository.pojo.experience.AppExperienceList
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceRequest
-import com.tencent.bkrepo.repository.pojo.experience.DevopsResponse
-import com.tencent.bkrepo.repository.pojo.experience.PaginationExperienceChangeLog
-import com.tencent.bkrepo.repository.pojo.experience.PaginationExperienceInstallPackages
 import com.tencent.bkrepo.repository.service.experience.ExperienceService
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -25,8 +23,9 @@ class UserExperienceController(
     fun listAppExperience(
         @RequestAttribute userId: String,
         @RequestBody request: AppExperienceRequest
-    ): DevopsResponse<AppExperienceList> {
-        return experienceService.list(userId, request)
+    ): ResponseEntity<Any> {
+        val response = experienceService.list(userId, request)
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
     }
 
     @PostMapping("/detail/{experienceId}")
@@ -34,8 +33,9 @@ class UserExperienceController(
         @RequestAttribute userId: String,
         @PathVariable experienceId: String,
         @RequestBody request: AppExperienceRequest
-    ): DevopsResponse<AppExperienceDetail> {
-        return experienceService.getExperienceDetail(userId, experienceId, request)
+    ): ResponseEntity<Any> {
+        val response = experienceService.getExperienceDetail(userId, experienceId, request)
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
     }
 
     @PostMapping("/changelog/{experienceId}")
@@ -43,8 +43,9 @@ class UserExperienceController(
         @RequestAttribute userId: String,
         @PathVariable experienceId: String,
         @RequestBody request: AppExperienceChangeLogRequest
-    ): DevopsResponse<PaginationExperienceChangeLog> {
-        return experienceService.getExperienceChangeLog(userId, experienceId, request)
+    ): ResponseEntity<Any> {
+        val response = experienceService.getExperienceChangeLog(userId, experienceId, request)
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
     }
 
     @PostMapping("/installPackages/{experienceId}")
@@ -52,7 +53,8 @@ class UserExperienceController(
         @RequestAttribute userId: String,
         @PathVariable experienceId: String,
         @RequestBody request: AppExperienceRequest
-    ): DevopsResponse<PaginationExperienceInstallPackages> {
-        return experienceService.getExperienceInstallPackages(userId, experienceId, request)
+    ): ResponseEntity<Any> {
+        val response = experienceService.getExperienceInstallPackages(userId, experienceId, request)
+        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
     }
 }
