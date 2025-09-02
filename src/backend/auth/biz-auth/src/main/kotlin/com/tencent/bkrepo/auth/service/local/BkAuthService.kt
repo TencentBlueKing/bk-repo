@@ -10,12 +10,12 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 import java.util.concurrent.TimeUnit
 
-class BkAuthService {
+@Service
+class BkAuthService @Autowired constructor(private val bkAuthConfig: BkAuthConfig) {
 
-    @Autowired
-    lateinit var bkAuthConfig: BkAuthConfig
 
     private val okHttpClient = okhttp3.OkHttpClient.Builder().connectTimeout(3L, TimeUnit.SECONDS)
         .readTimeout(5L, TimeUnit.SECONDS)
