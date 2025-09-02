@@ -43,6 +43,7 @@ import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.NodeCopyOrMoveRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
@@ -61,6 +62,7 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -366,6 +368,24 @@ class FederationReplicator(
         }
     }
 
+    override fun replicaNodeMove(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean {
+        with(context) {
+            buildNodeMoveCopyRequest(this, moveOrCopyRequest).let {
+                artifactReplicaClient!!.replicaNodeMoveRequest(it)
+            }
+            return true
+        }
+    }
+
+    override fun replicaNodeCopy(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean {
+        with(context) {
+            buildNodeMoveCopyRequest(this, moveOrCopyRequest).let {
+                artifactReplicaClient!!.replicaNodeCopyRequest(it)
+            }
+            return true
+        }
+    }
+
     private fun getCurrentClusterName(projectId: String, repoName: String, taskName: String): String {
         val key = parseKeyFromTaskName(taskName)
         return federationRepositoryService.getCurrentClusterName(projectId, repoName, key)
@@ -376,6 +396,26 @@ class FederationReplicator(
         val parts = taskName.split("/")
         require(parts.size >= 3) { "Invalid task name format" }
         return parts[1]
+    }
+
+    private fun buildNodeMoveCopyRequest(
+        context: ReplicaContext,
+        moveOrCopyRequest: NodeCopyOrMoveRequest
+    ): NodeMoveCopyRequest {
+        with(moveOrCopyRequest) {
+            return NodeMoveCopyRequest(
+                srcProjectId = srcProjectId,
+                srcRepoName = srcRepoName,
+                srcFullPath = srcFullPath,
+                destProjectId = destProjectId,
+                destRepoName = destRepoName,
+                destFullPath = destFullPath,
+                operator = operator,
+                overwrite = overwrite,
+                destNodeFolder =  destNodeFolder,
+                source = getCurrentClusterName(srcProjectId, srcRepoName, context.task.name),
+            )
+        }
     }
 
     private fun buildNodeDeleteRequest(context: ReplicaContext, node: NodeInfo): NodeDeleteRequest? {

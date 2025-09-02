@@ -107,12 +107,12 @@ interface ArtifactReplicaClient {
     @PostMapping("/node/copy")
     fun replicaNodeCopyRequest(
         @RequestBody request: NodeMoveCopyRequest,
-    ): Response<Void>
+    ): Response<NodeDetail>
 
     @PostMapping("/node/move")
     fun replicaNodeMoveRequest(
         @RequestBody request: NodeMoveCopyRequest,
-    ): Response<Void>
+    ): Response<NodeDetail>
 
     @PostMapping("/node/delete")
     fun replicaNodeDeleteRequest(

@@ -38,6 +38,7 @@ import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
+import com.tencent.bkrepo.replication.pojo.request.NodeCopyOrMoveRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
@@ -242,6 +243,27 @@ abstract class AbstractReplicaService(
             } catch (throwable: Throwable) {
                 logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
                 setRunOnceTaskFailedRecordMetrics(this, throwable, pathConstraint = constraint)
+                throw throwable
+            }
+        }
+    }
+
+    /**
+     * 同步移动或复制的节点
+     */
+    protected fun replicaByMovedOrCopiedNode(
+        replicaContext: ReplicaContext,
+        nodeOrMoveRequest: NodeCopyOrMoveRequest,
+        move: Boolean
+    ) {
+        with(replicaContext) {
+            try {
+                replicaMovedOrCopiedNode(this, nodeOrMoveRequest, move)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaByMovedOrCopiedNode ${nodeOrMoveRequest.srcFullPath} " +
+                        "to ${nodeOrMoveRequest.destFullPath} failed, error is ${throwable.message}"
+                )
                 throw throwable
             }
         }
@@ -475,6 +497,30 @@ abstract class AbstractReplicaService(
                     ConflictStrategy.SKIP -> false
                     ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
                     else -> replicator.replicaPackageVersion(replicaContext, packageSummary, version)
+                }
+            }
+        }
+    }
+
+    /**
+     * 同步移动或复制的节点
+     */
+    private fun replicaMovedOrCopiedNode(
+        replicaContext: ReplicaContext,
+        nodeOrMoveRequest: NodeCopyOrMoveRequest,
+        move: Boolean
+    ) {
+        with(replicaContext) {
+            val record = ReplicationRecord(path = nodeOrMoveRequest.srcFullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = nodeOrMoveRequest.srcFullPath
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                if (move) {
+                    replicator.replicaNodeMove(replicaContext, nodeOrMoveRequest)
+                } else {
+                    replicator.replicaNodeCopy(replicaContext, nodeOrMoveRequest)
                 }
             }
         }

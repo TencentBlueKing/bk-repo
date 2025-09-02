@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,38 +25,16 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.event.node
+package com.tencent.bkrepo.replication.pojo.request
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.artifact.event.base.EventType
-
-/**
- * 节点移动事件
- */
-class NodeMovedEvent(
-    override val projectId: String,
-    override val repoName: String,
-    override val resourceKey: String,
-    override val userId: String,
-    override val source: String?,
-    val dstProjectId: String,
-    val dstRepoName: String,
-    val dstFullPath: String,
-    val overwrite: Boolean,
-    val destNodeFolder: Boolean? = null,
-) : ArtifactEvent(
-    type = EventType.NODE_MOVED,
-    projectId = projectId,
-    repoName = repoName,
-    resourceKey = resourceKey,
-    userId = userId,
-    data = mutableMapOf(
-        "dstProjectId" to dstProjectId,
-        "dstRepoName" to dstRepoName,
-        "dstFullPath" to dstFullPath,
-        "overwrite" to overwrite
-    ).apply {
-        destNodeFolder?.let { this["destNodeFolder"] = destNodeFolder }
-    },
-    source = source
+data class NodeCopyOrMoveRequest(
+    val srcProjectId: String,
+    val srcRepoName: String,
+    val srcFullPath: String,
+    val destProjectId: String? = null,
+    val destRepoName: String? = null,
+    val destFullPath: String,
+    var destNodeFolder: Boolean? = null,
+    val overwrite: Boolean = false,
+    val operator: String,
 )

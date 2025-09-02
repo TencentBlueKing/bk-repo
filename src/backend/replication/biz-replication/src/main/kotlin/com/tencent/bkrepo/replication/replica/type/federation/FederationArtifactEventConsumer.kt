@@ -52,6 +52,8 @@ class FederationArtifactEventConsumer(
      */
     override fun getAcceptTypes(): Set<EventType> {
         return setOf(
+            EventType.NODE_MOVED,
+            EventType.NODE_COPIED,
             EventType.NODE_CREATED,
             EventType.NODE_DELETED,
             EventType.VERSION_CREATED,
