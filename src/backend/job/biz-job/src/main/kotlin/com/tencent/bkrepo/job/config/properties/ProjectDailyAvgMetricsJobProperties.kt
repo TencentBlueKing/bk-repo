@@ -33,15 +33,15 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.project-daily-avg-metrics")
-class ProjectDailyAvgMetricsJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = Scheduled.CRON_DISABLED,
+class ProjectDailyAvgMetricsJobProperties: MongodbJobProperties() {
+    override var enabled: Boolean = false
+    override var cron: String = Scheduled.CRON_DISABLED
     // 重新执行历史数据
-    var reRunDays: MutableList<String> = mutableListOf<String>(),
+    var reRunDays: MutableList<String> = mutableListOf<String>()
     // 每月账单开始时间
-    var monthStartDay: Int = 15,
+    var monthStartDay: Int = 15
     // 每月账单截止时间
-    var monthEndDay: Int = 14,
-    var bgIds: MutableList<String> = mutableListOf<String>(),
+    var monthEndDay: Int = 14
+    var bgIds: MutableList<String> = mutableListOf<String>()
     var reportStream: Boolean = false
-) : MongodbJobProperties(enabled)
+}

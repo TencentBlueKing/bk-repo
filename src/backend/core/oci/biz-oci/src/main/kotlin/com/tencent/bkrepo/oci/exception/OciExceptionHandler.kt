@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.oci.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.BKREPO_TRACE
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.USER_KEY
@@ -40,6 +41,7 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
@@ -71,6 +73,7 @@ class OciExceptionHandler(
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handleException(exception: AuthenticationException) {
         val response = HttpContextHolder.getResponse()
+        TraceHeaderUtils.setResponseHeader()
         response.contentType = MediaTypes.APPLICATION_JSON
         response.addHeader(
             HttpHeaders.WWW_AUTHENTICATE,
@@ -148,6 +151,7 @@ class OciExceptionHandler(
         } else {
             response
         }
+        httpResponse.setHeader(BKREPO_TRACE, TraceHeaderUtils.buildB3Header())
         httpResponse.writer.println(responseString)
     }
 

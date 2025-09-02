@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.storage.core.overlay.OverlayRangeUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import org.slf4j.LoggerFactory
+import java.io.InputStream
 
 abstract class OverlaySupport : FileBlockSupport() {
     override fun load(
@@ -43,28 +44,33 @@ abstract class OverlaySupport : FileBlockSupport() {
         range: Range,
         storageCredentials: StorageCredentials?
     ): ArtifactInputStream? {
+        return load(blocks, range) {
+            val input = loadResource(it, storageCredentials)
+            check(input != null) { "Block[${it.digest}] miss." }
+            input
+        }
+    }
+
+    override fun load(
+        blocks: List<RegionResource>,
+        range: Range,
+        loader: (RegionResource) -> InputStream
+    ): ArtifactInputStream? {
         if (logger.isDebugEnabled) {
             logger.debug("Range: $range, blocks: ${blocks.joinToString()}")
         }
         val ranges = OverlayRangeUtils.build(blocks, range)
-        if (ranges.size == 1) {
-            return loadResource(ranges.first(), storageCredentials)
-        }
         if (ranges.isEmpty()) {
             return null
         }
-        return OverlayArtifactFileInputStream(ranges) {
-            val input = loadResource(it, storageCredentials)
-            check(input != null) { "Block[${it.digest}] miss." }
-            input
-        }.artifactStream(range)
+        return OverlayArtifactFileInputStream(ranges, loader).artifactStream(range)
     }
 
-    private fun loadResource(
+    override fun loadResource(
         resource: RegionResource,
         storageCredentials: StorageCredentials?
     ): ArtifactInputStream? = if (resource.digest == RegionResource.ZERO_RESOURCE) {
-        ZeroInputStream(resource.len)?.artifactStream(Range.full(resource.len))
+        ZeroInputStream(resource.len).artifactStream(Range.full(resource.len))
     } else {
         val range = Range(resource.off, resource.off + resource.len - 1, resource.size)
         load(resource.digest, range, storageCredentials)
