@@ -30,6 +30,13 @@ export function down(serviceName, instanceId) {
   })
 }
 
+export function checkConsulPattern() {
+  return request({
+    url: `${PREFIX_SERVICES}/isConsul`,
+    method: 'get'
+  })
+}
+
 export const INSTANCE_STATUS_RUNNING = 'RUNNING'
 export const INSTANCE_STATUS_DEREGISTER = 'DEREGISTER'
 export const INSTANCE_STATUS_OFFLINE = 'OFFLINE'
