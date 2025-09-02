@@ -110,7 +110,6 @@ class ClientService(
         client.heartbeatTime = LocalDateTime.now()
         client.online = true
         clientRepository.save(client)
-        recordDairyClient(client)
     }
 
     suspend fun listClients(request: ClientListRequest): Page<ClientDetail> {
@@ -196,25 +195,6 @@ class ClientService(
         insertDairyClient(request, action)
     }
 
-    private suspend fun recordDairyClient(client: TClient) {
-        val query = Query(
-            Criteria.where(TDailyClient::projectId.name).isEqualTo(client.projectId)
-                .and(TDailyClient::repoName.name).isEqualTo(client.repoName)
-                .and(TDailyClient::ip.name).isEqualTo(client.ip)
-                .and(TDailyClient::action.name).isEqualTo("working")
-                .and(TDailyClient::mountPoint.name).isEqualTo(client.mountPoint)
-                .and(TDailyClient::time.name).gt(LocalDate.now().atStartOfDay())
-                .lt(LocalDate.now().atStartOfDay().plusDays(1))
-        )
-        val dailyClient = dailyClientRepository.findOne(query)
-        val request = convertClientRequest(client)
-        if (dailyClient == null) {
-            insertDairyClient(request, "working")
-        } else {
-            updateDairyClient(dailyClient)
-        }
-    }
-
     private suspend fun insertDairyClient(request: ClientCreateRequest, action: String): TDailyClient {
         val client = TDailyClient(
             projectId = request.projectId,
@@ -229,13 +209,6 @@ class ClientService(
             time = LocalDateTime.now()
         )
         return dailyClientRepository.save(client)
-    }
-
-    private suspend fun updateDairyClient(client: TDailyClient): TDailyClient {
-        val newClient = client.copy(
-            time = LocalDateTime.now()
-        )
-        return dailyClientRepository.save(newClient)
     }
 
     suspend fun listDailyClients(request: DailyClientListRequest): Page<DailyClientDetail> {
