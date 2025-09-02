@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
+import com.tencent.bkrepo.common.metadata.client.RAuthClient
 import com.tencent.bkrepo.fs.server.bodyToArtifactFile
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.io.RegionInputStreamResource
@@ -71,7 +72,8 @@ import java.net.URI
 @Component
 class FileOperationsHandler(
     private val fileOperationService: FileOperationService,
-    private val nodeService: RNodeService
+    private val nodeService: RNodeService,
+    private val authClient: RAuthClient
 ) {
 
     /**
@@ -161,6 +163,11 @@ class FileOperationsHandler(
     suspend fun stream(request: ServerRequest): ServerResponse {
         val user = ReactiveSecurityUtils.getUser()
         val streamRequest = StreamRequest(request)
+        try {
+            authClient.getOrCreatePersonalPath(streamRequest.projectId, streamRequest.repoName).awaitSingleOrNull()
+        } catch (e: Exception) {
+            logger.error("getOrCreatePersonalPath failed: {}", e.message)
+        }
         val nodeDetail = fileOperationService.stream(streamRequest, user)
         return ReactiveResponseBuilder.success(nodeDetail)
     }
