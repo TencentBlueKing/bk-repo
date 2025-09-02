@@ -71,6 +71,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.util.concurrent.Callable
 
 @Service
 class FederationRepositoryServiceImpl(
@@ -140,29 +141,23 @@ class FederationRepositoryServiceImpl(
             logger.info("Full sync federation repository is still running!")
             throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_FULL_SYNC_RUNNING)
         }
+
         try {
-            // 使用线程池异步执行同步任务
-            executor.execute (
-                Runnable {
-                    try {
-                        // TODO 多个任务并发执行
-                        federationRepository.federatedClusters.forEach {
-                            val taskInfo = replicaTaskService.getByTaskId(it.taskId!!)
-                            taskInfo?.let { task ->
-                                val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
-                                federationManualReplicaJobExecutor.execute(taskDetail)
-                            }
-                        }
-                    } finally {
-                        unlock(projectId, repoName, federationId, lock)
-                        logger.info("Released lock for federation sync: $federationId")
-                    }
-                }.trace()
-            )
-        } catch (ignore: Exception) {
-            logger.error("Failed to full sync federation repository, error: ${ignore.message}")
+            val futures = federationRepository.federatedClusters.mapNotNull { fedCluster ->
+                val taskInfo = replicaTaskService.getByTaskId(fedCluster.taskId!!)
+                taskInfo?.let { task ->
+                    executor.submit (Callable {
+                        val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
+                        federationManualReplicaJobExecutor.execute(taskDetail)
+                    }.trace())
+                }
+            }
+            futures.forEach { it.get() } // 等待所有任务完成
+        } catch (e: Exception) {
+            logger.error("Failed to execute federation sync tasks: ${e.message}", e)
+        } finally {
             unlock(projectId, repoName, federationId, lock)
-            throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_FULL_SYNC_FAILED)
+            logger.info("Released lock for federation sync: $federationId")
         }
     }
 

@@ -147,7 +147,7 @@ interface ArtifactReplicaClient {
         @RequestBody request: MetadataSaveRequest,
     ): Response<Void>
 
-    @PostMapping("/metadata/save/deleted")
+    @PostMapping("/deleted/metadata/save")
     fun replicaMetadataSaveRequestForDeletedNode(
         @RequestBody request: DeletedNodeMetadataSaveRequest,
     ): Response<Void>
