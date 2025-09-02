@@ -32,6 +32,6 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.artifact-preload-strategy-generate")
-class ArtifactPreloadStrategyGenerateJobProperties(
-    override var cron: String = "0 0 0 * * ?",
-) : BatchJobProperties()
+class ArtifactPreloadStrategyGenerateJobProperties: BatchJobProperties() {
+    override var cron: String = "0 0 0 * * ?"
+}

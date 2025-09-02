@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.service.exception.AbstractExceptionHandler
 import com.tencent.bkrepo.common.service.log.LoggerHolder
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -45,6 +46,7 @@ class OauthExceptionHandler : AbstractExceptionHandler() {
     @ExceptionHandler(OauthException::class)
     fun handleOauthException(exception: OauthException) {
         LoggerHolder.logException(exception, "[${exception.error}]${exception.errorDescription}", false)
+        TraceHeaderUtils.setResponseHeader()
         HttpContextHolder.getResponse().status = exception.status.value
         HttpContextHolder.getResponse().contentType = MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
         HttpContextHolder.getResponse().writer.println(

@@ -30,9 +30,7 @@
  */
 dependencies {
     api(project(":preview:api-preview"))
-    //api(project(":common:common-generic"))
     api(project(":common:common-artifact:artifact-service"))
-    api("org.dom4j:dom4j:${Versions.Dom4j}")
     // office转换
     api("org.jodconverter:jodconverter-local:${Versions.JodConverter}")
     // url规范化

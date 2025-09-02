@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import io.swagger.v3.oas.annotations.media.Schema
 import org.slf4j.LoggerFactory
+import org.springframework.util.unit.DataSize
 import kotlin.math.max
 
 @Schema(title = "扫描器配置")
@@ -89,6 +90,8 @@ open class Scanner(
     val limitCpu: Double = 16.0,
     @get:Schema(title = "不支持的制品名称正则列表")
     val unsupportedArtifactNameRegex: Set<String> = emptySet(),
+    @get:Schema(title = "扫描器配置")
+    val scanRate: Long = DataSize.ofMegabytes(20).toBytes()
 ) {
     /**
      * 获取待扫描文件最大允许扫描时长

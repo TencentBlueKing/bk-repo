@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.sign-file-cleanup")
-class SignFileCleanupJobProperties(
-    var expireOfDays: Int = 15,
+class SignFileCleanupJobProperties: MongodbJobProperties() {
+    var expireOfDays: Int = 15
     override var cron: String = "0 0 0 * * ?"
-) : MongodbJobProperties()
+}

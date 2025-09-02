@@ -2,10 +2,12 @@ package com.tencent.bkrepo.common.metadata.util
 
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.query.model.Sort
+import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -159,4 +161,6 @@ object NodeBaseServiceHelper {
     fun parseExpireDate(expireDays: Long?): LocalDateTime? {
         return expireDays?.takeIf { it > 0 }?.run { LocalDateTime.now().plusDays(this) }
     }
+
+    fun fsNode(node: TNode) = node.sha256 == FAKE_SHA256 && node.metadata?.any { it.key == FS_ATTR_KEY } == true
 }
