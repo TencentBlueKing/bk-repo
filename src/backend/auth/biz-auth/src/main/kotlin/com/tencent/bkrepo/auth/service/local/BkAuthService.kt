@@ -25,7 +25,7 @@ class BkAuthService @Autowired constructor(private val bkAuthConfig: BkAuthConfi
         if (!bkAuthConfig.enableBkUser) return false
         if (tenantId == null) return false
         val url =
-            "${bkAuthConfig.bkAuthServer}/api/bk-user/prod/api/v3/open/tenant/users/-/display_info/?bk_usernames=$userId"
+            "http://${bkAuthConfig.bkAuthServer}/api/bk-user/prod/api/v3/open/tenant/users/-/display_info/?bk_usernames=$userId"
         val authHeader = mapOf(
             "bk_app_code" to bkAuthConfig.bkAppCode,
             "bk_app_secret" to bkAuthConfig.bkAppSecret

@@ -330,7 +330,7 @@ class UserServiceImpl constructor(
     }
 
     override fun getUserInfoByIdAndTenantId(userId: String, tenantId: String?): UserInfo? {
-        logger.debug("get user userId : [$userId]")
+        logger.debug("get user userId : [$userId, $tenantId]")
         var user = userDao.findFirstByUserId(userId)
         if (user == null && tenantId != null) {
             if (bkAuthService.checkBkUserExist(userId, tenantId)) {
