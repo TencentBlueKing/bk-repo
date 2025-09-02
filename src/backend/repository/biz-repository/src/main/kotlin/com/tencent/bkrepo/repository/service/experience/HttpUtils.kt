@@ -1,17 +1,18 @@
 
 package com.tencent.bkrepo.repository.service.experience
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.slf4j.LoggerFactory
-import org.springframework.http.HttpStatusCode
-import org.springframework.web.client.HttpServerErrorException
-import java.io.IOException
-import java.net.SocketTimeoutException
 import java.net.ConnectException
-import java.net.UnknownHostException
-import java.lang.RuntimeException
+import java.net.SocketTimeoutException
 
+/**
+ * HTTP请求工具类
+ */
 object HttpUtils {
 
     private val logger = LoggerFactory.getLogger(HttpUtils::class.java)
@@ -23,66 +24,47 @@ object HttpUtils {
         okHttpClient: OkHttpClient,
         request: Request,
         retry: Int = 0,
-        acceptCode: Set<Int> = emptySet(),
         retryDelayMs: Long = 500
     ): String {
-        var currentRetry = retry
-        while (true) {
-            try {
-                okHttpClient.newCall(request).execute().use { response ->
-                    val code = response.code
-                    val body = response.body?.string() ?: ""
+        try {
+            okHttpClient.newCall(request).execute().use { response ->
+                val code = response.code
+                val body = response.body?.string() ?: ""
 
-                    // 成功响应或可接受的状态码直接返回
-                    if (response.isSuccessful || acceptCode.contains(code)) {
-                        return body
+                return when {
+                    // 对于需要重试的状态码，如果还有重试次数就重试
+                    code in setOf(502, 503, 504) && retry > 0 -> {
+                        logger.warn("HTTP $code received, retrying, remaining retries: $retry, url=${request.url}")
+                        Thread.sleep(retryDelayMs)
+                        doRequest(okHttpClient, request, retry - 1, retryDelayMs)
                     }
-
-                    // 对于5xx服务器错误，HttpServerErrorException
-                    if (code in 500..599) {
-                        throw HttpServerErrorException(
-                            HttpStatusCode.valueOf(code),
-                            "Server error: HTTP $code, body: $body"
-                        )
-                    }
-
-                    // 对于4xx等其他错误，抛出RuntimeException，不重试
-                    throw RuntimeException(
-                        "HTTP request failed, url=${request.url}, code=$code, body=$body"
-                    )
+                    // 其他所有情况都返回响应体
+                    else -> body
                 }
-            } catch (e: Exception) {
-                // 判断是否应该重试
-                val shouldRetry = isRetryableException(e)
-
-                if (shouldRetry && currentRetry > 0) {
-                    logger.warn("HTTP request failed, retrying ${retry - currentRetry + 1}/$retry, " +
+            }
+        } catch (e: Exception) {
+            return when {
+                shouldRetry(e) && retry > 0 -> {
+                    logger.warn("Request failed, retrying, remaining retries: $retry, " +
                                     "url=${request.url}, cause: ${e.message}")
                     Thread.sleep(retryDelayMs)
-                    currentRetry--
-                } else {
-                    throw e
+                    doRequest(okHttpClient, request, retry - 1, retryDelayMs)
+                }
+                else -> {
+                    // 详细记录异常信息
+                    logger.error("HTTP request failed after all retries, url=${request.url}, " +
+                                     "exception=${e.javaClass.simpleName}, message=${e.message}", e)
+                    throw ErrorCodeException(
+                        status = HttpStatus.INTERNAL_SERVER_ERROR,
+                        messageCode = RepositoryMessageCode.APP_EXPERIENCE_REQUEST_ERROR,
+                        params = arrayOf("Request failed: ${e.message ?: "Unknown error"}")
+                    )
                 }
             }
         }
     }
 
-    /**
-     * 判断异常是否可以重试
-     * 只有以下情况才重试：
-     * 1. 网络连接异常（ConnectException, UnknownHostException）
-     * 2. 读写超时异常（SocketTimeoutException）
-     * 3. 服务器5xx错误（HttpServerErrorException）
-     * 4. 其他IO异常（如网络中断等）
-     */
-    private fun isRetryableException(e: Exception): Boolean {
-        return when (e) {
-            is ConnectException -> true              // 连接失败
-            is UnknownHostException -> true          // DNS解析失败
-            is SocketTimeoutException -> true        // 读写超时
-            is HttpServerErrorException -> true      // 服务器5xx错误
-            is IOException -> true                   // 其他IO异常
-            else -> false                           // 其他异常不重试
-        }
+    private fun shouldRetry(e: Exception): Boolean {
+        return e is ConnectException || e is SocketTimeoutException
     }
 }

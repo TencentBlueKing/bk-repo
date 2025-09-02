@@ -1,9 +1,6 @@
 package com.tencent.bkrepo.repository.service.experience
 
-import com.fasterxml.jackson.module.kotlin.convertValue
-import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.repository.config.CIExperienceProperties
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
@@ -54,9 +51,12 @@ class CIExperienceService(
                 okHttpClient = okHttpClient,
                 request = request,
                 retry = 3,
-                acceptCode = allowHttpStatusSet,
                 retryDelayMs = 500
             )
+        } catch (exception: ErrorCodeException)
+        {
+            logger.error("$operationName error: ", exception.message)
+            throw exception
         } catch (exception: Exception) {
             logger.error("$operationName error: ", exception)
             throw ErrorCodeException(RepositoryMessageCode.APP_EXPERIENCE_REQUEST_ERROR)
@@ -97,9 +97,17 @@ class CIExperienceService(
         val httpUrl = baseUrl.toHttpUrlOrNull()?.newBuilder()
             ?: throw IllegalArgumentException("Invalid URL: $baseUrl")
 
-        objectMapper.convertValue<Map<String, Any?>>(request).forEach { (key, value) ->
-            value?.let { httpUrl.addQueryParameter(key, it.toString()) }
-        }
+        request.name?.let { httpUrl.addQueryParameter("name", it) }
+        request.version?.let { httpUrl.addQueryParameter("version", it) }
+        request.remark?.let { httpUrl.addQueryParameter("remark", it) }
+        request.creator?.let { httpUrl.addQueryParameter("creator", it) }
+        request.createDateBegin?.let { httpUrl.addQueryParameter("createDateBegin", it.toString()) }
+        request.createDateEnd?.let { httpUrl.addQueryParameter("createDateEnd", it.toString()) }
+        request.endDateBegin?.let { httpUrl.addQueryParameter("endDateBegin", it.toString()) }
+        request.endDateEnd?.let { httpUrl.addQueryParameter("endDateEnd", it.toString()) }
+        request.showAll?.let { httpUrl.addQueryParameter("showAll", it.toString()) }
+        httpUrl.addQueryParameter("page", request.page.toString())
+        httpUrl.addQueryParameter("pageSize", request.pageSize.toString())
 
         val url = httpUrl.build().toString()
         val headers = AppExperienceRequest(
@@ -137,7 +145,5 @@ class CIExperienceService(
         const val DEVOPS_PLATFORM = "X-DEVOPS-PLATFORM"
         const val DEVOPS_VERSION = "X-DEVOPS-APP-VERSION"
         const val DEVOPS_ORGANIZATION = "X-DEVOPS-ORGANIZATION-NAME"
-        private val allowHttpStatusSet =
-            setOf(HttpStatus.FORBIDDEN.value, HttpStatus.BAD_REQUEST.value, HttpStatus.NOT_FOUND.value)
     }
 }
