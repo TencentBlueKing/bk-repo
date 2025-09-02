@@ -39,7 +39,7 @@ class MigrateBlockNodeCollectionServiceImpl(
         newShardingColumns: List<String>,
         newShardingCount: Int
     ) {
-        logger.info("start migrate block node finished")
+        logger.info("start migrate block node")
         val startIds = getStartObjectIds(oldCollectionNamePrefix, newCollectionNamePrefix, newShardingCount)
         val newShardingFields = MongoDaoHelper.determineShardingFields(TBlockNode::class.java, newShardingColumns)
         for (i in 0 until SHARDING_COUNT) {
@@ -68,12 +68,15 @@ class MigrateBlockNodeCollectionServiceImpl(
         newShardingCount: Int,
     ) {
         logger.info("start migrate collection[$oldCollection]")
+        var count = 0
         val start = System.currentTimeMillis()
         iterateCollection<TBlockNode>(Query(), oldCollection, startId, BATCH_SIZE) {
+            count++
             val newCollection = newCollectionName(newCollectionNamePrefix, newShardingFields, newShardingCount, it)
             mongoTemplate.insert(it, newCollection)
         }
-        logger.info("migrate collection[$oldCollection] finished, elapsed ${System.currentTimeMillis() - start} ms")
+        val elapsed = System.currentTimeMillis() - start
+        logger.info("migrate collection[$oldCollection] finished, total count[$count], elapsed $elapsed ms")
     }
 
     /**
@@ -130,7 +133,7 @@ class MigrateBlockNodeCollectionServiceImpl(
             }
             data.forEach { consumer.accept(it) }
             querySize = data.size
-            lastId = FieldUtils.readField(idField, data.last()) as ObjectId
+            lastId = ObjectId(FieldUtils.readField(idField, data.last(), true) as String)
         } while (querySize == batchSize)
     }
 
