@@ -18,4 +18,5 @@ data:
     job.repoRefreshJobProperties.types: HELM,OCI
     job.deleted-node-cleanup.deletedNodeReserveDays: {{ .Values.repository.config.deletedNodeReserveDays }}
     job.artifact-cleanup.enabled: true
+    job.helm-replication-refresh.enabled: true
 {{- end }}

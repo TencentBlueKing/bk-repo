@@ -1053,22 +1053,25 @@
             handlerDownload (row) {
                 const transPath = encodeURIComponent(row.fullPath)
                 const url = `/generic/${this.projectId}/${this.repoName}/${transPath}?download=true`
-                this.$ajax.head(url).then(() => {
-                    window.open(
-                        '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
-                        '_self'
-                    )
-                }).catch(e => {
-                    if (e.status === 451) {
+                fetch('/web' + url, {
+                    headers: { Range: 'bytes=0-1' } // 限制范围
+                }).then(async response => {
+                    if (response.ok) {
+                        window.open(
+                            '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
+                            '_self'
+                        )
+                    } else if (response.status === 451) {
+                        const resJson = await response.json()
                         this.$refs.loading.isShow = true
                         this.$refs.loading.complete = false
                         this.$refs.loading.title = ''
                         this.$refs.loading.backUp = true
                         this.$refs.loading.cancelMessage = this.$t('downloadLater')
-                        this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                        this.$refs.loading.subMessage = resJson.message
                         this.$refs.loading.message = this.$t('backUpMessage', { 0: row.name })
                         this.timerDownload(url, row.fullPath, row.name)
-                    } else if (e.status === 403) {
+                    } else if (response.status === 403) {
                         this.getPermissionUrl({
                             body: {
                                 projectId: this.projectId,
@@ -1096,10 +1099,11 @@
                                 })
                             }
                         })
-                    } else if (e.status === 429) {
+                    } else if (response.status === 429) {
+                        const resJson = await response.json()
                         this.$bkMessage({
                             theme: 'error',
-                            message: e.message
+                            message: resJson.message
                         })
                     } else {
                         const message = this.$t('fileError')
@@ -1111,8 +1115,17 @@
                 })
             },
             timerDownload (url, fullPath, name) {
-                this.timer = setInterval(() => {
-                    this.$ajax.head(url).then(() => {
+                if (this.timer) return
+                this.timer = setInterval(async () => {
+                    try {
+                        const response = await fetch('/web' + url, {
+                            headers: { Range: 'bytes=0-1' } // 限制范围
+                        })
+                        if (!response.ok) {
+                            const resJson = await response.json()
+                            throw { status: response.status, message: resJson.message }
+                        }
+
                         clearInterval(this.timer)
                         this.timer = null
                         this.$refs.loading.isShow = false
@@ -1120,14 +1133,14 @@
                             '/web' + url + `&x-bkrepo-project-id=${this.projectId}`,
                             '_self'
                         )
-                    }).catch(e => {
+                    } catch (e) {
                         if (e.status === 451) {
                             this.$refs.loading.isShow = true
                             this.$refs.loading.complete = false
                             this.$refs.loading.title = ''
                             this.$refs.loading.backUp = true
                             this.$refs.loading.cancelMessage = this.$t('downloadLater')
-                            this.$refs.loading.subMessage = this.$t('backUpSubMessage')
+                            this.$refs.loading.subMessage = e.message
                             this.$refs.loading.message = this.$t('backUpMessage', { 0: name })
                         } else {
                             clearInterval(this.timer)
@@ -1139,7 +1152,7 @@
                                 message
                             })
                         }
-                    })
+                    }
                 }, 5000)
             },
             handlerMultiDownload () {

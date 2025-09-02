@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.lfs.exception
 
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -39,6 +40,7 @@ class LfsExceptionHandler {
 
     @ExceptionHandler(BatchRequestException::class)
     fun handleException(exception: BatchRequestException) {
+        TraceHeaderUtils.setResponseHeader()
         HttpContextHolder.getResponse().status = exception.status
         exception.headers.forEach {
             HttpContextHolder.getResponse().addHeader(it.first, it.second)

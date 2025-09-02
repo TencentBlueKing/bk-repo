@@ -32,7 +32,7 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.runonce-task-cleanup")
-class RunOnceTaskCleanupJobProperties(
-    override var fixedDelay: Long = 3600 * 1000L,
+class RunOnceTaskCleanupJobProperties: MongodbJobProperties() {
+    override var fixedDelay: Long = 3600 * 1000L
     override var initialDelay: Long = 120 * 1000L
-) : MongodbJobProperties()
+}

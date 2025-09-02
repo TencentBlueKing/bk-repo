@@ -31,9 +31,15 @@
 
 package com.tencent.bkrepo.common.metadata.service.metadata.impl
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.auth.pojo.user.UserInfo
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
 import com.tencent.bkrepo.common.artifact.constant.PIPELINE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
@@ -44,20 +50,26 @@ import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.pojo.webhook.NodeCreatedEventPayload
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildMetadataDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildMetadataSavedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
@@ -66,6 +78,7 @@ import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.concurrent.Executors
 
 /**
  * 元数据服务实现类
@@ -78,6 +91,8 @@ class MetadataServiceImpl(
     private val ciPermissionManager: CIPermissionManager,
     private val metadataLabelCacheService: MetadataLabelCacheService
 ) : MetadataService {
+
+    private val okHttpClient = HttpClientBuilderFactory.create().build()
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
         return MetadataUtils.toMap(nodeDao.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)
@@ -110,6 +125,7 @@ class MetadataServiceImpl(
 
             nodeDao.save(node)
             publishEvent(buildMetadataSavedEvent(request))
+            pipelineArtifactCallback(node, newMetadata.map { it.key })
             logger.info("Save metadata[$newMetadata] on node[/$projectId/$repoName$fullPath] success.")
         }
     }
@@ -152,6 +168,7 @@ class MetadataServiceImpl(
             )
             nodeDao.updateMulti(query, update)
             publishEvent(buildMetadataDeletedEvent(this))
+            pipelineArtifactCallback(node, request.keyList.toList())
             logger.info("Delete metadata[$keyList] on node[/$projectId/$repoName$fullPath] success.")
         }
     }
@@ -171,7 +188,7 @@ class MetadataServiceImpl(
             CIPermissionManager.PIPELINE_METADATA.any { m -> m.equals(it, true) }
         }
         val illegal = !node.folder && pipelineSource &&
-            pipelineMetadataKey != null && !ciPermissionManager.whiteListRequest()
+                pipelineMetadataKey != null && !ciPermissionManager.whiteListRequest()
         if (illegal) {
             ciPermissionManager.throwOrLogError(
                 messageCode = RepositoryMessageCode.PIPELINE_METADATA_UPDATE_NOT_ALLOWED,
@@ -204,7 +221,62 @@ class MetadataServiceImpl(
         return this.filter { k -> list.any { it.equals(k, true) } }
     }
 
+    private fun pipelineArtifactCallback(node: TNode, changedMetadataKeys: List<String>) {
+        if (repositoryProperties.updateArtifactUrl.isEmpty()) {
+            return
+        }
+        if (node.repoName != PIPELINE && node.repoName != CUSTOM) {
+            return
+        }
+        if (node.metadata?.find { it.key.equals(PIPELINE_ID, true) } == null) {
+            return
+        }
+        val metadataLabelKeys = metadataLabelCacheService.listAll(node.projectId).map { it.labelKey }
+        if (metadataLabelKeys.intersectIgnoreCase(changedMetadataKeys).isEmpty()) {
+            return
+        }
+        val userId = SecurityUtils.getUserId()
+        executor.submit {
+            val payload = buildNodeCreatedEventPayload(node, userId)
+            val request = Request.Builder()
+                .url(repositoryProperties.updateArtifactUrl)
+                .header(HEADER_DEVOPS_TOKEN, repositoryProperties.updateArtifactToken)
+                .post(payload.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull()))
+                .build()
+            okHttpClient.newCall(request).execute().use {
+                if (!it.isSuccessful) {
+                    logger.error("Failed to callback pipeline artifact, " +
+                            "bizId[${it.header(HEADER_DEVOPS_RID)}]," +
+                            " payload[${payload.toJsonString()}]")
+                    return@submit
+                }
+            }
+        }
+    }
+
+    private fun buildNodeCreatedEventPayload(node: TNode, userId: String): NodeCreatedEventPayload =
+        NodeCreatedEventPayload(
+            UserInfo(
+                userId = userId,
+                name = userId,
+                email = null,
+                phone = null,
+                createdDate = null,
+                locked = false,
+                admin = false,
+                group = false,
+            ),
+            NodeBaseServiceHelper.convertToDetail(node)!!
+        )
+
     companion object {
         private val logger = LoggerFactory.getLogger(MetadataServiceImpl::class.java)
+        private const val PIPELINE_ID = "pipelineId"
+        private const val HEADER_DEVOPS_RID = "X-DEVOPS-RID"
+        private const val HEADER_DEVOPS_TOKEN = "X-DEVOPS-BK-TOKEN"
+        private val executor = Executors.newFixedThreadPool(
+            Runtime.getRuntime().availableProcessors(),
+            ThreadFactoryBuilder().setNameFormat("pipeline-artifact-callback-%d").build()
+        ).trace()
     }
 }

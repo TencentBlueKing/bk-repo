@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.composer.exception
 
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.composer.pojo.ComposerExceptionResponse
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -45,18 +46,21 @@ class ComposerExceptionHandler {
     @ExceptionHandler(ComposerUnSupportCompressException::class)
     @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
     fun handleException(exception: ComposerUnSupportCompressException): ComposerExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return ComposerExceptionResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE.toString(), exception.message)
     }
 
     @ExceptionHandler(ComposerPackageMessageDeficiencyException::class)
     @ResponseStatus(HttpStatus.PRECONDITION_FAILED)
     fun handleException(exception: ComposerPackageMessageDeficiencyException): ComposerExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return ComposerExceptionResponse(HttpStatus.PRECONDITION_FAILED.toString(), exception.message)
     }
 
     @ExceptionHandler(ComposerArtifactMetadataException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleException(exception: ComposerArtifactMetadataException): ComposerExceptionResponse {
+        TraceHeaderUtils.setResponseHeader()
         return ComposerExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR.toString(), exception.message)
     }
 }

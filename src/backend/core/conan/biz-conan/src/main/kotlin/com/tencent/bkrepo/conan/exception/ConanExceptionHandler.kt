@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.conan.pojo.response.ConanErrorResponse
@@ -88,6 +89,7 @@ class ConanExceptionHandler {
         logConanException(exception)
         val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
         val httpResponse = HttpContextHolder.getResponse()
+        TraceHeaderUtils.setResponseHeader()
         httpResponse.contentType = MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
         httpResponse.writer.println(responseString)
     }

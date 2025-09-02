@@ -35,13 +35,13 @@ import org.springframework.util.unit.DataSize
 
 @Component
 @ConfigurationProperties(value = "job.idle-node-archive")
-class IdleNodeArchiveJobProperties(
-    override var enabled: Boolean = false,
-    override var cron: String = "0 0 0 * * ?",
-    var days: Int = 365,
-    var fileSizeThreshold: DataSize = DataSize.ofMegabytes(10),
-    var storageClass: ArchiveStorageClass = ArchiveStorageClass.DEEP_ARCHIVE,
-    var projectArchiveCredentialsKeys: Map<String, String?> = emptyMap(),
-    var ignoreStorageCredentialsKeys: Set<String> = emptySet(),
-    var ignoreRepoType: Set<String> = setOf(RepositoryType.DOCKER.name, RepositoryType.OCI.name),
-) : MongodbJobProperties()
+class IdleNodeArchiveJobProperties: MongodbJobProperties() {
+    override var enabled: Boolean = false
+    override var cron: String = "0 0 0 * * ?"
+    var days: Int = 365
+    var fileSizeThreshold: DataSize = DataSize.ofMegabytes(10)
+    var storageClass: ArchiveStorageClass = ArchiveStorageClass.DEEP_ARCHIVE
+    var projectArchiveCredentialsKeys: Map<String, String?> = emptyMap()
+    var ignoreStorageCredentialsKeys: Set<String> = emptySet()
+    var ignoreRepoType: Set<String> = setOf(RepositoryType.DOCKER.name, RepositoryType.OCI.name)
+}
