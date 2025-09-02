@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
@@ -77,7 +77,7 @@ class CreateIfAbsentService(
      * 如果repository不存在则创建
      */
     fun createRepoIfAbsent() {
-        val tenanId = ProjectServiceHelper.getTenantId()
+        val tenanId = SecurityUtils.getTenantId()
         val projectId = if (tenanId.isNullOrEmpty()) config.projectId else "$tenanId.${config.projectId}"
         val repoName = config.repoName
 
