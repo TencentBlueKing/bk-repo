@@ -257,6 +257,7 @@ class DevopsPermissionServiceImpl constructor(
                 logger.debug("need check path control [$context]")
                 return checkNodeAction(context, isDevopsProjectMember)
             }
+            logger.debug("no need check path control [$context]")
             return isDevopsProjectMember || super.checkLocalRepoOrNodePermission(context)
         }
     }
