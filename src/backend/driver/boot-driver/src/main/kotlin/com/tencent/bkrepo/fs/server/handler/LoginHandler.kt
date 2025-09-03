@@ -101,11 +101,10 @@ class LoginHandler(
                 !accessToken.isNullOrEmpty() -> accessTokenLogin(accessToken, repoName)
                 else -> ipLogin(repoName)
             }
-        } catch (e: IllegalArgumentException) {
-            logger.info("login failed: $e")
-            throw AuthenticationException()
+        } catch (e: AuthenticationException) {
+            throw e
         } catch (e: Exception) {
-            logger.error("login failed: ", e)
+            logger.warn("login failed: ${e.message}")
             throw AuthenticationException()
         }
         return ReactiveResponseBuilder.success(response)
