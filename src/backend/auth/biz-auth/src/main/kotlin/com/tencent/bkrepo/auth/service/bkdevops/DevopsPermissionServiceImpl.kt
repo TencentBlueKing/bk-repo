@@ -254,6 +254,7 @@ class DevopsPermissionServiceImpl constructor(
         with(context) {
             val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action)
             if (needCheckPathPermission(resourceType, projectId, repoName!!)) {
+                logger.debug("need check path control [$context]")
                 return checkNodeAction(context, isDevopsProjectMember)
             }
             return isDevopsProjectMember || super.checkLocalRepoOrNodePermission(context)
