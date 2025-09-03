@@ -111,7 +111,7 @@ class CIExperienceService(
     private fun executeGetRequest(
         url: String,
         user: String,
-        headers:  AppExperienceHeader,
+        headers: AppExperienceHeader,
         operationName: String
     ) {
         val request = Request.Builder()
@@ -123,10 +123,12 @@ class CIExperienceService(
         logger.info("$operationName, requestUrl: [$url]")
         okHttpClient.newCall(request).execute().use { response ->
             HttpContextHolder.getResponse().status = response.code
-            response.headers[TRANSFER_ENCODING]?.let { HttpContextHolder.getResponse().setHeader(TRANSFER_ENCODING, it) }
+            response.headers[TRANSFER_ENCODING]?.let {
+                HttpContextHolder.getResponse().setHeader(TRANSFER_ENCODING, it)
+            }
             response.headers[CONTENT_ENCODING]?.let { HttpContextHolder.getResponse().setHeader(CONTENT_ENCODING, it) }
             response.headers[CONTENT_TYPE]?.let { HttpContextHolder.getResponse().setHeader(CONTENT_TYPE, it) }
-            response.headers[CONTENT_LENGTH]?.let { HttpContextHolder.getResponse().setHeader(CONTENT_LENGTH, it)}
+            response.headers[CONTENT_LENGTH]?.let { HttpContextHolder.getResponse().setHeader(CONTENT_LENGTH, it) }
             response.body?.byteStream()?.copyTo(HttpContextHolder.getResponse().outputStream)
         }
     }
