@@ -1,11 +1,8 @@
 package com.tencent.bkrepo.repository.controller.user
 
-import com.google.common.net.HttpHeaders
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceChangeLogRequest
-import com.tencent.bkrepo.repository.pojo.experience.AppExperienceRequest
-import com.tencent.bkrepo.repository.service.experience.ExperienceService
-import org.springframework.http.MediaType
-import org.springframework.http.ResponseEntity
+import com.tencent.bkrepo.repository.pojo.experience.AppExperienceHeader
+import com.tencent.bkrepo.repository.service.experience.CIExperienceService
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
@@ -16,26 +13,24 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/experience")
 class UserExperienceController(
-    private val experienceService: ExperienceService
+    private val ciExperienceService: CIExperienceService
 ) {
 
     @PostMapping("/list")
     fun listAppExperience(
         @RequestAttribute userId: String,
-        @RequestBody request: AppExperienceRequest
-    ): ResponseEntity<Any> {
-        val response = experienceService.list(userId, request)
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
+        @RequestBody request: AppExperienceHeader
+    ) {
+        ciExperienceService.getAppExperiences(userId, request)
     }
 
     @PostMapping("/detail/{experienceId}")
     fun detail(
         @RequestAttribute userId: String,
         @PathVariable experienceId: String,
-        @RequestBody request: AppExperienceRequest
-    ): ResponseEntity<Any> {
-        val response = experienceService.getExperienceDetail(userId, experienceId, request)
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
+        @RequestBody request: AppExperienceHeader
+    ) {
+        ciExperienceService.getAppExperienceDetail(userId, experienceId, request)
     }
 
     @PostMapping("/changelog/{experienceId}")
@@ -43,18 +38,16 @@ class UserExperienceController(
         @RequestAttribute userId: String,
         @PathVariable experienceId: String,
         @RequestBody request: AppExperienceChangeLogRequest
-    ): ResponseEntity<Any> {
-        val response = experienceService.getExperienceChangeLog(userId, experienceId, request)
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
+    ) {
+        ciExperienceService.getAppExperienceChangeLog(userId, experienceId, request)
     }
 
     @PostMapping("/installPackages/{experienceId}")
     fun installPackages(
         @RequestAttribute userId: String,
         @PathVariable experienceId: String,
-        @RequestBody request: AppExperienceRequest
-    ): ResponseEntity<Any> {
-        val response = experienceService.getExperienceInstallPackages(userId, experienceId, request)
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).body(response)
+        @RequestBody request: AppExperienceHeader
+    ) {
+        ciExperienceService.getAppExperienceInstallPackages(userId, experienceId, request)
     }
 }

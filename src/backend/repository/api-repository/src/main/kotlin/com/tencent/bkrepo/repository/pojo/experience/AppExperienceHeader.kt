@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 /**
  * App体验通用请求
  */
-data class AppExperienceRequest(
+data class AppExperienceHeader(
     @get:Schema(title = "APP平台")
     val platform: String?,
     @get:Schema(title = "APP版本")
