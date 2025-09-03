@@ -26,7 +26,7 @@ class MigrateBlockNodeCollectionServiceImpl(
 ) : MigrateBlockNodeCollectionService {
 
     /**
-     * 迁移block_node_x表数据，目前仅支持停机迁移
+     * 迁移block_node_x表数据，目前仅支持停机迁移，且由于新数据只写入到新表，有问题时无法回滚
      *
      * @param oldCollectionNamePrefix 旧表名前缀
      * @param newCollectionNamePrefix 新表名前缀
@@ -73,7 +73,9 @@ class MigrateBlockNodeCollectionServiceImpl(
         iterateCollection<TBlockNode>(Query(), oldCollection, startId, BATCH_SIZE) {
             count++
             val newCollection = newCollectionName(newCollectionNamePrefix, newShardingFields, newShardingCount, it)
-            mongoTemplate.insert(it, newCollection)
+            if (!mongoTemplate.exists(Query(Criteria.where(ID).isEqualTo(it.id)), newCollection)) {
+                mongoTemplate.insert(it, newCollection)
+            }
         }
         val elapsed = System.currentTimeMillis() - start
         logger.info("migrate collection[$oldCollection] finished, total count[$count], elapsed $elapsed ms")
@@ -100,11 +102,12 @@ class MigrateBlockNodeCollectionServiceImpl(
             val newCollection = newCollectionName(newCollectionNamePrefix, newShardingFields, newShardingCount, old)
             val query = Query.query(Criteria.where(ID).isEqualTo(old.id))
             val new = mongoTemplate.findOne(query, TBlockNode::class.java, newCollection)
+            // 数据在新表中有而旧表中没有的情况暂不处理，避免遍历新表导致耗时过久，迁移过程中需停止BlockNode删除任务
             if (new == null) {
-                logger.info("block node[${old.id}] missed, will insert to new collection[$newCollection]")
-                mongoTemplate.insert(old, newCollection)
+                logger.info("block node[${old.id}] missed, will be inserted, collection[$newCollection]")
+                mongoTemplate.save(old, newCollection)
             } else if (new != old) {
-                logger.info("block node[${old.id}] changed, will reinsert to new collection[$newCollection]")
+                logger.info("block node[${old.id}] changed, will be updated, collection[$newCollection]")
                 mongoTemplate.save(old, newCollection)
             }
         }
@@ -152,15 +155,17 @@ class MigrateBlockNodeCollectionServiceImpl(
         val oldCollectionStartIdMap = HashMap<String, ObjectId>(newShardingCount)
         for (i in 0 until newShardingCount) {
             val newCollection = "${newCollectionNamePrefix}_$i"
-            val query = Query().with(Sort.by(ID).descending()).limit(1)
+            // 取前10个，尽量获取到每个old collection迁移的起始id
+            val query = Query().with(Sort.by(ID).descending()).limit(10)
             query.fields().include(ID, TBlockNode::repoName.name)
-            val latest = mongoTemplate.find<Map<String, Any?>>(query, newCollection).firstOrNull()
-            if (latest != null) {
-                val oldCollection = oldCollectionName(oldCollectionNamePrefix, latest)
-                val latestIdOfNewCollection = latest[ID] as ObjectId
+            mongoTemplate.find<Map<String, Any?>>(query, newCollection).forEach { migratedBlockNode ->
+                val oldCollection = oldCollectionName(oldCollectionNamePrefix, migratedBlockNode)
+                val migratedBlockId = migratedBlockNode[ID] as ObjectId
                 val currentId = oldCollectionStartIdMap[oldCollection]
-                if (currentId == null || currentId < latestIdOfNewCollection) {
-                    oldCollectionStartIdMap[oldCollection] = latestIdOfNewCollection
+                if (currentId == null || currentId < migratedBlockId) {
+                    if (mongoTemplate.exists(Query(Criteria.where(ID).isEqualTo(migratedBlockId)), oldCollection)) {
+                        oldCollectionStartIdMap[oldCollection] = migratedBlockId
+                    }
                 }
             }
         }
