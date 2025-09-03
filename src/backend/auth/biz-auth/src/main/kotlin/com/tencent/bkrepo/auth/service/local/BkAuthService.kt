@@ -6,7 +6,7 @@ import com.tencent.bkrepo.auth.pojo.BkAuthUserResponse
 import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.util.JsonUtils
-import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.api.util.toJson
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,10 +26,10 @@ class BkAuthService @Autowired constructor(private val bkAuthConfig: BkAuthConfi
         if (tenantId == null) return false
         val url =
             "http://${bkAuthConfig.bkAuthServer}/api/bk-user/prod/api/v3/open/tenant/users/-/display_info/?bk_usernames=$userId"
-        val authHeader = mapOf(
+        val authHeader = toJson(mapOf(
             "bk_app_code" to bkAuthConfig.bkAppCode,
             "bk_app_secret" to bkAuthConfig.bkAppSecret
-        ).toJsonString()
+        ))
         try {
             val request = Request.Builder().url(url).header("X-Bkapi-Authorization", authHeader)
                 .header("X-Bk-Tenant-Id", tenantId).get().build()
