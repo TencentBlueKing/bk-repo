@@ -107,7 +107,7 @@ class UserController @Autowired constructor(
     fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean> {
         // 限制创建为admin用户
         request.admin = false
-        preCheckUserInProject(AuthPermissionType.PROJECT, request.projectId, null)
+        preCheckProjectAdmin(request.projectId)
         userService.createUserToProject(request)
         val createRoleRequest = buildProjectAdminRequest(request.projectId)
         val roleId = roleService.createRole(createRoleRequest)
@@ -120,7 +120,7 @@ class UserController @Autowired constructor(
     fun createUserToRepo(@RequestBody request: CreateUserToRepoRequest): Response<Boolean> {
         // 限制创建为admin用户
         request.admin = false
-        preCheckUserInProject(AuthPermissionType.PROJECT, request.projectId, null)
+        preCheckProjectAdmin(request.projectId)
         userService.createUserToRepo(request)
         val createRoleRequest = buildRepoAdminRequest(request.projectId, request.repoName)
         val roleId = roleService.createRole(createRoleRequest)
