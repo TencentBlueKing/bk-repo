@@ -369,6 +369,7 @@ class PermissionHelper constructor(
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
             }
             val personalPathCheck = checkPersonalPath(userId, projectId, repoName!!, path!!)
+            logger.debug("checkNodeActionWithOutCtrl [$context, $isProjectUser , $personalPathCheck]")
             if (personalPathCheck != null) return personalPathCheck
         }
         return isProjectUser
