@@ -263,7 +263,7 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     private fun needCheckPathPermission(resourceType: String, projectId: String, repoName: String): Boolean {
-        return resourceType == NODE.name && needNodeCheck(projectId, repoName)
+        return repoName == PERSONAL_PATH_REPO || (resourceType == NODE.name && needNodeCheck(projectId, repoName))
     }
 
     private fun checkDevopsPipelinePermission(context: CheckPermissionContext): Boolean {
@@ -305,6 +305,7 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     companion object {
+        private const val PERSONAL_PATH_REPO = "lsync"
         private val logger = LoggerFactory.getLogger(DevopsPermissionServiceImpl::class.java)
     }
 }
