@@ -219,10 +219,11 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun parseDependencies(versionMetadata: NpmVersionMetadata): MutableList<DependenciesInfo> {
         val dependenciesList: MutableList<DependenciesInfo> = mutableListOf()
         if (versionMetadata.dependencies != null) {
-            versionMetadata.dependencies!!.entries.forEach { (key, value) ->
+            (versionMetadata.dependencies!! as Map<String, Any>).entries.forEach { (key, value) ->
                 dependenciesList.add(
                     DependenciesInfo(
                         key,
@@ -234,10 +235,11 @@ class NpmWebServiceImpl : NpmWebService, AbstractNpmService() {
         return dependenciesList
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun parseDevDependencies(versionMetadata: NpmVersionMetadata): MutableList<DependenciesInfo> {
         val devDependenciesList: MutableList<DependenciesInfo> = mutableListOf()
         if (versionMetadata.devDependencies != null) {
-            versionMetadata.devDependencies!!.entries.forEach { (key, value) ->
+            (versionMetadata.devDependencies!! as Map<String, Any>).entries.forEach { (key, value) ->
                 devDependenciesList.add(
                     DependenciesInfo(
                         key,
