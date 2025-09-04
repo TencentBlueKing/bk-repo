@@ -162,10 +162,13 @@ class MigrateBlockNodeCollectionServiceImpl(
                 val oldCollection = oldCollectionName(oldCollectionNamePrefix, migratedBlockNode)
                 val migratedBlockId = migratedBlockNode[ID] as ObjectId
                 val currentId = oldCollectionStartIdMap[oldCollection]
-                if (currentId == null || currentId < migratedBlockId) {
-                    if (mongoTemplate.exists(Query(Criteria.where(ID).isEqualTo(migratedBlockId)), oldCollection)) {
-                        oldCollectionStartIdMap[oldCollection] = migratedBlockId
-                    }
+                var shouldUpdate = currentId == null || currentId < migratedBlockId
+                shouldUpdate = shouldUpdate && mongoTemplate.exists(
+                    Query(Criteria.where(ID).isEqualTo(migratedBlockId)),
+                    oldCollection
+                )
+                if (shouldUpdate) {
+                    oldCollectionStartIdMap[oldCollection] = migratedBlockId
                 }
             }
         }
