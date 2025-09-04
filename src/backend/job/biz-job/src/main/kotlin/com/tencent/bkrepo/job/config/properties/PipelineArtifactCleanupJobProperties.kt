@@ -37,8 +37,8 @@ import org.springframework.stereotype.Component
  */
 @Component
 @ConfigurationProperties("job.pipeline-artifact-cleanup")
-class PipelineArtifactCleanupJobProperties(
-    override var cron: String = "0 0 0 1 1/1 ?",
-    override var enabled: Boolean = false,
-    var reservedFrequency: Long = 10000,
-) : MongodbJobProperties(enabled)
+class PipelineArtifactCleanupJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 0 1 1/1 ?"
+    override var enabled: Boolean = false
+    var reservedFrequency: Long = 10000
+}

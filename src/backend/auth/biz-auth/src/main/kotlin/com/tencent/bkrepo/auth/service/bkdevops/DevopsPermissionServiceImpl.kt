@@ -254,14 +254,16 @@ class DevopsPermissionServiceImpl constructor(
         with(context) {
             val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action)
             if (needCheckPathPermission(resourceType, projectId, repoName!!)) {
+                logger.debug("need check path control [$context]")
                 return checkNodeAction(context, isDevopsProjectMember)
             }
+            logger.debug("no need check path control [$context]")
             return isDevopsProjectMember || super.checkLocalRepoOrNodePermission(context)
         }
     }
 
     private fun needCheckPathPermission(resourceType: String, projectId: String, repoName: String): Boolean {
-        return resourceType == NODE.name && needNodeCheck(projectId, repoName)
+        return repoName == PERSONAL_PATH_REPO || (resourceType == NODE.name && needNodeCheck(projectId, repoName))
     }
 
     private fun checkDevopsPipelinePermission(context: CheckPermissionContext): Boolean {
@@ -303,6 +305,7 @@ class DevopsPermissionServiceImpl constructor(
     }
 
     companion object {
+        private const val PERSONAL_PATH_REPO = "lsync"
         private val logger = LoggerFactory.getLogger(DevopsPermissionServiceImpl::class.java)
     }
 }

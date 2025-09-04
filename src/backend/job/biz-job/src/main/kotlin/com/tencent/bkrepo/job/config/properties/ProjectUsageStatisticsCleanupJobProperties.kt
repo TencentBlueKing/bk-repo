@@ -32,10 +32,10 @@ import org.springframework.stereotype.Component
 
 @Component
 @ConfigurationProperties("job.project-usage-statistics-cleanup")
-class ProjectUsageStatisticsCleanupJobProperties(
-    override var cron: String = "0 0 4 * * ?",
+class ProjectUsageStatisticsCleanupJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 4 * * ?"
     /**
      * 数据保留天数
      */
-    var keepDays: Long = 90L,
-) : MongodbJobProperties()
+    var keepDays: Long = 90L
+}

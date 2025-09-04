@@ -30,6 +30,7 @@ package com.tencent.bkrepo.analyst.model
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
+import org.springframework.util.unit.DataSize
 import java.time.LocalDateTime
 
 @Document("scanner")
@@ -76,4 +77,8 @@ data class TScanner(
      * 支持扫描的类型[com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType]
      */
     val supportScanTypes: List<String> = emptyList(),
+    /**
+     * 扫描速率
+     */
+    val scanRate: Long? = DataSize.ofMegabytes(20).toBytes()
 )

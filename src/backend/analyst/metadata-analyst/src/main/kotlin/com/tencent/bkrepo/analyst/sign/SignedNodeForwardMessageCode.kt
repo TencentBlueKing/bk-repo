@@ -33,7 +33,8 @@ enum class SignedNodeForwardMessageCode(
     private val key: String
 ) : MessageCode {
 
-    SIGNED_NODE_NOT_FOUND("正在准备下载资源，请稍后重试"),
+    SIGN_TASK_IN_QUEUE("sign.task.in-queue"),
+    SIGN_TASK_EXECUTING("sign.task.executing"),
     ;
 
     override fun getBusinessCode() = ordinal + 1

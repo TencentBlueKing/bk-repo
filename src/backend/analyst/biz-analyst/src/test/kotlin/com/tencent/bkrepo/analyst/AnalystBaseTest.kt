@@ -27,12 +27,18 @@
 
 package com.tencent.bkrepo.analyst
 
+import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
 @Import(TaskExecutionAutoConfiguration::class)
 @ComponentScan("com.tencent.bkrepo.analyst.configuration", "com.tencent.bkrepo.common.mongo")
-open class AnalystBaseTest
+open class AnalystBaseTest {
+
+    @MockitoBean
+    lateinit var scannerPermissionCheckHandler: ScannerPermissionCheckHandler
+}
