@@ -137,7 +137,8 @@ class FederationRepositoryServiceImpl(
         val federationRepository = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId)
             .firstOrNull() ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, federationId)
 
-        val lock = getLock(projectId, repoName, federationId) ?: {
+        val lock = getLock(projectId, repoName, federationId)
+        if (lock == null) {
             logger.info("Full sync federation repository is still running!")
             throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_FULL_SYNC_RUNNING)
         }
