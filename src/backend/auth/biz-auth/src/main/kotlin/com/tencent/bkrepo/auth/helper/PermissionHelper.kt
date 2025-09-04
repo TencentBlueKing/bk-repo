@@ -373,7 +373,7 @@ class PermissionHelper constructor(
             val personalPathCheck = checkPersonalPath(userId, projectId, repoName!!, path!!)
             if (personalPathCheck != null) {
                 return personalPathCheck
-            } else if (path!!.startsWith(defaultPersonalPrefix)) {
+            } else if (path!!.startsWith(defaultPersonalPrefix) && path != defaultPersonalPrefix) {
                 return false
             }
         }
