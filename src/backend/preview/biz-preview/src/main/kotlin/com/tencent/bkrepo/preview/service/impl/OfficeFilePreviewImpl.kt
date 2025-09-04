@@ -41,9 +41,6 @@ import com.tencent.bkrepo.preview.service.FileTransferService
 import com.tencent.bkrepo.preview.service.OfficeToPdfService
 import com.tencent.bkrepo.preview.service.cache.impl.PreviewFileCacheServiceImpl
 import com.tencent.bkrepo.preview.utils.EncodingDetects
-import org.jodconverter.core.office.OfficeException
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.FileInputStream
@@ -52,6 +49,9 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
+import org.jodconverter.core.office.OfficeException
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 
 /**
  * 处理office文件

@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.helm.pojo.HelmErrorResponse
@@ -116,6 +117,7 @@ class  HelmExceptionHandler {
         logHelmException(exception, responseObject)
         val responseString = JsonUtils.objectMapper.writeValueAsString(responseObject)
         val response = HttpContextHolder.getResponse()
+        TraceHeaderUtils.setResponseHeader()
         response.contentType = "application/json; charset=utf-8"
         response.writer.println(responseString)
     }

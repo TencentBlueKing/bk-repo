@@ -65,6 +65,7 @@ class PermissionHelper constructor(
     private val permissionDao: PermissionDao,
     private val personalPathDao: PersonalPathDao
 ) {
+
     // check user is existed
     private fun checkUserExistBatch(idList: List<String>) {
         idList.forEach {
@@ -188,7 +189,7 @@ class PermissionHelper constructor(
 
     fun checkProjectReadAction(request: CheckPermissionContext, isProjectUser: Boolean): Boolean {
         val readeOrdownload = request.action == READ.name || request.action == DOWNLOAD.name
-        return  readeOrdownload && isProjectUser
+        return readeOrdownload && isProjectUser
     }
 
     fun getPermissionPathFromConfig(
@@ -355,6 +356,7 @@ class PermissionHelper constructor(
 
     fun checkNodeActionWithOutCtrl(context: CheckPermissionContext, isProjectUser: Boolean): Boolean {
         with(context) {
+            logger.debug("checkNodeActionWithOutCtrl [$context]")
             if (resourceType != NODE.name || path == null) return false
             val result = permissionDao.listInPermission(projectId, repoName!!, userId, resourceType, roles)
             result.forEach {
@@ -369,13 +371,18 @@ class PermissionHelper constructor(
                 if (checkIncludePatternAction(it.includePattern, path!!, it.actions, action)) return false
             }
             val personalPathCheck = checkPersonalPath(userId, projectId, repoName!!, path!!)
-            if (personalPathCheck != null) return personalPathCheck
+            if (personalPathCheck != null) {
+                return personalPathCheck
+            } else if (path!!.startsWith(defaultPersonalPrefix)) {
+                return false
+            }
         }
         return isProjectUser
     }
 
     fun checkNodeActionWithCtrl(context: CheckPermissionContext): Boolean {
         with(context) {
+            logger.debug("checkNodeActionWithCtrl [$context]")
             if (resourceType != NODE.name || path == null) return false
             val result = permissionDao.listInPermission(projectId, repoName!!, userId, resourceType, roles)
             result.forEach {
@@ -413,7 +420,12 @@ class PermissionHelper constructor(
             .any { role -> role.projectId == projectId && role.roleId == PROJECT_VIEWER_ID }
     }
 
+    fun getDefaultPersonalPrefix(): String {
+        return defaultPersonalPrefix
+    }
+
     companion object {
+        const val defaultPersonalPrefix = "/Personal"
         private val logger = LoggerFactory.getLogger(PermissionHelper::class.java)
     }
 }

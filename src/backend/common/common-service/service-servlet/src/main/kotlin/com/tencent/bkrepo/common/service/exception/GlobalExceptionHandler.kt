@@ -32,9 +32,11 @@
 package com.tencent.bkrepo.common.service.exception
 
 import com.fasterxml.jackson.module.kotlin.MissingKotlinParameterException
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.api.exception.TooManyRequestsException
@@ -43,6 +45,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
+import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -53,6 +56,9 @@ import org.springframework.web.bind.MissingRequestHeaderException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.context.request.ServletRequestAttributes
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException
 import org.springframework.web.context.request.async.DeferredResult
 import org.springframework.web.method.annotation.HandlerMethodValidationException
@@ -188,8 +194,22 @@ class GlobalExceptionHandler : AbstractExceptionHandler() {
         return response(errorCodeException)
     }
 
+    // https://github.com/spring-projects/spring-framework/issues/33225
+    @ExceptionHandler(AsyncRequestNotUsableException::class)
+    fun handleException(exception: AsyncRequestNotUsableException): Response<Void>? {
+        val request = (RequestContextHolder.getRequestAttributes() as? ServletRequestAttributes)?.request
+        val userId = request?.getAttribute(USER_KEY) ?: ANONYMOUS_USER
+        logger.warn("User[$userId] async request[${request?.requestURI}] not usable: ${exception.message}")
+        return null
+    }
+
     @ExceptionHandler(Exception::class)
     fun handleException(exception: Exception): Response<Void> {
         return response(exception)
+    }
+
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
     }
 }

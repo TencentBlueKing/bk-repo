@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 @ConfigurationProperties("repository")
-data class RepositoryProperties(
+class RepositoryProperties(
     var deletedNodeReserveDays: Long = 14,
     var defaultStorageCredentialsKey: String? = null,
     var listCountLimit: Long = 100000L,
@@ -66,4 +66,12 @@ data class RepositoryProperties(
      * 系统元数据标签
      */
     var systemMetadataLabels: List<String> = emptyList(),
+    /**
+     * 更新流水线制品快照url
+     */
+    var updateArtifactUrl: String = "",
+    /**
+     * 更新流水线制品快照token
+     */
+    var updateArtifactToken: String = ""
 )

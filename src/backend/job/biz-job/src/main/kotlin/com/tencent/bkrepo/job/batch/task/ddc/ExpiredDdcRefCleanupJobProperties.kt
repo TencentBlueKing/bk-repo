@@ -34,7 +34,7 @@ import java.time.Duration
 
 @Component
 @ConfigurationProperties(value = "job.expired-ddc-ref-cleanup")
-class ExpiredDdcRefCleanupJobProperties(
-    override var cron: String = "0 0 0 * * ?",
-    var expired: Duration = Duration.ofDays(14),
-) : MongodbJobProperties()
+class ExpiredDdcRefCleanupJobProperties : MongodbJobProperties() {
+    override var cron: String = "0 0 0 * * ?"
+    var expired: Duration = Duration.ofDays(14)
+}

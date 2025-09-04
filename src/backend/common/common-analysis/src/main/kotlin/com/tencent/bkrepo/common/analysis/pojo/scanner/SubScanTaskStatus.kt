@@ -83,6 +83,7 @@ enum class SubScanTaskStatus {
 
     companion object {
         val RUNNING_STATUS = listOf(CREATED.name, PULLED.name, EXECUTING.name)
+        val UNFINISH_STATUS = listOf(BLOCKED.name, CREATED.name, PULLED.name)
 
         /**
          * 判断[status]是否是已结束的状态
