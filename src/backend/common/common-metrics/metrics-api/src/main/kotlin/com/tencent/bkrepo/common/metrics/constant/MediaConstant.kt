@@ -29,7 +29,17 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.webhook.metrics
+package com.tencent.bkrepo.common.metrics.constant
 
-const val WEBHOOK_EXECUTING_COUNT = "webhook.executing.count"
-const val WEBHOOK_EXECUTING_COUNT_DESC = "webhook执行中数量"
+const val PACKET_RECV_COUNTER = "packet.recv.count"
+const val PACKET_RECV_COUNTER_DESC = "包接受数量"
+const val PACKET_HANDLER_COUNTER = "packet.handler.count"
+const val PACKET_HANDLER_COUNTER_DESC = "包写入数量"
+const val PACKET_HANDLER_SIZE_COUNTER = "packet.handler.size.count"
+const val PACKET_HANDLER_SIZE_COUNTER_DESC = "包写入大小"
+const val PACKET_LOSS_COUNTER = "packet.loss.count"
+const val PACKET_LOSS_COUNTER_DESC = "丢包数量"
+const val PACKET_QUEUE_COUNTER = "packet.queue.count"
+const val PACKET_QUEUE_COUNTER_DESC = "包队列大小"
+const val RECORDING_COUNTER = "recording.count"
+const val RECORDING_COUNTER_DESC = "正在录制数量"

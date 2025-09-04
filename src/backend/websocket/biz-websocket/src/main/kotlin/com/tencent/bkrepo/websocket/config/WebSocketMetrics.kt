@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.websocket.config
 
+import com.tencent.bkrepo.common.metrics.constant.WEBSOCKET_CONNECTION_COUNT
+import com.tencent.bkrepo.common.metrics.constant.WEBSOCKET_CONNECTION_COUNT_DESC
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
@@ -44,8 +46,4 @@ class WebSocketMetrics: MeterBinder {
             .register(registry)
     }
 
-    companion object {
-        private const val WEBSOCKET_CONNECTION_COUNT = "websocket_connection_count"
-        private const val WEBSOCKET_CONNECTION_COUNT_DESC = "websocket connection count"
-    }
 }

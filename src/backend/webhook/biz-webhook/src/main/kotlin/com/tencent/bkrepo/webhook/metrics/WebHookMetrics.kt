@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.webhook.metrics
 
+import com.tencent.bkrepo.common.metrics.constant.WEBHOOK_EXECUTING_COUNT
+import com.tencent.bkrepo.common.metrics.constant.WEBHOOK_EXECUTING_COUNT_DESC
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder

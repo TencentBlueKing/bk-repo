@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.metrics
+package com.tencent.bkrepo.common.metrics.constant
 
 const val ARTIFACT_UPLOADING_COUNT = "artifact.uploading.count"
 const val ARTIFACT_UPLOADING_COUNT_DESC = "构件实时上传量"

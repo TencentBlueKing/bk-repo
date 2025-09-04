@@ -42,7 +42,8 @@ dependencies {
     api(project(":common:common-storage:storage-service"))
     api(project(":common:common-ratelimiter"))
     api(project(":common:common-stream"))
-    api(project(":common:common-metrics-push"))
+    api(project(":common:common-metrics:metrics-push"))
+    api(project(":common:common-metrics:metrics-api"))
     api(project(":common:common-metadata:metadata-service"))
     api(project(":common:common-mongo"))
 

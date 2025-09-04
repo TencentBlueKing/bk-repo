@@ -27,18 +27,18 @@
 
 package com.tencent.bkrepo.helm.metrics
 
-import com.tencent.bkrepo.helm.constants.HELM_EVENT_TASK_ACTIVE_COUNT
-import com.tencent.bkrepo.helm.constants.HELM_EVENT_TASK_ACTIVE_COUNT_DESC
-import com.tencent.bkrepo.helm.constants.HELM_EVENT_TASK_COMPLETED_COUNT
-import com.tencent.bkrepo.helm.constants.HELM_EVENT_TASK_COMPLETED_COUNT_DESC
-import com.tencent.bkrepo.helm.constants.HELM_EVENT_TASK_QUEUE_SIZE
-import com.tencent.bkrepo.helm.constants.HELM_EVENT_TASK_QUEUE_SIZE_DESC
-import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT
-import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT_DESC
-import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT
-import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT_DESC
-import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_QUEUE_SIZE
-import com.tencent.bkrepo.helm.constants.HELM_INDEX_REFRESH_TASK_QUEUE_SIZE_DESC
+import com.tencent.bkrepo.common.metrics.constant.HELM_EVENT_TASK_ACTIVE_COUNT
+import com.tencent.bkrepo.common.metrics.constant.HELM_EVENT_TASK_ACTIVE_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.HELM_EVENT_TASK_COMPLETED_COUNT
+import com.tencent.bkrepo.common.metrics.constant.HELM_EVENT_TASK_COMPLETED_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.HELM_EVENT_TASK_QUEUE_SIZE
+import com.tencent.bkrepo.common.metrics.constant.HELM_EVENT_TASK_QUEUE_SIZE_DESC
+import com.tencent.bkrepo.common.metrics.constant.HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT
+import com.tencent.bkrepo.common.metrics.constant.HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT
+import com.tencent.bkrepo.common.metrics.constant.HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.HELM_INDEX_REFRESH_TASK_QUEUE_SIZE
+import com.tencent.bkrepo.common.metrics.constant.HELM_INDEX_REFRESH_TASK_QUEUE_SIZE_DESC
 import com.tencent.bkrepo.helm.pool.EventHandlerThreadPoolExecutor
 import com.tencent.bkrepo.helm.pool.HelmThreadPoolExecutor
 import io.micrometer.core.instrument.Gauge

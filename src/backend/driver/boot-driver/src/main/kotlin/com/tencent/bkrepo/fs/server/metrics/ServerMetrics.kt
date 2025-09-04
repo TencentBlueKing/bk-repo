@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.fs.server.metrics
 
+import com.tencent.bkrepo.common.metrics.constant.FILE_DOWNLOAD_COUNT
+import com.tencent.bkrepo.common.metrics.constant.FILE_UPLOAD_COUNT
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
@@ -46,8 +48,4 @@ class ServerMetrics : MeterBinder {
             .register(registry)
     }
 
-    companion object {
-        const val FILE_DOWNLOAD_COUNT = "artifact.downloading.count"
-        const val FILE_UPLOAD_COUNT = "artifact.uploading.count"
-    }
 }

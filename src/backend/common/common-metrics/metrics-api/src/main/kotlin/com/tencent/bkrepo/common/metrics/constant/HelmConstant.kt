@@ -29,34 +29,22 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.metrics
+package com.tencent.bkrepo.common.metrics.constant
 
-import com.tencent.bkrepo.common.metrics.constant.COS_ASYNC_UPLOADING_SIZE
-import com.tencent.bkrepo.common.metrics.constant.COS_ASYNC_UPLOADING_SIZE_DESC
-import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.MeterBinder
-import org.springframework.stereotype.Component
+const val HELM_EVENT_TASK_ACTIVE_COUNT = "helm.event.task.active.count"
+const val HELM_EVENT_TASK_ACTIVE_COUNT_DESC = "helm事件处理实时执行数量"
 
-@Suppress("LateinitUsage")
-@Component
-class CosUploadMetrics : MeterBinder {
+const val HELM_EVENT_TASK_QUEUE_SIZE = "helm.event.task.queue.size"
+const val HELM_EVENT_TASK_QUEUE_SIZE_DESC = "helm事件处理线程池等待队列大小"
 
-    override fun bindTo(meterRegistry: MeterRegistry) {
-        Companion.meterRegistry = meterRegistry
-    }
+const val HELM_EVENT_TASK_COMPLETED_COUNT = "helm.event.task.completed.count"
+const val HELM_EVENT_TASK_COMPLETED_COUNT_DESC = "helm事件处理已完成的任务数量"
 
-    companion object {
-        lateinit var meterRegistry: MeterRegistry
-        private const val BYTES = "bytes"
+const val HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT = "helm.index.refresh.task.active.count"
+const val HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT_DESC = "helm index刷新实时执行数量"
 
-        fun getUploadingCounter(): Counter {
-            return Counter.builder(COS_ASYNC_UPLOADING_SIZE)
-                .description(COS_ASYNC_UPLOADING_SIZE_DESC)
-                .baseUnit(BYTES)
-                .register(meterRegistry)
-        }
+const val HELM_INDEX_REFRESH_TASK_QUEUE_SIZE = "helm.index.refresh.task.queue.size"
+const val HELM_INDEX_REFRESH_TASK_QUEUE_SIZE_DESC = "helm index刷新线程池等待队列大小"
 
-    }
-
-}
+const val HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT = "helm.index.refresh.task.completed.count"
+const val HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT_DESC = "helm index刷新已完成的任务数量"

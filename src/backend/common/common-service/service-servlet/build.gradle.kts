@@ -47,6 +47,7 @@ dependencies {
     api("com.github.ulisesbocchio:jasypt-spring-boot-starter:${Versions.Jasypt}")
 
     api(project(":common:common-service:service-base"))
+    api(project(":common:common-metrics:metrics-api"))
     api("org.springframework.boot:spring-boot-starter-aop")
     api("org.springframework.boot:spring-boot-actuator-autoconfigure")
 }
