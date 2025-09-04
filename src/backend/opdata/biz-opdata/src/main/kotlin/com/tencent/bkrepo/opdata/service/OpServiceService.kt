@@ -40,14 +40,11 @@ import com.tencent.bkrepo.opdata.client.plugin.PluginClient
 import com.tencent.bkrepo.opdata.pojo.bandwidth.BandwidthInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryClient
+import com.tencent.bkrepo.opdata.registry.ServiceDiscoveryFactory
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.cloud.client.ServiceInstance
-import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
@@ -57,8 +54,8 @@ import org.springframework.stereotype.Service
  */
 @Service
 class OpServiceService @Autowired constructor(
-    private val discoveryClient: DiscoveryClient,
-    private val registryClientProvider: ObjectProvider<RegistryClient>,
+    private val serviceDiscoveryFactory: ServiceDiscoveryFactory,
+    private val registryClient: RegistryClient,
     private val artifactMetricsClient: ArtifactMetricsClient,
     private val pluginClient: PluginClient,
     private val executor: ThreadPoolTaskExecutor,
@@ -68,51 +65,24 @@ class OpServiceService @Autowired constructor(
      * 获取服务列表
      */
     fun listServices(): List<ServiceInfo> {
-        return if(checkConsulAlive()) {
-            registryClient().services()
-        } else{
-            discoveryClient.services.map { service->
-                ServiceInfo(
-                    name = service,
-                    instances = instances(service)
-                )
-            }
-        }
+        return registryClient.services()
     }
 
     /**
      * 获取服务的所有实例
      */
     fun instances(serviceName: String): List<InstanceInfo> {
-        if (checkConsulAlive()) {
-            return registryClient().instances(serviceName).map { instance ->
-                executor.submit<InstanceInfo> {
-                    instance.copy(detail = instanceDetail(instance))
-                }
-            }.map {
-                it.get()
+        return registryClient.instances(serviceName).map { instance ->
+            executor.submit<InstanceInfo> {
+                instance.copy(detail = instanceDetail(instance))
             }
-        } else {
-            return discoveryClient.getInstances(serviceName).map {
-                buildInfo(it, serviceName).copy(detail = instanceDetail(buildInfo(it, serviceName)))
-            }
-        }
-    }
-
-    private fun buildInfo(serviceInstance: ServiceInstance, serviceName: String): InstanceInfo {
-        with(serviceInstance) {
-            return InstanceInfo(
-                id = serviceId,
-                serviceName = serviceName,
-                host = host,
-                port = port,
-                status = InstanceStatus.RUNNING,
-            )
+        }.map {
+            it.get()
         }
     }
 
     fun instance(serviceName: String, instanceId: String): InstanceInfo {
-        val instanceInfo = registryClient().instanceInfo(serviceName, instanceId)
+        val instanceInfo = registryClient.instanceInfo(serviceName, instanceId)
         return instanceInfo.copy(detail = instanceDetail(instanceInfo))
     }
 
@@ -131,13 +101,7 @@ class OpServiceService @Autowired constructor(
      * @param down true: 下线， false: 上线
      */
     fun changeInstanceStatus(serviceName: String, instanceId: String, down: Boolean): InstanceInfo {
-        if (!checkConsulAlive()) {
-            val match =
-                discoveryClient.getInstances(serviceName).first { instance -> instance.instanceId.equals(instanceId) }
-            return buildInfo(match, serviceName)
-                .copy(detail = instanceDetail(buildInfo(match, serviceName)))
-        }
-        val instanceInfo = registryClient().maintenance(serviceName, instanceId, down)
+        val instanceInfo = registryClient.maintenance(serviceName, instanceId, down)
         return instanceInfo.copy(detail = instanceDetail(instanceInfo))
     }
 
@@ -277,12 +241,8 @@ class OpServiceService @Autowired constructor(
         )
     }
 
-    private fun registryClient(): RegistryClient {
-        return registryClientProvider.first()
-    }
-
     fun checkConsulAlive() : Boolean {
-        return registryClientProvider.firstOrNull() != null
+        return serviceDiscoveryFactory.isConsulEnabled()
     }
 
     companion object {
