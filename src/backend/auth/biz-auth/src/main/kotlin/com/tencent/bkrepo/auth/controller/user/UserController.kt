@@ -35,7 +35,6 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.BKREPO_TICKET
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.message.AuthMessageCode
-import com.tencent.bkrepo.auth.pojo.enums.AuthPermissionType
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
