@@ -27,14 +27,18 @@
 
 package com.tencent.bkrepo.common.mongo.dao.util
 
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper
 import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.springframework.data.mongodb.core.query.Criteria
+import org.springframework.data.mongodb.core.query.Query
+import java.lang.reflect.Field
 import java.time.LocalDateTime
 
 class MonthRangeShardingUtilsTest {
 
-    @Test
+    @org.junit.jupiter.api.Test
     fun testShardingSequence() {
         Assertions.assertEquals(
             202112,
@@ -44,5 +48,19 @@ class MonthRangeShardingUtilsTest {
             202201,
             MonthRangeShardingUtils.shardingSequenceFor(LocalDateTime.parse("2022-01-01T11:01:24.000"), -1)
         )
+
+        val now = LocalDateTime.parse("2021-12-01T00:01:24.123")
+        val criteria = Criteria.where("createdDate").gte(now).lt(now.plusMonths(1L))
+        val query = Query(criteria)
+        val shardingFields = LinkedHashMap<String, Field>()
+        shardingFields["createdDate"] = Test::class.java.getDeclaredField("id")
+        val shardingValues = MongoDaoHelper.shardingValuesOf(query.queryObject, shardingFields)!!
+        var result = MonthRangeShardingUtils.shardingSequencesFor(shardingValues.first(), -1)
+        assertTrue(result.size == 2)
+        assertTrue(result.contains(202112) && result.contains(202201))
+        result = MonthRangeShardingUtils.shardingSequencesFor(shardingValues, -1)
+        assertTrue(result.contains(202112) && result.contains(202201))
     }
+
+    private class Test(val id: String)
 }
