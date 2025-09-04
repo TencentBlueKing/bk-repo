@@ -87,10 +87,15 @@ object MongoDaoHelper {
      *
      * @param clazz 数据类
      * @param shardingUtils 分片数计算工具类
+     * @param customShardingCount 自定义分表数
      *
      * @return 分表数量
      */
-    fun determineShardingCount(clazz: Class<*>, shardingUtils: ShardingUtils): Int {
+    fun determineShardingCount(clazz: Class<*>, shardingUtils: ShardingUtils, customShardingCount: Int?): Int {
+        if (customShardingCount != null) {
+            return customShardingCount
+        }
+
         val fieldsWithShardingKey = getFieldsListWithAnnotation(clazz, ShardingKey::class.java)
         if (fieldsWithShardingKey.isNotEmpty()) {
             val shardingKey = AnnotationUtils.getAnnotation(fieldsWithShardingKey[0], ShardingKey::class.java)!!

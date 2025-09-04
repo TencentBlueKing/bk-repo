@@ -68,7 +68,7 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     /**
      * 分表Field，key为列名
      */
-    protected val shardingFields: LinkedHashMap<String, Field>
+    protected lateinit var shardingFields: LinkedHashMap<String, Field>
 
     /**
      * 分表数
@@ -82,16 +82,10 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         determineShardingUtils()
     }
 
-    init {
-        @Suppress("LeakingThis")
-        this.shardingFields = determineShardingFields(classType, customShardingColumns())
-        @Suppress("LeakingThis")
-        this.shardingCount = determineShardingCount(classType, shardingUtils)
-    }
-
     @PostConstruct
     private fun init() {
-        updateShardingCountIfNecessary()
+        this.shardingFields = determineShardingFields(classType, customShardingColumns())
+        this.shardingCount = determineShardingCount(classType, shardingUtils, customShardingCount())
         ensureIndex()
     }
 
@@ -138,14 +132,12 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         return collectionName + "_" + sequence
     }
 
-    protected open fun updateShardingCountIfNecessary() {
-        if (fixedShardingCount != null) {
-            this.shardingCount = fixedShardingCount
-        }
-    }
-
     protected open fun customShardingColumns(): List<String> {
         return emptyList()
+    }
+
+    protected open fun customShardingCount(): Int? {
+        return fixedShardingCount
     }
 
     override fun determineCollectionName(): String {

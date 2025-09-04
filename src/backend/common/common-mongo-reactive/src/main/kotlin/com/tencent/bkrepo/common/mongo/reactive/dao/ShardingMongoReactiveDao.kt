@@ -60,12 +60,12 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
     /**
      * 分表Field，key为列名
      */
-    protected val shardingFields: LinkedHashMap<String, Field>
+    protected lateinit var shardingFields: LinkedHashMap<String, Field>
 
     /**
      * 分表数
      */
-    protected var shardingCount: Int
+    protected var shardingCount: Int = 1
 
     /**
      * 分表工具类
@@ -74,16 +74,10 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
         determineShardingUtils()
     }
 
-    init {
-        @Suppress("LeakingThis")
-        this.shardingFields = determineShardingFields(classType, customShardingColumns())
-        @Suppress("LeakingThis")
-        this.shardingCount = determineShardingCount(classType, shardingUtils)
-    }
-
     @PostConstruct
     private fun init() {
-        updateShardingCountIfNecessary()
+        this.shardingFields = determineShardingFields(classType, customShardingColumns())
+        this.shardingCount = determineShardingCount(classType, shardingUtils, customShardingCount())
         ensureIndex()
     }
 
@@ -111,14 +105,12 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
         logger.info("Ensure [$indexCount] index for sharding collection [$collectionName], consume [$consume] ms.")
     }
 
-    protected open fun updateShardingCountIfNecessary() {
-        if (fixedShardingCount != null) {
-            this.shardingCount = fixedShardingCount
-        }
-    }
-
     protected open fun customShardingColumns(): List<String> {
         return emptyList()
+    }
+
+    protected open fun customShardingCount(): Int? {
+        return fixedShardingCount
     }
 
     override fun determineReactiveMongoOperations(): ReactiveMongoTemplate {

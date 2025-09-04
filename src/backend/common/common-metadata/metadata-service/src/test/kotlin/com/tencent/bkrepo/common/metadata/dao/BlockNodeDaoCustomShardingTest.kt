@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.common.metadata.dao
 
+import com.tencent.bkrepo.common.metadata.UT_PROJECT_ID
 import com.tencent.bkrepo.common.metadata.UT_REPO_NAME
 import com.tencent.bkrepo.common.metadata.constant.SHARDING_COUNT
 import com.tencent.bkrepo.common.metadata.dao.blocknode.BlockNodeDao
@@ -18,22 +19,27 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.context.TestPropertySource
 
-@DisplayName("BlockNodeDao测试")
+@DisplayName("BlockNodeDao自定义分表键测试")
 @DataMongoTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Import(BlockNodeDao::class, BlockNodeProperties::class)
 @TestPropertySource(
     locations = ["classpath:bootstrap-ut.properties"],
-    properties = ["sharding.count=256"]
+    properties = [
+        "block-node.collection-name=block_node_v2",
+        "block-node.sharding-columns=projectId,repoName",
+        "block-node.sharding-count=$SHARDING_COUNT",
+    ]
 )
-class BlockNodeDaoTest @Autowired constructor(
+class BlockNodeDaoCustomShardingTest @Autowired constructor(
     private val blockNodeDao: BlockNodeDao,
     private val mongoTemplate: MongoTemplate,
 ) {
     @Test
     fun test() {
         val block = blockNodeDao.insert(buildBlockNode())
-        val collectionName = "block_node_${HashShardingUtils.shardingSequenceFor(UT_REPO_NAME, SHARDING_COUNT)}"
+        val shardingValues = listOf(UT_PROJECT_ID, UT_REPO_NAME)
+        val collectionName = "block_node_v2_${HashShardingUtils.shardingSequenceFor(shardingValues, SHARDING_COUNT)}"
         val block2 = mongoTemplate.findOne(Query(), TBlockNode::class.java, collectionName)!!
         assertEquals(block.id, block2.id)
     }
