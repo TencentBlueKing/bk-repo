@@ -55,12 +55,14 @@ import org.springframework.stereotype.Service
 @Service
 class OpServiceService @Autowired constructor(
     private val serviceDiscoveryFactory: ServiceDiscoveryFactory,
-    private val registryClient: RegistryClient,
     private val artifactMetricsClient: ArtifactMetricsClient,
     private val pluginClient: PluginClient,
     private val executor: ThreadPoolTaskExecutor,
     private val redisTemplate: RedisTemplate<String, String>,
 ) {
+
+    private val registryClient by lazy { serviceDiscoveryFactory.createServiceDiscovery() }
+
     /**
      * 获取服务列表
      */
