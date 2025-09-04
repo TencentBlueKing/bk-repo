@@ -142,23 +142,27 @@ class FederationRepositoryServiceImpl(
             throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_FULL_SYNC_RUNNING)
         }
 
-        try {
-            val futures = federationRepository.federatedClusters.mapNotNull { fedCluster ->
-                val taskInfo = replicaTaskService.getByTaskId(fedCluster.taskId!!)
-                taskInfo?.let { task ->
-                    executor.submit (Callable {
-                        val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
-                        federationManualReplicaJobExecutor.execute(taskDetail)
-                    }.trace())
+        executor.execute(
+            Runnable {
+                try {
+                    val futures = federationRepository.federatedClusters.mapNotNull { fedCluster ->
+                        val taskInfo = replicaTaskService.getByTaskId(fedCluster.taskId!!)
+                        taskInfo?.let { task ->
+                            executor.submit(Callable {
+                                val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
+                                federationManualReplicaJobExecutor.execute(taskDetail)
+                            }.trace())
+                        }
+                    }
+                    futures.forEach { it.get() } // 等待所有任务完成
+                } catch (e: Exception) {
+                    logger.error("Failed to execute federation sync tasks: ${e.message}", e)
+                } finally {
+                    unlock(projectId, repoName, federationId, lock)
+                    logger.info("Released lock for federation sync: $federationId")
                 }
-            }
-            futures.forEach { it.get() } // 等待所有任务完成
-        } catch (e: Exception) {
-            logger.error("Failed to execute federation sync tasks: ${e.message}", e)
-        } finally {
-            unlock(projectId, repoName, federationId, lock)
-            logger.info("Released lock for federation sync: $federationId")
-        }
+            }.trace()
+        )
     }
 
     private fun paramsCheck(request: FederatedRepositoryCreateRequest) {
