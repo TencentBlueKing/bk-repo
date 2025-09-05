@@ -68,7 +68,7 @@ class CIExperienceService(
         val headers = AppExperienceHeader(
             organization = request.organizationName,
             platform = null,
-            version = null
+            version = null,
         )
         executeGetRequest(
             url = url,
@@ -102,6 +102,9 @@ class CIExperienceService(
         headers.platform?.let { addHeader(DEVOPS_PLATFORM, it) }
         headers.organization?.let { addHeader(DEVOPS_ORGANIZATION, it) }
         headers.version?.let { addHeader(DEVOPS_VERSION, it) }
+        if (properties.gray.isNotEmpty()) {
+            addHeader(DEVOPS_GRAY, properties.gray)
+        }
         return this
     }
 
@@ -140,5 +143,6 @@ class CIExperienceService(
         const val DEVOPS_PLATFORM = "X-DEVOPS-PLATFORM"
         const val DEVOPS_VERSION = "X-DEVOPS-APP-VERSION"
         const val DEVOPS_ORGANIZATION = "X-DEVOPS-ORGANIZATION-NAME"
+        const val DEVOPS_GRAY = "X-GATEWAY-TAG"
     }
 }
