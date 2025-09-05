@@ -12,4 +12,6 @@ data class AppExperienceHeader(
     var version: String?,
     @get:Schema(title = "APP组织名称")
     val organization: String?,
+    @get:Schema(title = "蓝盾灰度标识")
+    val gray: String?
 )
