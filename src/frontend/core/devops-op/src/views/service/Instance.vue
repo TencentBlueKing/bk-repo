@@ -164,9 +164,9 @@ export default {
     },
     convertBpsToMbps(data) {
       if (data) {
-        return (data / 1000000) + '/Mbps'
+        return (data / (1024 * 1024)) + 'MiB/s'
       } else {
-        return '0/Mbps'
+        return '0MiB/s'
       }
     },
     changeInstanceStatusBtnName(instanceStatus) {
