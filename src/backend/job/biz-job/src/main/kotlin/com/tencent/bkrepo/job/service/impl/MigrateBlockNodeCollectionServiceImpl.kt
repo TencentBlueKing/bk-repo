@@ -16,6 +16,7 @@ import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import java.lang.reflect.Field
 import java.util.function.Consumer
@@ -33,6 +34,7 @@ class MigrateBlockNodeCollectionServiceImpl(
      * @param newShardingColumns 新的分表键
      * @param newShardingCount 新分表数
      */
+    @Async
     override fun migrate(
         oldCollectionNamePrefix: String,
         newCollectionNamePrefix: String,
@@ -70,11 +72,23 @@ class MigrateBlockNodeCollectionServiceImpl(
         logger.info("start migrate collection[$oldCollection]")
         var count = 0
         val start = System.currentTimeMillis()
+        val blockNodeBuffer = HashMap<String, MutableList<TBlockNode>>()
         iterateCollection<TBlockNode>(Query(), oldCollection, startId, BATCH_SIZE) {
             count++
             val newCollection = newCollectionName(newCollectionNamePrefix, newShardingFields, newShardingCount, it)
+            val buffer = blockNodeBuffer.getOrPut(newCollection) { ArrayList() }
             if (!mongoTemplate.exists(Query(Criteria.where(ID).isEqualTo(it.id)), newCollection)) {
-                mongoTemplate.insert(it, newCollection)
+                buffer.add(it)
+            }
+            if (buffer.size >= BATCH_SIZE) {
+                mongoTemplate.insert(buffer, newCollection)
+                buffer.clear()
+            }
+        }
+        blockNodeBuffer.forEach {
+            if (it.value.isNotEmpty()) {
+                mongoTemplate.insert(it.value, it.key)
+                it.value.clear()
             }
         }
         val elapsed = System.currentTimeMillis() - start
