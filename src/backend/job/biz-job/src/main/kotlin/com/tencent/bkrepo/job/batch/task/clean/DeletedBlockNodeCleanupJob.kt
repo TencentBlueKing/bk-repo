@@ -67,11 +67,7 @@ class DeletedBlockNodeCleanupJob(
 
     override fun collectionNames(): List<String> {
         val collectionNamePrefix = blockNodeProperties.collectionName.ifEmpty { COLLECTION_NAME_PREFIX }
-        val collectionNames = mutableListOf<String>()
-        for (i in 0 until SHARDING_COUNT) {
-            collectionNames.add("$collectionNamePrefix$i")
-        }
-        return collectionNames
+        return (0 until SHARDING_COUNT).map { "${collectionNamePrefix}_$it" }
     }
 
     override fun buildQuery(): Query {
@@ -112,6 +108,6 @@ class DeletedBlockNodeCleanupJob(
     }
     companion object {
         private val logger = LoggerFactory.getLogger(DeletedBlockNodeCleanupJob::class.java)
-        private const val COLLECTION_NAME_PREFIX = "block_node_"
+        private const val COLLECTION_NAME_PREFIX = "block_node"
     }
 }
