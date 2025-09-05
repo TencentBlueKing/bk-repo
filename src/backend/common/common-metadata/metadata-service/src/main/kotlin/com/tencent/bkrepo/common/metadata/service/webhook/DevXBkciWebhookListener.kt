@@ -81,9 +81,6 @@ class DevXBkciWebhookListener(
     private val client by lazy { createClient() }
 
     override fun onDevXEnabled(payload: BkCiDevXEnabledPayload) {
-        if (!devXProperties.enabled) {
-            return
-        }
         // 创建远程制品库集群仓库
         if (devXProperties.remoteBkRepoUrl.isNotEmpty()) {
             createRemoteRepo(payload.projectCode, LSYNC)
