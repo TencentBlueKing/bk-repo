@@ -163,7 +163,11 @@ export default {
       })
     },
     convertBpsToMbps(data) {
-      return (data / 1000000) + '/Mbps'
+      if (data) {
+        return (data / 1000000) + '/Mbps'
+      } else {
+        return '0/Mbps'
+      }
     },
     changeInstanceStatusBtnName(instanceStatus) {
       switch (instanceStatus) {
