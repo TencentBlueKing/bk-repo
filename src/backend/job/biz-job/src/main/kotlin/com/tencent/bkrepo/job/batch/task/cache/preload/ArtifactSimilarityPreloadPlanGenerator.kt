@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlanGenerateParam
 import com.tencent.bkrepo.common.artifact.cache.service.ArtifactPreloadPlanGenerator
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.AiProperties
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.EmbeddingModel
 import com.tencent.bkrepo.job.batch.task.cache.preload.ai.SearchRequest

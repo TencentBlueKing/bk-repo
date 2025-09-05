@@ -27,7 +27,7 @@
 package com.tencent.bkrepo.job.batch.task.archive
 
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.NAME
 import com.tencent.bkrepo.job.SHARDING_COUNT

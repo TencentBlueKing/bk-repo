@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.common.mongo.dao.sharding
 
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.ShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.ShardingUtils
 
 abstract class HashShardingMongoDao<E> : ShardingMongoDao<E>() {
 

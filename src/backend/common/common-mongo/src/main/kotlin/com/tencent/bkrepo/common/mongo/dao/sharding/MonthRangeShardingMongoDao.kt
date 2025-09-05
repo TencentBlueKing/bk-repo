@@ -29,8 +29,8 @@ package com.tencent.bkrepo.common.mongo.dao.sharding
 
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.ShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.ShardingUtils
 import org.springframework.data.mongodb.core.index.IndexDefinition
 import java.util.concurrent.TimeUnit
 

@@ -29,10 +29,28 @@ package com.tencent.bkrepo.common.metadata.dao.blocknode
 
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.mongo.dao.sharding.HashShardingMongoDao
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Repository
 
 @Repository
 @Conditional(SyncCondition::class)
-class BlockNodeDao : HashShardingMongoDao<TBlockNode>()
+class BlockNodeDao(private val blockNodeProperties: BlockNodeProperties? = null) : HashShardingMongoDao<TBlockNode>() {
+
+    override fun determineCollectionName(): String {
+        if (blockNodeProperties != null && blockNodeProperties.collectionName.isNotEmpty()) {
+            return blockNodeProperties.collectionName
+        }
+        return super.determineCollectionName()
+    }
+
+    override fun customShardingCount(): Int? {
+        return blockNodeProperties?.shardingCount?.let { determineShardingUtils().shardingCountFor(it) }
+            ?: super.customShardingCount()
+    }
+
+    override fun customShardingColumns(): List<String> {
+        return blockNodeProperties?.shardingColumns ?: super.customShardingColumns()
+    }
+}

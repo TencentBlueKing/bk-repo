@@ -58,6 +58,8 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.contracts.ExperimentalContracts
 
 @DisplayName("预加载计划执行器测试")
@@ -120,9 +122,11 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
     fun testExecutorFull() {
         properties.preloadConcurrency = 1
         val plan = buildPlan()
+        val startLatch = CountDownLatch(1)
         val listener = object : PreloadListener {
             override fun onPreloadStart(plan: ArtifactPreloadPlan) {
-                // No-op
+                // 通知任务已开始
+                startLatch.countDown()
             }
 
             override fun onPreloadSuccess(plan: ArtifactPreloadPlan, throughput: Throughput?) {
@@ -139,6 +143,8 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
             }
         }
         assertTrue(preloadPlanExecutor.execute(plan, listener))
+        // 等待第一个任务真正开始执行
+        startLatch.await(1, TimeUnit.SECONDS)
         Assertions.assertFalse(preloadPlanExecutor.execute(plan, listener))
         properties.preloadConcurrency = 8
     }

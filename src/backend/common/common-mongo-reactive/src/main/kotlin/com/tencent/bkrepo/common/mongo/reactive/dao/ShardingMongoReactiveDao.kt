@@ -27,19 +27,18 @@
 
 package com.tencent.bkrepo.common.mongo.reactive.dao
 
-import com.mongodb.BasicDBList
-import com.tencent.bkrepo.common.api.mongo.ShardingDocument
-import com.tencent.bkrepo.common.api.mongo.ShardingKey
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.determineShardingCount
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.determineShardingFields
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.shardingValues
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.shardingValuesOf
+import com.tencent.bkrepo.common.mongo.api.util.sharding.ShardingUtils
 import com.tencent.bkrepo.common.mongo.util.MongoIndexResolver
-import com.tencent.bkrepo.common.mongo.util.ShardingUtils
 import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.reactor.awaitSingle
-import org.apache.commons.lang3.reflect.FieldUtils
-import org.bson.Document
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.annotation.AnnotationUtils
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -59,19 +58,14 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
     private val fixedShardingCount: Int? = null
 
     /**
-     * 分表Field
+     * 分表Field，key为列名
      */
-    private val shardingField: Field
-
-    /**
-     * 分表列名
-     */
-    private val shardingColumn: String
+    protected lateinit var shardingFields: LinkedHashMap<String, Field>
 
     /**
      * 分表数
      */
-    private var shardingCount: Int
+    protected var shardingCount: Int = 1
 
     /**
      * 分表工具类
@@ -80,23 +74,10 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
         determineShardingUtils()
     }
 
-    init {
-        @Suppress("LeakingThis")
-        val fieldsWithShardingKey = FieldUtils.getFieldsListWithAnnotation(classType, ShardingKey::class.java)
-        require(fieldsWithShardingKey.size == 1) {
-            "Only one field could be annotated with ShardingKey annotation but find ${fieldsWithShardingKey.size}!"
-        }
-
-        this.shardingField = fieldsWithShardingKey[0]
-        this.shardingColumn = determineShardingColumn()
-
-        val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-        this.shardingCount = shardingUtils.shardingCountFor(shardingKey.count)
-    }
-
     @PostConstruct
     private fun init() {
-        updateShardingCountIfNecessary()
+        this.shardingFields = determineShardingFields(classType, customShardingColumns())
+        this.shardingCount = determineShardingCount(classType, shardingUtils, customShardingCount())
         ensureIndex()
     }
 
@@ -124,10 +105,12 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
         logger.info("Ensure [$indexCount] index for sharding collection [$collectionName], consume [$consume] ms.")
     }
 
-    private fun updateShardingCountIfNecessary() {
-        if (fixedShardingCount != null) {
-            this.shardingCount = fixedShardingCount
-        }
+    protected open fun customShardingColumns(): List<String> {
+        return emptyList()
+    }
+
+    protected open fun customShardingCount(): Int? {
+        return fixedShardingCount
     }
 
     override fun determineReactiveMongoOperations(): ReactiveMongoTemplate {
@@ -135,52 +118,23 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
     }
 
     override fun determineCollectionName(query: Query): String {
-        val shardingValue = determineCollectionName(query.queryObject)
-        requireNotNull(shardingValue) { "Sharding value can not empty !" }
-
-        return shardingKeyToCollectionName(shardingValue)
+        val shardingValues = shardingValuesOf(query.queryObject, shardingFields)
+        requireNotNull(shardingValues) { "Sharding value can not empty!" }
+        return shardingKeyToCollectionName(shardingValues)
     }
 
     override fun determineCollectionName(entity: E): String {
-        val shardingValue = FieldUtils.readField(shardingField, entity, true)
-        requireNotNull(shardingValue) { "Sharding value can not be empty !" }
-
-        return shardingKeyToCollectionName(shardingValue)
+        return shardingKeyToCollectionName(shardingValues(entity as Any, shardingFields))
     }
 
     override fun determineCollectionName(aggregation: Aggregation): String {
-        var shardingValue: Any? = null
-        val pipeline = aggregation.toPipeline(Aggregation.DEFAULT_CONTEXT)
-        for (document in pipeline) {
-            if (document.containsKey("\$match")) {
-                val subDocument = document["\$match"]
-                require(subDocument is Document)
-                shardingValue = subDocument["projectId"]
-                break
-            }
-        }
-
-        requireNotNull(shardingValue) { "sharding value can not be empty!" }
-        return shardingKeyToCollectionName(shardingValue)
+        val shardingValues = shardingValuesOf(aggregation, shardingFields)
+        require(!shardingValues.isNullOrEmpty()) { "Sharding values can not be empty!" }
+        return shardingKeyToCollectionName(shardingValues)
     }
 
     override fun determineCollectionName(): String {
-        if (classType.isAnnotationPresent(ShardingDocument::class.java)) {
-            val document = classType.getAnnotation(ShardingDocument::class.java)
-            return document.collection
-        }
-        return super.determineCollectionName()
-    }
-
-    fun determineCollectionName(document: Document): Any? {
-        for ((key, value) in document) {
-            if (key == shardingColumn) return value
-            if (key == "\$and") {
-                require(value is BasicDBList)
-                determineCollectionName(value)?.let { return it }
-            }
-        }
-        return null
+        return MongoDaoHelper.determineShardingCollectionName(classType) ?: super.determineCollectionName()
     }
 
     /**
@@ -237,34 +191,12 @@ abstract class ShardingMongoReactiveDao<E> : AbstractMongoReactiveDao<E>() {
         return PageImpl(result, pageRequest, total)
     }
 
-    private fun determineCollectionName(list: BasicDBList): Any? {
-        for (element in list) {
-            require(element is Document)
-            determineCollectionName(element)?.let { return it }
-        }
-        return null
-    }
-
-    private fun shardingKeyToCollectionName(shardValue: Any): String {
-        val shardingSequence = shardingUtils.shardingSequenceFor(shardValue, shardingCount)
-        return parseSequenceToCollectionName(shardingSequence)
+    private fun shardingKeyToCollectionName(shardValues: List<Any>): String {
+        return parseSequenceToCollectionName(shardingUtils.shardingSequenceFor(shardValues, shardingCount))
     }
 
     fun parseSequenceToCollectionName(sequence: Int): String {
         return collectionName + "_" + sequence
-    }
-
-    private fun determineShardingColumn(): String {
-        val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-        if (shardingKey.column.isNotEmpty()) {
-            return shardingKey.column
-        }
-        val fieldJavaClass = org.springframework.data.mongodb.core.mapping.Field::class.java
-        val fieldAnnotation = AnnotationUtils.getAnnotation(shardingField, fieldJavaClass)
-        if (fieldAnnotation != null && fieldAnnotation.value.isNotEmpty()) {
-            return fieldAnnotation.value
-        }
-        return shardingField.name
     }
 
     private fun filterExistedIndex(indexDefinitions: List<IndexDefinition>): List<IndexDefinition> {

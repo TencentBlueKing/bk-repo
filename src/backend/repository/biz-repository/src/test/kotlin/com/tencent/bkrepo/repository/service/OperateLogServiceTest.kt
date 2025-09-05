@@ -29,7 +29,7 @@ package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.metadata.dao.log.OperateLogDao
 import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.repository.UT_PROJECT_ID
