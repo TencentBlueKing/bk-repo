@@ -11,5 +11,10 @@ data class CIExperienceProperties(
     /**
      * ci experience 服务认证token
      */
-    var ciToken: String = ""
+    var ciToken: String = "",
+    /**
+     * ci experience 灰度标识
+     *
+     */
+    var gray: String = ""
 )

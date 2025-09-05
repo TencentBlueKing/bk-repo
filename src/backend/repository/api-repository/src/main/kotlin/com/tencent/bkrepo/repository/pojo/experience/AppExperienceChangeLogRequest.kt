@@ -33,9 +33,6 @@ data class AppExperienceChangeLogRequest(
     @get:Schema(title = "组织名称")
     val organizationName: String? = null,
 
-    @get:Schema(title = "蓝盾灰度标识")
-    val gray: String? = null,
-
     @get:Schema(title = "页目")
     val page: Long,
 

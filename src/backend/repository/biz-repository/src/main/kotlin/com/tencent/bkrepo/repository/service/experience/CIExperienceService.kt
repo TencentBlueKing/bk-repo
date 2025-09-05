@@ -69,7 +69,6 @@ class CIExperienceService(
             organization = request.organizationName,
             platform = null,
             version = null,
-            gray = request.gray
         )
         executeGetRequest(
             url = url,
@@ -103,7 +102,9 @@ class CIExperienceService(
         headers.platform?.let { addHeader(DEVOPS_PLATFORM, it) }
         headers.organization?.let { addHeader(DEVOPS_ORGANIZATION, it) }
         headers.version?.let { addHeader(DEVOPS_VERSION, it) }
-        headers.gray?.let { addHeader(DEVOPS_GRAY, it) }
+        if (properties.gray.isNotEmpty()) {
+            addHeader(DEVOPS_GRAY, properties.gray)
+        }
         return this
     }
 
