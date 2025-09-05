@@ -41,11 +41,11 @@ class ServiceDiscoveryFactory (
     private val discoveryClient: DiscoveryClient,
     @Autowired(required = false) private val consulClient: ConsulClient?,
     private val httpClient: OkHttpClient,
-    private val consulProperties: ConsulProperties
+    @Autowired(required = false) private val consulProperties: ConsulProperties?
 ){
 
     fun createServiceDiscovery(): RegistryClient {
-        return if (isConsulEnabled() && consulClient != null) {
+        return if (isConsulEnabled() && consulClient != null && consulProperties != null) {
             ConsulRegistryClient(httpClient, consulProperties)
         } else {
             SpringCloudServiceDiscovery(discoveryClient)
