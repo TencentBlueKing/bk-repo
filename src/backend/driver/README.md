@@ -53,7 +53,14 @@ block-node:
   shardingCount: 256
 ```
 
-如果已经存在数据，可通过下方的job服务接口进行停机数据迁移，完成迁移且添加上方所示的配置项后部署新版本服务即可
+如果已经存在数据，且数据量较少，可参考下方步骤进行迁移，需注意提前做好数据备份
+
+1. 增加block-node分表相关配置
+2. 暂停DeletedBlockNodeCleanupJob，ExpiredBlockNodeMarkupJob
+3. 停止repository/generic/driver服务 
+4. 发布job服务，调用接口触发数据迁移
+5. 部署新版本repository/generic/driver服务
+6. 开启DeleteBlockNodeCleanupJob与ExpiredBlockNodeMarkupJob
 
 ```http request
 POST {host}/job/api/job/migrate/block

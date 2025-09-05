@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.batch.task.clean
 
+import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -50,6 +51,7 @@ import kotlin.reflect.KClass
  */
 @Component
 class DeletedBlockNodeCleanupJob(
+    private val blockNodeProperties: BlockNodeProperties,
     private val properties: DeletedBlockNodeCleanupJobProperties,
     private val fileReferenceService: FileReferenceService
 ) : DefaultContextMongoDbJob<DeletedBlockNodeCleanupJob.BlockNode>(properties) {
@@ -64,9 +66,10 @@ class DeletedBlockNodeCleanupJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
     override fun collectionNames(): List<String> {
+        val collectionNamePrefix = blockNodeProperties.collectionName.ifEmpty { COLLECTION_NAME_PREFIX }
         val collectionNames = mutableListOf<String>()
         for (i in 0 until SHARDING_COUNT) {
-            collectionNames.add("$COLLECTION_NAME_PREFIX$i")
+            collectionNames.add("$collectionNamePrefix$i")
         }
         return collectionNames
     }
