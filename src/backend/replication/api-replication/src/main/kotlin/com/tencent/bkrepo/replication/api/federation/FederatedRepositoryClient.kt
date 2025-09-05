@@ -52,7 +52,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface FederatedRepositoryClient {
     @Operation(summary = "同步配置")
     @PostMapping("/config/sync")
-    fun createFederatedConfig(@RequestBody request: FederatedRepositoryConfigRequest): Response<Void>
+    fun createFederatedConfig(@RequestBody request: FederatedRepositoryConfigRequest): Response<Boolean>
 
 
     @Operation(summary = "删除配置")

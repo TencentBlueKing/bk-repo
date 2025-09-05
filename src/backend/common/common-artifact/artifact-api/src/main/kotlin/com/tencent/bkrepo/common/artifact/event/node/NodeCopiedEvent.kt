@@ -41,17 +41,22 @@ class NodeCopiedEvent(
     override val source: String?,
     val dstProjectId: String,
     val dstRepoName: String,
-    val dstFullPath: String
+    val dstFullPath: String,
+    val overwrite: Boolean,
+    val destNodeFolder: Boolean? = null,
 ) : ArtifactEvent(
     type = EventType.NODE_COPIED,
     projectId = projectId,
     repoName = repoName,
     resourceKey = resourceKey,
     userId = userId,
-    data = mapOf(
+    data = mutableMapOf(
         "dstProjectId" to dstProjectId,
         "dstRepoName" to dstRepoName,
-        "dstFullPath" to dstFullPath
-    ),
+        "dstFullPath" to dstFullPath,
+        "overwrite" to overwrite
+    ).apply {
+        destNodeFolder?.let { this["destNodeFolder"] = destNodeFolder }
+    },
     source = source
 )

@@ -42,6 +42,8 @@ import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.NodeCopyOrMoveRequest
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
@@ -129,6 +131,7 @@ class ClusterReplicator(
 
     override fun replicaPackage(context: ReplicaContext, packageSummary: PackageSummary) {
         // do nothing
+
     }
 
     override fun replicaPackageVersion(
@@ -179,6 +182,13 @@ class ClusterReplicator(
             )
             artifactReplicaClient!!.replicaPackageVersionCreatedRequest(request)
         }
+        return true
+    }
+
+    override fun replicaDeletedPackage(
+        context: ReplicaContext,
+        packageVersionDeleteSummary: PackageVersionDeleteSummary
+    ): Boolean {
         return true
     }
 
@@ -281,6 +291,14 @@ class ClusterReplicator(
     }
 
     override fun replicaDeletedNode(context: ReplicaContext, node: NodeInfo): Boolean {
+        return true
+    }
+
+    override fun replicaNodeMove(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean {
+        return true
+    }
+
+    override fun replicaNodeCopy(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean {
         return true
     }
 

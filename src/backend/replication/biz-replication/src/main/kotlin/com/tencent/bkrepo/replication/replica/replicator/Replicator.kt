@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.replication.replica.replicator
 
+import com.tencent.bkrepo.replication.pojo.request.NodeCopyOrMoveRequest
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -68,6 +70,14 @@ interface Replicator {
     ): Boolean
 
     /**
+     * 删除package
+     */
+    fun replicaDeletedPackage(
+        context: ReplicaContext,
+        packageVersionDeleteSummary: PackageVersionDeleteSummary
+    ): Boolean
+
+    /**
      * 同步文件
      * @return 是否执行了同步，如果远程存在相同文件，则返回false
      */
@@ -80,7 +90,17 @@ interface Replicator {
     fun replicaDir(context: ReplicaContext, node: NodeInfo)
 
     /**
-     * 删除节点
+     * 同步已删除节点
      */
     fun replicaDeletedNode(context: ReplicaContext, node: NodeInfo): Boolean
+
+    /**
+     * 同步node move操作
+     */
+    fun replicaNodeMove(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean
+
+    /**
+     * 同步node  copy操作
+     */
+    fun replicaNodeCopy(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean
 }

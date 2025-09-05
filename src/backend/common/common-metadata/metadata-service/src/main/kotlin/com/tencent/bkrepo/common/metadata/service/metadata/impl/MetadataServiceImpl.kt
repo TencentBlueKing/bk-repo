@@ -58,12 +58,14 @@ import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildMetadataDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildMetadataSavedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
+import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper.nodeDeletedPointQuery
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.message.RepositoryMessageCode
+import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -173,6 +175,32 @@ class MetadataServiceImpl(
         }
     }
 
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun saveMetadataForDeletedNode(request: DeletedNodeMetadataSaveRequest) {
+        with(request) {
+            val query = nodeDeletedPointQuery(projectId, repoName, normalizeFullPath(fullPath), deleted)
+            val node = nodeDao.findOne(query) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+            checkNodeCluster(node)
+            val normalizedFullPath = normalizeFullPath(fullPath)
+            val oldMetadata = node.metadata ?: ArrayList()
+            val newMetadata = MetadataUtils.compatibleConvertAndCheck(
+                metadata,
+                MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
+            )
+            checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
+            node.metadata = if (replace) {
+                newMetadata
+            } else {
+                MetadataUtils.merge(oldMetadata, newMetadata)
+            }
+            nodeDao.save(node)
+            logger.info(
+                "Save metadata[$newMetadata] on deleted " +
+                    "node[/$projectId/$repoName$normalizedFullPath] success."
+            )
+        }
+    }
+
     fun checkNodeCluster(node: TNode) {
         return
     }
@@ -188,7 +216,7 @@ class MetadataServiceImpl(
             CIPermissionManager.PIPELINE_METADATA.any { m -> m.equals(it, true) }
         }
         val illegal = !node.folder && pipelineSource &&
-                pipelineMetadataKey != null && !ciPermissionManager.whiteListRequest()
+            pipelineMetadataKey != null && !ciPermissionManager.whiteListRequest()
         if (illegal) {
             ciPermissionManager.throwOrLogError(
                 messageCode = RepositoryMessageCode.PIPELINE_METADATA_UPDATE_NOT_ALLOWED,
@@ -245,9 +273,11 @@ class MetadataServiceImpl(
                 .build()
             okHttpClient.newCall(request).execute().use {
                 if (!it.isSuccessful) {
-                    logger.error("Failed to callback pipeline artifact, " +
+                    logger.error(
+                        "Failed to callback pipeline artifact, " +
                             "bizId[${it.header(HEADER_DEVOPS_RID)}]," +
-                            " payload[${payload.toJsonString()}]")
+                            " payload[${payload.toJsonString()}]"
+                    )
                     return@submit
                 }
             }

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.pojo.cluster
 
 data class RemoteClusterInfo(
+    val id: String? = null,
     val name: String = "",
     val url: String = "",
     val username: String? = null,

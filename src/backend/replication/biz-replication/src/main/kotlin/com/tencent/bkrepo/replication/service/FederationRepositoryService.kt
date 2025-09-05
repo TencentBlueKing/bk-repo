@@ -45,7 +45,7 @@ interface FederationRepositoryService {
     /**
      * 在联邦集群上创建对应集群信息以及任务存储联邦仓库配置
      */
-    fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest)
+    fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest): Boolean
 
     /**
      * 根据项目id和仓库名称和federationId查询相关联的联邦仓库配置
@@ -68,4 +68,11 @@ interface FederationRepositoryService {
      * 根据项目仓库获取当前集群名
      */
     fun getCurrentClusterName(projectId: String, repoName: String, federationId: String): String?
+
+    /**
+     * 执行联邦仓库fullSync
+    */
+    fun fullSyncFederationRepository(projectId: String, repoName: String, federationId: String)
+
+
 }
