@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceChangeLogRequest
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceHeader
 import com.tencent.bkrepo.repository.service.experience.CIExperienceService
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/experience")
+@Principal(PrincipalType.GENERAL)
 class UserExperienceController(
     private val ciExperienceService: CIExperienceService
 ) {
