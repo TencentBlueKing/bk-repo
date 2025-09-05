@@ -48,7 +48,7 @@ class MigrateBlockNodeCollectionServiceImpl(
             val oldCollectionName = "${oldCollectionNamePrefix}_$i"
             val startId = startIds[oldCollectionName] ?: ObjectId(MIN_OBJECT_ID)
             doMigrate(oldCollectionName, startId, newCollectionNamePrefix, newShardingFields, newShardingCount)
-            doValidate(oldCollectionName, newCollectionNamePrefix, newShardingFields, newShardingCount)
+            doValidate(oldCollectionName, startId, newCollectionNamePrefix, newShardingFields, newShardingCount)
         }
         logger.info("migrate block node finished")
     }
@@ -99,19 +99,21 @@ class MigrateBlockNodeCollectionServiceImpl(
      * 数据校验
      *
      * @param oldCollection 旧表名
+     * @param startId 起始id
      * @param newCollectionNamePrefix 新表名
      * @param newShardingFields 新的分表键对应的field
      * @param newShardingCount 新分表数
      */
     private fun doValidate(
         oldCollection: String,
+        startId: ObjectId,
         newCollectionNamePrefix: String,
         newShardingFields: LinkedHashMap<String, Field>,
         newShardingCount: Int,
     ) {
         var oldCount = 0
         val start = System.currentTimeMillis()
-        iterateCollection<TBlockNode>(Query(), oldCollection, ObjectId(MIN_OBJECT_ID), BATCH_SIZE) { old ->
+        iterateCollection<TBlockNode>(Query(), oldCollection, startId, BATCH_SIZE) { old ->
             oldCount++
             val newCollection = newCollectionName(newCollectionNamePrefix, newShardingFields, newShardingCount, old)
             val query = Query.query(Criteria.where(ID).isEqualTo(old.id))
