@@ -71,6 +71,8 @@ object HashShardingUtils : ShardingUtils {
         require(values.isNotEmpty())
         var h = 0
         values.forEach { value ->
+            // 仅支持重写了hashCode()方法，且hashCode值不变的类型，避免在用于分表场景时每次sharding结果不一致
+            require(value is String)
             h = 31 * h + value.hashCode()
         }
         return h and shardingCount - 1
