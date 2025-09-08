@@ -81,15 +81,14 @@ class DevXBkciWebhookListener(
     private val client by lazy { createClient() }
 
     override fun onDevXEnabled(payload: BkCiDevXEnabledPayload) {
-        if (!devXProperties.enabled) {
-            return
-        }
         // 创建远程制品库集群仓库
-        createRemoteRepo(payload.projectCode, LSYNC)
-        createRemoteRepo(payload.projectCode, "$PIPELINE$DEVX_SUFFIX")
-        createRemoteRepo(payload.projectCode, "$CUSTOM$DEVX_SUFFIX")
-        createRemoteRepo(payload.projectCode, "$REPORT$DEVX_SUFFIX")
-        createRemoteRepo(payload.projectCode, LOG)
+        if (devXProperties.remoteBkRepoUrl.isNotEmpty()) {
+            createRemoteRepo(payload.projectCode, LSYNC)
+            createRemoteRepo(payload.projectCode, "$PIPELINE$DEVX_SUFFIX")
+            createRemoteRepo(payload.projectCode, "$CUSTOM$DEVX_SUFFIX")
+            createRemoteRepo(payload.projectCode, "$REPORT$DEVX_SUFFIX")
+            createRemoteRepo(payload.projectCode, LOG)
+        }
 
         // 创建本地项目及仓库
         createLocalProject(payload)
@@ -178,8 +177,8 @@ class DevXBkciWebhookListener(
         display: Boolean,
         retry: Int = 3
     ) {
-        val configuration = CompositeConfiguration(
-            ProxyConfiguration(
+        val configuration = if (devXProperties.remoteBkRepoUrl.isNotEmpty()) {
+            val proxyConfiguration = ProxyConfiguration(
                 listOf(
                     ProxyChannelSetting(
                         public = false,
@@ -188,7 +187,10 @@ class DevXBkciWebhookListener(
                     )
                 )
             )
-        )
+            CompositeConfiguration(proxyConfiguration)
+        } else {
+            CompositeConfiguration()
+        }
         val request = RepoCreateRequest(
             projectId = projectId,
             name = repoName,
