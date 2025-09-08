@@ -109,6 +109,7 @@ class RBlockNodeServiceImpl(
                     Criteria.where(ID)
                         .isEqualTo(it.id)
                         .and(TBlockNode::projectId)
+                        .isEqualTo(projectId)
                         .and(TBlockNode::repoName)
                         .isEqualTo(repoName)
                 )
