@@ -30,6 +30,7 @@ package com.tencent.bkrepo.opdata.registry
 import com.tencent.bkrepo.opdata.registry.consul.ConsulRegistryClient
 import com.tencent.bkrepo.opdata.registry.spring.SpringCloudServiceDiscovery
 import okhttp3.OkHttpClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.cloud.consul.ConsulProperties
@@ -50,6 +51,7 @@ class ServiceDiscoveryConfig (
             "com.ecwid.consul.v1.ConsulClient"
         ]
     )
+    @ConditionalOnBean(ConsulProperties::class)
     fun createConsulClient(consulProperties: ConsulProperties): RegistryClient {
         return ConsulRegistryClient(httpClient, consulProperties)
     }
