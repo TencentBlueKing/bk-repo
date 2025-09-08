@@ -42,7 +42,7 @@ import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryClient
-import com.tencent.bkrepo.opdata.registry.ServiceDiscoveryFactory
+import com.tencent.bkrepo.opdata.registry.ServiceDiscoveryConfig
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
@@ -54,14 +54,13 @@ import org.springframework.stereotype.Service
  */
 @Service
 class OpServiceService @Autowired constructor(
-    private val serviceDiscoveryFactory: ServiceDiscoveryFactory,
+    private val registryClient: RegistryClient,
+    private val serviceDiscoveryConfig: ServiceDiscoveryConfig,
     private val artifactMetricsClient: ArtifactMetricsClient,
     private val pluginClient: PluginClient,
     private val executor: ThreadPoolTaskExecutor,
     private val redisTemplate: RedisTemplate<String, String>,
 ) {
-
-    private val registryClient by lazy { serviceDiscoveryFactory.createServiceDiscovery() }
 
     /**
      * 获取服务列表
@@ -244,7 +243,7 @@ class OpServiceService @Autowired constructor(
     }
 
     fun checkConsulAlive() : Boolean {
-        return serviceDiscoveryFactory.isConsulEnabled()
+        return serviceDiscoveryConfig.isConsulEnabled()
     }
 
     companion object {

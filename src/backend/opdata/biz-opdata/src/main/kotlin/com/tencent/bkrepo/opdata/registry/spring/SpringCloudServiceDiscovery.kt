@@ -2,7 +2,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 THL A29 Limited, a Tencent company.  All rights reserved.
+ * Copyright (C) 2025 Tencent. All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -32,6 +32,7 @@ import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryClient
+import org.slf4j.LoggerFactory
 import org.springframework.cloud.client.ServiceInstance
 import org.springframework.cloud.client.discovery.DiscoveryClient
 
@@ -40,13 +41,34 @@ import org.springframework.cloud.client.discovery.DiscoveryClient
  */
 class SpringCloudServiceDiscovery(
   private val discoveryClient: DiscoveryClient,
+  private val podLabelConfig: PodLabelConfig
 ): RegistryClient {
 
+  data class ServiceDetails(
+    val serviceName: String,
+    var details: List<ServiceInstance>,
+  )
+
   override fun services(): List<ServiceInfo> {
-     return discoveryClient.services.map { service->
+    val details = discoveryClient.services.map { ServiceDetails(
+      serviceName = it,
+      details =  discoveryClient.getInstances(it)
+    )}
+    var targetDetails = details
+    logger.info("details is $details")
+    logger.info("labelValue is " + podLabelConfig.labelValue)
+    if (podLabelConfig.labelValue.isNotBlank()) {
+       targetDetails = details.filter {
+         it.details.any { serviceInstance -> serviceInstance.metadata[LABEL_NAME].equals(podLabelConfig.labelValue) }
+       }
+    }
+    logger.info("details is $targetDetails")
+    return targetDetails.map { service->
        ServiceInfo(
-         name = service,
-         instances = instances(service)
+         name = service.serviceName,
+         instances = service.details.map {
+           buildInfo(it, service.serviceName)
+         }
        )
      }
   }
@@ -80,4 +102,10 @@ class SpringCloudServiceDiscovery(
   override fun maintenance(serviceName: String, instanceId: String, enable: Boolean): InstanceInfo {
     return instanceInfo(serviceName, instanceId)
   }
+
+  companion object {
+    private const val LABEL_NAME= "app.kubernetes.io/instance"
+    private val logger = LoggerFactory.getLogger(SpringCloudServiceDiscovery::class.java)
+  }
+
 }
