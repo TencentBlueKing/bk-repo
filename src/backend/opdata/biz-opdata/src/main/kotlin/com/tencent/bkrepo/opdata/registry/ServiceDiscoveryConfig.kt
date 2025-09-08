@@ -31,12 +31,15 @@ import com.tencent.bkrepo.opdata.registry.consul.ConsulRegistryClient
 import com.tencent.bkrepo.opdata.registry.spring.SpringCloudServiceDiscovery
 import okhttp3.OkHttpClient
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.cloud.consul.ConsulProperties
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Condition
+import org.springframework.context.annotation.ConditionContext
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
+import org.springframework.core.type.AnnotatedTypeMetadata
 
 @Configuration
 class ServiceDiscoveryConfig (
@@ -44,13 +47,23 @@ class ServiceDiscoveryConfig (
     private val httpClient: OkHttpClient,
 ){
 
+    class ConsulClassesCondition : Condition {
+        override fun matches(context: ConditionContext, metadata: AnnotatedTypeMetadata): Boolean {
+            return isClassPresent("org.springframework.cloud.consul.ConsulProperties") &&
+                    isClassPresent("com.ecwid.consul.v1.ConsulClient")
+        }
+        private fun isClassPresent(className: String): Boolean {
+            return try {
+                Class.forName(className, false, this.javaClass.classLoader)
+                true
+            } catch (e: ClassNotFoundException) {
+                false
+            }
+        }
+    }
+
     @Bean
-    @ConditionalOnClass(
-        name = [
-            "org.springframework.cloud.consul.ConsulProperties",
-            "com.ecwid.consul.v1.ConsulClient"
-        ]
-    )
+    @Conditional(ConsulClassesCondition::class)
     @ConditionalOnBean(ConsulProperties::class)
     fun createConsulClient(consulProperties: ConsulProperties): RegistryClient {
         return ConsulRegistryClient(httpClient, consulProperties)
