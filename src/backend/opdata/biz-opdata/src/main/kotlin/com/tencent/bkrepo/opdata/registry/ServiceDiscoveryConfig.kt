@@ -27,29 +27,37 @@
 
 package com.tencent.bkrepo.opdata.registry
 
-import com.ecwid.consul.v1.ConsulClient
 import com.tencent.bkrepo.opdata.registry.consul.ConsulRegistryClient
 import com.tencent.bkrepo.opdata.registry.spring.SpringCloudServiceDiscovery
 import okhttp3.OkHttpClient
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.cloud.consul.ConsulProperties
-import org.springframework.stereotype.Component
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
 
-@Component
-class ServiceDiscoveryFactory (
+@Configuration
+class ServiceDiscoveryConfig (
     private val discoveryClient: DiscoveryClient,
-    @Autowired(required = false) private val consulClient: ConsulClient?,
     private val httpClient: OkHttpClient,
-    @Autowired(required = false) private val consulProperties: ConsulProperties?
 ){
 
-    fun createServiceDiscovery(): RegistryClient {
-        return if (isConsulEnabled() && consulClient != null && consulProperties != null) {
-            ConsulRegistryClient(httpClient, consulProperties)
-        } else {
-            SpringCloudServiceDiscovery(discoveryClient)
-        }
+    @Bean
+    @ConditionalOnClass(
+        name = [
+            "org.springframework.cloud.consul.ConsulProperties",
+            "com.ecwid.consul.v1.ConsulClient"
+        ]
+    )
+    fun createConsulClient(consulProperties: ConsulProperties): RegistryClient {
+        return ConsulRegistryClient(httpClient, consulProperties)
+    }
+
+    @Bean
+    @Primary
+    fun springCloudRegistryClient(discoveryClient: DiscoveryClient): RegistryClient {
+        return SpringCloudServiceDiscovery(discoveryClient)
     }
 
     fun isConsulEnabled(): Boolean {
