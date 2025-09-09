@@ -398,7 +398,7 @@ open class PermissionServiceImpl constructor(
     }
 
     override fun getOrCreatePersonalPath(projectId: String, repoName: String, userId: String): String {
-        val personalPath = "$defaultPersonalPrefix/$userId"
+        val personalPath = "${permHelper.getDefaultPersonalPrefix()}/$userId"
         personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName) ?: run {
             logger.info("personal path [$projectId, $repoName, $personalPath ] not exist , create")
             val personalPathData =
@@ -487,6 +487,5 @@ open class PermissionServiceImpl constructor(
 
     companion object {
         private val logger = LoggerFactory.getLogger(PermissionServiceImpl::class.java)
-        private const val defaultPersonalPrefix = "/Personal"
     }
 }

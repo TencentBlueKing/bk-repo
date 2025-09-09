@@ -3,8 +3,8 @@ package com.tencent.bkrepo.job.batch.utils
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.MonthRangeShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.exception.RepoMigratingException

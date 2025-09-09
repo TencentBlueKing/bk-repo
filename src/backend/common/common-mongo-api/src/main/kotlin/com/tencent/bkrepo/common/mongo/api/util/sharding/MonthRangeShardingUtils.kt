@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.dao.util.sharding
+package com.tencent.bkrepo.common.mongo.api.util.sharding
 
 import org.bson.Document
 import java.time.LocalDateTime
@@ -37,11 +37,23 @@ object MonthRangeShardingUtils : ShardingUtils {
     }
 
     override fun shardingSequenceFor(value: Any, shardingCount: Int): Int {
+        return shardingSequenceFor(listOf(value), shardingCount)
+    }
+
+    override fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int> {
+        return shardingSequencesFor(listOf(value), shardingCount)
+    }
+
+    override fun shardingSequenceFor(values: List<Any>, shardingCount: Int): Int {
+        require(values.size == 1)
+        val value = values.first()
         require(value is LocalDateTime)
         return calculateSequence(value)
     }
 
-    override fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int> {
+    override fun shardingSequencesFor(values: List<Any>, shardingCount: Int): Set<Int> {
+        require(values.size == 1)
+        val value = values.first()
         require(value is Document && value.size == 2)
         val startValue = (value["\$gte"] ?: value["\$gt"]) as LocalDateTime
         val endValue = (value["\$lte"] ?: value["\$lt"]) as LocalDateTime

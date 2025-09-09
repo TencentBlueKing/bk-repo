@@ -140,6 +140,9 @@ class DevxWorkspaceUtils(
         }
 
         suspend fun getWorkspace(): Mono<DevXWorkSpace?> {
+            if (devXProperties.workspaceUrl.isEmpty()) {
+                return Mono.empty()
+            }
             val type = object : ParameterizedTypeReference<QueryResponse<List<DevXWorkSpace>>>() {}
             return httpClient
                 .get()

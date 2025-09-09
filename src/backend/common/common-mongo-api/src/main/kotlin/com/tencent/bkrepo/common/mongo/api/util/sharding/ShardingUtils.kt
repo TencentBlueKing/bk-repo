@@ -25,7 +25,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.dao.util.sharding
+package com.tencent.bkrepo.common.mongo.api.util.sharding
 
 interface ShardingUtils {
 
@@ -34,4 +34,8 @@ interface ShardingUtils {
     fun shardingSequenceFor(value: Any, shardingCount: Int): Int
 
     fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int>
+
+    fun shardingSequenceFor(values: List<Any>, shardingCount: Int): Int
+
+    fun shardingSequencesFor(values: List<Any>, shardingCount: Int): Set<Int>
 }
