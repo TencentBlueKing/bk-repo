@@ -28,7 +28,7 @@
 dependencies {
     implementation(project(":driver:api-driver"))
     implementation(project(":common:common-stream"))
-    implementation(project(":common:common-metrics")) {
+    implementation(project(":common:common-metrics:metrics-push")) {
         exclude(module = "service-servlet")
     }
     api(project(":common:common-metrics:metrics-api"))
