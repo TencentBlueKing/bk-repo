@@ -29,7 +29,7 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.mongo.util
+package com.tencent.bkrepo.common.mongo.api.util.sharding
 
 import org.slf4j.LoggerFactory
 
@@ -54,17 +54,29 @@ object HashShardingUtils : ShardingUtils {
         return result
     }
 
-    /**
-     * 计算[value]对应的sharding sequence
-     *
-     * [shardingCount]表示分表数量，计算出的结果范围为[0, shardingCount)
-     */
     override fun shardingSequenceFor(value: Any, shardingCount: Int): Int {
-        val hashCode = value.hashCode()
-        return hashCode and shardingCount - 1
+        return shardingSequenceFor(listOf(value), shardingCount)
     }
 
     override fun shardingSequencesFor(value: Any, shardingCount: Int): Set<Int> {
+        throw UnsupportedOperationException()
+    }
+
+    /**
+     * 计算[values]对应的sharding sequence
+     *
+     * [shardingCount]表示分表数量，计算出的结果范围为[0, shardingCount)
+     */
+    override fun shardingSequenceFor(values: List<Any>, shardingCount: Int): Int {
+        require(values.isNotEmpty())
+        var h = 0
+        values.forEach { value ->
+            h = 31 * h + value.hashCode()
+        }
+        return h and shardingCount - 1
+    }
+
+    override fun shardingSequencesFor(values: List<Any>, shardingCount: Int): Set<Int> {
         throw UnsupportedOperationException()
     }
 
