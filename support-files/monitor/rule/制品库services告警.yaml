@@ -1,0 +1,105 @@
+detect:
+  algorithm:
+    warning:
+    - config: '>=5'
+      type: Threshold
+  trigger: 1/5/5
+name: 制品库services告警
+notice:
+  assign_mode:
+  - only_notice
+  - by_rule
+  signal:
+  - abnormal
+  template:
+    abnormal:
+      content: '{{content.level}}
+
+        {{content.begin_time}}
+
+        {{content.time}}
+
+        {{content.duration}}
+
+        {{content.target_type}}
+
+        {{content.data_source}}
+
+        {{content.content}}
+
+        {{content.current_value}}
+
+        {{content.biz}}
+
+        {{content.target}}
+
+        {{content.dimension}}
+
+        {{content.detail}}
+
+        {{content.related_info}}'
+      title: '{{business.bk_biz_name}} - {{alarm.name}}{{alarm.display_type}}'
+    closed:
+      content: '{{content.level}}
+
+        {{content.begin_time}}
+
+        {{content.time}}
+
+        {{content.duration}}
+
+        {{content.target_type}}
+
+        {{content.data_source}}
+
+        {{content.content}}
+
+        {{content.current_value}}
+
+        {{content.biz}}
+
+        {{content.target}}
+
+        {{content.dimension}}
+
+        {{content.detail}}
+
+        {{content.related_info}}'
+      title: '{{business.bk_biz_name}} - {{alarm.name}}{{alarm.display_type}}'
+    recovered:
+      content: '{{content.level}}
+
+        {{content.begin_time}}
+
+        {{content.time}}
+
+        {{content.duration}}
+
+        {{content.target_type}}
+
+        {{content.data_source}}
+
+        {{content.content}}
+
+        {{content.current_value}}
+
+        {{content.biz}}
+
+        {{content.target}}
+
+        {{content.dimension}}
+
+        {{content.detail}}
+
+        {{content.related_info}}'
+      title: '{{business.bk_biz_name}} - {{alarm.name}}{{alarm.display_type}}'
+  user_groups:
+  - bkrepo告警
+query:
+  data_source: bk_log_search
+  data_type: log
+  query_configs:
+  - interval: 60
+    metric: '23269'
+    query_string: 'loglevel:ERROR'
+version: '1.0'

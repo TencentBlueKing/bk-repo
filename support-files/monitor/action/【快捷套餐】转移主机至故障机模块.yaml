@@ -1,0 +1,8 @@
+description: 系统内置快捷套餐
+name: 【快捷套餐】转移主机至故障机模块
+template_detail:
+  ${cc_host_ip}: '{{target.host.bk_host_innerip}}'
+template_id: 41133
+timeout: 600
+type: sops
+version: '1.0'
