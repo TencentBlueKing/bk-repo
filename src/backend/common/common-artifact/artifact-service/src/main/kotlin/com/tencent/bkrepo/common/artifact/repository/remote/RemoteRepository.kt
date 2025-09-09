@@ -392,7 +392,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         addInterceptor: Boolean = true,
         followRedirect: Boolean = false,
     ): OkHttpClient {
-        return buildOkHttpClient(configuration, addInterceptor, followRedirect).build()
+        return buildOkHttpClient(configuration, addInterceptor, followRedirect, registry = registry).build()
     }
 
     /**

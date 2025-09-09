@@ -57,6 +57,7 @@ import com.tencent.bkrepo.replication.replica.repository.remote.base.PushClient
 import com.tencent.bkrepo.replication.util.DefaultHandler
 import com.tencent.bkrepo.replication.util.ManifestParser
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
@@ -78,8 +79,9 @@ class OciArtifactPushClient(
     private val authService: OciAuthorizationService,
     replicationProperties: ReplicationProperties,
     localDataManager: LocalDataManager,
-    private val artifactReplicationHandler: RemoteClusterArtifactReplicationHandler
-) : PushClient(replicationProperties, localDataManager) {
+    private val artifactReplicationHandler: RemoteClusterArtifactReplicationHandler,
+    registry: ObservationRegistry
+) : PushClient(replicationProperties, localDataManager, registry) {
 
     private val blobUploadExecutor: ThreadPoolExecutor = OciThreadPoolExecutor.instance
 
