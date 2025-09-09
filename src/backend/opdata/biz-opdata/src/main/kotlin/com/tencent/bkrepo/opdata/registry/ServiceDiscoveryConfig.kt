@@ -27,11 +27,9 @@
 
 package com.tencent.bkrepo.opdata.registry
 
-import com.tencent.bkrepo.opdata.registry.consul.ConsulRegistryClient
 import com.tencent.bkrepo.opdata.registry.spring.SpringCloudServiceDiscovery
 import okhttp3.OkHttpClient
 import org.springframework.cloud.client.discovery.DiscoveryClient
-import org.springframework.cloud.consul.ConsulProperties
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Condition
