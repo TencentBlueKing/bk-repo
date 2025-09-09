@@ -30,9 +30,9 @@ package com.tencent.bkrepo.opdata.registry
 import com.tencent.bkrepo.opdata.registry.consul.ConsulRegistryClient
 import com.tencent.bkrepo.opdata.registry.spring.SpringCloudServiceDiscovery
 import okhttp3.OkHttpClient
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean
 import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.cloud.consul.ConsulProperties
+import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Condition
 import org.springframework.context.annotation.ConditionContext
@@ -45,6 +45,7 @@ import org.springframework.core.type.AnnotatedTypeMetadata
 class ServiceDiscoveryConfig (
     private val discoveryClient: DiscoveryClient,
     private val httpClient: OkHttpClient,
+    private val ctx: ApplicationContext,
 ){
 
     class ConsulClassesCondition : Condition {
@@ -64,9 +65,15 @@ class ServiceDiscoveryConfig (
 
     @Bean
     @Conditional(ConsulClassesCondition::class)
-    @ConditionalOnBean(ConsulProperties::class)
-    fun createConsulClient(consulProperties: ConsulProperties): RegistryClient {
-        return ConsulRegistryClient(httpClient, consulProperties)
+    fun createConsulClient(): RegistryClient {
+        val consulPropertiesClass = Class.forName("org.springframework.cloud.consul.ConsulProperties")
+        val consulPropertiesProvider = ctx.getBeanProvider(consulPropertiesClass)
+        val consulProperties = consulPropertiesProvider.ifAvailable
+            ?: throw IllegalStateException("ConsulProperties not available")
+
+        val constructor = Class.forName("com.tencent.bkrepo.opdata.registry.consul.ConsulRegistryClient")
+            .getDeclaredConstructor(OkHttpClient::class.java, consulPropertiesClass)
+        return constructor.newInstance(httpClient, consulProperties) as RegistryClient
     }
 
     @Bean
