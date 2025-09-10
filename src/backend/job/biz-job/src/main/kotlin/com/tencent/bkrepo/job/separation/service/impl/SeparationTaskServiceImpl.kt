@@ -144,6 +144,11 @@ class SeparationTaskServiceImpl(
     }
 
     override fun findSeparationCollectionList(projectId: String): List<String> {
+        val projectRepoKey = "$projectId/*"
+        if (!matchesConfigRepos(projectRepoKey, dataSeparationConfig.specialSeparateRepos)) {
+            return emptyList()
+        }
+
         val result = mutableListOf<String>()
         findDistinctSeparationDate(projectId).forEach { date ->
             val separationNodeCollection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
@@ -158,18 +163,13 @@ class SeparationTaskServiceImpl(
         projectId: String,
         repoName: String,
     ) {
-        var flag = false
         val projectRepoKey = "${projectId}/${repoName}"
-        dataSeparationConfig.specialRestoreRepos.forEach {
-            val regex = Regex(it.replace("*", ".*"))
-            if (regex.matches(projectRepoKey)) {
-                flag = true
-            }
+        if (!matchesConfigRepos(projectRepoKey, dataSeparationConfig.specialRestoreRepos)) {
+            throw BadRequestException(
+                CommonMessageCode.PARAMETER_INVALID,
+                projectRepoKey
+            )
         }
-        if (!flag) throw BadRequestException(
-            CommonMessageCode.PARAMETER_INVALID,
-            projectRepoKey
-        )
     }
 
     private fun createRestoreTask(request: SeparationTaskRequest) {
@@ -233,18 +233,13 @@ class SeparationTaskServiceImpl(
                 )
             }
 
-            var flag = false
             val projectRepoKey = "$projectId/$repoName"
-            dataSeparationConfig.specialSeparateRepos.forEach {
-                val regex = Regex(it.replace("*", ".*"))
-                if (regex.matches(projectRepoKey)) {
-                    flag = true
-                }
+            if (!matchesConfigRepos(projectRepoKey, dataSeparationConfig.specialSeparateRepos)) {
+                throw BadRequestException(
+                    CommonMessageCode.PARAMETER_INVALID,
+                    projectRepoKey
+                )
             }
-            if (!flag) throw BadRequestException(
-                CommonMessageCode.PARAMETER_INVALID,
-                projectRepoKey
-            )
 
             val separateDate = try {
                 LocalDateTime.parse(separateAt, DateTimeFormatter.ISO_DATE_TIME)
@@ -303,6 +298,16 @@ class SeparationTaskServiceImpl(
                 type = type,
                 overwrite = overwrite
             )
+        }
+    }
+
+    /**
+     * 检查项目仓库键是否匹配配置的仓库列表
+     */
+    private fun matchesConfigRepos(projectRepoKey: String, configRepos: List<String>): Boolean {
+        return configRepos.any { configRepo ->
+            val regex = Regex(configRepo.replace("*", ".*"))
+            regex.matches(projectRepoKey)
         }
     }
 
