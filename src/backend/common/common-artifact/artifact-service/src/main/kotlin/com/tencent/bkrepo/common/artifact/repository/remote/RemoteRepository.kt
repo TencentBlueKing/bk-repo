@@ -338,7 +338,8 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             metadataService = metadataService,
             monitor = monitor,
             contentLength = contentLength,
-            storageProperties = storageProperties
+            storageProperties = storageProperties,
+            registry = registry
         )
     }
 
