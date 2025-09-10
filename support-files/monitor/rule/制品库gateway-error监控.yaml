@@ -1,11 +1,3 @@
-actions:
-- action: 【自愈】bkrepo日志关键字告警预处理（未完成）
-  converge:
-    count: 1
-    func: skip_when_success
-    interval: 1
-  signal:
-  - abnormal
 detect:
   algorithm:
     warning:
@@ -109,6 +101,6 @@ query:
   data_type: log
   query_configs:
   - interval: 60
-    metric: '23270'
+    metric: 'xxxx'
     query_string: '*'
 version: '1.0'
