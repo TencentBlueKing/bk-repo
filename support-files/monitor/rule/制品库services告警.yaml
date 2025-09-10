@@ -100,6 +100,6 @@ query:
   data_type: log
   query_configs:
   - interval: 60
-    metric: '23269'
+    metric: 'xxxxx'
     query_string: 'loglevel:ERROR'
 version: '1.0'
