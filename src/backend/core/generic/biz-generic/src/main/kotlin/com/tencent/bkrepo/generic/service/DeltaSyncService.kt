@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory

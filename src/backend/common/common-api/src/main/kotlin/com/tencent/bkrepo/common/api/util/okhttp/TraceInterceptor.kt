@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.api.util.okhttp
 
-import com.tencent.bkrepo.common.api.util.AsyncUtils
+import com.tencent.bkrepo.common.api.util.TraceUtils
 import io.micrometer.common.KeyValue
 import io.micrometer.common.KeyValues
 import io.micrometer.observation.ObservationRegistry
@@ -19,7 +19,7 @@ class TraceInterceptor(
         val urlKV = KeyValue.of("http.url", request.url.toString())
         val lowCardinalityKeyValues = KeyValues.of(methodKV)
         val highCardinalityKeyValues = KeyValues.of(urlKV)
-        return AsyncUtils.newSpan(registry, spanName, lowCardinalityKeyValues, highCardinalityKeyValues) {
+        return TraceUtils.newSpan(registry, spanName, lowCardinalityKeyValues, highCardinalityKeyValues) {
             try {
                 val response = chain.proceed(request)
                 registry.currentObservation?.lowCardinalityKeyValue("http.status_code", response.code.toString())

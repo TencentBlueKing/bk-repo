@@ -35,7 +35,7 @@ import io.micrometer.observation.ObservationRegistry
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 
-object AsyncUtils {
+object TraceUtils {
 
     private val contextSnapshotFactory = ContextSnapshotFactory.builder().build()
 

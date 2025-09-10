@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.api.util.okhttp
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 import java.io.InputStream
@@ -245,7 +245,7 @@ class UnsafeSSLSocketImpl(private val delegate: SSLSocket, private val closeTime
     private fun Closeable.closeQuietly() {
         try {
             this.close()
-        } catch (ignored: Throwable) {
+        } catch (_: Throwable) {
         }
     }
 

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.api.util.okhttp
 
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import io.micrometer.observation.ObservationRegistry
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient

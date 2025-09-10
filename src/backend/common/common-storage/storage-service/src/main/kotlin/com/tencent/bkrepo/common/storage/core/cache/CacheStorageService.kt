@@ -81,11 +81,11 @@ class CacheStorageService(
             }
 
             artifactFile.isFallback() || artifactFile.isInLocalDisk() -> {
-                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials, storageClass)
+                fileStorage.store(path, filename, artifactFile.traceableFlushToFile(), credentials, storageClass)
             }
 
             else -> {
-                val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.flushToFile())
+                val cacheFile = getCacheClient(credentials).move(path, filename, artifactFile.traceableFlushToFile())
                 cacheFileEventPublisher.publishCacheFileLoadedEvent(credentials, cacheFile)
                 async2Store(filename, credentials, path, cacheFile, storageClass)
             }

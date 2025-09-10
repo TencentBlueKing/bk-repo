@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.helm.listener
 
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent

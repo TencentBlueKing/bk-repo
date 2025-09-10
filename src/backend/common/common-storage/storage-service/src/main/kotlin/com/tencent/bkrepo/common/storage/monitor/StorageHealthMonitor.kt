@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.api.util.HumanReadable.time
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -127,11 +127,11 @@ class StorageHealthMonitor(
                             executorService
                         ).get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
                         onCheckSuccess()
-                    } catch (ignored: TimeoutException) {
+                    } catch (_: TimeoutException) {
                         onCheckFailed(IO_TIMEOUT_MESSAGE)
-                    } catch (exception: InterruptedException) {
+                    } catch (_: InterruptedException) {
                         onCheckFailed(INTERRUPTED_MESSAGE)
-                    } catch (exception: CancellationException) {
+                    } catch (_: CancellationException) {
                         onCheckFailed(CANCELLED_MESSAGE)
                     } catch (exception: ExecutionException) {
                         onCheckFailed(exception.cause?.message ?: UNKNOWN)
