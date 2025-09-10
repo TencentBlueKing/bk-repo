@@ -127,3 +127,11 @@ const val DATA_RECORDS_RESTORE = "DATA_RESTORE"
  * 归档
  */
 const val ARCHIVE_FILE_COLLECTION = "archive_file"
+
+/**
+ * 表名
+ */
+const val COLLECTION_NAME_NODE = "node"
+const val COLLECTION_NAME_FILE_REFERENCE = "file_reference"
+const val COLLECTION_NAME_BLOCK_NODE = "block_node"
+const val COLLECTION_NAME_COMPRESS_FILE = "compress_file"

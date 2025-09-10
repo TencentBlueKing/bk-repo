@@ -105,7 +105,7 @@ class NodeCommonUtilsTest @Autowired constructor(
     fun `throw IllegalStateException when repo was migrating`() {
         whenever(separationTaskService.findDistinctSeparationDate()).thenReturn(emptySet())
         mockNode()
-        assertThrows<IllegalStateException> { NodeCommonUtils.exist(Query(), null) }
+        assertThrows<IllegalStateException> { NodeCommonUtils.nodeExist(Query(), null) }
     }
 
     @Test
