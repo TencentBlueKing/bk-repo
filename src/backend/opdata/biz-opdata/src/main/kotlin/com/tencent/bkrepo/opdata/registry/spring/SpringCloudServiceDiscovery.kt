@@ -56,7 +56,8 @@ class SpringCloudServiceDiscovery(
     )}
     var targetDetails = details
     logger.info("details is $details")
-    logger.info("podLabelConfig is $podLabelConfig")
+    logger.info("labelName is " + podLabelConfig.labelName)
+    logger.info("labelValue is " + podLabelConfig.labelValue)
     if (podLabelConfig.labelValue.isNotBlank()) {
        targetDetails = details.filter {
          it.details.any { serviceInstance -> serviceInstance.metadata[LABEL_NAME].equals(podLabelConfig.labelValue) }
