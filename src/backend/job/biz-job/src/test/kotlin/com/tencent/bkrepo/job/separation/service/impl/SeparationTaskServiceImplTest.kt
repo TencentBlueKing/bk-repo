@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
+import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -25,6 +26,7 @@ class SeparationTaskServiceImplTest {
     private lateinit var separationFailedRecordDao: SeparationFailedRecordDao
     private lateinit var mongoTemplate: MongoTemplate
     private lateinit var matchesConfigReposMethod: Method
+    private lateinit var isProjectAllowedForSeparationMethod: Method
     private lateinit var separationTaskService: SeparationTaskServiceImpl
 
     @BeforeAll
@@ -44,6 +46,12 @@ class SeparationTaskServiceImplTest {
             List::class.java
         )
         matchesConfigReposMethod.isAccessible = true
+
+        isProjectAllowedForSeparationMethod = SeparationTaskServiceImpl::class.java.getDeclaredMethod(
+            "isProjectAllowedForSeparation",
+            String::class.java
+        )
+        isProjectAllowedForSeparationMethod.isAccessible = true
     }
 
     /**
@@ -51,6 +59,13 @@ class SeparationTaskServiceImplTest {
      */
     private fun callMatchesConfigRepos(projectRepoKey: String, configRepos: List<String>): Boolean {
         return matchesConfigReposMethod.invoke(separationTaskService, projectRepoKey, configRepos) as Boolean
+    }
+
+    /**
+     * 调用私有方法isProjectAllowedForSeparation的辅助方法
+     */
+    private fun callIsProjectAllowedForSeparation(projectId: String): Boolean {
+        return isProjectAllowedForSeparationMethod.invoke(separationTaskService, projectId) as Boolean
     }
 
     @Test
@@ -190,5 +205,188 @@ class SeparationTaskServiceImplTest {
 
         // 单个不匹配
         assertFalse(callMatchesConfigRepos("project1/repo1", listOf("project2/repo2")))
+    }
+
+    @Test
+    @DisplayName("测试项目ID是否允许数据分离 - 精确匹配")
+    fun testIsProjectAllowedForSeparation_ExactMatch() {
+        // Mock配置：精确匹配项目ID
+        every { dataSeparationConfig.specialSeparateRepos } returns mutableListOf(
+            "project1/repo1",
+            "project2/repo2",
+            "test-project/test-repo"
+        )
+
+        // 精确匹配的项目ID应该被允许
+        assertTrue(callIsProjectAllowedForSeparation("project1"))
+        assertTrue(callIsProjectAllowedForSeparation("project2"))
+        assertTrue(callIsProjectAllowedForSeparation("test-project"))
+
+        // 不在配置中的项目ID应该被拒绝
+        assertFalse(callIsProjectAllowedForSeparation("project3"))
+        assertFalse(callIsProjectAllowedForSeparation("unknown-project"))
+        assertFalse(callIsProjectAllowedForSeparation(""))
+    }
+
+    @Test
+    @DisplayName("测试项目ID是否允许数据分离 - 通配符匹配")
+    fun testIsProjectAllowedForSeparation_WildcardMatch() {
+        // Mock配置：包含通配符
+        every { dataSeparationConfig.specialSeparateRepos } returns mutableListOf(
+            "*/common",
+            "prod-*/release-repo",
+            "*/*"
+        )
+
+        // 任何项目ID都应该被允许（因为有*/*配置）
+        assertTrue(callIsProjectAllowedForSeparation("any-project"))
+        assertTrue(callIsProjectAllowedForSeparation("test"))
+        assertTrue(callIsProjectAllowedForSeparation("prod-app"))
+        assertTrue(callIsProjectAllowedForSeparation("random-name"))
+    }
+
+    @Test
+    @DisplayName("测试项目ID是否允许数据分离 - 全局通配符")
+    fun testIsProjectAllowedForSeparation_GlobalWildcard() {
+        // Mock配置：只有全局通配符
+        every { dataSeparationConfig.specialSeparateRepos } returns mutableListOf("*/*")
+
+        // 任何项目ID都应该被允许
+        assertTrue(callIsProjectAllowedForSeparation("project1"))
+        assertTrue(callIsProjectAllowedForSeparation("any-project"))
+        assertTrue(callIsProjectAllowedForSeparation("test-123"))
+        assertTrue(callIsProjectAllowedForSeparation(""))
+    }
+
+    @Test
+    @DisplayName("测试项目ID是否允许数据分离 - 项目级通配符")
+    fun testIsProjectAllowedForSeparation_ProjectWildcard() {
+        // Mock配置：项目级通配符
+        every { dataSeparationConfig.specialSeparateRepos } returns mutableListOf(
+            "project1/*",
+            "test-*/*",
+            "prod/*"
+        )
+
+        // 匹配的项目ID应该被允许
+        assertTrue(callIsProjectAllowedForSeparation("project1"))
+        assertTrue(callIsProjectAllowedForSeparation("test-app"))
+        assertTrue(callIsProjectAllowedForSeparation("test-service"))
+        assertTrue(callIsProjectAllowedForSeparation("prod"))
+
+        // 不匹配的项目ID应该被拒绝
+        assertFalse(callIsProjectAllowedForSeparation("project2"))
+        assertFalse(callIsProjectAllowedForSeparation("dev"))
+        assertFalse(callIsProjectAllowedForSeparation("staging"))
+    }
+
+    @Test
+    @DisplayName("测试项目ID是否允许数据分离 - 空配置")
+    fun testIsProjectAllowedForSeparation_EmptyConfig() {
+        // Mock配置：空列表
+        every { dataSeparationConfig.specialSeparateRepos } returns mutableListOf()
+
+        // 所有项目ID都应该被拒绝
+        assertFalse(callIsProjectAllowedForSeparation("project1"))
+        assertFalse(callIsProjectAllowedForSeparation("any-project"))
+        assertFalse(callIsProjectAllowedForSeparation("test"))
+        assertFalse(callIsProjectAllowedForSeparation(""))
+    }
+
+    @Test
+    @DisplayName("测试项目ID是否允许数据分离 - 混合配置")
+    fun testIsProjectAllowedForSeparation_MixedConfig() {
+        // Mock配置：混合精确匹配和通配符
+        every { dataSeparationConfig.specialSeparateRepos } returns mutableListOf(
+            "exact-project/exact-repo",
+            "wildcard-*/*",
+            "*/shared-repo",
+            "special/*"
+        )
+
+        // 精确匹配
+        assertTrue(callIsProjectAllowedForSeparation("exact-project"))
+
+        // 通配符匹配
+        assertTrue(callIsProjectAllowedForSeparation("wildcard-test"))
+        assertTrue(callIsProjectAllowedForSeparation("wildcard-prod"))
+        assertTrue(callIsProjectAllowedForSeparation("any-name")) // 匹配 */shared-repo
+        assertTrue(callIsProjectAllowedForSeparation("special"))
+
+        // 不匹配
+        assertTrue(callIsProjectAllowedForSeparation("other-project"))
+        assertTrue(callIsProjectAllowedForSeparation("random"))
+    }
+
+    @Test
+    @DisplayName("测试项目ID是否允许数据分离 - 特殊字符")
+    fun testIsProjectAllowedForSeparation_SpecialCharacters() {
+        // Mock配置：包含特殊字符
+        every { dataSeparationConfig.specialSeparateRepos } returns mutableListOf(
+            "project-1/repo_1",
+            "project.test/*",
+            "test_project/*"
+        )
+
+        // 包含特殊字符的项目ID
+        assertTrue(callIsProjectAllowedForSeparation("project-1"))
+        assertTrue(callIsProjectAllowedForSeparation("project.test"))
+        assertTrue(callIsProjectAllowedForSeparation("test_project"))
+
+        // 不匹配的特殊字符
+        assertFalse(callIsProjectAllowedForSeparation("project_1"))
+        assertFalse(callIsProjectAllowedForSeparation("project-test"))
+    }
+
+    @Test
+    @DisplayName("测试项目模式匹配 - 通配符逻辑")
+    fun testMatchesProjectPattern() {
+        // 使用反射调用私有方法进行测试
+        val method = SeparationTaskServiceImpl::class.java.getDeclaredMethod(
+            "matchesProjectPattern", 
+            String::class.java, 
+            String::class.java
+        )
+        method.isAccessible = true
+        
+        fun callMatchesProjectPattern(projectId: String, pattern: String): Boolean {
+            return method.invoke(separationTaskService, projectId, pattern) as Boolean
+        }
+
+        // 全局通配符测试
+        assertTrue(callMatchesProjectPattern("any-project", "*"))
+        assertTrue(callMatchesProjectPattern("", "*"))
+        assertTrue(callMatchesProjectPattern("test123", "*"))
+
+        // 精确匹配测试
+        assertTrue(callMatchesProjectPattern("project1", "project1"))
+        assertTrue(callMatchesProjectPattern("test-app", "test-app"))
+        assertFalse(callMatchesProjectPattern("project1", "project2"))
+
+        // 前缀通配符测试
+        assertTrue(callMatchesProjectPattern("test-app", "test-*"))
+        assertTrue(callMatchesProjectPattern("test-service", "test-*"))
+        assertTrue(callMatchesProjectPattern("test-", "test-*"))
+        assertTrue(callMatchesProjectPattern("test", "test*"))
+        assertFalse(callMatchesProjectPattern("prod-app", "test-*"))
+        assertFalse(callMatchesProjectPattern("mytest-app", "test-*"))
+
+        // 后缀通配符测试
+        assertTrue(callMatchesProjectPattern("app-test", "*-test"))
+        assertTrue(callMatchesProjectPattern("service-test", "*-test"))
+        assertTrue(callMatchesProjectPattern("-test", "*-test"))
+        assertTrue(callMatchesProjectPattern("test", "*test"))
+        assertFalse(callMatchesProjectPattern("app-prod", "*-test"))
+        assertFalse(callMatchesProjectPattern("app-testing", "*-test"))
+
+        // 边界情况测试
+        assertFalse(callMatchesProjectPattern("project", ""))
+        assertFalse(callMatchesProjectPattern("", "project"))
+        assertTrue(callMatchesProjectPattern("", ""))
+        
+        // 特殊字符测试
+        assertTrue(callMatchesProjectPattern("project-1.0", "project-*"))
+        assertTrue(callMatchesProjectPattern("test_app", "test_*"))
+        assertTrue(callMatchesProjectPattern("app.service", "*.service"))
     }
 }

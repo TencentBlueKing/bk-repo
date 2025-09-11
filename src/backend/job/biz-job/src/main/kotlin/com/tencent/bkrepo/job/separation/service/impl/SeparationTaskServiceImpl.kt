@@ -144,8 +144,7 @@ class SeparationTaskServiceImpl(
     }
 
     override fun findSeparationCollectionList(projectId: String): List<String> {
-        val projectRepoKey = "$projectId/*"
-        if (!matchesConfigRepos(projectRepoKey, dataSeparationConfig.specialSeparateRepos)) {
+        if (!isProjectAllowedForSeparation(projectId)) {
             return emptyList()
         }
 
@@ -157,6 +156,41 @@ class SeparationTaskServiceImpl(
             result.add(separationNodeCollection)
         }
         return result
+    }
+
+    /**
+     * 检查项目ID是否在specialSeparateRepos配置中被允许进行数据分离操作
+     */
+    private fun isProjectAllowedForSeparation(projectId: String): Boolean {
+        return dataSeparationConfig.specialSeparateRepos.any { repoConfig ->
+            val configProjectId = repoConfig.substringBefore("/")
+            matchesProjectPattern(projectId, configProjectId)
+        }
+    }
+
+    /**
+     * 检查项目ID是否匹配配置模式
+     * 支持通配符匹配，如：project1, test-*, *, 等
+     */
+    private fun matchesProjectPattern(projectId: String, pattern: String): Boolean {
+        return when {
+            // 全局通配符
+            pattern == "*" -> true
+            // 精确匹配
+            pattern == projectId -> true
+            // 前缀通配符匹配，如 test-* 匹配 test-app
+            pattern.endsWith("*") -> {
+                val prefix = pattern.dropLast(1)
+                projectId.startsWith(prefix)
+            }
+            // 后缀通配符匹配，如 *-test 匹配 app-test
+            pattern.startsWith("*") -> {
+                val suffix = pattern.drop(1)
+                projectId.endsWith(suffix)
+            }
+            // 其他情况不匹配
+            else -> false
+        }
     }
 
     private fun restoreTaskCheck(
