@@ -170,6 +170,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         )
         RepositoryCommonUtils.updateService(repositoryService, storageCredentialService)
         fileReferenceCleanupJobProperties.expectedNodes = 50_000
+        fileReferenceCleanupJobProperties.expectedBlockNodes = 50_000
     }
 
     @AfterEach
