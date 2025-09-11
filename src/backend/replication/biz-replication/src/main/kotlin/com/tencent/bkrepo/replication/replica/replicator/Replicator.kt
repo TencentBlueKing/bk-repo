@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.replication.replica.replicator
 
-import com.tencent.bkrepo.replication.pojo.request.NodeCopyOrMoveRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 
@@ -97,10 +97,10 @@ interface Replicator {
     /**
      * 同步node move操作
      */
-    fun replicaNodeMove(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean
+    fun replicaNodeMove(context: ReplicaContext, moveOrCopyRequest: NodeMoveCopyRequest): Boolean
 
     /**
      * 同步node  copy操作
      */
-    fun replicaNodeCopy(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean
+    fun replicaNodeCopy(context: ReplicaContext, moveOrCopyRequest: NodeMoveCopyRequest): Boolean
 }

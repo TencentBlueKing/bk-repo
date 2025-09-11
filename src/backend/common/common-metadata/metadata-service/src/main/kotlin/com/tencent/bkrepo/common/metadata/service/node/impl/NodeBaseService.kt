@@ -253,16 +253,12 @@ abstract class NodeBaseService(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun replicaDeletedNode(request: DeletedNodeReplicationRequest): NodeDetail {
-        with(request) {
+        with(request.nodeCreateRequest) {
             // 判断父目录是否存在，不存在先创建
             mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
             // 创建节点
-            val node = buildDeletedNode(this)
-            try {
-                nodeDao.insert(node)
-            } catch (exception: DuplicateKeyException) {
-                logger.warn("Insert deleted node[$node] error: [${exception.message}]")
-            }
+            val node = buildDeletedNode(request)
+            doCreate(node, separate = separate)
             logger.info("replica deleted node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
             return convertToDetail(node)!!
         }
@@ -276,7 +272,9 @@ abstract class NodeBaseService(
     }
 
     private fun buildDeletedNode(request: DeletedNodeReplicationRequest): TNode {
-        return NodeBaseServiceHelper.buildDeletedNode(request)
+        return buildTNode(request.nodeCreateRequest).apply {
+            deleted = request.deleted
+        }
     }
 
     private fun getTotalNodeNum(artifact: ArtifactInfo, query: Query): Long {
@@ -401,7 +399,9 @@ abstract class NodeBaseService(
                 if (node.sha256 != FAKE_SHA256) {
                     incrementFileReference(node, repository)
                 }
-                quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
+                if (node.deleted == null) {
+                    quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
+                }
             }
         } catch (exception: DuplicateKeyException) {
             if (separate){

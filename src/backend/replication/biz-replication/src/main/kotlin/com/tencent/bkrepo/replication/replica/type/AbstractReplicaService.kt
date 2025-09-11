@@ -38,7 +38,6 @@ import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
-import com.tencent.bkrepo.replication.pojo.request.NodeCopyOrMoveRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
@@ -54,6 +53,7 @@ import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationRecordDetailMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -253,7 +253,7 @@ abstract class AbstractReplicaService(
      */
     protected fun replicaByMovedOrCopiedNode(
         replicaContext: ReplicaContext,
-        nodeOrMoveRequest: NodeCopyOrMoveRequest,
+        nodeOrMoveRequest: NodeMoveCopyRequest,
         move: Boolean
     ) {
         with(replicaContext) {
@@ -507,7 +507,7 @@ abstract class AbstractReplicaService(
      */
     private fun replicaMovedOrCopiedNode(
         replicaContext: ReplicaContext,
-        nodeOrMoveRequest: NodeCopyOrMoveRequest,
+        nodeOrMoveRequest: NodeMoveCopyRequest,
         move: Boolean
     ) {
         with(replicaContext) {

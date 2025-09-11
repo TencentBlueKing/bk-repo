@@ -33,7 +33,6 @@ dependencies {
     api(project(":common:common-job"))
     api(project(":common:common-fdtp"))
     api(project(":common:common-artifact:artifact-service"))
-    api(project(":common:common-lock"))
     implementation("org.quartz-scheduler:quartz")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")

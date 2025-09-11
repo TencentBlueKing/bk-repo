@@ -44,7 +44,14 @@ class FederatedRepositoryController(
     }
 
     override fun deleteConfig(projectId: String, repoName: String, key: String): Response<Void> {
-        federationRepositoryService.deleteLocalFederationRepositoryConfig(projectId, repoName, key)
+        federationRepositoryService.deleteFederationRepositoryConfig(projectId, repoName, key, false)
+        return ResponseBuilder.success()
+    }
+
+    override fun removeClusterFromFederation(
+        projectId: String, repoName: String, key: String, name: String
+    ): Response<Void> {
+        federationRepositoryService.removeClusterFromFederation(projectId, repoName, key, name, false)
         return ResponseBuilder.success()
     }
 

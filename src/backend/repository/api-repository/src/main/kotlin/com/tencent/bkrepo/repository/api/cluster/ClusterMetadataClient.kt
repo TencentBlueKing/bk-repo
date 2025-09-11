@@ -59,6 +59,6 @@ interface ClusterMetadataClient {
 
 
     @Operation(summary = "创建/更新元数据列表")
-    @PostMapping("/save/deletd")
+    @PostMapping("/save/deleted")
     fun saveMetadataForDeletedNode(@RequestBody request: DeletedNodeMetadataSaveRequest): Response<Void>
 }

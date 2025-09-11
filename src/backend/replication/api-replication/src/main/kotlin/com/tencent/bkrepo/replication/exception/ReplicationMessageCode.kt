@@ -52,6 +52,7 @@ enum class ReplicationMessageCode(private val businessCode: Int, private val key
     FEDERATION_REPOSITORY_CREATE_ERROR(17, "federation.repository.create.error"),
     FEDERATION_REPOSITORY_FULL_SYNC_RUNNING(18, "federation.repository.full.sync.running"),
     FEDERATION_REPOSITORY_FULL_SYNC_FAILED(19, "federation.repository.full.sync.failed"),
+    FEDERATION_REPOSITORY_DELETE_ERROR(20, "federation.repository.delete.error")
     ;
 
     override fun getBusinessCode() = businessCode

@@ -63,5 +63,15 @@ interface FederatedRepositoryClient {
         @PathVariable key: String,
     ): Response<Void>
 
+    @Operation(summary = "删除配置")
+    @DeleteMapping("/config/cluster/delete/{projectId}/{repoName}/{key}/{name}")
+    fun removeClusterFromFederation(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @PathVariable key: String,
+        @PathVariable name: String
+    ): Response<Void>
+
+
 
 }

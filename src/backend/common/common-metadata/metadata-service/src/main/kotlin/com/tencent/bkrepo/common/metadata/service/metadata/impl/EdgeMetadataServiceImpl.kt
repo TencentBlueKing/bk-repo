@@ -101,8 +101,8 @@ class EdgeMetadataServiceImpl(
 
     override fun saveMetadataForDeletedNode(request: DeletedNodeMetadataSaveRequest) {
         ignoreException(
-            projectId = request.projectId,
-            repoName = request.repoName,
+            projectId = request.metadataSaveRequest.projectId,
+            repoName = request.metadataSaveRequest.repoName,
             messageCodes = nodeLevelNotFoundError
         ) {
             centerMetadataClient.saveMetadataForDeletedNode(request)

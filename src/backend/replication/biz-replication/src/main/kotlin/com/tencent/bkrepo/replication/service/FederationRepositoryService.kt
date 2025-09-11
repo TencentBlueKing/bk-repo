@@ -55,14 +55,25 @@ interface FederationRepositoryService {
     ): List<FederatedRepositoryInfo>
 
     /**
-     * 删除联邦仓库配置（本地+remote）
+     * 删除联邦仓库配置（解散整个联邦）
      */
-    fun deleteFederationRepositoryConfig(projectId: String, repoName: String, federationId: String)
+    fun deleteFederationRepositoryConfig(
+        projectId: String,
+        repoName: String,
+        federationId: String,
+        deleteRemote: Boolean = true
+    )
 
     /**
-     * 删除本地联邦仓库配置
+     * 从联邦中移除指定集群（不解散联邦）
      */
-    fun deleteLocalFederationRepositoryConfig(projectId: String, repoName: String, federationId: String)
+    fun removeClusterFromFederation(
+        projectId: String,
+        repoName: String,
+        federationId: String,
+        remoteClusterName: String,
+        deleteRemote: Boolean = true
+    )
 
     /**
      * 根据项目仓库获取当前集群名
@@ -71,7 +82,7 @@ interface FederationRepositoryService {
 
     /**
      * 执行联邦仓库fullSync
-    */
+     */
     fun fullSyncFederationRepository(projectId: String, repoName: String, federationId: String)
 
 

@@ -110,26 +110,53 @@ class MetadataServiceImpl(
             val fullPath = normalizeFullPath(fullPath)
             val node = nodeDao.findNode(projectId, repoName, fullPath)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            checkNodeCluster(node)
-            val oldMetadata = node.metadata ?: ArrayList()
-            val newMetadata = MetadataUtils.compatibleConvertAndCheck(
-                metadata,
-                MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
-            )
-            checkEnumTypeMetadata(projectId, newMetadata)
-            checkIfModifyPipelineMetadata(node, newMetadata.map { it.key })
-            checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
-            node.metadata = if (replace) {
-                newMetadata
-            } else {
-                MetadataUtils.merge(oldMetadata, newMetadata)
-            }
 
-            nodeDao.save(node)
+            val newMetadata = processMetadataSave(
+                node = node,
+                metadata = metadata,
+                nodeMetadata = nodeMetadata,
+                replace = replace,
+                isDeletedNode = false
+            )
+
             publishEvent(buildMetadataSavedEvent(request))
             pipelineArtifactCallback(node, newMetadata.map { it.key })
             logger.info("Save metadata[$newMetadata] on node[/$projectId/$repoName$fullPath] success.")
         }
+    }
+
+    /**
+     * 处理元数据保存的通用逻辑
+     */
+    private fun processMetadataSave(
+        node: TNode,
+        metadata: Map<String, Any>?,
+        nodeMetadata: List<MetadataModel>?,
+        replace: Boolean,
+        isDeletedNode: Boolean
+    ): MutableList<TMetadata> {
+        checkNodeCluster(node)
+        val oldMetadata = node.metadata ?: ArrayList()
+        val newMetadata = MetadataUtils.compatibleConvertAndCheck(
+            metadata,
+            MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
+        )
+
+        // 只有非删除节点才需要进行这些检查
+        if (!isDeletedNode) {
+            checkEnumTypeMetadata(node.projectId, newMetadata)
+            checkIfModifyPipelineMetadata(node, newMetadata.map { it.key })
+        }
+
+        checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
+        node.metadata = if (replace) {
+            newMetadata
+        } else {
+            MetadataUtils.merge(oldMetadata, newMetadata)
+        }
+
+        nodeDao.save(node)
+        return newMetadata
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -177,23 +204,19 @@ class MetadataServiceImpl(
 
     @Transactional(rollbackFor = [Throwable::class])
     override fun saveMetadataForDeletedNode(request: DeletedNodeMetadataSaveRequest) {
-        with(request) {
-            val query = nodeDeletedPointQuery(projectId, repoName, normalizeFullPath(fullPath), deleted)
-            val node = nodeDao.findOne(query) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
-            checkNodeCluster(node)
+        with(request.metadataSaveRequest) {
             val normalizedFullPath = normalizeFullPath(fullPath)
-            val oldMetadata = node.metadata ?: ArrayList()
-            val newMetadata = MetadataUtils.compatibleConvertAndCheck(
-                metadata,
-                MetadataUtils.changeSystem(nodeMetadata, repositoryProperties.allowUserAddSystemMetadata)
+            val query = nodeDeletedPointQuery(projectId, repoName, normalizedFullPath, request.deleted)
+            val node = nodeDao.findOne(query) ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
+
+            val newMetadata = processMetadataSave(
+                node = node,
+                metadata = metadata,
+                nodeMetadata = nodeMetadata,
+                replace = replace,
+                isDeletedNode = true
             )
-            checkIfUpdateSystemMetadata(oldMetadata, newMetadata)
-            node.metadata = if (replace) {
-                newMetadata
-            } else {
-                MetadataUtils.merge(oldMetadata, newMetadata)
-            }
-            nodeDao.save(node)
+
             logger.info(
                 "Save metadata[$newMetadata] on deleted " +
                     "node[/$projectId/$repoName$normalizedFullPath] success."

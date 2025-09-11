@@ -27,10 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.executor
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 /**
  * 用于同步任务的线程池
@@ -40,17 +37,5 @@ object ReplicaThreadPoolExecutor {
     /**
      * 线程池实例
      */
-    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
-
-    /**
-     * 创建线程池
-     */
-    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("replica-worker-%d").build()
-        val corePoolSize = Runtime.getRuntime().availableProcessors() * 2
-        return ThreadPoolExecutor(
-            corePoolSize, corePoolSize * 2, 30, TimeUnit.SECONDS,
-            ArrayBlockingQueue(1024), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
-        ).apply { this.allowCoreThreadTimeOut(true) }
-    }
+    val instance: ThreadPoolExecutor = ThreadPoolExecutorBuilder.build(ThreadPoolExecutorBuilder.Configs.REPLICA)
 }

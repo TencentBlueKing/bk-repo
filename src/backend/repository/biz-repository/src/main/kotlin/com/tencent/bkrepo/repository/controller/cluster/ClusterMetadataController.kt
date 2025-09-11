@@ -68,9 +68,9 @@ class ClusterMetadataController(
     }
 
     override fun saveMetadataForDeletedNode(request: DeletedNodeMetadataSaveRequest): Response<Void> {
-        with(request) {
+        with(request.metadataSaveRequest) {
             permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, fullPath)
-            metadataService.saveMetadataForDeletedNode(this)
+            metadataService.saveMetadataForDeletedNode(request)
             return ResponseBuilder.success()
         }
     }

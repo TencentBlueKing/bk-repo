@@ -27,23 +27,15 @@
 
 package com.tencent.bkrepo.replication.replica.replicator.standalone
 
-import com.google.common.base.Throwables
-import com.tencent.bkrepo.common.api.constant.HttpStatus
-import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.replication.config.ReplicationProperties
-import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
-import com.tencent.bkrepo.replication.constant.RETRY_COUNT
-import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
-import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.request.NodeCopyOrMoveRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
+import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.replicator.base.AbstractFileReplicator
 import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterArtifactReplicationHandler
 import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
-import com.tencent.bkrepo.replication.replica.context.FilePushContext
-import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.replication.replica.replicator.Replicator
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
@@ -56,9 +48,9 @@ import org.springframework.stereotype.Component
 @Component
 class EdgeNodeReplicator(
     private val localDataManager: LocalDataManager,
-    private val artifactReplicationHandler: ClusterArtifactReplicationHandler,
-    private val replicationProperties: ReplicationProperties
-) : Replicator {
+    artifactReplicationHandler: ClusterArtifactReplicationHandler,
+    replicationProperties: ReplicationProperties
+) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties) {
 
     override fun checkVersion(context: ReplicaContext) {
         // do nothing
@@ -115,64 +107,22 @@ class EdgeNodeReplicator(
     }
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
-        with(context) {
-            val sha256 = node.sha256.orEmpty()
-            var type: String = replicationProperties.pushType
-            var downGrade = false
-            val remoteRepositoryType = context.remoteRepoType
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
-                if (blobReplicaClient?.check(sha256 = sha256, repoType = remoteRepositoryType)?.data != true) {
-                    try {
-                        artifactReplicationHandler.blobPush(
-                            filePushContext = FilePushContext(
-                                context = context,
-                                name = node.fullPath,
-                                size = node.size,
-                                sha256 = node.sha256,
-                                md5 = node.md5,
-                                crc64ecma = node.crc64ecma,
-                            ),
-                            pushType = type,
-                            downGrade = downGrade
-                        )
-                    } catch (throwable: Throwable) {
-                        logger.warn(
-                            "File replica push from edge error $throwable, trace is " +
-                                "${Throwables.getStackTraceAsString(throwable)}!"
-                        )
-                        // 当不支持分块上传时，降级为普通上传
-                        if (
-                            throwable is ArtifactPushException &&
-                            (
-                                throwable.code == HttpStatus.METHOD_NOT_ALLOWED.value ||
-                                    throwable.code == HttpStatus.UNAUTHORIZED.value
-                                )
-                        ) {
-                            type = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
-                            downGrade = true
-                        }
-                        throw throwable
-                    }
-                    return true
-                }
-                return false
-            }
-        }
+        return executeFilePush(
+            context = context,
+            node = node,
+            logPrefix = "[EdgeNode] ",
+        )
     }
 
     override fun replicaDeletedNode(context: ReplicaContext, node: NodeInfo): Boolean {
         return true
     }
 
-    override fun replicaNodeMove(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean {
+    override fun replicaNodeMove(context: ReplicaContext, moveOrCopyRequest: NodeMoveCopyRequest): Boolean {
         return true
     }
 
-    override fun replicaNodeCopy(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean {
+    override fun replicaNodeCopy(context: ReplicaContext, moveOrCopyRequest: NodeMoveCopyRequest): Boolean {
         return true
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(EdgeNodeReplicator::class.java)
     }
 }

@@ -31,12 +31,12 @@ import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.replication.exception.ArtifactSourceCheckException
 import com.tencent.bkrepo.replication.exception.RegexCheckException
-import com.tencent.bkrepo.replication.pojo.request.NodeCopyOrMoveRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
-import com.tencent.bkrepo.replication.replica.repository.remote.ArtifactPushMappings
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
+import com.tencent.bkrepo.replication.replica.repository.remote.ArtifactPushMappings
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import org.slf4j.LoggerFactory
@@ -160,11 +160,11 @@ class RemoteReplicator : Replicator {
         return true
     }
 
-    override fun replicaNodeMove(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean {
+    override fun replicaNodeMove(context: ReplicaContext, moveOrCopyRequest: NodeMoveCopyRequest): Boolean {
         return true
     }
 
-    override fun replicaNodeCopy(context: ReplicaContext, moveOrCopyRequest: NodeCopyOrMoveRequest): Boolean {
+    override fun replicaNodeCopy(context: ReplicaContext, moveOrCopyRequest: NodeMoveCopyRequest): Boolean {
         return true
     }
 

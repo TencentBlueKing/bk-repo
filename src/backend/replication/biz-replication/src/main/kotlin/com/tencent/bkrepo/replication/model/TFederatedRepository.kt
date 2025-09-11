@@ -55,4 +55,10 @@ data class TFederatedRepository(
     var name: String,
     // 配置的联邦集群对应仓库信息
     var federatedClusters: List<FederatedCluster>,
+    // 是否正在进行全量同步
+    var isFullSyncing: Boolean = false,
+    // 最后一次全量同步开始时间
+    var lastFullSyncStartTime: LocalDateTime? = null,
+    // 最后一次全量同步完成时间
+    var lastFullSyncEndTime: LocalDateTime? = null
 )

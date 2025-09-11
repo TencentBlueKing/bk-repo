@@ -318,9 +318,9 @@ class ArtifactReplicaController(
     }
 
     private fun checkAndHandleExistingNodes(request: DeletedNodeReplicationRequest): NodeDetail? {
-        with(request) {
+        with(request.nodeCreateRequest) {
             // 检查是否存在已删除的节点
-            val deletedNode = nodeService.getDeletedNodeDetail(projectId, repoName, fullPath, deleted)
+            val deletedNode = nodeService.getDeletedNodeDetail(projectId, repoName, fullPath, request.deleted)
             if (deletedNode != null) {
                 return deletedNode
             }
@@ -332,9 +332,9 @@ class ArtifactReplicaController(
                 if (existCreatedDate.isEqual(createdDate) && existNode.createdBy == createdBy) {
                     // 如果活跃节点符合条件，则删除并返回
                     nodeService.deleteNodeById(
-                        projectId, repoName, fullPath, operator, existNode.nodeInfo.id!!, deleted
+                        projectId, repoName, fullPath, operator, existNode.nodeInfo.id!!, request.deleted
                     )
-                    return existNode
+                    return nodeService.getDeletedNodeDetail(projectId, repoName, fullPath, request.deleted)
                 }
             }
             return null

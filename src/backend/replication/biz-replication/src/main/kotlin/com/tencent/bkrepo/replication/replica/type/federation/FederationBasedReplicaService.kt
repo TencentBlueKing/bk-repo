@@ -30,7 +30,6 @@ package com.tencent.bkrepo.replication.replica.type.federation
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.pojo.request.NodeCopyOrMoveRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
@@ -38,6 +37,7 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import org.springframework.stereotype.Component
 
 /**
@@ -74,43 +74,11 @@ class FederationBasedReplicaService(
             replicaContext.executeType = TaskExecuteType.DELTA
             when (event.type) {
                 EventType.NODE_COPIED -> {
-                    val dstProjectId = event.data["dstProjectId"].toString()
-                    val dstRepoName = event.data["dstRepoName"].toString()
-                    val dstFullPath = event.data["dstFullPath"].toString()
-                    val destNodeFolder = event.data["destNodeFolder"]?.toString()?.toBoolean()
-                    val overwrite = event.data["overwrite"]?.toString()?.toBoolean() ?: false
-                    val nodeCopyOrMoveRequest = NodeCopyOrMoveRequest(
-                        srcProjectId = localProjectId,
-                        srcRepoName = localRepoName,
-                        srcFullPath = event.resourceKey,
-                        destProjectId = dstProjectId,
-                        destRepoName = dstRepoName,
-                        destFullPath = dstFullPath,
-                        destNodeFolder = destNodeFolder,
-                        overwrite = overwrite,
-                        operator = event.userId
-                    )
-                    replicaByMovedOrCopiedNode(this, nodeCopyOrMoveRequest, false)
+                    handleNodeMoveCopyEvent(this, isMoveOperation = false)
                 }
 
                 EventType.NODE_MOVED -> {
-                    val dstProjectId = event.data["dstProjectId"].toString()
-                    val dstRepoName = event.data["dstRepoName"].toString()
-                    val dstFullPath = event.data["dstFullPath"].toString()
-                    val destNodeFolder = event.data["destNodeFolder"]?.toString()?.toBoolean()
-                    val overwrite = event.data["overwrite"]?.toString()?.toBoolean() ?: false
-                    val nodeCopyOrMoveRequest = NodeCopyOrMoveRequest(
-                        srcProjectId = localProjectId,
-                        srcRepoName = localRepoName,
-                        srcFullPath = event.resourceKey,
-                        destProjectId = dstProjectId,
-                        destRepoName = dstRepoName,
-                        destFullPath = dstFullPath,
-                        destNodeFolder = destNodeFolder,
-                        overwrite = overwrite,
-                        operator = event.userId
-                    )
-                    replicaByMovedOrCopiedNode(this, nodeCopyOrMoveRequest, true)
+                    handleNodeMoveCopyEvent(this, isMoveOperation = true)
                 }
 
                 EventType.NODE_DELETED -> {
@@ -158,6 +126,35 @@ class FederationBasedReplicaService(
 
                 else -> throw UnsupportedOperationException()
             }
+        }
+    }
+
+    /**
+     * 处理节点移动或复制事件
+     * @param replicaContext 复制上下文
+     * @param isMoveOperation 是否为移动操作，true表示移动，false表示复制
+     */
+    private fun handleNodeMoveCopyEvent(replicaContext: ReplicaContext, isMoveOperation: Boolean) {
+        with(replicaContext) {
+            val dstProjectId = event.data["dstProjectId"].toString()
+            val dstRepoName = event.data["dstRepoName"].toString()
+            val dstFullPath = event.data["dstFullPath"].toString()
+            val destNodeFolder = event.data["destNodeFolder"]?.toString()?.toBoolean()
+            val overwrite = event.data["overwrite"]?.toString()?.toBoolean() ?: false
+
+            val nodeCopyOrMoveRequest = NodeMoveCopyRequest(
+                srcProjectId = localProjectId,
+                srcRepoName = localRepoName,
+                srcFullPath = event.resourceKey,
+                destProjectId = dstProjectId,
+                destRepoName = dstRepoName,
+                destFullPath = dstFullPath,
+                destNodeFolder = destNodeFolder,
+                overwrite = overwrite,
+                operator = event.userId
+            )
+
+            replicaByMovedOrCopiedNode(this, nodeCopyOrMoveRequest, isMoveOperation)
         }
     }
 }
