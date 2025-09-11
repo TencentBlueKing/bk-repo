@@ -30,7 +30,7 @@
 <script>
 
 import { ROUTER_NAME_INSTANCE } from '@/router'
-import { checkConsulPattern, services } from '@/api/service'
+import { services } from '@/api/service'
 
 export default {
   name: 'Service',
@@ -42,9 +42,6 @@ export default {
   created() {
     services().then(res => {
       this.services = res.data
-    })
-    checkConsulPattern().then(res => {
-      console.log(res)
     })
   },
   methods: {

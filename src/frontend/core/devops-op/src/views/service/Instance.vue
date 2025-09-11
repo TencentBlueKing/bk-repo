@@ -108,7 +108,7 @@ export default {
       this.loading = false
     })
     checkConsulPattern().then(res => {
-      console.log(res)
+      this.isConsul = res.data
     })
   },
   methods: {
