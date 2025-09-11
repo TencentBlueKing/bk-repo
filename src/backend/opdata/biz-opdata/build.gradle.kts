@@ -40,5 +40,4 @@ dependencies {
     implementation("org.influxdb:influxdb-java")
     compileOnly("org.springframework.cloud:spring-cloud-starter-consul-discovery")
     compileOnly("org.springframework.cloud:spring-cloud-starter-consul-config")
-    implementation("io.fabric8:kubernetes-client:7.4.0")
 }
