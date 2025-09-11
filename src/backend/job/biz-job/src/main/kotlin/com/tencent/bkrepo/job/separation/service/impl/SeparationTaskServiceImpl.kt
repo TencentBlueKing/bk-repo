@@ -144,6 +144,10 @@ class SeparationTaskServiceImpl(
     }
 
     override fun findSeparationCollectionList(projectId: String): List<String> {
+        if (!isProjectAllowedForSeparation(projectId)) {
+            return emptyList()
+        }
+
         val result = mutableListOf<String>()
         findDistinctSeparationDate(projectId).forEach { date ->
             val separationNodeCollection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
@@ -154,22 +158,52 @@ class SeparationTaskServiceImpl(
         return result
     }
 
+    /**
+     * 检查项目ID是否在specialSeparateRepos配置中被允许进行数据分离操作
+     */
+    private fun isProjectAllowedForSeparation(projectId: String): Boolean {
+        return dataSeparationConfig.specialSeparateRepos.any { repoConfig ->
+            val configProjectId = repoConfig.substringBefore("/")
+            matchesProjectPattern(projectId, configProjectId)
+        }
+    }
+
+    /**
+     * 检查项目ID是否匹配配置模式
+     * 支持通配符匹配，如：project1, test-*, *, 等
+     */
+    private fun matchesProjectPattern(projectId: String, pattern: String): Boolean {
+        return when {
+            // 全局通配符
+            pattern == "*" -> true
+            // 精确匹配
+            pattern == projectId -> true
+            // 前缀通配符匹配，如 test-* 匹配 test-app
+            pattern.endsWith("*") -> {
+                val prefix = pattern.dropLast(1)
+                projectId.startsWith(prefix)
+            }
+            // 后缀通配符匹配，如 *-test 匹配 app-test
+            pattern.startsWith("*") -> {
+                val suffix = pattern.drop(1)
+                projectId.endsWith(suffix)
+            }
+            // 其他情况不匹配
+            else -> false
+        }
+    }
+
     private fun restoreTaskCheck(
         projectId: String,
         repoName: String,
     ) {
-        var flag = false
         val projectRepoKey = "${projectId}/${repoName}"
-        dataSeparationConfig.specialRestoreRepos.forEach {
-            val regex = Regex(it.replace("*", ".*"))
-            if (regex.matches(projectRepoKey)) {
-                flag = true
-            }
+        if (!matchesConfigRepos(projectRepoKey, dataSeparationConfig.specialRestoreRepos)) {
+            throw BadRequestException(
+                CommonMessageCode.PARAMETER_INVALID,
+                projectRepoKey
+            )
         }
-        if (!flag) throw BadRequestException(
-            CommonMessageCode.PARAMETER_INVALID,
-            projectRepoKey
-        )
     }
 
     private fun createRestoreTask(request: SeparationTaskRequest) {
@@ -233,18 +267,13 @@ class SeparationTaskServiceImpl(
                 )
             }
 
-            var flag = false
             val projectRepoKey = "$projectId/$repoName"
-            dataSeparationConfig.specialSeparateRepos.forEach {
-                val regex = Regex(it.replace("*", ".*"))
-                if (regex.matches(projectRepoKey)) {
-                    flag = true
-                }
+            if (!matchesConfigRepos(projectRepoKey, dataSeparationConfig.specialSeparateRepos)) {
+                throw BadRequestException(
+                    CommonMessageCode.PARAMETER_INVALID,
+                    projectRepoKey
+                )
             }
-            if (!flag) throw BadRequestException(
-                CommonMessageCode.PARAMETER_INVALID,
-                projectRepoKey
-            )
 
             val separateDate = try {
                 LocalDateTime.parse(separateAt, DateTimeFormatter.ISO_DATE_TIME)
@@ -303,6 +332,16 @@ class SeparationTaskServiceImpl(
                 type = type,
                 overwrite = overwrite
             )
+        }
+    }
+
+    /**
+     * 检查项目仓库键是否匹配配置的仓库列表
+     */
+    private fun matchesConfigRepos(projectRepoKey: String, configRepos: List<String>): Boolean {
+        return configRepos.any { configRepo ->
+            val regex = Regex(configRepo.replace("*", ".*"))
+            regex.matches(projectRepoKey)
         }
     }
 
