@@ -63,7 +63,7 @@ class FederatedRepositoryDao : SimpleMongoDao<TFederatedRepository>() {
         val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
             .and(TFederatedRepository::repoName.name).`is`(repoName)
             .and(TFederatedRepository::federationId.name).`is`(federationId)
-            .and(TFederatedRepository::isFullSyncing.name).`is`(false) // 只有未在同步的才能开始
+            .and(TFederatedRepository::isFullSyncing.name).ne(true) // 兼容历史数据：null或false都可以开始同步
 
         val update = Update()
             .set(TFederatedRepository::isFullSyncing.name, true)

@@ -41,7 +41,7 @@ import com.tencent.bkrepo.replication.service.impl.federation.FederationSyncMana
 import com.tencent.bkrepo.replication.service.impl.federation.FederationTaskManager
 import com.tencent.bkrepo.replication.service.impl.federation.LocalFederationManager
 import com.tencent.bkrepo.replication.service.impl.federation.RemoteFederationManager
-import com.tencent.bkrepo.replication.util.FederationDataBuilder
+import com.tencent.bkrepo.replication.util.FederationDataBuilder.buildTFederatedRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -50,7 +50,6 @@ class FederationRepositoryServiceImpl(
     private val localFederationManager: LocalFederationManager,
     private val remoteFederationManager: RemoteFederationManager,
     private val federationTaskManager: FederationTaskManager,
-    private val federationDataBuilder: FederationDataBuilder,
     private val federationSyncManager: FederationSyncManager,
     private val clusterNodeService: ClusterNodeService,
 ) : FederationRepositoryService {
@@ -64,7 +63,7 @@ class FederationRepositoryServiceImpl(
         try {
             val federationId = uniqueId()
             val taskMap = doFederatedRepositoryCreate(request, currentCluster, federationId)
-            val tFederatedRepository = federationDataBuilder.buildTFederatedRepository(request, taskMap, federationId)
+            val tFederatedRepository = buildTFederatedRepository(request, taskMap, federationId)
             localFederationManager.saveFederationRepository(tFederatedRepository)
             logger.info(
                 "Successfully created federation repository for repo:" +
