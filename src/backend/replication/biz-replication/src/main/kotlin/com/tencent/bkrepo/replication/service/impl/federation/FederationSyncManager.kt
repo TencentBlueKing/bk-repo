@@ -7,7 +7,7 @@ import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TFederatedRepository
 import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
 import com.tencent.bkrepo.replication.replica.executor.FederationFullSyncThreadPoolExecutor
-import com.tencent.bkrepo.replication.replica.type.federation.FederationManualReplicaJobExecutor
+import com.tencent.bkrepo.replication.replica.type.federation.FederationFullSyncReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -21,7 +21,7 @@ import java.util.concurrent.Callable
 class FederationSyncManager(
     private val localFederationManager: LocalFederationManager,
     private val replicaTaskService: ReplicaTaskService,
-    private val federationManualReplicaJobExecutor: FederationManualReplicaJobExecutor,
+    private val federationFullSyncReplicaJobExecutor: FederationFullSyncReplicaJobExecutor,
 ) {
 
     private val executor = FederationFullSyncThreadPoolExecutor.instance
@@ -144,7 +144,7 @@ class FederationSyncManager(
         return taskInfo?.let { task ->
             executor.submit(Callable {
                 val taskDetail = replicaTaskService.getDetailByTaskKey(task.key)
-                federationManualReplicaJobExecutor.execute(taskDetail)
+                federationFullSyncReplicaJobExecutor.execute(taskDetail)
             }.trace())
         }
     }

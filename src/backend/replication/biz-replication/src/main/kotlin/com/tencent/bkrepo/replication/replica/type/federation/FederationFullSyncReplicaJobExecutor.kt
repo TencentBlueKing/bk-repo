@@ -12,11 +12,10 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
 /**
- * 手动调用仅执行一次的任务
- * 仅针对remote类型节点同步
+ * 联邦全量同步任务执行器
  */
 @Component
-class FederationManualReplicaJobExecutor(
+class FederationFullSyncReplicaJobExecutor(
     clusterNodeService: ClusterNodeService,
     localDataManager: LocalDataManager,
     replicaService: FederationBasedReplicaService,
@@ -24,9 +23,7 @@ class FederationManualReplicaJobExecutor(
     private val replicaRecordService: ReplicaRecordService,
 ) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService, replicationProperties) {
 
-    /**
-     * 执行仅执行一次的同步任务，仅限remote类型节点同步
-     */
+
     fun execute(taskDetail: ReplicaTaskDetail) {
         logger.info("The federation full sync task[${taskDetail.task.key}] will be manually executed.")
         var replicaOverview: ReplicaOverview? = null
@@ -56,6 +53,6 @@ class FederationManualReplicaJobExecutor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(FederationManualReplicaJobExecutor::class.java)
+        private val logger = LoggerFactory.getLogger(FederationFullSyncReplicaJobExecutor::class.java)
     }
 }
