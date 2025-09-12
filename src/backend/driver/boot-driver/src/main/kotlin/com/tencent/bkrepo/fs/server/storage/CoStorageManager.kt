@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.RepositoryCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
@@ -69,7 +70,16 @@ class CoStorageManager(
         storageCredentials: StorageCredentials?
     ): ArtifactInputStream? {
         return withContext(Dispatchers.IO) {
-            storageService.load(blocks, range, storageCredentials)
+            try {
+                storageService.load(blocks, range, storageCredentials)
+            } catch (e: Exception) {
+                logger.error("load blocks input stream failed", e)
+                null
+            }
         }
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(CoStorageManager::class.java)
     }
 }
