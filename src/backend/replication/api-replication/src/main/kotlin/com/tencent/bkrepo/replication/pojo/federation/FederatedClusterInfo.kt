@@ -27,12 +27,12 @@
 
 package com.tencent.bkrepo.replication.pojo.federation
 
-import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
+import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 
 class FederatedClusterInfo(
     var projectId: String,
     var repoName: String,
-    var clusterNodeInfo: ClusterNodeInfo,
+    var clusterNodeInfo: RemoteClusterInfo,
     // 是否启用
     var enabled: Boolean
 )

@@ -52,7 +52,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface FederatedRepositoryClient {
     @Operation(summary = "同步配置")
     @PostMapping("/config/sync")
-    fun createFederatedConfig(@RequestBody request: FederatedRepositoryConfigRequest): Response<Void>
+    fun createFederatedConfig(@RequestBody request: FederatedRepositoryConfigRequest): Response<Boolean>
 
 
     @Operation(summary = "删除配置")
@@ -62,6 +62,16 @@ interface FederatedRepositoryClient {
         @PathVariable repoName: String,
         @PathVariable key: String,
     ): Response<Void>
+
+    @Operation(summary = "删除配置")
+    @DeleteMapping("/config/cluster/delete/{projectId}/{repoName}/{key}/{name}")
+    fun removeClusterFromFederation(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @PathVariable key: String,
+        @PathVariable name: String
+    ): Response<Void>
+
 
 
 }

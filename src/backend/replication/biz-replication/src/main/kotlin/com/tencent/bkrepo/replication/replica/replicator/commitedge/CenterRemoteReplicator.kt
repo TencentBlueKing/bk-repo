@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.replicator.commitedge
 
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import com.tencent.bkrepo.replication.config.ReplicationProperties
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.standalone.RemoteReplicator
 import com.tencent.bkrepo.replication.service.EdgeReplicaTaskRecordService
@@ -64,6 +65,13 @@ class CenterRemoteReplicator(
             size = packageVersion.size
         )
         edgeReplicaTaskRecordService.waitTaskFinish(edgeReplicaTaskRecord.id!!, estimateTime, ChronoUnit.SECONDS)
+        return true
+    }
+
+    override fun replicaDeletedPackage(
+        context: ReplicaContext,
+        packageVersionDeleteSummary: PackageVersionDeleteSummary
+    ): Boolean {
         return true
     }
 }

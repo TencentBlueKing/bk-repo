@@ -50,7 +50,7 @@ import java.time.temporal.ChronoUnit
 class CenterClusterReplicator(
     localDataManager: LocalDataManager,
     clusterArtifactReplicationHandler: ClusterArtifactReplicationHandler,
-    private val replicationProperties: ReplicationProperties,
+    replicationProperties: ReplicationProperties,
     private val clusterProperties: ClusterProperties,
     private val edgeReplicaTaskRecordService: EdgeReplicaTaskRecordService
 ): ClusterReplicator(localDataManager, clusterArtifactReplicationHandler, replicationProperties) {
@@ -68,7 +68,7 @@ class CenterClusterReplicator(
         )
         EdgeReplicaContextHolder.setEdgeReplicaTask(edgeReplicaTaskRecord)
         val estimateTime = EdgeReplicaContextHolder.getEstimatedTime(
-            timoutCheckHosts = replicationProperties.timoutCheckHosts,
+            timoutCheckHosts = super.replicationProperties.timoutCheckHosts,
             url = context.remoteCluster.url,
             size = node.size
         )
@@ -90,7 +90,7 @@ class CenterClusterReplicator(
         )
         EdgeReplicaContextHolder.setEdgeReplicaTask(edgeReplicaTaskRecord)
         val estimateTime = EdgeReplicaContextHolder.getEstimatedTime(
-            timoutCheckHosts = replicationProperties.timoutCheckHosts,
+            timoutCheckHosts = super.replicationProperties.timoutCheckHosts,
             url = context.remoteCluster.url,
             size = packageVersion.size
         )

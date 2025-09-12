@@ -134,7 +134,9 @@ object NodeEventFactory {
                 dstProjectId = destProjectId ?: projectId,
                 dstRepoName = destRepoName ?: repoName,
                 dstFullPath = destFullPath,
-                source = source
+                source = source,
+                destNodeFolder = destNodeFolder,
+                overwrite = overwrite
             )
         }
     }
@@ -152,7 +154,9 @@ object NodeEventFactory {
                 dstProjectId = destProjectId ?: projectId,
                 dstRepoName = destRepoName ?: repoName,
                 dstFullPath = destFullPath,
-                source = source
+                source = source,
+                destNodeFolder = destNodeFolder,
+                overwrite = overwrite
             )
         }
     }
