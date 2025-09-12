@@ -16,7 +16,6 @@ import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -38,9 +37,6 @@ class StorageReconcileJobTest @Autowired constructor(
     private val storageService: StorageService,
     private val storageProperties: StorageProperties,
 ) : JobBaseTest() {
-
-    @MockitoBean
-    private lateinit var routerControllerClient: RouterControllerClient
 
     @MockitoBean
     lateinit var servicePermissionClient: ServicePermissionClient
