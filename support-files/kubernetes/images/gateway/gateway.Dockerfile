@@ -1,4 +1,4 @@
-FROM bkrepo/openrestry:0.0.1
+FROM mirrors.tencent.com/blueking/openresty:1.19.9.1-ts3
 
 LABEL maintainer="Tencent BlueKing Devops"
 
