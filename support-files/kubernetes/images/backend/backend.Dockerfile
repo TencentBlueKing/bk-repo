@@ -1,4 +1,4 @@
-FROM bkci/jdk:0.0.9-jdk17
+FROM mirrors.tencent.com/blueking/jdk17:0.0.1-bkrepo-ts3
 
 LABEL maintainer="Tencent BlueKing Devops"
 
