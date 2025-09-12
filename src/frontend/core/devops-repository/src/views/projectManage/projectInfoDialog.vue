@@ -99,7 +99,7 @@
                 this.editProjectDialog.loading = true
                 const { name, description } = this.editProjectDialog
                 let id = this.editProjectDialog.id
-                /* 多租户模式下，项目标识显示变成tenantId.name,新增无需传递原始值，修改需处理 */
+                /* 多租户模式下，项目标识显示变成tenantId.name,新增传递原始值，修改需处理 */
                 if (this.multiMode && !this.editProjectDialog.add) {
                     id = id.substring(id.lastIndexOf('.') + 1)
                 }
