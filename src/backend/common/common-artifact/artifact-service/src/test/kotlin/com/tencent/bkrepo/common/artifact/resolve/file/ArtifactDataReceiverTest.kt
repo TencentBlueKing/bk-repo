@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.api.constant.StringPool.randomString
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.stream.RateLimitInputStream
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.storage.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.util.toPath

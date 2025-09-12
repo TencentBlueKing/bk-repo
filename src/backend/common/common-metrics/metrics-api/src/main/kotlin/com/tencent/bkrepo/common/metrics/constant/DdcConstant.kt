@@ -29,34 +29,11 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.metrics
+package com.tencent.bkrepo.common.metrics.constant
 
-import com.tencent.bkrepo.common.metrics.constant.COS_ASYNC_UPLOADING_SIZE
-import com.tencent.bkrepo.common.metrics.constant.COS_ASYNC_UPLOADING_SIZE_DESC
-import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.binder.MeterBinder
-import org.springframework.stereotype.Component
-
-@Suppress("LateinitUsage")
-@Component
-class CosUploadMetrics : MeterBinder {
-
-    override fun bindTo(meterRegistry: MeterRegistry) {
-        Companion.meterRegistry = meterRegistry
-    }
-
-    companion object {
-        lateinit var meterRegistry: MeterRegistry
-        private const val BYTES = "bytes"
-
-        fun getUploadingCounter(): Counter {
-            return Counter.builder(COS_ASYNC_UPLOADING_SIZE)
-                .description(COS_ASYNC_UPLOADING_SIZE_DESC)
-                .baseUnit(BYTES)
-                .register(meterRegistry)
-        }
-
-    }
-
-}
+const val DDC_REF_GETS = "ddc.ref.gets"
+const val DDC_REF_LOAD = "ddc.ref.load"
+const val DDC_REF_STORE = "ddc.ref.store"
+const val DDC_BLOB = "ddc.blob"
+const val DDC_REF_BATCH_EXECUTOR_ACTIVE = "ddc.ref.batch.executor.active.count"
+const val DDC_REF_BATCH_EXECUTOR_QUEUE_SIZE = "ddc.ref.batch.executor.queue.size"

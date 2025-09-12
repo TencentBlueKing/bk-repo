@@ -30,13 +30,13 @@ package com.tencent.bkrepo.replication.fdtp
 import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurer
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.repository.composite.CompositeRepository
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactClient
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.proxy.ProxyRepository
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_TIME
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity

@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.common.service.metrics
 
+import com.tencent.bkrepo.common.metrics.constant.ATTR_WORKER_QUEUE_SIZE
+import com.tencent.bkrepo.common.metrics.constant.UNDERTOW_WORKER_QUEUE_SIZE
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
@@ -65,10 +67,5 @@ class UndertowMetrics : MeterBinder {
 
         private const val OBJECT_NAME = "org.xnio:type=Xnio,provider=\"nio\",worker=\"XNIO-1\""
 
-        /**
-         * Worker线程池队列当前大小
-         */
-        private const val UNDERTOW_WORKER_QUEUE_SIZE = "undertow.worker.queue.size"
-        private const val ATTR_WORKER_QUEUE_SIZE = "WorkerQueueSize"
     }
 }

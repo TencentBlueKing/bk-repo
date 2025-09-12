@@ -58,21 +58,3 @@ const val REFRESH_INDEX_KEY_PREFIX = "helm:lock:refreshIndex:"
 
 const val SLEEP_MILLIS = 20L
 
-
-const val HELM_EVENT_TASK_ACTIVE_COUNT = "helm.event.task.active.count"
-const val HELM_EVENT_TASK_ACTIVE_COUNT_DESC = "helm事件处理实时执行数量"
-
-const val HELM_EVENT_TASK_QUEUE_SIZE = "helm.event.task.queue.size"
-const val HELM_EVENT_TASK_QUEUE_SIZE_DESC = "helm事件处理线程池等待队列大小"
-
-const val HELM_EVENT_TASK_COMPLETED_COUNT = "helm.event.task.completed.count"
-const val HELM_EVENT_TASK_COMPLETED_COUNT_DESC = "helm事件处理已完成的任务数量"
-
-const val HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT = "helm.index.refresh.task.active.count"
-const val HELM_INDEX_REFRESH_TASK_ACTIVE_COUNT_DESC = "helm index刷新实时执行数量"
-
-const val HELM_INDEX_REFRESH_TASK_QUEUE_SIZE = "helm.index.refresh.task.queue.size"
-const val HELM_INDEX_REFRESH_TASK_QUEUE_SIZE_DESC = "helm index刷新线程池等待队列大小"
-
-const val HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT = "helm.index.refresh.task.completed.count"
-const val HELM_INDEX_REFRESH_TASK_COMPLETED_COUNT_DESC = "helm index刷新已完成的任务数量"
