@@ -54,6 +54,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.common.metadata.pojo.webhook.BkCiDevXEnabledPayload
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -76,6 +77,7 @@ class DevXBkciWebhookListener(
     private val devXProperties: DevXProperties,
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
+    private val registry: ObservationRegistry
 ) : BkciWebhookListener {
 
     private val client by lazy { createClient() }
@@ -219,7 +221,7 @@ class DevXBkciWebhookListener(
     }
 
     private fun createClient(): OkHttpClient {
-        val builder = HttpClientBuilderFactory.create()
+        val builder = HttpClientBuilderFactory.create(registry = registry)
         val ak = devXProperties.remoteBkRepoAccessKey
         val sk = devXProperties.remoteBkRepoSecretKey
         // 使用系统用户身份操作

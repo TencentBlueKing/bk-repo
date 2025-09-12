@@ -42,7 +42,7 @@ import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.stream.ChunkedFuture
 import com.tencent.bkrepo.common.api.stream.ChunkedFutureInputStream
 import com.tencent.bkrepo.common.api.stream.EnhanceFileChunkedFutureWrapper
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
@@ -428,7 +428,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         val httpRequest = buildHttpRequest(cosRequest)
         try {
             return CosHttpClient.execute(httpRequest, VoidResponseHandler())
-        } catch (ignored: IOException) {
+        } catch (_: IOException) {
         }
     }
 
@@ -561,7 +561,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         cancelFutureList(futureList)
         try {
             cleanTempPath(activeCount, tempRootPath)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             logger.error("Failed to delete cos temp chunked download dir[$tempRootPath]")
         }
     }

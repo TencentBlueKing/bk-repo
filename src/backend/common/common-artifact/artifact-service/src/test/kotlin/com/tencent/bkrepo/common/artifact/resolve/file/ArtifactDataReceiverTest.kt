@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.micrometer.observation.ObservationRegistry
 import io.mockk.every
 import io.mockk.mockkObject
 import java.io.ByteArrayOutputStream
@@ -271,6 +272,13 @@ internal class ArtifactDataReceiverTest {
         val monitor = MonitorProperties(
             enableTransfer = enableTransfer
         )
-        return ArtifactDataReceiver(receive, monitor, primaryPath, filename, randomPath)
+        return ArtifactDataReceiver(
+            receive,
+            monitor,
+            primaryPath,
+            filename,
+            randomPath,
+            registry = ObservationRegistry.NOOP
+        )
     }
 }

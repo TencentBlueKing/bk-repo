@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import io.micrometer.observation.ObservationRegistry
 import io.mockk.every
 import io.mockk.mockkObject
 import org.junit.jupiter.api.Assertions
@@ -58,7 +59,7 @@ class ChunkArtifactFileTest {
             receive = ReceiveProperties(fileSizeThreshold = DataSize.ofBytes(DEFAULT_BUFFER_SIZE.toLong()))
         )
         val monitor = StorageHealthMonitor(storageProperties, storageCredentials.upload.location)
-        return ChunkedArtifactFile(monitor, storageProperties, storageCredentials)
+        return ChunkedArtifactFile(monitor, storageProperties, storageCredentials, ObservationRegistry.NOOP)
     }
 
     @BeforeEach

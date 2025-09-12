@@ -56,11 +56,11 @@ class SimpleStorageService : AbstractStorageService() {
             }
 
             artifactFile.isFallback() -> {
-                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials, storageClass)
+                fileStorage.store(path, filename, artifactFile.traceableFlushToFile(), credentials, storageClass)
             }
 
             else -> {
-                fileStorage.store(path, filename, artifactFile.flushToFile(), credentials, storageClass)
+                fileStorage.store(path, filename, artifactFile.traceableFlushToFile(), credentials, storageClass)
             }
         }
     }

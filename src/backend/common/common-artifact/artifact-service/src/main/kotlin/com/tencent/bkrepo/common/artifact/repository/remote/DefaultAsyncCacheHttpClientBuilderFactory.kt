@@ -28,10 +28,13 @@
 package com.tencent.bkrepo.common.artifact.repository.remote
 
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.OkHttpClient
 
-class DefaultAsyncCacheHttpClientBuilderFactory : AsyncCacheHttpClientBuilderFactory {
+class DefaultAsyncCacheHttpClientBuilderFactory(
+    private val registry: ObservationRegistry
+) : AsyncCacheHttpClientBuilderFactory {
     override fun newBuilder(configuration: RemoteConfiguration): OkHttpClient.Builder {
-        return buildOkHttpClient(configuration, false)
+        return buildOkHttpClient(configuration, false, registry = registry)
     }
 }

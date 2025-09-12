@@ -51,6 +51,7 @@ import com.tencent.bkrepo.fdtp.codec.FdtpResponseStatus
 import com.tencent.bkrepo.replication.constant.SHA256
 import io.micrometer.core.instrument.Timer
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
+import io.micrometer.observation.ObservationRegistry
 import io.micrometer.tracing.Tracer
 import io.micrometer.tracing.otel.bridge.OtelTracer
 import io.mockk.every
@@ -109,7 +110,7 @@ class FdtpAFTTest {
             Mockito.mock(ObjectProvider::class.java) as ObjectProvider<NodeForwardService>
         )
         val helper = StorageHealthMonitorHelper(ConcurrentHashMap())
-        ArtifactFileFactory(StorageProperties(), helper, limitCheckService)
+        ArtifactFileFactory(StorageProperties(), helper, limitCheckService, ObservationRegistry.NOOP)
         mockkObject(ArtifactMetrics)
         every { ArtifactMetrics.getUploadingCounters(any()) } returns emptyList()
         every { ArtifactMetrics.getUploadingTimer(any()) } returns Timer.builder(ARTIFACT_UPLOADING_TIME)

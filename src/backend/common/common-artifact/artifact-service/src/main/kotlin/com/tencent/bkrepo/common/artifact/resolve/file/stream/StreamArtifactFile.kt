@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
+import io.micrometer.observation.ObservationRegistry
 import java.io.File
 import java.io.InputStream
 
@@ -49,7 +50,8 @@ open class StreamArtifactFile(
     private val storageProperties: StorageProperties,
     private val storageCredentials: StorageCredentials,
     private val contentLength: Long? = null,
-    private val requestLimitCheckService: RequestLimitCheckService? = null
+    private val requestLimitCheckService: RequestLimitCheckService? = null,
+    private val registry: ObservationRegistry
 ) : ArtifactFile {
 
     /**
@@ -87,7 +89,8 @@ open class StreamArtifactFile(
             receivePath,
             randomPath = !useLocalPath,
             requestLimitCheckService = requestLimitCheckService,
-            contentLength = contentLength
+            contentLength = contentLength,
+            registry = registry
         )
         if (!storageProperties.receive.resolveLazily) {
             init()

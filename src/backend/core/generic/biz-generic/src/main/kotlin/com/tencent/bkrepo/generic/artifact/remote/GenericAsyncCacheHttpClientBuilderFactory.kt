@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.repository.remote.AsyncCacheHttpClient
 import com.tencent.bkrepo.common.artifact.repository.remote.buildOkHttpClient
 import com.tencent.bkrepo.generic.artifact.createPlatformDns
 import com.tencent.bkrepo.generic.config.GenericProperties
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.OkHttpClient
 import org.springframework.context.annotation.Primary
 import org.springframework.stereotype.Component
@@ -39,11 +40,12 @@ import org.springframework.stereotype.Component
 @Component
 @Primary
 class GenericAsyncCacheHttpClientBuilderFactory(
-    private val genericProperties: GenericProperties
+    private val genericProperties: GenericProperties,
+    private val registry: ObservationRegistry
 ) : AsyncCacheHttpClientBuilderFactory {
     override fun newBuilder(configuration: RemoteConfiguration): OkHttpClient.Builder {
         val platforms = genericProperties.platforms
         // 自定义dns，解析特定platform的域名到指定ip
-        return buildOkHttpClient(configuration, false).dns(createPlatformDns(platforms))
+        return buildOkHttpClient(configuration, false, registry = registry).dns(createPlatformDns(platforms))
     }
 }

@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.toPath
+import io.micrometer.observation.ObservationRegistry
 import java.io.File
 import java.io.InputStream
 import java.io.RandomAccessFile
@@ -24,6 +25,7 @@ class RandomAccessArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageCredentials: StorageCredentials,
     storageProperties: StorageProperties,
+    private val registry: ObservationRegistry
 ) : ArtifactFile {
 
     /**
@@ -44,7 +46,7 @@ class RandomAccessArtifactFile(
     init {
         val path = storageCredentials.upload.location.toPath()
         receiver = ArtifactDataReceiver(
-            storageProperties.receive, storageProperties.monitor, path,
+            storageProperties.receive, storageProperties.monitor, path, registry = registry
         )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {

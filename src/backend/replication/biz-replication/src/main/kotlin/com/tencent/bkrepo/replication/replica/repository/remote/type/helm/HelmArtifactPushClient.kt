@@ -42,6 +42,7 @@ import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.repository.remote.base.PushClient
 import com.tencent.bkrepo.replication.util.DefaultHandler
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -58,8 +59,9 @@ import java.net.URL
 class HelmArtifactPushClient(
     private val authService: HelmAuthorizationService,
     replicationProperties: ReplicationProperties,
-    localDataManager: LocalDataManager
-) : PushClient(replicationProperties, localDataManager) {
+    localDataManager: LocalDataManager,
+    registry: ObservationRegistry
+) : PushClient(replicationProperties, localDataManager, registry) {
 
     override fun type(): RepositoryType {
         return RepositoryType.HELM

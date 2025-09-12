@@ -37,6 +37,7 @@ import com.tencent.bkrepo.huggingface.constants.ERROR_MSG_HEADER
 import com.tencent.bkrepo.huggingface.exception.HfApiException
 import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
@@ -44,11 +45,18 @@ import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 
 @Component
-class HfApi {
+class HfApi(
+    private val registry: ObservationRegistry
+) {
+
+    init {
+        Companion.registry = registry
+    }
 
     companion object {
+        private lateinit var registry: ObservationRegistry
         private val httpClient by lazy {
-            HttpClientBuilderFactory.create()
+            HttpClientBuilderFactory.create(registry = registry)
                 .addInterceptor(RedirectInterceptor())
                 .followRedirects(false).build()
         }

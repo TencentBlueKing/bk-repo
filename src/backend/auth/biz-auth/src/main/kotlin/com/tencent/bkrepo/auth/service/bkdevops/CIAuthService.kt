@@ -46,6 +46,8 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -55,9 +57,13 @@ import java.util.concurrent.TimeUnit
 
 @Service
 @Conditional(DevopsAuthCondition::class)
-class CIAuthService @Autowired constructor(private val devopsAuthConfig: DevopsAuthConfig) {
+class CIAuthService @Autowired constructor(
+    private val devopsAuthConfig: DevopsAuthConfig,
+    private val registry: ObservationRegistry
+) {
 
-    private val okHttpClient = okhttp3.OkHttpClient.Builder().connectTimeout(3L, TimeUnit.SECONDS)
+    private val okHttpClient = HttpClientBuilderFactory.create(registry = registry)
+        .connectTimeout(3L, TimeUnit.SECONDS)
         .readTimeout(5L, TimeUnit.SECONDS)
         .writeTimeout(5L, TimeUnit.SECONDS).build()
 

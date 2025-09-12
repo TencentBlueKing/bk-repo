@@ -110,6 +110,7 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackagePopulateReques
 import com.tencent.bkrepo.repository.pojo.packages.request.PopulatedPackageVersion
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.repository.pojo.search.NodeQueryBuilder
+import io.micrometer.observation.ObservationRegistry
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -157,6 +158,9 @@ open class AbstractChartService : ArtifactService() {
 
     @Autowired
     lateinit var helmChartEventRecordDao: HelmChartEventRecordDao
+
+    @Autowired
+    lateinit var registry: ObservationRegistry
 
 
     val threadPoolExecutor: ThreadPoolExecutor = HelmThreadPoolExecutor.instance
@@ -571,7 +575,11 @@ open class AbstractChartService : ArtifactService() {
             is RemoteConfiguration -> {
                 val config = repoDetail.configuration as RemoteConfiguration
                 try {
-                    val inputStream = RemoteDownloadUtil.doHttpRequest(config, HelmUtils.getIndexYamlFullPath())
+                    val inputStream = RemoteDownloadUtil.doHttpRequest(
+                        registry = registry,
+                        configuration = config,
+                        path = HelmUtils.getIndexYamlFullPath()
+                    )
                     val helmIndexYamlMetadata = (inputStream as ArtifactInputStream).use {
                         it.readYamlString() as HelmIndexYamlMetadata
                     }
@@ -665,7 +673,11 @@ open class AbstractChartService : ArtifactService() {
         for (proxyChannel in channelList) {
             try {
                 val config = getRemoteConfigFromProxyChannel(repositoryDetail, proxyChannel)
-                val inputStream = RemoteDownloadUtil.doHttpRequest(config, HelmUtils.getIndexYamlFullPath())
+                val inputStream = RemoteDownloadUtil.doHttpRequest(
+                    registry = registry,
+                    configuration = config,
+                    path = HelmUtils.getIndexYamlFullPath()
+                )
                 val newIndex = (inputStream as ArtifactInputStream).use {
                     it.readYamlString() as HelmIndexYamlMetadata
                 }

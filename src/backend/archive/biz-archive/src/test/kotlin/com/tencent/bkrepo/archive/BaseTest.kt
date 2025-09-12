@@ -26,6 +26,9 @@ class BaseTest {
     @Autowired
     lateinit var storageUtils: StorageUtils
 
+    @Autowired
+    lateinit var registry: NoopObservationRegistry
+
     fun initMock() {
         mockkObject(SpringContextUtils)
         every { SpringContextUtils.publishEvent(any()) } returns Unit

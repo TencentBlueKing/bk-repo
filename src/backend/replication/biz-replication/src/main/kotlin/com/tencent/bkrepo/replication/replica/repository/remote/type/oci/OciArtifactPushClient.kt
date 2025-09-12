@@ -31,7 +31,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.retry
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -57,6 +57,7 @@ import com.tencent.bkrepo.replication.replica.repository.remote.base.PushClient
 import com.tencent.bkrepo.replication.util.DefaultHandler
 import com.tencent.bkrepo.replication.util.ManifestParser
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
@@ -78,8 +79,9 @@ class OciArtifactPushClient(
     private val authService: OciAuthorizationService,
     replicationProperties: ReplicationProperties,
     localDataManager: LocalDataManager,
-    private val artifactReplicationHandler: RemoteClusterArtifactReplicationHandler
-) : PushClient(replicationProperties, localDataManager) {
+    private val artifactReplicationHandler: RemoteClusterArtifactReplicationHandler,
+    registry: ObservationRegistry
+) : PushClient(replicationProperties, localDataManager, registry) {
 
     private val blobUploadExecutor: ThreadPoolExecutor = OciThreadPoolExecutor.instance
 

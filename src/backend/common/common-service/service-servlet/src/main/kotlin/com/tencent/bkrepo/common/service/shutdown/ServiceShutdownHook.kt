@@ -28,7 +28,7 @@
 package com.tencent.bkrepo.common.service.shutdown
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import org.slf4j.LoggerFactory
 import org.springframework.context.SmartLifecycle
 import org.springframework.stereotype.Component
@@ -55,7 +55,7 @@ class ServiceShutdownHook(
         futureList.forEach {
             try {
                 it.get(getTimeout(latestTimestampToWait), TimeUnit.MILLISECONDS)
-            } catch (e: TimeoutException) {
+            } catch (_: TimeoutException) {
                 logger.warn("wait task finish timeout")
             } catch (e: Exception) {
                 logger.error("task execute failed", e)

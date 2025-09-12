@@ -30,7 +30,7 @@ package com.tencent.bkrepo.replication.service.impl
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.api.util.UrlFormatter.addProtocol
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -456,7 +456,7 @@ class RemoteNodeServiceImpl(
             try{
                 it.createRunOnceTask(projectId, repoName, request)
                 return true
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // fegin连不上时需要降级为本地执行
                 logger.warn("Cloud not run task on remote node, will run with current node")
             }
@@ -482,7 +482,7 @@ class RemoteNodeServiceImpl(
             try{
                 it.executeRunOnceTask(projectId, repoName, name)
                 return true
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 // fegin连不上时需要降级为本地执行
                 logger.warn("Cloud not run task on remote node, will run with current node")
             }

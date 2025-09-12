@@ -204,7 +204,7 @@ class GenericRemoteRepository(
 
     private fun createGenericHttpClient(configuration: RemoteConfiguration): OkHttpClient {
         val platforms = genericProperties.platforms
-        val builder = buildOkHttpClient(configuration, false).dns(createPlatformDns(platforms))
+        val builder = buildOkHttpClient(configuration, false, registry = registry).dns(createPlatformDns(platforms))
         createAuthenticateInterceptor(configuration, platforms)?.let { builder.addInterceptor(it) }
         return builder.build()
     }

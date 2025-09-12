@@ -40,6 +40,7 @@ import com.tencent.bkrepo.common.service.util.okhttp.TokenAuthInterceptor
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Authenticator
 import okhttp3.Credentials
 import okhttp3.Interceptor
@@ -90,9 +91,10 @@ fun createAuthenticateInterceptor(configuration: RemoteCredentialsConfiguration)
 fun buildOkHttpClient(
     configuration: RemoteConfiguration,
     addInterceptor: Boolean = true,
-    followRedirect: Boolean = false
+    followRedirect: Boolean = false,
+    registry: ObservationRegistry? = null,
 ): OkHttpClient.Builder {
-    val builder = HttpClientBuilderFactory.create()
+    val builder = HttpClientBuilderFactory.create(registry = registry)
     builder.readTimeout(configuration.network.readTimeout, TimeUnit.MILLISECONDS)
     builder.connectTimeout(configuration.network.connectTimeout, TimeUnit.MILLISECONDS)
     builder.proxy(createProxy(configuration.network.proxy))

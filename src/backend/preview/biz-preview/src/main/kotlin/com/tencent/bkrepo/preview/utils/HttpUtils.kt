@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -48,10 +49,12 @@ import java.net.URL
 import java.util.concurrent.TimeUnit
 
 @Component
-class HttpUtils {
+class HttpUtils(
+    private val registry: ObservationRegistry
+) {
     private val okHttpClient: OkHttpClient by lazy {
         HttpClientBuilderFactory
-            .create()
+            .create(registry = registry)
             .readTimeout(72000, TimeUnit.MILLISECONDS)
             .connectTimeout(10000, TimeUnit.MILLISECONDS)
             .retryOnConnectionFailure(true)

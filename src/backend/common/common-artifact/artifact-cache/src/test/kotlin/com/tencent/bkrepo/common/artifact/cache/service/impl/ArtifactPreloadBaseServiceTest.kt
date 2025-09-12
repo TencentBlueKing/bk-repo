@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.artifact.cache.service.impl
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.FileSystemArtifactFile
+import com.tencent.bkrepo.common.artifact.cache.NoopObservationRegistry
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadConfiguration
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
@@ -48,6 +49,7 @@ import org.junit.jupiter.api.TestInstance
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.io.File
@@ -65,6 +67,7 @@ import kotlin.contracts.ExperimentalContracts
 )
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:application-test.properties"])
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Import(NoopObservationRegistry::class)
 open class ArtifactPreloadBaseServiceTest(
     protected val properties: ArtifactPreloadProperties,
     protected val storageService: StorageService,

@@ -31,7 +31,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.constant.MS_AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.cns.CnsProperties
 import com.tencent.bkrepo.common.artifact.cns.CnsService
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -53,6 +53,7 @@ import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.net.URI
+import java.util.Locale.getDefault
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Callable
 import java.util.concurrent.ThreadPoolExecutor
@@ -162,7 +163,7 @@ class CnsServiceImpl(
             }
 
             else -> {
-                serviceIds.add(formatServiceId(type.name.toLowerCase()))
+                serviceIds.add(formatServiceId(type.name.lowercase(getDefault())))
             }
         }
         return serviceIds
