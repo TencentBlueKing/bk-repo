@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCac
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
@@ -59,7 +60,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
@@ -77,7 +77,7 @@ class NodeServiceImpl(
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
     override val servicePermissionClient: ServicePermissionClient,
-    override val routerControllerClient: RouterControllerClient,
+    override val routerControllerService: RouterControllerService,
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
     override val projectService: ProjectService,
@@ -93,7 +93,7 @@ class NodeServiceImpl(
     repositoryProperties,
     messageSupplier,
     servicePermissionClient,
-    routerControllerClient,
+    routerControllerService,
     routerControllerProperties,
     blockNodeService,
     projectService,

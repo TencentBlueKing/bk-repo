@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 Tencent.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,9 +25,26 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.metadata.dao.router
 
-class CompressedReportProperties(
-    var enabled: Boolean = false,
-    var zipFileName: String = "bkrepo_compressed_report.zip"
-)
+import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.model.TRouterPolicy
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import org.springframework.context.annotation.Conditional
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
+import org.springframework.stereotype.Repository
+
+@Repository
+@Conditional(SyncCondition::class)
+class RouterPolicyDao : SimpleMongoDao<TRouterPolicy>() {
+    fun findAllByUsersInOrProjectIdsIn(user: String, projectId: String): List<TRouterPolicy> {
+        val query = Query(
+            where(TRouterPolicy::users).isEqualTo(user)
+                .and(TRouterPolicy::projectIds).isEqualTo(projectId)
+        )
+        return find(query)
+    }
+}

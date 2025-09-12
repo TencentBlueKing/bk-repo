@@ -35,27 +35,27 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.NestedConfigurationProperty
 
 @ConfigurationProperties(prefix = "generic")
-data class GenericProperties(
+class GenericProperties {
     /**
      * generic服务domain地址，用于生成临时url
      */
-    var domain: String = "localhost",
+    var domain: String = "localhost"
     @NestedConfigurationProperty
-    var delta: DeltaProperties = DeltaProperties(),
+    var delta: DeltaProperties = DeltaProperties()
     @NestedConfigurationProperty
-    var bkBase: BkBaseProperties = BkBaseProperties(),
+    var bkBase: BkBaseProperties = BkBaseProperties()
     /**
      * 平台账号，在Generic仓库代理远程BkRepo的Generic仓库时使用
      */
-    var platforms: List<PlatformProperties> = emptyList(),
+    var platforms: List<PlatformProperties> = emptyList()
     /**
      * 分块上传来源判断
      */
-    var chunkedUploadClients: List<String> = listOf("bk-repo"),
+    var chunkedUploadClients: List<String> = listOf("bk-repo")
     @NestedConfigurationProperty
-    var proxy: ProxyProperties = ProxyProperties(),
+    var proxy: ProxyProperties = ProxyProperties()
     @NestedConfigurationProperty
-    var userShareInterceptor: UserShareInterceptorProperties = UserShareInterceptorProperties(),
+    var userShareInterceptor: UserShareInterceptorProperties = UserShareInterceptorProperties()
     @NestedConfigurationProperty
-    var compressedReport: CompressedReportProperties = CompressedReportProperties(),
-)
+    var compressedReport: CompressedReportProperties = CompressedReportProperties()
+}

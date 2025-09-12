@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 Tencent.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,9 +25,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.metadata.model
 
-class CompressedReportProperties(
-    var enabled: Boolean = false,
-    var zipFileName: String = "bkrepo_compressed_report.zip"
-)
+import org.springframework.data.mongodb.core.index.CompoundIndex
+import org.springframework.data.mongodb.core.mapping.Document
+
+/**
+ * 文件节点位置
+ * */
+@Document("node_location")
+@CompoundIndex(name = TNodeLocation.FULL_PATH_IDX, def = TNodeLocation.FULL_PATH_IDX_DEF)
+data class TNodeLocation(
+    val projectId: String,
+    val repoName: String,
+    val fullPath: String,
+    val routerNodeId: String,
+) {
+    companion object {
+        const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"
+        const val FULL_PATH_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'fullPath': 1}"
+    }
+}
