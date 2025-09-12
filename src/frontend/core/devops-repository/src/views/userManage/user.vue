@@ -17,6 +17,7 @@
                     clearable
                     @enter="handlerPaginationChange()"
                     @clear="handlerPaginationChange()"
+                    @right-icon-click="handlerPaginationChange()"
                     right-icon="bk-icon icon-search">
                 </bk-input>
                 <bk-select
