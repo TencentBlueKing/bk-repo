@@ -54,13 +54,7 @@ class SpringCloudServiceDiscovery(
       serviceName = it,
       details =  discoveryClient.getInstances(it)
     )}
-    var targetDetails = details
-    logger.info("details is $details")
-    if (podLabelConfig.labelValue.isNotBlank()) {
-       targetDetails = details.filter {
-         it.details.any { serviceInstance -> serviceInstance.metadata[LABEL_NAME].equals(podLabelConfig.labelValue) }
-       }
-    }
+    val targetDetails = matchService(details)
     logger.info("targetDetails is $targetDetails")
     return targetDetails.map { service->
        ServiceInfo(
@@ -73,8 +67,31 @@ class SpringCloudServiceDiscovery(
   }
 
   override fun instances(serviceName: String): List<InstanceInfo> {
-    return discoveryClient.getInstances(serviceName).map { buildInfo(it, serviceName)
+    return matchInstance(serviceName).map { buildInfo(it, serviceName)
     }
+  }
+
+  private fun matchService( details: List<ServiceDetails>): List<ServiceDetails> {
+    var targetDetails = details
+    logger.info("details is $details")
+    if (podLabelConfig.labelValue.isNotBlank() && podLabelConfig.labelName.isNotBlank()) {
+      targetDetails = details.filter {
+        it.details.any { serviceInstance ->
+          serviceInstance.metadata[podLabelConfig.labelName].equals(podLabelConfig.labelValue) }
+      }
+    }
+    return targetDetails
+  }
+
+  private fun matchInstance(serviceName: String) : List<ServiceInstance> {
+    val instances = discoveryClient.getInstances(serviceName)
+    var matchResult = true
+    if (podLabelConfig.labelValue.isNotBlank() && podLabelConfig.labelName.isNotBlank()) {
+      matchResult = instances.any { serviceInstance ->
+        serviceInstance.metadata[podLabelConfig.labelName].equals(podLabelConfig.labelValue) }
+    }
+    return if (matchResult) instances else emptyList()
+
   }
 
   private fun buildInfo(serviceInstance: ServiceInstance, serviceName: String): InstanceInfo {
@@ -103,7 +120,6 @@ class SpringCloudServiceDiscovery(
   }
 
   companion object {
-    private const val LABEL_NAME= "app.kubernetes.io/instance"
     private val logger = LoggerFactory.getLogger(SpringCloudServiceDiscovery::class.java)
   }
 
