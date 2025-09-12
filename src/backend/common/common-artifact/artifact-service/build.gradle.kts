@@ -34,7 +34,6 @@ dependencies {
     api(project(":auth:api-auth"))
     api(project(":replication:api-replication"))
     api(project(":driver:api-driver"))
-    api(project(":router-controller:api-router-controller"))
     api(project(":archive:api-archive"))
     api(project(":common:common-service:service-servlet"))
     api(project(":common:common-security"))

@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.reportMetadataToCenter
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
@@ -50,7 +51,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.router.api.RouterControllerClient
 
 abstract class EdgeNodeBaseService(
     override val nodeDao: NodeDao,
@@ -60,7 +60,7 @@ abstract class EdgeNodeBaseService(
     override val quotaService: QuotaService,
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
-    override val routerControllerClient: RouterControllerClient,
+    override val routerControllerService: RouterControllerService,
     override val servicePermissionClient: ServicePermissionClient,
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
@@ -77,7 +77,7 @@ abstract class EdgeNodeBaseService(
     repositoryProperties,
     messageSupplier,
     servicePermissionClient,
-    routerControllerClient,
+    routerControllerService,
     routerControllerProperties,
     blockNodeService,
     projectService,

@@ -47,7 +47,6 @@ dependencies {
     implementation(project(":replication:biz-replication"))
     implementation(project(":webhook:biz-webhook"))
     implementation(project(":archive:biz-archive"))
-    implementation(project(":router-controller:biz-router-controller"))
 }
 
 configurations.all {

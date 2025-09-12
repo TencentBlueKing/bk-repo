@@ -42,7 +42,6 @@ import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.mockRepositoryCommonUtils
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -65,8 +64,6 @@ import java.time.LocalDateTime
 class NodeCommonUtilsTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
 ) : JobBaseTest() {
-    @MockitoBean
-    private lateinit var routerControllerClient: RouterControllerClient
 
     @MockitoBean
     lateinit var servicePermissionClient: ServicePermissionClient

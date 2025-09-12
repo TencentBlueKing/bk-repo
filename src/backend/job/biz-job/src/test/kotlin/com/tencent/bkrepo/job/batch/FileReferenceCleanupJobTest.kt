@@ -50,7 +50,6 @@ import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.repository.JobSnapshotRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.bson.Document
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -96,9 +95,6 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
 
     @MockitoBean
     private lateinit var servicePermissionClient: ServicePermissionClient
-
-    @MockitoBean
-    private lateinit var routerControllerClient: RouterControllerClient
 
     @MockitoBean
     private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
