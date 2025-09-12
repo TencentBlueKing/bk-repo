@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -40,6 +41,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -65,6 +67,14 @@ class UserFederationRepositoryController(
     ): Response<String> {
         return ResponseBuilder.success(federationRepositoryService.createFederationRepository(requests))
 
+    }
+
+    @Operation(summary = "更新联邦仓库配置")
+    @PutMapping("/update")
+    fun federatedRepositoryUpdate(
+        @RequestBody request: FederatedRepositoryUpdateRequest,
+    ): Response<Boolean> {
+        return ResponseBuilder.success(federationRepositoryService.updateFederationRepository(request))
     }
 
     @Operation(summary = "删除联邦仓库（解散整个联邦）")

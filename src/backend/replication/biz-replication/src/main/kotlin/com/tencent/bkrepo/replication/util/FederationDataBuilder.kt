@@ -85,7 +85,10 @@ object FederationDataBuilder {
             projectId = tFederatedRepository.projectId,
             repoName = tFederatedRepository.repoName,
             clusterId = tFederatedRepository.clusterId,
-            federatedClusters = tFederatedRepository.federatedClusters
+            federatedClusters = tFederatedRepository.federatedClusters,
+            isFullSyncing = tFederatedRepository.isFullSyncing,
+            lastFullSyncStartTime = tFederatedRepository.lastFullSyncStartTime,
+            lastFullSyncEndTime = tFederatedRepository.lastFullSyncEndTime
         )
     }
 

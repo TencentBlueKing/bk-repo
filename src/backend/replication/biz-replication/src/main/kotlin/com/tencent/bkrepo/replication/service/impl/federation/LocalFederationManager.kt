@@ -121,6 +121,13 @@ class LocalFederationManager(
         federatedRepositoryDao.updateFederatedClusters(projectId, repoName, federationId, updatedClusters)
     }
 
+    /**
+     * 检查联邦仓库名称是否已存在
+     */
+    fun isFederationNameExists(name: String): Boolean {
+        return federatedRepositoryDao.findByName(name).isNotEmpty()
+    }
+
     private fun createFederatedClusterAndSaveConfig(request: FederatedRepositoryConfigRequest): Boolean {
         with(request) {
             logger.info("Start to sync federation config for project: $projectId, repo: $repoName")

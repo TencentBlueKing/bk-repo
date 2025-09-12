@@ -48,6 +48,14 @@ class FederatedRepositoryDao : SimpleMongoDao<TFederatedRepository>() {
         return find(Query(criteria))
     }
 
+    /**
+     * 根据名称查询联邦仓库
+     */
+    fun findByName(name: String): List<TFederatedRepository> {
+        val criteria = Criteria.where(TFederatedRepository::name.name).`is`(name)
+        return find(Query(criteria))
+    }
+
     fun deleteByProjectIdAndRepoName(projectId: String, repoName: String, federationId: String) {
         val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
             .and(TFederatedRepository::repoName.name).`is`(repoName)
@@ -63,7 +71,7 @@ class FederatedRepositoryDao : SimpleMongoDao<TFederatedRepository>() {
         val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
             .and(TFederatedRepository::repoName.name).`is`(repoName)
             .and(TFederatedRepository::federationId.name).`is`(federationId)
-            .and(TFederatedRepository::isFullSyncing.name).`is`(false) // 只有未在同步的才能开始
+            .and(TFederatedRepository::isFullSyncing.name).ne(true) // 兼容历史数据：null或false都可以开始同步
 
         val update = Update()
             .set(TFederatedRepository::isFullSyncing.name, true)

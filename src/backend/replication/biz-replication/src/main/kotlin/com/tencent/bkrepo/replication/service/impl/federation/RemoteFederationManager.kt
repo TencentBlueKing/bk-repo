@@ -12,7 +12,7 @@ import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
 import com.tencent.bkrepo.replication.pojo.federation.FederatedClusterInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
-import com.tencent.bkrepo.replication.util.FederationDataBuilder
+import com.tencent.bkrepo.replication.util.FederationDataBuilder.buildClusterInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
@@ -26,7 +26,6 @@ import org.springframework.stereotype.Component
 class RemoteFederationManager(
     private val localDataManager: LocalDataManager,
     private val clusterNodeService: ClusterNodeService,
-    private val federationDataBuilder: FederationDataBuilder,
 ) {
 
     /**
@@ -44,7 +43,7 @@ class RemoteFederationManager(
             "Start to create remote project and repo for repo: $currentProjectId|$currentRepoName " +
                 "with cluster ${remoteClusterNode.name}"
         )
-        val remoteCluster = federationDataBuilder.buildClusterInfo(remoteClusterNode)
+        val remoteCluster = buildClusterInfo(remoteClusterNode)
         val artifactReplicaClient = FeignClientFactory.create<ArtifactReplicaClient>(remoteCluster)
 
         // 创建远程项目
@@ -99,7 +98,7 @@ class RemoteFederationManager(
             "Start to sync federation config with federationId $federationId " +
                 "for repo: $projectId|$repoName to cluster ${remoteClusterNode.name}"
         )
-        val cluster = federationDataBuilder.buildClusterInfo(remoteClusterNode)
+        val cluster = buildClusterInfo(remoteClusterNode)
         val federatedClusterInfos = federatedClusters.map { fedCluster ->
             val federatedClusterInfo = clusterNodeService.getByClusterId(fedCluster.clusterId)
                 ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, fedCluster.clusterId)
@@ -145,7 +144,7 @@ class RemoteFederationManager(
     fun deleteRemoteFederationConfig(key: String, fed: FederatedCluster) {
         logger.info("Start to delete remote federation config on cluster: ${fed.clusterId}")
         val remoteClusterNode = clusterNodeService.getByClusterId(fed.clusterId) ?: return
-        val cluster = federationDataBuilder.buildClusterInfo(remoteClusterNode)
+        val cluster = buildClusterInfo(remoteClusterNode)
         val federatedRepositoryClient = FeignClientFactory.create<FederatedRepositoryClient>(cluster)
         federatedRepositoryClient.deleteConfig(fed.projectId, fed.repoName, key)
         logger.info("Successfully deleted remote federation config on cluster: ${fed.clusterId}")
@@ -163,7 +162,7 @@ class RemoteFederationManager(
         val targetCluster = clusterNodeService.getByClusterId(targetClusterId) ?: return
         remainingClusters.forEach { fed ->
             val remoteClusterNode = clusterNodeService.getByClusterId(targetClusterId) ?: return
-            val cluster = federationDataBuilder.buildClusterInfo(remoteClusterNode)
+            val cluster = buildClusterInfo(remoteClusterNode)
             val federatedRepositoryClient = FeignClientFactory.create<FederatedRepositoryClient>(cluster)
             federatedRepositoryClient.removeClusterFromFederation(
                 fed.projectId, fed.repoName, federationId, targetCluster.name

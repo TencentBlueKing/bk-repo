@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
 
 /**
  * 联邦仓库同步接口
@@ -84,6 +85,11 @@ interface FederationRepositoryService {
      * 执行联邦仓库fullSync
      */
     fun fullSyncFederationRepository(projectId: String, repoName: String, federationId: String)
+
+    /**
+     * 更新联邦仓库配置
+     */
+    fun updateFederationRepository(request: FederatedRepositoryUpdateRequest): Boolean
 
 
 }
