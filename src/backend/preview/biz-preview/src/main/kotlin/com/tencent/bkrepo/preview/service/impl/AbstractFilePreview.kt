@@ -34,7 +34,7 @@ package com.tencent.bkrepo.preview.service.impl
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
-import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PreviewMessageCode
 import com.tencent.bkrepo.preview.exception.PreviewNotFoundException
@@ -196,7 +196,7 @@ abstract class AbstractFilePreview(
 
     private fun buildTenantProjectId(projectId: String): String {
         return if (enableMultiTenant.enabled) {
-            val tenantId = ProjectServiceHelper.getTenantId()
+            val tenantId = SecurityUtils.getTenantId()
             if (tenantId.isNullOrEmpty()) projectId else "$tenantId.$projectId"
         } else {
             projectId

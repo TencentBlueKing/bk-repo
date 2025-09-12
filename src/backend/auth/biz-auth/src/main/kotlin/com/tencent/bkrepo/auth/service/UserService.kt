@@ -83,6 +83,8 @@ interface UserService {
 
     fun getUserInfoById(userId: String): UserInfo?
 
+    fun getUserInfoByIdAndTenantId(userId: String, tenantId: String?): UserInfo?
+
     fun getUserInfoByToken(token: String): UserInfo?
 
     fun getUserPwdById(userId: String): String?
