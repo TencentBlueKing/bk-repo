@@ -3,6 +3,7 @@ package com.tencent.bkrepo.job.batch.task.other
 
 import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
+import com.tencent.bkrepo.job.COLLECTION_NAME_BLOCK_NODE
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -40,7 +41,7 @@ class ExpiredBlockNodeMarkupJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
     override fun collectionNames(): List<String> {
-        val collectionNamePrefix = blockNodeProperties.collectionName.ifEmpty { COLLECTION_NAME_PREFIX }
+        val collectionNamePrefix = blockNodeProperties.collectionName.ifEmpty { COLLECTION_NAME_BLOCK_NODE }
         return (0 until SHARDING_COUNT).map { "${collectionNamePrefix}_$it" }
     }
 
@@ -78,6 +79,5 @@ class ExpiredBlockNodeMarkupJob(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ExpiredBlockNodeMarkupJob::class.java)
-        private const val COLLECTION_NAME_PREFIX = "block_node"
     }
 }

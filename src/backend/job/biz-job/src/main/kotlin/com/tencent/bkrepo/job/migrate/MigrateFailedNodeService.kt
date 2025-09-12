@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.BATCH_SIZE
+import com.tencent.bkrepo.job.COLLECTION_NAME_FILE_REFERENCE
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
@@ -153,7 +154,7 @@ class MigrateFailedNodeService(
 
         val query = Query(Criteria.where(TFileReference::credentialsKey.name).isEqualTo(srcCredentialKey))
         val cleaned = AtomicLong(0L)
-        NodeCommonUtils.forEachRefByCollectionParallel(query, BATCH_SIZE) { ref ->
+        NodeCommonUtils.forEachByCollectionParallel(COLLECTION_NAME_FILE_REFERENCE, query, BATCH_SIZE) { ref ->
             val sha256 = ref[TFileReference::sha256.name] as String
             val count = ref[TFileReference::count.name].toString().toLong()
             logger.info("start clean ref[$sha256], ref count[$count]")

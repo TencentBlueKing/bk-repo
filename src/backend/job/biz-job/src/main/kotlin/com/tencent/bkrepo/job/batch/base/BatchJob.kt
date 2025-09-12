@@ -119,18 +119,17 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
             return false
         }
         logger.info("Start to execute async job[${getJobName()}]")
-        val jobContext = createJobContext()
         val wasExecuted = if (isExclusive) {
             var wasExecuted = false
             lockProvider.lock(getLockConfiguration()).ifPresent {
                 lock = it
-                it.use { doStart(jobContext) }
+                it.use { doStart(createJobContext()) }
                 lock = null
                 wasExecuted = true
             }
             wasExecuted
         } else {
-            doStart(jobContext)
+            doStart(createJobContext())
             true
         }
         if (!wasExecuted) {
