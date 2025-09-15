@@ -20,7 +20,7 @@
     "@vue-office/pdf": "^2.0.2",
     "@vue/composition-api": "^1.7.2",
     "@wolf-table/table": "^0.0.1",
-    "axios": "^1.11.0",
+    "axios": "^1.12.0",
     "js-base64": "^3.7.7",
     "js-cookie": "^2.2.1",
     "marked": "^4.3.0",
