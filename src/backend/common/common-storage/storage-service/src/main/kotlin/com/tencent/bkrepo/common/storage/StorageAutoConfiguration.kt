@@ -33,8 +33,8 @@ package com.tencent.bkrepo.common.storage
 
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.config.StorageProperties
+import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.cache.indexer.StorageCacheIndexConfiguration
@@ -45,12 +45,14 @@ import com.tencent.bkrepo.common.storage.credentials.StorageType
 import com.tencent.bkrepo.common.storage.filesystem.FileSystemStorage
 import com.tencent.bkrepo.common.storage.filesystem.cleanup.FileRetainResolver
 import com.tencent.bkrepo.common.storage.innercos.InnerCosFileStorage
+import com.tencent.bkrepo.common.storage.innercos.http.CosHttpClient
 import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadMetrics
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.common.storage.s3.S3Storage
 import com.tencent.bkrepo.common.storage.util.PolarisUtil
 import com.tencent.bkrepo.common.storage.util.StorageUtils
+import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -70,7 +72,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Import(
     StorageUtils::class,
     StorageCacheIndexConfiguration::class,
-    CosUploadMetrics::class,
+    CosUploadMetrics::class
 )
 class StorageAutoConfiguration {
 
@@ -119,6 +121,9 @@ class StorageAutoConfiguration {
 
     @Bean
     fun polarisUtil(storageProperties: StorageProperties) = PolarisUtil(storageProperties)
+
+    @Bean
+    fun cosHttpClient(registry: ObservationRegistry) = CosHttpClient(registry)
 
     companion object {
         private val logger = LoggerFactory.getLogger(StorageAutoConfiguration::class.java)

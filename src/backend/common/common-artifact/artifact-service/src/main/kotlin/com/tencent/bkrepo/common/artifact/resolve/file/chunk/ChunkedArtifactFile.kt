@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.toPath
+import io.micrometer.observation.ObservationRegistry
 import java.io.File
 import java.io.InputStream
 
@@ -47,6 +48,7 @@ class ChunkedArtifactFile(
     private val monitor: StorageHealthMonitor,
     private val storageProperties: StorageProperties,
     private val storageCredentials: StorageCredentials,
+    private val registry: ObservationRegistry
 ) : ArtifactFile {
 
     /**
@@ -71,6 +73,7 @@ class ChunkedArtifactFile(
             storageProperties.monitor,
             path,
             randomPath = true,
+            registry = registry
         )
         monitor.add(receiver)
         if (!monitor.healthy.get()) {

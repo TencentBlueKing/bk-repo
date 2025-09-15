@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.api.exception.OverloadException
+import com.tencent.bkrepo.common.api.util.TraceUtils
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
@@ -45,6 +46,8 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.common.storage.util.delete
+import io.micrometer.common.KeyValues
+import io.micrometer.observation.ObservationRegistry
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -80,6 +83,7 @@ class ArtifactDataReceiver(
     private val originPath: Path = path,
     private val requestLimitCheckService: RequestLimitCheckService? = null,
     private val contentLength: Long? = null,
+    private val registry: ObservationRegistry
 ) : StorageHealthMonitor.Observer, AutoCloseable {
 
     /**
@@ -235,33 +239,35 @@ class ArtifactDataReceiver(
      */
     fun receiveStream(source: InputStream) {
         require(!finished) { "Receiver is close" }
-        if (startTime == 0L) {
-            startTime = System.nanoTime()
-        }
-        var rateLimitFlag = false
-        var exp: Exception? = null
-        try {
-            val input = requestLimitCheckService?.bandwidthCheck(
-                source, receiveProperties.circuitBreakerThreshold, contentLength
-            ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
-            rateLimitFlag = input is CommonRateLimitInputStream
-            val buffer = ByteArray(bufferSize)
-            input.use {
-                var bytes = input.read(buffer)
-                while (bytes >= 0) {
-                    writeData(buffer, 0, bytes)
-                    bytes = input.read(buffer)
-                }
+        TraceUtils.newSpan(registry, "receive stream", KeyValues.empty(), KeyValues.empty()) {
+            if (startTime == 0L) {
+                startTime = System.nanoTime()
             }
-        } catch (exception: IOException) {
-            exp = exception
-            handleIOException(exception)
-        } catch (overloadEx: OverloadException) {
-            exp = overloadEx
-            handleOverloadException(overloadEx)
-        } finally {
-            if (rateLimitFlag) {
-                requestLimitCheckService?.bandwidthFinish(exp)
+            var rateLimitFlag = false
+            var exp: Exception? = null
+            try {
+                val input = requestLimitCheckService?.bandwidthCheck(
+                    source, receiveProperties.circuitBreakerThreshold, contentLength
+                ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
+                rateLimitFlag = input is CommonRateLimitInputStream
+                val buffer = ByteArray(bufferSize)
+                input.use {
+                    var bytes = input.read(buffer)
+                    while (bytes >= 0) {
+                        writeData(buffer, 0, bytes)
+                        bytes = input.read(buffer)
+                    }
+                }
+            } catch (exception: IOException) {
+                exp = exception
+                handleIOException(exception)
+            } catch (overloadEx: OverloadException) {
+                exp = overloadEx
+                handleOverloadException(overloadEx)
+            } finally {
+                if (rateLimitFlag) {
+                    requestLimitCheckService?.bandwidthFinish(exp)
+                }
             }
         }
     }

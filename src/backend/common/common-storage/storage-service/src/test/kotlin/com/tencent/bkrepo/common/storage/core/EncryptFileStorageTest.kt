@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.storage.core
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.storage.NoopObservationRegistry
 import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
+import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import java.io.File
@@ -50,6 +52,7 @@ import java.nio.file.Files
 @ExtendWith(SpringExtension::class)
 @ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
 @TestPropertySource(locations = ["classpath:storage-encrypt.properties"])
+@Import(NoopObservationRegistry::class)
 class EncryptFileStorageTest {
 
     private val filePath = createTempFile().toPath()
