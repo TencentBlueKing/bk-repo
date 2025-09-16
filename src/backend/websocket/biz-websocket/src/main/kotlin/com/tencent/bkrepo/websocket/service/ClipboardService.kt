@@ -52,6 +52,7 @@ import com.tencent.bkrepo.websocket.pojo.fs.CopyPDU
 import com.tencent.bkrepo.websocket.pojo.fs.PastePDU
 import com.tencent.bkrepo.websocket.pojo.fs.PingPongPDU
 import com.tencent.devops.api.pojo.Response
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
 import okio.IOException
 import org.slf4j.LoggerFactory
@@ -64,9 +65,10 @@ class ClipboardService(
     private val jwtAuthProperties: JwtAuthProperties,
     private val permissionManager: PermissionManager,
     private val serviceUserClient: ServiceUserClient,
+    registry: ObservationRegistry
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create().build()
+    private val httpClient = HttpClientBuilderFactory.create(registry = registry).build()
     private val signingKey = JwtUtils.createSigningKey(jwtAuthProperties.secretKey)
 
     fun ping(userId: String, pingPDU: PingPongPDU) {

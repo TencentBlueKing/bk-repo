@@ -33,6 +33,10 @@ import com.tencent.bkrepo.analyst.distribution.DistributedCountFactory
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
 import com.tencent.bkrepo.analyst.statemachine.ScanTaskSchedulerConfiguration.Companion.SCAN_TASK_SCHEDULER_THREAD_POOL_BEAN_NAME
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.metrics.constant.SCANNER_SUBTASK_COUNT
+import com.tencent.bkrepo.common.metrics.constant.SCANNER_SUBTASK_REUSE_RESULT_COUNT
+import com.tencent.bkrepo.common.metrics.constant.SCANNER_SUBTASK_SPEED
+import com.tencent.bkrepo.common.metrics.constant.SCANNER_TASK_COUNT
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
@@ -237,26 +241,6 @@ class ScannerMetrics(
     }
 
     companion object {
-        /**
-         * 扫描任务数量
-         */
-        private const val SCANNER_TASK_COUNT = "scanner.task.count"
-
-        /**
-         * 子扫描任务数量
-         */
-        private const val SCANNER_SUBTASK_COUNT = "scanner.subtask.count"
-
-        /**
-         * 重用扫描结果的子任务数量
-         */
-        private const val SCANNER_SUBTASK_REUSE_RESULT_COUNT = "scanner.subtask.reuse-result.count"
-
-        /**
-         * 子任务执行耗时
-         */
-        private const val SCANNER_SUBTASK_SPEED = "scanner.subtask.speed"
-
         /**
          * 未知扩展名
          */

@@ -39,16 +39,18 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.devops.api.http.HttpHeaders
 import com.tencent.devops.api.pojo.Response
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
 import okio.IOException
 import org.slf4j.LoggerFactory
 import java.util.concurrent.TimeUnit
 
 open class CIPermissionManager(
-    private val ciPermissionProperties: CIPermissionProperties
+    private val ciPermissionProperties: CIPermissionProperties,
+    private val registry: ObservationRegistry
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create()
+    private val httpClient = HttpClientBuilderFactory.create(registry = registry)
         .connectTimeout(10L, TimeUnit.SECONDS)
         .readTimeout(10L, TimeUnit.SECONDS)
         .build()
@@ -123,7 +125,6 @@ open class CIPermissionManager(
         const val METADATA_SUB_PROJECT_ID = "sub_project_id"
         const val METADATA_SUB_PIPELINE_ID = "sub_pipeline_id"
         const val METADATA_SUB_BUILD_ID = "sub_build_id"
-        const val METADATA_SUB_BUILD_NO = "sub_build_no"
         const val METADATA_FOLDER_BUILD_ID = "bk_ci_bid" // 标识‘归档文件夹’下的子文件关系，不会被“构件列表”查询出来
         val PIPELINE_METADATA = listOf(
             METADATA_PROJECT_ID, METADATA_PIPELINE_ID, METADATA_BUILD_ID, METADATA_BUILD_NO, METADATA_TASK_ID,

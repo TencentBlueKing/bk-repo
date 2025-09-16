@@ -33,6 +33,14 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream.Companion.METADATA_KEY_CACHE_ENABLED
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
+import com.tencent.bkrepo.common.metrics.constant.CACHE_ACCESS_FILE_SIZE
+import com.tencent.bkrepo.common.metrics.constant.CACHE_ACCESS_INTERVAL
+import com.tencent.bkrepo.common.metrics.constant.CACHE_COUNT_HIT
+import com.tencent.bkrepo.common.metrics.constant.CACHE_COUNT_LARGE_MISS
+import com.tencent.bkrepo.common.metrics.constant.CACHE_COUNT_MISS
+import com.tencent.bkrepo.common.metrics.constant.CACHE_PRELOAD_COUNT
+import com.tencent.bkrepo.common.metrics.constant.CACHE_PRELOAD_SIZE
+import com.tencent.bkrepo.common.metrics.constant.CACHE_SIZE_LARGE_MISS
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
@@ -221,14 +229,6 @@ class ArtifactCacheMetrics(
         private val logger = LoggerFactory.getLogger(ArtifactCacheMetrics::class.java)
         private const val MAX_CACHE_FILE_SIZE = 100.0 * 1024 * 1024 * 1024
         private const val MIN_CACHE_ACCESS_INTERVAL = 1000.0
-        private const val CACHE_COUNT_HIT = "storage.cache.count.hit"
-        private const val CACHE_COUNT_MISS = "storage.cache.count.miss"
-        private const val CACHE_COUNT_LARGE_MISS = "storage.cache.miss.large.count"
-        private const val CACHE_SIZE_LARGE_MISS = "storage.cache.miss.large.size"
-        private const val CACHE_ACCESS_INTERVAL = "storage.cache.access.interval"
-        private const val CACHE_ACCESS_FILE_SIZE = "storage.cache.access.file.size"
-        private const val CACHE_PRELOAD_SIZE = "storage.cache.preload.size"
-        private const val CACHE_PRELOAD_COUNT = "storage.cache.preload.count"
         private const val TAG_STORAGE_KEY = "storageKey"
         private const val TAG_PROJECT_ID = "projectId"
     }

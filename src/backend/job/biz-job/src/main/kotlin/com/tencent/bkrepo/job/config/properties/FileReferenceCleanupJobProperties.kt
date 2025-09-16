@@ -39,6 +39,12 @@ class FileReferenceCleanupJobProperties: MongodbJobProperties() {
      * 预期系统节点数
      * */
     var expectedNodes: Long = 100_000_000 // 1e
+
+    /**
+     * 预期block node数量
+     */
+    var expectedBlockNodes: Long = 100_000_000
+
     /**
      * 布隆过滤器的误报率。
      * 误报率较高，会导致更多的数据库查询，但不影响节点清理的正确性，误报率越低，消耗的内存越大。

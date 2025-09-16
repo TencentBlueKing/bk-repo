@@ -34,12 +34,14 @@ import com.tencent.bkrepo.common.artifact.cache.UT_REPO_NAME
 import com.tencent.bkrepo.common.artifact.cache.UT_SHA256
 import com.tencent.bkrepo.common.artifact.cache.config.ArtifactPreloadProperties
 import com.tencent.bkrepo.common.artifact.cache.pojo.ArtifactPreloadPlan
+import com.tencent.bkrepo.common.artifact.cache.service.PreloadListener
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.core.cache.CacheStorageService
 import com.tencent.bkrepo.common.storage.core.locator.FileLocator
 import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.common.storage.util.delete
 import com.tencent.bkrepo.common.storage.util.existReal
@@ -56,6 +58,8 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.contracts.ExperimentalContracts
 
 @DisplayName("预加载计划执行器测试")
@@ -118,10 +122,30 @@ class DefaultPreloadPlanExecutorTest @Autowired constructor(
     fun testExecutorFull() {
         properties.preloadConcurrency = 1
         val plan = buildPlan()
-        assertTrue(preloadPlanExecutor.execute(plan))
-        preloadPlanExecutor.execute(plan)
-        preloadPlanExecutor.execute(plan)
-        Assertions.assertFalse(preloadPlanExecutor.execute(plan))
+        val startLatch = CountDownLatch(1)
+        val listener = object : PreloadListener {
+            override fun onPreloadStart(plan: ArtifactPreloadPlan) {
+                // 通知任务已开始
+                startLatch.countDown()
+            }
+
+            override fun onPreloadSuccess(plan: ArtifactPreloadPlan, throughput: Throughput?) {
+                // No-op
+            }
+
+            override fun onPreloadFailed(plan: ArtifactPreloadPlan) {
+                // No-op
+            }
+
+            override fun onPreloadFinished(plan: ArtifactPreloadPlan) {
+                // No-op
+                Thread.sleep(5000)
+            }
+        }
+        assertTrue(preloadPlanExecutor.execute(plan, listener))
+        // 等待第一个任务真正开始执行
+        startLatch.await(1, TimeUnit.SECONDS)
+        Assertions.assertFalse(preloadPlanExecutor.execute(plan, listener))
         properties.preloadConcurrency = 8
     }
 

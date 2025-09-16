@@ -27,7 +27,8 @@
 
 package com.tencent.bkrepo.common.api.util.okhttp
 
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import okhttp3.internal.threadFactory
@@ -59,6 +60,7 @@ object HttpClientBuilderFactory {
         certificate: String? = null,
         neverReadTimeout: Boolean = false,
         closeTimeout: Long = 0,
+        registry: ObservationRegistry? = null,
     ): OkHttpClient.Builder {
         return defaultClient.newBuilder()
             .apply {
@@ -83,6 +85,9 @@ object HttpClientBuilderFactory {
                     SynchronousQueue(), threadFactory("Okhttp Client Dispatcher", false)
                 ).trace()
                 dispatcher(Dispatcher(executorService))
+                registry?.let {
+                    addInterceptor(TraceInterceptor(registry))
+                }
             }
     }
 }

@@ -28,9 +28,10 @@
 dependencies {
     implementation(project(":driver:api-driver"))
     implementation(project(":common:common-stream"))
-    implementation(project(":common:common-metrics-push")) {
+    implementation(project(":common:common-metrics:metrics-push")) {
         exclude(module = "service-servlet")
     }
+    api(project(":common:common-metrics:metrics-api"))
     implementation(project(":common:common-storage:storage-service"))
     implementation(project(":common:common-mongo-reactive"))
     implementation(project(":common:common-metadata:metadata-service"))

@@ -48,5 +48,9 @@ dependencies {
     compileOnly(project(":common:common-service:service-servlet"))
     compileOnly(project(":common:common-service:service-reactive"))
 
+    testImplementation(project(":common:common-service:service-servlet"))
+    testImplementation(project(":common:common-mongo-reactive"))
+    testImplementation(project(":common:common-mongo"))
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
 }

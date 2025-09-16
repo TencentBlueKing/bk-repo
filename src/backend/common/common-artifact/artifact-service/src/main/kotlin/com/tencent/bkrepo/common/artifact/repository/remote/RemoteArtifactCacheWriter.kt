@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
 
 /**
@@ -51,6 +52,7 @@ class RemoteArtifactCacheWriter(
     monitor: StorageHealthMonitor,
     contentLength: Long,
     storageProperties: StorageProperties,
+    private val registry: ObservationRegistry
 ) : StreamReadListener {
 
     private val projectId: String = context.repositoryDetail.projectId
@@ -83,7 +85,8 @@ class RemoteArtifactCacheWriter(
                 storageProperties.receive,
                 storageProperties.monitor,
                 if (useLocalPath) localPath else path,
-                randomPath = !useLocalPath
+                randomPath = !useLocalPath,
+                registry = registry
             )
 
             // 本地磁盘不需要fallback

@@ -30,11 +30,13 @@ package com.tencent.bkrepo.fs.server
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.scheduling.annotation.EnableScheduling
+import reactor.core.publisher.Hooks
 
 @SpringBootApplication
 @EnableScheduling
 class FileSystemServerApplication
 
 fun main(args: Array<String>) {
+    Hooks.enableAutomaticContextPropagation()
     runApplication<FileSystemServerApplication>(*args)
 }
