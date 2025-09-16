@@ -37,6 +37,7 @@ import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryDeleteRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
@@ -65,8 +66,8 @@ class FederationRepositoryServiceImpl(
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, request.clusterId)
         try {
             val federationId = uniqueId()
-            val taskMap = doFederatedRepositoryCreate(request, currentCluster, federationId)
-            val tFederatedRepository = buildTFederatedRepository(request, taskMap, federationId)
+            val federatedClusterList = doFederatedRepositoryCreate(request, currentCluster, federationId)
+            val tFederatedRepository = buildTFederatedRepository(request, federatedClusterList, federationId)
             localFederationManager.saveFederationRepository(tFederatedRepository)
             logger.info(
                 "Successfully created federation repository for repo:" +
@@ -98,11 +99,29 @@ class FederationRepositoryServiceImpl(
         deleteConfig(projectId, repoName, federationId, deleteRemote)
     }
 
+    override fun removeClusterFromFederation(request: FederatedRepositoryDeleteRequest) {
+        request.federatedClusters?.forEach { fed ->
+            val fedClusterInfo = clusterNodeService.getByClusterId(fed.clusterId)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, fed.clusterId)
+            removeClusterFromFederation(
+                projectId = request.projectId,
+                repoName = request.repoName,
+                federationId = request.federationId,
+                remoteClusterName = fedClusterInfo.name,
+                remoteProjectId = fed.projectId,
+                remoteRepoName = fed.repoName,
+                deleteRemote = true
+            )
+        }
+    }
+
     override fun removeClusterFromFederation(
         projectId: String,
         repoName: String,
         federationId: String,
         remoteClusterName: String,
+        remoteProjectId: String,
+        remoteRepoName: String,
         deleteRemote: Boolean
     ) {
         val clusterId = localFederationManager.getClusterIdByName(remoteClusterName)
@@ -110,8 +129,9 @@ class FederationRepositoryServiceImpl(
             ?: return
 
         // 检查是否存在要移除的集群
-        val targetCluster = federationRepository.federatedClusters.find { it.clusterId == clusterId }
-            ?: return
+        val targetCluster = federationRepository.federatedClusters.find {
+            it.clusterId == clusterId && it.projectId == remoteProjectId && it.repoName == remoteRepoName
+        } ?: return
 
         try {
             // 如果只剩一个集群，直接删除整个联邦配置
@@ -121,17 +141,27 @@ class FederationRepositoryServiceImpl(
                 return
             }
             // 获取剩余集群列表
-            val remainingClusters = federationRepository.federatedClusters.filter { it.clusterId != clusterId }
+            val remainingClusters = federationRepository.federatedClusters.filter {
+                it.clusterId != clusterId && it.projectId != remoteProjectId && it.repoName != remoteRepoName
+            }
 
             if (deleteRemote) {
                 //  删除目标集群上的联邦配置
                 logger.info("Deleting federation config on target cluster: $clusterId")
                 remoteFederationManager.deleteRemoteFederationConfig(federationId, targetCluster)
 
-
-                // 删除其他集群上到应目标集群的同步配置
-                logger.info("Deleting remote tasks for target cluster: $clusterId on remaining clusters")
-                remoteFederationManager.deleteRemoteConfigForTargetCluster(federationId, clusterId, remainingClusters)
+                // 删除其他集群上到对应目标集群的同步配置
+                logger.info(
+                    "Deleting remote tasks for target cluster: $clusterId " +
+                        "with $remoteProjectId|$remoteRepoName on remaining clusters"
+                )
+                remoteFederationManager.deleteRemoteConfigForTargetCluster(
+                    federationId = federationId,
+                    targetClusterName = remoteClusterName,
+                    targetProjectId = remoteProjectId,
+                    targetRepoName = remoteRepoName,
+                    remainingClusters = remainingClusters
+                )
             }
 
             // 删除本集群上到目标集群的同步任务
@@ -332,14 +362,14 @@ class FederationRepositoryServiceImpl(
 
     private fun doFederatedRepositoryCreate(
         request: FederatedRepositoryCreateRequest,
-        currentCluster: com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo,
+        currentCluster: ClusterNodeInfo,
         federationId: String,
-    ): Map<String, String> {
-        val taskMap = mutableMapOf<String, String>()
+    ): List<FederatedCluster> {
         // 一次性获取所有cluster信息，避免重复查询
         val clusterInfoMap = federationTaskManager.getClusterInfoMap(request.federatedClusters)
         val federatedNameList = clusterInfoMap.values.map { it.name }.distinct()
 
+        val newFederatedClusters = mutableListOf<FederatedCluster>()
         request.federatedClusters.forEach { fed ->
             // 直接从缓存的map中获取cluster信息，避免重复查询
             val remoteClusterNode = clusterInfoMap[fed.clusterId]!!
@@ -351,9 +381,17 @@ class FederationRepositoryServiceImpl(
                 request.name, federationId, request.projectId, request.repoName,
                 fed, federatedClusters, currentCluster, remoteClusterNode, federatedNameList
             )
-            taskMap[fed.clusterId] = taskId
+            newFederatedClusters.add(
+                FederatedCluster(
+                    projectId = fed.projectId,
+                    repoName = fed.repoName,
+                    clusterId = fed.clusterId,
+                    enabled = fed.enabled,
+                    taskId = taskId
+                )
+            )
         }
-        return taskMap
+        return newFederatedClusters
     }
 
     /**
@@ -418,6 +456,8 @@ class FederationRepositoryServiceImpl(
                     repoName = existingFederation.repoName,
                     federationId = existingFederation.federationId,
                     remoteClusterName = clusterInfo.name,
+                    remoteProjectId = cluster.projectId,
+                    remoteRepoName = cluster.repoName,
                     deleteRemote = true
                 )
             }

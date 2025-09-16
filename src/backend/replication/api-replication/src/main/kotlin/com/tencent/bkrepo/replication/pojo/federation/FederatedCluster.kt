@@ -32,6 +32,6 @@ class FederatedCluster(
     var repoName: String,
     var clusterId: String,
     // 是否启用
-    var enabled: Boolean,
+    var enabled: Boolean = true,
     var taskId: String? = null,
 )

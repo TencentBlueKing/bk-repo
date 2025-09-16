@@ -10,6 +10,7 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.cluster.RemoteClusterInfo
 import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
 import com.tencent.bkrepo.replication.pojo.federation.FederatedClusterInfo
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedClusterRemoveRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.util.FederationDataBuilder.buildClusterInfo
@@ -155,20 +156,34 @@ class RemoteFederationManager(
      */
     fun deleteRemoteConfigForTargetCluster(
         federationId: String,
-        targetClusterId: String,
+        targetClusterName: String,
+        targetProjectId: String,
+        targetRepoName: String,
         remainingClusters: List<FederatedCluster>
     ) {
-        logger.info("Start to delete remote config for target cluster: $targetClusterId")
-        val targetCluster = clusterNodeService.getByClusterId(targetClusterId) ?: return
+        logger.info(
+            "Start to delete remote config for target cluster:" +
+                " $targetRepoName with $targetProjectId|$targetRepoName"
+        )
         remainingClusters.forEach { fed ->
-            val remoteClusterNode = clusterNodeService.getByClusterId(targetClusterId) ?: return
+            val remoteClusterNode = clusterNodeService.getByClusterId(fed.clusterId) ?: return
             val cluster = buildClusterInfo(remoteClusterNode)
             val federatedRepositoryClient = FeignClientFactory.create<FederatedRepositoryClient>(cluster)
             federatedRepositoryClient.removeClusterFromFederation(
-                fed.projectId, fed.repoName, federationId, targetCluster.name
+                FederatedClusterRemoveRequest(
+                    federationId = federationId,
+                    projectId = fed.projectId,
+                    repoName = fed.repoName,
+                    federatedProjectId = targetProjectId,
+                    federatedRepoName = targetRepoName,
+                    federatedClusterName = targetClusterName
+                )
             )
         }
-        logger.info("Successfully deleted remote config for target cluster: $targetClusterId")
+        logger.info(
+            "Successfully deleted remote config for target cluster: " +
+                "$targetRepoName with $targetProjectId|$targetRepoName"
+        )
     }
 
     companion object {

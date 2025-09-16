@@ -70,8 +70,8 @@ class LocalFederationManager(
     }
 
     fun getClusterIdByName(name: String): String {
-        return clusterNodeService.getByClusterId(name)?.id
-            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, name)
+        return clusterNodeService.getByClusterName(name)?.id
+            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, name)
     }
 
     /**

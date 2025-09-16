@@ -187,12 +187,14 @@ class FederationRepositoryServiceImplIntegrationTest {
         } returns updatedFederation
         every { localFederationManager.getClusterIdByName("cluster-2") } returns clusterId2
         every { remoteFederationManager.deleteRemoteFederationConfig(any(), any()) } just runs
-        every { remoteFederationManager.deleteRemoteConfigForTargetCluster(any(), any(), any()) } just runs
+        every {
+            remoteFederationManager.deleteRemoteConfigForTargetCluster(any(), any(), any(), any(), any())
+        } just runs
         every { federationTaskManager.deleteFederationTasks(any()) } just runs
         every { localFederationManager.updateFederationClusters(any(), any(), any(), any()) } just runs
 
         federationRepositoryService.removeClusterFromFederation(
-            projectId, repoName, createdFederationId, "cluster-2", true
+            projectId, repoName, createdFederationId, "cluster-2", projectId, repoName, true
         )
 
         // Phase 4: 删除整个联邦配置
@@ -305,7 +307,9 @@ class FederationRepositoryServiceImplIntegrationTest {
 
         // Mock 移除cluster2的操作
         every { remoteFederationManager.deleteRemoteFederationConfig(any(), any()) } just runs
-        every { remoteFederationManager.deleteRemoteConfigForTargetCluster(any(), any(), any()) } just runs
+        every {
+            remoteFederationManager.deleteRemoteConfigForTargetCluster(any(), any(), any(), any(), any())
+        } just runs
         every { federationTaskManager.deleteFederationTasks(any()) } just runs
 
         // Mock 添加cluster4的操作
@@ -378,7 +382,7 @@ class FederationRepositoryServiceImplIntegrationTest {
         every { localFederationManager.deleteConfig(projectId, repoName, federationId) } just runs
 
         federationRepositoryService.removeClusterFromFederation(
-            projectId, repoName, federationId, "cluster-1", true
+            projectId, repoName, federationId, "cluster-1", projectId, repoName,true
         )
 
         // 验证触发了完整删除而不是部分更新

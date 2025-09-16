@@ -260,7 +260,7 @@ class FederationRepositoryServiceImplTest : FederationRepositoryServiceTestBase(
         } returns federationWithMultipleClusters
         every { remoteFederationManager.deleteRemoteFederationConfig(TEST_FEDERATION_ID, any()) } just runs
         every {
-            remoteFederationManager.deleteRemoteConfigForTargetCluster(TEST_FEDERATION_ID, any(), any())
+            remoteFederationManager.deleteRemoteConfigForTargetCluster(TEST_FEDERATION_ID, any(), any(), any(), any())
         } just runs
         every { federationTaskManager.deleteFederationTasks(any()) } just runs
         every {
@@ -269,13 +269,14 @@ class FederationRepositoryServiceImplTest : FederationRepositoryServiceTestBase(
 
         // When
         federationRepositoryService.removeClusterFromFederation(
-            TEST_PROJECT_ID, TEST_REPO_NAME, TEST_FEDERATION_ID, remoteClusterName, true
+            TEST_PROJECT_ID, TEST_REPO_NAME, TEST_FEDERATION_ID,
+            remoteClusterName, TEST_PROJECT_ID, TEST_REPO_NAME,true
         )
 
         // Then
         verify { remoteFederationManager.deleteRemoteFederationConfig(TEST_FEDERATION_ID, any()) }
         verify {
-            remoteFederationManager.deleteRemoteConfigForTargetCluster(TEST_FEDERATION_ID, any(), any())
+            remoteFederationManager.deleteRemoteConfigForTargetCluster(TEST_FEDERATION_ID, any(), any(), any(), any())
         }
         verify { federationTaskManager.deleteFederationTasks(any()) }
         verify {
@@ -307,7 +308,8 @@ class FederationRepositoryServiceImplTest : FederationRepositoryServiceTestBase(
 
         // When
         federationRepositoryService.removeClusterFromFederation(
-            TEST_PROJECT_ID, TEST_REPO_NAME, TEST_FEDERATION_ID, remoteClusterName, true
+            TEST_PROJECT_ID, TEST_REPO_NAME, TEST_FEDERATION_ID,remoteClusterName,
+            TEST_PROJECT_ID, TEST_REPO_NAME, true
         )
 
         // Then
@@ -402,7 +404,7 @@ class FederationRepositoryServiceImplTest : FederationRepositoryServiceTestBase(
         every { federationTaskManager.deleteFederationTasks(any()) } just runs
         every { localFederationManager.getClusterIdByName("test-cluster") } returns TEST_CLUSTER_ID_1
         every {
-            remoteFederationManager.deleteRemoteConfigForTargetCluster(TEST_FEDERATION_ID, any(), any())
+            remoteFederationManager.deleteRemoteConfigForTargetCluster(TEST_FEDERATION_ID, any(), any(), any(), any())
         } just runs
         every {
             localFederationManager.updateFederationClusters(TEST_PROJECT_ID, TEST_REPO_NAME, TEST_FEDERATION_ID, any())
@@ -558,7 +560,7 @@ class FederationRepositoryServiceImplTest : FederationRepositoryServiceTestBase(
         every { federationTaskManager.deleteFederationTasks(any()) } just runs
         every { localFederationManager.getClusterIdByName("test-cluster") } returns TEST_CLUSTER_ID_1
         every {
-            remoteFederationManager.deleteRemoteConfigForTargetCluster(TEST_FEDERATION_ID, any(), any())
+            remoteFederationManager.deleteRemoteConfigForTargetCluster(TEST_FEDERATION_ID, any(), any(), any(), any())
         } just runs
 
         every {

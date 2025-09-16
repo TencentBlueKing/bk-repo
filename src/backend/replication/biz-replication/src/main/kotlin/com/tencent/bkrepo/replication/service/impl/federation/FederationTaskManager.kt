@@ -11,7 +11,6 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
-import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
 import com.tencent.bkrepo.replication.service.ClusterNodeService
@@ -46,45 +45,29 @@ class FederationTaskManager(
             repoName, repositoryDetail.type, federatedCluster, federatedNameList
         )
         val sourceRepo = projectId + StringPool.DASH + repoName
-        val taskName = FEDERATION_TASK_NAME.format(federationId, sourceRepo, clusterInfo.name)
+        val targetRepo = federatedCluster.projectId + StringPool.DASH + federatedCluster.repoName
+        val taskName = FEDERATION_TASK_NAME.format(federationId, sourceRepo, targetRepo, clusterInfo.name)
         var task = replicaTaskService.getByTaskName(taskName)
-        
-        if (task == null) {
-            logger.info("Creating new federation task: $taskName")
-            val taskCreateRequest = ReplicaTaskCreateRequest(
-                name = taskName,
-                localProjectId = projectId,
-                replicaObjectType = ReplicaObjectType.REPOSITORY,
-                replicaTaskObjects = replicaTaskObjects,
-                replicaType = ReplicaType.FEDERATION,
-                setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
-                remoteClusterIds = setOf(clusterInfo.id!!),
-                enabled = federatedCluster.enabled
-            )
-            task = replicaTaskService.create(taskCreateRequest)
-        } else {
-            logger.info("Updating existing federation task: ${task.id}")
-            val taskUpdateRequest = ReplicaTaskUpdateRequest(
-                key = task.key,
-                name = task.name,
-                localProjectId = projectId,
-                replicaTaskObjects = replicaTaskObjects,
-                replicaObjectType = ReplicaObjectType.REPOSITORY,
-                setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
-                remoteClusterIds = setOf(clusterInfo.id!!),
-            )
-            replicaTaskService.update(taskUpdateRequest)?.let {
-                task = it
-            }
-            if (task!!.enabled != federatedCluster.enabled) {
-                replicaTaskService.toggleStatus(task!!.key)
-            }
+        if (task != null) {
+            replicaTaskService.deleteByTaskKey(task.key)
         }
+        logger.info("Creating new federation task: $taskName")
+        val taskCreateRequest = ReplicaTaskCreateRequest(
+            name = taskName,
+            localProjectId = projectId,
+            replicaObjectType = ReplicaObjectType.REPOSITORY,
+            replicaTaskObjects = replicaTaskObjects,
+            replicaType = ReplicaType.FEDERATION,
+            setting = ReplicaSetting(conflictStrategy = ConflictStrategy.OVERWRITE),
+            remoteClusterIds = setOf(clusterInfo.id!!),
+            enabled = federatedCluster.enabled
+        )
+        task = replicaTaskService.create(taskCreateRequest)
         logger.info(
             "Successfully created federation task: $taskName" +
                 " with federationId $federationId for repo: $projectId|$repoName to cluster: ${clusterInfo.name}"
         )
-        return task!!.id
+        return task.id
     }
 
     /**
@@ -139,6 +122,6 @@ class FederationTaskManager(
 
     companion object {
         private val logger = LoggerFactory.getLogger(FederationTaskManager::class.java)
-        const val FEDERATION_TASK_NAME = "federation/%s/%s/%s"
+        const val FEDERATION_TASK_NAME = "federation/%s/%s/%s/%s"
     }
 }

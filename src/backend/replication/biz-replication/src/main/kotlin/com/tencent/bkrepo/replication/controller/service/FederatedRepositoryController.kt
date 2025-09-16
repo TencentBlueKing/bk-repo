@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.controller.service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.federation.FederatedRepositoryClient
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedClusterRemoveRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import org.springframework.web.bind.annotation.RestController
@@ -48,10 +49,14 @@ class FederatedRepositoryController(
         return ResponseBuilder.success()
     }
 
-    override fun removeClusterFromFederation(
-        projectId: String, repoName: String, key: String, name: String
-    ): Response<Void> {
-        federationRepositoryService.removeClusterFromFederation(projectId, repoName, key, name, false)
+    override fun removeClusterFromFederation(request: FederatedClusterRemoveRequest): Response<Void> {
+        with(request) {
+            federationRepositoryService.removeClusterFromFederation(
+                projectId = projectId, repoName = repoName, federationId = federationId,
+                remoteClusterName = federatedClusterName, remoteProjectId = federatedProjectId,
+                remoteRepoName = federatedRepoName, deleteRemote = false
+            )
+        }
         return ResponseBuilder.success()
     }
 

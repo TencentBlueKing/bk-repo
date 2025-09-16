@@ -21,21 +21,9 @@ object FederationDataBuilder {
      */
     fun buildTFederatedRepository(
         request: FederatedRepositoryCreateRequest,
-        taskMap: Map<String, String>,
+        federatedClusters: List<FederatedCluster>,
         federationId: String,
     ): TFederatedRepository {
-        // 将请求中的联邦集群列表转换为实体列表，并添加对应的任务ID
-        val federatedClusters = request.federatedClusters.map {
-            FederatedCluster(
-                projectId = it.projectId,
-                repoName = it.repoName,
-                clusterId = it.clusterId,
-                enabled = it.enabled,
-                taskId = taskMap[it.clusterId]
-            )
-        }.toMutableList()
-
-        // 构建并返回联邦仓库实体
         return TFederatedRepository(
             projectId = request.projectId,
             repoName = request.repoName,

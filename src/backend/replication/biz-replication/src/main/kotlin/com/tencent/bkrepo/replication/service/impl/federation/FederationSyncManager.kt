@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.replication.service.impl.federation
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TFederatedRepository
@@ -50,7 +49,7 @@ class FederationSyncManager(
         federationId: String
     ): TFederatedRepository {
         return localFederationManager.getFederationRepository(projectId, repoName, federationId)
-            ?: throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, federationId)
+            ?: throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_NOT_FOUND)
     }
 
     /**

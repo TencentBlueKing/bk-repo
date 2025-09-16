@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryDeleteRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import io.swagger.v3.oas.annotations.Operation
@@ -63,9 +64,9 @@ class UserFederationRepositoryController(
     @Operation(summary = "创建联邦仓库")
     @PostMapping("/create")
     fun federatedRepositoryCreate(
-        @RequestBody requests: FederatedRepositoryCreateRequest,
+        @RequestBody request: FederatedRepositoryCreateRequest,
     ): Response<String> {
-        return ResponseBuilder.success(federationRepositoryService.createFederationRepository(requests))
+        return ResponseBuilder.success(federationRepositoryService.createFederationRepository(request))
 
     }
 
@@ -89,16 +90,11 @@ class UserFederationRepositoryController(
     }
 
     @Operation(summary = "从联邦中移除指定集群")
-    @DeleteMapping("/remove-cluster/{projectId}/{repoName}/{federationId}/{clusterName}")
+    @DeleteMapping("/remove-cluster")
     fun removeClusterFromFederation(
-        @PathVariable("projectId") projectId: String,
-        @PathVariable("repoName") repoName: String,
-        @PathVariable("federationId") federationId: String,
-        @PathVariable("clusterName") clusterName: String,
+        @RequestBody request: FederatedRepositoryDeleteRequest
     ): Response<Boolean> {
-        federationRepositoryService.removeClusterFromFederation(
-            projectId, repoName, federationId, clusterName
-        )
+        federationRepositoryService.removeClusterFromFederation(request)
         return ResponseBuilder.success()
     }
 

@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryDeleteRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
 
 /**
@@ -66,6 +67,11 @@ interface FederationRepositoryService {
     )
 
     /**
+     * 从联邦中移除指定集群
+     */
+    fun removeClusterFromFederation(request: FederatedRepositoryDeleteRequest)
+
+    /**
      * 从联邦中移除指定集群（不解散联邦）
      */
     fun removeClusterFromFederation(
@@ -73,6 +79,8 @@ interface FederationRepositoryService {
         repoName: String,
         federationId: String,
         remoteClusterName: String,
+        remoteProjectId: String,
+        remoteRepoName: String,
         deleteRemote: Boolean = true
     )
 
