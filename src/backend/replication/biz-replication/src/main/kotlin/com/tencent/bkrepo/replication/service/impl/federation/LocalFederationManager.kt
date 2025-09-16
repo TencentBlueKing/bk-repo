@@ -176,7 +176,7 @@ class LocalFederationManager(
     ): MutableList<FederatedCluster> {
         logger.info("Starting to build federated cluster list for project: $projectId, repo: $repoName")
         val clusterNameList = federatedClusters.mapNotNull { it.clusterNodeInfo?.name }.distinct()
-        return federatedClusters.mapNotNull { clusterInfo ->
+        return federatedClusters.map { clusterInfo ->
             val federatedCluster = getOrCreateCluster(clusterInfo.clusterNodeInfo)
             val fed = FederatedCluster(
                 clusterInfo.projectId, clusterInfo.repoName, federatedCluster.id!!, clusterInfo.enabled

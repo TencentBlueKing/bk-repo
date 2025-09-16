@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.replication.service.impl.federation
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TFederatedRepository
 import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster

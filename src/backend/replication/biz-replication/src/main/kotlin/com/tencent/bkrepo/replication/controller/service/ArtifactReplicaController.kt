@@ -29,10 +29,8 @@ package com.tencent.bkrepo.replication.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
@@ -286,7 +284,7 @@ class ArtifactReplicaController(
         if (existNode != null) {
             val existCreatedDate = LocalDateTime.parse(existNode.createdDate, DateTimeFormatter.ISO_DATE_TIME)
             if (existCreatedDate.isAfter(compareDate)) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+                return
             }
         }
     }
@@ -302,7 +300,7 @@ class ArtifactReplicaController(
 
         // 检查包的创建日期是否晚于比较日期
         if (existPackage.createdDate.isAfter(compareDate)) {
-            throw ErrorCodeException(ArtifactMessageCode.PACKAGE_EXISTED, packageKey)
+            return
         }
 
         // 如果未指定版本名称，则无需检查版本
@@ -313,7 +311,7 @@ class ArtifactReplicaController(
 
         // 检查版本的修改日期是否晚于比较日期
         if (existVersion.lastModifiedDate.isAfter(compareDate)) {
-            throw ErrorCodeException(ArtifactMessageCode.VERSION_EXISTED, packageKey, versionName)
+            return
         }
     }
 

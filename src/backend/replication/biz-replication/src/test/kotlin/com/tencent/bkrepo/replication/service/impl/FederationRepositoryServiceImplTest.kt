@@ -285,42 +285,6 @@ class FederationRepositoryServiceImplTest : FederationRepositoryServiceTestBase(
     }
 
     @Test
-    fun `test removeClusterFromFederation - delete entire federation when only one cluster left`() {
-        // Given
-        val remoteClusterName = "remote-cluster"
-        val remoteClusterId = TEST_CLUSTER_ID_1
-        val federationWithOneCluster = createTestTFederatedRepository(
-            clusterId = TEST_CLUSTER_ID_1,
-            federatedClusters = listOf(createTestFederatedCluster(clusterId = remoteClusterId))
-        )
-
-        every { localFederationManager.getClusterIdByName(remoteClusterName) } returns remoteClusterId
-        every {
-            localFederationManager.getFederationRepository(
-                TEST_PROJECT_ID, TEST_REPO_NAME, TEST_FEDERATION_ID
-            )
-        } returns federationWithOneCluster
-        every { remoteFederationManager.deleteRemoteFederationConfig(TEST_FEDERATION_ID, any()) } just runs
-        every { federationTaskManager.deleteFederationTasks(any()) } just runs
-        every {
-            localFederationManager.deleteConfig(TEST_PROJECT_ID, TEST_REPO_NAME, TEST_FEDERATION_ID)
-        } just runs
-
-        // When
-        federationRepositoryService.removeClusterFromFederation(
-            TEST_PROJECT_ID, TEST_REPO_NAME, TEST_FEDERATION_ID,remoteClusterName,
-            TEST_PROJECT_ID, TEST_REPO_NAME, true
-        )
-
-        // Then
-        verify { remoteFederationManager.deleteRemoteFederationConfig(TEST_FEDERATION_ID, any()) }
-        verify { federationTaskManager.deleteFederationTasks(any()) }
-        verify {
-            localFederationManager.deleteConfig(TEST_PROJECT_ID, TEST_REPO_NAME, TEST_FEDERATION_ID)
-        }
-    }
-
-    @Test
     fun `test getCurrentClusterName - success`() {
         // Given
         val expectedClusterName = "test-cluster"

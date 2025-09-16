@@ -29,7 +29,7 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
@@ -379,7 +379,7 @@ class FederationReplicator(
     ): NodeMoveCopyRequest {
         with(moveOrCopyRequest) {
             return moveOrCopyRequest.copy(
-                source = getCurrentClusterName(srcProjectId, srcRepoName, context.task.name),
+                source = getCurrentClusterName(context.localProjectId, context.localRepoName, context.task.name),
             )
         }
     }
@@ -390,7 +390,7 @@ class FederationReplicator(
     ): NodeRenameRequest {
         with(nodeRenameRequest) {
             return nodeRenameRequest.copy(
-                source = getCurrentClusterName(projectId, repoName, context.task.name),
+                source = getCurrentClusterName(context.localProjectId, context.localRepoName, context.task.name),
             )
         }
     }
@@ -401,7 +401,7 @@ class FederationReplicator(
     ): MetadataSaveRequest {
         with(metadataSaveRequest) {
             return metadataSaveRequest.copy(
-                source = getCurrentClusterName(projectId, repoName, context.task.name),
+                source = getCurrentClusterName(context.localProjectId, context.localRepoName, context.task.name),
             )
         }
     }
@@ -412,7 +412,7 @@ class FederationReplicator(
     ): MetadataDeleteRequest {
         with(metadataDeleteRequest) {
             return metadataDeleteRequest.copy(
-                source = getCurrentClusterName(projectId, repoName, context.task.name),
+                source = getCurrentClusterName(context.localProjectId, context.localRepoName, context.task.name),
             )
         }
     }
@@ -479,12 +479,12 @@ class FederationReplicator(
                 repoName = remoteRepoName,
                 fullPath = node.fullPath,
                 folder = node.folder,
-                overwrite = true,
-                size = node.size,
-                sha256 = node.sha256!!,
-                md5 = node.md5!!,
-                crc64ecma = node.crc64ecma,
-                nodeMetadata = updatedMetadata,
+                overwrite = if (node.folder) false else true,
+                size = if (node.folder) null else node.size,
+                sha256 = if (node.folder) null else node.sha256!!,
+                md5 = if (node.folder) null else node.md5!!,
+                crc64ecma = if (node.folder) null else node.crc64ecma,
+                nodeMetadata = if (node.folder) emptyList() else updatedMetadata,
                 operator = node.createdBy,
                 createdBy = node.createdBy,
                 createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME),

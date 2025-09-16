@@ -98,8 +98,8 @@ class FederationBasedReplicaService(
     private fun handleMetadataDeleted(replicaContext: ReplicaContext) {
         with(replicaContext) {
             val metadataDeleteRequest = MetadataDeleteRequest(
-                projectId = localProjectId,
-                repoName = localRepoName,
+                projectId = remoteProjectId!!,
+                repoName = remoteRepoName!!,
                 fullPath = event.resourceKey,
                 keyList = (event.data["keys"] as? List<String>)?.toSet() ?: emptySet(),
                 operator = event.userId
@@ -117,8 +117,8 @@ class FederationBasedReplicaService(
                 metadata = event.data["metadata"] as? Map<String, Any>
             }
             val metadataSaveRequest = MetadataSaveRequest(
-                projectId = localProjectId,
-                repoName = localRepoName,
+                projectId = remoteProjectId!!,
+                repoName = remoteRepoName!!,
                 fullPath = event.resourceKey,
                 nodeMetadata = nodeMetadata,
                 metadata = metadata,
@@ -141,8 +141,8 @@ class FederationBasedReplicaService(
     private fun handleNodeRenamed(replicaContext: ReplicaContext) {
         with(replicaContext) {
             val nodeRenameRequest = NodeRenameRequest(
-                projectId = localProjectId,
-                repoName = localRepoName,
+                projectId = remoteProjectId!!,
+                repoName = remoteRepoName!!,
                 fullPath = event.resourceKey,
                 newFullPath = event.data["newFullPath"].toString(),
                 operator = event.userId
@@ -160,11 +160,11 @@ class FederationBasedReplicaService(
     }
 
     private fun handleNodeCopied(replicaContext: ReplicaContext) {
-        handleNodeMoveCopyEvent(replicaContext, isMoveOperation = false)
+        handleNodeMoveCopyEvent(replicaContext, moveOperation = false)
     }
 
     private fun handleNodeMoved(replicaContext: ReplicaContext) {
-        handleNodeMoveCopyEvent(replicaContext, isMoveOperation = true)
+        handleNodeMoveCopyEvent(replicaContext, moveOperation = true)
     }
 
     private fun handleNodeCreated(replicaContext: ReplicaContext) {
@@ -207,29 +207,72 @@ class FederationBasedReplicaService(
     /**
      * 处理节点移动或复制事件
      * @param replicaContext 复制上下文
-     * @param isMoveOperation 是否为移动操作，true表示移动，false表示复制
+     * @param moveOperation 是否为移动操作，true表示移动，false表示复制
      */
-    private fun handleNodeMoveCopyEvent(replicaContext: ReplicaContext, isMoveOperation: Boolean) {
+    private fun handleNodeMoveCopyEvent(replicaContext: ReplicaContext, moveOperation: Boolean) {
         with(replicaContext) {
             val dstProjectId = event.data["dstProjectId"].toString()
             val dstRepoName = event.data["dstRepoName"].toString()
             val dstFullPath = event.data["dstFullPath"].toString()
             val destNodeFolder = event.data["destNodeFolder"]?.toString()?.toBoolean()
             val overwrite = event.data["overwrite"]?.toString()?.toBoolean() ?: false
-
+            // 检查是否为跨项目/跨仓库的操作
+            if (crossProjectRepoOperation(replicaContext, dstProjectId, dstRepoName)) {
+                handleCrossProjectMove(replicaContext, moveOperation)
+                return
+            }
+            // 当目标节点为文件夹时，先确保目标集群上节点存在
+            ensureTargetFolderExists(replicaContext, dstFullPath)
             val nodeCopyOrMoveRequest = NodeMoveCopyRequest(
-                srcProjectId = localProjectId,
-                srcRepoName = localRepoName,
+                srcProjectId = remoteProjectId!!,
+                srcRepoName = remoteRepoName!!,
                 srcFullPath = event.resourceKey,
-                destProjectId = dstProjectId,
-                destRepoName = dstRepoName,
+                destProjectId = remoteProjectId,
+                destRepoName = remoteRepoName,
                 destFullPath = dstFullPath,
                 destNodeFolder = destNodeFolder,
                 overwrite = overwrite,
                 operator = event.userId
             )
+            replicaByMovedOrCopiedNode(this, nodeCopyOrMoveRequest, moveOperation)
+        }
+    }
 
-            replicaByMovedOrCopiedNode(this, nodeCopyOrMoveRequest, isMoveOperation)
+    private fun crossProjectRepoOperation(
+        context: ReplicaContext,
+        dstProjectId: String,
+        dstRepoName: String
+    ): Boolean {
+        return dstProjectId != context.localProjectId || dstRepoName != context.localRepoName
+    }
+
+    private fun handleCrossProjectMove(context: ReplicaContext, moveOperation: Boolean) {
+        if (!moveOperation) return
+
+        localDataManager.findDeletedNodeDetail(
+            context.localProjectId,
+            context.localRepoName,
+            context.event.resourceKey
+        )?.let { deletedNode ->
+            val pathConstraint = PathConstraint(
+                context.event.resourceKey,
+                deletedDate = deletedNode.nodeInfo.deleted
+            )
+            replicaByDeletedNode(context, pathConstraint)
+        }
+    }
+
+    private fun ensureTargetFolderExists(context: ReplicaContext, dstFullPath: String) {
+        localDataManager.findNode(
+            context.localProjectId, context.localRepoName, dstFullPath
+        )?.let { node ->
+            if (node.folder) {
+                try {
+                    val pathConstraint = PathConstraint(dstFullPath)
+                    replicaFolderOnlyByPathConstraint(context, pathConstraint)
+                } catch (_: Exception) {
+                }
+            }
         }
     }
 }

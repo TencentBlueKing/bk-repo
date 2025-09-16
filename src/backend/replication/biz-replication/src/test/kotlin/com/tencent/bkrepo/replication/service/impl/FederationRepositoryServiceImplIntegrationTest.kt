@@ -355,38 +355,4 @@ class FederationRepositoryServiceImplIntegrationTest {
 
         verify(exactly = 2) { federationSyncManager.executeFullSync(projectId, repoName, federationId) }
     }
-
-    @Test
-    fun `test edge case - remove last cluster triggers full deletion`() {
-        // 只有一个集群的联邦仓库
-        val singleClusterFederation = TFederatedRepository(
-            createdBy = "test-user",
-            createdDate = LocalDateTime.now(),
-            lastModifiedBy = "test-user",
-            lastModifiedDate = LocalDateTime.now(),
-            projectId = projectId,
-            repoName = repoName,
-            clusterId = clusterId1,
-            federationId = federationId,
-            name = federationName,
-            federatedClusters = listOf(federatedCluster1),
-            isFullSyncing = false
-        )
-
-        every { localFederationManager.getClusterIdByName("cluster-1") } returns clusterId1
-        every {
-            localFederationManager.getFederationRepository(projectId, repoName, federationId)
-        } returns singleClusterFederation
-        every { remoteFederationManager.deleteRemoteFederationConfig(any(), any()) } just runs
-        every { federationTaskManager.deleteFederationTasks(any()) } just runs
-        every { localFederationManager.deleteConfig(projectId, repoName, federationId) } just runs
-
-        federationRepositoryService.removeClusterFromFederation(
-            projectId, repoName, federationId, "cluster-1", projectId, repoName,true
-        )
-
-        // 验证触发了完整删除而不是部分更新
-        verify { localFederationManager.deleteConfig(projectId, repoName, federationId) }
-        verify(exactly = 0) { localFederationManager.updateFederationClusters(any(), any(), any(), any()) }
-    }
 }

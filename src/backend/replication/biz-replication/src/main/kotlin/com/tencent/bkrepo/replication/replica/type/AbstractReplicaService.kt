@@ -72,7 +72,7 @@ import java.time.format.DateTimeFormatter
 @Suppress("TooGenericExceptionCaught")
 abstract class AbstractReplicaService(
     private val replicaRecordService: ReplicaRecordService,
-    private val localDataManager: LocalDataManager,
+    val localDataManager: LocalDataManager,
 ) : ReplicaService {
 
     /**
@@ -198,6 +198,27 @@ abstract class AbstractReplicaService(
             } catch (throwable: Throwable) {
                 logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
                 setRunOnceTaskFailedRecordMetrics(this, throwable, pathConstraint = constraint)
+                throw throwable
+            }
+        }
+    }
+
+    /**
+     * 同步目录数据(只同步当前目录)
+     */
+    protected fun replicaFolderOnlyByPathConstraint(replicaContext: ReplicaContext, constraint: PathConstraint) {
+        with(replicaContext) {
+            try {
+                val nodeInfo = localDataManager.findNodeDetail(
+                    projectId = localProjectId,
+                    repoName = localRepoName,
+                    fullPath = constraint.path!!
+                ).nodeInfo
+                replicaFolderNodeOnly(replicaContext, nodeInfo)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaFolderOnlyByPathConstraint ${constraint.path} failed, error is ${throwable.message}"
+                )
                 throw throwable
             }
         }
@@ -410,11 +431,27 @@ abstract class AbstractReplicaService(
     }
 
     /**
+     * 同步文件夹节点（只同步当前文件夹节点）
+     */
+    private fun replicaFolderNodeOnly(replicaContext: ReplicaContext, node: NodeInfo) {
+        with(replicaContext) {
+            val record = ReplicationRecord(path = node.fullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = node.fullPath,
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicaContext.replicator.replicaDir(replicaContext, node)
+                true
+            }
+        }
+    }
+
+    /**
      * 同步删除节点
      */
     private fun replicaDeletedNode(replicaContext: ReplicaContext, node: NodeInfo) {
         with(replicaContext) {
-            val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
             val record = ReplicationRecord(path = node.fullPath)
             val replicaExecutionContext = initialExecutionContext(
                 context = replicaContext,
@@ -650,7 +687,8 @@ abstract class AbstractReplicaService(
                 )
                 replicaContext.replicaProgress.failed++
                 setErrorStatus(this, throwable)
-                if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
+                // 非全量同步且配置了快速失败策略时，直接抛出异常
+                if (shouldFastFail(replicaContext)) {
                     throw throwable
                 }
             } finally {
@@ -669,6 +707,13 @@ abstract class AbstractReplicaService(
                 )
             }
         }
+    }
+
+    private fun shouldFastFail(context: ReplicaContext): Boolean {
+        if (context.executeType == TaskExecuteType.FULL) {
+            return false
+        }
+        return context.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL
     }
 
     /**
