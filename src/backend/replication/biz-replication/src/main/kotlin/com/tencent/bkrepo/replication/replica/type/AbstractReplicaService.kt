@@ -52,8 +52,11 @@ import com.tencent.bkrepo.replication.replica.context.ReplicaExecutionContext
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationRecordDetailMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -263,6 +266,58 @@ abstract class AbstractReplicaService(
                 logger.error(
                     "replicaByMovedOrCopiedNode ${nodeOrMoveRequest.srcFullPath} " +
                         "to ${nodeOrMoveRequest.destFullPath} failed, error is ${throwable.message}"
+                )
+                throw throwable
+            }
+        }
+    }
+
+    /**
+     * 同步rename的节点
+     */
+    protected fun replicaByRenamedNode(replicaContext: ReplicaContext, nodeRenameRequest: NodeRenameRequest) {
+        with(replicaContext) {
+            try {
+                replicaRenamedNode(this, nodeRenameRequest)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaByRenamedNode ${nodeRenameRequest.fullPath} " +
+                        "to ${nodeRenameRequest.newFullPath} failed, error is ${throwable.message}"
+                )
+                throw throwable
+            }
+        }
+    }
+
+    /**
+     * 同步更新的元数据
+     */
+    protected fun replicaBySaveMetadata(replicaContext: ReplicaContext, metadataSaveRequest: MetadataSaveRequest) {
+        with(replicaContext) {
+            try {
+                replicaSavedMetadata(this, metadataSaveRequest)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaBySaveMetadata for ${metadataSaveRequest.fullPath} failed, error is ${throwable.message}"
+                )
+                throw throwable
+            }
+        }
+    }
+
+    /**
+     * 同步删除元数据
+     */
+    protected fun replicaByDeleteMetadata(
+        replicaContext: ReplicaContext, metadataDeleteRequest: MetadataDeleteRequest
+    ) {
+        with(replicaContext) {
+            try {
+                replicaDeletedMetadata(this, metadataDeleteRequest)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaByDeleteMetadata for ${metadataDeleteRequest.fullPath} failed," +
+                        " error is ${throwable.message}"
                 )
                 throw throwable
             }
@@ -522,6 +577,54 @@ abstract class AbstractReplicaService(
                 } else {
                     replicator.replicaNodeCopy(replicaContext, nodeOrMoveRequest)
                 }
+            }
+        }
+    }
+
+    /**
+     * 同步rename的节点
+     */
+    private fun replicaRenamedNode(replicaContext: ReplicaContext, nodeRenameRequest: NodeRenameRequest) {
+        with(replicaContext) {
+            val record = ReplicationRecord(path = nodeRenameRequest.fullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = nodeRenameRequest.fullPath
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicator.replicaNodeRename(replicaContext, nodeRenameRequest)
+            }
+        }
+    }
+
+    /**
+     * 同步更新元数据
+     */
+    private fun replicaSavedMetadata(replicaContext: ReplicaContext, metadataSaveRequest: MetadataSaveRequest) {
+        with(replicaContext) {
+            val record = ReplicationRecord(path = metadataSaveRequest.fullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = metadataSaveRequest.fullPath
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicator.replicaMetadataSave(replicaContext, metadataSaveRequest)
+            }
+        }
+    }
+
+    /**
+     * 同步删除元数据
+     */
+    private fun replicaDeletedMetadata(replicaContext: ReplicaContext, metadataDeleteRequest: MetadataDeleteRequest) {
+        with(replicaContext) {
+            val record = ReplicationRecord(path = metadataDeleteRequest.fullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = metadataDeleteRequest.fullPath
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicator.replicaMetadataDelete(replicaContext, metadataDeleteRequest)
             }
         }
     }

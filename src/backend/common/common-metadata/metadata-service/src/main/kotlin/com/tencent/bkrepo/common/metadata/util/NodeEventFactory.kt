@@ -171,8 +171,9 @@ object NodeEventFactory {
                 repoName = repoName,
                 resourceKey = fullPath,
                 userId = operator,
-                metadata = nodeMetadata?.associate { Pair(it.key, it.value) }.orEmpty(),
-                source = source
+                metadata = nodeMetadata?.associate { Pair(it.key, it) }.orEmpty(),
+                source = source,
+                replace = replace
             )
         }
     }

@@ -56,9 +56,12 @@ class FederationArtifactEventConsumer(
             EventType.NODE_COPIED,
             EventType.NODE_CREATED,
             EventType.NODE_DELETED,
+            EventType.NODE_RENAMED,
             EventType.VERSION_CREATED,
             EventType.VERSION_DELETED,
-            EventType.VERSION_UPDATED
+            EventType.VERSION_UPDATED,
+            EventType.METADATA_SAVED,
+            EventType.METADATA_DELETED
         )
     }
 

@@ -28,6 +28,9 @@
 package com.tencent.bkrepo.replication.replica.type.federation
 
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
@@ -37,7 +40,11 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import org.springframework.stereotype.Component
 
 /**
@@ -73,60 +80,128 @@ class FederationBasedReplicaService(
                 throw UnsupportedOperationException()
             replicaContext.executeType = TaskExecuteType.DELTA
             when (event.type) {
-                EventType.NODE_COPIED -> {
-                    handleNodeMoveCopyEvent(this, isMoveOperation = false)
-                }
-
-                EventType.NODE_MOVED -> {
-                    handleNodeMoveCopyEvent(this, isMoveOperation = true)
-                }
-
-                EventType.NODE_DELETED -> {
-                    val deleted = event.data["deletedDate"]?.toString()
-                    val pathConstraint = PathConstraint(event.resourceKey, deletedDate = deleted)
-                    replicaByDeletedNode(this, pathConstraint)
-                }
-
-                EventType.NODE_CREATED -> {
-                    val pathConstraint = PathConstraint(event.resourceKey)
-                    replicaByPathConstraint(this, pathConstraint)
-                }
-
-                EventType.VERSION_CREATED -> {
-                    val packageKey = event.data["packageKey"].toString()
-                    val packageVersion = event.data["packageVersion"].toString()
-                    val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
-                    replicaByPackageConstraint(this, packageConstraint)
-                }
-
-                EventType.VERSION_UPDATED -> {
-                    val packageKey = event.data["packageKey"].toString()
-                    val packageVersion = event.data["packageVersion"].toString()
-                    val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
-                    replicaByPackageConstraint(this, packageConstraint)
-                }
-
-                EventType.VERSION_DELETED -> {
-                    val packageKey = event.data["packageKey"].toString()
-                    val packageName = event.data["packageName"].toString()
-                    val deleted = event.data["deletedDate"]?.toString()
-                    val packageVersion = event.data["packageVersion"]?.toString()
-                    if (deleted.isNullOrEmpty()) return
-
-                    val packageVersionDeleteSummary = PackageVersionDeleteSummary(
-                        projectId = localProjectId,
-                        repoName = localRepoName,
-                        packageName = packageName,
-                        packageKey = packageKey,
-                        versionName = packageVersion,
-                        deletedDate = deleted
-                    )
-                    replicaByDeletedPackage(this, packageVersionDeleteSummary)
-                }
-
+                EventType.METADATA_DELETED -> handleMetadataDeleted(replicaContext)
+                EventType.METADATA_SAVED -> handleMetadataSaved(replicaContext)
+                EventType.NODE_RENAMED -> handleNodeRenamed(replicaContext)
+                EventType.NODE_COPIED -> handleNodeCopied(replicaContext)
+                EventType.NODE_MOVED -> handleNodeMoved(replicaContext)
+                EventType.NODE_DELETED -> handleNodeDeleted(replicaContext)
+                EventType.NODE_CREATED -> handleNodeCreated(replicaContext)
+                EventType.VERSION_CREATED -> handleVersionCreated(replicaContext)
+                EventType.VERSION_UPDATED -> handleVersionUpdated(replicaContext)
+                EventType.VERSION_DELETED -> handleVersionDeleted(replicaContext)
                 else -> throw UnsupportedOperationException()
             }
         }
+    }
+
+    private fun handleMetadataDeleted(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            val metadataDeleteRequest = MetadataDeleteRequest(
+                projectId = localProjectId,
+                repoName = localRepoName,
+                fullPath = event.resourceKey,
+                keyList = (event.data["keys"] as? List<String>)?.toSet() ?: emptySet(),
+                operator = event.userId
+            )
+            replicaByDeleteMetadata(replicaContext, metadataDeleteRequest)
+        }
+    }
+
+    private fun handleMetadataSaved(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            // 兼容旧版本
+            val nodeMetadata = parseMetadataModel(event)
+            var metadata: Map<String, Any>? = null
+            if (nodeMetadata == null) {
+                metadata = event.data["metadata"] as? Map<String, Any>
+            }
+            val metadataSaveRequest = MetadataSaveRequest(
+                projectId = localProjectId,
+                repoName = localRepoName,
+                fullPath = event.resourceKey,
+                nodeMetadata = nodeMetadata,
+                metadata = metadata,
+                replace = event.data["replace"]?.toString()?.toBoolean() ?: false,
+                operator = event.userId
+            )
+            replicaBySaveMetadata(replicaContext, metadataSaveRequest)
+        }
+    }
+
+
+    private fun parseMetadataModel(event: ArtifactEvent): List<MetadataModel>? {
+        return try {
+            event.data["metadata"]?.toJsonString()?.readJsonString<Map<String, MetadataModel>>()?.values?.toList()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun handleNodeRenamed(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            val nodeRenameRequest = NodeRenameRequest(
+                projectId = localProjectId,
+                repoName = localRepoName,
+                fullPath = event.resourceKey,
+                newFullPath = event.data["newFullPath"].toString(),
+                operator = event.userId
+            )
+            replicaByRenamedNode(replicaContext, nodeRenameRequest)
+        }
+    }
+
+    private fun handleNodeDeleted(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            val deleted = event.data["deletedDate"]?.toString()
+            val pathConstraint = PathConstraint(event.resourceKey, deletedDate = deleted)
+            replicaByDeletedNode(replicaContext, pathConstraint)
+        }
+    }
+
+    private fun handleNodeCopied(replicaContext: ReplicaContext) {
+        handleNodeMoveCopyEvent(replicaContext, isMoveOperation = false)
+    }
+
+    private fun handleNodeMoved(replicaContext: ReplicaContext) {
+        handleNodeMoveCopyEvent(replicaContext, isMoveOperation = true)
+    }
+
+    private fun handleNodeCreated(replicaContext: ReplicaContext) {
+        val pathConstraint = PathConstraint(replicaContext.event.resourceKey)
+        replicaByPathConstraint(replicaContext, pathConstraint)
+    }
+
+    private fun handleVersionCreated(replicaContext: ReplicaContext) {
+        val packageKey = replicaContext.event.data["packageKey"].toString()
+        val packageVersion = replicaContext.event.data["packageVersion"].toString()
+        val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
+        replicaByPackageConstraint(replicaContext, packageConstraint)
+    }
+
+    private fun handleVersionUpdated(replicaContext: ReplicaContext) {
+        val packageKey = replicaContext.event.data["packageKey"].toString()
+        val packageVersion = replicaContext.event.data["packageVersion"].toString()
+        val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
+        replicaByPackageConstraint(replicaContext, packageConstraint)
+    }
+
+    private fun handleVersionDeleted(replicaContext: ReplicaContext) {
+        val packageKey = replicaContext.event.data["packageKey"].toString()
+        val packageName = replicaContext.event.data["packageName"].toString()
+        val deleted = replicaContext.event.data["deletedDate"]?.toString()
+        val packageVersion = replicaContext.event.data["packageVersion"]?.toString()
+        if (deleted.isNullOrEmpty()) return
+
+        val packageVersionDeleteSummary = PackageVersionDeleteSummary(
+            projectId = replicaContext.localProjectId,
+            repoName = replicaContext.localRepoName,
+            packageName = packageName,
+            packageKey = packageKey,
+            versionName = packageVersion,
+            deletedDate = deleted
+        )
+        replicaByDeletedPackage(replicaContext, packageVersionDeleteSummary)
     }
 
     /**

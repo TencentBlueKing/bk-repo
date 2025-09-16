@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.Import
@@ -210,7 +209,7 @@ class FederatedRepositoryDaoTest {
     @Test
     fun `test findByProjectIdAndRepoName - basic query`() {
         val results = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName)
-        
+
         assertEquals(1, results.size)
         val repository = results.first()
         assertEquals(projectId, repository.projectId)
@@ -222,7 +221,7 @@ class FederatedRepositoryDaoTest {
     @Test
     fun `test findByProjectIdAndRepoName - with federationId filter`() {
         val results = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId)
-        
+
         assertEquals(1, results.size)
         assertEquals(federationId, results.first().federationId)
     }
@@ -230,21 +229,21 @@ class FederatedRepositoryDaoTest {
     @Test
     fun `test findByProjectIdAndRepoName - with wrong federationId filter`() {
         val results = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, "wrong-federation")
-        
+
         assertEquals(0, results.size)
     }
 
     @Test
     fun `test findByProjectIdAndRepoName - non-existent repository`() {
         val results = federatedRepositoryDao.findByProjectIdAndRepoName("non-exist", "non-exist")
-        
+
         assertEquals(0, results.size)
     }
 
     @Test
     fun `test findByName - single result`() {
         val results = federatedRepositoryDao.findByName("test-federation-repo-2")
-        
+
         assertEquals(1, results.size)
         assertEquals(projectId2, results.first().projectId)
         assertEquals(repoName2, results.first().repoName)
@@ -253,7 +252,7 @@ class FederatedRepositoryDaoTest {
     @Test
     fun `test findByName - multiple results with same name`() {
         val results = federatedRepositoryDao.findByName("test-federation-repo")
-        
+
         assertEquals(2, results.size)
         val projectIds = results.map { it.projectId }.toSet()
         assertTrue(projectIds.contains(projectId))
@@ -263,7 +262,7 @@ class FederatedRepositoryDaoTest {
     @Test
     fun `test findByName - non-existent name`() {
         val results = federatedRepositoryDao.findByName("non-existent-name")
-        
+
         assertEquals(0, results.size)
     }
 
@@ -287,7 +286,7 @@ class FederatedRepositoryDaoTest {
     fun `test deleteByProjectIdAndRepoName - non-existent repository`() {
         // 删除不存在的仓库不应该抛出异常
         federatedRepositoryDao.deleteByProjectIdAndRepoName("non-exist", "non-exist", "non-exist")
-        
+
         // 原有数据应该仍然存在
         val results = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId)
         assertEquals(1, results.size)
@@ -297,7 +296,7 @@ class FederatedRepositoryDaoTest {
     fun `test deleteByProjectIdAndRepoName - partial match`() {
         // 只有完全匹配的记录才会被删除
         federatedRepositoryDao.deleteByProjectIdAndRepoName(projectId, repoName, "wrong-federation")
-        
+
         // 原有数据应该仍然存在
         val results = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId)
         assertEquals(1, results.size)
@@ -330,12 +329,12 @@ class FederatedRepositoryDaoTest {
         // 验证更新结果
         val repository = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).first()
         assertEquals(2, repository.federatedClusters.size)
-        
+
         val cluster1 = repository.federatedClusters.find { it.clusterId == "new-cluster-1" }
         assertNotNull(cluster1)
         assertTrue(cluster1!!.enabled)
         assertEquals("new-task-1", cluster1.taskId)
-        
+
         val cluster2 = repository.federatedClusters.find { it.clusterId == "new-cluster-2" }
         assertNotNull(cluster2)
         assertFalse(cluster2!!.enabled)
@@ -365,7 +364,7 @@ class FederatedRepositoryDaoTest {
 
         // 更新不存在的仓库不应该抛出异常
         federatedRepositoryDao.updateFederatedClusters("non-exist", "non-exist", "non-exist", newClusters)
-        
+
         // 原有数据应该不受影响
         val repository = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).first()
         assertEquals(1, repository.federatedClusters.size)
@@ -411,7 +410,7 @@ class FederatedRepositoryDaoTest {
             clusterId = "cluster-2",
             name = "multi-federation-2"
         )
-        
+
         federatedRepositoryDao.save(repository1)
         federatedRepositoryDao.save(repository2)
 
@@ -439,25 +438,26 @@ class FederatedRepositoryDaoTest {
     @Test
     fun `test lastModifiedDate is updated correctly`() {
         val beforeUpdate = LocalDateTime.now()
-        
+
         // 等待一小段时间确保时间戳不同
         Thread.sleep(10)
-        
+
         // 执行更新操作
         assertTrue(federatedRepositoryDao.updateFullSyncStart(projectId, repoName, federationId))
-        
+
         // 验证时间戳已更新
         val repository = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).first()
         assertTrue(repository.lastModifiedDate.isAfter(beforeUpdate))
-        
+
         val afterSyncStart = repository.lastModifiedDate
         Thread.sleep(10)
-        
+
         // 结束同步
         federatedRepositoryDao.updateFullSyncEnd(projectId, repoName, federationId)
-        
+
         // 验证时间戳再次更新
-        val updatedRepository = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).first()
+        val updatedRepository =
+            federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).first()
         assertTrue(updatedRepository.lastModifiedDate.isAfter(afterSyncStart))
     }
 }

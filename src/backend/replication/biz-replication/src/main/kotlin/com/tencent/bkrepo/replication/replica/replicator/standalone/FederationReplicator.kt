@@ -48,6 +48,7 @@ import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMap
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -55,6 +56,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationReq
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateRequest
@@ -332,6 +334,33 @@ class FederationReplicator(
         }
     }
 
+    override fun replicaNodeRename(context: ReplicaContext, nodeRenameRequest: NodeRenameRequest): Boolean {
+        with(context) {
+            buildNodeRenameRequest(this, nodeRenameRequest).let {
+                artifactReplicaClient!!.replicaNodeRenameRequest(it)
+            }
+            return true
+        }
+    }
+
+    override fun replicaMetadataSave(context: ReplicaContext, metadataSaveRequest: MetadataSaveRequest): Boolean {
+        with(context) {
+            buildMetadataSaveRequest(this, metadataSaveRequest).let {
+                artifactReplicaClient!!.replicaMetadataSaveRequest(it)
+            }
+            return true
+        }
+    }
+
+    override fun replicaMetadataDelete(context: ReplicaContext, metadataDeleteRequest: MetadataDeleteRequest): Boolean {
+        with(context) {
+            buildMetadataDeleteRequest(this, metadataDeleteRequest).let {
+                artifactReplicaClient!!.replicaMetadataDeleteRequest(it)
+            }
+            return true
+        }
+    }
+
     private fun getCurrentClusterName(projectId: String, repoName: String, taskName: String): String {
         val key = parseKeyFromTaskName(taskName)
         return federationRepositoryService.getCurrentClusterName(projectId, repoName, key)
@@ -351,6 +380,39 @@ class FederationReplicator(
         with(moveOrCopyRequest) {
             return moveOrCopyRequest.copy(
                 source = getCurrentClusterName(srcProjectId, srcRepoName, context.task.name),
+            )
+        }
+    }
+
+    private fun buildNodeRenameRequest(
+        context: ReplicaContext,
+        nodeRenameRequest: NodeRenameRequest
+    ): NodeRenameRequest {
+        with(nodeRenameRequest) {
+            return nodeRenameRequest.copy(
+                source = getCurrentClusterName(projectId, repoName, context.task.name),
+            )
+        }
+    }
+
+    private fun buildMetadataSaveRequest(
+        context: ReplicaContext,
+        metadataSaveRequest: MetadataSaveRequest
+    ): MetadataSaveRequest {
+        with(metadataSaveRequest) {
+            return metadataSaveRequest.copy(
+                source = getCurrentClusterName(projectId, repoName, context.task.name),
+            )
+        }
+    }
+
+    private fun buildMetadataDeleteRequest(
+        context: ReplicaContext,
+        metadataDeleteRequest: MetadataDeleteRequest
+    ): MetadataDeleteRequest {
+        with(metadataDeleteRequest) {
+            return metadataDeleteRequest.copy(
+                source = getCurrentClusterName(projectId, repoName, context.task.name),
             )
         }
     }
