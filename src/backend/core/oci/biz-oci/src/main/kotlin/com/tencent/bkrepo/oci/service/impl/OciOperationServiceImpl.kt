@@ -31,6 +31,8 @@ import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.constant.ensurePrefix
+import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.api.util.StreamUtils.readText
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
@@ -60,10 +62,13 @@ import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.oci.config.OciProperties
+import com.tencent.bkrepo.oci.constant.ARCHITECTURE
 import com.tencent.bkrepo.oci.constant.BLOB_PATH_REFRESHED_KEY
 import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_KEY
 import com.tencent.bkrepo.oci.constant.BLOB_PATH_VERSION_VALUE
 import com.tencent.bkrepo.oci.constant.DESCRIPTION
+import com.tencent.bkrepo.oci.constant.DOCKER_MANIFEST_DIGEST
+import com.tencent.bkrepo.oci.constant.DOCKER_REPO_NAME
 import com.tencent.bkrepo.oci.constant.DOWNLOADS
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_BY
 import com.tencent.bkrepo.oci.constant.LAST_MODIFIED_DATE
@@ -71,19 +76,27 @@ import com.tencent.bkrepo.oci.constant.MANIFEST_DIGEST
 import com.tencent.bkrepo.oci.constant.MD5
 import com.tencent.bkrepo.oci.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OCI_IMAGE_MANIFEST_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.OCI_MANIFEST_LIST
 import com.tencent.bkrepo.oci.constant.OCI_NODE_FULL_PATH
 import com.tencent.bkrepo.oci.constant.OCI_NODE_SIZE
 import com.tencent.bkrepo.oci.constant.OCI_PACKAGE_NAME
+import com.tencent.bkrepo.oci.constant.OLD_DOCKER_MEDIA_TYPE
+import com.tencent.bkrepo.oci.constant.OLD_DOCKER_VERSION
+import com.tencent.bkrepo.oci.constant.OS
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.constant.PROXY_URL
 import com.tencent.bkrepo.oci.constant.REPO_TYPE
+import com.tencent.bkrepo.oci.constant.VARIANT
 import com.tencent.bkrepo.oci.dao.OciReplicationRecordDao
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.exception.OciFileNotFoundException
 import com.tencent.bkrepo.oci.exception.OciVersionNotFoundException
 import com.tencent.bkrepo.oci.extension.ImagePackageInfoPullExtension
 import com.tencent.bkrepo.oci.extension.ImagePackagePullContext
+import com.tencent.bkrepo.oci.model.ConfigSchema2
 import com.tencent.bkrepo.oci.model.Descriptor
+import com.tencent.bkrepo.oci.model.History
+import com.tencent.bkrepo.oci.model.ManifestList
 import com.tencent.bkrepo.oci.model.ManifestSchema2
 import com.tencent.bkrepo.oci.model.TOciReplicationRecord
 import com.tencent.bkrepo.oci.pojo.artifact.OciArtifactInfo
@@ -102,6 +115,7 @@ import com.tencent.bkrepo.oci.util.OciLocationUtils
 import com.tencent.bkrepo.oci.util.OciLocationUtils.buildBlobsFolderPath
 import com.tencent.bkrepo.oci.util.OciResponseUtils
 import com.tencent.bkrepo.oci.util.OciUtils
+import com.tencent.bkrepo.repository.constant.SHA256
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -303,9 +317,46 @@ class OciOperationServiceImpl(
                 OciMessageCode.OCI_VERSION_NOT_FOUND, "$packageKey/$version", "$projectId|$repoName"
             )
             val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, version)!!
-            val basicInfo = ObjectBuildUtils.buildBasicInfo(nodeDetail, packageVersion)
-            return PackageVersionInfo(basicInfo, packageVersion.packageMetadata)
+            val pair = getManifestInfo(nodeDetail, repoDetail, name)
+            val basicInfo = ObjectBuildUtils.buildBasicInfo(nodeDetail, packageVersion, pair.first)
+            return PackageVersionInfo(basicInfo, packageVersion.packageMetadata, pair.second)
         }
+    }
+
+    private fun getManifestInfo(
+        nodeDetail: NodeDetail,
+        repoDetail: RepositoryDetail,
+        packageName: String
+    ): Pair<List<String>, List<History>> {
+        val platform = mutableListOf<String>()
+        var history = listOf<History>()
+        if (nodeDetail.name == OCI_MANIFEST_LIST) {
+            // manifestList
+            loadManifestList(nodeDetail, repoDetail.storageCredentials)?.let { manifestList ->
+                manifestList.manifests.forEach { manifest ->
+                    val map = manifest.platform
+                    platform.add(
+                        "${map[OS]}/${map[ARCHITECTURE]}" + (map[VARIANT]?.toString()?.ensurePrefix("/") ?: "")
+                    )
+                }
+            }
+        } else {
+            val manifest = loadManifest(nodeDetail, repoDetail.storageCredentials)
+            // config
+            manifest?.config?.digest?.let { configDigest ->
+                val configNode = getImageNodeDetail(
+                    nodeDetail.projectId,
+                    nodeDetail.repoName,
+                    packageName,
+                    configDigest
+                )
+                val inputStream = storageManager.loadArtifactInputStream(configNode, repoDetail.storageCredentials)
+                val config = JsonUtils.objectMapper.readValue(inputStream, ConfigSchema2::class.java)
+                platform.add("${config.os}/${config.architecture}" + (config.variant?.ensurePrefix("/") ?: ""))
+                history = config.history
+            }
+        }
+        return Pair(platform, history)
     }
 
     /**
@@ -327,7 +378,8 @@ class OciOperationServiceImpl(
                 packageName = name,
                 reference = version,
                 isValidDigest = false,
-                version = StringPool.EMPTY
+                version = StringPool.EMPTY,
+                isFat = false
             )
         } else {
             // 返回blob文件的节点信息
@@ -343,8 +395,12 @@ class OciOperationServiceImpl(
         val nodeDetail = nodeService.getNodeDetail(ociArtifactInfo) ?: run {
             val oldDockerFullPath = getDockerNode(ociArtifactInfo) ?: return@run null
             nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, oldDockerFullPath)) ?: run {
-                logger.warn("node [$fullPath] don't found.")
-                null
+                if (ociArtifactInfo !is OciManifestArtifactInfo) return null
+                // 兼容 list.manifest.json
+                val manifestListPath = OciLocationUtils.buildManifestListPath(
+                    ociArtifactInfo.packageName, ociArtifactInfo.reference
+                )
+                nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, manifestListPath))
             }
         }
         return nodeDetail
@@ -433,37 +489,59 @@ class OciOperationServiceImpl(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
                 "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
-        // https://github.com/docker/docker-ce/blob/master/components/engine/distribution/push_v2.go
-        // docker 客户端上传manifest时先按照schema2的格式上传，
-        // 如失败则按照schema1格式上传，但是非docker客户端不兼容schema1版本manifest
-        val manifest = loadManifest(nodeDetail, storageCredentials)
-            ?: throw OciBadRequestException(OciMessageCode.OCI_MANIFEST_SCHEMA1_NOT_SUPPORT)
-        // 更新manifest文件的metadata
-        val mediaType = if (manifest.mediaType.isNullOrEmpty()) {
-            HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
-        } else {
-            manifest.mediaType
-        }
-        val digestList = OciUtils.manifestIteratorDigest(manifest)
+        var mediaType: String
+        var digestList = listOf<String>()
+        // 需要区分 manifest.json 和 list.manifest.json
+        if (ociArtifactInfo.isFat) {
+            mediaType = loadManifestList(nodeDetail, storageCredentials)!!.mediaType
 
+            val metadata = mutableMapOf<String, Any>(
+                OLD_DOCKER_VERSION to ociArtifactInfo.reference,
+                SHA256 to nodeDetail.sha256!!,
+                DOCKER_REPO_NAME to ociArtifactInfo.packageName,
+                DOCKER_MANIFEST_DIGEST to OciDigest.fromSha256(nodeDetail.sha256!!).toString(),
+                OLD_DOCKER_MEDIA_TYPE to mediaType,
+            )
+            doPackageOperations(
+                manifestPath = nodeDetail.fullPath,
+                ociArtifactInfo = ociArtifactInfo,
+                manifestDigest = OciDigest.fromSha256(nodeDetail.sha256!!),
+                size = nodeDetail.size,
+                sourceType = sourceType,
+                metadata = metadata,
+                userId = SecurityUtils.getUserId()
+            )
+        } else {
+            // https://github.com/docker/docker-ce/blob/master/components/engine/distribution/push_v2.go
+            // docker 客户端上传manifest时先按照schema2的格式上传，
+            // 如失败则按照schema1格式上传，但是非docker客户端不兼容schema1版本manifest
+            val manifest = loadManifest(nodeDetail, storageCredentials)
+                ?: throw OciBadRequestException(OciMessageCode.OCI_MANIFEST_SCHEMA1_NOT_SUPPORT)
+            // 更新manifest文件的metadata
+            mediaType = if (manifest.mediaType.isNullOrEmpty()) {
+                HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+            } else {
+                manifest.mediaType!!
+            }
+            digestList = OciUtils.manifestIteratorDigest(manifest)
+
+            if (ociArtifactInfo.packageName.isEmpty()) return
+            // 处理manifest中的blob数据
+            syncBlobInfo(
+                ociArtifactInfo = ociArtifactInfo,
+                manifest = manifest,
+                nodeDetail = nodeDetail,
+                sourceType = sourceType
+            )
+        }
         // 更新manifest节点元数据
         updateNodeMetaData(
             projectId = ociArtifactInfo.projectId,
             repoName = ociArtifactInfo.repoName,
             version = ociArtifactInfo.reference,
             fullPath = nodeDetail.fullPath,
-            mediaType = mediaType!!,
+            mediaType = mediaType,
             digestList = digestList,
-            sourceType = sourceType
-        )
-
-
-        if (ociArtifactInfo.packageName.isEmpty()) return
-        // 处理manifest中的blob数据
-        syncBlobInfo(
-            ociArtifactInfo = ociArtifactInfo,
-            manifest = manifest,
-            nodeDetail = nodeDetail,
             sourceType = sourceType
         )
     }
@@ -476,6 +554,19 @@ class OciOperationServiceImpl(
             val manifestBytes = storageManager.loadFullArtifactInputStream(node, storageCredentials)!!.readText()
             OciUtils.stringToManifestV2(manifestBytes)
         } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun loadManifestList(
+        node: NodeDetail,
+        storageCredentials: StorageCredentials?
+    ): ManifestList? {
+        return try {
+            val manifestBytes = storageManager.loadFullArtifactInputStream(node, storageCredentials)!!.readText()
+            OciUtils.stringToManifestList(manifestBytes)
+        } catch (e: Exception) {
+            logger.error("load manifest list error, sha256:${node.sha256}")
             null
         }
     }
@@ -569,6 +660,15 @@ class OciOperationServiceImpl(
         )
         // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
         if (existFlag) {
+            val mediaType = manifest.mediaType ?: HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE)
+            ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+            val metadata = mutableMapOf<String, Any>(
+                OLD_DOCKER_VERSION to ociArtifactInfo.reference,
+                SHA256 to nodeDetail.sha256!!,
+                DOCKER_REPO_NAME to ociArtifactInfo.packageName,
+                DOCKER_MANIFEST_DIGEST to OciDigest.fromSha256(nodeDetail.sha256!!).toString(),
+                OLD_DOCKER_MEDIA_TYPE to mediaType
+            )
             // 第三方同步的索引更新等所有文件全部上传完成后才去进行
             // 根据flag生成package信息以及package version信息
             doPackageOperations(
@@ -577,6 +677,7 @@ class OciOperationServiceImpl(
                 manifestDigest = OciDigest.fromSha256(nodeDetail.sha256!!),
                 size = size,
                 sourceType = sourceType,
+                metadata = metadata,
                 userId = userId
             )
             return true
@@ -704,18 +805,17 @@ class OciOperationServiceImpl(
         ociArtifactInfo: OciManifestArtifactInfo,
         manifestDigest: OciDigest,
         size: Long,
+        metadata: MutableMap<String, Any>,
         sourceType: ArtifactChannel? = null,
-        userId: String = SecurityUtils.getUserId()
+        userId: String = SecurityUtils.getUserId(),
     ) {
         with(ociArtifactInfo) {
             logger.info("Will create package info for [$packageName/$version in repo ${getRepoIdentify()} ")
             // 针对支持多仓库类型，如docker和oci
             val repoType = repositoryService.getRepoDetail(projectId, repoName)!!.type.name
             val packageKey = PackageKeys.ofName(repoType.lowercase(Locale.getDefault()), packageName)
-            val metadata = mutableMapOf<String, Any>(MANIFEST_DIGEST to manifestDigest.toString())
-                .apply {
-                    sourceType?.let { this[SOURCE_TYPE] = sourceType }
-                }
+            metadata[MANIFEST_DIGEST] = manifestDigest.toString()
+            sourceType?.let { metadata[SOURCE_TYPE] = sourceType }
             val request = ObjectBuildUtils.buildPackageVersionCreateRequest(
                 ociArtifactInfo = this,
                 packageName = packageName,
@@ -1022,7 +1122,8 @@ class OciOperationServiceImpl(
             packageName = packageName,
             version = pVersion,
             reference = pVersion,
-            isValidDigest = false
+            isValidDigest = false,
+            isFat = false
         )
         val manifestNode = nodeService.getNodeDetail(
             ArtifactInfo(repoInfo.projectId, repoInfo.name, manifestPath)
