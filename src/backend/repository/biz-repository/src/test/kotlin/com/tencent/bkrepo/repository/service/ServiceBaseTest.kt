@@ -74,6 +74,7 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import com.tencent.bkrepo.router.api.RouterControllerClient
+import io.micrometer.observation.ObservationRegistry
 import io.micrometer.tracing.Tracer
 import io.micrometer.tracing.otel.bridge.OtelTracer
 import io.mockk.every
@@ -154,6 +155,9 @@ open class ServiceBaseTest {
 
     @MockitoBean
     lateinit var operateLogService: OperateLogService
+
+    @Autowired
+    lateinit var registry: ObservationRegistry
 
     fun initMock() {
         val tracer = mockk<OtelTracer>()

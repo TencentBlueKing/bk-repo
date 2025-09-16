@@ -28,11 +28,11 @@
 package com.tencent.bkrepo.common.artifact.metrics.bandwidth
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_DOWNLOADING_SIZE
-import com.tencent.bkrepo.common.artifact.metrics.ARTIFACT_UPLOADING_SIZE
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsProperties
-import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadMetrics.Companion.COS_ASYNC_UPLOADING_SIZE
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_DOWNLOADING_SIZE
+import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_UPLOADING_SIZE
+import com.tencent.bkrepo.common.metrics.constant.COS_ASYNC_UPLOADING_SIZE
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry

@@ -27,12 +27,15 @@
 
 package com.tencent.bkrepo.common.api.util
 
+import io.micrometer.common.KeyValues
 import io.micrometer.context.ContextExecutorService
 import io.micrometer.context.ContextSnapshotFactory
+import io.micrometer.observation.Observation
+import io.micrometer.observation.ObservationRegistry
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 
-object AsyncUtils {
+object TraceUtils {
 
     private val contextSnapshotFactory = ContextSnapshotFactory.builder().build()
 
@@ -54,5 +57,18 @@ object AsyncUtils {
 
     fun ExecutorService.trace(): ExecutorService {
         return ContextExecutorService.wrap(this, contextSnapshotFactory::captureAll)
+    }
+
+    fun <T> newSpan(
+        observationRegistry: ObservationRegistry,
+        spanName: String,
+        lowCardinalityKeyValues: KeyValues,
+        highCardinalityKeyValues: KeyValues,
+        action: () -> T
+    ): T {
+        return Observation.createNotStarted(spanName, observationRegistry)
+            .lowCardinalityKeyValues(lowCardinalityKeyValues)
+            .highCardinalityKeyValues(highCardinalityKeyValues)
+            .observe(action)!!
     }
 }

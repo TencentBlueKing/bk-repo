@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
@@ -67,6 +67,7 @@ import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -89,10 +90,11 @@ class MetadataServiceImpl(
     private val nodeDao: NodeDao,
     private val repositoryProperties: RepositoryProperties,
     private val ciPermissionManager: CIPermissionManager,
-    private val metadataLabelCacheService: MetadataLabelCacheService
+    private val metadataLabelCacheService: MetadataLabelCacheService,
+    private val registry: ObservationRegistry
 ) : MetadataService {
 
-    private val okHttpClient = HttpClientBuilderFactory.create().build()
+    private val okHttpClient = HttpClientBuilderFactory.create(registry = registry).build()
 
     override fun listMetadata(projectId: String, repoName: String, fullPath: String): Map<String, Any> {
         return MetadataUtils.toMap(nodeDao.findOne(NodeQueryHelper.nodeQuery(projectId, repoName, fullPath))?.metadata)

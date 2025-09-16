@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.type.event
 
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent

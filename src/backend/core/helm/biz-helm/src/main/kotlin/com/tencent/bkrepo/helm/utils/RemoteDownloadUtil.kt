@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
 import com.tencent.bkrepo.helm.constants.HelmMessageCode
 import com.tencent.bkrepo.helm.exception.HelmBadRequestException
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
 import java.io.InputStream
 import java.util.concurrent.TimeUnit
@@ -49,9 +50,9 @@ object RemoteDownloadUtil {
     /**
      * 从remote地址下载index.yaml
      */
-    fun doHttpRequest(configuration: RemoteConfiguration, path: String): InputStream {
+    fun doHttpRequest(registry: ObservationRegistry, configuration: RemoteConfiguration, path: String): InputStream {
         val httpClient = with(configuration) {
-            val builder = HttpClientBuilderFactory.create()
+            val builder = HttpClientBuilderFactory.create(registry = registry)
             builder.readTimeout(network.readTimeout, TimeUnit.MILLISECONDS)
             builder.connectTimeout(network.connectTimeout, TimeUnit.MILLISECONDS)
             builder.proxy(createProxy(configuration.network.proxy))
