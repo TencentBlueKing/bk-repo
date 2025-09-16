@@ -39,6 +39,7 @@ import com.tencent.bkrepo.replication.constant.DOCKER_MANIFEST_JSON_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_LAYER_FULL_PATH
 import com.tencent.bkrepo.replication.constant.OCI_LAYER_FULL_PATH_V1
 import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_JSON_FULL_PATH
+import com.tencent.bkrepo.replication.constant.OCI_MANIFEST_LIST
 import com.tencent.bkrepo.replication.util.ManifestParser
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
@@ -75,25 +76,30 @@ class DockerPackageNodeMapper(
             val nodeDetail = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, manifestFullPath)) ?: run {
                 // 针对使用oci替换了docker仓库，需要进行数据兼容
                 isOci = true
-                manifestFullPath = OCI_MANIFEST_JSON_FULL_PATH.format(name, version)
+                manifestFullPath = packageVersion.manifestPath ?: OCI_MANIFEST_JSON_FULL_PATH.format(name, version)
                 nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, manifestFullPath))!!
             }
             if (nodeDetail.sha256.isNullOrEmpty()) throw ArtifactNotFoundException(manifestFullPath)
             val inputStream = storageManager.loadFullArtifactInputStream(nodeDetail, repository.storageCredentials)!!
-            val manifestInfo = try {
-                ManifestParser.parseManifest(inputStream)
-            } catch (e: Exception) {
-                // 针对v1版本的镜像或者manifest.json文件异常时无法获取到对应的节点列表
-                throw ArtifactNotFoundException("Could not read manifest.json, $e")
-            }
-            manifestInfo!!.descriptors?.forEach {
-                result.add(buildBlobPath(
-                    descriptor = it,
-                    packageName = name,
-                    version = version,
-                    isOci = isOci,
-                    nodeDetail = nodeDetail
-                ))
+            //  list.manifest.json 只需要分发本身
+            if (nodeDetail.name != OCI_MANIFEST_LIST) {
+                val manifestInfo = try {
+                    ManifestParser.parseManifest(inputStream)
+                } catch (e: Exception) {
+                    // 针对v1版本的镜像或者manifest.json文件异常时无法获取到对应的节点列表
+                    throw ArtifactNotFoundException("Could not read manifest.json, $e")
+                }
+                manifestInfo!!.descriptors?.forEach {
+                    result.add(
+                        buildBlobPath(
+                            descriptor = it,
+                            packageName = name,
+                            version = version,
+                            isOci = isOci,
+                            nodeDetail = nodeDetail
+                        )
+                    )
+                }
             }
             result.add(manifestFullPath)
             return result
@@ -113,7 +119,7 @@ class DockerPackageNodeMapper(
         val replace = descriptor.replace(":", "__")
         return if (isOci) {
             // 镜像blob路径格式有调整，从/package/blobs/下调至//package/blobs/version/
-            val refreshedMetadata = nodeDetail.nodeMetadata.firstOrNull { it.key == BLOB_PATH_REFRESHED_KEY}
+            val refreshedMetadata = nodeDetail.nodeMetadata.firstOrNull { it.key == BLOB_PATH_REFRESHED_KEY }
             if (refreshedMetadata != null) {
                 OCI_LAYER_FULL_PATH_V1.format(packageName, version, replace)
             } else {
