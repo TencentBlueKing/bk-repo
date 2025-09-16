@@ -106,7 +106,7 @@ class FileHandlerService(
         when {
             isHtmlView -> FilePreview.EXEL_FILE_PREVIEW_PAGE
             type?.name == FileType.OFFICE.name -> when (suffix!!.lowercase()) {
-                "xlsx" -> FilePreview.XLSX_FILE_PREVIEW_PAGE
+                "xlsx", "xlx" -> FilePreview.XLSX_FILE_PREVIEW_PAGE
                 "csv"  -> FilePreview.CSV_FILE_PREVIEW_PAGE
                 else   -> FilePreview.PDF_FILE_PREVIEW_PAGE
             }
@@ -168,6 +168,8 @@ class FileHandlerService(
             FileType.OFFICE -> {
                 if (suffix.equals("csv", ignoreCase = true) || suffix.equals("xlsx", ignoreCase = true)) {
                     originFileName
+                } else if (suffix.equals("xls", ignoreCase = true) ) {
+                    convertFilePrefixName + "xlsx"
                 } else {
                     convertFilePrefixName + if (isHtmlView) "html" else "pdf"
                 }
@@ -293,7 +295,7 @@ class FileHandlerService(
 
     // 判断是否为HTML视图
     private fun isHtmlView(suffix: String): Boolean {
-        val htmlSuffixes = setOf("xls", "xlsm", "xlt", "xltm", "et", "ett", "xlam")
+        val htmlSuffixes = setOf("xlsm", "xlt", "xltm", "et", "ett", "xlam")
         return htmlSuffixes.contains(suffix.lowercase())
     }
 }
