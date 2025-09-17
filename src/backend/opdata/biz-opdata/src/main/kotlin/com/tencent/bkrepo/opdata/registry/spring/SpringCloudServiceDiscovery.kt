@@ -74,8 +74,8 @@ class SpringCloudServiceDiscovery(
   private fun matchService( details: List<ServiceDetails>): List<ServiceDetails> {
     var targetDetails = details
     logger.info("details is $details")
-    logger.info("podLabelConfig.labelValue is" + podLabelConfig.labelValue)
-    logger.info("podLabelConfig.labelName is" + podLabelConfig.labelName)
+    logger.info("labelName is " + podLabelConfig.labelName)
+    logger.info("labelValue is " + podLabelConfig.labelValue)
     if (podLabelConfig.labelValue.isNotBlank() && podLabelConfig.labelName.isNotBlank()) {
       targetDetails = details.filter {
         it.details.any { serviceInstance ->
