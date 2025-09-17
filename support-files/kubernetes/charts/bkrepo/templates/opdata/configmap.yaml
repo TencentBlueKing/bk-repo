@@ -18,6 +18,6 @@ data:
       application:
         version: 1.0.0
     {{- if keys $.Values.opdata.config }}
-      {{- toYaml .Values.opdata.config | nindent 6 }}
+      {{- toYaml .Values.opdata.config | nindent 4 }}
     {{- end}}
 {{- end }}
