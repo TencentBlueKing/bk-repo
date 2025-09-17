@@ -106,7 +106,7 @@ class FileHandlerService(
         when {
             isHtmlView -> FilePreview.EXEL_FILE_PREVIEW_PAGE
             type?.name == FileType.OFFICE.name -> when (suffix!!.lowercase()) {
-                "xlsx", "xlx" -> FilePreview.XLSX_FILE_PREVIEW_PAGE
+                "xlsx", "xls" -> FilePreview.XLSX_FILE_PREVIEW_PAGE
                 "csv"  -> FilePreview.CSV_FILE_PREVIEW_PAGE
                 else   -> FilePreview.PDF_FILE_PREVIEW_PAGE
             }
