@@ -20,4 +20,4 @@ data:
     {{- if keys $.Values.opdata.config }}
       {{- toYaml .Values.opdata.config | nindent 6 }}
     {{- end}}
-  {{- end }}
+{{- end }}
