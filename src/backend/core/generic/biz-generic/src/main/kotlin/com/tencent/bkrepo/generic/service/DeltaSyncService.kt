@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
@@ -53,6 +53,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -85,6 +86,7 @@ class DeltaSyncService(
     val signFileDao: SignFileDao,
     val repositoryService: RepositoryService,
     private val redisOperation: RedisOperation,
+    private val registry: ObservationRegistry
 ) : ArtifactService() {
 
     private val deltaProperties = genericProperties.delta
@@ -99,7 +101,7 @@ class DeltaSyncService(
         repositoryService.getRepoDetail(signFileProjectId, signFileRepoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, signFileRepoName)
     }
-    private val httpClient = HttpClientBuilderFactory.create().build()
+    private val httpClient = HttpClientBuilderFactory.create(registry = registry).build()
 
     /**
      * 签名文件
@@ -544,7 +546,7 @@ class DeltaSyncService(
                 )
                 signFileDao.save(signFile)
                 logger.info("Success to save sign file[$signFileFullPath].")
-            } catch (ignore: DuplicateKeyException) {
+            } catch (_: DuplicateKeyException) {
                 // 说明文件已存在，可以忽略
             }
         }

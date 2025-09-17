@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.job.COLLECTION_NAME_FILE_REFERENCE
 import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
@@ -100,11 +101,8 @@ class StorageReconcileJob(
         }
         val query = Query(criteria)
         query.fields().include(SHA256)
-        NodeCommonUtils.forEachRefByCollectionParallel(query) {
-            val sha256 = it[SHA256]?.toString()
-            if (sha256 != null) {
-                bf.put(sha256)
-            }
+        NodeCommonUtils.forEachByCollectionParallel(COLLECTION_NAME_FILE_REFERENCE, query) {
+            it[SHA256]?.toString()?.let { sha256 -> bf.put(sha256) }
         }
         val count = "${bf.approximateElementCount()}/${bloomFilterProp.expectedNodes}"
         val fpp = bf.expectedFpp()

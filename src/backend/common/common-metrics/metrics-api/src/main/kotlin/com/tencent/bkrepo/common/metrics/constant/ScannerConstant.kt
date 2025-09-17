@@ -29,8 +29,24 @@
  * SOFTWARE.
  */
 
-dependencies {
-    api(project(":common:common-service:service-servlet"))
-    api("io.micrometer:micrometer-registry-prometheus")
-    api("io.prometheus:simpleclient_pushgateway")
-}
+package com.tencent.bkrepo.common.metrics.constant
+
+/**
+ * 扫描任务数量
+ */
+const val SCANNER_TASK_COUNT = "scanner.task.count"
+
+/**
+ * 子扫描任务数量
+ */
+const val SCANNER_SUBTASK_COUNT = "scanner.subtask.count"
+
+/**
+ * 重用扫描结果的子任务数量
+ */
+const val SCANNER_SUBTASK_REUSE_RESULT_COUNT = "scanner.subtask.reuse-result.count"
+
+/**
+ * 子任务执行耗时
+ */
+const val SCANNER_SUBTASK_SPEED = "scanner.subtask.speed"

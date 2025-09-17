@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.generic.config.ItsmProperties
 import com.tencent.bkrepo.generic.pojo.share.ItsmTicket
 import com.tencent.bkrepo.generic.pojo.share.ItsmTicketCreateRequest
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -50,9 +51,10 @@ import org.springframework.stereotype.Service
 @Conditional(SyncCondition::class)
 class ItsmService(
     private val itsmProperties: ItsmProperties,
+    private val registry: ObservationRegistry
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create().build()
+    private val httpClient = HttpClientBuilderFactory.create(registry = registry).build()
 
     fun createTicket(
         fields: List<Map<String, Any>>,

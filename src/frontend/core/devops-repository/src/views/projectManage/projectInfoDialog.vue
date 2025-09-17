@@ -14,10 +14,10 @@
                 </bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('projectName')" :required="true" property="name" error-display-type="normal">
-                <bk-input v-model.trim="editProjectDialog.name" maxlength="100" show-word-limit placeholder="$t('pleaseInput')"></bk-input>
+                <bk-input v-model.trim="editProjectDialog.name" maxlength="100" show-word-limit></bk-input>
             </bk-form-item>
             <bk-form-item :label="$t('projectDescription')" property="description">
-                <bk-input placeholder="$t('pleaseInput')" type="textarea" v-model.trim="editProjectDialog.description" maxlength="200" show-word-limit></bk-input>
+                <bk-input type="textarea" v-model.trim="editProjectDialog.description" maxlength="200" show-word-limit></bk-input>
             </bk-form-item>
         </bk-form>
         <template #footer>
@@ -40,6 +40,7 @@
                     name: '',
                     description: ''
                 },
+                multiMode: BK_REPO_ENABLE_MULTI_TENANT_MODE === 'true',
                 rules: {
                     id: [
                         {
@@ -48,7 +49,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^[a-z][a-z0-9_-]{1,99}$/,
+                            regex: /^[a-z][a-z0-9_.-]{1,99}$/,
                             message: this.$t('numCharacterTip'),
                             trigger: 'blur'
                         },
@@ -87,12 +88,21 @@
                 }
             },
             asynCheck ({ id }) {
+                /* 修改界面ID禁用修改，直接返回true */
+                if (!this.editProjectDialog.add) {
+                    return true
+                }
                 return this.checkProjectId({ id }).then(res => !res)
             },
             async submitProject () {
                 await this.$refs.projectInfoForm.validate()
                 this.editProjectDialog.loading = true
-                const { id, name, description } = this.editProjectDialog
+                const { name, description } = this.editProjectDialog
+                let id = this.editProjectDialog.id
+                /* 多租户模式下，项目标识显示变成tenantId.name,新增传递原始值，修改需处理 */
+                if (this.multiMode && !this.editProjectDialog.add) {
+                    id = id.substring(id.lastIndexOf('.') + 1)
+                }
                 const fn = this.editProjectDialog.add ? this.createProject : this.editProject
                 fn({
                     id,

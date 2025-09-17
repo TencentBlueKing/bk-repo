@@ -338,7 +338,8 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
             metadataService = metadataService,
             monitor = monitor,
             contentLength = contentLength,
-            storageProperties = storageProperties
+            storageProperties = storageProperties,
+            registry = registry
         )
     }
 
@@ -392,7 +393,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
         addInterceptor: Boolean = true,
         followRedirect: Boolean = false,
     ): OkHttpClient {
-        return buildOkHttpClient(configuration, addInterceptor, followRedirect).build()
+        return buildOkHttpClient(configuration, addInterceptor, followRedirect, registry = registry).build()
     }
 
     /**

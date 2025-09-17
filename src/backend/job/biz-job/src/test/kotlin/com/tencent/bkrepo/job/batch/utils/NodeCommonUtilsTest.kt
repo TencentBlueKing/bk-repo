@@ -31,7 +31,7 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.UT_PROJECT_ID
@@ -105,7 +105,7 @@ class NodeCommonUtilsTest @Autowired constructor(
     fun `throw IllegalStateException when repo was migrating`() {
         whenever(separationTaskService.findDistinctSeparationDate()).thenReturn(emptySet())
         mockNode()
-        assertThrows<IllegalStateException> { NodeCommonUtils.exist(Query(), null) }
+        assertThrows<IllegalStateException> { NodeCommonUtils.nodeExist(Query(), null) }
     }
 
     @Test

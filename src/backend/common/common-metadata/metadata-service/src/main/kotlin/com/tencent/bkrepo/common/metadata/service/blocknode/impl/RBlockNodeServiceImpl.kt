@@ -105,7 +105,14 @@ class RBlockNodeServiceImpl(
             val blocks = rBlockNodeDao.find(Query(criteria))
             blocks.forEach {
                 val update = BlockNodeQueryHelper.moveUpdate(it.nodeFullPath.replace(fullPath, dstFullPath))
-                val query = Query(Criteria.where(ID).isEqualTo(it.id).and(TBlockNode::repoName).isEqualTo(repoName))
+                val query = Query(
+                    Criteria.where(ID)
+                        .isEqualTo(it.id)
+                        .and(TBlockNode::projectId)
+                        .isEqualTo(projectId)
+                        .and(TBlockNode::repoName)
+                        .isEqualTo(repoName)
+                )
                 rBlockNodeDao.updateMulti(query, update)
             }
         } else {
