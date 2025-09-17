@@ -76,10 +76,11 @@ class CIAuthService @Autowired constructor(
         .expireAfterWrite(60, TimeUnit.SECONDS).build<String, Boolean>()
 
     fun Request.addTenantHeaderIfNeeded(userId: String): Request {
-        if (!enableMultiTenant.enabled) {
+        val userInfo = userDao.findById(userId)
+        logger.debug("addTenantHeaderIfNeeded [$userId, $userInfo]")
+        if (!enableMultiTenant.enabled || userInfo == null) {
             return this
         }
-        val userInfo = userDao.findById(userId) ?: return this
         if (userInfo.tenantId == null) {
             return this
         }
