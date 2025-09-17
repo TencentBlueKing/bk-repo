@@ -35,11 +35,11 @@ import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.model.TFileReference
 import com.tencent.bkrepo.common.mongo.reactive.dao.HashShardingMongoReactiveDao
 import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Repository
+import org.springframework.stereotype.Component
 
 /**
  * 文件摘要引用 Dao
  */
-@Repository
+@Component
 @Conditional(ReactiveCondition::class)
 class RFileReferenceDao : HashShardingMongoReactiveDao<TFileReference>()
