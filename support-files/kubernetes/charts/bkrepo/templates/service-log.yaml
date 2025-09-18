@@ -13,7 +13,9 @@ spec:
     matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
       {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
   path:
-    - /data/workspace/logs/{auth,repository,generic,opdata,npm,maven}.log
+    - /data/workspace/logs/auth.log
+    - /data/workspace/logs/generic.log
+    - /data/workspace/logs/repository.log
   encoding: 'utf-8'
   extMeta:
     logSourceType: "service"
