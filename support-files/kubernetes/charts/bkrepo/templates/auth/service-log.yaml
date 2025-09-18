@@ -1,0 +1,43 @@
+{{- if .Values.bkLogConfig.enabled }}
+
+# service log
+apiVersion: bk.tencent.com/v1alpha1
+kind: BkLogConfig
+metadata:
+  name: bk-repo-service-log-config
+spec:
+  dataId: {{ .Values.bkLogConfig.service.dataId }}
+  logConfigType: container_log_config
+  namespace: {{ .Release.Namespace }}
+  labelSelector:
+    matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
+      {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
+      app.kubernetes.io/component: auth
+  path:
+    - /data/workspace/logs/auth.log
+  encoding: 'utf-8'
+  extMeta:
+    logSourceType: "service"
+
+---
+
+# service access log
+apiVersion: bk.tencent.com/v1alpha1
+kind: BkLogConfig
+metadata:
+  name: bk-repo-service-access-log-config
+spec:
+  dataId: {{ .Values.bkLogConfig.serviceAccess.dataId }}
+  logConfigType: container_log_config
+  namespace: {{ .Release.Namespace }}
+  labelSelector:
+    matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
+      {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
+      app.kubernetes.io/component: auth
+  path:
+    - /data/workspace/logs/auth-access.log
+  encoding: 'utf-8'
+  extMeta:
+    logSourceType: "service-access"
+
+{{- end }}

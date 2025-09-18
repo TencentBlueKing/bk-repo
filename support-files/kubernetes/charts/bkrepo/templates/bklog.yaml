@@ -1,24 +1,5 @@
 {{- if .Values.bkLogConfig.enabled }}
 
-# service log
-apiVersion: bk.tencent.com/v1alpha1
-kind: BkLogConfig
-metadata:
-  name: bk-repo-service-log-config
-spec:
-  dataId: {{ .Values.bkLogConfig.service.dataId }}
-  logConfigType: container_log_config
-  namespace: {{ .Release.Namespace }}
-  labelSelector:
-    matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
-      {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
-  path:
-    - /data/workspace/logs/*.log
-  encoding: 'utf-8'
-  extMeta:
-    logSourceType: "service"
-
----
 # gateway access log
 apiVersion: bk.tencent.com/v1alpha1
 kind: BkLogConfig
