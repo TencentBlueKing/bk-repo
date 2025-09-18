@@ -100,6 +100,7 @@ interface NodeDeleteOperation {
         repoName: String,
         fullPath: String,
         operator: String,
-        nodeId: String
+        nodeId: String,
+        deleteTime: LocalDateTime = LocalDateTime.now()
     ): NodeDeleteResult
 }

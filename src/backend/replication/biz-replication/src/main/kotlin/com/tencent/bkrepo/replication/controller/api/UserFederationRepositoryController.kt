@@ -27,12 +27,14 @@
 
 package com.tencent.bkrepo.replication.controller.api
 
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.security.permission.Principal
+import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryDeleteRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -40,6 +42,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -50,32 +53,48 @@ import org.springframework.web.bind.annotation.RestController
  */
 @Tag(name = "联邦仓库接口")
 @RestController
+@Principal(type = PrincipalType.ADMIN)
+
 @RequestMapping("/api/federation")
 class UserFederationRepositoryController(
     private val federationRepositoryService: FederationRepositoryService,
-    private val permissionManager: PermissionManager,
 ) {
 
 
     @Operation(summary = "创建联邦仓库")
     @PostMapping("/create")
     fun federatedRepositoryCreate(
-        @RequestBody requests: FederatedRepositoryCreateRequest,
+        @RequestBody request: FederatedRepositoryCreateRequest,
     ): Response<String> {
-        permissionManager.checkRepoPermission(PermissionAction.WRITE, requests.projectId, requests.repoName)
-        return ResponseBuilder.success(federationRepositoryService.createFederationRepository(requests))
+        return ResponseBuilder.success(federationRepositoryService.createFederationRepository(request))
 
     }
 
-    @Operation(summary = "删除联邦仓库")
+    @Operation(summary = "更新联邦仓库配置")
+    @PutMapping("/update")
+    fun federatedRepositoryUpdate(
+        @RequestBody request: FederatedRepositoryUpdateRequest,
+    ): Response<Boolean> {
+        return ResponseBuilder.success(federationRepositoryService.updateFederationRepository(request))
+    }
+
+    @Operation(summary = "删除联邦仓库（解散整个联邦）")
     @DeleteMapping("/delete/{projectId}/{repoName}/{federationId}")
     fun federatedRepositoryDelete(
         @PathVariable("projectId") projectId: String,
         @PathVariable("repoName") repoName: String,
         @PathVariable("federationId") federationId: String,
     ): Response<Void> {
-        permissionManager.checkRepoPermission(PermissionAction.WRITE, projectId, repoName)
         federationRepositoryService.deleteFederationRepositoryConfig(projectId, repoName, federationId)
+        return ResponseBuilder.success()
+    }
+
+    @Operation(summary = "从联邦中移除指定集群")
+    @DeleteMapping("/remove-cluster")
+    fun removeClusterFromFederation(
+        @RequestBody request: FederatedRepositoryDeleteRequest
+    ): Response<Boolean> {
+        federationRepositoryService.removeClusterFromFederation(request)
         return ResponseBuilder.success()
     }
 
@@ -87,9 +106,20 @@ class UserFederationRepositoryController(
         @PathVariable("repoName") repoName: String,
         @RequestParam("federationId") federationId: String? = null,
     ): Response<List<FederatedRepositoryInfo>> {
-        permissionManager.checkRepoPermission(PermissionAction.READ, projectId, repoName)
         return ResponseBuilder.success(
             federationRepositoryService.listFederationRepository(projectId, repoName, federationId)
         )
+    }
+
+
+    @Operation(summary = "联邦仓库fullsync")
+    @PostMapping("/fullSync/{projectId}/{repoName}/{federationId}")
+    fun federatedRepositoryFullSync(
+        @PathVariable("projectId") projectId: String,
+        @PathVariable("repoName") repoName: String,
+        @PathVariable("federationId") federationId: String,
+    ): Response<Void> {
+        federationRepositoryService.fullSyncFederationRepository(projectId, repoName, federationId)
+        return ResponseBuilder.success()
     }
 }

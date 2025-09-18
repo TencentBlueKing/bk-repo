@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
+import io.micrometer.observation.ObservationRegistry
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
@@ -43,12 +44,14 @@ class CenterMetadataServiceImpl(
     nodeDao: NodeDao,
     repositoryProperties: RepositoryProperties,
     ciPermissionManager: CIPermissionManager,
-    metadataLabelCacheService: MetadataLabelCacheService
+    metadataLabelCacheService: MetadataLabelCacheService,
+    registry: ObservationRegistry
 ) : MetadataServiceImpl(
     nodeDao,
     repositoryProperties,
     ciPermissionManager,
-    metadataLabelCacheService
+    metadataLabelCacheService,
+    registry
 ) {
 
     /**

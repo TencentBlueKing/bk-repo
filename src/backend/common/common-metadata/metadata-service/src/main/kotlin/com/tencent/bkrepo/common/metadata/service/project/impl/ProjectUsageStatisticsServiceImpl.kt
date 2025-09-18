@@ -33,7 +33,7 @@ import com.google.common.cache.LoadingCache
 import com.google.common.util.concurrent.RateLimiter
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.AsyncUtils.trace
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.project.ProjectUsageStatisticsDao
 import com.tencent.bkrepo.common.metadata.model.TProjectUsageStatistics
@@ -163,7 +163,7 @@ class ProjectUsageStatisticsServiceImpl(
     }
 
     @PreDestroy
-    open fun destroy() {
+    fun destroy() {
         if (!properties.enabled) {
             return
         }
@@ -184,7 +184,7 @@ class ProjectUsageStatisticsServiceImpl(
     }
 
     @Scheduled(cron = "0 55 23 * * ?")
-    open fun flush() {
+    fun flush() {
         if (properties.enabled) {
             logger.info("try to flush all projects usage statistics")
             cache.invalidateAll()

@@ -13,6 +13,7 @@ import com.tencent.bkrepo.common.storage.StorageAutoConfiguration
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.com.bkrepo.generic.BLOCK_SIZE
+import com.tencent.com.bkrepo.generic.NoopObservationRegistry
 import com.tencent.com.bkrepo.generic.UT_CRC64_ECMA
 import com.tencent.com.bkrepo.generic.UT_PROJECT_ID
 import com.tencent.com.bkrepo.generic.UT_REPO_NAME
@@ -31,6 +32,7 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration
 import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
 import org.springframework.context.annotation.ComponentScan
+import org.springframework.context.annotation.Import
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
@@ -52,6 +54,7 @@ import kotlin.random.Random
 )
 @ImportAutoConfiguration(StorageAutoConfiguration::class, TaskExecutionAutoConfiguration::class)
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties"])
+@Import(NoopObservationRegistry::class)
 class BlockNodeServiceTest {
 
     @MockitoBean

@@ -12,6 +12,9 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
+    {{- if keys $.Values.auth.commonConfig }}
+    {{- toYaml .Values.auth.commonConfig | nindent 4 }}
+    {{- end}}
     auth:
       {{- if keys $.Values.auth.config }}
         {{- toYaml .Values.auth.config | nindent 6 }}

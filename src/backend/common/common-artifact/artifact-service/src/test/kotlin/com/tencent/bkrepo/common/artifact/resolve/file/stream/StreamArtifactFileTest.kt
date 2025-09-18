@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.storage.credentials.FileSystemCredentials
 import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.util.toPath
+import io.micrometer.observation.ObservationRegistry
 import io.mockk.every
 import io.mockk.mockkObject
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -72,7 +73,14 @@ class StreamArtifactFileTest {
             monitor = MonitorProperties()
         )
         val monitor = StorageHealthMonitor(storageProperties, tempDir)
-        return StreamArtifactFile(source, monitor, storageProperties, storageCredentials, contentLength)
+        return StreamArtifactFile(
+            source,
+            monitor,
+            storageProperties,
+            storageCredentials,
+            contentLength,
+            registry = ObservationRegistry.NOOP
+        )
     }
 
     @BeforeEach

@@ -27,63 +27,48 @@
 
 package com.tencent.bkrepo.replication.service.impl
 
-import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.cluster.ClusterInfo
-import com.tencent.bkrepo.common.service.feign.FeignClientFactory
-import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
-import com.tencent.bkrepo.replication.api.federation.FederatedRepositoryClient
-import com.tencent.bkrepo.replication.dao.FederatedRepositoryDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
-import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.model.TFederatedRepository
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
-import com.tencent.bkrepo.replication.pojo.cluster.request.ClusterNodeCreateRequest
-import com.tencent.bkrepo.replication.pojo.cluster.request.DetectType
 import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
-import com.tencent.bkrepo.replication.pojo.federation.FederatedClusterInfo
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
-import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
-import com.tencent.bkrepo.replication.pojo.request.ReplicaType
-import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
-import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskCreateRequest
-import com.tencent.bkrepo.replication.pojo.task.request.ReplicaTaskUpdateRequest
-import com.tencent.bkrepo.replication.pojo.task.setting.ReplicaSetting
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryDeleteRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
-import com.tencent.bkrepo.replication.service.ReplicaTaskService
-import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.replication.service.impl.federation.FederationSyncManager
+import com.tencent.bkrepo.replication.service.impl.federation.FederationTaskManager
+import com.tencent.bkrepo.replication.service.impl.federation.LocalFederationManager
+import com.tencent.bkrepo.replication.service.impl.federation.RemoteFederationManager
+import com.tencent.bkrepo.replication.util.FederationDataBuilder.buildTFederatedRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
 
 @Service
 class FederationRepositoryServiceImpl(
-    private val federatedRepositoryDao: FederatedRepositoryDao,
-    private val localDataManager: LocalDataManager,
+    private val localFederationManager: LocalFederationManager,
+    private val remoteFederationManager: RemoteFederationManager,
+    private val federationTaskManager: FederationTaskManager,
+    private val federationSyncManager: FederationSyncManager,
     private val clusterNodeService: ClusterNodeService,
-    private val replicaTaskService: ReplicaTaskService,
 ) : FederationRepositoryService {
 
     override fun createFederationRepository(request: FederatedRepositoryCreateRequest): String {
+        // TODO 需要校验用户是有有目标仓库的权限
         logger.info("Creating federation repository for project: ${request.projectId}, repo: ${request.repoName}")
         paramsCheck(request)
         val currentCluster = clusterNodeService.getByClusterId(request.clusterId)
             ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, request.clusterId)
         try {
             val federationId = uniqueId()
-            val taskMap = doFederatedRepositoryCreate(request, currentCluster, federationId)
-            val tFederatedRepository = buildTFederatedRepository(request, taskMap, federationId)
-            federatedRepositoryDao.save(tFederatedRepository)
+            val federatedClusterList = doFederatedRepositoryCreate(request, currentCluster, federationId)
+            val tFederatedRepository = buildTFederatedRepository(request, federatedClusterList, federationId)
+            localFederationManager.saveFederationRepository(tFederatedRepository)
             logger.info(
                 "Successfully created federation repository for repo:" +
                     " ${request.projectId}|${request.repoName} with key: $federationId"
@@ -95,42 +80,219 @@ class FederationRepositoryServiceImpl(
         }
     }
 
-    override fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest) {
-        createFederatedClusterAndSaveConfig(request)
+    override fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest): Boolean {
+        return localFederationManager.saveFederationRepositoryConfig(request)
     }
 
     override fun listFederationRepository(
         projectId: String, repoName: String, federationId: String?,
     ): List<FederatedRepositoryInfo> {
-        return federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).map {
-            convertToFederatedRepositoryInfo(it)
+        return localFederationManager.listFederationRepository(projectId, repoName, federationId)
+    }
+
+    override fun deleteFederationRepositoryConfig(
+        projectId: String,
+        repoName: String,
+        federationId: String,
+        deleteRemote: Boolean
+    ) {
+        deleteConfig(projectId, repoName, federationId, deleteRemote)
+    }
+
+    override fun removeClusterFromFederation(request: FederatedRepositoryDeleteRequest) {
+        request.federatedClusters?.forEach { fed ->
+            val fedClusterInfo = clusterNodeService.getByClusterId(fed.clusterId)
+                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, fed.clusterId)
+            removeClusterFromFederation(
+                projectId = request.projectId,
+                repoName = request.repoName,
+                federationId = request.federationId,
+                remoteClusterName = fedClusterInfo.name,
+                remoteProjectId = fed.projectId,
+                remoteRepoName = fed.repoName,
+                deleteRemote = true
+            )
         }
     }
 
-    override fun deleteFederationRepositoryConfig(projectId: String, repoName: String, federationId: String) {
-        deleteConfig(projectId, repoName, federationId, true)
-    }
+    override fun removeClusterFromFederation(
+        projectId: String,
+        repoName: String,
+        federationId: String,
+        remoteClusterName: String,
+        remoteProjectId: String,
+        remoteRepoName: String,
+        deleteRemote: Boolean
+    ) {
+        val clusterId = localFederationManager.getClusterIdByName(remoteClusterName)
+        val federationRepository = localFederationManager.getFederationRepository(projectId, repoName, federationId)
+            ?: return
 
-    override fun deleteLocalFederationRepositoryConfig(projectId: String, repoName: String, federationId: String) {
-        deleteConfig(projectId, repoName, federationId, false)
+        // 检查是否存在要移除的集群
+        val targetCluster = federationRepository.federatedClusters.find {
+            it.clusterId == clusterId && it.projectId == remoteProjectId && it.repoName == remoteRepoName
+        } ?: return
+
+        try {
+            // 获取剩余集群列表
+            val remainingClusters = federationRepository.federatedClusters.filterNot {
+                it.clusterId == clusterId && it.projectId == remoteProjectId && it.repoName == remoteRepoName
+            }
+
+            if (deleteRemote) {
+                //  删除目标集群上的联邦配置
+                logger.info("Deleting federation config on target cluster: $clusterId")
+                remoteFederationManager.deleteRemoteFederationConfig(federationId, targetCluster)
+
+                // 删除其他集群上到对应目标集群的同步配置
+                logger.info(
+                    "Deleting remote tasks for target cluster: $clusterId " +
+                        "with $remoteProjectId|$remoteRepoName on remaining clusters"
+                )
+                remoteFederationManager.deleteRemoteConfigForTargetCluster(
+                    federationId = federationId,
+                    targetClusterName = remoteClusterName,
+                    targetProjectId = remoteProjectId,
+                    targetRepoName = remoteRepoName,
+                    remainingClusters = remainingClusters
+                )
+            }
+
+            // 删除本集群上到目标集群的同步任务
+            logger.info("Deleting federation tasks for cluster: $clusterId")
+            federationTaskManager.deleteFederationTasks(listOf(targetCluster))
+
+            // 从本地联邦配置中移除该集群
+            localFederationManager.updateFederationClusters(projectId, repoName, federationId, remainingClusters)
+
+            logger.info(
+                "Successfully removed cluster $clusterId from federation $federationId for repo: $projectId|$repoName"
+            )
+            return
+        } catch (e: Exception) {
+            throw ErrorCodeException(
+                ReplicationMessageCode.FEDERATION_REPOSITORY_DELETE_ERROR,
+                "Failed to remove cluster from federation: ${e.message}"
+            )
+        }
     }
 
     override fun getCurrentClusterName(projectId: String, repoName: String, federationId: String): String? {
-        return federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).firstOrNull()?.let {
-            clusterNodeService.getByClusterId(it.clusterId)?.name
+        return localFederationManager.getCurrentClusterName(projectId, repoName, federationId)
+    }
+
+    override fun fullSyncFederationRepository(projectId: String, repoName: String, federationId: String) {
+        federationSyncManager.executeFullSync(projectId, repoName, federationId)
+    }
+
+    override fun updateFederationRepository(request: FederatedRepositoryUpdateRequest): Boolean {
+        logger.info(
+            "Updating federation repository for repo: ${request.projectId}|${request.repoName}, " +
+                "federationId: ${request.federationId}"
+        )
+
+        if (request.federatedClusters.isNullOrEmpty()) return true
+        federatedClustersCheck(request.federatedClusters!!)
+
+        // 获取现有的联邦配置
+        val existingFederation = localFederationManager.getFederationRepository(
+            request.projectId, request.repoName, request.federationId
+        ) ?: throw ErrorCodeException(
+            ReplicationMessageCode.FEDERATION_REPOSITORY_NOT_FOUND,
+            "Federation repository not found: ${request.federationId}"
+        )
+
+        try {
+            // 更新联邦集群配置
+            val currentClusters = existingFederation.federatedClusters
+            val newClusters = request.federatedClusters!!
+
+            // 检查集群配置是否有变化（包括集群ID和配置属性）
+            val hasClusterChanges = detectClusterChanges(currentClusters, newClusters)
+
+            return if (hasClusterChanges) {
+                // 处理集群变更
+                updateFederationClusters(existingFederation, newClusters, request.federationId)
+                logger.info("Successfully updated federation repository: ${request.federationId}")
+                true
+            } else {
+                logger.info("No cluster changes detected for federation repository: ${request.federationId}")
+                false
+            }
+        } catch (e: ErrorCodeException) {
+            // 重新抛出业务异常
+            logger.warn("Business error updating federation repository ${request.federationId}: ${e.message}")
+            throw e
+        } catch (e: Exception) {
+            // 处理系统异常
+            logger.error("System error updating federation repository ${request.federationId}", e)
+            throw ErrorCodeException(
+                ReplicationMessageCode.FEDERATION_REPOSITORY_UPDATE_ERROR,
+                "Failed to update federation repository: ${e.message}"
+            )
         }
+    }
+
+    /**
+     * 检测集群配置是否有变化
+     * 不仅检查集群ID，还检查集群的其他配置属性
+     */
+    private fun detectClusterChanges(
+        currentClusters: List<FederatedCluster>,
+        newClusters: List<FederatedCluster>
+    ): Boolean {
+        // 快速检查：数量不同
+        if (currentClusters.size != newClusters.size) {
+            return true
+        }
+
+        // 创建映射以便快速查找和比较
+        val currentClusterMap = currentClusters.associateBy { it.clusterId }
+        val newClusterMap = newClusters.associateBy { it.clusterId }
+
+        // 检查集群ID是否有变化
+        if (currentClusterMap.keys != newClusterMap.keys) {
+            return true
+        }
+
+        // 检查每个集群的配置是否有变化
+        return currentClusterMap.any { (clusterId, currentCluster) ->
+            val newCluster = newClusterMap[clusterId]!!
+            !areClusterConfigsEqual(currentCluster, newCluster)
+        }
+    }
+
+    /**
+     * 比较两个集群配置是否相等
+     * 可以根据需要扩展比较的属性
+     */
+    private fun areClusterConfigsEqual(cluster1: FederatedCluster, cluster2: FederatedCluster): Boolean {
+        return cluster1.clusterId == cluster2.clusterId &&
+            cluster1.projectId == cluster2.projectId &&
+            cluster1.repoName == cluster2.repoName
     }
 
     private fun paramsCheck(request: FederatedRepositoryCreateRequest) {
         require(request.federatedClusters.isNotEmpty()) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "federatedClusters")
         }
-        val repo = localDataManager.findRepoByName(request.projectId, request.repoName)
-        if (repo.type != RepositoryType.GENERIC) {
-            logger.warn("Unsupported repo type: ${repo.type}")
-            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, request.repoName)
+        federatedClustersCheck(request.federatedClusters)
+        // 检查联邦仓库名称是否已存在
+        if (localFederationManager.isFederationNameExists(request.name)) {
+            throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_NAME_EXISTS, request.name)
         }
     }
+
+    private fun federatedClustersCheck(federatedClusters: List<FederatedCluster>) {
+        // 检查是否有重复的集群配置
+        val clusterKeys = federatedClusters.map { it.toKey() }
+        if (clusterKeys.distinct().size != clusterKeys.size) {
+            throw ErrorCodeException(
+                CommonMessageCode.PARAMETER_INVALID, "Duplicate federated clusters found"
+            )
+        }
+    }
+
 
     private fun deleteConfig(
         projectId: String,
@@ -138,371 +300,235 @@ class FederationRepositoryServiceImpl(
         federationId: String,
         deleteRemote: Boolean = false,
     ) {
-        val federationRepository = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId)
-            .firstOrNull() ?: return
-        federationRepository.federatedClusters.forEach {
+        try {
+            val federationRepository = localFederationManager.getFederationRepository(projectId, repoName, federationId)
+                ?: return
+
+            // 删除远程配置（如果需要）
             if (deleteRemote) {
-                deleteRemoteFederationConfig(federationId, it)
+                federationRepository.federatedClusters.forEach { fedCluster ->
+                    remoteFederationManager.deleteRemoteFederationConfig(federationId, fedCluster)
+                }
             }
-            val task = replicaTaskService.getByTaskId(it.taskId!!)
-            task?.let {
-                replicaTaskService.deleteByTaskKey(task.key)
-            }
+
+            // 删除联邦同步任务
+            federationTaskManager.deleteFederationTasks(federationRepository.federatedClusters)
+
+            // 删除本地联邦配置
+            localFederationManager.deleteConfig(projectId, repoName, federationId)
+
+            logger.info("Successfully deleted federation repository config: $projectId|$repoName|$federationId")
+        } catch (e: Exception) {
+            logger.error("Failed to delete federation repository config: $projectId|$repoName|$federationId", e)
+            throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_DELETE_ERROR, e.message.orEmpty())
         }
-        federatedRepositoryDao.deleteByProjectIdAndRepoName(projectId, repoName, federationId)
     }
 
     private fun doFederatedRepositoryCreate(
         request: FederatedRepositoryCreateRequest,
         currentCluster: ClusterNodeInfo,
         federationId: String,
-    ): Map<String, String> {
-        val taskMap = mutableMapOf<String, String>()
+    ): List<FederatedCluster> {
+        // 一次性获取所有cluster信息，避免重复查询
+        val clusterInfoMap = federationTaskManager.getClusterInfoMap(request.federatedClusters)
+        val federatedNameList = clusterInfoMap.values.map { it.name }.distinct()
+
+        val newFederatedClusters = mutableListOf<FederatedCluster>()
         request.federatedClusters.forEach { fed ->
-            val remoteClusterNode = clusterNodeService.getByClusterId(fed.clusterId)
-                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, fed.clusterId)
+            // 直接从缓存的map中获取cluster信息，避免重复查询
+            val remoteClusterNode = clusterInfoMap[fed.clusterId]!!
             val federatedClusters = request.federatedClusters
-                .filter { it.clusterId != fed.clusterId }
-                .plus(FederatedCluster(request.projectId, request.repoName, currentCluster.id!!, true))
-            remoteProjectAndRepoCreate(
-                request.projectId, request.repoName, fed.projectId, fed.repoName, remoteClusterNode, currentCluster
+                .filterNot {
+                    it.clusterId == fed.clusterId && it.projectId == fed.projectId && it.repoName == fed.repoName
+                }.plus(FederatedCluster(request.projectId, request.repoName, currentCluster.id!!, true))
+
+            val taskId = setupFederationForCluster(
+                request.name, federationId, request.projectId, request.repoName,
+                fed, federatedClusters, currentCluster, remoteClusterNode, federatedNameList
             )
-            // 在目标集群生成对应cluster以及对应同步task
-            syncFederationConfig(
-                request.name, federationId, fed.projectId, fed.repoName, remoteClusterNode, federatedClusters
-            )
-            // 生成本地同步task
-            val taskId = createOrUpdateTask(federationId, request.projectId, request.repoName, fed, remoteClusterNode)
-            taskMap[fed.clusterId] = taskId
-        }
-        return taskMap
-    }
-
-    private fun deleteRemoteFederationConfig(key: String, fed: FederatedCluster) {
-        logger.info("Start to delete remote federation config")
-        val remoteClusterNode = clusterNodeService.getByClusterId(fed.clusterId) ?: return
-        val cluster = buildClusterInfo(remoteClusterNode)
-        val federatedRepositoryClient = FeignClientFactory.create<FederatedRepositoryClient>(cluster)
-        federatedRepositoryClient.deleteConfig(fed.projectId, fed.repoName, key)
-    }
-
-    private fun syncFederationConfig(
-        name: String,
-        federationId: String,
-        projectId: String,
-        repoName: String,
-        remoteClusterNode: ClusterNodeInfo,
-        federatedClusters: List<FederatedCluster>,
-    ) {
-        logger.info(
-            "Start to sync federation config with federationId $federationId " +
-                "for repo: $projectId|$repoName to cluster ${remoteClusterNode.name}"
-        )
-        val cluster = buildClusterInfo(remoteClusterNode)
-        val federatedClusterInfos = federatedClusters.map {
-            val federatedClusterInfo = clusterNodeService.getByClusterId(it.clusterId)
-                ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, it.clusterId)
-            FederatedClusterInfo(
-                projectId = it.projectId,
-                repoName = it.repoName,
-                clusterNodeInfo = federatedClusterInfo,
-                enabled = it.enabled
-            )
-        }
-        val configRequest = FederatedRepositoryConfigRequest(
-            name = name,
-            federationId = federationId,
-            projectId = projectId,
-            repoName = repoName,
-            federatedClusters = federatedClusterInfos,
-            selfCluster = remoteClusterNode
-        )
-        val federatedRepositoryClient = FeignClientFactory.create<FederatedRepositoryClient>(cluster)
-        federatedRepositoryClient.createFederatedConfig(configRequest)
-        logger.info(
-            "Successfully synced federation config with federationId $federationId " +
-                "for repo: $projectId|$repoName to cluster ${cluster.name}"
-        )
-    }
-
-    private fun remoteProjectAndRepoCreate(
-        currentProjectId: String,
-        currentRepoName: String,
-        remoteProjectId: String,
-        remoteRepoName: String,
-        remoteClusterNode: ClusterNodeInfo,
-        currentCluster: ClusterNodeInfo,
-    ) {
-        logger.info(
-            "Start to create remote project and repo for repo: $currentProjectId|$currentRepoName " +
-                "with cluster ${remoteClusterNode.name}"
-        )
-        val remoteCluster = buildClusterInfo(remoteClusterNode)
-        val artifactReplicaClient = FeignClientFactory.create<ArtifactReplicaClient>(remoteCluster)
-        val localProject = localDataManager.findProjectById(currentProjectId)
-        val projectRequest = ProjectCreateRequest(
-            name = remoteProjectId,
-            displayName = remoteProjectId,
-            description = localProject.description,
-            operator = localProject.createdBy,
-            source = currentCluster.name
-        )
-        artifactReplicaClient.replicaProjectCreateRequest(projectRequest)
-        val localRepo = localDataManager.findRepoByName(currentProjectId, currentRepoName)
-        val repoRequest = RepoCreateRequest(
-            projectId = remoteProjectId,
-            name = remoteRepoName,
-            type = localRepo.type,
-            category = localRepo.category,
-            public = localRepo.public,
-            description = localRepo.description,
-            configuration = localRepo.configuration,
-            operator = localRepo.createdBy,
-            source = currentCluster.name
-        )
-        artifactReplicaClient.replicaRepoCreateRequest(repoRequest)
-    }
-
-    private fun createFederatedClusterAndSaveConfig(request: FederatedRepositoryConfigRequest) {
-        with(request) {
-            logger.info("Start to sync federation config for project: $projectId, repo: $repoName")
-            val selfCluster = getOrCreateCluster(selfCluster)
-            val fedList = buildFederatedClusterList(federationId, projectId, repoName, federatedClusters)
-            saveFederationConfig(name, federationId, projectId, repoName, selfCluster.id!!, fedList)
-            logger.info("Successfully synced federation config for project: $projectId, repo: $repoName")
-        }
-    }
-
-    private fun buildClusterInfo(clusterNode: ClusterNodeInfo): ClusterInfo {
-        return ClusterInfo(
-            name = clusterNode.name,
-            url = clusterNode.url,
-            username = clusterNode.username,
-            password = clusterNode.password,
-            certificate = clusterNode.certificate,
-            appId = clusterNode.appId,
-            accessKey = clusterNode.accessKey,
-            secretKey = clusterNode.secretKey,
-            udpPort = clusterNode.udpPort
-        )
-    }
-
-    private fun getOrCreateCluster(cluster: ClusterNodeInfo): ClusterNodeInfo {
-        val existCluster = clusterNodeService.getByClusterName(cluster.name)
-        return when {
-            existCluster == null -> {
-                val clusterCreateRequest = buildClusterNodeCreateRequest(cluster)
-                clusterNodeService.create(SYSTEM_USER, clusterCreateRequest)
-            }
-
-            existCluster.url != cluster.url -> {
-                throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_EXISTS, cluster.name)
-            }
-
-            else -> existCluster
-        }
-    }
-
-    private fun buildFederatedClusterList(
-        federationId: String,
-        projectId: String,
-        repoName: String,
-        federatedClusters: List<FederatedClusterInfo>,
-    ): MutableList<FederatedCluster> {
-        logger.info("Starting to build federated cluster list for project: $projectId, repo: $repoName")
-        return federatedClusters.mapNotNull { it ->
-            val federatedCluster = getOrCreateCluster(it.clusterNodeInfo)
-            val fed = FederatedCluster(it.projectId, it.repoName, federatedCluster.id!!, it.enabled)
-            val taskId = createOrUpdateTask(federationId, projectId, repoName, fed, federatedCluster)
-            fed.taskId = taskId
-            fed
-        }.toMutableList()
-    }
-
-    private fun saveFederationConfig(
-        name: String,
-        federationId: String,
-        projectId: String,
-        repoName: String,
-        clusterId: String,
-        fedList: MutableList<FederatedCluster>,
-    ) {
-        val request = buildTFederatedRepository(
-            name = name,
-            federationId = federationId,
-            projectId = projectId,
-            repoName = repoName,
-            clusterId = clusterId,
-            federatedClusters = fedList
-        )
-        federatedRepositoryDao.save(request)
-    }
-
-    /**
-     * 当远端集群创建后，创建/更新对应的任务
-     */
-    private fun createOrUpdateTask(
-        federationId: String,
-        projectId: String,
-        repoName: String,
-        federatedCluster: FederatedCluster,
-        clusterInfo: ClusterNodeInfo,
-    ): String {
-        val repositoryDetail = localDataManager.findRepoByName(projectId, repoName)
-        val replicaTaskObjects = buildReplicaTaskObjects(
-            repoName, repositoryDetail.type, federatedCluster
-        )
-        val sourceRepo = projectId + StringPool.DASH + repoName
-        val taskName = FEDERATION_TASK_NAME.format(federationId, sourceRepo, clusterInfo.name)
-        var task = replicaTaskService.getByTaskName(taskName)
-        if (task == null) {
-            logger.info("Creating new federation task: $taskName")
-            val taskCreateRequest = ReplicaTaskCreateRequest(
-                name = taskName,
-                localProjectId = projectId,
-                replicaObjectType = ReplicaObjectType.REPOSITORY,
-                replicaTaskObjects = replicaTaskObjects,
-                replicaType = ReplicaType.FEDERATION,
-                setting = ReplicaSetting(),
-                remoteClusterIds = setOf(clusterInfo.id!!),
-                enabled = federatedCluster.enabled
-            )
-            task = replicaTaskService.create(taskCreateRequest)
-        } else {
-            logger.info("Updating existing federation task: ${task.id}")
-            val taskUpdateRequest = ReplicaTaskUpdateRequest(
-                key = task.key,
-                name = task.name,
-                localProjectId = projectId,
-                replicaTaskObjects = replicaTaskObjects,
-                replicaObjectType = ReplicaObjectType.REPOSITORY,
-                setting = ReplicaSetting(),
-                remoteClusterIds = setOf(clusterInfo.id!!),
-            )
-            replicaTaskService.update(taskUpdateRequest)?.let {
-                task = it.copy()
-            }
-            if (task!!.enabled != federatedCluster.enabled) {
-                replicaTaskService.toggleStatus(task!!.key)
-            }
-        }
-        logger.info(
-            "Successfully created federation task: $taskName" +
-                " with federationId $federationId for repo: $projectId|$repoName to cluster: ${clusterInfo.name}"
-        )
-        return task!!.id
-    }
-
-    private fun buildReplicaTaskObjects(
-        repoName: String,
-        repoType: RepositoryType,
-        federatedCluster: FederatedCluster,
-    ): List<ReplicaObjectInfo> {
-        with(federatedCluster) {
-            val taskObjects = mutableListOf<ReplicaObjectInfo>()
-            taskObjects.add(
-                ReplicaObjectInfo(
-                    localRepoName = repoName,
-                    repoType = repoType,
-                    remoteProjectId = federatedCluster.projectId,
-                    remoteRepoName = federatedCluster.repoName,
-                    packageConstraints = null,
-                    pathConstraints = null
+            newFederatedClusters.add(
+                FederatedCluster(
+                    projectId = fed.projectId,
+                    repoName = fed.repoName,
+                    clusterId = fed.clusterId,
+                    enabled = fed.enabled,
+                    taskId = taskId
                 )
             )
-            return taskObjects
         }
+        return newFederatedClusters
     }
 
-    private fun buildClusterNodeCreateRequest(cluster: ClusterNodeInfo): ClusterNodeCreateRequest {
-        return ClusterNodeCreateRequest(
-            name = cluster.name,
-            url = cluster.url,
-            certificate = cluster.certificate,
-            appId = cluster.appId,
-            accessKey = cluster.accessKey,
-            secretKey = cluster.secretKey,
-            udpPort = cluster.udpPort,
-            username = cluster.username,
-            password = cluster.password,
-            type = ClusterNodeType.STANDALONE,
-            detectType = DetectType.PING
+    /**
+     * 为单个集群设置联邦配置
+     */
+    private fun setupFederationForCluster(
+        federationName: String,
+        federationId: String,
+        currentProjectId: String,
+        currentRepoName: String,
+        targetCluster: FederatedCluster,
+        allClusters: List<FederatedCluster>,
+        currentCluster: ClusterNodeInfo,
+        remoteClusterNode: ClusterNodeInfo,
+        federatedNameList: List<String>
+    ): String {
+        // 在远程集群创建项目和仓库
+        remoteFederationManager.createRemoteProjectAndRepo(
+            currentProjectId, currentRepoName,
+            targetCluster.projectId, targetCluster.repoName,
+            remoteClusterNode, currentCluster
+        )
+
+        // 在目标集群生成对应cluster以及对应同步task
+        remoteFederationManager.syncFederationConfig(
+            federationName, federationId,
+            targetCluster.projectId, targetCluster.repoName,
+            remoteClusterNode, allClusters
+        )
+
+        // 生成本地同步task
+        return federationTaskManager.createOrUpdateTask(
+            federationId, currentProjectId, currentRepoName,
+            targetCluster, remoteClusterNode, federatedNameList
         )
     }
 
     /**
-     * 构建联邦仓库实体对象
-     * @param request 创建联邦仓库请求参数
-     * @param taskMap 集群ID与任务ID的映射关系
-     * @return 构建好的联邦仓库实体
+     * 更新联邦集群配置
      */
-    private fun buildTFederatedRepository(
-        request: FederatedRepositoryCreateRequest,
-        taskMap: Map<String, String>,
-        federationId: String,
-    ): TFederatedRepository {
-        // 将请求中的联邦集群列表转换为实体列表，并添加对应的任务ID
-        val federatedClusters = request.federatedClusters.map {
-            FederatedCluster(
-                projectId = it.projectId,
-                repoName = it.repoName,
-                clusterId = it.clusterId,
-                enabled = it.enabled,
-                taskId = taskMap[it.clusterId]
+    private fun updateFederationClusters(
+        existingFederation: TFederatedRepository,
+        newClusters: List<FederatedCluster>,
+        federationId: String
+    ) {
+        val currentClusters = existingFederation.federatedClusters
+
+        // 计算集群变更
+        val (clustersToKeep, clustersToRemove, clustersToAdd) =
+            calculateClusterChanges(currentClusters, newClusters)
+
+        val newFederatedClusters = clustersToKeep.toMutableList()
+
+        // 处理移除集群
+        processRemovedClusters(
+            existingFederation,
+            federationId,
+            clustersToRemove
+        )
+
+        // 处理新增集群
+        if (clustersToAdd.isNotEmpty()) {
+            processNewClusters(
+                existingFederation,
+                federationId,
+                clustersToAdd,
+                newClusters,
+                newFederatedClusters
             )
-        }.toMutableList()
+        }
 
-        // 构建并返回联邦仓库实体
-        return TFederatedRepository(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            clusterId = request.clusterId,
-            federatedClusters = federatedClusters,
-            createdBy = SecurityUtils.getUserId(),
-            createdDate = LocalDateTime.now(),
-            lastModifiedBy = SecurityUtils.getUserId(),
-            lastModifiedDate = LocalDateTime.now(),
-            federationId = federationId,
-            name = request.name
+        // 更新本地配置
+        localFederationManager.updateFederationClusters(
+            existingFederation.projectId,
+            existingFederation.repoName,
+            federationId,
+            newFederatedClusters
         )
+
     }
 
-    private fun buildTFederatedRepository(
-        name: String,
+
+    // 新增扩展函数
+    private fun FederatedCluster.toKey() = Triple(clusterId, projectId, repoName)
+
+    // 提取集群比较逻辑
+    private fun calculateClusterChanges(
+        currentClusters: List<FederatedCluster>,
+        newClusters: List<FederatedCluster>
+    ): Triple<List<FederatedCluster>, List<FederatedCluster>, List<FederatedCluster>> {
+        val currentKeys = currentClusters.map { it.toKey() }.toSet()
+        val newKeys = newClusters.map { it.toKey() }.toSet()
+
+        val clustersToKeep = currentClusters.filter { it.toKey() in newKeys }
+        val clustersToRemove = currentClusters.filter { it.toKey() !in newKeys }
+        val clustersToAdd = newClusters.filter { it.toKey() !in currentKeys }
+
+        return Triple(clustersToKeep, clustersToRemove, clustersToAdd)
+    }
+
+    // 新增集群处理函数
+    private fun processNewClusters(
+        existingFederation: TFederatedRepository,
         federationId: String,
-        projectId: String,
-        repoName: String,
-        federatedClusters: List<FederatedCluster>,
-        clusterId: String,
-    ): TFederatedRepository {
-        return TFederatedRepository(
-            name = name,
-            federationId = federationId,
-            projectId = projectId,
-            repoName = repoName,
-            clusterId = clusterId,
-            federatedClusters = federatedClusters,
-            createdBy = SecurityUtils.getUserId(),
-            createdDate = LocalDateTime.now(),
-            lastModifiedBy = SecurityUtils.getUserId(),
-            lastModifiedDate = LocalDateTime.now()
-        )
+        clustersToAdd: List<FederatedCluster>,
+        allNewClusters: List<FederatedCluster>,
+        resultList: MutableList<FederatedCluster>
+    ) {
+        logger.info("Adding ${clustersToAdd.size} new clusters to federation $federationId")
+
+        val currentCluster = clusterNodeService.getByClusterId(existingFederation.clusterId)
+            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, existingFederation.clusterId)
+
+        val clusterInfoMap = federationTaskManager.getClusterInfoMap(clustersToAdd)
+        val federatedNameList = clusterInfoMap.values.map { it.name }.distinct()
+
+        clustersToAdd.forEach { addCluster ->
+            val remoteClusterNode = clusterInfoMap[addCluster.clusterId]!!
+            val otherClusters = allNewClusters
+                .filterNot { it.toKey() == addCluster.toKey() }
+                .plus(
+                    FederatedCluster(
+                        existingFederation.projectId,
+                        existingFederation.repoName,
+                        currentCluster.id!!,
+                        true
+                    )
+                )
+
+            val taskId = setupFederationForCluster(
+                existingFederation.name, federationId,
+                existingFederation.projectId, existingFederation.repoName,
+                addCluster, otherClusters, currentCluster, remoteClusterNode, federatedNameList
+            )
+
+            resultList.add(
+                FederatedCluster(
+                    projectId = addCluster.projectId,
+                    repoName = addCluster.repoName,
+                    clusterId = addCluster.clusterId,
+                    enabled = addCluster.enabled,
+                    taskId = taskId
+                )
+            )
+        }
     }
 
-    private fun convertToFederatedRepositoryInfo(tFederatedRepository: TFederatedRepository): FederatedRepositoryInfo {
-        return FederatedRepositoryInfo(
-            federationId = tFederatedRepository.federationId,
-            name = tFederatedRepository.name,
-            projectId = tFederatedRepository.projectId,
-            repoName = tFederatedRepository.repoName,
-            clusterId = tFederatedRepository.clusterId,
-            federatedClusters = tFederatedRepository.federatedClusters
-        )
+    // 移除集群处理函数
+    private fun processRemovedClusters(
+        existingFederation: TFederatedRepository,
+        federationId: String,
+        clustersToRemove: List<FederatedCluster>
+    ) {
+        clustersToRemove.forEach { cluster ->
+            logger.info("Removing cluster ${cluster.clusterId} from federation $federationId")
+            val clusterInfo = clusterNodeService.getByClusterId(cluster.clusterId)
+            if (clusterInfo != null) {
+                removeClusterFromFederation(
+                    projectId = existingFederation.projectId,
+                    repoName = existingFederation.repoName,
+                    federationId = existingFederation.federationId,
+                    remoteClusterName = clusterInfo.name,
+                    remoteProjectId = cluster.projectId,
+                    remoteRepoName = cluster.repoName,
+                    deleteRemote = true
+                )
+            }
+        }
     }
+
 
     companion object {
         private val logger = LoggerFactory.getLogger(FederationRepositoryServiceImpl::class.java)
-        const val FEDERATION_TASK_NAME = "federation/%s/%s/%s"
-
     }
 }
