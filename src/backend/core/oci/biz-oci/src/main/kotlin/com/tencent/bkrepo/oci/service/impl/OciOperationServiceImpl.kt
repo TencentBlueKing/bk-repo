@@ -489,51 +489,24 @@ class OciOperationServiceImpl(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
                 "in repo ${ociArtifactInfo.getRepoIdentify()}"
         )
-        var mediaType: String
-        var digestList = listOf<String>()
-        // 需要区分 manifest.json 和 list.manifest.json
-        if (ociArtifactInfo.isFat) {
-            mediaType = loadManifestList(nodeDetail, storageCredentials)!!.mediaType
-
-            val metadata = mutableMapOf<String, Any>(
-                OLD_DOCKER_VERSION to ociArtifactInfo.reference,
-                SHA256 to nodeDetail.sha256!!,
-                DOCKER_REPO_NAME to ociArtifactInfo.packageName,
-                DOCKER_MANIFEST_DIGEST to OciDigest.fromSha256(nodeDetail.sha256!!).toString(),
-                OLD_DOCKER_MEDIA_TYPE to mediaType,
-            )
-            doPackageOperations(
-                manifestPath = nodeDetail.fullPath,
-                ociArtifactInfo = ociArtifactInfo,
-                manifestDigest = OciDigest.fromSha256(nodeDetail.sha256!!),
-                size = nodeDetail.size,
-                sourceType = sourceType,
-                metadata = metadata,
-                userId = SecurityUtils.getUserId()
-            )
-        } else {
-            // https://github.com/docker/docker-ce/blob/master/components/engine/distribution/push_v2.go
-            // docker 客户端上传manifest时先按照schema2的格式上传，
-            // 如失败则按照schema1格式上传，但是非docker客户端不兼容schema1版本manifest
-            val manifest = loadManifest(nodeDetail, storageCredentials)
-                ?: throw OciBadRequestException(OciMessageCode.OCI_MANIFEST_SCHEMA1_NOT_SUPPORT)
-            // 更新manifest文件的metadata
-            mediaType = if (manifest.mediaType.isNullOrEmpty()) {
-                HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
-            } else {
-                manifest.mediaType!!
-            }
-            digestList = OciUtils.manifestIteratorDigest(manifest)
-
-            if (ociArtifactInfo.packageName.isEmpty()) return
-            // 处理manifest中的blob数据
-            syncBlobInfo(
-                ociArtifactInfo = ociArtifactInfo,
-                manifest = manifest,
-                nodeDetail = nodeDetail,
-                sourceType = sourceType
-            )
+        
+        // 提前检查packageName，避免后续无效处理
+        if (ociArtifactInfo.packageName.isEmpty()) {
+            logger.warn("Package name is empty, skipping OCI info update")
+            return
         }
+        
+        // 提取公共变量，避免重复计算
+        val sha256 = nodeDetail.sha256 ?: throw IllegalStateException("Node sha256 cannot be null")
+        val manifestDigest = OciDigest.fromSha256(sha256)
+        val userId = SecurityUtils.getUserId()
+        
+        val (mediaType, digestList) = if (ociArtifactInfo.isFat) {
+            handleManifestList(nodeDetail, storageCredentials, ociArtifactInfo, manifestDigest, sourceType, userId)
+        } else {
+            handleManifest(nodeDetail, storageCredentials, ociArtifactInfo, sourceType)
+        }
+        
         // 更新manifest节点元数据
         updateNodeMetaData(
             projectId = ociArtifactInfo.projectId,
@@ -545,16 +518,101 @@ class OciOperationServiceImpl(
             sourceType = sourceType
         )
     }
+    
+    /**
+     * 处理ManifestList类型的manifest
+     */
+    private fun handleManifestList(
+        nodeDetail: NodeDetail,
+        storageCredentials: StorageCredentials?,
+        ociArtifactInfo: OciManifestArtifactInfo,
+        manifestDigest: OciDigest,
+        sourceType: ArtifactChannel?,
+        userId: String
+    ): Pair<String, List<String>> {
+        val manifestList = loadManifestList(nodeDetail, storageCredentials)
+            ?: throw OciBadRequestException(OciMessageCode.OCI_MANIFEST_SCHEMA1_NOT_SUPPORT)
+        
+        val mediaType = manifestList.mediaType
+        val metadata = buildManifestMetadata(ociArtifactInfo, nodeDetail.sha256!!, manifestDigest, mediaType)
+        
+        doPackageOperations(
+            manifestPath = nodeDetail.fullPath,
+            ociArtifactInfo = ociArtifactInfo,
+            manifestDigest = manifestDigest,
+            size = nodeDetail.size,
+            sourceType = sourceType,
+            metadata = metadata,
+            userId = userId
+        )
+        
+        return Pair(mediaType, emptyList())
+    }
+    
+    /**
+     * 处理普通Manifest类型的manifest
+     */
+    private fun handleManifest(
+        nodeDetail: NodeDetail,
+        storageCredentials: StorageCredentials?,
+        ociArtifactInfo: OciManifestArtifactInfo,
+        sourceType: ArtifactChannel?
+    ): Pair<String, List<String>> {
+        // https://github.com/docker/docker-ce/blob/master/components/engine/distribution/push_v2.go
+        // docker 客户端上传manifest时先按照schema2的格式上传，
+        // 如失败则按照schema1格式上传，但是非docker客户端不兼容schema1版本manifest
+        val manifest = loadManifest(nodeDetail, storageCredentials)
+            ?: throw OciBadRequestException(OciMessageCode.OCI_MANIFEST_SCHEMA1_NOT_SUPPORT)
+        
+        // 确定mediaType
+        val mediaType = determineMediaType(manifest)
+        val digestList = OciUtils.manifestIteratorDigest(manifest)
+        
+        // 处理manifest中的blob数据
+        syncBlobInfo(
+            ociArtifactInfo = ociArtifactInfo,
+            manifest = manifest,
+            nodeDetail = nodeDetail,
+            sourceType = sourceType
+        )
+        
+        return Pair(mediaType, digestList)
+    }
+    
+    /**
+     * 构建manifest元数据
+     */
+    private fun buildManifestMetadata(
+        ociArtifactInfo: OciManifestArtifactInfo,
+        sha256: String,
+        manifestDigest: OciDigest,
+        mediaType: String
+    ): MutableMap<String, Any> {
+        return mutableMapOf(
+            OLD_DOCKER_VERSION to ociArtifactInfo.reference,
+            SHA256 to sha256,
+            DOCKER_REPO_NAME to ociArtifactInfo.packageName,
+            DOCKER_MANIFEST_DIGEST to manifestDigest.toString(),
+            OLD_DOCKER_MEDIA_TYPE to mediaType
+        )
+    }
+    
+    /**
+     * 确定manifest的mediaType
+     */
+    private fun determineMediaType(manifest: ManifestSchema2): String {
+        return when {
+            !manifest.mediaType.isNullOrEmpty() -> manifest.mediaType!!
+            else -> HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE) ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
+        }
+    }
 
     private fun loadManifest(
         node: NodeDetail,
         storageCredentials: StorageCredentials?
     ): ManifestSchema2? {
-        return try {
-            val manifestBytes = storageManager.loadFullArtifactInputStream(node, storageCredentials)!!.readText()
+        return loadManifestContent(node, storageCredentials) { manifestBytes ->
             OciUtils.stringToManifestV2(manifestBytes)
-        } catch (e: Exception) {
-            null
         }
     }
 
@@ -562,11 +620,37 @@ class OciOperationServiceImpl(
         node: NodeDetail,
         storageCredentials: StorageCredentials?
     ): ManifestList? {
-        return try {
-            val manifestBytes = storageManager.loadFullArtifactInputStream(node, storageCredentials)!!.readText()
+        return loadManifestContent(node, storageCredentials) { manifestBytes ->
             OciUtils.stringToManifestList(manifestBytes)
+        }.also { result ->
+            if (result == null) {
+                logger.error("Failed to load manifest list, sha256: ${node.sha256}")
+            }
+        }
+    }
+    
+    /**
+     * 通用的manifest内容加载方法
+     */
+    private fun <T> loadManifestContent(
+        node: NodeDetail,
+        storageCredentials: StorageCredentials?,
+        parser: (String) -> T?
+    ): T? {
+        return try {
+            val inputStream = storageManager.loadFullArtifactInputStream(node, storageCredentials)
+                ?: run {
+                    logger.warn("Failed to load artifact input stream for node: ${node.fullPath}")
+                    return null
+                }
+            val manifestBytes = inputStream.readText()
+            if (manifestBytes.isBlank()) {
+                logger.warn("Manifest content is empty for node: ${node.fullPath}")
+                return null
+            }
+            parser(manifestBytes)
         } catch (e: Exception) {
-            logger.error("load manifest list error, sha256:${node.sha256}")
+            logger.error("Error loading manifest content for node: ${node.fullPath}, sha256: ${node.sha256}", e)
             null
         }
     }
