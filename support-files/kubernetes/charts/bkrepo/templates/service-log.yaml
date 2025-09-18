@@ -12,9 +12,8 @@ spec:
   labelSelector:
     matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
       {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
-      app.kubernetes.io/component: repository
   path:
-    - /data/workspace/logs/repository.log
+    - /data/workspace/logs/{auth,repository,generic,opdata,npm,maven}.log
   encoding: 'utf-8'
   extMeta:
     logSourceType: "service"
@@ -33,9 +32,8 @@ spec:
   labelSelector:
     matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
       {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
-      app.kubernetes.io/component: repository
   path:
-    - /data/workspace/logs/repository-access.log
+    - /data/workspace/logs/*-access.log
   encoding: 'utf-8'
   extMeta:
     logSourceType: "service-access"
