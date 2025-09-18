@@ -40,11 +40,12 @@ abstract class SubtaskPushDispatcher<T : ExecutionCluster>(
             return
         }
 
+        if (!lock.tryLock()) {
+            logger.info("other process is dispatching to cluster[${executionCluster.name}], skip dispatching")
+            return
+        }
+
         try {
-            if (!lock.tryLock()) {
-                logger.info("other process is dispatching to cluster[${executionCluster.name}], skip dispatching")
-                return
-            }
             val availableCount = availableCount()
             logger.info("cluster [${executionCluster.name}] can execute $availableCount subtasks, starting to dispatch")
             if (availableCount == 0) {
