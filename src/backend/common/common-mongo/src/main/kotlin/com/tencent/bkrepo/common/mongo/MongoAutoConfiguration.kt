@@ -33,6 +33,7 @@ package com.tencent.bkrepo.common.mongo
 
 import com.tencent.bkrepo.common.mongo.actuate.MongoHealthIndicator
 import com.tencent.bkrepo.common.mongo.dao.util.MongoSslUtils
+import com.tencent.bkrepo.common.mongo.api.properties.MongoConnectionPoolProperties
 import com.tencent.bkrepo.common.mongo.properties.MongoSslProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.actuate.health.HealthIndicator
@@ -53,6 +54,7 @@ import org.springframework.data.mongodb.core.convert.MappingMongoConverter
 import org.springframework.data.mongodb.core.convert.MongoConverter
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext
+import java.util.concurrent.TimeUnit
 
 /**
  * mongodb 4.0+开始支持事物，但springboot data mongo为了兼容老版本不出错，默认不开启事物
@@ -60,7 +62,7 @@ import org.springframework.data.mongodb.core.mapping.MongoMappingContext
  */
 @Configuration
 @PropertySource("classpath:common-mongo.properties")
-@EnableConfigurationProperties(MongoSslProperties::class)
+@EnableConfigurationProperties(MongoSslProperties::class, MongoConnectionPoolProperties::class)
 class MongoAutoConfiguration {
 
     @Bean
@@ -105,7 +107,10 @@ class MongoAutoConfiguration {
     }
 
     @Bean
-    fun mongoClientCustomizer(mongoSslProperties: MongoSslProperties): MongoClientSettingsBuilderCustomizer {
+    fun mongoClientCustomizer(
+        mongoSslProperties: MongoSslProperties,
+        mongoConnectionPoolProperties: MongoConnectionPoolProperties
+    ): MongoClientSettingsBuilderCustomizer {
         logger.info("Init MongoSSLConfiguration")
         return MongoClientSettingsBuilderCustomizer { clientSettingsBuilder ->
             // 根据配置文件判断是否开启ssl
@@ -127,6 +132,20 @@ class MongoAutoConfiguration {
                         logger.error("Failed to configure MongoDB TLS context", e)
                         throw RuntimeException("Failed to configure MongoDB TLS context", e)
                     }
+                }
+            }
+            clientSettingsBuilder.applyToConnectionPoolSettings {
+                if (mongoConnectionPoolProperties.maxConnectionIdleTimeMS != 0L) {
+                    it.maxConnectionIdleTime(
+                        mongoConnectionPoolProperties.maxConnectionIdleTimeMS,
+                        TimeUnit.MILLISECONDS
+                    )
+                }
+                if (mongoConnectionPoolProperties.maxConnectionLifeTimeMS != 0L) {
+                    it.maxConnectionLifeTime(
+                        mongoConnectionPoolProperties.maxConnectionLifeTimeMS,
+                        TimeUnit.MILLISECONDS
+                    )
                 }
             }
         }
