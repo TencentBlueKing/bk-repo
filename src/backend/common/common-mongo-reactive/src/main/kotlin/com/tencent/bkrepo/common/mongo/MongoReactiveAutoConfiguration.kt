@@ -57,6 +57,7 @@ package com.tencent.bkrepo.common.mongo/*
  */
 
 import com.tencent.bkrepo.common.mongo.api.properties.MongoConnectionPoolProperties
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.mongo.MongoClientSettingsBuilderCustomizer
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -70,6 +71,7 @@ import java.util.concurrent.TimeUnit
 class MongoReactiveAutoConfiguration {
 
     @Bean
+    @ConditionalOnMissingBean
     fun mongoClientCustomizer(
         mongoConnectionPoolProperties: MongoConnectionPoolProperties
     ): MongoClientSettingsBuilderCustomizer {
