@@ -39,13 +39,17 @@ class MetadataSavedEvent(
     override val resourceKey: String,
     override val userId: String,
     override val source: String?,
-    val metadata: Map<String, Any>
+    val metadata: Map<String, Any>,
+    val replace: Boolean = false
 ) : ArtifactEvent(
     type = EventType.METADATA_SAVED,
     projectId = projectId,
     repoName = repoName,
     resourceKey = resourceKey,
     userId = userId,
-    data = mapOf("metadata" to metadata),
+    data = mapOf(
+        "metadata" to metadata,
+        "replace" to replace
+    ),
     source = source
 )

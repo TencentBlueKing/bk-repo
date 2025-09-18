@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeConditi
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.repository.api.cluster.ClusterMetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import io.micrometer.observation.ObservationRegistry
@@ -99,5 +100,16 @@ class EdgeMetadataServiceImpl(
             centerMetadataClient.addForbidMetadata(request)
         }
         super.addForbidMetadata(request)
+    }
+
+    override fun saveMetadataForDeletedNode(request: DeletedNodeMetadataSaveRequest) {
+        ignoreException(
+            projectId = request.metadataSaveRequest.projectId,
+            repoName = request.metadataSaveRequest.repoName,
+            messageCodes = nodeLevelNotFoundError
+        ) {
+            centerMetadataClient.saveMetadataForDeletedNode(request)
+        }
+        super.saveMetadataForDeletedNode(request)
     }
 }

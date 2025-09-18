@@ -33,6 +33,7 @@ package com.tencent.bkrepo.replication.api.federation
 
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedClusterRemoveRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -52,7 +53,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 interface FederatedRepositoryClient {
     @Operation(summary = "同步配置")
     @PostMapping("/config/sync")
-    fun createFederatedConfig(@RequestBody request: FederatedRepositoryConfigRequest): Response<Void>
+    fun createFederatedConfig(@RequestBody request: FederatedRepositoryConfigRequest): Response<Boolean>
 
 
     @Operation(summary = "删除配置")
@@ -62,6 +63,10 @@ interface FederatedRepositoryClient {
         @PathVariable repoName: String,
         @PathVariable key: String,
     ): Response<Void>
+
+    @Operation(summary = "删除配置")
+    @DeleteMapping("/config/cluster/delete")
+    fun removeClusterFromFederation(@RequestBody request: FederatedClusterRemoveRequest): Response<Void>
 
 
 }

@@ -34,8 +34,8 @@ rootProject.name = "bk-repo-backend"
 pluginManagement {
     repositories {
         val snapshotsRepo = maven {
-            name = "MavenSnapshot"
-            url = java.net.URI("https://oss.sonatype.org/content/repositories/snapshots/")
+            name = "Central Portal Snapshots"
+            url = java.net.URI("https://central.sonatype.com/repository/maven-snapshots/")
             mavenContent {
                 snapshotsOnly()
             }

@@ -80,6 +80,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
@@ -250,11 +251,30 @@ abstract class NodeBaseService(
         }
     }
 
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun replicaDeletedNode(request: DeletedNodeReplicationRequest): NodeDetail {
+        with(request.nodeCreateRequest) {
+            // 判断父目录是否存在，不存在先创建
+            mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
+            // 创建节点
+            val node = buildDeletedNode(request)
+            doCreate(node, separate = separate)
+            logger.info("replica deleted node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
+            return convertToDetail(node)!!
+        }
+    }
+
     open fun buildTNode(request: NodeCreateRequest): TNode {
         val metadata = NodeBaseServiceHelper.resolveMetadata(
             request, metadataCustomizer, repositoryProperties.allowUserAddSystemMetadata
         )
         return NodeBaseServiceHelper.buildTNode(request, metadata)
+    }
+
+    private fun buildDeletedNode(request: DeletedNodeReplicationRequest): TNode {
+        return buildTNode(request.nodeCreateRequest).apply {
+            deleted = request.deleted
+        }
     }
 
     private fun getTotalNodeNum(artifact: ArtifactInfo, query: Query): Long {
@@ -379,7 +399,9 @@ abstract class NodeBaseService(
                 if (node.sha256 != FAKE_SHA256) {
                     incrementFileReference(node, repository)
                 }
-                quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
+                if (node.deleted == null) {
+                    quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
+                }
             }
         } catch (exception: DuplicateKeyException) {
             if (separate){

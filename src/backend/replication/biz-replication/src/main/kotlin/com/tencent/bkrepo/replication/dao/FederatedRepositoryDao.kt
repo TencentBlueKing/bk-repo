@@ -29,9 +29,12 @@ package com.tencent.bkrepo.replication.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.replication.model.TFederatedRepository
+import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class FederatedRepositoryDao : SimpleMongoDao<TFederatedRepository>() {
@@ -45,11 +48,85 @@ class FederatedRepositoryDao : SimpleMongoDao<TFederatedRepository>() {
         return find(Query(criteria))
     }
 
+    /**
+     * 根据名称查询联邦仓库
+     */
+    fun findByName(name: String): List<TFederatedRepository> {
+        val criteria = Criteria.where(TFederatedRepository::name.name).`is`(name)
+        return find(Query(criteria))
+    }
+
     fun deleteByProjectIdAndRepoName(projectId: String, repoName: String, federationId: String) {
         val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
             .and(TFederatedRepository::repoName.name).`is`(repoName)
             .and(TFederatedRepository::federationId.name).`is`(federationId)
         val query = Query(criteria)
         remove(query)
+    }
+
+    /**
+     * 更新全量同步状态为开始
+     */
+    fun updateFullSyncStart(projectId: String, repoName: String, federationId: String): Boolean {
+        val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
+            .and(TFederatedRepository::repoName.name).`is`(repoName)
+            .and(TFederatedRepository::federationId.name).`is`(federationId)
+            .and(TFederatedRepository::isFullSyncing.name).ne(true) // 兼容历史数据：null或false都可以开始同步
+
+        val update = Update()
+            .set(TFederatedRepository::isFullSyncing.name, true)
+            .set(TFederatedRepository::lastFullSyncStartTime.name, LocalDateTime.now())
+            .set(TFederatedRepository::lastModifiedDate.name, LocalDateTime.now())
+
+        val result = updateFirst(Query(criteria), update)
+        return result.modifiedCount > 0
+    }
+
+    /**
+     * 更新全量同步状态为完成
+     */
+    fun updateFullSyncEnd(projectId: String, repoName: String, federationId: String) {
+        val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
+            .and(TFederatedRepository::repoName.name).`is`(repoName)
+            .and(TFederatedRepository::federationId.name).`is`(federationId)
+
+        val update = Update()
+            .set(TFederatedRepository::isFullSyncing.name, false)
+            .set(TFederatedRepository::lastFullSyncEndTime.name, LocalDateTime.now())
+            .set(TFederatedRepository::lastModifiedDate.name, LocalDateTime.now())
+
+        updateFirst(Query(criteria), update)
+    }
+
+    /**
+     * 检查是否正在进行全量同步
+     */
+    fun isFullSyncing(projectId: String, repoName: String, federationId: String): Boolean {
+        val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
+            .and(TFederatedRepository::repoName.name).`is`(repoName)
+            .and(TFederatedRepository::federationId.name).`is`(federationId)
+            .and(TFederatedRepository::isFullSyncing.name).`is`(true)
+
+        return exists(Query(criteria))
+    }
+
+    /**
+     * 更新联邦仓库的集群列表
+     */
+    fun updateFederatedClusters(
+        projectId: String,
+        repoName: String,
+        federationId: String,
+        updatedClusters: List<FederatedCluster>
+    ) {
+        val criteria = Criteria.where(TFederatedRepository::projectId.name).`is`(projectId)
+            .and(TFederatedRepository::repoName.name).`is`(repoName)
+            .and(TFederatedRepository::federationId.name).`is`(federationId)
+
+        val update = Update()
+            .set(TFederatedRepository::federatedClusters.name, updatedClusters)
+            .set(TFederatedRepository::lastModifiedDate.name, LocalDateTime.now())
+
+        updateFirst(Query(criteria), update)
     }
 }

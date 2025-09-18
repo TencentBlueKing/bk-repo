@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component
 @Component
 class FederationArtifactEventConsumer(
     private val replicaTaskService: ReplicaTaskService,
-    private val federationBasedReplicaJobExecutor: FederationBasedReplicaJobExecutor,
+    private val federationBasedReplicaJobExecutor: FederationEventBasedReplicaJobExecutor,
 ) : EventConsumer() {
 
     private val federationExecutors = FederationThreadPoolExecutor.instance
@@ -52,8 +52,16 @@ class FederationArtifactEventConsumer(
      */
     override fun getAcceptTypes(): Set<EventType> {
         return setOf(
+            EventType.NODE_MOVED,
+            EventType.NODE_COPIED,
             EventType.NODE_CREATED,
             EventType.NODE_DELETED,
+            EventType.NODE_RENAMED,
+            EventType.VERSION_CREATED,
+            EventType.VERSION_DELETED,
+            EventType.VERSION_UPDATED,
+            EventType.METADATA_SAVED,
+            EventType.METADATA_DELETED
         )
     }
 

@@ -72,5 +72,9 @@ data class TReplicaObject(
     /**
      * 节点限制
      */
-    val pathConstraints: List<PathConstraint>?
+    val pathConstraints: List<PathConstraint>?,
+    /**
+     * 当来源不为空的场景下仅限制来源是列表中的数据进行同步
+     */
+    val sourceFilter: List<String>? = null
 )

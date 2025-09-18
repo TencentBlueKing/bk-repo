@@ -38,8 +38,11 @@ import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
+import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
@@ -49,7 +52,11 @@ import com.tencent.bkrepo.replication.replica.context.ReplicaExecutionContext
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationRecordDetailMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
+import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
+import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -65,7 +72,7 @@ import java.time.format.DateTimeFormatter
 @Suppress("TooGenericExceptionCaught")
 abstract class AbstractReplicaService(
     private val replicaRecordService: ReplicaRecordService,
-    private val localDataManager: LocalDataManager
+    val localDataManager: LocalDataManager,
 ) : ReplicaService {
 
     /**
@@ -83,9 +90,11 @@ abstract class AbstractReplicaService(
             }
             // 按仓库同步
             if (includeAllData(this)) {
+                replicaContext.executeType = TaskExecuteType.FULL
                 replicaByRepo(this)
                 return
             }
+            replicaContext.executeType = TaskExecuteType.PARTIAL
             replicaTaskObjectConstraints(this)
         }
     }
@@ -195,6 +204,46 @@ abstract class AbstractReplicaService(
     }
 
     /**
+     * 同步目录数据(只同步当前目录)
+     */
+    protected fun replicaFolderOnlyByPathConstraint(replicaContext: ReplicaContext, constraint: PathConstraint) {
+        with(replicaContext) {
+            try {
+                val nodeInfo = localDataManager.findNodeDetail(
+                    projectId = localProjectId,
+                    repoName = localRepoName,
+                    fullPath = constraint.path!!
+                ).nodeInfo
+                replicaFolderNodeOnly(replicaContext, nodeInfo)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaFolderOnlyByPathConstraint ${constraint.path} failed, error is ${throwable.message}"
+                )
+                throw throwable
+            }
+        }
+    }
+
+    /**
+     * 同步删除package数据
+     */
+    protected fun replicaByDeletedPackage(
+        replicaContext: ReplicaContext,
+        packageVersionDeleteSummary: PackageVersionDeleteSummary
+    ) {
+        val packageKey = packageVersionDeleteSummary.packageKey
+        val versionName = packageVersionDeleteSummary.versionName
+        try {
+            replicaDeletedPackage(replicaContext, packageVersionDeleteSummary)
+        } catch (throwable: Throwable) {
+            logger.error(
+                "replicaByDeletedPackage $packageKey|$versionName failed, error: ${throwable.message}"
+            )
+            throw throwable
+        }
+    }
+
+    /**
      * 同步删除节点数据
      */
     protected fun replicaByDeletedNode(replicaContext: ReplicaContext, constraint: PathConstraint) {
@@ -224,31 +273,136 @@ abstract class AbstractReplicaService(
     }
 
     /**
+     * 同步移动或复制的节点
+     */
+    protected fun replicaByMovedOrCopiedNode(
+        replicaContext: ReplicaContext,
+        nodeOrMoveRequest: NodeMoveCopyRequest,
+        move: Boolean
+    ) {
+        with(replicaContext) {
+            try {
+                replicaMovedOrCopiedNode(this, nodeOrMoveRequest, move)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaByMovedOrCopiedNode ${nodeOrMoveRequest.srcFullPath} " +
+                        "to ${nodeOrMoveRequest.destFullPath} failed, error is ${throwable.message}"
+                )
+                throw throwable
+            }
+        }
+    }
+
+    /**
+     * 同步rename的节点
+     */
+    protected fun replicaByRenamedNode(replicaContext: ReplicaContext, nodeRenameRequest: NodeRenameRequest) {
+        with(replicaContext) {
+            try {
+                replicaRenamedNode(this, nodeRenameRequest)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaByRenamedNode ${nodeRenameRequest.fullPath} " +
+                        "to ${nodeRenameRequest.newFullPath} failed, error is ${throwable.message}"
+                )
+                throw throwable
+            }
+        }
+    }
+
+    /**
+     * 同步更新的元数据
+     */
+    protected fun replicaBySaveMetadata(replicaContext: ReplicaContext, metadataSaveRequest: MetadataSaveRequest) {
+        with(replicaContext) {
+            try {
+                replicaSavedMetadata(this, metadataSaveRequest)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaBySaveMetadata for ${metadataSaveRequest.fullPath} failed, error is ${throwable.message}"
+                )
+                throw throwable
+            }
+        }
+    }
+
+    /**
+     * 同步删除元数据
+     */
+    protected fun replicaByDeleteMetadata(
+        replicaContext: ReplicaContext, metadataDeleteRequest: MetadataDeleteRequest
+    ) {
+        with(replicaContext) {
+            try {
+                replicaDeletedMetadata(this, metadataDeleteRequest)
+            } catch (throwable: Throwable) {
+                logger.error(
+                    "replicaByDeleteMetadata for ${metadataDeleteRequest.fullPath} failed," +
+                        " error is ${throwable.message}"
+                )
+                throw throwable
+            }
+        }
+    }
+
+    /**
      * 同步路径
      * 采用广度优先遍历
      */
     private fun replicaByPath(replicaContext: ReplicaContext, node: NodeInfo) {
+        if (!node.folder) {
+            replicaFileNode(replicaContext, node)
+            return
+        }
+        replicaFolderNode(replicaContext, node)
+    }
+
+    /**
+     * 同步文件节点
+     */
+    private fun replicaFileNode(replicaContext: ReplicaContext, node: NodeInfo) {
         with(replicaContext) {
-            if (!node.folder) {
-                // 存在冲突：记录冲突策略
-                // 外部集群仓库没有project/repoName
-                val conflictStrategy = if (
-                    !remoteProjectId.isNullOrBlank() && !remoteRepoName.isNullOrBlank() &&
-                    artifactReplicaClient!!.checkNodeExist(remoteProjectId, remoteRepoName, node.fullPath).data == true
-                ) {
-                    replicaProgress.conflict++
-                    task.setting.conflictStrategy
-                } else null
-                val replicaExecutionContext = initialExecutionContext(
-                    context = replicaContext,
-                    artifactName = node.fullPath,
-                    conflictStrategy = conflictStrategy,
-                    size = node.size,
-                    sha256 = node.sha256
-                )
-                replicaFile(replicaExecutionContext, node)
-                return
+            // 如果节点来源不属于此次任务限制的来源，则跳过
+            val sourceFilter = replicaContext.taskObject.sourceFilter
+            if (!sourceFilter.isNullOrEmpty() && !node.federatedSource.isNullOrEmpty()) {
+                if (node.federatedSource !in sourceFilter) {
+                    logger.info(
+                        "Node ${node.fullPath} in repo ${node.projectId}|${node.repoName}" +
+                            " is not in source filter list"
+                    )
+                    return
+                }
             }
+            // 存在冲突：记录冲突策略
+            val conflictStrategy = if (
+                !remoteProjectId.isNullOrBlank() && !remoteRepoName.isNullOrBlank() &&
+                artifactReplicaClient!!.checkNodeExist(
+                    remoteProjectId, remoteRepoName, node.fullPath, node.deleted
+                ).data == true
+            ) {
+                replicaProgress.conflict++
+                task.setting.conflictStrategy
+            } else null
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = node.fullPath,
+                conflictStrategy = conflictStrategy,
+                size = node.size,
+                sha256 = node.sha256
+            )
+            replicaExecutionContext.replicaContext.recordDetailId == replicaExecutionContext.detail.id
+            replicaFile(replicaExecutionContext, node)
+        }
+    }
+
+    /**
+     * 同步文件夹节点（子节点遍历）
+     */
+    private fun replicaFolderNode(replicaContext: ReplicaContext, node: NodeInfo) {
+        with(replicaContext) {
+            // 判断是否需要同步已删除的节点
+            val includeDeleted =
+                taskDetail.task.replicaType == ReplicaType.FEDERATION && executeType != TaskExecuteType.DELTA
             // 查询子节点
             var pageNumber = DEFAULT_PAGE_NUMBER
             var nodes = localDataManager.listNodePage(
@@ -256,7 +410,8 @@ abstract class AbstractReplicaService(
                 repoName = replicaContext.localRepoName,
                 fullPath = node.fullPath,
                 pageNumber = pageNumber,
-                pageSize = PAGE_SIZE
+                pageSize = PAGE_SIZE,
+                includeDeleted = includeDeleted
             )
             while (nodes.isNotEmpty()) {
                 nodes.forEach {
@@ -268,8 +423,26 @@ abstract class AbstractReplicaService(
                     repoName = replicaContext.localRepoName,
                     fullPath = node.fullPath,
                     pageNumber = pageNumber,
-                    pageSize = PAGE_SIZE
+                    pageSize = PAGE_SIZE,
+                    includeDeleted = includeDeleted
                 )
+            }
+        }
+    }
+
+    /**
+     * 同步文件夹节点（只同步当前文件夹节点）
+     */
+    private fun replicaFolderNodeOnly(replicaContext: ReplicaContext, node: NodeInfo) {
+        with(replicaContext) {
+            val record = ReplicationRecord(path = node.fullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = node.fullPath,
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicaContext.replicator.replicaDir(replicaContext, node)
+                true
             }
         }
     }
@@ -279,18 +452,13 @@ abstract class AbstractReplicaService(
      */
     private fun replicaDeletedNode(replicaContext: ReplicaContext, node: NodeInfo) {
         with(replicaContext) {
-            val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
             val record = ReplicationRecord(path = node.fullPath)
             val replicaExecutionContext = initialExecutionContext(
                 context = replicaContext,
                 artifactName = node.fullPath,
             )
             runActionAndPrintLog(replicaExecutionContext, record) {
-                when (replicaExecutionContext.detail.conflictStrategy) {
-                    ConflictStrategy.SKIP -> false
-                    ConflictStrategy.FAST_FAIL -> throw IllegalArgumentException("File[$fullPath] conflict.")
-                    else -> replicaContext.replicator.replicaDeletedNode(replicaContext, node)
-                }
+                replicaContext.replicator.replicaDeletedNode(replicaContext, node)
             }
         }
     }
@@ -320,13 +488,36 @@ abstract class AbstractReplicaService(
         }
     }
 
+
+    /**
+     * 同步删除package
+     */
+    private fun replicaDeletedPackage(
+        replicaContext: ReplicaContext,
+        packageVersionDeleteSummary: PackageVersionDeleteSummary
+    ) {
+        if (packageVersionDeleteSummary.packageKey.isEmpty()) return
+        val record = ReplicationRecord(
+            packageName = packageVersionDeleteSummary.packageKey,
+            version = packageVersionDeleteSummary.versionName,
+        )
+        val replicaExecutionContext = initialExecutionContext(
+            context = replicaContext,
+            artifactName = packageVersionDeleteSummary.packageName,
+            version = packageVersionDeleteSummary.versionName
+        )
+        runActionAndPrintLog(replicaExecutionContext, record) {
+            replicaContext.replicator.replicaDeletedPackage(replicaContext, packageVersionDeleteSummary)
+        }
+    }
+
     /**
      * 根据[packageSummary]和版本列表[versionNames]执行同步
      */
     private fun replicaByPackage(
         replicaContext: ReplicaContext,
         packageSummary: PackageSummary,
-        versionNames: List<String>? = null
+        versionNames: List<String>? = null,
     ) {
         replicaContext.replicator.replicaPackage(replicaContext, packageSummary)
         // 同步package功能： 对应内部集群配置是当version不存在时则同步全部的package version
@@ -384,7 +575,7 @@ abstract class AbstractReplicaService(
     private fun replicaPackageVersion(
         context: ReplicaExecutionContext,
         packageSummary: PackageSummary,
-        version: PackageVersion
+        version: PackageVersion,
     ) {
         with(context) {
             val record = ReplicationRecord(
@@ -403,10 +594,82 @@ abstract class AbstractReplicaService(
         }
     }
 
+    /**
+     * 同步移动或复制的节点
+     */
+    private fun replicaMovedOrCopiedNode(
+        replicaContext: ReplicaContext,
+        nodeOrMoveRequest: NodeMoveCopyRequest,
+        move: Boolean
+    ) {
+        with(replicaContext) {
+            val record = ReplicationRecord(path = nodeOrMoveRequest.srcFullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = nodeOrMoveRequest.srcFullPath
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                if (move) {
+                    replicator.replicaNodeMove(replicaContext, nodeOrMoveRequest)
+                } else {
+                    replicator.replicaNodeCopy(replicaContext, nodeOrMoveRequest)
+                }
+            }
+        }
+    }
+
+    /**
+     * 同步rename的节点
+     */
+    private fun replicaRenamedNode(replicaContext: ReplicaContext, nodeRenameRequest: NodeRenameRequest) {
+        with(replicaContext) {
+            val record = ReplicationRecord(path = nodeRenameRequest.fullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = nodeRenameRequest.fullPath
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicator.replicaNodeRename(replicaContext, nodeRenameRequest)
+            }
+        }
+    }
+
+    /**
+     * 同步更新元数据
+     */
+    private fun replicaSavedMetadata(replicaContext: ReplicaContext, metadataSaveRequest: MetadataSaveRequest) {
+        with(replicaContext) {
+            val record = ReplicationRecord(path = metadataSaveRequest.fullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = metadataSaveRequest.fullPath
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicator.replicaMetadataSave(replicaContext, metadataSaveRequest)
+            }
+        }
+    }
+
+    /**
+     * 同步删除元数据
+     */
+    private fun replicaDeletedMetadata(replicaContext: ReplicaContext, metadataDeleteRequest: MetadataDeleteRequest) {
+        with(replicaContext) {
+            val record = ReplicationRecord(path = metadataDeleteRequest.fullPath)
+            val replicaExecutionContext = initialExecutionContext(
+                context = replicaContext,
+                artifactName = metadataDeleteRequest.fullPath
+            )
+            runActionAndPrintLog(replicaExecutionContext, record) {
+                replicator.replicaMetadataDelete(replicaContext, metadataDeleteRequest)
+            }
+        }
+    }
+
     private fun runActionAndPrintLog(
         context: ReplicaExecutionContext,
         record: ReplicationRecord,
-        action: () -> Boolean
+        action: () -> Boolean,
     ) {
         with(context) {
             val startTime = LocalDateTime.now().toString()
@@ -424,7 +687,8 @@ abstract class AbstractReplicaService(
                 )
                 replicaContext.replicaProgress.failed++
                 setErrorStatus(this, throwable)
-                if (replicaContext.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL) {
+                // 非全量同步且配置了快速失败策略时，直接抛出异常
+                if (shouldFastFail(replicaContext)) {
                     throw throwable
                 }
             } finally {
@@ -445,6 +709,13 @@ abstract class AbstractReplicaService(
         }
     }
 
+    private fun shouldFastFail(context: ReplicaContext): Boolean {
+        if (context.executeType == TaskExecuteType.FULL) {
+            return false
+        }
+        return context.task.setting.errorStrategy == ErrorStrategy.FAST_FAIL
+    }
+
     /**
      * 记录因需要分发的package或者path本地不存在而导致的异常，分发中的异常已在实际分发处记录
      */
@@ -452,7 +723,7 @@ abstract class AbstractReplicaService(
         context: ReplicaContext,
         throwable: Throwable,
         packageConstraint: PackageConstraint? = null,
-        pathConstraint: PathConstraint? = null
+        pathConstraint: PathConstraint? = null,
     ) {
         with(context) {
             if (throwable !is IllegalStateException) return
@@ -480,7 +751,7 @@ abstract class AbstractReplicaService(
         startTime: String,
         status: ExecutionStatus,
         errorReason: String? = null,
-        record: ReplicationRecord
+        record: ReplicationRecord,
     ) {
         logger.info(
             toJson(
@@ -511,7 +782,7 @@ abstract class AbstractReplicaService(
         version: String? = null,
         conflictStrategy: ConflictStrategy? = null,
         size: Long? = null,
-        sha256: String? = null
+        sha256: String? = null,
     ): ReplicaExecutionContext {
         // 创建详情
         val request = RecordDetailInitialRequest(
@@ -525,7 +796,8 @@ abstract class AbstractReplicaService(
             version = version,
             conflictStrategy = conflictStrategy,
             size = size,
-            sha256 = sha256
+            sha256 = sha256,
+            executeType = context.executeType
         )
         val recordDetail = replicaRecordService.initialRecordDetail(request)
         return ReplicaExecutionContext(context, recordDetail)

@@ -134,7 +134,9 @@ object NodeEventFactory {
                 dstProjectId = destProjectId ?: projectId,
                 dstRepoName = destRepoName ?: repoName,
                 dstFullPath = destFullPath,
-                source = source
+                source = source,
+                destNodeFolder = destNodeFolder,
+                overwrite = overwrite
             )
         }
     }
@@ -152,7 +154,9 @@ object NodeEventFactory {
                 dstProjectId = destProjectId ?: projectId,
                 dstRepoName = destRepoName ?: repoName,
                 dstFullPath = destFullPath,
-                source = source
+                source = source,
+                destNodeFolder = destNodeFolder,
+                overwrite = overwrite
             )
         }
     }
@@ -167,8 +171,9 @@ object NodeEventFactory {
                 repoName = repoName,
                 resourceKey = fullPath,
                 userId = operator,
-                metadata = nodeMetadata?.associate { Pair(it.key, it.value) }.orEmpty(),
-                source = source
+                metadata = nodeMetadata?.associate { Pair(it.key, it) }.orEmpty(),
+                source = source,
+                replace = replace
             )
         }
     }

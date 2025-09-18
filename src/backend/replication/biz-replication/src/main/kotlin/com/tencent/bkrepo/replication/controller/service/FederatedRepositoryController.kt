@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.controller.service
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.federation.FederatedRepositoryClient
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedClusterRemoveRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import org.springframework.web.bind.annotation.RestController
@@ -39,13 +40,23 @@ class FederatedRepositoryController(
     private val federationRepositoryService: FederationRepositoryService,
 ) : FederatedRepositoryClient {
 
-    override fun createFederatedConfig(request: FederatedRepositoryConfigRequest): Response<Void> {
-        federationRepositoryService.saveFederationRepositoryConfig(request)
-        return ResponseBuilder.success()
+    override fun createFederatedConfig(request: FederatedRepositoryConfigRequest): Response<Boolean> {
+        return ResponseBuilder.success(federationRepositoryService.saveFederationRepositoryConfig(request))
     }
 
     override fun deleteConfig(projectId: String, repoName: String, key: String): Response<Void> {
-        federationRepositoryService.deleteLocalFederationRepositoryConfig(projectId, repoName, key)
+        federationRepositoryService.deleteFederationRepositoryConfig(projectId, repoName, key, false)
+        return ResponseBuilder.success()
+    }
+
+    override fun removeClusterFromFederation(request: FederatedClusterRemoveRequest): Response<Void> {
+        with(request) {
+            federationRepositoryService.removeClusterFromFederation(
+                projectId = projectId, repoName = repoName, federationId = federationId,
+                remoteClusterName = federatedClusterName, remoteProjectId = federatedProjectId,
+                remoteRepoName = federatedRepoName, deleteRemote = false
+            )
+        }
         return ResponseBuilder.success()
     }
 

@@ -41,7 +41,8 @@ class VersionDeletedEvent(
     val packageVersion: String?,
     val packageName: String,
     val packageType: String,
-    val realIpAddress: String?
+    val realIpAddress: String?,
+    val deletedDate: String,
 ) : ArtifactEvent(
     type = EventType.VERSION_DELETED,
     projectId = projectId,
@@ -52,8 +53,9 @@ class VersionDeletedEvent(
         "packageKey" to packageKey,
         "packageType" to packageType,
         "packageName" to packageName,
-        "packageVersion" to (packageVersion ?: "")
-    ).apply {
+        "packageVersion" to (packageVersion ?: ""),
+        "deletedDate" to deletedDate
+        ).apply {
         realIpAddress?.let { this["realIpAddress"] = realIpAddress }
     }
 )
