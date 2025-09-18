@@ -218,7 +218,12 @@ class ProjectServiceImpl(
             }
         }
         request.credentialsKey?.let { checkCredentialsKey(it) }
-        val query = Query.query(Criteria.where(TProject::name.name).`is`(name))
+        val projectName = if (enableMultiTenant.enabled) {
+            "${ProjectServiceHelper.getTenantId()}.$name"
+        } else {
+            name
+        }
+        val query = Query.query(Criteria.where(TProject::name.name).`is`(projectName))
         val update = buildUpdate(request)
         val updateResult = projectDao.updateFirst(query, update)
         return if (updateResult.modifiedCount == 1L) {
