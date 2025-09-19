@@ -43,7 +43,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadConte
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.constant.PREVIEW_ARTIFACT_TO_FILE
@@ -146,7 +146,7 @@ class FileTransferService(
         if (enableMultiTenant.enabled) {
             createIfAbsentService.createProjectIfAbsent()
             createIfAbsentService.createRepoIfAbsent()
-            projectId = "${ProjectServiceHelper.getTenantId()}.$projectId"
+            projectId = "${SecurityUtils.getTenantId()}.$projectId"
         }
 
         val artifactInfo = ArtifactInfo(projectId!!, repoName!!, buildArtifactUri(fileAttribute))
