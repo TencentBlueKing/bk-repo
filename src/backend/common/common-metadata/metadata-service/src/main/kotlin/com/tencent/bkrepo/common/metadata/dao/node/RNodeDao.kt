@@ -47,14 +47,14 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
-import org.springframework.stereotype.Repository
+import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
 
 /**
  * 节点 Dao
  */
-@Repository
+@Component
 @Conditional(ReactiveCondition::class)
 class RNodeDao: HashShardingMongoReactiveDao<TNode>() {
     /**

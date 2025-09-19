@@ -31,8 +31,8 @@ import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.model.TOperateLog
 import com.tencent.bkrepo.common.mongo.reactive.dao.MonthRangeShardingMongoReactiveDao
 import org.springframework.context.annotation.Conditional
-import org.springframework.stereotype.Repository
+import org.springframework.stereotype.Component
 
-@Repository
+@Component
 @Conditional(ReactiveCondition::class)
 class ROperateLogDao : MonthRangeShardingMongoReactiveDao<TOperateLog>()

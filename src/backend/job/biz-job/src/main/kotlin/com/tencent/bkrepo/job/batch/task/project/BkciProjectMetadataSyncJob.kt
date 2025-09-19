@@ -33,7 +33,6 @@ import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
-import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Query
@@ -48,7 +47,6 @@ import java.time.Duration
 @Component
 class BkciProjectMetadataSyncJob(
     private val properties: BkciProjectMetadataSyncJobProperties,
-    private val registry: ObservationRegistry
 ) : DefaultContextMongoDbJob<BkciProjectMetadataSyncJob.Project>(properties) {
 
     val client by lazy {

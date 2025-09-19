@@ -9,7 +9,6 @@ import com.tencent.bkrepo.common.metadata.service.webhook.BkciWebhookListener
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.devops.api.pojo.Response
-import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
@@ -20,7 +19,6 @@ class DevXProjectSyncJob(
     private val properties: DevXProjectSyncJobProperties,
     private val mongoTemplate: MongoTemplate,
     private val bkciWebhookListener: BkciWebhookListener,
-    private val registry: ObservationRegistry
 ) : DefaultContextJob(properties) {
 
     val client by lazy {

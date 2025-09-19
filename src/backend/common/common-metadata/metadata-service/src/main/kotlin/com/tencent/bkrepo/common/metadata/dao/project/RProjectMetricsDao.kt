@@ -35,10 +35,10 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
-import org.springframework.stereotype.Repository
+import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 
-@Repository
+@Component
 @Conditional(ReactiveCondition::class)
 class RProjectMetricsDao : SimpleMongoReactiveDao<TProjectMetrics>() {
 

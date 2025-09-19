@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.withContext
@@ -200,7 +201,7 @@ class CoArtifactDataReceiver(
 
     private suspend fun initChannel() {
         if (channel == null) {
-            channel = withContext(Dispatchers.IO) {
+            channel = withContext(Dispatchers.IO + currentCoroutineContext()) {
                 Files.createDirectories(filePath.parent)
                 AsynchronousFileChannel.open(
                     filePath,
@@ -251,7 +252,7 @@ class CoArtifactDataReceiver(
                 val originalFile = originalPath.resolve(fileName)
                 val filePath = this.filePath.apply { this.createFile() }
                 val dataBuffer = DataBufferUtils.read(originalPath, DefaultDataBufferFactory(), bufferSize)
-                channel = withContext(Dispatchers.IO) {
+                channel = withContext(Dispatchers.IO + currentCoroutineContext()) {
                     AsynchronousFileChannel.open(
                         filePath,
                         StandardOpenOption.WRITE,
@@ -259,7 +260,7 @@ class CoArtifactDataReceiver(
                     )
                 }
                 DataBufferUtils.write(dataBuffer, channel!!, 0).awaitSingle()
-                withContext(Dispatchers.IO) {
+                withContext(Dispatchers.IO + currentCoroutineContext()) {
                     Files.deleteIfExists(originalFile)
                 }
                 logger.info("Success to transfer data from [$originalPath] to [$path]")

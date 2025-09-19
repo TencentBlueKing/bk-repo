@@ -33,7 +33,7 @@ package com.tencent.bkrepo.fs.server.repository
 
 import com.tencent.bkrepo.common.mongo.reactive.dao.SimpleMongoReactiveDao
 import com.tencent.bkrepo.fs.server.model.TDailyClient
-import org.springframework.stereotype.Repository
+import org.springframework.stereotype.Component
 
-@Repository
+@Component
 class DailyClientRepository: SimpleMongoReactiveDao<TDailyClient>()

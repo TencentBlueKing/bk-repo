@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.TraceUtils
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.common.service.log.LoggerHolder
@@ -149,43 +150,46 @@ abstract class MongoDbBatchJob<Entity : Any, Context : JobContext>(
             logger.info("Job[${getJobName()}] already stopped.")
             return
         }
-        onRunCollectionStart(collectionName, context)
-        logger.info("Job[${getJobName()}]: Start collection $collectionName.")
-        val pageSize = batchSize
-        var querySize: Int
-        var lastId = ObjectId(MIN_OBJECT_ID)
-        var sum = 0L
-        measureNanoTime {
-            do {
-                val query = buildQuery()
-                    .addCriteria(Criteria.where(ID).gt(lastId))
-                    .limit(batchSize)
-                    .with(Sort.by(ID).ascending())
-                val fields = query.fields()
-                entityClass().declaredMemberProperties.forEach {
-                    fields.include(it.name)
-                }
-                val data = mongoTemplate.find<Map<String, Any?>>(
-                    query,
-                    collectionName,
-                )
-                if (data.isEmpty()) {
-                    break
-                }
-                if (concurrentLevel == JobConcurrentLevel.ROW) {
-                    runAsync(data) { runRow(it, collectionName, context) }
-                } else {
-                    data.forEach { runRow(it, collectionName, context) }
-                }
-                sum += data.size
-                querySize = data.size
-                lastId = data.last()[ID] as ObjectId
-                report(context)
-            } while (querySize == pageSize && shouldRun())
-        }.apply {
-            val elapsedTime = HumanReadable.time(this)
-            onRunCollectionFinished(collectionName, context)
-            logger.info("Job[${getJobName()}]: collection $collectionName run completed,sum [$sum] elapse $elapsedTime")
+        TraceUtils.newSpan(registry, collectionName) {
+            onRunCollectionStart(collectionName, context)
+            logger.info("Job[${getJobName()}]: Start collection $collectionName.")
+            val pageSize = batchSize
+            var querySize: Int
+            var lastId = ObjectId(MIN_OBJECT_ID)
+            var sum = 0L
+            measureNanoTime {
+                do {
+                    val query = buildQuery()
+                        .addCriteria(Criteria.where(ID).gt(lastId))
+                        .limit(batchSize)
+                        .with(Sort.by(ID).ascending())
+                    val fields = query.fields()
+                    entityClass().declaredMemberProperties.forEach {
+                        fields.include(it.name)
+                    }
+                    val data = mongoTemplate.find<Map<String, Any?>>(
+                        query,
+                        collectionName,
+                    )
+                    if (data.isEmpty()) {
+                        break
+                    }
+                    if (concurrentLevel == JobConcurrentLevel.ROW) {
+                        runAsync(data) { runRow(it, collectionName, context) }
+                    } else {
+                        data.forEach { runRow(it, collectionName, context) }
+                    }
+                    sum += data.size
+                    querySize = data.size
+                    lastId = data.last()[ID] as ObjectId
+                    report(context)
+                } while (querySize == pageSize && shouldRun())
+            }.apply {
+                val elapsedTime = HumanReadable.time(this)
+                onRunCollectionFinished(collectionName, context)
+                logger.info("Job[${getJobName()}]: collection $collectionName run completed," +
+                        "sum [$sum] elapse $elapsedTime")
+            }
         }
     }
 
