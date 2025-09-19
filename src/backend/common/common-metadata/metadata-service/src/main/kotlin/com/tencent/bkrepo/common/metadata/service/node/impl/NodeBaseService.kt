@@ -58,6 +58,7 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.TOPIC
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.checkNodeListOption
@@ -85,7 +86,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
@@ -108,7 +108,7 @@ abstract class NodeBaseService(
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
     open val servicePermissionClient: ServicePermissionClient,
-    open val routerControllerClient: RouterControllerClient,
+    open val routerControllerService: RouterControllerService,
     open val routerControllerProperties: RouterControllerProperties,
     open val blockNodeService: BlockNodeService,
     open val projectService: ProjectService,
@@ -332,7 +332,7 @@ abstract class NodeBaseService(
      */
     private fun createRouter(node: TNode) {
         HeaderUtils.getHeader(PROXY_HEADER_NAME)?.let {
-            routerControllerClient.addNode(node.projectId, node.repoName, node.fullPath, it)
+            routerControllerService.addNode(node.projectId, node.repoName, node.fullPath, it)
         }
     }
 

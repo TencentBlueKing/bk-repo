@@ -51,6 +51,7 @@ import com.tencent.bkrepo.common.metadata.service.node.impl.NodeServiceImpl
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
@@ -67,7 +68,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
@@ -86,7 +86,7 @@ class CenterNodeServiceImpl(
     override val repositoryProperties: RepositoryProperties,
     override val messageSupplier: MessageSupplier,
     override val servicePermissionClient: ServicePermissionClient,
-    override val routerControllerClient: RouterControllerClient,
+    override val routerControllerService: RouterControllerService,
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
     override val projectService: ProjectService,
@@ -103,7 +103,7 @@ class CenterNodeServiceImpl(
     repositoryProperties,
     messageSupplier,
     servicePermissionClient,
-    routerControllerClient,
+    routerControllerService,
     routerControllerProperties,
     blockNodeService,
     projectService,
