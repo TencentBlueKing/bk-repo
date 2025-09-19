@@ -46,7 +46,7 @@
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isFormatType, isHtmlType, isPic, isText } from '@repository/utils/file'
+    import {isExcel, isFormatType, isHtmlType, isPic, isText} from '@repository/utils/file'
     import Papa from 'papaparse'
     import Table from '@wolf-table/table'
     import Viewer from 'viewerjs'
@@ -150,10 +150,11 @@
                     this.previewBasic = true
                     this.basicFileText = typeof (res) === 'string' ? res : JSON.stringify(res)
                 }).catch(() => this.showError())
-            } else if (this.filePath.endsWith('.xlsx')) {
+            } else if (isExcel(this.filePath)) {
                 customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
                     this.loading = false
                     this.previewExcel = true
+                    this.excelOptions.xls = this.filePath.endsWith('.xls')
                     this.dataSource = res.data
                 }).catch(() => this.showError())
             } else if (this.filePath.endsWith('.csv')) {
@@ -200,6 +201,8 @@
                 this.hasError = false
                 this.imgShow = false
                 this.imgUrl = ''
+                this.excelOptions.xls = false
+                window.resetWaterMark()
             },
             dealWaterMark () {
                 const param = this.extraParam !== '0' ? Base64.decode(this.extraParam) : ''
