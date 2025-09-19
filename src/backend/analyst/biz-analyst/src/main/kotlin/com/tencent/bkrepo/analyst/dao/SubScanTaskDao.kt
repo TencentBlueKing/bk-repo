@@ -35,6 +35,7 @@ import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.CredentialsKeyFiles
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.Companion.RUNNING_STATUS
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
@@ -250,7 +251,7 @@ class SubScanTaskDao(
     fun timeoutTasks(dispatcher: String? = null, allDispatcher: Boolean = true): Page<TSubScanTask> {
         val criteriaList = mutableListOf(
             buildTimeoutCriteria(),
-            TSubScanTask::status.inValues(PULLED.name, EXECUTING.name),
+            TSubScanTask::status.inValues(RUNNING_STATUS),
         )
         if (!allDispatcher) {
             criteriaList.add(dispatcherCriteria(dispatcher))
@@ -280,7 +281,7 @@ class SubScanTaskDao(
             .and(TSubScanTask::metadata.name).elemMatch(
                 TaskMetadata::key.isEqualTo(TASK_METADATA_DISPATCHER)
                     .and(TaskMetadata::value.name).isEqualTo(dispatcher)
-                )
+            )
         return find(Query(criteria))
     }
 

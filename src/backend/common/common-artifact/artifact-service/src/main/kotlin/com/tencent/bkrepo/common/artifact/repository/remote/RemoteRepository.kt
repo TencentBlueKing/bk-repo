@@ -37,7 +37,6 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode.PARAMETER_INVALID
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.constant.FLAG_QUERY_CACHE
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
@@ -51,6 +50,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.EmptyInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
+import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.useCache
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils.resolveContentRange
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
@@ -311,8 +311,7 @@ abstract class RemoteRepository : AbstractArtifactRepository() {
     }
 
     protected fun shouldCache(context: ArtifactContext): Boolean {
-        val cacheFlag = HttpContextHolder.getRequestOrNull()?.getParameter(FLAG_QUERY_CACHE)?.lowercase() != "false"
-        return context.getRemoteConfiguration().cache.enabled && cacheFlag
+        return context.getRemoteConfiguration().cache.enabled && useCache()
     }
 
     /**
