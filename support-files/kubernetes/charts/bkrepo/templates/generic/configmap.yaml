@@ -13,9 +13,9 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
+    {{- if keys $.Values.generic.config }}
+        {{- toYaml .Values.generic.config | nindent 4 }}
+    {{- end}}
     generic:
       domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}/generic
-      {{- if keys $.Values.generic.config }}
-        {{- toYaml .Values.generic.config | nindent 6 }}
-      {{- end}}
 {{- end }}

@@ -18,6 +18,6 @@ data:
       application:
         version: 1.0.0
     {{- if keys $.Values.replication.config }}
-      {{- toYaml .Values.replication.config | nindent 6 }}
+      {{- toYaml .Values.replication.config | nindent 4 }}
     {{- end}}
   {{- end }}

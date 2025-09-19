@@ -19,7 +19,7 @@ data:
         appSecret: {{ .Values.bkNotice.appToken }}
         apiBaseUrl: {{ .Values.bkNotice.apiBaseUrl }}
         {{- end }}
-      {{- if keys $.Values.repository.config }}
-        {{- toYaml .Values.repository.config | nindent 6 }}
-      {{- end}}
+    {{- if keys $.Values.repository.config }}
+      {{- toYaml .Values.repository.config | nindent 4 }}
+    {{- end}}
     

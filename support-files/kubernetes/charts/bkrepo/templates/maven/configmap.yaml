@@ -13,9 +13,9 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
+    {{- if keys $.Values.maven.config }}
+    {{- toYaml .Values.maven.config | nindent 4 }}
+    {{- end}}
     maven:
       domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}/maven
-      {{- if keys $.Values.maven.config }}
-        {{- toYaml .Values.maven.config | nindent 6 }}
-      {{- end}}
   {{- end }}
