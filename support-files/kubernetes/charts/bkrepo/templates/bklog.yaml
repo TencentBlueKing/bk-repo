@@ -54,7 +54,7 @@ spec:
 apiVersion: bk.tencent.com/v1alpha1
 kind: BkLogConfig
 metadata:
-  name: bk-repo-gateway-acsess-log-config
+  name: bk-repo-gateway-access-log-config
 spec:
   dataId: {{ .Values.bkLogConfig.gatewayAccess.dataId }}
   logConfigType: container_log_config
