@@ -5,6 +5,7 @@ import com.mongodb.reactivestreams.client.internal.MongoClientImpl
 import io.micrometer.observation.ObservationRegistry
 import io.micrometer.tracing.otel.bridge.OtelTracer
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.mongo.MongoClientSettingsBuilderCustomizer
 import org.springframework.context.annotation.Bean
@@ -18,6 +19,7 @@ import org.springframework.data.mongodb.observability.MongoObservationCommandLis
 class OtelMongoConfiguration {
 
     @Bean
+    @ConditionalOnMissingBean
     fun mongoMetricsSynchronousContextProvider(registry: ObservationRegistry): MongoClientSettingsBuilderCustomizer {
         return MongoClientSettingsBuilderCustomizer { clientSettingsBuilder: MongoClientSettings.Builder? ->
             clientSettingsBuilder!!.contextProvider(ContextProviderFactory.create(registry))

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.schedule
 
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
+import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.boot.task.ThreadPoolTaskSchedulerBuilder
 import org.springframework.scheduling.config.CronTask
@@ -41,6 +42,7 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar
  * */
 class SpringScheduleJobRegistrar(
     private val builder: ThreadPoolTaskSchedulerBuilder,
+    private val observationRegistry: ObservationRegistry
 ) : JobRegistrar {
     private var initial = false
     lateinit var taskRegistrar: ScheduledTaskRegistrar
@@ -51,7 +53,9 @@ class SpringScheduleJobRegistrar(
         if (!initial) {
             val taskScheduler = builder.build()
             taskScheduler.initialize()
+            taskScheduler.setTaskDecorator { it.trace() }
             taskRegistrar.setTaskScheduler(taskScheduler)
+            taskRegistrar.observationRegistry = observationRegistry
             initial = true
         }
     }
@@ -111,17 +115,17 @@ class SpringScheduleJobRegistrar(
     )
 
     private fun addCronTask(runnable: Runnable, cron: String): ScheduledTask? {
-        val cronTask = CronTask(runnable.trace(), cron)
+        val cronTask = CronTask(runnable, cron)
         return taskRegistrar.scheduleCronTask(cronTask)
     }
 
     private fun addFixedRateTask(runnable: Runnable, interval: Long, initialDelay: Long): ScheduledTask? {
-        val fixedRateTask = FixedRateTask(runnable.trace(), interval, initialDelay)
+        val fixedRateTask = FixedRateTask(runnable, interval, initialDelay)
         return taskRegistrar.scheduleFixedRateTask(fixedRateTask)
     }
 
     private fun addFixedDelayTask(runnable: Runnable, delay: Long, initialDelay: Long): ScheduledTask? {
-        val task = FixedDelayTask(runnable.trace(), delay, initialDelay)
+        val task = FixedDelayTask(runnable, delay, initialDelay)
         return taskRegistrar.scheduleFixedDelayTask(task)
     }
 

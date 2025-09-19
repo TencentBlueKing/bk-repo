@@ -62,15 +62,19 @@ object TraceUtils {
     fun <T> newSpan(
         observationRegistry: ObservationRegistry,
         spanName: String,
-        lowCardinalityKeyValues: KeyValues,
-        highCardinalityKeyValues: KeyValues,
+        lowCardinalityKeyValues: KeyValues = KeyValues.empty(),
+        highCardinalityKeyValues: KeyValues = KeyValues.empty(),
+        init: Boolean = false,
         action: () -> T
     ): T {
         // webflux中kotlin协程调用时, context是空的, 此时用空context创建新span会导致traceId丢失
-        val contextName = observationRegistry.currentObservation?.context?.name
-        if (contextName.isNullOrEmpty() || contextName == "null") {
-            return action()
+        if (!init) {
+            val contextName = observationRegistry.currentObservation?.context?.name
+            if (contextName.isNullOrEmpty() || contextName == "null") {
+                return action()
+            }
         }
+
         return Observation.createNotStarted(spanName, observationRegistry)
             .lowCardinalityKeyValues(lowCardinalityKeyValues)
             .highCardinalityKeyValues(highCardinalityKeyValues)
