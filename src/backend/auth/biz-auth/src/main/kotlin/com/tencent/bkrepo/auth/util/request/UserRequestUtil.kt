@@ -113,7 +113,8 @@ object UserRequestUtil {
             createdDate = user.createdDate,
             admin = user.admin,
             group = user.group,
-            asstUsers = user.asstUsers
+            asstUsers = user.asstUsers,
+            tenantId = user.tenantId
         )
     }
 
