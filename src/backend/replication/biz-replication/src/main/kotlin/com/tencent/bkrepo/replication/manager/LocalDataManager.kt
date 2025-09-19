@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.manager
 
+import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
@@ -38,15 +39,17 @@ import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -54,6 +57,7 @@ import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.constant.MD5
 import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.replication.constant.SIZE
+import com.tencent.bkrepo.repository.constant.NAME
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -90,6 +94,7 @@ class LocalDataManager(
     private val storageCredentialService: StorageCredentialService,
     private val storageProperties: StorageProperties,
     private val mongoTemplate: MongoTemplate,
+    private val blockNodeService: BlockNodeService,
 ) {
 
     /**
@@ -199,6 +204,25 @@ class LocalDataManager(
             ?: throw NodeNotFoundException(fullPath)
     }
 
+    fun findRegexNodeDetail(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        pageNumber: Int,
+        pageSize: Int,
+    ): List<NodeInfo> {
+        val path = PathUtils.resolveParent(fullPath)
+        val name = PathUtils.resolveName(fullPath)
+        val escapedValue = EscapeUtils.escapeRegexExceptWildcard(name)
+        val regexPattern = escapedValue.replace("*", ".*")
+        val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
+            .and(REPO_NAME).isEqualTo(repoName)
+            .and(NODE_PATH).isEqualTo(path)
+            .and(NAME).regex(regexPattern)
+            .and(DELETED).isEqualTo(null)
+            .and(FOLDER).isEqualTo(false)
+        return queryNodes(projectId, criteria, pageNumber, pageSize)
+    }
 
     /**
      * 查找package对应version下的节点
@@ -303,8 +327,27 @@ class LocalDataManager(
                     and(DELETED).isEqualTo(null)
                 }
             }
+        return queryNodes(projectId, criteria, pageNumber, pageSize)
+    }
+
+    private fun queryNodes(
+        projectId: String,
+        criteria: Criteria,
+        pageNumber: Int,
+        pageSize: Int
+    ): List<NodeInfo> {
+        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val query = Query(criteria).with(Pages.ofRequest(pageNumber, pageSize))
         return mongoTemplate.find(query, Node::class.java, collectionName).mapNotNull { convert(it) }
+    }
+
+    /**
+     * 根据节点信息获取所有block node
+     */
+    fun listBlockNode(nodeInfo: NodeInfo): List<TBlockNode> {
+        with(nodeInfo) {
+            return blockNodeService.listAllBlocks(projectId, repoName, fullPath, createdDate)
+        }
     }
 
     /**
@@ -409,6 +452,7 @@ class LocalDataManager(
     companion object {
         private const val DELETED = "deleted"
         private const val NODE_PATH = "path"
+        private const val FOLDER = "folder"
 
     }
 }

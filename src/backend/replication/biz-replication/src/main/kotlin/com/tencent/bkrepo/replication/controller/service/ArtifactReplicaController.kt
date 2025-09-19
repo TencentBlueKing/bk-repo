@@ -29,9 +29,13 @@ package com.tencent.bkrepo.replication.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
@@ -48,6 +52,8 @@ import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
+import com.tencent.bkrepo.repository.pojo.blocknode.BlockNodeDetail
+import com.tencent.bkrepo.repository.pojo.blocknode.service.BlockNodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -84,6 +90,7 @@ class ArtifactReplicaController(
     private val metadataService: MetadataService,
     private val userResource: ServiceUserClient,
     private val permissionManager: PermissionManager,
+    private val blockNodeService: BlockNodeService,
 ) : ArtifactReplicaClient {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
@@ -269,6 +276,50 @@ class ArtifactReplicaController(
             packageService.deleteVersion(projectId, repoName, packageKey, versionName)
         }
         return ResponseBuilder.success()
+    }
+
+    override fun replicaBlockNodeCreateRequest(request: BlockNodeCreateRequest): Response<BlockNodeDetail> {
+        val blockNode = buildTBlockNode(request)
+        val repo = repositoryService.getRepoDetail(request.projectId, request.repoName)
+            ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, request.repoName)
+        val result = blockNodeService.createBlock(blockNode, repo.storageCredentials)
+        return ResponseBuilder.success(toBlockNodeDetail(result))
+    }
+
+    private fun buildTBlockNode(request: BlockNodeCreateRequest): TBlockNode {
+        return TBlockNode(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            nodeFullPath = request.fullPath,
+            size = request.size,
+            createdDate = request.createdDate,
+            createdBy = request.createdBy,
+            startPos = request.startPos,
+            endPos = request.endPos,
+            sha256 = request.sha256,
+            crc64ecma = request.crc64ecma,
+            uploadId = request.uploadId,
+            expireDate = request.expireDate
+        )
+    }
+
+    private fun toBlockNodeDetail(blockNode: TBlockNode): BlockNodeDetail {
+        return BlockNodeDetail(
+            id = blockNode.id,
+            projectId = blockNode.projectId,
+            repoName = blockNode.repoName,
+            nodeFullPath = blockNode.nodeFullPath,
+            size = blockNode.size,
+            createdDate = blockNode.createdDate,
+            createdBy = blockNode.createdBy,
+            startPos = blockNode.startPos,
+            endPos = blockNode.endPos,
+            sha256 = blockNode.sha256,
+            crc64ecma = blockNode.crc64ecma,
+            uploadId = blockNode.uploadId,
+            expireDate = blockNode.expireDate,
+            deleted = blockNode.deleted,
+        )
     }
 
 

@@ -153,10 +153,6 @@ class EdgeReplicaTaskJob(
             try {
                 val nodeInfo = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath!!))?.nodeInfo
                     ?: throw NodeNotFoundException(fullPath!!)
-                if (nodeInfo.sha256 == FAKE_SHA256) {
-                    logger.warn("Node $fullPath in repo ${nodeInfo.projectId}|${nodeInfo.repoName} is link node.")
-                    return
-                }
                 replicaContext.replicator.replicaFile(replicaContext, nodeInfo)
                 status = ExecutionStatus.SUCCESS
             } catch (e: Exception) {
