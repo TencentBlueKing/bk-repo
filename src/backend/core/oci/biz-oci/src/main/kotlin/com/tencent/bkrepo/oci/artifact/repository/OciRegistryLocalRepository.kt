@@ -425,9 +425,7 @@ class OciRegistryLocalRepository(
         if (context.request.method == HttpMethod.HEAD.name) {
             return null
         }
-        val version = artifactResource.node?.metadata?.get(IMAGE_VERSION)?.toString() ?: run {
-            artifactResource.node?.metadata?.get(OLD_DOCKER_VERSION)?.toString() ?: return null
-        }
+        val version = artifactResource.node?.metadata?.let { extractVersionFromMetadata(it) } ?: return null
         return PackageDownloadRecord(
             projectId = context.projectId,
             repoName = context.repoName,
@@ -454,13 +452,9 @@ class OciRegistryLocalRepository(
         val inputStream = storageManager.loadArtifactInputStream(node, context.storageCredentials)
             ?: return null
         val digest = OciDigest.fromSha256(node!!.sha256.orEmpty())
-        val mediaType = node.metadata[MEDIA_TYPE] ?: run {
-            node.metadata[OLD_DOCKER_MEDIA_TYPE] ?: MediaTypes.APPLICATION_OCTET_STREAM
-        }
+        val mediaType = extractMediaTypeFromMetadata(node.metadata, MediaTypes.APPLICATION_OCTET_STREAM)
         val contentType = if (context.artifactInfo is OciManifestArtifactInfo) {
-            node.metadata[MEDIA_TYPE] ?: run {
-                node.metadata[OLD_DOCKER_MEDIA_TYPE] ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
-            }
+            extractMediaTypeFromMetadata(node.metadata, OCI_IMAGE_MANIFEST_MEDIA_TYPE)
         } else {
             MediaTypes.APPLICATION_OCTET_STREAM
         }
@@ -546,9 +540,7 @@ class OciRegistryLocalRepository(
         with(context) {
             val artifactInfo = context.artifactInfo as OciArtifactInfo
             val packageKey = PackageKeys.ofName(repo.type, artifactInfo.packageName)
-            val version = node.metadata[IMAGE_VERSION]?.toString() ?: run {
-                node.metadata[OLD_DOCKER_VERSION]?.toString() ?: return null
-            }
+            val version = extractVersionFromMetadata(node.metadata) ?: return null
             return packageService.findVersionByName(projectId, repoName, packageKey, version)
         }
     }
@@ -630,6 +622,22 @@ class OciRegistryLocalRepository(
             values.size == 3 -> FileInfo(sha256 = values[0], md5 = values[1], size = values[2].toLong())
             else -> FileInfo(sha256 = values[0], md5 = values[1], crc64ecma = values[2], size = values[3].toLong())
         }
+    }
+
+    /**
+     * 从节点元数据中获取版本信息
+     * 优先使用 IMAGE_VERSION，如果不存在则使用 OLD_DOCKER_VERSION
+     */
+    private fun extractVersionFromMetadata(metadata: Map<String, Any>): String? {
+        return metadata[IMAGE_VERSION]?.toString() ?: metadata[OLD_DOCKER_VERSION]?.toString()
+    }
+
+    /**
+     * 从节点元数据中获取媒体类型
+     * 优先使用 MEDIA_TYPE，如果不存在则使用 OLD_DOCKER_MEDIA_TYPE，最后使用默认值
+     */
+    private fun extractMediaTypeFromMetadata(metadata: Map<String, Any>, defaultValue: String): String {
+        return metadata[MEDIA_TYPE]?.toString() ?: metadata[OLD_DOCKER_MEDIA_TYPE]?.toString() ?: defaultValue
     }
 
     companion object {

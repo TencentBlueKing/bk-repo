@@ -744,14 +744,12 @@ class OciOperationServiceImpl(
         )
         // 如果当前镜像下的blob没有全部存储在制品库，则不生成版本，由定时任务去生成
         if (existFlag) {
-            val mediaType = manifest.mediaType ?: HeaderUtils.getHeader(HttpHeaders.CONTENT_TYPE)
-            ?: OCI_IMAGE_MANIFEST_MEDIA_TYPE
-            val metadata = mutableMapOf<String, Any>(
-                OLD_DOCKER_VERSION to ociArtifactInfo.reference,
-                SHA256 to nodeDetail.sha256!!,
-                DOCKER_REPO_NAME to ociArtifactInfo.packageName,
-                DOCKER_MANIFEST_DIGEST to OciDigest.fromSha256(nodeDetail.sha256!!).toString(),
-                OLD_DOCKER_MEDIA_TYPE to mediaType
+            val mediaType = determineMediaType(manifest)
+            val metadata = buildManifestMetadata(
+                ociArtifactInfo = ociArtifactInfo,
+                sha256 = nodeDetail.sha256!!,
+                manifestDigest = OciDigest.fromSha256(nodeDetail.sha256!!),
+                mediaType = mediaType
             )
             // 第三方同步的索引更新等所有文件全部上传完成后才去进行
             // 根据flag生成package信息以及package version信息
