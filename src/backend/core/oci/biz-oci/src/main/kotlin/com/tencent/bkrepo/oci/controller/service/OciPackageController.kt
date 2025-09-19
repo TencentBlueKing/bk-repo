@@ -53,7 +53,7 @@ class OciPackageController(
     override fun packageCreate(record: OciReplicationRecordInfo): Response<Void> {
         with(record) {
             val ociArtifactInfo = OciManifestArtifactInfo(
-                projectId, repoName, packageName, "", packageVersion, false
+                projectId, repoName, packageName, "", packageVersion, false, false
             )
             val result = operationService.createPackageForThirdPartyImage(
                 manifestPath = manifestPath,

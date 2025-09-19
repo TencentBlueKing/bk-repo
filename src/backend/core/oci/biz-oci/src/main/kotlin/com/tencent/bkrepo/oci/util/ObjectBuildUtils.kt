@@ -212,7 +212,7 @@ object ObjectBuildUtils {
         )
     }
 
-    fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
+    fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion, platform: List<String>): BasicInfo {
         with(nodeDetail) {
             return BasicInfo(
                 version = packageVersion.name,
@@ -227,7 +227,8 @@ object ObjectBuildUtils {
                 createdBy = createdBy,
                 createdDate = createdDate,
                 lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate
+                lastModifiedDate = lastModifiedDate,
+                platform = platform
             )
         }
     }

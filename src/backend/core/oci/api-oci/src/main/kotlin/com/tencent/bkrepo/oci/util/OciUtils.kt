@@ -36,6 +36,7 @@ import com.tencent.bkrepo.oci.constant.DOCKER_IMAGE_MANIFEST_MEDIA_TYPE_V1
 import com.tencent.bkrepo.oci.constant.OciMessageCode
 import com.tencent.bkrepo.oci.exception.OciBadRequestException
 import com.tencent.bkrepo.oci.model.Descriptor
+import com.tencent.bkrepo.oci.model.ManifestList
 import com.tencent.bkrepo.oci.model.ManifestSchema1
 import com.tencent.bkrepo.oci.model.ManifestSchema2
 import com.tencent.bkrepo.oci.model.SchemaVersion
@@ -81,6 +82,14 @@ object OciUtils {
     }
 
     fun stringToManifestV2(content: String): ManifestSchema2 {
+        try {
+            return content.readJsonString()
+        } catch (e: Exception) {
+            throw OciBadRequestException(OciMessageCode.OCI_MANIFEST_INVALID, Strings.EMPTY)
+        }
+    }
+
+    fun stringToManifestList(content: String): ManifestList {
         try {
             return content.readJsonString()
         } catch (e: Exception) {

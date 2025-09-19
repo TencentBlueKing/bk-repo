@@ -38,6 +38,7 @@ class ThirdPartyReplicationEvent(
     val version: String? = null,
     val sha256: String? = null,
     val fullPath: String,
+    val isFat: Boolean = false,
     override val projectId: String,
     override val repoName: String,
     override val userId: String
@@ -48,7 +49,8 @@ class ThirdPartyReplicationEvent(
     resourceKey = fullPath,
     userId = userId,
     data = mutableMapOf(
-        "packageName" to packageName
+        "packageName" to packageName,
+        "isFat" to isFat
     ).apply {
         version?.let { this["version"] = version }
         sha256?.let { this["sha256"] = sha256 }
