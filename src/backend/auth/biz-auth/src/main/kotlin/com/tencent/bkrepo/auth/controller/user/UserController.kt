@@ -170,6 +170,10 @@ class UserController @Autowired constructor(
             preCheckUserAdmin()
             preCheckPlatformPermission()
         }
+        // 默认创建平台账户的用户
+        if (isAuthFromPlatform() && userService.getUserById(uid) == null) {
+            userService.createOrUpdateUser(uid, uid, request.tenantId)
+        }
         userService.updateUserById(uid, request)
         return ResponseBuilder.success(true)
     }
