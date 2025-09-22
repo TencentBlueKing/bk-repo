@@ -49,6 +49,11 @@ import java.time.LocalDateTime
         background = true
     ),
     CompoundIndex(
+        name = "createdDate_idx",
+        def = "{'createdDate': 1}",
+        background = true
+    ),
+    CompoundIndex(
         name = "timeoutDateTime_idx",
         def = "{'timeoutDateTime': 1}",
         background = true

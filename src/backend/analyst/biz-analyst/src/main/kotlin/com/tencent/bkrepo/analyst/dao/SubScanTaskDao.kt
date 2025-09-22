@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -228,16 +229,23 @@ class SubScanTaskDao(
     }
 
     /**
-     * 获取指定状态任务数量
+     * 获取指定状态任务数量，返回的数量不会超过[limit]
      *
      * @param status 要查询的任务状态列表
      * @param dispatcher 任务使用的分发器
+     * @param limit 限制最大数量
      *
      * @return 任务数量
      */
-    fun countTaskByStatusIn(status: List<String>?, dispatcher: String?): Long {
+    fun limitCountTaskByStatusIn(status: List<String>?, dispatcher: String?, limit: Int): Long {
+        val query = buildStatusAndDispatcherQuery(status, dispatcher).limit(limit)
+        query.fields().include(ID)
+        return determineMongoTemplate().find<Map<String, Any?>>(query, determineCollectionName(query)).size.toLong()
+    }
+
+    fun existsTaskByStatusIn(status: List<String>?, dispatcher: String?): Boolean {
         val query = buildStatusAndDispatcherQuery(status, dispatcher)
-        return count(query)
+        return exists(query)
     }
 
     /**
