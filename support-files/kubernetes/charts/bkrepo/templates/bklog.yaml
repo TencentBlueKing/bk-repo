@@ -19,6 +19,7 @@ spec:
     - /data/workspace/logs/maven.log
     - /data/workspace/logs/pypi.log
     - /data/workspace/logs/job.log
+    - /data/workspace/logs/job-job.log
     - /data/workspace/logs/opdata.log
     - /data/workspace/logs/preview.log
     - /data/workspace/logs/replication.log
