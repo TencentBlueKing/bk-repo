@@ -13,6 +13,9 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
+    {{- if keys $.Values.job.config }}
+    {{- toYaml .Values.job.config | nindent 4 }}
+    {{- end}}
     job.repoRefreshJobProperties.concurrentLevel: COLLECTION
     job.repoRefreshJobProperties.permitsPerSecond: 512
     job.repoRefreshJobProperties.types: HELM,OCI

@@ -15,7 +15,7 @@ data:
   application.yml: |-
     s3:
       domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}/s3
-      {{- if keys $.Values.s3.config }}
-        {{- toYaml .Values.s3.config | nindent 6 }}
-      {{- end}}
+    {{- if keys $.Values.s3.config }}
+      {{- toYaml .Values.s3.config | nindent 4 }}
+    {{- end}}
   {{- end }}
