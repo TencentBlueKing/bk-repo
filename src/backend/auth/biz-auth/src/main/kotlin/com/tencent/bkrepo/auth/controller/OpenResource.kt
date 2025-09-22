@@ -69,6 +69,18 @@ open class OpenResource(private val permissionService: PermissionService) {
     }
 
     /**
+     * 是否系统管理员
+     * 限定在auth服务api请求时使用
+     */
+    fun isAuthFromPlatform(): Boolean {
+        val appId = SecurityUtils.getPlatformId()
+        if (appId.isNullOrEmpty()) {
+            return false
+        }
+        return true
+    }
+
+    /**
      *  userId's assetUsers contain userContext or userContext be admin
      */
     fun preCheckUserOrAssetUser(userId: String, users: List<UserInfo>) {

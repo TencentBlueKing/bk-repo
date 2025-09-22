@@ -178,9 +178,10 @@ class NodeServiceImpl(
         repoName: String,
         fullPath: String,
         operator: String,
-        nodeId: String
+        nodeId: String,
+        deleteTime: LocalDateTime
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNodeById(projectId, repoName, fullPath, operator, nodeId)
+        return NodeDeleteSupport(this).deleteNodeById(projectId, repoName, fullPath, operator, nodeId, deleteTime)
     }
 
     @Transactional(rollbackFor = [Throwable::class])

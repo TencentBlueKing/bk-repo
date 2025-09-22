@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.model
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
+import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
@@ -112,5 +113,9 @@ data class TReplicaRecordDetail(
     /**
      * 错误原因
      */
-    var errorReason: String? = null
+    var errorReason: String? = null,
+    /**
+     * 任务类型
+     */
+    var executeType: TaskExecuteType? = null
 )

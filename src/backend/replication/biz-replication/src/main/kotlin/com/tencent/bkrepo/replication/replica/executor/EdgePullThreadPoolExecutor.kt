@@ -27,10 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.executor
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder
-import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
-import java.util.concurrent.TimeUnit
 
 /**
  * 用于执行边缘节点主动拉取任务的Node分发
@@ -39,17 +36,5 @@ object EdgePullThreadPoolExecutor {
     /**
      * 线程池实例
      */
-    val instance: ThreadPoolExecutor = buildThreadPoolExecutor()
-
-    /**
-     * 创建线程池
-     */
-    private fun buildThreadPoolExecutor(): ThreadPoolExecutor {
-        val namedThreadFactory = ThreadFactoryBuilder().setNameFormat("edge-pull-worker-%d").build()
-        val corePoolSize = Runtime.getRuntime().availableProcessors()
-        return ThreadPoolExecutor(
-            corePoolSize, corePoolSize, 60, TimeUnit.SECONDS,
-            SynchronousQueue(), namedThreadFactory, ThreadPoolExecutor.CallerRunsPolicy()
-        )
-    }
+    val instance: ThreadPoolExecutor = ThreadPoolExecutorBuilder.build(ThreadPoolExecutorBuilder.Configs.EDGE_PULL)
 }

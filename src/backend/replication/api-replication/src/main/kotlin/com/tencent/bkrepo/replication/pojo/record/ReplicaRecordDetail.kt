@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.pojo.record
 
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
@@ -71,5 +72,7 @@ data class ReplicaRecordDetail(
     @get:Schema(title = "结束时间")
     var endTime: LocalDateTime? = null,
     @get:Schema(title = "错误原因，未执行或执行成功则为null")
-    var errorReason: String? = null
+    var errorReason: String? = null,
+    @get:Schema(title = "任务执行类型")
+    var executeType: TaskExecuteType? = null
 )
