@@ -49,8 +49,8 @@ import java.time.LocalDateTime
         background = true
     ),
     CompoundIndex(
-        name = "createdDate_idx",
-        def = "{'createdDate': 1}",
+        name = "createdDate_status_metadata_idx",
+        def = "{'createdDate': 1, 'status': 1, 'metadata.key': 1, 'metadata.value': 1}",
         background = true
     ),
     CompoundIndex(

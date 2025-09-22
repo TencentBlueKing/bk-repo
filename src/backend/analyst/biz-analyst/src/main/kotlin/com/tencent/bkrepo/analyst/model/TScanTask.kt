@@ -41,7 +41,12 @@ import java.time.LocalDateTime
         name = "projectId_lastModifiedDate_idx",
         def = "{'projectId': 1, 'lastModifiedDate': -1}",
         background = true
-    )
+    ),
+    CompoundIndex(
+        name = "projectId_status_scanner_createdDate_idx",
+        def = "{'projectId': 1, 'status': 1, 'scanner': 1, 'createdDate': 1}",
+        background = true
+    ),
 )
 data class TScanTask(
     val id: String? = null,
