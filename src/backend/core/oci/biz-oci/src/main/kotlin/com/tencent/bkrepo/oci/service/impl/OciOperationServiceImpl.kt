@@ -483,7 +483,8 @@ class OciOperationServiceImpl(
         digest: OciDigest,
         nodeDetail: NodeDetail,
         storageCredentials: StorageCredentials?,
-        sourceType: ArtifactChannel?
+        sourceType: ArtifactChannel?,
+        userId: String
     ) {
         logger.info(
             "Will start to update oci info for ${ociArtifactInfo.getArtifactFullPath()} " +
@@ -499,12 +500,11 @@ class OciOperationServiceImpl(
         // 提取公共变量，避免重复计算
         val sha256 = nodeDetail.sha256 ?: throw IllegalStateException("Node sha256 cannot be null")
         val manifestDigest = OciDigest.fromSha256(sha256)
-        val userId = SecurityUtils.getUserId()
-        
+
         val (mediaType, digestList) = if (ociArtifactInfo.isFat) {
             handleManifestList(nodeDetail, storageCredentials, ociArtifactInfo, manifestDigest, sourceType, userId)
         } else {
-            handleManifest(nodeDetail, storageCredentials, ociArtifactInfo, sourceType)
+            handleManifest(nodeDetail, storageCredentials, ociArtifactInfo, sourceType, userId)
         }
         
         // 更新manifest节点元数据
@@ -556,7 +556,8 @@ class OciOperationServiceImpl(
         nodeDetail: NodeDetail,
         storageCredentials: StorageCredentials?,
         ociArtifactInfo: OciManifestArtifactInfo,
-        sourceType: ArtifactChannel?
+        sourceType: ArtifactChannel?,
+        userId: String
     ): Pair<String, List<String>> {
         // https://github.com/docker/docker-ce/blob/master/components/engine/distribution/push_v2.go
         // docker 客户端上传manifest时先按照schema2的格式上传，
@@ -573,7 +574,8 @@ class OciOperationServiceImpl(
             ociArtifactInfo = ociArtifactInfo,
             manifest = manifest,
             nodeDetail = nodeDetail,
-            sourceType = sourceType
+            sourceType = sourceType,
+            userId = userId
         )
         
         return Pair(mediaType, digestList)
