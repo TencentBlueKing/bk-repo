@@ -34,6 +34,7 @@ import com.tencent.bkrepo.common.service.feign.RClientConfiguration
 import com.tencent.bkrepo.common.service.filter.FilterConfiguration
 import com.tencent.bkrepo.common.service.log.NettyWebServerAccessLogCustomizer
 import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
+import com.tencent.bkrepo.common.service.otel.OtelMongoConfiguration
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.devops.service.config.ServiceProperties
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -50,6 +51,7 @@ import org.springframework.context.annotation.Import
     RClientConfiguration::class,
     SpringContextUtils::class,
     FilterConfiguration::class,
+    OtelMongoConfiguration::class
 )
 @EnableConfigurationProperties(ServiceProperties::class)
 class ServiceAutoConfiguration

@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.RepositoryCache
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -48,7 +49,7 @@ class CoStorageManager(
 ) {
 
     suspend fun storeBlock(artifactFile: ArtifactFile, blockNode: TBlockNode) {
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.IO + currentCoroutineContext()) {
             val digest = artifactFile.getFileSha256()
             val repo = RepositoryCache.getRepoDetail(blockNode.projectId, blockNode.repoName)
             val storageCredentials = repo.storageCredentials
@@ -69,7 +70,7 @@ class CoStorageManager(
         range: Range,
         storageCredentials: StorageCredentials?
     ): ArtifactInputStream? {
-        return withContext(Dispatchers.IO) {
+        return withContext(Dispatchers.IO + currentCoroutineContext()) {
             try {
                 storageService.load(blocks, range, storageCredentials)
             } catch (e: Exception) {
