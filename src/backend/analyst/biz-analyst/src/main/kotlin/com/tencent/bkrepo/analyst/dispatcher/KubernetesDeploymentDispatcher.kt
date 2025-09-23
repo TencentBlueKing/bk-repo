@@ -245,12 +245,17 @@ class KubernetesDeploymentDispatcher(
     }
 
     /**
-     * minReplicas <= targetReplicas <= maxReplicas
+     * minReplicas <= targetReplicas <= maxReplicas，当不存在任务时返回0
      */
     private fun targetReplicas(): Int {
         val limitedRunningTaskCount = subScanTaskDao.limitCountTaskByStatusIn(
             RUNNING_STATUS, executionCluster.name, executionCluster.maxReplicas
         ).toInt()
+
+        if (limitedRunningTaskCount == 0) {
+            return 0
+        }
+
         return maxOf(
             minOf(limitedRunningTaskCount, executionCluster.maxReplicas),
             executionCluster.minReplicas
