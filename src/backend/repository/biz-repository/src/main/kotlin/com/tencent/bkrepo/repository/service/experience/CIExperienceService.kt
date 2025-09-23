@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_ENCODING
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_TYPE
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.TRANSFER_ENCODING
+import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.config.CIExperienceProperties
@@ -11,7 +12,9 @@ import com.tencent.bkrepo.repository.pojo.experience.AppExperienceHeader
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceChangeLogRequest
 import io.micrometer.observation.ObservationRegistry
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -95,6 +98,21 @@ class CIExperienceService(
         )
     }
 
+    fun getAppExperienceDownloadUrl(
+        user: String,
+        experienceHashId: String,
+        request: AppExperienceHeader
+    ) {
+        val url = properties.ciExperienceServer +
+            "/ms/artifactory/api/open/experiences/$experienceHashId/downloadUrl"
+        executePostRequest(
+            url = url,
+            user = user,
+            headers = request,
+            operationName = "getAppExperienceDownloadUrl"
+        )
+    }
+
     /**
      * 构建通用请求头
      */
@@ -111,7 +129,7 @@ class CIExperienceService(
     }
 
     /**
-     * 执行请求的通用方法
+     * 执行请求GET请求
      */
     private fun executeGetRequest(
         url: String,
@@ -125,6 +143,36 @@ class CIExperienceService(
             .get()
             .build()
 
+        executeRequest(request, operationName, url)
+    }
+
+    /**
+     * 执行请求POST请求
+     */
+    private fun executePostRequest(
+        url: String,
+        user: String,
+        headers: AppExperienceHeader,
+        operationName: String
+    ) {
+        val requestBody = "".toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
+        val request = Request.Builder()
+            .url(url)
+            .withHeaders(user, headers)
+            .post(requestBody)
+            .build()
+
+        executeRequest(request, operationName, url)
+    }
+
+    /**
+     * 执行请求的通用方法
+     */
+    private fun executeRequest(
+        request: Request,
+        operationName: String,
+        url: String
+    ) {
         logger.info("$operationName, requestUrl: [$url]")
         okHttpClient.newCall(request).execute().use { response ->
             HttpContextHolder.getResponse().status = response.code
