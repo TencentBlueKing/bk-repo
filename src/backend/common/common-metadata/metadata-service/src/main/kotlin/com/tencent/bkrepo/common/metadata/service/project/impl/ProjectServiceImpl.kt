@@ -95,7 +95,7 @@ class ProjectServiceImpl(
     private lateinit var resourcePermissionListener: ResourcePermissionListener
 
     override fun getProjectInfo(name: String): ProjectInfo? {
-        return convert(projectDao.findByName(name))
+        return convert(projectDao.findByName(normalizeProjectName(name)))
     }
 
     override fun getProjectInfoByDisplayName(displayName: String): ProjectInfo? {
@@ -139,7 +139,7 @@ class ProjectServiceImpl(
 
     override fun isProjectEnabled(name: String): Boolean {
         if (!repositoryProperties.returnEnabled) return true
-        val projectInfo = projectDao.findByName(name)
+        val projectInfo = projectDao.findByName(normalizeProjectName(name))
             ?: throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
         return ProjectServiceHelper.isProjectEnabled(projectInfo)
     }
@@ -154,14 +154,7 @@ class ProjectServiceImpl(
     }
 
     override fun checkExist(name: String): Boolean {
-        // 校验租户信息
-        if (enableMultiTenant.enabled) {
-            validateTenantId()
-            val tenantId = ProjectServiceHelper.getTenantId()
-            val projectId = "$tenantId.$name"
-            return projectDao.findByName(projectId) != null
-        }
-        return projectDao.findByName(name) != null
+        return projectDao.findByName(normalizeProjectName(name)) != null
     }
 
     override fun createProject(request: ProjectCreateRequest): ProjectInfo {
@@ -218,12 +211,7 @@ class ProjectServiceImpl(
             }
         }
         request.credentialsKey?.let { checkCredentialsKey(it) }
-        val projectName = if (enableMultiTenant.enabled) {
-            "${ProjectServiceHelper.getTenantId()}.$name"
-        } else {
-            name
-        }
-        val query = Query.query(Criteria.where(TProject::name.name).`is`(projectName))
+        val query = Query.query(Criteria.where(TProject::name.name).`is`(normalizeProjectName(name)))
         val update = buildUpdate(request)
         val updateResult = projectDao.updateFirst(query, update)
         return if (updateResult.modifiedCount == 1L) {
@@ -251,6 +239,17 @@ class ProjectServiceImpl(
 
     private fun checkCredentialsKey(key: String) {
         storageCredentialService.findByKey(key) ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, key)
+    }
+
+    /**
+     * 规范化projectName，在启用多租户时自动拼接tenantId
+     * 但是如果已经带有租户Id前缀，则不重复拼接。
+     */
+    private fun normalizeProjectName(name: String): String {
+        if (!enableMultiTenant.enabled) return name
+        validateTenantId()
+        val tenantId = ProjectServiceHelper.getTenantId()
+        return if (name.startsWith("$tenantId.")) name else "$tenantId.$name"
     }
 
     companion object {
