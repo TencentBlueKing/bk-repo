@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.oci.listener.base
 
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
@@ -41,6 +42,7 @@ import com.tencent.bkrepo.oci.service.OciOperationService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.util.concurrent.Callable
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 
@@ -58,15 +60,17 @@ class EventExecutor(
     fun submit(
         event: ArtifactEvent
     ): Future<Boolean> {
-        return threadPoolExecutor.submit<Boolean> {
-            try {
-                eventHandler(event)
-                true
-            } catch (exception: Throwable) {
-                logger.warn("Error occurred while executing the oci event: $exception")
-                false
-            }
-        }
+        return threadPoolExecutor.submit<Boolean>(
+            Callable {
+                try {
+                    eventHandler(event)
+                    true
+                } catch (exception: Throwable) {
+                    logger.warn("Error occurred while executing the oci event: $exception")
+                    false
+                }
+            }.trace()
+        )
     }
 
     private fun eventHandler(event: ArtifactEvent) {
@@ -84,8 +88,9 @@ class EventExecutor(
             val packageName = event.data["packageName"].toString()
             val version = event.data["version"].toString()
             val sha256 = event.data["sha256"].toString()
+            val isFat = event.data["isFat"]?.toString()?.toBoolean() ?: false
             val ociArtifactInfo = OciManifestArtifactInfo(
-                projectId, repoName, packageName, "", version, false
+                projectId, repoName, packageName, version, version, false, isFat
             )
             val nodeInfo = nodeService.getNodeDetail(ociArtifactInfo)
                 ?: throw NodeNotFoundException(
@@ -99,7 +104,8 @@ class EventExecutor(
                 digest = ociDigest,
                 nodeDetail = nodeInfo,
                 storageCredentials = repositoryDetail.storageCredentials,
-                sourceType = ArtifactChannel.REPLICATION
+                sourceType = ArtifactChannel.REPLICATION,
+                userId = event.userId
             )
         }
     }

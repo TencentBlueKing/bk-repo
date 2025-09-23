@@ -197,12 +197,12 @@ class ClusterReplicator(
                     postPush = { ctx, _ ->
                         // 再次确认下文件是否已经可见(cfs可见性问题)
                         doubleCheck(ctx, node.sha256!!)
-                        
-                        logger.info("The node [${node.fullPath}] will be pushed to the remote server!")
-                        // 同步节点信息
-                        ctx.artifactReplicaClient!!.replicaNodeCreateRequest(nodeCreateRequest)
                     }
                 )
+                logger.info("The node [${node.fullPath}] will be pushed to the remote server!")
+                // 同步节点信息
+                context.artifactReplicaClient!!.replicaNodeCreateRequest(nodeCreateRequest)
+                true
             } ?: false
         }
     }
