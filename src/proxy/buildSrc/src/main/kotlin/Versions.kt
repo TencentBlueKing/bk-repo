@@ -31,11 +31,10 @@ object Release {
 }
 
 object Versions {
-    const val DevopsBoot = "0.0.6"
-    const val BkRepo = "1.1.1-SNAPSHOT"
+    const val DevopsBoot = "1.1.0-SNAPSHOT"
+    const val BkRepo = "2.1.0-SNAPSHOT"
     const val OKhttp = "4.9.0"
     const val Polaris = "1.5.2"
     const val CommonsText = "1.9"
-    const val SleuthOtel = "1.0.0-M13"
     const val CryptoJavaSdk = "1.1.0"
 }

@@ -63,12 +63,12 @@ import com.tencent.bkrepo.repository.api.proxy.ProxyNodeClient
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URLDecoder
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicBoolean
-import javax.servlet.http.HttpServletRequest
 
 @Component
 class ProxyLocalRepository: LocalRepository() {
@@ -118,8 +118,7 @@ class ProxyLocalRepository: LocalRepository() {
     override fun onUpload(context: ArtifactUploadContext) {
         with(context) {
             val request = buildNodeCreateRequest(this)
-            val cancel = AtomicBoolean(false)
-            val affectedCount = storageService.store(request.sha256!!, getArtifactFile(), storageCredentials, cancel)
+            val affectedCount = storageService.store(request.sha256!!, getArtifactFile(), storageCredentials)
             try {
                 val nodeDetail = proxyNodeClient.createNode(request).data!!
                 context.response.contentType = MediaTypes.APPLICATION_JSON
@@ -128,7 +127,7 @@ class ProxyLocalRepository: LocalRepository() {
                 context.response.writer.println(ResponseBuilder.success(nodeDetail).toJsonString())
             } catch (exception: Exception) {
                 // 当文件有创建，则删除文件
-                delete(affectedCount, cancel, request)
+                delete(affectedCount, request)
                 // 异常往上抛
                 throw exception
             }
@@ -164,12 +163,10 @@ class ProxyLocalRepository: LocalRepository() {
 
     private fun ArtifactUploadContext.delete(
         affectedCount: Int,
-        cancel: AtomicBoolean,
         request: NodeCreateRequest
     ) {
         if (affectedCount == 1) {
             try {
-                cancel.set(true)
                 storageService.delete(request.sha256!!, storageCredentials)
             } catch (exception: Exception) {
                 logger.error("Failed to delete new created file[${request.sha256}]", exception)
