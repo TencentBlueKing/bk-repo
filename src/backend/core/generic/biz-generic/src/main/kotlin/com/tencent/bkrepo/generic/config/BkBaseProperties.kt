@@ -30,7 +30,7 @@ package com.tencent.bkrepo.generic.config
 /**
  * 蓝鲸基础计算平台接口配置
  */
-data class BkBaseProperties(
+class BkBaseProperties(
     var domain: String = "",
     var appCode: String = "",
     var appSecret: String = "",

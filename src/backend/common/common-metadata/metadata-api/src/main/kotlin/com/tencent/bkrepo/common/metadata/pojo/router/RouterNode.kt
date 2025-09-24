@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 Tencent.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,9 +25,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.metadata.pojo.router
 
-class CompressedReportProperties(
-    var enabled: Boolean = false,
-    var zipFileName: String = "bkrepo_compressed_report.zip"
+import java.time.LocalDateTime
+
+/**
+ * 路由节点
+ * 具备上报文件节点位置、支持下载文件的节点。
+ * 路由控制器会根据路由策略将相关请求转发到路由节点。
+ * */
+data class RouterNode(
+    // 节点id，唯一
+    val id: String,
+    // 创建者
+    var createdBy: String,
+    // 创建时间
+    var createdDate: LocalDateTime,
+    // 节点名称
+    val name: String,
+    // 节点描述
+    val description: String,
+    // 节点类型
+    val type: RouterNodeType,
+    // 节点位置，如http://bkrepo.edge.com
+    val location: String,
 )

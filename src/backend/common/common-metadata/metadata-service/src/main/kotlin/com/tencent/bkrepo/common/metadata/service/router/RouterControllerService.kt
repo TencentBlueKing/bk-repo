@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 Tencent.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,9 +25,49 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.metadata.service.router
 
-class CompressedReportProperties(
-    var enabled: Boolean = false,
-    var zipFileName: String = "bkrepo_compressed_report.zip"
-)
+import com.tencent.bkrepo.common.metadata.pojo.router.NodeLocation
+
+/**
+ * 路由控制器服务
+ *
+ * */
+interface RouterControllerService {
+    /**
+     * 新增节点位置
+     * @param projectId 项目id
+     * @param repoName 仓库名
+     * @param fullPath 文件完整路径
+     * @param routerNodeId 所在节点id
+     * */
+    fun addNode(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        routerNodeId: String,
+    ): NodeLocation
+
+    /**
+     * 删除节点位置
+     * @param projectId 项目id
+     * @param repoName 仓库名
+     * @param fullPath 文件完整路径
+     * @param routerNodeId 所在节点id
+     * */
+    fun removeNode(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        routerNodeId: String,
+    )
+
+    /**
+     * 批量删除
+     * */
+    fun removeNodes(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+    )
+}

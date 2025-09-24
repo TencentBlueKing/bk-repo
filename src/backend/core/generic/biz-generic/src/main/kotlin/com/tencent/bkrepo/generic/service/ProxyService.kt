@@ -148,7 +148,10 @@ class ProxyService(
             writer.close()
             fs.close()
             return tmpJar
+        } catch (e: ErrorCodeException) {
+            throw e
         } catch (e: Exception) {
+            logger.error("write proxy properties failed:", e)
             throw ArtifactNotFoundException("proxy.jar")
         }
     }

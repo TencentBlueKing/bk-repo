@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2025 Tencent.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,9 +25,21 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.generic.config
+package com.tencent.bkrepo.common.metadata.service.router
 
-class CompressedReportProperties(
-    var enabled: Boolean = false,
-    var zipFileName: String = "bkrepo_compressed_report.zip"
-)
+/**
+ * 文件节点重定向服务
+ * */
+interface NodeRedirectService {
+    /**
+     * 根据路由策略生成用于重定向的Url
+     * */
+    fun generateRedirectUrl(
+        originUrl: String,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        user: String,
+        serviceName: String
+    ): String?
+}

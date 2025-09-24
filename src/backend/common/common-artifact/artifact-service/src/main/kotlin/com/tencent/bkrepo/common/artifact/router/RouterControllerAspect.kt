@@ -29,10 +29,11 @@ package com.tencent.bkrepo.common.artifact.router
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.pojo.router.RouterPolicy
+import com.tencent.bkrepo.common.metadata.service.router.NodeRedirectService
+import com.tencent.bkrepo.common.metadata.service.router.RouterAdminService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.router.api.RouterControllerClient
-import com.tencent.bkrepo.router.pojo.RouterPolicy
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
@@ -51,7 +52,8 @@ import org.springframework.scheduling.annotation.Scheduled
 @ConditionalOnProperty("router.controller.enabled", havingValue = "true")
 open class RouterControllerAspect(
     private val properties: RouterControllerProperties,
-    private val routerControllerClient: RouterControllerClient,
+    private val nodeRedirectService: NodeRedirectService,
+    private val routerAdminService: RouterAdminService,
 ) {
 
     /**
@@ -87,13 +89,14 @@ open class RouterControllerAspect(
         }
         with(artifactInfo) {
             val originUrl = "${request.requestURL}?${request.queryString}"
-            val targetUrl = routerControllerClient.getRedirectUrl(
+            val targetUrl = nodeRedirectService.generateRedirectUrl (
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = getArtifactFullPath(),
                 originUrl = originUrl,
                 serviceName = serviceName,
-            ).data ?: return proceedingJoinPoint.proceed()
+                user = user
+            ) ?: return proceedingJoinPoint.proceed()
             if (logger.isDebugEnabled) {
                 logger.debug("Redirect $originUrl --> $targetUrl")
             }
@@ -115,7 +118,10 @@ open class RouterControllerAspect(
      * */
     @Scheduled(fixedDelay = POLICY_REFRESH_PERIOD)
     open fun refreshRouterPolicyCache() {
-        routerPolicyCache = routerControllerClient.listRouterPolicies().data.orEmpty()
+        if (!properties.supportServices.contains(serviceName)) {
+            return
+        }
+        routerPolicyCache = routerAdminService.listPolicies()
     }
 
     companion object {
