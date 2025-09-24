@@ -69,15 +69,16 @@ open class RouterControllerAspect(
 
     /**
      * 对下载构件请求进行拦截。
-     * 只有GET方法的下载请求，和参数ArtifactInfo放在方法首位的方法才会被拦截。
      * */
     @Around("@annotation(com.tencent.bkrepo.common.artifact.router.Router)")
     fun interceptorDownloadArtifactInfoRequest(proceedingJoinPoint: ProceedingJoinPoint): Any? {
         if (!properties.supportServices.contains(serviceName)) {
             return proceedingJoinPoint.proceed()
         }
-        val artifactInfo = proceedingJoinPoint.args.first()
-        require(artifactInfo is ArtifactInfo)
+        val artifactInfo = proceedingJoinPoint.args.find { it is ArtifactInfo } as? ArtifactInfo
+        if (artifactInfo == null) {
+            return proceedingJoinPoint.proceed()
+        }
         val user = SecurityUtils.getUserId()
         val request = HttpContextHolder.getRequest()
         val response = HttpContextHolder.getResponse()
