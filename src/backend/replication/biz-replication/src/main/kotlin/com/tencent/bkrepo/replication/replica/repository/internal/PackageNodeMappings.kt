@@ -33,6 +33,7 @@ import com.tencent.bkrepo.replication.replica.repository.internal.type.DockerPac
 import com.tencent.bkrepo.replication.replica.repository.internal.type.HelmPackageNodeMapper
 import com.tencent.bkrepo.replication.replica.repository.internal.type.MavenPackageNodeMapper
 import com.tencent.bkrepo.replication.replica.repository.internal.type.NpmPackageNodeMapper
+import com.tencent.bkrepo.replication.replica.repository.internal.type.NugetPackageNodeMapper
 import com.tencent.bkrepo.replication.replica.repository.internal.type.PackageNodeMapper
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
@@ -49,6 +50,7 @@ object PackageNodeMappings {
         addMapper(NpmPackageNodeMapper())
         addMapper(SpringContextUtils.getBean(HelmPackageNodeMapper::class.java))
         addMapper(SpringContextUtils.getBean(DockerPackageNodeMapper::class.java))
+        addMapper(SpringContextUtils.getBean(NugetPackageNodeMapper::class.java))
     }
 
     private fun addMapper(mapper: PackageNodeMapper) {
