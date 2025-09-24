@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
@@ -132,7 +134,16 @@ class FederationReplicator(
                     operator = localRepo.createdBy,
                     source = getCurrentClusterName(localProjectId, localRepoName, task.name)
                 )
-                artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
+                val createdRemoteRepo = artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
+                // 目标节点已有名称相同但类型不同的仓库时抛出异常
+                if (createdRemoteRepo.type != remoteRepoType) {
+                    throw ErrorCodeException(
+                        ArtifactMessageCode.REPOSITORY_EXISTED,
+                        "$remoteProjectId/$remoteRepoName",
+                        status = HttpStatus.CONFLICT
+                    )
+                }
+                createdRemoteRepo
             }
         }
     }
