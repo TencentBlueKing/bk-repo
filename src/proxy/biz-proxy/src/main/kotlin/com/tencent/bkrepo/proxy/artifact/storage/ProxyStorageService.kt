@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.repository.api.proxy.ProxyFileReferenceClient
 import org.apache.commons.io.IOUtils
 import java.nio.charset.Charset
-import java.util.concurrent.atomic.AtomicBoolean
 
 class ProxyStorageService : AbstractStorageService() {
 

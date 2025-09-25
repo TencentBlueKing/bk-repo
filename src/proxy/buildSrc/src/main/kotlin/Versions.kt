@@ -32,9 +32,10 @@ object Release {
 
 object Versions {
     const val DevopsBoot = "1.1.0-SNAPSHOT"
-    const val BkRepo = "2.1.0-SNAPSHOT"
+    const val BkRepo = "v3.0.1-rc.9-SNAPSHOT"
     const val OKhttp = "4.9.0"
     const val Polaris = "1.5.2"
     const val CommonsText = "1.9"
     const val CryptoJavaSdk = "1.1.0"
+    const val EmbeddedMongo = "4.11.0"
 }

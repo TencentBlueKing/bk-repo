@@ -31,12 +31,14 @@ import com.tencent.bkrepo.common.security.manager.AuthenticationManager
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.Primary
 
 @Configuration
 @Import(ProxyProjectPermissionAspect::class)
 class ProxySecurityConfiguration {
 
     @Bean
+    @Primary
     fun proxyAuthenticationManager(): AuthenticationManager {
         return ProxyAuthenticationManager()
     }

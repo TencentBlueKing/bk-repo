@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URLDecoder
 import java.util.Base64
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.Locale.getDefault
 
 @Component
 class ProxyLocalRepository: LocalRepository() {
@@ -191,7 +191,7 @@ class ProxyLocalRepository: LocalRepository() {
         val headerNames = request.headerNames
         for (headerName in headerNames) {
             if (headerName.startsWith(BKREPO_META_PREFIX, true)) {
-                val key = headerName.substring(BKREPO_META_PREFIX.length).trim().toLowerCase()
+                val key = headerName.substring(BKREPO_META_PREFIX.length).trim().lowercase(getDefault())
                 if (key.isNotBlank()) {
                     metadata[key] = HeaderUtils.getUrlDecodedHeader(headerName)!!
                 }
@@ -215,7 +215,7 @@ class ProxyLocalRepository: LocalRepository() {
                     metadata[key] = value
                 }
             }
-        } catch (exception: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             logger.warn("$header is not in valid Base64 scheme.")
         }
         return metadata

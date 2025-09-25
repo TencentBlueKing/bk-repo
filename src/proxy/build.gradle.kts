@@ -35,8 +35,8 @@ plugins {
 }
 
 allprojects {
-    group=Release.Group
-    version=Release.Version
+    group = Release.Group
+    version = Release.Version
 
 
     repositories {
@@ -69,6 +69,7 @@ allprojects {
             dependency("com.tencent.polaris:polaris-discovery-factory:${Versions.Polaris}")
             dependency("com.tencent.bk.sdk:crypto-java-sdk:${Versions.CryptoJavaSdk}")
             dependency("com.squareup.okhttp3:okhttp:${Versions.OKhttp}")
+            dependency("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x:${Versions.EmbeddedMongo}")
         }
     }
 }
