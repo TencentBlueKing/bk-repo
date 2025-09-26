@@ -46,10 +46,7 @@ source $BK_REPO_HOME/backend/assembly/service.env
 java -server \
      -Dsun.jnu.encoding=UTF-8 \
      -Dfile.encoding=UTF-8 \
-     -Xloggc:$BK_REPO_LOGS_DIR/bkrepo/gc.log \
-     -XX:+PrintTenuringDistribution \
-     -XX:+PrintGCDetails \
-     -XX:+PrintGCDateStamps \
+     -Xlog:gc*,gc+age=trace:file=$BK_REPO_LOGS_DIR/bkrepo/gc.log:time,level,tags \
      -XX:+HeapDumpOnOutOfMemoryError \
      -XX:HeapDumpPath=oom.hprof \
      -XX:ErrorFile=$BK_REPO_LOGS_DIR/bkrepo/error_sys.log \
