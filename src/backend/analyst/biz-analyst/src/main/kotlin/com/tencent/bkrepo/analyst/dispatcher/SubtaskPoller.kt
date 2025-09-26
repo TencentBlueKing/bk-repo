@@ -98,7 +98,7 @@ open class SubtaskPoller(
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
     open fun clean(event: SubtaskStatusChangedEvent) {
-        val dispatcher = event.dispatcher?.let { dispatcherCache.get(it) }
+        val dispatcher = event.dispatcher()?.let { dispatcherCache.get(it) }
         val subtaskFinished = SubScanTaskStatus.finishedStatus(event.subtask.status)
         if (subtaskFinished && dispatcher != null) {
             val scanner = scannerService.get(event.subtask.scanner)
@@ -109,7 +109,7 @@ open class SubtaskPoller(
 
         // oldStatus为null时说明是复用扫描结果，此时不调用executor接口清理
         val reuseResult = event.oldStatus == null
-        if (subtaskFinished && event.dispatcher.isNullOrEmpty() && !reuseResult) {
+        if (subtaskFinished && event.dispatcher().isNullOrEmpty() && !reuseResult) {
             // dispatcher为空时表示通过analysis-executor执行的任务，此时调用其接口进行清理
             val subtaskId = event.subtask.latestSubScanTaskId!!
             val result = executorClient.ifAvailable?.stop(subtaskId)

@@ -101,7 +101,10 @@ class CreateSubtaskAction(
         val planArtifactLatestSubScanTasks = tasks.map { SubtaskConverter.convertToPlanSubtask(it, it.status) }
         planArtifactLatestSubScanTaskDao.replace(planArtifactLatestSubScanTasks)
         subScanTaskDao.insert(tasks.map { SubtaskConverter.convertToSubtask(it, metadata) })
-        planArtifactLatestSubScanTasks.forEach { publisher.publishEvent(SubtaskStatusChangedEvent(null, it)) }
+        planArtifactLatestSubScanTasks.forEach {
+            val event = SubtaskStatusChangedEvent(oldStatus = null, subtask = it, taskMetadata = metadata)
+            publisher.publishEvent(event)
+        }
 
         // 统计BLOCKED与CREATED任务数量
         val createdTasks = tasks.filter { it.status == SubScanTaskStatus.CREATED.name }

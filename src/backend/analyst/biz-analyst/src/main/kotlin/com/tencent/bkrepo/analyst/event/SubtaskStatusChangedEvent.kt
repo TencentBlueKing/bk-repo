@@ -29,12 +29,20 @@ package com.tencent.bkrepo.analyst.event
 
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata
+import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanExecutorResult
 
 data class SubtaskStatusChangedEvent(
     val oldStatus: SubScanTaskStatus? = null,
     val subtask: TPlanArtifactLatestSubScanTask,
     /**
-     * 子任务使用的分发器，仅在[subtask]为结束状态时且使用了分发器才有值
+     * 任务元数据，在复用扫描结果时为null
      */
-    val dispatcher: String? = null
-)
+    val taskMetadata: List<TaskMetadata>? = null,
+    /**
+     * 扫描结果，仅在[subtask]为结束状态时有值
+     */
+    val result: ScanExecutorResult? = null,
+) {
+    fun dispatcher() = taskMetadata?.firstOrNull { it.key == TaskMetadata.TASK_METADATA_DISPATCHER }?.value
+}
