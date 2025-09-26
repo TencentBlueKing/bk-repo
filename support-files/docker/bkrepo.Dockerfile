@@ -1,4 +1,4 @@
-FROM bkrepo/bkrepo-base:0.0.2
+FROM bkrepo/bkrepo-base:0.0.3
 
 LABEL maintainer="Tencent BlueKing Devops"
 
@@ -20,7 +20,8 @@ ENV BK_REPO_HOME=/data/workspace/bkrepo \
 
 COPY ./bkrepo-slim.tar.gz /data/workspace/bkrepo-slim.tar.gz
 
-RUN tar -xvf /data/workspace/bkrepo-slim.tar.gz -C /data/workspace && \
+RUN yum install -y net-tools && yum clean all && \
+    tar -xvf /data/workspace/bkrepo-slim.tar.gz -C /data/workspace && \
     rm -rf /data/workspace/bkrepo-slim.tar.gz && \
     chmod +x $BK_REPO_HOME/scripts/render_tpl && \
     chmod +x $BK_REPO_HOME/scripts/bk-repo-all-in-one-startup.sh
