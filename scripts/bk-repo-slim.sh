@@ -130,8 +130,8 @@ if [ -n "${temp_jar_dir:-}" ]; then
   echo "temp_jar_dir defined: $temp_jar_dir, will not clean it."
   keep_temp_jar_dir=1
 else
-  echo "try to create a temp_jar_dir in ${TMP_DIR:-/dev/shm}."
-  temp_jar_dir=$(mktemp -d "${TMP_DIR:-/dev/shm}/$temp_jar_dir_tpl" || mktemp -dt "$temp_jar_dir_tpl")
+  echo "try to create a temp_jar_dir in ${TMP_DIR:-/data}."
+  temp_jar_dir=$(mktemp -d "${TMP_DIR:-/data}/$temp_jar_dir_tpl" || mktemp -dt "$temp_jar_dir_tpl")
 fi
 mkdir -p "$temp_jar_dir" || exit 1
 echo "temp_jar_dir is $temp_jar_dir"
