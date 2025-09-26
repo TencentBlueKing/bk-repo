@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.proxy.log
 
-import com.tencent.bkrepo.common.operate.api.OperateLogService
+import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
