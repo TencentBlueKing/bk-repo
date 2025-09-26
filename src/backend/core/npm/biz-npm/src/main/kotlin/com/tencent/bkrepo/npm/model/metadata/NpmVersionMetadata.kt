@@ -61,12 +61,12 @@ class NpmVersionMetadata : Serializable {
 
     @JsonProperty("dist")
     var dist: Dist? = null
-    var dependencies: Map<String, Any>? = null
+    var dependencies: Any? = null
         set(dependencies) {
             field = if (dependencies != null) resolveDependencies(dependencies) else emptyMap()
         }
-    var optionalDependencies: Map<String, String>? = null
-    var devDependencies: Map<String, Any>? = null
+    var optionalDependencies: Any? = null
+    var devDependencies: Any? = null
         set(devDependencies) {
             field = if (devDependencies != null) resolveDependencies(devDependencies) else emptyMap()
         }
@@ -112,6 +112,10 @@ class NpmVersionMetadata : Serializable {
     }
 
     /**
+     *  dependencies可能是字符串和数组，需要先转换为Map<String, Any>再进行后续处理：
+     *  https://github.com/npm/normalize-package-data/blob/46967fd9b06db3cc23f6f813c89a9f6232299563/lib/fixer.js#L427
+     *
+     *
      * npm版本元数据的dependencies或者devDependencies对象里面，键值对的值通常是字符串类型的版本号，即
      *     "devDependencies": {
      *         <pkg>: <version>
@@ -125,11 +129,22 @@ class NpmVersionMetadata : Serializable {
      *         ...
      *     }
      */
-    private fun resolveDependencies(dependencies: Map<String, Any>): Map<String, Any> {
-        return when (dependencies.values.firstOrNull()) {
-            is String, null -> dependencies
+    @Suppress("UNCHECKED_CAST")
+    private fun resolveDependencies(dependencies: Any): Map<String, Any> {
+        // dependencies可能是字符串、数组或map，统一转换为Map<String, Any>
+        val depsMap = when (dependencies) {
+            is Map<*, *> -> dependencies as Map<String, Any>
+            is String -> objectifyDepsList(dependencies.trim().split(Regex("[\n\r\\s\t ,]+")))
+            is List<*> -> objectifyDepsList(dependencies.filterIsInstance<String>())
+            else -> emptyMap()
+        }
+        if (depsMap.isEmpty()) return depsMap
+
+        // value的类型可能是String或Map，Map类型需要转换为String
+        return when (depsMap.values.first()) {
+            is String -> depsMap
             is Map<*, *> -> {
-                dependencies.mapValues {
+                depsMap.mapValues {
                     val dependencyMap = it.value as Map<*, *>
                     dependencyMap[VERSION] ?: throw IOException(
                         "Invalid package.json format($name-$version-dependencies/devDependencies-${it.key})"
@@ -141,6 +156,25 @@ class NpmVersionMetadata : Serializable {
                     "Invalid package.json format. The dependencies/devDependencies field cannot be parsed."
                 )
         }
+    }
+
+    private fun objectifyDepsList(depsList: List<String>): Map<String, String> {
+        val depsMap = mutableMapOf<String, String>()
+        depsList.forEach {
+            val depString = it.trim()
+            if (depString.isBlank()) return@forEach
+            val delimiterIndex = depString.indexOfFirst { c -> c.isWhitespace() || "@<>=".contains(c) }
+            when (delimiterIndex) {
+                -1 -> depsMap[depString] = ""
+                0 -> {}
+                else -> {
+                    val name = depString.take(delimiterIndex)
+                    val version = depString.drop(delimiterIndex).trim().removePrefix("@")
+                    depsMap[name] = version
+                }
+            }
+        }
+        return depsMap
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
