@@ -69,8 +69,9 @@ class ExecuteSubtaskAction(
             scanTaskDao.updateStartedDateTimeIfNotExists(subtask.parentScanTaskId, LocalDateTime.now())
             publisher.publishEvent(
                 SubtaskStatusChangedEvent(
-                    SubScanTaskStatus.valueOf(subtask.status),
-                    SubtaskConverter.convertToPlanSubtask(subtask, SubScanTaskStatus.EXECUTING.name)
+                    oldStatus = SubScanTaskStatus.valueOf(subtask.status),
+                    subtask = SubtaskConverter.convertToPlanSubtask(subtask, SubScanTaskStatus.EXECUTING.name),
+                    taskMetadata = subtask.metadata
                 )
             )
             return TransitResult(target)

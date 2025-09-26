@@ -30,10 +30,12 @@ package com.tencent.bkrepo.analyst.event.listener
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.analyst.service.ScanPlanService
 import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.FORBID_REASON
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
@@ -69,7 +71,7 @@ class SubtaskStatusChangedEventListener(
     @EventListener(SubtaskStatusChangedEvent::class)
     fun listen(event: SubtaskStatusChangedEvent) {
         with(event.subtask) {
-            recordSubtask(event.subtask)
+            recordSubtask(event)
             // 未指定扫描方案表示为系统级别触发的扫描，不更新元数据
             if (planId == null) {
                 return
@@ -90,9 +92,10 @@ class SubtaskStatusChangedEventListener(
     /**
      * 打印子任务详情，用于数据分析
      */
-    private fun recordSubtask(subtask: TPlanArtifactLatestSubScanTask) {
-        if (SubScanTaskStatus.finishedStatus(subtask.status)) {
-            logger.info(subtask.toJsonString().replace(System.lineSeparator(), ""))
+    private fun recordSubtask(event: SubtaskStatusChangedEvent) {
+        if (SubScanTaskStatus.finishedStatus(event.subtask.status)) {
+            val record = createRecord(event)
+            logger.info(record.toJsonString().replace(System.lineSeparator(), ""))
         }
     }
 
@@ -186,6 +189,22 @@ class SubtaskStatusChangedEventListener(
             deleteMetadata(subtask, setOf(FORBID_STATUS, FORBID_REASON, FORBID_USER, FORBID_TYPE))
         }
     }
+
+    private fun createRecord(event: SubtaskStatusChangedEvent): SubtaskRecord {
+        val result = event.result
+        val metrics = if (event.result is StandardScanExecutorResult) {
+            result.output?.metrics
+        } else {
+            null
+        }
+        return SubtaskRecord(subtask = event.subtask, metadata = event.taskMetadata, metrics = metrics)
+    }
+
+    private data class SubtaskRecord(
+        val subtask: TPlanArtifactLatestSubScanTask,
+        val metadata: List<TaskMetadata>? = null,
+        val metrics: Map<String, Any?>? = null,
+    )
 
     companion object {
         private val logger = LoggerFactory.getLogger(SubtaskStatusChangedEventListener::class.java)
