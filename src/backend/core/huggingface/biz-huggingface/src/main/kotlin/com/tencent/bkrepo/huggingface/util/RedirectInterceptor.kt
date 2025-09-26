@@ -50,7 +50,11 @@ class RedirectInterceptor : Interceptor {
 
         val location = response.header(HttpHeaders.LOCATION) ?: return response
         response.close()
-        val newRequest: Request = request.newBuilder().url(location).build()
+
+        // location可能是相对路径
+        val redirectUrl = request.url.resolve(location)
+            ?: throw IllegalArgumentException("Invalid redirect location: $location")
+        val newRequest: Request = request.newBuilder().url(redirectUrl).build()
         val newResponse: Response = chain.proceed(newRequest)
 
         val responseBuilder = newResponse.newBuilder()
