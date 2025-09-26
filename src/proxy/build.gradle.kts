@@ -51,7 +51,6 @@ allprojects {
 
     configurations.all {
         resolutionStrategy.cacheChangingModulesFor(0, TimeUnit.MINUTES)
-        exclude("com.tencent.bk.sdk", "spring-boot-bk-audit-starter")
     }
 
     dependencyManagement {
@@ -70,6 +69,7 @@ allprojects {
             dependency("com.tencent.bk.sdk:crypto-java-sdk:${Versions.CryptoJavaSdk}")
             dependency("com.squareup.okhttp3:okhttp:${Versions.OKhttp}")
             dependency("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x:${Versions.EmbeddedMongo}")
+            dependency("com.tencent.bk.sdk:spring-boot-bk-audit-starter:${Versions.BKAudit}")
         }
     }
 }
