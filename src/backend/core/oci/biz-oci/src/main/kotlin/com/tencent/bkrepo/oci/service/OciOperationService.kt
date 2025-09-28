@@ -77,7 +77,8 @@ interface OciOperationService {
         digest: OciDigest,
         nodeDetail: NodeDetail,
         storageCredentials: StorageCredentials?,
-        sourceType: ArtifactChannel? = null
+        sourceType: ArtifactChannel? = null,
+        userId: String = SecurityUtils.getUserId()
     )
 
     /**

@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.router.NodeLocationDao
 import com.tencent.bkrepo.common.metadata.listener.ResourcePermissionListener
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
@@ -73,7 +74,6 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import io.micrometer.observation.ObservationRegistry
 import io.micrometer.tracing.Tracer
 import io.micrometer.tracing.otel.bridge.OtelTracer
@@ -103,6 +103,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
     RouterControllerProperties::class,
     RepositoryProperties::class,
     EnableMultiTenantProperties::class,
+    NodeLocationDao::class
 )
 @ComponentScan(value = ["com.tencent.bkrepo.repository.service", "com.tencent.bkrepo.common.metadata"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
@@ -135,9 +136,6 @@ open class ServiceBaseTest {
     @MockitoBean
     lateinit var resourcePermissionListener: ResourcePermissionListener
 
-    @MockitoBean
-    lateinit var routerControllerClient: RouterControllerClient
-
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
 
@@ -158,6 +156,9 @@ open class ServiceBaseTest {
 
     @Autowired
     lateinit var registry: ObservationRegistry
+
+    @MockitoBean
+    lateinit var nodeLocationDao: NodeLocationDao
 
     fun initMock() {
         val tracer = mockk<OtelTracer>()

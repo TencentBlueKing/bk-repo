@@ -57,5 +57,7 @@ data class BasicInfo(
     @get:Schema(title = "修改者")
     val lastModifiedBy: String,
     @get:Schema(title = "修改时间")
-    val lastModifiedDate: String
+    val lastModifiedDate: String,
+    @get:Schema(title = "操作系统和架构信息")
+    val platform: List<String> = emptyList(),
 )

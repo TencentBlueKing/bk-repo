@@ -39,6 +39,8 @@ data class PackageVersionInfo(
     @get:Schema(title = "基础信息")
     val basic: BasicInfo,
     @get:Schema(title = "元数据信息")
-    val metadata: List<MetadataModel>
+    val metadata: List<MetadataModel>,
+    @get:Schema(title = "history")
+    val history: List<Any> = emptyList()
 )
 

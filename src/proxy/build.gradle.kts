@@ -35,15 +35,15 @@ plugins {
 }
 
 allprojects {
-    group=Release.Group
-    version=Release.Version
+    group = Release.Group
+    version = Release.Version
 
 
     repositories {
         // for debug devops-boot locally
         mavenLocal()
-        maven("https://oss.sonatype.org/content/repositories/snapshots/")
         mavenCentral()
+        maven("https://central.sonatype.com/repository/maven-snapshots/")
         maven(url = "https://repo.spring.io/milestone")
     }
 
@@ -54,22 +54,22 @@ allprojects {
     }
 
     dependencyManagement {
-        imports {
-            mavenBom("org.springframework.cloud:spring-cloud-sleuth-otel-dependencies:${Versions.SleuthOtel}")
-        }
         dependencies {
             val bkrepoVersion = System.getProperty("bkrepo_version") ?: Versions.BkRepo
             dependencySet("com.tencent.bk.repo:$bkrepoVersion") {
                 entry("api-auth")
                 entry("api-generic")
-                entry("common-service")
+                entry("service-servlet")
                 entry("common-security")
                 entry("artifact-service")
+                entry("common-ratelimiter")
             }
             dependency("org.apache.commons:commons-text:${Versions.CommonsText}")
             dependency("com.tencent.polaris:polaris-discovery-factory:${Versions.Polaris}")
             dependency("com.tencent.bk.sdk:crypto-java-sdk:${Versions.CryptoJavaSdk}")
             dependency("com.squareup.okhttp3:okhttp:${Versions.OKhttp}")
+            dependency("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x:${Versions.EmbeddedMongo}")
+            dependency("com.tencent.bk.sdk:spring-boot-bk-audit-starter:${Versions.BKAudit}")
         }
     }
 }

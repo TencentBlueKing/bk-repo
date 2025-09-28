@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.generic.config
 
-data class ProxyProperties(
+class ProxyProperties(
     var projectId: String = "",
     var repoName: String = "",
     var fullPath: String = ""

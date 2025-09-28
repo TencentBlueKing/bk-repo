@@ -29,12 +29,12 @@ package com.tencent.bkrepo.proxy.artifact.storage
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.StreamRequestBody
 import com.tencent.bkrepo.common.service.proxy.ProxyEnv
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.common.service.proxy.ProxyRequestInterceptor
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.filesystem.ArtifactFileVisitor
 import com.tencent.bkrepo.replication.api.proxy.ProxyBlobReplicaClient
 import com.tencent.bkrepo.replication.constant.FILE

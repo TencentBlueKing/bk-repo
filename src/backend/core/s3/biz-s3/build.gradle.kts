@@ -31,7 +31,6 @@
 
 dependencies {
     api(project(":core:s3:api-s3"))
-    api(project(":common:common-generic"))
     api(project(":common:common-artifact:artifact-service"))
     api("org.dom4j:dom4j:${Versions.Dom4j}")
 }

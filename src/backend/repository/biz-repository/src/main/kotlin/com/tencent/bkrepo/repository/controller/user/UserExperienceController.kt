@@ -53,4 +53,13 @@ class UserExperienceController(
     ) {
         ciExperienceService.getAppExperienceInstallPackages(userId, experienceId, request)
     }
+
+    @PostMapping("/downloadUrl/{experienceId}")
+    fun downloadUrl(
+        @RequestAttribute userId: String,
+        @PathVariable experienceId: String,
+        @RequestBody request: AppExperienceHeader
+    ) {
+        ciExperienceService.getAppExperienceDownloadUrl(userId, experienceId, request)
+    }
 }

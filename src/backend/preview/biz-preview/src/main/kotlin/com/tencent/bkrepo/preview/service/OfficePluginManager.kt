@@ -69,7 +69,7 @@ class OfficePluginManager {
     private val officeHome: String = "/opt/libreoffice7.6"
 
     fun startOfficeManagerIfNeeded() {
-        if (officeManager == null) {
+        if (officeManager?.isRunning() != true) {
             startOfficeManager()
         }
     }

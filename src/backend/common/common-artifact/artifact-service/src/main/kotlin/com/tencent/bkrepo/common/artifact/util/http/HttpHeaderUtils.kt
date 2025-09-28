@@ -29,7 +29,9 @@ package com.tencent.bkrepo.common.artifact.util.http
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.artifact.constant.CONTENT_DISPOSITION_TEMPLATE
+import com.tencent.bkrepo.common.artifact.constant.FLAG_QUERY_CACHE
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import org.springframework.boot.web.server.MimeMappings
 import org.springframework.web.util.UriUtils
 
@@ -56,4 +58,9 @@ object HttpHeaderUtils {
         val extension = PathUtils.resolveExtension(name)
         return this.mimeMappings.get(extension) ?: mimeMappings[extension] ?: MediaTypes.APPLICATION_OCTET_STREAM
     }
+
+    /**
+     * 判断是否使用缓存
+     */
+    fun useCache() = HttpContextHolder.getRequestOrNull()?.getParameter(FLAG_QUERY_CACHE)?.lowercase() != "false"
 }

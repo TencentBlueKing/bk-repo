@@ -37,6 +37,7 @@ import com.tencent.bkrepo.analyst.statemachine.subtask.context.RetryContext
 import com.tencent.bkrepo.analyst.statemachine.task.ScanTaskEvent
 import com.tencent.bkrepo.analyst.statemachine.task.context.ResetTaskContext
 import com.tencent.bkrepo.analyst.utils.SubtaskConverter
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.BLOCK_TIMEOUT
 import com.tencent.bkrepo.statemachine.Event
 import com.tencent.bkrepo.statemachine.StateMachine
@@ -94,8 +95,17 @@ class TimeoutTaskScheduler(
     fun retryTimeoutSubtask() {
         subScanTaskDao.timeoutTasks().records.forEach { task ->
             logger.info("subTask[${task.id}] of parentTask[${task.parentScanTaskId}] timeout[${task.lastModifiedDate}]")
-            val context = RetryContext(SubtaskConverter.convert(task, scannerService.get(task.scanner)))
-            subtaskStateMachine.sendEvent(task.status, Event(SubtaskEvent.RETRY.name, context))
+            if (task.status == SubScanTaskStatus.CREATED.name) {
+                // CREATED状态的任务超时后表示达到最大允许执行时间，直接设置为超时状态
+                val targetState = SubScanTaskStatus.TIMEOUT.name
+                val reason = "subtask timeout, createdDateTime[${task.createdDate}]"
+                val context = FinishSubtaskContext(subtask = task, targetState = targetState, reason = reason)
+                val event = SubtaskEvent.finishEventOf(targetState)
+                subtaskStateMachine.sendEvent(task.status, Event(event.name, context))
+            } else {
+                val context = RetryContext(SubtaskConverter.convert(task, scannerService.get(task.scanner)))
+                subtaskStateMachine.sendEvent(task.status, Event(SubtaskEvent.RETRY.name, context))
+            }
         }
     }
 

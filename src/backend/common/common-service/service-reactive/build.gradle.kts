@@ -33,4 +33,5 @@ dependencies {
     }
     api("com.playtika.reactivefeign:feign-reactor-spring-cloud-starter")
     api("io.projectreactor.kotlin:reactor-kotlin-extensions")
+    compileOnly(project(":common:common-mongo-reactive"))
 }

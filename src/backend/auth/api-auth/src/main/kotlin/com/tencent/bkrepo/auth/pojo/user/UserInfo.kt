@@ -22,5 +22,7 @@ data class UserInfo(
     @get:Schema(title = "是否为虚拟用户")
     val group: Boolean,
     @get:Schema(title = "关联用户")
-    val asstUsers: List<String> = emptyList()
+    val asstUsers: List<String> = emptyList(),
+    @get:Schema(title = "租户信息")
+    val tenantId: String? = null,
 )

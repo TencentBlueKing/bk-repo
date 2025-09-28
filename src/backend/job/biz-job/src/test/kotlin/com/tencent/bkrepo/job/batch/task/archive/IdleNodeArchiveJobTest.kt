@@ -21,7 +21,6 @@ import com.tencent.bkrepo.job.config.properties.IdleNodeArchiveJobProperties
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.buildRepo
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -67,9 +66,6 @@ class IdleNodeArchiveJobTest @Autowired constructor(
 
     @MockitoBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
-
-    @MockitoBean
-    private lateinit var routerControllerClient: RouterControllerClient
 
     @MockitoBean
     private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient

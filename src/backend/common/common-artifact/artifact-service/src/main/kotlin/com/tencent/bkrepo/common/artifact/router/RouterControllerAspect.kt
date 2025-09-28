@@ -29,10 +29,11 @@ package com.tencent.bkrepo.common.artifact.router
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
+import com.tencent.bkrepo.common.metadata.pojo.router.RouterPolicy
+import com.tencent.bkrepo.common.metadata.service.router.NodeRedirectService
+import com.tencent.bkrepo.common.metadata.service.router.RouterAdminService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.router.api.RouterControllerClient
-import com.tencent.bkrepo.router.pojo.RouterPolicy
 import org.aspectj.lang.ProceedingJoinPoint
 import org.aspectj.lang.annotation.Around
 import org.aspectj.lang.annotation.Aspect
@@ -51,7 +52,8 @@ import org.springframework.scheduling.annotation.Scheduled
 @ConditionalOnProperty("router.controller.enabled", havingValue = "true")
 open class RouterControllerAspect(
     private val properties: RouterControllerProperties,
-    private val routerControllerClient: RouterControllerClient,
+    private val nodeRedirectService: NodeRedirectService,
+    private val routerAdminService: RouterAdminService,
 ) {
 
     /**
@@ -67,15 +69,16 @@ open class RouterControllerAspect(
 
     /**
      * 对下载构件请求进行拦截。
-     * 只有GET方法的下载请求，和参数ArtifactInfo放在方法首位的方法才会被拦截。
      * */
     @Around("@annotation(com.tencent.bkrepo.common.artifact.router.Router)")
     fun interceptorDownloadArtifactInfoRequest(proceedingJoinPoint: ProceedingJoinPoint): Any? {
         if (!properties.supportServices.contains(serviceName)) {
             return proceedingJoinPoint.proceed()
         }
-        val artifactInfo = proceedingJoinPoint.args.first()
-        require(artifactInfo is ArtifactInfo)
+        val artifactInfo = proceedingJoinPoint.args.find { it is ArtifactInfo } as? ArtifactInfo
+        if (artifactInfo == null) {
+            return proceedingJoinPoint.proceed()
+        }
         val user = SecurityUtils.getUserId()
         val request = HttpContextHolder.getRequest()
         val response = HttpContextHolder.getResponse()
@@ -87,13 +90,14 @@ open class RouterControllerAspect(
         }
         with(artifactInfo) {
             val originUrl = "${request.requestURL}?${request.queryString}"
-            val targetUrl = routerControllerClient.getRedirectUrl(
+            val targetUrl = nodeRedirectService.generateRedirectUrl (
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = getArtifactFullPath(),
                 originUrl = originUrl,
                 serviceName = serviceName,
-            ).data ?: return proceedingJoinPoint.proceed()
+                user = user
+            ) ?: return proceedingJoinPoint.proceed()
             if (logger.isDebugEnabled) {
                 logger.debug("Redirect $originUrl --> $targetUrl")
             }
@@ -115,7 +119,10 @@ open class RouterControllerAspect(
      * */
     @Scheduled(fixedDelay = POLICY_REFRESH_PERIOD)
     open fun refreshRouterPolicyCache() {
-        routerPolicyCache = routerControllerClient.listRouterPolicies().data.orEmpty()
+        if (!properties.supportServices.contains(serviceName)) {
+            return
+        }
+        routerPolicyCache = routerAdminService.listPolicies()
     }
 
     companion object {

@@ -36,6 +36,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
+import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.pojo.BkciAuthCheckResponse
 import com.tencent.bkrepo.auth.pojo.BkciAuthListResponse
 import com.tencent.bkrepo.auth.pojo.BkciRoleListResponse
@@ -45,7 +46,9 @@ import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.util.HttpUtils
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.TENANT_ID
 import com.tencent.bkrepo.common.api.util.JsonUtils.objectMapper
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
@@ -59,6 +62,8 @@ import java.util.concurrent.TimeUnit
 @Conditional(DevopsAuthCondition::class)
 class CIAuthService @Autowired constructor(
     private val devopsAuthConfig: DevopsAuthConfig,
+    private val userDao: UserDao,
+    private val enableMultiTenant: EnableMultiTenantProperties,
     private val registry: ObservationRegistry
 ) {
 
@@ -70,6 +75,17 @@ class CIAuthService @Autowired constructor(
     private val resourcePermissionCache = CacheBuilder.newBuilder().maximumSize(20000)
         .expireAfterWrite(60, TimeUnit.SECONDS).build<String, Boolean>()
 
+    fun Request.addTenantHeaderIfNeeded(userId: String): Request {
+        val userInfo = userDao.findFirstByUserId(userId)
+        logger.debug("addTenantHeaderIfNeeded [$userId, $userInfo]")
+        if (!enableMultiTenant.enabled || userInfo == null) {
+            return this
+        }
+        if (userInfo.tenantId == null) {
+            return this
+        }
+        return newBuilder().header(TENANT_ID, userInfo.tenantId!!).build()
+    }
 
     fun isProjectMember(user: String, projectCode: String): Boolean {
         val cacheKey = "$user::$projectCode"
@@ -84,7 +100,9 @@ class CIAuthService @Autowired constructor(
                 "/users/$user/isProjectUsers"
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
-                .header(DEVOPS_PROJECT_ID, projectCode).get().build()
+                .header(DEVOPS_PROJECT_ID, projectCode).get().build().addTenantHeaderIfNeeded(user)
+            userDao.findById(user)
+
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             logger.debug("validateProjectUsers url[$url],result[${apiResponse.code},${apiResponse.content}]")
             if (apiResponse.code == HttpStatus.OK.value) {
@@ -98,7 +116,7 @@ class CIAuthService @Autowired constructor(
         } catch (exception: InvalidFormatException) {
             logger.info("validateProjectUsers  url is $url, error: ", exception)
             false
-        }catch (exception: Exception) {
+        } catch (exception: Exception) {
             logger.error("validateProjectUsers url is $url, error: ", exception)
             false
         }
@@ -115,7 +133,7 @@ class CIAuthService @Autowired constructor(
                 "/users/$user/checkProjectManager"
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
-                .header(DEVOPS_PROJECT_ID, projectCode).get().build()
+                .header(DEVOPS_PROJECT_ID, projectCode).get().build().addTenantHeaderIfNeeded(user)
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
             logger.debug("validateProjectManager url[$url], result[${apiResponse.content}]")
@@ -154,6 +172,7 @@ class CIAuthService @Autowired constructor(
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode)
                 .header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken()).get().build()
+                .addTenantHeaderIfNeeded(user)
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             logger.debug(
                 "validateProjectSuperAdmin , requestUrl: [$url]," + " result : [${
@@ -201,6 +220,7 @@ class CIAuthService @Autowired constructor(
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
+                .addTenantHeaderIfNeeded(user)
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthCheckResponse>(apiResponse.content)
             logger.debug("validateUserResourcePermission,requestUrl: [$url], result : [${apiResponse.content}]")
@@ -224,6 +244,7 @@ class CIAuthService @Autowired constructor(
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .header(DEVOPS_UID, user).header(DEVOPS_PROJECT_ID, projectCode).get().build()
+                .addTenantHeaderIfNeeded(user)
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthListResponse>(apiResponse.content)
             logger.debug("getUserResourceByPermission, requestUrl: [$url], result : [${apiResponse.content}]")
@@ -241,7 +262,7 @@ class CIAuthService @Autowired constructor(
         val url = "${devopsAuthConfig.getBkciAuthServer()}/auth/api/open/service/auth/projects/users/$user"
         return try {
             val request = Request.Builder().url(url).header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
-                .header(DEVOPS_UID, user).get().build()
+                .header(DEVOPS_UID, user).get().build().addTenantHeaderIfNeeded(user)
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, 2, allowHttpStatusSet)
             val responseObject = objectMapper.readValue<BkciAuthListResponse>(apiResponse.content)
             logger.debug("getProjectListByUser, requestUrl: [$url], result : [${apiResponse.content}]")

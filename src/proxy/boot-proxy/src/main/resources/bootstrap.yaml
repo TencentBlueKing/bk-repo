@@ -7,3 +7,10 @@ spring:
 
 server:
   port: 80
+
+de:
+  flapdoodle:
+    mongodb:
+      embedded:
+        version: 4.0.2
+        database-dir: ./embedded-mongo

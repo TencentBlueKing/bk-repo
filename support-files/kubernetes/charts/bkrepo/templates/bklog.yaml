@@ -1,5 +1,4 @@
 {{- if .Values.bkLogConfig.enabled }}
-
 # service log
 apiVersion: bk.tencent.com/v1alpha1
 kind: BkLogConfig
@@ -13,17 +12,50 @@ spec:
     matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
       {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
   path:
-    - /data/workspace/logs/*.log
+    - /data/workspace/logs/auth.log
+    - /data/workspace/logs/generic.log
+    - /data/workspace/logs/repository.log
+    - /data/workspace/logs/npm.log
+    - /data/workspace/logs/maven.log
+    - /data/workspace/logs/pypi.log
+    - /data/workspace/logs/job.log
+    - /data/workspace/logs/job-job.log
+    - /data/workspace/logs/opdata.log
+    - /data/workspace/logs/preview.log
+    - /data/workspace/logs/replication.log
+    - /data/workspace/logs/oci.log
+    - /data/workspace/logs/helm.log
+    - /data/workspace/logs/s3.log
   encoding: 'utf-8'
   extMeta:
     logSourceType: "service"
+
+---
+
+# service access log
+apiVersion: bk.tencent.com/v1alpha1
+kind: BkLogConfig
+metadata:
+  name: bk-repo-service-access-log-config
+spec:
+  dataId: {{ .Values.bkLogConfig.serviceAccess.dataId }}
+  logConfigType: container_log_config
+  namespace: {{ .Release.Namespace }}
+  labelSelector:
+    matchLabels: {{- include "common.labels.standard" . | nindent 6 }}
+      {{ include "bkrepo.labelValues.scope" . }}: {{ include "bkrepo.labelValues.scope.backend" . }}
+  path:
+    - /data/workspace/logs/*-access.log
+  encoding: 'utf-8'
+  extMeta:
+    logSourceType: "service-access"
 
 ---
 # gateway access log
 apiVersion: bk.tencent.com/v1alpha1
 kind: BkLogConfig
 metadata:
-  name: bk-repo-gateway-acsess-log-config
+  name: bk-repo-gateway-access-log-config
 spec:
   dataId: {{ .Values.bkLogConfig.gatewayAccess.dataId }}
   logConfigType: container_log_config

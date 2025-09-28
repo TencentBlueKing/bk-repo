@@ -67,6 +67,7 @@ import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildRepoConfiguration
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.buildTypeQuery
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkCategory
+import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkCleanStrategy
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkConfigType
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.checkInterceptorConfig
 import com.tencent.bkrepo.common.metadata.util.RepositoryServiceHelper.Companion.convertProxyToProxyChannelSetting
@@ -221,6 +222,7 @@ class RepositoryServiceImpl(
             Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
             Preconditions.checkArgument(checkCategory(category, configuration), this::configuration.name)
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
+            Preconditions.checkArgument(checkCleanStrategy(configuration), this::configuration.name)
             // 确保项目一定存在
             val project = projectService.getProjectInfo(projectId)
                 ?: throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, projectId)
@@ -273,6 +275,7 @@ class RepositoryServiceImpl(
         repoUpdateRequest.apply {
             Preconditions.checkArgument((description?.length ?: 0) < REPO_DESC_MAX_LENGTH, this::description.name)
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
+            Preconditions.checkArgument(checkCleanStrategy(configuration), this::configuration.name)
             val repository = checkRepository(projectId, name)
             quota?.let {
                 Preconditions.checkArgument(it >= (repository.used ?: 0), this::quota.name)

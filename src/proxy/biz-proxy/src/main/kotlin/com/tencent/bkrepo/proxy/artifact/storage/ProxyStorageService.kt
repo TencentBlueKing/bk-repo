@@ -40,7 +40,6 @@ import com.tencent.bkrepo.common.storage.filesystem.FileSystemClient
 import com.tencent.bkrepo.repository.api.proxy.ProxyFileReferenceClient
 import org.apache.commons.io.IOUtils
 import java.nio.charset.Charset
-import java.util.concurrent.atomic.AtomicBoolean
 
 class ProxyStorageService : AbstractStorageService() {
 
@@ -53,7 +52,7 @@ class ProxyStorageService : AbstractStorageService() {
         filename: String,
         artifactFile: ArtifactFile,
         credentials: StorageCredentials,
-        cancel: AtomicBoolean?
+        storageClass: String?
     ) {
         val proxyCredentials = storageProperties.defaultStorageCredentials()
         when {
@@ -116,6 +115,24 @@ class ProxyStorageService : AbstractStorageService() {
             fileStorage.store(path, syncFileName, inputStream, size, storageProperties.defaultStorageCredentials())
         }
         return true
+    }
+
+    override fun doCheckRestore(
+        path: String,
+        filename: String,
+        credentials: StorageCredentials
+    ): Boolean {
+        return true
+    }
+
+    override fun doRestore(
+        path: String,
+        filename: String,
+        days: Int,
+        tier: String,
+        credentials: StorageCredentials
+    ) {
+        return
     }
 
     /**

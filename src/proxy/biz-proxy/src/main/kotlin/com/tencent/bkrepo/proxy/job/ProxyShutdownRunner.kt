@@ -33,10 +33,10 @@ import com.tencent.bkrepo.common.security.util.AESUtils
 import com.tencent.bkrepo.common.service.proxy.ProxyEnv
 import com.tencent.bkrepo.common.service.proxy.ProxyFeignClientFactory
 import com.tencent.bkrepo.proxy.constant.PID_FILE_PATH
+import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.File
-import javax.annotation.PreDestroy
 
 @Component
 class ProxyShutdownRunner {

@@ -35,6 +35,7 @@ import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.CredentialsKeyFiles
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.Companion.RUNNING_STATUS
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.EXECUTING
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus.PULLED
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
@@ -43,6 +44,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -227,16 +229,23 @@ class SubScanTaskDao(
     }
 
     /**
-     * 获取指定状态任务数量
+     * 获取指定状态任务数量，返回的数量不会超过[limit]
      *
      * @param status 要查询的任务状态列表
      * @param dispatcher 任务使用的分发器
+     * @param limit 限制最大数量
      *
      * @return 任务数量
      */
-    fun countTaskByStatusIn(status: List<String>?, dispatcher: String?): Long {
+    fun limitCountTaskByStatusIn(status: List<String>?, dispatcher: String?, limit: Int): Long {
+        val query = buildStatusAndDispatcherQuery(status, dispatcher).limit(limit)
+        query.fields().include(ID)
+        return determineMongoTemplate().find<Map<String, Any?>>(query, determineCollectionName(query)).size.toLong()
+    }
+
+    fun existsTaskByStatusIn(status: List<String>?, dispatcher: String?): Boolean {
         val query = buildStatusAndDispatcherQuery(status, dispatcher)
-        return count(query)
+        return exists(query)
     }
 
     /**
@@ -250,7 +259,7 @@ class SubScanTaskDao(
     fun timeoutTasks(dispatcher: String? = null, allDispatcher: Boolean = true): Page<TSubScanTask> {
         val criteriaList = mutableListOf(
             buildTimeoutCriteria(),
-            TSubScanTask::status.inValues(PULLED.name, EXECUTING.name),
+            TSubScanTask::status.inValues(RUNNING_STATUS),
         )
         if (!allDispatcher) {
             criteriaList.add(dispatcherCriteria(dispatcher))
@@ -280,7 +289,7 @@ class SubScanTaskDao(
             .and(TSubScanTask::metadata.name).elemMatch(
                 TaskMetadata::key.isEqualTo(TASK_METADATA_DISPATCHER)
                     .and(TaskMetadata::value.name).isEqualTo(dispatcher)
-                )
+            )
         return find(Query(criteria))
     }
 

@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.migration.MigrateDetail
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
+import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.useCache
 import com.tencent.bkrepo.common.metadata.service.repo.ProxyChannelService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.repository.pojo.proxy.ProxyChannelInfo
@@ -112,11 +113,17 @@ class CompositeRepository(
     }
 
     override fun onDownload(context: ArtifactDownloadContext): ArtifactResource? {
-        return localRepository.onDownload(context) ?: run {
-            mapFirstProxyRepo(context) {
+        return if (useCache()) {
+            localRepository.onDownload(context) ?: mapFirstProxyRepo(context) {
                 require(it is ArtifactDownloadContext)
                 remoteRepository.onDownload(it)
             }
+        } else {
+            // 不使用缓存时优先从远程仓库加载
+            mapFirstProxyRepo(context) {
+                require(it is ArtifactDownloadContext)
+                remoteRepository.onDownload(it)
+            } ?: localRepository.onDownload(context)
         }
     }
 

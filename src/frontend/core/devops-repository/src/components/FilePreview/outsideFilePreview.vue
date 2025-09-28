@@ -44,7 +44,7 @@
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import { isHtmlType, isOutDisplayType, isPic, isText } from '@repository/utils/file'
+    import {isExcel, isHtmlType, isOutDisplayType, isPic, isText} from '@repository/utils/file'
     import Papa from 'papaparse'
     import Table from '@wolf-table/table'
     import Viewer from 'viewerjs'
@@ -137,8 +137,9 @@
                 if (isOutDisplayType(res.data.data.suffix)) {
                     customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(fileDate => {
                         this.loading = false
-                        if (res.data.data.suffix.endsWith('xlsx')) {
+                        if (isExcel(res.data.data.suffix)) {
                             this.previewExcel = true
+                            this.excelOptions.xls = res.data.data.suffix.endsWith('xls')
                             this.dataSource = fileDate.data
                         } else if (isHtmlType(res.data.data.suffix)) {
                             const url = URL.createObjectURL(fileDate.data)
@@ -197,6 +198,7 @@
                 this.imgUrl = ''
                 this.hasError = false
                 this.csvShow = false
+                this.excelOptions.xls = false
                 window.resetWaterMark()
             },
             initWaterMark (param) {

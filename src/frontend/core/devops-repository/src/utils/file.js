@@ -57,11 +57,11 @@ const formatType = [
 ]
 
 const isHtmlFormatType = [
-    'xls', 'xlsm', 'xlt', 'xltm', 'et', 'ett', 'xlam'
+    'xlsm', 'xlt', 'xltm', 'et', 'ett', 'xlam'
 ]
 
 const excelType = [
-    'xlsx'
+    'xls', 'xlsx'
 ]
 
 const csvType = [
@@ -89,6 +89,10 @@ export function isHtmlType (param) {
 
 export function isPic (param) {
     return picType.find(type => param.endsWith(type))
+}
+
+export function isExcel (param) {
+    return excelType.find(type => param.endsWith(type))
 }
 
 // 判断可预览的类型(不包括pic)

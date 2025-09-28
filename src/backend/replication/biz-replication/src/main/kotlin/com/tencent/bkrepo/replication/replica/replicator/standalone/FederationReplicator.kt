@@ -28,11 +28,13 @@
 package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.replication.config.ReplicationProperties
@@ -139,7 +141,16 @@ class FederationReplicator(
                     operator = localRepo.createdBy,
                     source = getCurrentClusterName(localProjectId, localRepoName, task.name)
                 )
-                artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
+                val createdRemoteRepo = artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
+                // 目标节点已有名称相同但类型不同的仓库时抛出异常
+                if (createdRemoteRepo.type != remoteRepoType) {
+                    throw ErrorCodeException(
+                        ArtifactMessageCode.REPOSITORY_EXISTED,
+                        "$remoteProjectId/$remoteRepoName",
+                        status = HttpStatus.CONFLICT
+                    )
+                }
+                createdRemoteRepo
             }
         }
     }
@@ -255,7 +266,7 @@ class FederationReplicator(
                 logger.warn("Node ${node.fullPath} in repo ${node.projectId}|${node.repoName} is link node.")
                 return false
             }
-            
+
             val blockNodeList = localDataManager.listBlockNode(node)
             if (blockNodeList.isEmpty()) {
                 logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
@@ -271,11 +282,11 @@ class FederationReplicator(
 
             // 同步节点
             if (!syncNodeToFederatedCluster(this, node)) return false
-            
+
             // 并发传输文件
             val success = executeBlockFileTransfer(context, node, blockNodeList)
             if (!success) return false
-            
+
             // 保存元数据标识传输完成
             saveNodeMetadata(context, node)
             return true
@@ -299,13 +310,13 @@ class FederationReplicator(
      * 执行块文件传输
      */
     private fun executeBlockFileTransfer(
-        context: ReplicaContext, 
-        node: NodeInfo, 
+        context: ReplicaContext,
+        node: NodeInfo,
         blockNodeList: List<TBlockNode>
     ): Boolean {
         val latch = CountDownLatch(blockNodeList.size)
         val failureCount = AtomicInteger(0)
-        
+
         blockNodeList.forEach { blockNode ->
             if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
                 // 异步执行
@@ -333,7 +344,7 @@ class FederationReplicator(
                 }
             }
         }
-        
+
         // 等待所有文件传输完成
         latch.await()
         return failureCount.get() == 0
@@ -345,7 +356,7 @@ class FederationReplicator(
     private fun executeFileTransferAsync(context: ReplicaContext, node: NodeInfo): Boolean {
         val latch = CountDownLatch(1)
         val result = AtomicBoolean(true)
-        
+
         executor.execute(
             Runnable {
                 try {
@@ -358,7 +369,7 @@ class FederationReplicator(
                 }
             }.trace()
         )
-        
+
         latch.await()
         return result.get()
     }

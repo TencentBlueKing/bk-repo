@@ -31,7 +31,9 @@
 
 dependencies {
     implementation(project(":api-proxy"))
-    implementation("com.tencent.bk.repo:common-service")
+    implementation("com.tencent.bk.repo:service-servlet")
     implementation("com.tencent.bk.repo:common-security")
     implementation("com.tencent.bk.repo:artifact-service")
+    implementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
+    implementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")
 }

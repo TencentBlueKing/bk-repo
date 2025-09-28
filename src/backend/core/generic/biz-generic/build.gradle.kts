@@ -32,7 +32,6 @@
 dependencies {
     api(project(":core:generic:api-generic"))
     api(project(":common:common-redis"))
-    api(project(":common:common-generic"))
     api(project(":common:common-artifact:artifact-service"))
     implementation(project(":analyst:metadata-analyst"))
     implementation(project(":common:common-artifact:artifact-cache"))
