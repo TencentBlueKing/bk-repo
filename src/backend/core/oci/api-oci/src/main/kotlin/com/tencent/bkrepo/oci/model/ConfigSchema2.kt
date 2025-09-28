@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 data class ConfigSchema2(
     var architecture: String,
-    var history: List<History>,
+    var history: List<History>?,
     var os: String,
     val variant: String? = null
 )
