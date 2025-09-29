@@ -353,7 +353,9 @@ class OciOperationServiceImpl(
                 val inputStream = storageManager.loadArtifactInputStream(configNode, repoDetail.storageCredentials)
                 val config = JsonUtils.objectMapper.readValue(inputStream, ConfigSchema2::class.java)
                 platform.add("${config.os}/${config.architecture}" + (config.variant?.ensurePrefix("/") ?: ""))
-                history = config.history
+                if (!config.history.isNullOrEmpty()) {
+                    history = config.history!!
+                }
             }
         }
         return Pair(platform, history)
