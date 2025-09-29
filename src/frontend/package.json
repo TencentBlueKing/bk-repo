@@ -78,6 +78,7 @@
     "svg-sprite-loader/**/micromatch": "^4.0.8",
     "svg-sprite-loader/**/braces": "3.0.3",
     "webpack-dev-server": "^5.2.2",
-    "form-data": "^4.0.4"
+    "form-data": "^4.0.4",
+    "**/pdfjs-dist": "4.2.67"
   }
 }

@@ -25,7 +25,7 @@
     "js-cookie": "^2.2.1",
     "marked": "^4.3.0",
     "papaparse": "^5.5.1",
-    "pdfjs-dist": "^2.16.105",
+    "pdfjs-dist": "^4.2.67",
     "qrcode": "^1.5.0",
     "viewerjs": "^1.11.7",
     "vue-demi": "^0.14.6",
