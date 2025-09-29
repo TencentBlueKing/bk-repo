@@ -43,10 +43,9 @@
     import { isHtmlType } from '@repository/utils/file'
     import Papa from 'papaparse'
     import Table from '@wolf-table/table'
+    import * as pdfjsLib from 'pdfjs-dist'
 
-    const PDFJS = require('pdfjs-dist')
-    PDFJS.GlobalWorkerOptions.isEvalSupported = false
-    PDFJS.GlobalWorkerOptions.workerSrc = location.origin + '/ui/pdf.worker.js'
+    pdfjsLib.GlobalWorkerOptions.workerSrc = location.origin + '/ui/pdf.worker.mjs'
 
     export default {
         name: 'PreviewOfficeFileDialog',
@@ -230,7 +229,7 @@
                 })
             },
             loadFile (url) {
-                const loadingTask = PDFJS.getDocument(url)
+                const loadingTask = pdfjsLib.getDocument(url)
                 loadingTask.promise.then(pdf => {
                     this.pdfDoc = pdf
                     this.pdfPages = pdf.numPages
