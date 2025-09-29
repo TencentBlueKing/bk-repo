@@ -65,8 +65,9 @@ class ClipboardController(
     }
 
     @MessageMapping("/paste")
-    fun paste(pastePDU: PastePDU) {
-        clipboardService.paste(pastePDU)
+    fun paste(pastePDU: PastePDU, accessor: SimpMessageHeaderAccessor) {
+        val userId = accessor.sessionAttributes?.get(USER_KEY)?.toString() ?: ANONYMOUS_USER
+        clipboardService.paste(userId, pastePDU)
     }
 }
 
