@@ -32,6 +32,6 @@ import com.tencent.bkrepo.websocket.pojo.fs.PastePDU
 class PastePDUTransferPush(
     pastePDU: PastePDU,
 ) : TransferPush(
-    topic = "/topic/clipboard/paste/${pastePDU.workspaceName}",
+    topic = "/topic/clipboard/paste/${pastePDU.sessionId}",
     data = pastePDU
 )

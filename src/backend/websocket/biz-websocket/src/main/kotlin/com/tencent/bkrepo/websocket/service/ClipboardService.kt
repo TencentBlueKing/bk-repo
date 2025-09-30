@@ -92,8 +92,8 @@ class ClipboardService(
         transferDispatch.dispatch(copyPDUTransferPush)
     }
 
-    fun paste(pastePDU: PastePDU) {
-        logger.info("PastePDU: $pastePDU")
+    fun paste(userId: String, pastePDU: PastePDU) {
+        logger.info("userId: $userId, PastePDU: $pastePDU")
         val pastePDUTransferPush = PastePDUTransferPush(pastePDU)
         transferDispatch.dispatch(pastePDUTransferPush)
     }
