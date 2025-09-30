@@ -40,7 +40,6 @@ import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.metrics.ScannerMetrics
 import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTaskStatus
-import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.request.filter.MatchFilterRuleRequest
 import com.tencent.bkrepo.analyst.service.FilterRuleService
 import com.tencent.bkrepo.analyst.service.ScanQualityService
@@ -115,7 +114,7 @@ class FinishSubtaskAction(
             scanExecutorResult?.normalizeResult()
             val overview = scanExecutorResult?.let { overviewOf(subtask, it) } ?: emptyMap()
             // 更新扫描任务结果
-            val updateScanTaskResultSuccess = updateScanTaskResult(subtask, targetState, overview)
+            val updateScanTaskResultSuccess = updateScanTaskResult(context, overview)
 
             if (updateScanTaskResultSuccess && targetState == SubScanTaskStatus.SUCCESS.name) {
                 // 扫描成功时更新扫描报告结果
@@ -157,12 +156,10 @@ class FinishSubtaskAction(
      */
     @Suppress("UNCHECKED_CAST")
     @Transactional(rollbackFor = [Throwable::class])
-    fun updateScanTaskResult(
-        subTask: TSubScanTask,
-        resultSubTaskStatus: String,
-        overview: Map<String, Any?>,
-        modifiedBy: String? = null
-    ): Boolean {
+    fun updateScanTaskResult(context: FinishSubtaskContext, overview: Map<String, Any?>): Boolean {
+        val subTask = context.subtask
+        val resultSubTaskStatus = context.targetState
+        val modifiedBy = context.modifiedBy
         val subTaskId = subTask.id!!
         val parentTaskId = subTask.parentScanTaskId
         // 任务已扫描过，重复上报直接返回
@@ -170,8 +167,8 @@ class FinishSubtaskAction(
             return false
         }
         // 子任务执行结束后唤醒项目另一个子任务
-        val context = NotifySubtaskContext(subTask.projectId)
-        subtaskStateMachine.sendEvent(SubScanTaskStatus.BLOCKED.name, Event(SubtaskEvent.NOTIFY.name, context))
+        val notifyEvent = Event(SubtaskEvent.NOTIFY.name, NotifySubtaskContext(subTask.projectId))
+        subtaskStateMachine.sendEvent(SubScanTaskStatus.BLOCKED.name, notifyEvent)
 
         // 质量规则检查结果
         val planId = subTask.planId
@@ -195,11 +192,12 @@ class FinishSubtaskAction(
         )
         publisher.publishEvent(
             SubtaskStatusChangedEvent(
-                SubScanTaskStatus.valueOf(subTask.status),
-                SubtaskConverter.convertToPlanSubtask(
+                oldStatus = SubScanTaskStatus.valueOf(subTask.status),
+                subtask = SubtaskConverter.convertToPlanSubtask(
                     subTask, resultSubTaskStatus, overview, qualityPass = qualityPass
                 ),
-                subTask.metadata.firstOrNull { it.key == TaskMetadata.TASK_METADATA_DISPATCHER }?.value
+                taskMetadata = subTask.metadata,
+                result = context.scanExecutorResult,
             )
         )
 
