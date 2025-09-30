@@ -60,6 +60,7 @@
         </template>
         <template slot-scope="scope">
           <el-button
+            v-if="isConsul"
             :disabled="disableChangeInstanceStatusBtn(scope.row.status)"
             type="primary"
             size="mini"
@@ -74,7 +75,14 @@
   </div>
 </template>
 <script>
-import { down, INSTANCE_STATUS_DEREGISTER, INSTANCE_STATUS_RUNNING, instances, up } from '@/api/service'
+import {
+  checkConsulPattern,
+  down,
+  INSTANCE_STATUS_DEREGISTER,
+  INSTANCE_STATUS_RUNNING,
+  instances,
+  up
+} from '@/api/service'
 
 export default {
   name: 'Instance',
@@ -88,7 +96,8 @@ export default {
     return {
       loading: true,
       instances: [],
-      search: ''
+      search: '',
+      isConsul: true
     }
   },
   created() {
@@ -97,6 +106,9 @@ export default {
       this.loading = false
     }).catch(() => {
       this.loading = false
+    })
+    checkConsulPattern().then(res => {
+      this.isConsul = res.data
     })
   },
   methods: {
