@@ -18,6 +18,7 @@ import io.kubernetes.client.openapi.apis.BatchV1Api
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.V1ConfigMapVolumeSource
 import io.kubernetes.client.openapi.models.V1Container
+import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSource
 import io.kubernetes.client.openapi.models.V1EnvVar
 import io.kubernetes.client.openapi.models.V1Job
 import io.kubernetes.client.openapi.models.V1JobSpec
@@ -76,7 +77,11 @@ class TranscodeJobService @Autowired constructor(
                 logger.error("configmap ${k8sProperties.namespace}:$configMapName not found error")
                 return
             }
-            createK8sJob(BatchV1Api(apiClient), job.id ?: "", jobName, projectConfig, job)
+            if (!projectConfig.cosConfigMapName.isNullOrBlank()) {
+                createK8sJobCos(BatchV1Api(apiClient), job.id ?: "", jobName, projectConfig, job)
+            } else {
+                createK8sJob(BatchV1Api(apiClient), job.id ?: "", jobName, projectConfig, job)
+            }
         } catch (e: ApiException) {
             logger.error(e.buildMessage())
             throw e
@@ -112,12 +117,17 @@ class TranscodeJobService @Autowired constructor(
             .env(
                 listOf(
                     V1EnvVar().name("MEDIA_JOB_JOB_PARAM").value(job.param),
-                    V1EnvVar().name("MEDIA_JOB_ENABLE_COS").value("${config.cosConfigMapName != null}"),
-                    V1EnvVar().name("MEDIA_JOB_PROJECT_ID").value(job.projectId),
-                    V1EnvVar().name("MEDIA_JOB_WORKSPACE_NAME").value(job.repoName),
                 )
             )
-            .volumeMounts(genContainerMount(config))
+            .volumeMounts(
+                listOf(
+                    V1VolumeMount()
+                        .name("script-volume")
+                        .mountPath("$WORK_SPACE/$CMD")
+                        .subPath(CMD)
+                        .readOnly(true)
+                )
+            )
             .resources(
                 V1ResourceRequirements().apply {
                     limits(
@@ -135,7 +145,24 @@ class TranscodeJobService @Autowired constructor(
         val podSpec = V1PodSpec()
             .restartPolicy("Never")
             .containers(listOf(container))
-            .volumes(genVolume(config))
+            .volumes(
+                listOf(
+                    V1Volume()
+                        .name("script-volume")
+                        .configMap(
+                            V1ConfigMapVolumeSource()
+                                .name(SCRIPT_CONFIG_MAP_NAME)
+                                .items(
+                                    listOf(
+                                        V1KeyToPath().apply {
+                                            key = CMD
+                                            path = CMD
+                                        },
+                                    )
+                                )
+                        )
+                )
+            )
         val jobSpec = V1JobSpec()
             .backoffLimit(0)
             .ttlSecondsAfterFinished(60 * 60 * 24 * 3)
@@ -155,78 +182,172 @@ class TranscodeJobService @Autowired constructor(
         logger.info("created job $jobName in namespace ${k8sProperties.namespace}")
     }
 
-    private fun genContainerMount(config: TMediaTranscodeJobConfig): List<V1VolumeMount> {
-        val res = mutableListOf(
-            V1VolumeMount()
-                .name("script-volume")
-                .mountPath("$WORK_SPACE/$CMD")
-                .subPath(CMD)
-                .readOnly(true)
-        )
-
-        // 存在 cos 则添加对于 cos 的挂载
-        if (config.cosConfigMapName != null) {
-            res.add(
-                V1VolumeMount()
-                    .name("cos")
-                    .mountPath("/root/$COS_FILE")
-                    .subPath(COS_FILE)
-                    .readOnly(false),
-
+    private fun createK8sJobCos(
+        api: BatchV1Api,
+        jobId: String,
+        jobName: String,
+        config: TMediaTranscodeJobConfig,
+        job: TMediaTranscodeJob
+    ) {
+        val metadata = V1ObjectMeta()
+            .name(jobName)
+            .namespace(k8sProperties.namespace)
+            .labels(
+                mapOf(
+                    TRANSCODE_JOB_APP_LABEL_KEY to TRANSCODE_JOB_APP_LABEL_VALUE,
+                    TRANSCODE_JOB_ID_LABEL to jobId,
+                    TRANSCODE_JOB_PROJECT_ID to job.projectId,
+                    TRANSCODE_JOB_REPO_NAME to job.repoName,
+                    TRANSCODE_JOB_FILE_NAME to job.fileName,
                 )
-            res.add(
-                V1VolumeMount()
-                    .name("cos")
-                    .mountPath("/etc/$COS_DNS_FILE")
-                    .subPath(COS_DNS_FILE)
-                    .readOnly(false)
             )
-        }
-
-        return res
-    }
-
-    private fun genVolume(config: TMediaTranscodeJobConfig): List<V1Volume> {
-        val res = mutableListOf(
-            V1Volume()
-                .name("script-volume")
-                .configMap(
-                    V1ConfigMapVolumeSource()
-                        .name(SCRIPT_CONFIG_MAP_NAME)
-                        .items(
-                            listOf(
-                                V1KeyToPath().apply {
-                                    key = CMD
-                                    path = CMD
-                                },
-                            )
-                        )
+        val resource = config.resource?.readJsonString<ResourceLimit>()
+        val initContainer = V1Container()
+            .name("transcoder")
+            .image(config.image)
+            .command(PYTHON_CMD)
+            .env(
+                listOf(
+                    V1EnvVar().name("MEDIA_JOB_JOB_PARAM").value(job.param),
+                    V1EnvVar().name("MEDIA_JOB_COS_STEP").value("init"),
                 )
-        )
-        // 存在 cos 则添加对 cos 的配置
-        if (config.cosConfigMapName != null) {
-            res.add(
-                V1Volume()
-                    .name("cos")
-                    .configMap(
-                        V1ConfigMapVolumeSource()
-                            .name(config.cosConfigMapName)
-                            .items(
-                                listOf(
-                                    V1KeyToPath().apply {
-                                        key = COS_FILE
-                                        path = COS_FILE
-                                    },
-                                    V1KeyToPath().apply {
-                                        key = COS_DNS_FILE
-                                        path = COS_DNS_FILE
-                                    },
-                                )
-                            )
+            )
+            .volumeMounts(
+                listOf(
+                    V1VolumeMount()
+                        .name("script-volume")
+                        .mountPath("$WORK_SPACE/$CMD")
+                        .subPath(CMD)
+                        .readOnly(true),
+                    V1VolumeMount()
+                        .name("temp")
+                        .mountPath(WORK_SPACE)
+                        .readOnly(false)
+                )
+            )
+            .resources(
+                V1ResourceRequirements().apply {
+                    limits(
+                        cpu = resource?.limitCpu ?: k8sProperties.limit.limitCpu.toString(),
+                        memory = resource?.limitMem ?: k8sProperties.limit.limitMem.toString(),
+                        ephemeralStorage = resource?.limitStorage ?: k8sProperties.limit.limitStorage.toString(),
                     )
+                    requests(
+                        cpu = resource?.requestCpu ?: k8sProperties.limit.requestCpu.toString(),
+                        memory = resource?.requestMem ?: k8sProperties.limit.requestMem.toString(),
+                        ephemeralStorage = resource?.requestStorage ?: k8sProperties.limit.requestStorage.toString(),
+                    )
+                }
             )
-        }
-        return res
+        val container = V1Container()
+            .name("upload")
+            .image(config.image)
+            .command(PYTHON_CMD)
+            .env(
+                listOf(
+                    V1EnvVar().name("MEDIA_JOB_JOB_PARAM").value(job.param),
+                    V1EnvVar().name("MEDIA_JOB_COS_STEP").value("upload"),
+                    V1EnvVar().name("MEDIA_JOB_PROJECT_ID").value(job.projectId),
+                    V1EnvVar().name("MEDIA_JOB_WORKSPACE_NAME").value(job.repoName),
+                )
+            )
+            .volumeMounts(
+                listOf(
+                    V1VolumeMount()
+                        .name("script-volume")
+                        .mountPath("$WORK_SPACE/$CMD")
+                        .subPath(CMD)
+                        .readOnly(true),
+                    V1VolumeMount()
+                        .name("cos")
+                        .mountPath("/root/$COS_FILE")
+                        .subPath(COS_FILE)
+                        .readOnly(false),
+                    V1VolumeMount()
+                        .name("cos")
+                        .mountPath("/etc/$COS_DNS_FILE")
+                        .subPath(COS_DNS_FILE)
+                        .readOnly(false),
+                    V1VolumeMount()
+                        .name("temp")
+                        .mountPath(WORK_SPACE)
+                        .readOnly(false)
+                )
+            )
+            .resources(
+                V1ResourceRequirements().apply {
+                    limits(
+                        cpu = resource?.limitCpu ?: k8sProperties.limit.limitCpu.toString(),
+                        memory = resource?.limitMem ?: k8sProperties.limit.limitMem.toString(),
+                        ephemeralStorage = resource?.limitStorage ?: k8sProperties.limit.limitStorage.toString(),
+                    )
+                    requests(
+                        cpu = resource?.requestCpu ?: k8sProperties.limit.requestCpu.toString(),
+                        memory = resource?.requestMem ?: k8sProperties.limit.requestMem.toString(),
+                        ephemeralStorage = resource?.requestStorage ?: k8sProperties.limit.requestStorage.toString(),
+                    )
+                }
+            )
+        val podSpec = V1PodSpec()
+            .restartPolicy("Never")
+            .initContainers(listOf(initContainer))
+            .containers(listOf(container))
+            .volumes(
+                listOf(
+                    V1Volume()
+                        .name("script-volume")
+                        .configMap(
+                            V1ConfigMapVolumeSource()
+                                .name(SCRIPT_CONFIG_MAP_NAME)
+                                .items(
+                                    listOf(
+                                        V1KeyToPath().apply {
+                                            key = CMD
+                                            path = CMD
+                                        },
+                                    )
+                                )
+                        ),
+                    V1Volume()
+                        .name("cos")
+                        .configMap(
+                            V1ConfigMapVolumeSource()
+                                .name(config.cosConfigMapName)
+                                .items(
+                                    listOf(
+                                        V1KeyToPath().apply {
+                                            key = COS_FILE
+                                            path = COS_FILE
+                                        },
+                                        V1KeyToPath().apply {
+                                            key = COS_DNS_FILE
+                                            path = COS_DNS_FILE
+                                        },
+                                    )
+                                )
+                        ),
+                    V1Volume()
+                        .name("temp")
+                        .emptyDir(V1EmptyDirVolumeSource())
+                )
+            )
+        val jobSpec = V1JobSpec()
+            .backoffLimit(0)
+            .ttlSecondsAfterFinished(60 * 60 * 24 * 3)
+            .template(V1PodTemplateSpec().spec(podSpec))
+        val kJob = V1Job()
+            .apiVersion("batch/v1")
+            .kind("Job")
+            .metadata(metadata)
+            .spec(jobSpec)
+        api.createNamespacedJob(
+            k8sProperties.namespace,
+            kJob,
+            null,
+            null,
+            null,
+        )
+        logger.info("created cos job $jobName in namespace ${k8sProperties.namespace}")
     }
 
     private fun <T> CoreV1Api.exec(block: () -> T?): T? {
