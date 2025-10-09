@@ -181,9 +181,13 @@ class SignedNodeForwardServiceImpl(
      * 1. 指定项目
      * 2. 对应文件类型
      * 3. BK_CI_APP_STAGE=Alpha
+     * 4. 非归档节点
      * */
     private fun notOnCondition(node: NodeDetail, config: SignConfig): Boolean {
         if (node.folder) {
+            return true
+        }
+        if (node.archived == true) {
             return true
         }
         if (config.scanner[PathUtils.resolveExtension(node.name)] == null) {
