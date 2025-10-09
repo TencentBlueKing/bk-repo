@@ -33,11 +33,12 @@ import com.tencent.bkrepo.analyst.config.AnalystProperties
 import com.tencent.bkrepo.analyst.metadata.AnalystMetadataCustomizer
 import com.tencent.bkrepo.analyst.sign.SignedNodeForwardServiceImpl
 import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
-import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
+import com.tencent.bkrepo.common.artifact.sign.SignProperties
 import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.sign.SignConfigService
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -64,6 +65,14 @@ class AnalystMetadataAutoConfiguration {
         metadataService: MetadataService,
         scanClient: ScanClient,
         repositoryService: RepositoryService,
+        signConfigService: SignConfigService
     ): NodeForwardService =
-        SignedNodeForwardServiceImpl(signProperties, nodeService, metadataService, scanClient, repositoryService)
+        SignedNodeForwardServiceImpl(
+            signProperties = signProperties,
+            nodeService = nodeService,
+            metadataService = metadataService,
+            scanClient = scanClient,
+            repositoryService = repositoryService,
+            signConfigService = signConfigService
+        )
 }

@@ -40,9 +40,10 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
-import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.sign.SignProperties
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.sign.SignConfigService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -53,7 +54,8 @@ import org.springframework.stereotype.Service
 class DefenderServiceImpl(
     private val scanService: ScanService,
     private val nodeService: NodeService,
-    private val signProperties: SignProperties
+    private val signProperties: SignProperties,
+    private val signConfigService: SignConfigService
 ) : DefenderService {
     override fun defender(request: DefenderRequest): DefenderResponse {
         with(request) {
@@ -91,7 +93,7 @@ class DefenderServiceImpl(
     }
 
     private fun getScanner(projectId: String, fileName: String): String {
-        val scanner = signProperties.config[projectId]?.scanner?.get(PathUtils.resolveExtension(fileName))
+        val scanner = signConfigService.find(projectId)?.scanner?.get(PathUtils.resolveExtension(fileName))
         return scanner ?: throw ErrorCodeException(ScannerMessageCode.SCANNER_NOT_FOUND, projectId)
     }
 }
