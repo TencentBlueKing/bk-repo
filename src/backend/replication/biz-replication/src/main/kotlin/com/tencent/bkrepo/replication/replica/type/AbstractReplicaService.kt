@@ -30,7 +30,6 @@ package com.tencent.bkrepo.replication.replica.type
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
-import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -209,29 +208,14 @@ abstract class AbstractReplicaService(
 
     private fun replicaByRegexPathConstraint(replicaContext: ReplicaContext, constraint: PathConstraint) {
         with(replicaContext) {
-            // 查询子节点
-            var pageNumber = DEFAULT_PAGE_NUMBER
-            var nodes = localDataManager.findRegexNodeDetail(
+            localDataManager.processRegexPathNodes(
                 projectId = replicaContext.localProjectId,
                 repoName = replicaContext.localRepoName,
                 fullPath = constraint.path!!,
-                pageNumber = pageNumber,
-                pageSize = PAGE_SIZE
-            )
-            if (nodes.isEmpty()) throw NodeNotFoundException(constraint.path!!)
-            while (nodes.isNotEmpty()) {
-                nodes.forEach {
-                    replicaByPath(this, it)
+                nodeProcessor = { node ->
+                    replicaByPath(this, node)
                 }
-                pageNumber++
-                nodes = localDataManager.findRegexNodeDetail(
-                    projectId = replicaContext.localProjectId,
-                    repoName = replicaContext.localRepoName,
-                    fullPath = constraint.path!!,
-                    pageNumber = pageNumber,
-                    pageSize = PAGE_SIZE
-                )
-            }
+            )
         }
     }
 

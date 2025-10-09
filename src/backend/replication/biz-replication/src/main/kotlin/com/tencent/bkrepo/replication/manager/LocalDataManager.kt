@@ -218,7 +218,7 @@ class LocalDataManager(
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
             .and(NODE_PATH).isEqualTo(path)
-            .and(NAME).regex(regexPattern)
+            .and(NAME).regex("^$regexPattern$")
             .and(DELETED).isEqualTo(null)
             .and(FOLDER).isEqualTo(false)
         return queryNodes(projectId, criteria, pageNumber, pageSize)
@@ -447,6 +447,71 @@ class LocalDataManager(
                 compressed = it.compressed,
             )
         }
+    }
+
+    /**
+     * 遍历正则路径匹配的所有节点
+     * @param projectId 项目ID
+     * @param repoName 仓库名称
+     * @param fullPath 完整路径（支持正则表达式）
+     * @param nodeProcessor 节点处理函数
+     * @param throwIfEmpty 如果没有找到节点是否抛出异常，默认为true
+     */
+    fun processRegexPathNodes(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeProcessor: (NodeInfo) -> Unit,
+        throwIfEmpty: Boolean = true
+    ) {
+        var pageNumber = 1
+        var nodes = findRegexNodeDetail(
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            pageNumber = pageNumber,
+            pageSize = 1000
+        )
+        if (nodes.isEmpty() && throwIfEmpty) {
+            throw NodeNotFoundException(fullPath)
+        }
+        
+        while (nodes.isNotEmpty()) {
+            nodes.forEach(nodeProcessor)
+            pageNumber++
+            nodes = findRegexNodeDetail(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                pageNumber = pageNumber,
+                pageSize = 1000
+            )
+        }
+    }
+
+    /**
+     * 计算正则路径匹配的所有节点的总大小
+     * @param projectId 项目ID
+     * @param repoName 仓库名称
+     * @param fullPath 完整路径（支持正则表达式）
+     * @return 总大小
+     */
+    fun computeRegexPathNodesSize(
+        projectId: String,
+        repoName: String,
+        fullPath: String
+    ): Long {
+        var totalSize = 0L
+        processRegexPathNodes(
+            projectId = projectId,
+            repoName = repoName,
+            fullPath = fullPath,
+            nodeProcessor = { node ->
+                totalSize += node.size
+            },
+            throwIfEmpty = false
+        )
+        return totalSize
     }
 
     companion object {
