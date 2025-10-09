@@ -46,10 +46,14 @@ class TranscodeService(
         transcodeConfig: TranscodeConfig,
         userId: String,
         extraFiles: List<ArtifactInfo>?,
+        author: String?,
+        videoStartTime: Long?,
+        videoEndTime: Long?,
     ) {
-        val transcodeParam = generateTranscodeParam(artifactInfo, transcodeConfig, userId)
+        val transcodeParam =
+            generateTranscodeParam(artifactInfo, transcodeConfig, userId, author, videoStartTime, videoEndTime)
         transcodeParam.extraFiles = extraFiles?.map {
-            val p = generateTranscodeParam(it, transcodeConfig, userId)
+            val p = generateTranscodeParam(it, transcodeConfig, userId, author, videoStartTime, videoEndTime)
             mapOf(
                 "inputFileName" to p.inputFileName,
                 "inputUrl" to p.inputUrl
@@ -120,6 +124,9 @@ class TranscodeService(
         artifactInfo: ArtifactInfo,
         transcodeConfig: TranscodeConfig,
         userId: String,
+        author: String?,
+        videoStartTime: Long?,
+        videoEndTime: Long?,
     ): TranscodeParam {
         with(transcodeConfig) {
             val outputArtifactInfo = covertOutputArtifactInfo(artifactInfo, scale)
@@ -139,7 +146,10 @@ class TranscodeService(
                 inputFileName = artifactInfo.getResponseName(),
                 outputFileName = outputArtifactInfo.getResponseName(),
                 extraParams = transcodeConfig.extraParams.orEmpty(),
-                extraFiles = null
+                extraFiles = null,
+                author = author,
+                videoStartTime = videoStartTime,
+                videoEndTime = videoEndTime,
             )
         }
     }

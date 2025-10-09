@@ -3,6 +3,7 @@ package com.tencent.bkrepo.media.job.service
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
+import com.tencent.bkrepo.media.common.dao.TranscodeJobConfigDao
 import com.tencent.bkrepo.media.job.k8s.K8sProperties
 import com.tencent.bkrepo.media.job.k8s.limits
 import com.tencent.bkrepo.media.job.k8s.requests
@@ -29,6 +30,9 @@ import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.http.HttpStatus
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
@@ -38,7 +42,8 @@ import java.time.ZoneOffset
 class TranscodeJobService @Autowired constructor(
     private val apiClient: ApiClient,
     private val k8sProperties: K8sProperties,
-    private val mediaTranscodeJobDao: MediaTranscodeJobDao
+    private val mediaTranscodeJobDao: MediaTranscodeJobDao,
+    private val transcodeJobConfigDao: TranscodeJobConfigDao
 ) {
     @Async
     fun startJob(config: TMediaTranscodeJobConfig) {
@@ -47,9 +52,14 @@ class TranscodeJobService @Autowired constructor(
             return
         }
 
+        // 存在独立项目的情况就使用独立项目配置替代默认配置
+        val projectConfig = transcodeJobConfigDao.findOne(
+            Query(where(TMediaTranscodeJobConfig::projectId).isEqualTo(job.projectId))
+        ) ?: config
+
         var jobName = "${job.id}-${job.updateTime.toInstant(ZoneOffset.ofHours(8)).toEpochMilli()}".lowercase()
         if (jobName.length > 63) {
-            jobName = jobName.substring(0, 63)
+            jobName = jobName.take(63)
         }
         val api = CoreV1Api(apiClient)
         try {
@@ -66,7 +76,7 @@ class TranscodeJobService @Autowired constructor(
                 logger.error("configmap ${k8sProperties.namespace}:$configMapName not found error")
                 return
             }
-            createK8sJob(BatchV1Api(apiClient), job.id ?: "", jobName, config, job)
+            createK8sJob(BatchV1Api(apiClient), job.id ?: "", jobName, projectConfig, job)
         } catch (e: ApiException) {
             logger.error(e.buildMessage())
             throw e
@@ -101,18 +111,13 @@ class TranscodeJobService @Autowired constructor(
             .command(PYTHON_CMD)
             .env(
                 listOf(
-                    V1EnvVar().name("MEDIA_JOB_JOB_PARAM").value(job.param)
+                    V1EnvVar().name("MEDIA_JOB_JOB_PARAM").value(job.param),
+                    V1EnvVar().name("MEDIA_JOB_ENABLE_COS").value("${config.cosConfigMapName != null}"),
+                    V1EnvVar().name("MEDIA_JOB_PROJECT_ID").value(job.projectId),
+                    V1EnvVar().name("MEDIA_JOB_WORKSPACE_NAME").value(job.repoName),
                 )
             )
-            .volumeMounts(
-                listOf(
-                    V1VolumeMount()
-                        .name("script-volume")
-                        .mountPath("$WORK_SPACE/$CMD")
-                        .subPath(CMD)
-                        .readOnly(true)
-                )
-            )
+            .volumeMounts(genContainerMount(config))
             .resources(
                 V1ResourceRequirements().apply {
                     limits(
@@ -127,24 +132,10 @@ class TranscodeJobService @Autowired constructor(
                     )
                 }
             )
-        val scriptVolume = V1Volume()
-            .name("script-volume")
-            .configMap(
-                V1ConfigMapVolumeSource()
-                    .name(SCRIPT_CONFIG_MAP_NAME)
-                    .items(
-                        listOf(
-                            V1KeyToPath().apply {
-                                key = CMD
-                                path = CMD
-                            },
-                        )
-                    )
-            )
         val podSpec = V1PodSpec()
             .restartPolicy("Never")
             .containers(listOf(container))
-            .volumes(listOf(scriptVolume))
+            .volumes(genVolume(config))
         val jobSpec = V1JobSpec()
             .backoffLimit(0)
             .ttlSecondsAfterFinished(60 * 60 * 24 * 3)
@@ -162,6 +153,80 @@ class TranscodeJobService @Autowired constructor(
             null,
         )
         logger.info("created job $jobName in namespace ${k8sProperties.namespace}")
+    }
+
+    private fun genContainerMount(config: TMediaTranscodeJobConfig): List<V1VolumeMount> {
+        val res = mutableListOf(
+            V1VolumeMount()
+                .name("script-volume")
+                .mountPath("$WORK_SPACE/$CMD")
+                .subPath(CMD)
+                .readOnly(true)
+        )
+
+        // 存在 cos 则添加对于 cos 的挂载
+        if (config.cosConfigMapName != null) {
+            res.add(
+                V1VolumeMount()
+                    .name("cos")
+                    .mountPath("/root/$COS_FILE")
+                    .subPath(COS_FILE)
+                    .readOnly(false),
+
+                )
+            res.add(
+                V1VolumeMount()
+                    .name("cos")
+                    .mountPath("/etc/$COS_DNS_FILE")
+                    .subPath(COS_DNS_FILE)
+                    .readOnly(false)
+            )
+        }
+
+        return res
+    }
+
+    private fun genVolume(config: TMediaTranscodeJobConfig): List<V1Volume> {
+        val res = mutableListOf(
+            V1Volume()
+                .name("script-volume")
+                .configMap(
+                    V1ConfigMapVolumeSource()
+                        .name(SCRIPT_CONFIG_MAP_NAME)
+                        .items(
+                            listOf(
+                                V1KeyToPath().apply {
+                                    key = CMD
+                                    path = CMD
+                                },
+                            )
+                        )
+                )
+        )
+        // 存在 cos 则添加对 cos 的配置
+        if (config.cosConfigMapName != null) {
+            res.add(
+                V1Volume()
+                    .name("cos")
+                    .configMap(
+                        V1ConfigMapVolumeSource()
+                            .name(config.cosConfigMapName)
+                            .items(
+                                listOf(
+                                    V1KeyToPath().apply {
+                                        key = COS_FILE
+                                        path = COS_FILE
+                                    },
+                                    V1KeyToPath().apply {
+                                        key = COS_DNS_FILE
+                                        path = COS_DNS_FILE
+                                    },
+                                )
+                            )
+                    )
+            )
+        }
+        return res
     }
 
     private fun <T> CoreV1Api.exec(block: () -> T?): T? {
@@ -207,6 +272,8 @@ class TranscodeJobService @Autowired constructor(
         private const val SCRIPT_CONFIG_MAP_NAME = "media-transcode-job-script"
         private const val WORK_SPACE = "/data/workspace"
         private const val CMD = "run.py"
+        private const val COS_FILE = ".cos.yaml"
+        private const val COS_DNS_FILE = "resolv.conf"
         private val PYTHON_CMD =
             listOf("/bin/bash", "-c", "source /opt/conda/bin/activate media && python $CMD")
         const val TRANSCODE_JOB_ID_LABEL = "BKREPO_MEDIA_TRANSCODE_JOB_ID"

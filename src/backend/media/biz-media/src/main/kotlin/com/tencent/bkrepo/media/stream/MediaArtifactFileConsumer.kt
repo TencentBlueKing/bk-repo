@@ -33,19 +33,28 @@ class MediaArtifactFileConsumer(
     }
 
     override fun accept(name: String, file: ArtifactFile, extraFiles: Map<String, ArtifactFile>?) {
-        val artifactInfo = genAndStoreArtifactInfos(name, file)
+        val endTime = System.currentTimeMillis()
+        val artifactInfo = genAndStoreArtifactInfos(name, file, endTime)
         val extraArtifactFiles = extraFiles?.map { (name, file) ->
-            genAndStoreArtifactInfos(name, file)
+            genAndStoreArtifactInfos(name, file, endTime)
         }
         if (transcodeConfig != null) {
-            transcodeService.transcode(artifactInfo, transcodeConfig, userId, extraArtifactFiles)
+            transcodeService.transcode(
+                artifactInfo = artifactInfo,
+                transcodeConfig = transcodeConfig,
+                userId = userId,
+                extraFiles = extraArtifactFiles,
+                author = author,
+                videoStartTime = startTime,
+                videoEndTime = endTime
+            )
         }
     }
 
-    fun genAndStoreArtifactInfos(name: String, file: ArtifactFile): ArtifactInfo {
+    fun genAndStoreArtifactInfos(name: String, file: ArtifactFile, endTime: Long): ArtifactInfo {
         val filePath = "$path/$name"
         val artifactInfo = ArtifactInfo(repo.projectId, repo.name, filePath)
-        val nodeCreateRequest = buildNodeCreateRequest(artifactInfo, file, userId, author)
+        val nodeCreateRequest = buildNodeCreateRequest(artifactInfo, file, userId, author, endTime)
         storageManager.storeArtifactFile(nodeCreateRequest, file, repo.storageCredentials)
         return artifactInfo
     }
@@ -55,9 +64,9 @@ class MediaArtifactFileConsumer(
         file: ArtifactFile,
         userId: String,
         author: String,
+        endTime: Long,
     ): NodeCreateRequest {
         with(artifactInfo) {
-            val endTime = System.currentTimeMillis()
             return NodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,

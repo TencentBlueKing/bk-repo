@@ -11,4 +11,7 @@ data class TranscodeParam(
     var outputFileName: String, // 输出文件名
     var extraParams: String, // 额外参数
     var extraFiles: List<Map<String, String>>?, // 额外文件
+    var author: String?, // 云桌面使用人
+    var videoStartTime: Long?, // 录屏开始时间
+    var videoEndTime: Long?, // 录屏结束时间
 )

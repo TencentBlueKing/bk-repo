@@ -13,4 +13,6 @@ data class TMediaTranscodeJobConfig(
     var image: String,
     // 容器资源限制
     var resource: String?,
+    // 推送 cos 使用的 configmap 名称
+    var cosConfigMapName: String?,
 )
