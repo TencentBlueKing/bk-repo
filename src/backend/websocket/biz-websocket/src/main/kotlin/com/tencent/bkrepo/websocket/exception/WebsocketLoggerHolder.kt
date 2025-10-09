@@ -23,7 +23,12 @@ object WebsocketLoggerHolder {
         logException(accessor, exception, message, systemError)
     }
 
-    fun logException(accessor: SimpMessageHeaderAccessor, exception: Exception, message: String?, systemError: Boolean) {
+    fun logException(
+        accessor: SimpMessageHeaderAccessor,
+        exception: Exception,
+        message: String?,
+        systemError: Boolean
+    ) {
         val userId = accessor.sessionAttributes?.get(USER_KEY) ?: ANONYMOUS_USER
         val dest = accessor.destination
         val platformId = accessor.sessionAttributes?.get(PLATFORM_KEY)

@@ -36,6 +36,7 @@ import com.tencent.bkrepo.websocket.dispatch.push.TransferPush
 import com.tencent.bkrepo.websocket.handler.SessionWebSocketHandlerDecoratorFactory
 import com.tencent.bkrepo.websocket.listener.TransferPushListener
 import com.tencent.bkrepo.websocket.service.WebsocketService
+import io.micrometer.observation.ObservationRegistry
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -57,6 +58,7 @@ class WebsocketConfiguration(
     private val jwtAuthProperties: JwtAuthProperties,
     private val authenticationManager: AuthenticationManager,
     private val webSocketMetrics: WebSocketMetrics,
+    private val registry: ObservationRegistry
 ) : WebSocketMessageBrokerConfigurer {
 
     override fun configureMessageBroker(config: MessageBrokerRegistry) {
@@ -107,7 +109,8 @@ class WebsocketConfiguration(
             websocketService = websocketService,
             authenticationManager = authenticationManager,
             jwtAuthProperties = jwtAuthProperties,
-            webSocketMetrics = webSocketMetrics
+            webSocketMetrics = webSocketMetrics,
+            registry = registry
         )
     }
 
