@@ -221,7 +221,7 @@ class TranscodeJobService @Autowired constructor(
                         .readOnly(true),
                     V1VolumeMount()
                         .name("temp")
-                        .mountPath(WORK_SPACE)
+                        .mountPath(WORK_SPACE_SAVE)
                         .readOnly(false)
                 )
             )
@@ -270,7 +270,7 @@ class TranscodeJobService @Autowired constructor(
                         .readOnly(false),
                     V1VolumeMount()
                         .name("temp")
-                        .mountPath(WORK_SPACE)
+                        .mountPath(WORK_SPACE_SAVE)
                         .readOnly(false)
                 )
             )
@@ -392,6 +392,7 @@ class TranscodeJobService @Autowired constructor(
         // 先写死，后面写到配置
         private const val SCRIPT_CONFIG_MAP_NAME = "media-transcode-job-script"
         private const val WORK_SPACE = "/data/workspace"
+        private const val WORK_SPACE_SAVE = "$WORK_SPACE/save"
         private const val CMD = "run.py"
         private const val COS_FILE = ".cos.yaml"
         private const val COS_DNS_FILE = "resolv.conf"
