@@ -29,24 +29,33 @@ package com.tencent.bkrepo.websocket.exception
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
 @RestControllerAdvice
 class WebsocketExceptionHandler {
 
     @MessageExceptionHandler(ErrorCodeException::class)
-    fun handleException(exception: ErrorCodeException) {
+    fun handleException(exception: ErrorCodeException, accessor: SimpMessageHeaderAccessor) {
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(exception.messageCode, exception.params)
-        LoggerHolder.logErrorCodeException(exception, "[${exception.messageCode.getCode()}]$errorMessage")
+        WebsocketLoggerHolder.logErrorCodeException(
+            accessor = accessor,
+            exception = exception,
+            message = "[${exception.messageCode.getCode()}]$errorMessage"
+        )
     }
 
     @MessageExceptionHandler(Exception::class)
-    fun handleException(exception: Exception) {
+    fun handleException(exception: Exception, accessor: SimpMessageHeaderAccessor) {
         val errorMessage = LocaleMessageUtils.getLocalizedMessage(CommonMessageCode.SYSTEM_ERROR)
         val code = CommonMessageCode.SYSTEM_ERROR.getCode()
-        LoggerHolder.logException(exception, "[$code]$errorMessage", true)
+        WebsocketLoggerHolder.logException(
+            accessor = accessor,
+            exception = exception,
+            message = "[$code]$errorMessage",
+            systemError = true
+        )
     }
 }
