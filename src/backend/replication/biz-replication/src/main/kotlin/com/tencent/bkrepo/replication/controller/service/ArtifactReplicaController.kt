@@ -279,47 +279,61 @@ class ArtifactReplicaController(
     }
 
     override fun replicaBlockNodeCreateRequest(request: BlockNodeCreateRequest): Response<BlockNodeDetail> {
-        val blockNode = buildTBlockNode(request)
+        // 获取仓库信息，如果不存在则抛出异常
         val repo = repositoryService.getRepoDetail(request.projectId, request.repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, request.repoName)
-        val result = blockNodeService.createBlock(blockNode, repo.storageCredentials)
-        return ResponseBuilder.success(toBlockNodeDetail(result))
+        
+        // 构建块节点对象
+        val blockNode = buildTBlockNode(request)
+        
+        // 检查块是否已存在，如果存在直接返回
+        if (blockNodeService.checkBlockExist(blockNode)) {
+            return ResponseBuilder.success(toBlockNodeDetail(blockNode))
+        }
+        
+        // 创建新的块节点
+        val createdBlockNode = blockNodeService.createBlock(blockNode, repo.storageCredentials)
+        return ResponseBuilder.success(toBlockNodeDetail(createdBlockNode))
     }
 
     private fun buildTBlockNode(request: BlockNodeCreateRequest): TBlockNode {
-        return TBlockNode(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            nodeFullPath = request.fullPath,
-            size = request.size,
-            createdDate = request.createdDate,
-            createdBy = request.createdBy,
-            startPos = request.startPos,
-            endPos = request.endPos,
-            sha256 = request.sha256,
-            crc64ecma = request.crc64ecma,
-            uploadId = request.uploadId,
-            expireDate = request.expireDate
-        )
+        return with(request) {
+            TBlockNode(
+                projectId = projectId,
+                repoName = repoName,
+                nodeFullPath = fullPath,
+                size = size,
+                createdDate = createdDate,
+                createdBy = createdBy,
+                startPos = startPos,
+                endPos = endPos,
+                sha256 = sha256,
+                crc64ecma = crc64ecma,
+                uploadId = uploadId,
+                expireDate = expireDate
+            )
+        }
     }
 
     private fun toBlockNodeDetail(blockNode: TBlockNode): BlockNodeDetail {
-        return BlockNodeDetail(
-            id = blockNode.id,
-            projectId = blockNode.projectId,
-            repoName = blockNode.repoName,
-            nodeFullPath = blockNode.nodeFullPath,
-            size = blockNode.size,
-            createdDate = blockNode.createdDate,
-            createdBy = blockNode.createdBy,
-            startPos = blockNode.startPos,
-            endPos = blockNode.endPos,
-            sha256 = blockNode.sha256,
-            crc64ecma = blockNode.crc64ecma,
-            uploadId = blockNode.uploadId,
-            expireDate = blockNode.expireDate,
-            deleted = blockNode.deleted,
-        )
+        return with(blockNode) {
+            BlockNodeDetail(
+                id = id,
+                projectId = projectId,
+                repoName = repoName,
+                nodeFullPath = nodeFullPath,
+                size = size,
+                createdDate = createdDate,
+                createdBy = createdBy,
+                startPos = startPos,
+                endPos = endPos,
+                sha256 = sha256,
+                crc64ecma = crc64ecma,
+                uploadId = uploadId,
+                expireDate = expireDate,
+                deleted = deleted
+            )
+        }
     }
 
 

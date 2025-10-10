@@ -27,9 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.replicator.standalone
 
-import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
-import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
@@ -177,10 +175,6 @@ class EdgeNodeReplicator(
             logPrefix = "[Cluster-Block] ",
         )
     }
-
-    fun unNormalNode(node: NodeInfo) = node.sha256 == FAKE_SHA256
-
-    fun blockNode(node: NodeInfo) = node.sha256 == FAKE_SHA256 && node.metadata?.any { it.key == FS_ATTR_KEY } == true
 
     companion object {
         private val logger = LoggerFactory.getLogger(EdgeNodeReplicator::class.java)

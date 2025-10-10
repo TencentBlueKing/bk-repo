@@ -436,7 +436,7 @@ class LocalDataManager(
                 sha256 = it.sha256,
                 md5 = it.md5,
                 crc64ecma = it.crc64ecma,
-                metadata = null,
+                metadata = toMap(it.metadata),
                 nodeMetadata = it.metadata,
                 copyFromCredentialsKey = it.copyFromCredentialsKey,
                 copyIntoCredentialsKey = it.copyIntoCredentialsKey,
@@ -512,6 +512,10 @@ class LocalDataManager(
             throwIfEmpty = false
         )
         return totalSize
+    }
+
+    private fun toMap(metadataList: List<MetadataModel>?): Map<String, Any> {
+        return metadataList?.associate { it.key to it.value }.orEmpty()
     }
 
     companion object {

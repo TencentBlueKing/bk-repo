@@ -32,11 +32,9 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
-import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
-import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
-import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.constant.FEDERATED
@@ -270,7 +268,6 @@ class FederationReplicator(
             val blockNodeList = localDataManager.listBlockNode(node)
             if (blockNodeList.isEmpty()) {
                 logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
-                return true
             }
 
             // 传输所有blocknode元数据
@@ -708,10 +705,6 @@ class FederationReplicator(
             source = getCurrentClusterName(node.projectId, node.repoName, taskName)
         )
     }
-
-    fun unNormalNode(node: NodeInfo) = node.sha256 == FAKE_SHA256
-
-    fun blockNode(node: NodeInfo) = node.sha256 == FAKE_SHA256 && node.metadata?.any { it.key == FS_ATTR_KEY } == true
 
     companion object {
 

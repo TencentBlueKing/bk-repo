@@ -31,10 +31,8 @@ import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
-import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
-import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -376,10 +374,6 @@ class ClusterReplicator(
             )
         }
     }
-
-    fun unNormalNode(node: NodeInfo) = node.sha256 == FAKE_SHA256
-
-    fun blockNode(node: NodeInfo) = node.sha256 == FAKE_SHA256 && node.metadata?.any { it.key == FS_ATTR_KEY } == true
 
     companion object {
         private val logger = LoggerFactory.getLogger(ClusterReplicator::class.java)

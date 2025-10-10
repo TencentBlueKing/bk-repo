@@ -4,7 +4,9 @@ import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT
@@ -62,7 +64,6 @@ abstract class AbstractFileReplicator(
                     try {
                         performFilePush(context, node, type, downGrade)
                         postPush(context, node)
-                        return@retry true
                     } catch (throwable: Throwable) {
                         handlePushException(throwable, logPrefix)
                         // 处理降级逻辑
@@ -156,6 +157,11 @@ abstract class AbstractFileReplicator(
             (throwable.code == HttpStatus.METHOD_NOT_ALLOWED.value ||
                 throwable.code == HttpStatus.UNAUTHORIZED.value)
     }
+
+    protected fun unNormalNode(node: NodeInfo) = node.sha256 == FAKE_SHA256
+
+    protected fun blockNode(node: NodeInfo) = unNormalNode(node)
+        && node.nodeMetadata?.any { it.key == FS_ATTR_KEY } == true
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractFileReplicator::class.java)
