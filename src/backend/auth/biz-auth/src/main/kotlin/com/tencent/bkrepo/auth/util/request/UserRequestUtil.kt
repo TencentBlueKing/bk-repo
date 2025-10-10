@@ -139,11 +139,10 @@ object UserRequestUtil {
         if (!Pattern.matches(USER_ID_PATTERN, userId)) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, this::userId.name)
         }
-        if (userId.isBlank() ||
-            userId.length < USER_ID_LENGTH_MIN ||
-            userId.length > USER_ID_LENGTH_MAX ||
-            userId == ANONYMOUS_USER
-        ) {
+        if (userId.isBlank() || userId == ANONYMOUS_USER) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, this::userId.name)
+        }
+        if (userId.length < USER_ID_LENGTH_MIN || userId.length > USER_ID_LENGTH_MAX) {
             throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, this::userId.name)
         }
         if (group && asstUsers.isEmpty()) {

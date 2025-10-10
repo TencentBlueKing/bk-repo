@@ -49,7 +49,6 @@ import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.request.UserRequestUtil
 import com.tencent.bkrepo.auth.util.request.UserRequestUtil.validate
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
