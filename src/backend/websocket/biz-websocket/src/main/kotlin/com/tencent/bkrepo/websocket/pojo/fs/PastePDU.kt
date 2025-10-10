@@ -33,4 +33,6 @@ package com.tencent.bkrepo.websocket.pojo.fs
 data class PastePDU(
     val workspaceName: String,
     val timestamp: Long,
+    val sessionId: String = "",
+    val type: String = "paste",
 )
