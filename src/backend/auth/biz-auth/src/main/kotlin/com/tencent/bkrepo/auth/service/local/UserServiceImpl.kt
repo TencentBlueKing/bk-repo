@@ -48,6 +48,7 @@ import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.request.UserRequestUtil
+import com.tencent.bkrepo.auth.util.request.UserRequestUtil.validate
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -80,20 +81,12 @@ class UserServiceImpl constructor(
     private val userHelper by lazy { UserHelper(userDao, roleRepository) }
 
     override fun createUser(request: CreateUserRequest): Boolean {
-        // todo 校验
+        request.validate()
         logger.info("create user request : [${DesensitizedUtils.toString(request)}]")
-        // create a anonymous user is not allowed
-        if (request.userId == ANONYMOUS_USER) {
-            logger.warn("create user [${request.userId}]  is exist.")
-            throw ErrorCodeException(AuthMessageCode.AUTH_DUP_UID)
-        }
         val user = userDao.findFirstByUserId(request.userId)
         user?.let {
             logger.warn("create user [${request.userId}]  is exist.")
             return true
-        }
-        if (request.group && request.asstUsers.isEmpty()) {
-            throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
         }
         // check asstUsers
         request.asstUsers.forEach {

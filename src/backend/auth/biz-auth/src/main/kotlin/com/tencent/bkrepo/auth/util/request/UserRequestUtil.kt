@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.auth.util.request
 
+import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
@@ -37,11 +38,18 @@ import com.tencent.bkrepo.auth.pojo.user.User
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.util.DataDigestUtils
 import com.tencent.bkrepo.auth.util.IDUtil
+import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import java.time.LocalDateTime
+import java.util.regex.Pattern
 
 object UserRequestUtil {
 
+    const val USER_ID_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,99}"
+    const val USER_ID_LENGTH_MIN = 2
+    const val USER_ID_LENGTH_MAX = 100
     fun convToCreateRepoUserRequest(request: CreateUserToRepoRequest): CreateUserRequest {
         return CreateUserRequest(
             request.userId,
@@ -125,5 +133,21 @@ object UserRequestUtil {
 
     fun generateToken(): String {
         return DataDigestUtils.md5FromStr(IDUtil.genRandomId())
+    }
+
+    fun CreateUserRequest.validate() {
+        if (!Pattern.matches(USER_ID_PATTERN, userId)) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, this::userId.name)
+        }
+        if (userId.isBlank() ||
+            userId.length < USER_ID_LENGTH_MIN ||
+            userId.length > USER_ID_LENGTH_MAX ||
+            userId == ANONYMOUS_USER
+        ) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, this::userId.name)
+        }
+        if (group && asstUsers.isEmpty()) {
+            throw ErrorCodeException(AuthMessageCode.AUTH_ASST_USER_EMPTY)
+        }
     }
 }
