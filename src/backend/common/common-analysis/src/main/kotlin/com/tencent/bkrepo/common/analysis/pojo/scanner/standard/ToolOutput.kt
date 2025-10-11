@@ -55,7 +55,11 @@ data class ToolOutput(
     /**
      * 分析结果
      */
-    var result: Result? = null
+    var result: Result? = null,
+    /**
+     * 制品分析性能数据
+     */
+    var metrics: Map<String, Any?>? = null,
 )
 
 /**
