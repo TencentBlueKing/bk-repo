@@ -183,7 +183,7 @@ class GenericLocalRepository(
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
         }
         // 校验crc64ecma
-        val calculatedCrc64ecma = context.getArtifactSha256()
+        val calculatedCrc64ecma = context.getArtifactCrc64ecma()
         val uploadCrc64ecma = HeaderUtils.getHeader(HEADER_CRC64ECMA)
         if (uploadCrc64ecma != null && !calculatedCrc64ecma.equals(uploadCrc64ecma, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "crc64ecma")
