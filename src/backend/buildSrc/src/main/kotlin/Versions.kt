@@ -67,7 +67,7 @@ object Versions {
     const val JavaCpp = "1.5.9"
     const val Notice = "1.0.0"
     const val SpringCloudFunction = "3.2.11"
-    const val Audit = "2.0.0"
+    const val Audit = "2.0.1"
     const val JodConverter = "4.4.6"
     const val Galimatias = "0.2.1"
     const val CommonsNet = "3.9.0"
