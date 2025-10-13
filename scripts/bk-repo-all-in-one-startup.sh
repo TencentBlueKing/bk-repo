@@ -22,6 +22,9 @@ mongo mongodb://127.0.0.1:27017/bkrepo $BK_REPO_HOME/support-files/sql/init-data
 mkdir -p $BK_REPO_LOGS_DIR/nginx
 chmod 777 $BK_REPO_LOGS_DIR/nginx
 
+mkdir -p $BK_REPO_LOGS_DIR/bkrepo
+chmod 777 $BK_REPO_LOGS_DIR/bkrepo
+
 ##初始化网关配置
 echo "渲染网关配置..."
 touch repo.env
@@ -46,16 +49,14 @@ source $BK_REPO_HOME/backend/assembly/service.env
 java -server \
      -Dsun.jnu.encoding=UTF-8 \
      -Dfile.encoding=UTF-8 \
-     -Xloggc:$BK_REPO_LOGS_DIR/bkrepo/gc.log \
-     -XX:+PrintTenuringDistribution \
-     -XX:+PrintGCDetails \
-     -XX:+PrintGCDateStamps \
+     -Xlog:gc*:file=$BK_REPO_LOGS_DIR/bkrepo/gc.log:time,level,tags \
      -XX:+HeapDumpOnOutOfMemoryError \
      -XX:HeapDumpPath=oom.hprof \
      -XX:ErrorFile=$BK_REPO_LOGS_DIR/bkrepo/error_sys.log \
      -Dspring.profiles.active=$BK_REPO_PROFILE \
-     -Doci.domain=BK_REPO_DOCKER_HOST \
+     -Doci.domain=$BK_REPO_DOCKER_HOST \
      -Doci.authUrl=http://$BK_REPO_DOCKER_HOST/v2/auth \
+     -Dhelm.domain=http://$BK_REPO_HOST/helm \
      -Dlogging.path=$BK_REPO_LOGS_DIR/bkrepo \
      -Dstorage.filesystem.path=$BK_REPO_DATA_PATH \
      $BK_REPO_JVM_OPTION \
