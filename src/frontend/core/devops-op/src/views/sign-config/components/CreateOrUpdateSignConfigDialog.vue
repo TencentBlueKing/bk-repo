@@ -33,6 +33,16 @@
           />
         </el-select>
       </el-form-item>
+
+      <el-form-item label="过期天数" prop="expireDays" :rules="[{ required: true, message: '过期天数不能为空'}, { type: 'number', min: 1, max: 365, message: '过期天数必须在1-365天之间'}]">
+        <el-input-number
+          v-model="signConfig.expireDays"
+          :min="1"
+          :max="365"
+          placeholder="请输入过期天数"
+          style="width: 100%;"
+        />
+      </el-form-item>
     </el-form>
     <div slot="footer">
       <el-button @click="close">取 消</el-button>
@@ -66,7 +76,8 @@ export default {
       signConfig: {
         projectId: '',
         scanner: {},
-        tags: ['Alpha']
+        tags: ['Alpha'],
+        expireDays: 7
       },
       scannerItems: [],
       rules: {
@@ -106,7 +117,8 @@ export default {
         this.signConfig = {
           projectId: '',
           scanner: {},
-          tags: ['Alpha']
+          tags: ['Alpha'],
+          expireDays: 7
         }
         this.scannerItems = []
       } else {
@@ -151,7 +163,8 @@ export default {
           const submitData = {
             projectId: this.signConfig.projectId,
             scanner: this.signConfig.scanner,
-            tags: Array.isArray(this.signConfig.tags) ? this.signConfig.tags : ['Alpha']
+            tags: Array.isArray(this.signConfig.tags) ? this.signConfig.tags : ['Alpha'],
+            expireDays: this.signConfig.expireDays || 7
           }
           
           if (this.createMode) {

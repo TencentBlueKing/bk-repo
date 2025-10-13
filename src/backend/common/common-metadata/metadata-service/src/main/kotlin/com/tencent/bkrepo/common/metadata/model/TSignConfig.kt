@@ -12,6 +12,7 @@ data class TSignConfig(
     // key文件类型, value扫描器
     val scanner: MutableMap<String, String>,
     val tags: MutableList<String> = mutableListOf("Alpha"),
+    val expireDays: Int,
     val createdBy: String,
     val createdDate: LocalDateTime,
     val lastModifiedBy: String,

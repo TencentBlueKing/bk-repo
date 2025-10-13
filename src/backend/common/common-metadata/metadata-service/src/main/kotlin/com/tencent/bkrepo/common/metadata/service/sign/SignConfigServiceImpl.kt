@@ -40,6 +40,7 @@ class SignConfigServiceImpl(
                 projectId = projectId,
                 scanner = scanner,
                 tags = tags,
+                expireDays = expireDays,
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
                 lastModifiedBy = userId,
@@ -62,6 +63,7 @@ class SignConfigServiceImpl(
         val updatedConfig = existingConfig.copy(
             scanner = request.scanner,
             tags = request.tags,
+            expireDays = request.expireDays,
             lastModifiedBy = userId,
             lastModifiedDate = LocalDateTime.now()
         )
@@ -98,6 +100,7 @@ class SignConfigServiceImpl(
             projectId = projectId,
             scanner = scanner,
             tags = tags,
+            expireDays = expireDays,
             createdBy = createdBy,
             createdDate = createdDate,
             lastModifiedBy = lastModifiedBy,

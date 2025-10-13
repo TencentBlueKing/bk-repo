@@ -35,6 +35,11 @@
           <el-tag v-for="tag in row.tags" :key="tag" style="margin-right: 5px;">{{ tag }}</el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="过期天数" prop="expireDays" align="center" min-width="100">
+        <template slot-scope="{row}">
+          <span>{{ row.expireDays }}天</span>
+        </template>
+      </el-table-column>
       <el-table-column label="创建人" prop="createdBy" align="center" min-width="100">
         <template slot-scope="{row}">
           <span>{{ row.createdBy }}</span>
