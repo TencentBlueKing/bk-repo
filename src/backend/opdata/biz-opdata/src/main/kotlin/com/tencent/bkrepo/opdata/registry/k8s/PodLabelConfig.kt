@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.opdata.registry.spring
+package com.tencent.bkrepo.opdata.registry.k8s
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component

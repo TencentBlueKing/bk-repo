@@ -26,7 +26,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.registry.spring
+package com.tencent.bkrepo.opdata.registry.k8s
 
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode
@@ -41,7 +41,7 @@ import org.springframework.cloud.client.discovery.DiscoveryClient
 /**
  * discoveryClient仅只能查看，无法做任何操作
  */
-class SpringCloudServiceDiscovery(
+class KubernetesServiceDiscovery(
   private val discoveryClient: DiscoveryClient,
   private val podLabelConfig: PodLabelConfig
 ): RegistryClient {
@@ -128,7 +128,7 @@ class SpringCloudServiceDiscovery(
   }
 
   companion object {
-    private val logger = LoggerFactory.getLogger(SpringCloudServiceDiscovery::class.java)
+    private val logger = LoggerFactory.getLogger(KubernetesServiceDiscovery::class.java)
   }
 
 }

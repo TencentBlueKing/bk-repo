@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.opdata.registry
 
-import com.tencent.bkrepo.opdata.registry.spring.PodLabelConfig
-import com.tencent.bkrepo.opdata.registry.spring.SpringCloudServiceDiscovery
+import com.tencent.bkrepo.opdata.registry.k8s.PodLabelConfig
+import com.tencent.bkrepo.opdata.registry.k8s.KubernetesServiceDiscovery
 import okhttp3.OkHttpClient
 import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.context.ApplicationContext
@@ -78,8 +78,8 @@ class ServiceDiscoveryConfig (
     }
 
     @Bean
-    fun springCloudRegistryClient(discoveryClient: DiscoveryClient): RegistryClient {
-        return SpringCloudServiceDiscovery(discoveryClient, podLabelConfig)
+    fun createK8sClient(discoveryClient: DiscoveryClient): RegistryClient {
+        return KubernetesServiceDiscovery(discoveryClient, podLabelConfig)
     }
 
     fun isConsulEnabled(): Boolean {
