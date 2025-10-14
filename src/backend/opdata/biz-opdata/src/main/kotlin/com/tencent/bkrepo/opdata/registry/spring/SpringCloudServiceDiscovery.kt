@@ -28,6 +28,8 @@
 
 package com.tencent.bkrepo.opdata.registry.spring
 
+import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.opdata.message.OpDataMessageCode
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
@@ -74,9 +76,7 @@ class SpringCloudServiceDiscovery(
   private fun matchService( details: List<ServiceDetails>): List<ServiceDetails> {
     var targetDetails = details
     logger.info("details is $details")
-    logger.info("labelName is " + podLabelConfig.labelName)
-    logger.info("labelValue is " + podLabelConfig.labelValue)
-    if (podLabelConfig.labelValue.isNotBlank() && podLabelConfig.labelName.isNotBlank()) {
+    if (hasLabelConfig()) {
       targetDetails = details.filter {
         it.details.any { serviceInstance ->
           serviceInstance.metadata[podLabelConfig.labelName].equals(podLabelConfig.labelValue) }
@@ -88,12 +88,18 @@ class SpringCloudServiceDiscovery(
   private fun matchInstance(serviceName: String) : List<ServiceInstance> {
     val instances = discoveryClient.getInstances(serviceName)
     var matchResult = true
-    if (podLabelConfig.labelValue.isNotBlank() && podLabelConfig.labelName.isNotBlank()) {
+    if (hasLabelConfig()) {
       matchResult = instances.any { serviceInstance ->
         serviceInstance.metadata[podLabelConfig.labelName].equals(podLabelConfig.labelValue) }
     }
     return if (matchResult) instances else emptyList()
 
+  }
+
+  private fun hasLabelConfig(): Boolean {
+    logger.info("labelName is " + podLabelConfig.labelName)
+    logger.info("labelValue is " + podLabelConfig.labelValue)
+    return podLabelConfig.labelValue.isNotBlank() && podLabelConfig.labelName.isNotBlank()
   }
 
   private fun buildInfo(serviceInstance: ServiceInstance, serviceName: String): InstanceInfo {
@@ -109,7 +115,7 @@ class SpringCloudServiceDiscovery(
   }
 
   override fun deregister(serviceName: String, instanceId: String): InstanceInfo {
-    return instanceInfo(serviceName, instanceId)
+    throw SystemErrorException(OpDataMessageCode.NOT_SUPPORT)
   }
 
   override fun instanceInfo(serviceName: String, instanceId: String): InstanceInfo {
@@ -118,7 +124,7 @@ class SpringCloudServiceDiscovery(
   }
 
   override fun maintenance(serviceName: String, instanceId: String, enable: Boolean): InstanceInfo {
-    return instanceInfo(serviceName, instanceId)
+    throw SystemErrorException(OpDataMessageCode.NOT_SUPPORT)
   }
 
   companion object {
