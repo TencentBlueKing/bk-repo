@@ -38,6 +38,7 @@ import java.lang.reflect.Constructor
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.lang.reflect.Parameter
+import java.time.Duration
 import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.isSubclassOf
@@ -199,5 +200,5 @@ object DesensitizedUtils {
     /**
      * 脱敏时需要忽略的类型，不会递归遍历这些类型的字段
      */
-    private val ignoredClasses = arrayOf(String::class.java)
+    private val ignoredClasses = arrayOf(String::class.java, Duration::class.java)
 }
