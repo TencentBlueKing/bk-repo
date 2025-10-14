@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.sign.SignProperties
+import com.tencent.bkrepo.common.metadata.pojo.sign.SignConfig
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.sign.SignConfigService
 import com.tencent.bkrepo.common.query.enums.OperationType
@@ -63,7 +64,8 @@ class DefenderServiceImpl(
                 return DefenderResponse(emptyList())
             }
             Preconditions.checkArgument(batchSize > 0, DefenderRequest::batchSize.name)
-            val scanner = getScanner(projectId, PathUtils.resolveName(fullPath))
+            val config = signConfigService.find(projectId)
+            val scanner = getScanner(config, projectId, PathUtils.resolveName(fullPath))
             val rules = ArrayList<Rule>()
             rules.add(Rule.QueryRule(NodeInfo::projectId.name, projectId, OperationType.EQ))
             rules.add(Rule.QueryRule(NodeInfo::repoName.name, repoName, OperationType.EQ))
@@ -79,6 +81,10 @@ class DefenderServiceImpl(
                     metadata = listOf(
                         TaskMetadata("users", it.joinToString(",")),
                         TaskMetadata("sha256", node.sha256!!),
+                        TaskMetadata("host", signProperties.host),
+                        TaskMetadata("projectId", projectId),
+                        TaskMetadata("uploadRepoName", signProperties.signedRepoName),
+                        TaskMetadata("expire", config!!.expireDays.toString()),
                         TaskMetadata(
                             "repoUrl",
                             "${signProperties.host}/generic/${node.projectId}/${signProperties.signedRepoName}"
@@ -92,8 +98,8 @@ class DefenderServiceImpl(
         }
     }
 
-    private fun getScanner(projectId: String, fileName: String): String {
-        val scanner = signConfigService.find(projectId)?.scanner?.get(PathUtils.resolveExtension(fileName))
+    private fun getScanner(config: SignConfig?, projectId: String, fileName: String): String {
+        val scanner = config?.scanner?.get(PathUtils.resolveExtension(fileName))
         return scanner ?: throw ErrorCodeException(ScannerMessageCode.SCANNER_NOT_FOUND, projectId)
     }
 }

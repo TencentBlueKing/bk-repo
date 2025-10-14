@@ -218,6 +218,10 @@ class SignedNodeForwardServiceImpl(
                 metadata = listOf(
                     TaskMetadata("users", userId),
                     TaskMetadata("sha256", node.sha256!!),
+                    TaskMetadata("host", signProperties.host),
+                    TaskMetadata("projectId", projectId),
+                    TaskMetadata("uploadRepoName", signProperties.signedRepoName),
+                    TaskMetadata("expire", config.expireDays.toString()),
                     TaskMetadata(
                         "repoUrl",
                         "${signProperties.host}/generic/${node.projectId}/${signProperties.signedRepoName}"
