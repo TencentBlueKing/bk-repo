@@ -2,3 +2,7 @@ spring.application.name: websocket
 server.port: 25914
 
 group: ${spring.cloud.consul.discovery.instance-id}
+
+
+management.metrics.ignored.filterList:
+  - "websocket.session"
