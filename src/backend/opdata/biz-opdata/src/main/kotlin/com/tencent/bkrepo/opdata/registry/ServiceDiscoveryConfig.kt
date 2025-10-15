@@ -30,6 +30,7 @@ package com.tencent.bkrepo.opdata.registry
 import com.tencent.bkrepo.opdata.registry.k8s.PodLabelConfig
 import com.tencent.bkrepo.opdata.registry.k8s.KubernetesServiceDiscovery
 import okhttp3.OkHttpClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.cloud.client.discovery.DiscoveryClient
 import org.springframework.context.ApplicationContext
 import org.springframework.context.annotation.Bean
@@ -71,13 +72,13 @@ class ServiceDiscoveryConfig (
         val consulPropertiesProvider = ctx.getBeanProvider(consulPropertiesClass)
         val consulProperties = consulPropertiesProvider.ifAvailable
             ?: throw IllegalStateException("ConsulProperties not available")
-
         val constructor = Class.forName("com.tencent.bkrepo.opdata.registry.consul.ConsulRegistryClient")
             .getDeclaredConstructor(OkHttpClient::class.java, consulPropertiesClass)
         return constructor.newInstance(httpClient, consulProperties) as RegistryClient
     }
 
     @Bean
+    @ConditionalOnProperty(value = ["spring.cloud.consul.enabled"], havingValue = "false")
     fun createK8sClient(discoveryClient: DiscoveryClient): RegistryClient {
         return KubernetesServiceDiscovery(discoveryClient, podLabelConfig)
     }
