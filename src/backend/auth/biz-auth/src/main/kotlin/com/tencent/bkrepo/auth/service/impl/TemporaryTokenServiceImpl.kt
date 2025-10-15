@@ -72,7 +72,6 @@ class TemporaryTokenServiceImpl(
                     lastModifiedDate = LocalDateTime.now()
                 )
                 temporaryTokenRepository.save(temporaryToken)
-                logger.info("Create share record[$temporaryToken] success.")
                 convert(temporaryToken)
             }
         }
@@ -85,12 +84,12 @@ class TemporaryTokenServiceImpl(
 
     override fun deleteToken(token: String) {
         temporaryTokenRepository.deleteByToken(token)
-        logger.info("Delete temporary token[$token] success.")
+        logger.info("Delete temporary token success.")
     }
 
     override fun decrementPermits(token: String) {
         temporaryTokenRepository.decrementPermits(token)
-        logger.info("Decrement permits of token[$token] success.")
+        logger.info("Decrement permits of token success.")
     }
 
     /**

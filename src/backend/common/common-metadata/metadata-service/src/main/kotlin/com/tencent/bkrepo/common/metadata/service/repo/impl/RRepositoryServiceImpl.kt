@@ -266,7 +266,7 @@ class RRepositoryServiceImpl(
                     topic = event.topic,
                     key = event.getFullResourceKey(),
                 )
-                logger.info("Create repository [$repoCreateRequest] success.")
+                logger.info("Create repository [${repoCreateRequest.name}] success.")
                 convertToDetail(repository)!!
             } catch (exception: DuplicateKeyException) {
                 logger.warn("Insert repository[$projectId/$name] error: [${exception.message}]")
@@ -304,7 +304,7 @@ class RRepositoryServiceImpl(
             topic = event.topic,
             key = event.getFullResourceKey(),
         )
-        logger.info("Update repository[$repoUpdateRequest] success.")
+        logger.info("Update repository[${repoUpdateRequest.name}] success.")
     }
 
     @Transactional(rollbackFor = [Throwable::class])
@@ -420,14 +420,14 @@ class RRepositoryServiceImpl(
         // 创建代理仓库
         val proxyRepository = buildProxyChannelCreateRequest(repository, proxy)
         proxyChannelService.createProxy(operator, proxyRepository)
-        logger.info("Success to create private proxy repository[$proxyRepository]")
+        logger.info("Success to create private proxy repository[${proxyRepository.name}]")
     }
 
     private suspend fun updateProxyRepo(repository: TRepository, proxy: ProxyChannelSetting, operator: String) {
         // 更新代理仓库
         val proxyRepository = buildProxyChannelUpdateRequest(repository, proxy)
         proxyChannelService.updateProxy(operator, proxyRepository)
-        logger.info("Success to update private proxy repository[$proxyRepository]")
+        logger.info("Success to update private proxy repository[${proxyRepository.name}]")
     }
 
     override suspend fun listRepoPageByType(type: String, pageNumber: Int, pageSize: Int): Page<RepositoryDetail> {
