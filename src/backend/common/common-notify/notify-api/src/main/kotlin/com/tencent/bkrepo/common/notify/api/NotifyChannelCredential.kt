@@ -38,7 +38,7 @@ import io.swagger.v3.oas.annotations.media.Schema
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(
-    JsonSubTypes.Type(value = WeworkBotChannelCredential::class, name = WeworkBotChannelCredential.type),
+    JsonSubTypes.Type(value = WeworkBotChannelCredential::class, name = WeworkBotChannelCredential.TYPE),
 )
 @Schema(title = "消息通知渠道")
 open class NotifyChannelCredential(
