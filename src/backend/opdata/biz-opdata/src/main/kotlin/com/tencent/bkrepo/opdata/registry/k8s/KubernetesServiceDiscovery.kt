@@ -127,8 +127,13 @@ class KubernetesServiceDiscovery(
     throw SystemErrorException(OpDataMessageCode.NOT_SUPPORT)
   }
 
+  override fun isConsulEnabled(): Boolean {
+    return discoveryClient.services.contains(CONSUL_NAME)
+  }
+
   companion object {
     private val logger = LoggerFactory.getLogger(KubernetesServiceDiscovery::class.java)
+    private const val CONSUL_NAME= "consul"
   }
 
 }

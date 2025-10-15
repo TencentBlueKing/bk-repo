@@ -42,7 +42,6 @@ import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryClient
-import com.tencent.bkrepo.opdata.registry.ServiceDiscoveryConfig
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
@@ -55,7 +54,6 @@ import org.springframework.stereotype.Service
 @Service
 class OpServiceService @Autowired constructor(
     private val registryClient: RegistryClient,
-    private val serviceDiscoveryConfig: ServiceDiscoveryConfig,
     private val artifactMetricsClient: ArtifactMetricsClient,
     private val pluginClient: PluginClient,
     private val executor: ThreadPoolTaskExecutor,
@@ -243,7 +241,7 @@ class OpServiceService @Autowired constructor(
     }
 
     fun checkConsulAlive() : Boolean {
-        return serviceDiscoveryConfig.isConsulEnabled()
+        return registryClient.isConsulEnabled()
     }
 
     companion object {

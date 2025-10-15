@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2021 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent. All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,26 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.registry
+package com.tencent.bkrepo.opdata.registry.k8s
 
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
-import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
+import com.tencent.bkrepo.opdata.registry.RegistryClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.cloud.client.discovery.DiscoveryClient
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-/**
- * 微服务注册中心api接口
- */
-interface RegistryClient {
-    fun services(): List<ServiceInfo>
-    fun instances(serviceName: String): List<InstanceInfo>
-    fun deregister(serviceName: String, instanceId: String): InstanceInfo
-    fun instanceInfo(serviceName: String, instanceId: String): InstanceInfo
+@Configuration
+@ConditionalOnProperty(value = ["spring.cloud.consul.enabled"], havingValue = "false")
+class KubernetesDiscoveryConfig (
+    private val discoveryClient: DiscoveryClient,
+    private val podLabelConfig: PodLabelConfig
+){
 
-    /**
-     * 是否开启维护模式，开启维护模式后服务仍处于注册状态，但不对外提供服务
-     *
-     * @param enable true: 开启维护模式，实例不再对外提供服务， false: 关闭维护模式，实例恢复正常
-     */
-    fun maintenance(serviceName: String, instanceId: String, enable: Boolean): InstanceInfo
-
-    fun isConsulEnabled(): Boolean
+    @Bean
+    fun createK8sClient(): RegistryClient {
+        return KubernetesServiceDiscovery(discoveryClient, podLabelConfig)
+    }
 }

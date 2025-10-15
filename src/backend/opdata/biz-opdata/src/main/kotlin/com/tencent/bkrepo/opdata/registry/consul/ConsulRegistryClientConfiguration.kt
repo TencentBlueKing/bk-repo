@@ -25,26 +25,29 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.registry
+package com.tencent.bkrepo.opdata.registry.consul
 
-import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
-import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
+import com.ecwid.consul.v1.ConsulClient
+import com.tencent.bkrepo.opdata.config.OkHttpConfiguration
+import okhttp3.OkHttpClient
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.cloud.consul.ConsulProperties
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-/**
- * 微服务注册中心api接口
- */
-interface RegistryClient {
-    fun services(): List<ServiceInfo>
-    fun instances(serviceName: String): List<InstanceInfo>
-    fun deregister(serviceName: String, instanceId: String): InstanceInfo
-    fun instanceInfo(serviceName: String, instanceId: String): InstanceInfo
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnProperty(value = ["spring.cloud.consul.enabled"], matchIfMissing = true)
+@ConditionalOnClass(ConsulClient::class)
+class ConsulRegistryClientConfiguration {
 
-    /**
-     * 是否开启维护模式，开启维护模式后服务仍处于注册状态，但不对外提供服务
-     *
-     * @param enable true: 开启维护模式，实例不再对外提供服务， false: 关闭维护模式，实例恢复正常
-     */
-    fun maintenance(serviceName: String, instanceId: String, enable: Boolean): InstanceInfo
+    @Bean
+    fun consulRegistryClient(
+        @Qualifier(OkHttpConfiguration.OP_OKHTTP_CLIENT_NAME) httpClient: OkHttpClient,
+        consulProperties: ConsulProperties
+    ): ConsulRegistryClient {
+        return ConsulRegistryClient(httpClient, consulProperties)
+    }
 
-    fun isConsulEnabled(): Boolean
 }
