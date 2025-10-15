@@ -32,6 +32,7 @@ export const ROUTER_NAME_SEPARATION_RECORD = 'SeparationRecord'
 export const ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG = 'MigrationConfig'
 export const ROUTER_NAME_MIGRATE_PROJECT_GRAYSCALE_CONFIG = 'ProjectGrayscaleConfig'
 export const ROUTER_NAME_SERVER_LOG = 'ServerLog'
+export const ROUTER_NAME_SIGN_CONFIG = 'SignConfig'
 
 Vue.use(Router)
 
@@ -394,6 +395,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG,
         meta: { title: '迁移任务管理', icon: 'separate' },
         component: () => import('@/views/migration/index')
+      }
+    ]
+  },
+  {
+    path: '/sign-config',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_SIGN_CONFIG,
+        meta: { title: '水印加固配置管理', icon: 'lock' },
+        component: () => import('@/views/sign-config/SignConfig')
       }
     ]
   },
