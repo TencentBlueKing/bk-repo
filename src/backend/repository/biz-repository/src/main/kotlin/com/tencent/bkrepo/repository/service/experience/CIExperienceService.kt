@@ -5,9 +5,11 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_LENGTH
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_TYPE
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.TRANSFER_ENCODING
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.config.CIExperienceProperties
+import com.tencent.bkrepo.repository.message.RepositoryMessageCode
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceHeader
 import com.tencent.bkrepo.repository.pojo.experience.AppExperienceChangeLogRequest
 import io.micrometer.observation.ObservationRegistry
@@ -26,6 +28,7 @@ class CIExperienceService(
     private val okHttpClient = HttpClientBuilderFactory.create(registry = registry).build()
 
     fun getAppExperiences(user: String, request: AppExperienceHeader) {
+        checkConfig()
         val url = "${properties.ciExperienceServer}/ms/artifactory/api/open/experiences/v3/list"
         executeGetRequest(
             url = url,
@@ -40,6 +43,7 @@ class CIExperienceService(
         experienceHashId: String,
         request: AppExperienceHeader
     ) {
+        checkConfig()
         val url = "${properties.ciExperienceServer}/ms/artifactory/api/open/experiences/${experienceHashId}/detail"
         executeGetRequest(
             url = url,
@@ -54,6 +58,7 @@ class CIExperienceService(
         experienceHashId: String,
         request: AppExperienceChangeLogRequest
     ) {
+        checkConfig()
         val baseUrl = "${properties.ciExperienceServer}/ms/artifactory/api/open/experiences/$experienceHashId/changeLog"
         val httpUrl = baseUrl.toHttpUrlOrNull()?.newBuilder()!!
 
@@ -88,6 +93,7 @@ class CIExperienceService(
         experienceHashId: String,
         request: AppExperienceHeader
     ) {
+        checkConfig()
         val url = properties.ciExperienceServer +
             "/ms/artifactory/api/open/experiences/$experienceHashId/installPackages"
         executeGetRequest(
@@ -103,6 +109,7 @@ class CIExperienceService(
         experienceHashId: String,
         request: AppExperienceHeader
     ) {
+        checkConfig()
         val url = properties.ciExperienceServer +
             "/ms/artifactory/api/open/experiences/$experienceHashId/downloadUrl"
         executePostRequest(
@@ -183,6 +190,15 @@ class CIExperienceService(
             response.headers[CONTENT_TYPE]?.let { HttpContextHolder.getResponse().setHeader(CONTENT_TYPE, it) }
             response.headers[CONTENT_LENGTH]?.let { HttpContextHolder.getResponse().setHeader(CONTENT_LENGTH, it) }
             response.body?.byteStream()?.copyTo(HttpContextHolder.getResponse().outputStream)
+        }
+    }
+
+    /**
+     * 配置检查
+     */
+    private fun checkConfig() {
+        if (properties.ciExperienceServer.isBlank() || properties.ciToken.isBlank()) {
+            throw ErrorCodeException(RepositoryMessageCode.APP_EXPERIENCE_CONFIG_ERROR)
         }
     }
 
