@@ -29,6 +29,7 @@ package com.tencent.bkrepo.common.notify.api
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.tencent.bkrepo.common.notify.api.bkci.BkciChannelCredential
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -39,6 +40,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(
     JsonSubTypes.Type(value = WeworkBotChannelCredential::class, name = WeworkBotChannelCredential.TYPE),
+    JsonSubTypes.Type(value = BkciChannelCredential::class, name = BkciChannelCredential.TYPE),
 )
 @Schema(title = "消息通知渠道")
 open class NotifyChannelCredential(
