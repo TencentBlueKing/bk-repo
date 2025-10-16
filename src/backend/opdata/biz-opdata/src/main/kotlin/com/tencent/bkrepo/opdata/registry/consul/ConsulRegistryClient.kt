@@ -93,6 +93,10 @@ class ConsulRegistryClient constructor(
         return changeInstanceStatus(urlBuilder, serviceName, instanceId, targetStatus)
     }
 
+    override fun isConsulEnabled(): Boolean {
+        return true
+    }
+
     private fun changeInstanceStatus(
         urlBuilder: HttpUrl.Builder,
         serviceName: String,
