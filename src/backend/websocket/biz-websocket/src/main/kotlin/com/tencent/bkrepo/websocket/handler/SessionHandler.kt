@@ -107,8 +107,7 @@ class SessionHandler(
 
     @Throws(java.lang.Exception::class)
     override fun handleMessage(session: WebSocketSession, message: WebSocketMessage<*>) {
-        val sessionId = session.attributes[SESSION_ID].toString()
-        TraceUtils.newSpan(registry, sessionId, init = true) {
+        TraceUtils.newSpan(registry, "websocket.session", init = true) {
             super.handleMessage(session, message)
         }
     }
