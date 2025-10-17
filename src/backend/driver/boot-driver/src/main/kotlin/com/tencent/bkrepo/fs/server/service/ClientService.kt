@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.metrics.constant.DRIVE_CLIENT_HEARTBEAT
+import com.tencent.bkrepo.common.metrics.constant.DRIVE_CLIENT_HEARTBEAT_DESC
 import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
@@ -58,6 +60,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Service
@@ -78,11 +81,13 @@ class ClientService(
             )
             val client = clientRepository.findOne(query)
             recordDairyClient(request, "start")
-            return if (client == null) {
+            val newClient = if (client == null) {
                 insertClient(request)
             } else {
                 updateClient(request, client)
-            }.convert()
+            }
+            pushHeartbeatMetrics(newClient)
+            return newClient.convert()
         }
     }
 
@@ -109,7 +114,8 @@ class ClientService(
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
         client.heartbeatTime = LocalDateTime.now()
         client.online = true
-        clientRepository.save(client)
+        val newClient = clientRepository.save(client)
+        pushHeartbeatMetrics(newClient)
     }
 
     suspend fun listClients(request: ClientListRequest): Page<ClientDetail> {
@@ -125,6 +131,28 @@ class ClientService(
         val count = clientRepository.count(query)
         val data = clientRepository.find(query.with(pageRequest))
         return Pages.ofResponse(pageRequest, count, data.map { it.convert() })
+    }
+
+    suspend fun pushHeartbeatMetrics(client: TClient) {
+        with(client) {
+            val metricItem = MetricsItem(
+                name = DRIVE_CLIENT_HEARTBEAT,
+                help = DRIVE_CLIENT_HEARTBEAT_DESC,
+                dataModel = DataModel.DATAMODEL_GAUGE,
+                keepHistory = false,
+                value = heartbeatTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli().toDouble(),
+                labels = mutableMapOf(
+                    TClient::projectId.name to projectId,
+                    TClient::repoName.name to repoName,
+                    TClient::mountPoint.name to mountPoint,
+                    TClient::userId.name to userId,
+                    TClient::ip.name to ip,
+                    TClient::version.name to version,
+                    TClient::os.name to os,
+                )
+            )
+            customMetricsExporter?.reportMetrics(metricItem)
+        }
     }
 
     suspend fun pushMetrics(request: ClientPushMetricsRequest) {
