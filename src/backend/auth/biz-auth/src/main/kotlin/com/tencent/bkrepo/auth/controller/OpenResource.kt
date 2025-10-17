@@ -49,168 +49,176 @@ import org.slf4j.LoggerFactory
 open class OpenResource(private val permissionService: PermissionService) {
 
     /**
-     * the userContext should equal userId or be admin
-     * only use in user api
+     * 检查当前用户上下文是否与指定用户ID匹配或为管理员
+     * 仅用于用户API
      */
     fun preCheckContextUser(userId: String) {
         val userContext = SecurityUtils.getUserId()
         if (!isAdminFromApi() && userContext.isNotEmpty() && userContext != userId) {
-            logger.warn("user not match [$userContext, $userId]")
+            logger.warn("User context mismatch: expected [$userId], actual [$userContext]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
 
     /**
-     * 是否系统管理员
-     * 限定在auth服务api请求时使用
+     * 检查是否为系统管理员
+     * 限定在auth服务API请求时使用
      */
     private fun isAdminFromApi(): Boolean {
         return HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
     }
 
     /**
-     * 是否系统管理员
-     * 限定在auth服务api请求时使用
+     * 检查是否为平台认证
+     * 限定在auth服务API请求时使用
      */
     fun isAuthFromPlatform(): Boolean {
-        val appId = SecurityUtils.getPlatformId()
-        if (appId.isNullOrEmpty()) {
-            return false
-        }
-        return true
+        return !SecurityUtils.getPlatformId().isNullOrEmpty()
     }
 
     /**
-     *  userId's assetUsers contain userContext or userContext be admin
+     * 检查用户ID的资产用户列表是否包含当前用户上下文，或当前用户为管理员
      */
     fun preCheckUserOrAssetUser(userId: String, users: List<UserInfo>) {
-        if (!users.any { userInfo -> userInfo.userId == userId }) {
+        if (users.none { it.userId == userId }) {
             preCheckContextUser(userId)
         }
     }
 
     /**
-     * the userContext should be admin
-     * only use in user api
+     * 检查当前用户是否为管理员
+     * 仅用于用户API
      */
     fun preCheckUserAdmin() {
-        val userContext = SecurityUtils.getUserId()
         if (!isAdminFromApi()) {
-            logger.warn("user not match admin [$userContext]")
+            val userContext = SecurityUtils.getUserId()
+            logger.warn("User [$userContext] is not admin")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
 
     /**
-     * the userContext should be admin
-     * only use in user api
+     * 检查授权类型，如果包含平台授权或为空则需要管理员权限
+     * 仅用于用户API
      */
     fun preCheckGrantTypes(grantTypes: Set<AuthorizationGrantType>) {
-        if (grantTypes.contains(AuthorizationGrantType.PLATFORM) || grantTypes.isEmpty()) {
+        if (AuthorizationGrantType.PLATFORM in grantTypes || grantTypes.isEmpty()) {
             preCheckUserAdmin()
         }
     }
 
     /**
-     * only system scopeType account have the permission
+     * 检查平台权限，仅系统级账号拥有此权限
      */
     fun preCheckPlatformPermission() {
         val appId = SecurityUtils.getPlatformId()
         if (appId.isNullOrEmpty()) {
-            logger.warn("appId can not be empty [$appId]")
+            logger.warn("Platform appId is required but not provided")
             throw ErrorCodeException(AuthMessageCode.AUTH_ACCOUT_FORAUTH_NOT_PERM)
         }
-        val request = CheckPermissionRequest(
-            uid = SecurityUtils.getUserId(),
-            appId = appId,
-            resourceType = ResourceType.SYSTEM.name,
-            action = PermissionAction.MANAGE.name
+        
+        val request = buildPermissionRequest(
+            resourceType = ResourceType.SYSTEM,
+            action = PermissionAction.MANAGE,
+            appId = appId
         )
 
         if (!permissionService.checkPlatformPermission(request)) {
-            logger.warn("account do not have the permission [$request]")
+            logger.warn("Account does not have platform permission: $request")
             throw ErrorCodeException(AuthMessageCode.AUTH_ACCOUT_FORAUTH_NOT_PERM)
         }
     }
 
     /**
-     * check is the user have project or repo create permission
+     * 检查用户是否拥有项目或仓库的创建权限
      */
     fun preCheckUserInProject(type: AuthPermissionType, projectId: String, repoName: String?) {
-        val checkRequest = CheckPermissionRequest(
-            uid = SecurityUtils.getUserId(),
-            resourceType = ResourceType.PROJECT.name,
-            action = PermissionAction.WRITE.name,
+        val resourceType = if (type == AuthPermissionType.REPO) ResourceType.REPO else ResourceType.PROJECT
+        val checkRequest = buildPermissionRequest(
+            resourceType = resourceType,
+            action = PermissionAction.WRITE,
             projectId = projectId,
+            repoName = repoName.takeIf { type == AuthPermissionType.REPO },
             appId = SecurityUtils.getPlatformId()
         )
-        if (type == AuthPermissionType.REPO) {
-            checkRequest.repoName = repoName
-            checkRequest.resourceType = ResourceType.REPO.name
-        }
+        
         if (!permissionService.checkPermission(checkRequest)) {
-            logger.warn("check user permission error [$checkRequest]")
+            logger.warn("User permission check failed: $checkRequest")
             throw ErrorCodeException(AuthMessageCode.AUTH_PERMISSION_FAILED)
         }
     }
 
     /**
-     * check is the user is project admin
+     * 检查用户是否为项目管理员
      */
     fun preCheckProjectAdmin(projectId: String) {
-        val userId = SecurityUtils.getUserId()
-        val checkRequest = CheckPermissionRequest(
-            uid = userId,
-            resourceType = ResourceType.PROJECT.name,
-            projectId = projectId,
-            action = PermissionAction.MANAGE.name
-        )
-        if (!permissionService.checkPermission(checkRequest)) {
-            logger.warn("user is not project admin [$checkRequest]")
+        if (!isContextUserProjectAdmin(projectId)) {
+            val userId = SecurityUtils.getUserId()
+            logger.warn("User [$userId] is not project admin for project [$projectId]")
             throw ErrorCodeException(AuthMessageCode.AUTH_USER_FORAUTH_NOT_PERM)
         }
     }
 
-
+    /**
+     * 判断当前用户是否为项目管理员
+     */
     fun isContextUserProjectAdmin(projectId: String): Boolean {
-        val userId = SecurityUtils.getUserId()
-        val checkRequest = CheckPermissionRequest(
-            uid = userId,
-            resourceType = ResourceType.PROJECT.toString(),
-            projectId = projectId,
-            action = PermissionAction.MANAGE.toString()
+        val checkRequest = buildPermissionRequest(
+            resourceType = ResourceType.PROJECT,
+            action = PermissionAction.MANAGE,
+            projectId = projectId
         )
         return permissionService.checkPermission(checkRequest)
     }
 
+    /**
+     * 校验权限检查请求参数的完整性
+     */
     fun checkRequest(request: CheckPermissionRequest) {
         with(request) {
+            // 所有资源类型都需要 projectId
+            validateParameter(projectId, "projectId")
+            
             when (resourceType) {
-                ResourceType.PROJECT.toString() -> {
-                    if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
-                    }
-                }
                 ResourceType.REPO.toString() -> {
-                    if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
-                    }
-                    if (repoName.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoName")
-                    }
+                    validateParameter(repoName, "repoName")
                 }
                 ResourceType.NODE.toString() -> {
-                    if (projectId.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "projectId")
-                    }
-                    if (repoName.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "repoName")
-                    }
-                    if (path.isNullOrBlank()) {
-                        throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, "path")
-                    }
+                    validateParameter(repoName, "repoName")
+                    validateParameter(path, "path")
                 }
             }
+        }
+    }
+
+    /**
+     * 构建权限检查请求对象
+     */
+    private fun buildPermissionRequest(
+        resourceType: ResourceType,
+        action: PermissionAction,
+        projectId: String? = null,
+        repoName: String? = null,
+        path: String? = null,
+        appId: String? = null
+    ): CheckPermissionRequest {
+        return CheckPermissionRequest(
+            uid = SecurityUtils.getUserId(),
+            resourceType = resourceType.name,
+            action = action.name,
+            projectId = projectId,
+            repoName = repoName,
+            path = path,
+            appId = appId
+        )
+    }
+
+    /**
+     * 校验参数是否为空
+     */
+    private fun validateParameter(value: String?, paramName: String) {
+        if (value.isNullOrBlank()) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_MISSING, paramName)
         }
     }
 
