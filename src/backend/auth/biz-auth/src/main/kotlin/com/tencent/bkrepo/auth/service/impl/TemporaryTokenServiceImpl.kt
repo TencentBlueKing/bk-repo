@@ -35,6 +35,7 @@ import com.tencent.bkrepo.auth.service.TemporaryTokenService
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.handler.MaskPartString
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import org.slf4j.LoggerFactory
@@ -84,12 +85,12 @@ class TemporaryTokenServiceImpl(
 
     override fun deleteToken(token: String) {
         temporaryTokenRepository.deleteByToken(token)
-        logger.info("Delete temporary token success.")
+        logger.info("Delete temporary token ${MaskPartString().desensitize(token)} success.")
     }
 
     override fun decrementPermits(token: String) {
         temporaryTokenRepository.decrementPermits(token)
-        logger.info("Decrement permits of token success.")
+        logger.info("Decrement permits of token ${MaskPartString().desensitize(token)} success.")
     }
 
     /**
