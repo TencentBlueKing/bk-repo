@@ -114,7 +114,7 @@ class RepositoryMetricsReportJob(
             name = REPOSITORY_ARTIFACT_COUNT,
             help = REPOSITORY_ARTIFACT_COUNT_DESC,
             dataModel = DataModel.DATAMODEL_GAUGE,
-            keepHistory = true,
+            keepHistory = false,
             value = repoMetric.num.toDouble(),
             labels = labels
         )
@@ -139,7 +139,7 @@ class RepositoryMetricsReportJob(
             name = REPOSITORY_ARTIFACT_SIZE_BYTES,
             help = REPOSITORY_ARTIFACT_SIZE_BYTES_DESC,
             dataModel = DataModel.DATAMODEL_GAUGE,
-            keepHistory = true,
+            keepHistory = false,
             value = repoMetric.size.toDouble(),
             labels = labels
         )
@@ -168,7 +168,7 @@ class RepositoryMetricsReportJob(
             name = REPOSITORY_QUOTA_BYTES,
             help = REPOSITORY_QUOTA_BYTES_DESC,
             dataModel = DataModel.DATAMODEL_GAUGE,
-            keepHistory = true,
+            keepHistory = false,
             value = quotaValue,
             labels = labels
         )
