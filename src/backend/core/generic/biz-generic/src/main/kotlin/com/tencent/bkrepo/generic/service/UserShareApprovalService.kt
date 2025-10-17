@@ -197,7 +197,7 @@ class UserShareApprovalService(
             }
         } catch (e: Exception) {
             logger.error("request $url failed: ${e.message}")
-            throw throw ErrorCodeException(CommonMessageCode.SERVICE_CALL_ERROR)
+            throw ErrorCodeException(CommonMessageCode.SERVICE_CALL_ERROR)
         }
     }
 

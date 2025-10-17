@@ -126,7 +126,7 @@ class UserShareService(
                 artifact = ArtifactInfo(record.projectId, record.repoName, record.path),
                 option = NodeListOption(includeFolder = false, deep = true)
             )
-            val needApproval = checkFileSize(nodes)
+            val needApproval = checkFileSize(record.projectId, nodes)
             if (needApproval) {
                 val approval = userShareApprovalService.checkApprovalStatus(record.id!!)
                 ActionAuditContext.current().addExtendData(TUserShareApproval::approvalId.name, approval.approvalId)
@@ -151,12 +151,11 @@ class UserShareService(
         }
     }
 
-    fun checkFileSize(nodes: List<NodeInfo>): Boolean {
-        if (!devXProperties.enabled) {
-            return false
-        }
+    fun checkFileSize(projectId: String, nodes: List<NodeInfo>): Boolean {
+        val sizeLimitBytes = devXProperties.projectShareFileSizeLimit[projectId]?.toBytes()
+            ?: devXProperties.shareFileSizeLimit.toBytes()
         nodes.forEach { node ->
-            if (node.size > devXProperties.shareFileSizeLimit.toBytes()) {
+            if (node.size > sizeLimitBytes) {
                 return true
             }
         }
@@ -172,12 +171,13 @@ class UserShareService(
         return UserShareUrls(urls)
     }
 
-    // TODO 后续配置从蓝盾查询
     fun getConfig(projectId: String, repoName: String): UserShareConfigInfo {
+        val sizeLimitBytes = devXProperties.projectShareFileSizeLimit[projectId]?.toBytes()
+            ?: devXProperties.shareFileSizeLimit.toBytes()
         return UserShareConfigInfo(
             projectId = projectId,
             repoName = repoName,
-            sizeLimit = devXProperties.shareFileSizeLimit.toBytes(),
+            sizeLimit = sizeLimitBytes,
             createdBy = SecurityUtils.getUserId(),
             createdDate = LocalDateTime.now(),
             lastModifiedBy = SecurityUtils.getUserId(),
