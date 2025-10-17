@@ -94,6 +94,9 @@ enum class EventType(val msgKey: String) {
     SERVICE_INSTANCE("artifact.event.service-instance"),
     SERVICE_INSTANCE_LIST("artifact.event.service-instance-list"),
     SERVICE_LIST("artifact.event.service-list"),
+    SERVICE_INSTANCE_BANDWIDTH_LIST("artifact.event.service-bandwidth-instance-list"),
+    SERVICE_INSTANCE_BANDWIDTH_DELETE("artifact.event.service-bandwidth-instance-delete"),
+    SERVICE_INSTANCE_BANDWIDTH_IP_LIST("artifact.event.service-bandwidth-ip-list"),
 
     // EXT-PERMISSION
     EXT_PERMISSION_LIST("artifact.event.ext-permission-list"),
