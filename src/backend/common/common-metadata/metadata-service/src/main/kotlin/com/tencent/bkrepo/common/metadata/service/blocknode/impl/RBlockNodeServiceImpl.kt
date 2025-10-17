@@ -47,6 +47,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -154,6 +155,19 @@ class RBlockNodeServiceImpl(
                 blockResources.add(res)
             }
             return blockResources
+        }
+    }
+
+    override suspend fun checkBlockExist(blockNode: TBlockNode): Boolean {
+        with(blockNode) {
+            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(nodeFullPath)
+                .and(TBlockNode::projectId).isEqualTo(projectId)
+                .and(TBlockNode::repoName).isEqualTo(repoName)
+                .and(TBlockNode::deleted).isEqualTo(null)
+                .and(TBlockNode::uploadId).isEqualTo(uploadId)
+                .and(TBlockNode::sha256).isEqualTo(sha256)
+                .and(TBlockNode::startPos).isEqualTo(startPos)
+            return rBlockNodeDao.exists(Query(criteria))
         }
     }
 

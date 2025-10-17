@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.replicator.standalone
 
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
@@ -41,6 +42,7 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 /**
@@ -109,11 +111,16 @@ class EdgeNodeReplicator(
     }
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
-        return executeFilePush(
+        if (unNormalNode(node)) {
+            handleBlockNodeReplication(context, node)
+            return true
+        }
+        executeFilePush(
             context = context,
             node = node,
             logPrefix = "[EdgeNode] ",
         )
+        return true
     }
 
     override fun replicaDeletedNode(context: ReplicaContext, node: NodeInfo): Boolean {
@@ -138,5 +145,38 @@ class EdgeNodeReplicator(
 
     override fun replicaMetadataDelete(context: ReplicaContext, metadataDeleteRequest: MetadataDeleteRequest): Boolean {
         return true
+    }
+
+    private fun handleBlockNodeReplication(context: ReplicaContext, node: NodeInfo): Boolean {
+        with(context) {
+            if (!blockNode(node)) {
+                logger.warn("Node ${node.fullPath} in repo ${node.projectId}|${node.repoName} is link node.")
+                return false
+            }
+            val blockNodeList = localDataManager.listBlockNode(node)
+            if (blockNodeList.isEmpty()) {
+                logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
+                return true
+            }
+            blockNodeList.forEach { blockNode ->
+                executeBlockNodePush(this, blockNode)
+            }
+            return true
+        }
+    }
+
+    private fun executeBlockNodePush(
+        context: ReplicaContext,
+        blockNode: TBlockNode,
+    ) {
+        executeFilePush(
+            context = context,
+            node = blockNode,
+            logPrefix = "[Cluster-Block] ",
+        )
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(EdgeNodeReplicator::class.java)
     }
 }

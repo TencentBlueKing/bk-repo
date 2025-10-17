@@ -105,4 +105,10 @@ interface RBlockNodeService {
         nodeDetail: NodeDetail,
         range: Range
     ): List<RegionResource>
+
+
+    /**
+     * 检查分块是否存在
+     * */
+    suspend fun checkBlockExist(blockNode: TBlockNode): Boolean
 }

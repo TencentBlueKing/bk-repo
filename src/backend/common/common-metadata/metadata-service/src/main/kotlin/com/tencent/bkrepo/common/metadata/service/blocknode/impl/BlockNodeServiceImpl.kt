@@ -48,7 +48,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
-
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -75,13 +75,13 @@ class BlockNodeServiceImpl(
         fullPath: String,
         uploadId: String
     ) {
-            val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
-                criteria.and(TBlockNode::uploadId).isEqualTo(uploadId)
-            val update = Update().set(TBlockNode::uploadId.name, null)
-                .set(TBlockNode::createdDate.name, LocalDateTime.now())
-                .set(TBlockNode::expireDate.name, null)
-            blockNodeDao.updateMulti(Query(criteria), update)
-            logger.info("Update block node[$projectId/$repoName/$fullPath--/uploadId: $uploadId] success.")
+        val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
+        criteria.and(TBlockNode::uploadId).isEqualTo(uploadId)
+        val update = Update().set(TBlockNode::uploadId.name, null)
+            .set(TBlockNode::createdDate.name, LocalDateTime.now())
+            .set(TBlockNode::expireDate.name, null)
+        blockNodeDao.updateMulti(Query(criteria), update)
+        logger.info("Update block node[$projectId/$repoName/$fullPath--/uploadId: $uploadId] success.")
     }
 
     override fun listBlocks(
@@ -150,7 +150,6 @@ class BlockNodeServiceImpl(
     }
 
 
-
     override fun restoreBlocks(
         projectId: String,
         repoName: String,
@@ -162,8 +161,10 @@ class BlockNodeServiceImpl(
             BlockNodeQueryHelper.deletedCriteria(projectId, repoName, fullPath, nodeCreateDate, nodeDeleteDate)
         val update = BlockNodeQueryHelper.restoreUpdate()
         val result = blockNodeDao.updateMulti(Query(criteria), update)
-        logger.info("Restore ${result.modifiedCount} blocks node[$projectId/$repoName$fullPath] " +
-            "between $nodeCreateDate and $nodeDeleteDate success.")
+        logger.info(
+            "Restore ${result.modifiedCount} blocks node[$projectId/$repoName$fullPath] " +
+                "between $nodeCreateDate and $nodeDeleteDate success."
+        )
     }
 
     override fun info(nodeDetail: NodeDetail, range: Range): List<RegionResource> {
@@ -179,6 +180,19 @@ class BlockNodeServiceImpl(
                 blockResources.add(res)
             }
             return blockResources
+        }
+    }
+
+    override fun checkBlockExist(blockNode: TBlockNode): Boolean {
+        with(blockNode) {
+            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(nodeFullPath)
+                .and(TBlockNode::projectId).isEqualTo(projectId)
+                .and(TBlockNode::repoName).isEqualTo(repoName)
+                .and(TBlockNode::deleted).isEqualTo(null)
+                .and(TBlockNode::uploadId).isEqualTo(uploadId)
+                .and(TBlockNode::sha256).isEqualTo(sha256)
+                .and(TBlockNode::startPos).isEqualTo(startPos)
+            return blockNodeDao.exists(Query(criteria))
         }
     }
 

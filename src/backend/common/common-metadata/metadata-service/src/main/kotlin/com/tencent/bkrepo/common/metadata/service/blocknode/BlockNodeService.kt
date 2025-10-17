@@ -123,4 +123,9 @@ interface BlockNodeService {
         nodeDetail: NodeDetail,
         range: Range
     ): List<RegionResource>
+
+    /**
+     * 检查分块是否存在
+     * */
+    fun checkBlockExist(blockNode: TBlockNode): Boolean
 }

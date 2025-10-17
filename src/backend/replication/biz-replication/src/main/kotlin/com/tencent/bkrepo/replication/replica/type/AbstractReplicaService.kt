@@ -32,7 +32,6 @@ import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
@@ -189,17 +188,34 @@ abstract class AbstractReplicaService(
     protected fun replicaByPathConstraint(replicaContext: ReplicaContext, constraint: PathConstraint) {
         with(replicaContext) {
             try {
-                val nodeInfo = localDataManager.findNodeDetail(
+                val nodeInfo = localDataManager.findNode(
                     projectId = localProjectId,
                     repoName = localRepoName,
                     fullPath = constraint.path!!
-                ).nodeInfo
-                replicaByPath(this, nodeInfo)
+                )?.nodeInfo
+                if (nodeInfo == null) {
+                    replicaByRegexPathConstraint(replicaContext, constraint)
+                } else {
+                    replicaByPath(this, nodeInfo)
+                }
             } catch (throwable: Throwable) {
                 logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
                 setRunOnceTaskFailedRecordMetrics(this, throwable, pathConstraint = constraint)
                 throw throwable
             }
+        }
+    }
+
+    private fun replicaByRegexPathConstraint(replicaContext: ReplicaContext, constraint: PathConstraint) {
+        with(replicaContext) {
+            localDataManager.processRegexPathNodes(
+                projectId = replicaContext.localProjectId,
+                repoName = replicaContext.localRepoName,
+                fullPath = constraint.path!!,
+                nodeProcessor = { node ->
+                    replicaByPath(this, node)
+                }
+            )
         }
     }
 
@@ -474,10 +490,6 @@ abstract class AbstractReplicaService(
                 size = node.size.toString()
             )
             val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
-            if (node.sha256 == FAKE_SHA256) {
-                logger.warn("Node $fullPath in repo ${node.projectId}|${node.repoName} is link node.")
-                return
-            }
             runActionAndPrintLog(context, record) {
                 when (context.detail.conflictStrategy) {
                     ConflictStrategy.SKIP -> false
