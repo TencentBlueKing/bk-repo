@@ -124,7 +124,7 @@ class UserServiceImpl constructor(
         try {
             val userResult = createUser(UserRequestUtil.convToCreateRepoUserRequest(request))
             if (!userResult) {
-                logger.warn("create user fail [$request]")
+                logger.warn("create user fail for userId [${request.userId}]")
                 return false
             }
             request.pwd?.let {
@@ -150,7 +150,7 @@ class UserServiceImpl constructor(
         try {
             val userResult = createUser(UserRequestUtil.convToCreateProjectUserRequest(request))
             if (!userResult) {
-                logger.warn("create user fail [$request]")
+                logger.warn("create user fail for userId [${request.userId}]")
                 return false
             }
             request.pwd?.let {
@@ -216,7 +216,7 @@ class UserServiceImpl constructor(
     }
 
     override fun updateUserById(userId: String, request: UpdateUserRequest): Boolean {
-        logger.info("update user userId : [$userId], request : [$request]")
+        logger.info("update user userId : [$userId]")
         userHelper.checkUserExist(userId)
         return userDao.updateUserById(userId, request)
     }

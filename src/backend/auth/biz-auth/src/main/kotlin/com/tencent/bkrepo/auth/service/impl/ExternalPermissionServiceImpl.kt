@@ -69,7 +69,6 @@ class ExternalPermissionServiceImpl(
                 lastModifiedBy = userId
             )
             externalPermissionRepository.insert(tExternalPermission)
-            logger.info("$userId create external permission[$tExternalPermission]")
         }
     }
 
@@ -88,7 +87,6 @@ class ExternalPermissionServiceImpl(
             tExternalPermission.lastModifiedDate = LocalDateTime.now()
             tExternalPermission.lastModifiedBy = userId
             externalPermissionRepository.save(tExternalPermission)
-            logger.info("$userId update external permission[$tExternalPermission]")
         }
     }
 

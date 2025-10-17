@@ -94,7 +94,7 @@ object EdgeReplicaContextHolder {
                     logger.info("deferredResult set failed: $key")
                     continue
                 }
-                logger.info("send edge task: $edgeReplicaTaskRecord")
+                logger.info("send edge task: ${edgeReplicaTaskRecord.taskDetail.task.key}")
                 deferredResultMap.remove(key)
                 return
             }
