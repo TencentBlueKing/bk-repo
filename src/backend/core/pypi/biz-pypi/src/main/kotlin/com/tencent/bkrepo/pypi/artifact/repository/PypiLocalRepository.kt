@@ -360,20 +360,22 @@ class PypiLocalRepository(
                 return buildPypiPageContent(PACKAGE_INDEX_TITLE, buildPackageListContent(nodeList))
             }
             // 请求中带包名，返回对应包的文件列表。
-            val nodes = nodeService.listNode(
-                ArtifactInfo(projectId, repoName, "/$packageName"),
-                NodeListOption(includeFolder = false, deep = true, includeMetadata = true)
-            )
-            if (!nodes.isNullOrEmpty()) {
-                return buildPypiPageContent(
-                    String.format(VERSION_INDEX_TITLE, packageName),
-                    buildPackageFileListContent(nodes)
+            if (!pypiProperties.enableRegexQuery || !pypiProperties.preferRegexQuery) {
+                val nodes = nodeService.listNode(
+                    ArtifactInfo(projectId, repoName, "/$packageName"),
+                    NodeListOption(includeFolder = false, deep = true, includeMetadata = true)
                 )
+                if (!nodes.isNullOrEmpty()) {
+                    return buildPypiPageContent(
+                        String.format(VERSION_INDEX_TITLE, packageName),
+                        buildPackageFileListContent(nodes)
+                    )
+                }
+                if (!pypiProperties.enableRegexQuery) {
+                    throw PypiSimpleNotFoundException(packageName!!)
+                }
+                logger.info("not found nodeList by packageName[$packageName], use regex query")
             }
-            if (!pypiProperties.enableRegexQuery) {
-                throw PypiSimpleNotFoundException(packageName!!)
-            }
-            logger.info("not found nodeList by packageName[$packageName], use regex query")
             // 客户端标准化包名规则：1.连续的[-_.]转换为单个"-"；2.转换为全小写。此处需要以反向规则查询
             var pageNumber = 1
             val nodeList = mutableListOf<Map<String, Any?>>()
