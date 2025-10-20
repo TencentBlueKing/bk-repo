@@ -35,7 +35,6 @@ import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
 import com.tencent.bkrepo.auth.constant.BKREPO_TICKET
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.message.AuthMessageCode
-import com.tencent.bkrepo.auth.pojo.enums.AuthPermissionType
 import com.tencent.bkrepo.auth.pojo.token.Token
 import com.tencent.bkrepo.auth.pojo.token.TokenResult
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
@@ -63,6 +62,7 @@ import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import jakarta.servlet.http.Cookie
 import org.bouncycastle.crypto.CryptoException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -78,7 +78,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.Base64
-import javax.servlet.http.Cookie
 
 @RestController
 @RequestMapping(AUTH_API_USER_PREFIX)
@@ -107,7 +106,7 @@ class UserController @Autowired constructor(
     fun createUserToProject(@RequestBody request: CreateUserToProjectRequest): Response<Boolean> {
         // 限制创建为admin用户
         request.admin = false
-        preCheckUserInProject(AuthPermissionType.PROJECT, request.projectId, null)
+        preCheckProjectAdmin(request.projectId)
         userService.createUserToProject(request)
         val createRoleRequest = buildProjectAdminRequest(request.projectId)
         val roleId = roleService.createRole(createRoleRequest)
@@ -120,7 +119,7 @@ class UserController @Autowired constructor(
     fun createUserToRepo(@RequestBody request: CreateUserToRepoRequest): Response<Boolean> {
         // 限制创建为admin用户
         request.admin = false
-        preCheckUserInProject(AuthPermissionType.PROJECT, request.projectId, null)
+        preCheckProjectAdmin(request.projectId)
         userService.createUserToRepo(request)
         val createRoleRequest = buildRepoAdminRequest(request.projectId, request.repoName)
         val roleId = roleService.createRole(createRoleRequest)
@@ -170,6 +169,10 @@ class UserController @Autowired constructor(
         if (request.admin != null && request.admin) {
             preCheckUserAdmin()
             preCheckPlatformPermission()
+        }
+        // 默认创建平台账户的用户
+        if (isAuthFromPlatform() && userService.getUserById(uid) == null) {
+            userService.createOrUpdateUser(uid, uid, request.tenantId)
         }
         userService.updateUserById(uid, request)
         return ResponseBuilder.success(true)

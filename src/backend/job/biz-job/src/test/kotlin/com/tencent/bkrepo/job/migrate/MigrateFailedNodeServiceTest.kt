@@ -43,7 +43,6 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -51,6 +50,7 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -80,25 +80,25 @@ class MigrateFailedNodeServiceTest @Autowired constructor(
     @Autowired
     private lateinit var migrateRepoStorageTaskDao: MigrateRepoStorageTaskDao
 
-    @MockBean
+    @MockitoBean
     private lateinit var autoFixStrategy: MigrateFailedNodeAutoFixStrategy
 
-    @MockBean
+    @MockitoBean
     private lateinit var separationTaskService: SeparationTaskService
 
-    @MockBean
+    @MockitoBean
     private lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
-    @MockBean
+    @MockitoBean
     private lateinit var storageCredentialService: StorageCredentialService
 
-    @MockBean
+    @MockitoBean
     private lateinit var storageService: StorageService
 
-    @MockBean
+    @MockitoBean
     private lateinit var migrateArchivedFileService: MigrateArchivedFileService
 
-    @MockBean
+    @MockitoBean
     private lateinit var repositoryService: RepositoryService
 
     @Autowired

@@ -33,7 +33,6 @@ package com.tencent.bkrepo.common.service.exception
 
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import com.tencent.bkrepo.common.service.log.LoggerHolder.logException
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -51,7 +50,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
  * 服务调用异常处理
  */
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
-@ConditionalOnMicroService
 @RestControllerAdvice
 class ServiceExceptionHandler {
 

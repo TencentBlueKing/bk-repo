@@ -110,7 +110,7 @@ class KubernetesDispatcher(
             k8sProps.namespace,
             null, null, null,
             null, null, null,
-            null, null, null, null
+            null, null, null, null, null
         )
         val status = quota.items.firstOrNull()?.status
         val hard = status?.hard
@@ -124,7 +124,7 @@ class KubernetesDispatcher(
             k8sProps.namespace,
             null, null, null,
             null, null, null,
-            null, null, null, null
+            null, null, null, null, null
         )
         val executingJobCount = jobs.items.filter {
             (it.status?.failed ?: 0) == 0 && (it.status?.succeeded ?: 0) == 0
@@ -198,7 +198,7 @@ class KubernetesDispatcher(
                 }
             }
         }
-        batchV1Api.createNamespacedJob(k8sProps.namespace, body, null, null, null)
+        batchV1Api.createNamespacedJob(k8sProps.namespace, body, null, null, null, null)
         logger.info("dispatch subtask[${subtask.taskId}] success")
         return true
     }
@@ -241,7 +241,7 @@ class KubernetesDispatcher(
                         "Foreground",
                         null
                     )
-                    batchV1Api.readNamespacedJob(jobName, namespace, null, null, null)
+                    batchV1Api.readNamespacedJob(jobName, namespace, null)
                 } catch (e: ApiException) {
                     deleted = (e.code == HttpStatus.NOT_FOUND.value)
                 }

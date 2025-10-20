@@ -41,12 +41,12 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
 import com.tencent.bkrepo.common.metadata.service.node.NodeDeleteOperation
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
+import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.NodeDeleteHelper.buildCriteria
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildDeletedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildNodeCleanEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
@@ -66,7 +66,7 @@ open class NodeDeleteSupport(
 
     val nodeDao: NodeDao = nodeBaseService.nodeDao
     val quotaService: QuotaService = nodeBaseService.quotaService
-    val routerControllerClient: RouterControllerClient = nodeBaseService.routerControllerClient
+    val routerControllerService: RouterControllerService = nodeBaseService.routerControllerService
     val routerControllerProperties: RouterControllerProperties = nodeBaseService.routerControllerProperties
 
     override fun deleteNode(deleteRequest: NodeDeleteRequest): NodeDeleteResult {
@@ -192,11 +192,10 @@ open class NodeDeleteSupport(
         repoName: String,
         fullPath: String,
         operator: String,
-        nodeId: String
+        nodeId: String,
+        deleteTime: LocalDateTime
     ): NodeDeleteResult {
         require(!PathUtils.isRoot(fullPath)) { "Cannot delete root node." }
-        val deleteTime = LocalDateTime.now()
-
         val criteria = buildCriteria(projectId, repoName, fullPath).apply {
             and(ID).isEqualTo(nodeId)
         }
@@ -255,7 +254,7 @@ open class NodeDeleteSupport(
             }
             fullPaths?.forEach { fullPath ->
                 if (routerControllerProperties.enabled) {
-                    routerControllerClient.removeNodes(projectId, repoName, fullPath)
+                    routerControllerService.removeNodes(projectId, repoName, fullPath)
                 }
                 publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator, deleteTime.toString(), source))
             }

@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.preview.service
 
-import javax.annotation.PreDestroy
+import jakarta.annotation.PreDestroy
 import org.apache.commons.lang3.StringUtils
 import org.jodconverter.core.office.InstalledOfficeManagerHolder
 import org.jodconverter.core.office.OfficeUtils
@@ -51,7 +51,7 @@ import java.io.IOException
  */
 @Component
 class OfficePluginManager {
-    private var officeManager: LocalOfficeManager ? = null
+    private var officeManager: LocalOfficeManager? = null
 
     @Value("\${preview.office.plugin.server.ports:2001,2002}")
     private val serverPorts = "2001,2002"
@@ -69,7 +69,7 @@ class OfficePluginManager {
     private val officeHome: String = "/opt/libreoffice7.6"
 
     fun startOfficeManagerIfNeeded() {
-        if (officeManager == null) {
+        if (officeManager?.isRunning() != true) {
             startOfficeManager()
         }
     }
@@ -99,7 +99,7 @@ class OfficePluginManager {
             officeManager?.start()
             InstalledOfficeManagerHolder.setInstance(officeManager)
         } catch (e: Exception) {
-            logger.error("The office component fails to start, check whether the office component is available",e)
+            logger.error("The office component fails to start, check whether the office component is available", e)
         }
     }
 

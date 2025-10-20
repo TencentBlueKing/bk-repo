@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.common.service.actuator
 
-import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import com.tencent.bkrepo.common.service.config.CustomActuatorMetricsConfig
 import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
@@ -40,7 +39,6 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 @EnableConfigurationProperties(CustomActuatorMetricsConfig::class)
-@ConditionalOnMicroService
 class ActuatorConfiguration {
 
     @Value(SERVICE_NAME)

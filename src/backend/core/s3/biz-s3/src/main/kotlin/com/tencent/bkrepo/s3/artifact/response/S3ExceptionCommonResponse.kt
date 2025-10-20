@@ -33,20 +33,21 @@ package com.tencent.bkrepo.s3.artifact.response
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.s3.artifact.utils.ContextUtil
 import com.tencent.bkrepo.s3.constant.DEFAULT_ENCODING
 import com.tencent.bkrepo.s3.constant.S3HttpHeaders
 import com.tencent.bkrepo.s3.exception.AWS4AuthenticationException
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.dom4j.Document
 import org.dom4j.DocumentHelper
 import org.dom4j.Element
 import org.dom4j.io.OutputFormat
 import org.dom4j.io.XMLWriter
 import java.io.StringWriter
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * s3请求异常时，返回处理
@@ -88,6 +89,7 @@ class S3ExceptionCommonResponse {
         }
 
         private fun setResponseHeaders(response: HttpServletResponse) {
+            TraceHeaderUtils.setResponseHeader()
             response.setHeader(S3HttpHeaders.X_AMZ_REQUEST_ID, ContextUtil.getTraceId())
             response.setHeader(S3HttpHeaders.X_AMZ_TRACE_ID, ContextUtil.getTraceId())
             response.setHeader(HttpHeaders.CONTENT_TYPE, "application/xml")

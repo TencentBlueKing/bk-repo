@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.job.batch.task.clean
 
+import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.service.file.FileReferenceService
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.job.COLLECTION_NAME_BLOCK_NODE
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
@@ -36,7 +38,6 @@ import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.DeletedBlockNodeCleanupJobProperties
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -50,8 +51,8 @@ import kotlin.reflect.KClass
  * 清理被标记为删除的node，同时减少文件引用
  */
 @Component
-@EnableConfigurationProperties(DeletedBlockNodeCleanupJobProperties::class)
 class DeletedBlockNodeCleanupJob(
+    private val blockNodeProperties: BlockNodeProperties,
     private val properties: DeletedBlockNodeCleanupJobProperties,
     private val fileReferenceService: FileReferenceService
 ) : DefaultContextMongoDbJob<DeletedBlockNodeCleanupJob.BlockNode>(properties) {
@@ -66,11 +67,8 @@ class DeletedBlockNodeCleanupJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(7)
 
     override fun collectionNames(): List<String> {
-        val collectionNames = mutableListOf<String>()
-        for (i in 0 until SHARDING_COUNT) {
-            collectionNames.add("$COLLECTION_NAME_PREFIX$i")
-        }
-        return collectionNames
+        val collectionNamePrefix = blockNodeProperties.collectionName.ifEmpty { COLLECTION_NAME_BLOCK_NODE }
+        return (0 until SHARDING_COUNT).map { "${collectionNamePrefix}_$it" }
     }
 
     override fun buildQuery(): Query {
@@ -111,6 +109,5 @@ class DeletedBlockNodeCleanupJob(
     }
     companion object {
         private val logger = LoggerFactory.getLogger(DeletedBlockNodeCleanupJob::class.java)
-        private const val COLLECTION_NAME_PREFIX = "block_node_"
     }
 }

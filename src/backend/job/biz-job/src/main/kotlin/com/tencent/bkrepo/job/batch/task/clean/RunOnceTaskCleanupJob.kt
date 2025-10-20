@@ -36,7 +36,6 @@ import com.tencent.bkrepo.job.exception.JobExecuteException
 import com.tencent.bkrepo.replication.api.DistributionClient
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaStatus
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -48,7 +47,6 @@ import kotlin.reflect.KClass
  * 清除已经执行完成的一次性分发任务
  */
 @Component
-@EnableConfigurationProperties(RunOnceTaskCleanupJobProperties::class)
 class RunOnceTaskCleanupJob(
     private val properties: RunOnceTaskCleanupJobProperties,
     private val distributionClient: DistributionClient

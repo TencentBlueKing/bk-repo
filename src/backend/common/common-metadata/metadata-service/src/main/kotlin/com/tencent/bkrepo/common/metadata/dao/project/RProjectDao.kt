@@ -33,12 +33,12 @@ import com.tencent.bkrepo.common.mongo.reactive.dao.SimpleMongoReactiveDao
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.stereotype.Repository
+import org.springframework.stereotype.Component
 
 /**
  * 项目数据访问层
  */
-@Repository
+@Component
 @Conditional(ReactiveCondition::class)
 class RProjectDao : SimpleMongoReactiveDao<TProject>() {
 

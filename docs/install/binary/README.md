@@ -35,7 +35,7 @@
 ### 1.4 系统要求
 
 - CentOS 7.x +
-- JDK 1.8
+- JDK 17
 - MongoDB 3.6 +
 - Consul 1.0 +
 

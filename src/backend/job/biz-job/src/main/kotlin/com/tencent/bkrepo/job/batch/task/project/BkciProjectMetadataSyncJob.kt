@@ -28,14 +28,13 @@
 package com.tencent.bkrepo.job.batch.task.project
 
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import okhttp3.Request
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -46,12 +45,13 @@ import java.time.Duration
  * 定时从蓝盾同步项目元数据
  */
 @Component
-@EnableConfigurationProperties(BkciProjectMetadataSyncJobProperties::class)
 class BkciProjectMetadataSyncJob(
     private val properties: BkciProjectMetadataSyncJobProperties,
 ) : DefaultContextMongoDbJob<BkciProjectMetadataSyncJob.Project>(properties) {
 
-    val client by lazy { HttpClientBuilderFactory.create().build() }
+    val client by lazy {
+        HttpClientBuilderFactory.create(registry = registry).build()
+    }
 
     override fun run(row: Project, collectionName: String, context: JobContext) {
         if (properties.ignoredProjectPrefix.any { row.name.startsWith(it) }) {

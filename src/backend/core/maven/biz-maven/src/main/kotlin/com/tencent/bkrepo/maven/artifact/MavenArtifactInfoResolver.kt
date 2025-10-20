@@ -35,10 +35,10 @@ import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import com.tencent.bkrepo.maven.constants.PACKAGE_SUFFIX_REGEX
+import jakarta.servlet.http.HttpServletRequest
 import org.apache.commons.lang3.StringUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
-import javax.servlet.http.HttpServletRequest
 
 @Component
 @Resolver(MavenArtifactInfo::class)
@@ -79,6 +79,7 @@ class MavenArtifactInfoResolver : ArtifactInfoResolver {
 
     companion object {
         private val logger = LoggerFactory.getLogger(MavenArtifactInfoResolver::class.java)
+
         // artifact uri 最少请求参数 group/artifact/[version]/filename
         private const val pathMinLimit = 3
         private const val groupMark = 2

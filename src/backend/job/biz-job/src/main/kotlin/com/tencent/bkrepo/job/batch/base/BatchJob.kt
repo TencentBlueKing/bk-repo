@@ -28,11 +28,13 @@
 package com.tencent.bkrepo.job.batch.base
 
 import com.tencent.bkrepo.common.api.util.HumanReadable
+import com.tencent.bkrepo.common.api.util.TraceUtils
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.job.config.JobProperties
 import com.tencent.bkrepo.job.config.properties.BatchJobProperties
 import com.tencent.bkrepo.job.listener.event.TaskExecutedEvent
+import io.micrometer.observation.ObservationRegistry
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.core.LockingTaskExecutor
@@ -114,29 +116,33 @@ abstract class BatchJob<C : JobContext>(open val batchJobProperties: BatchJobPro
     @Autowired
     private lateinit var jobProperties: JobProperties
 
+    @Autowired
+    protected lateinit var registry: ObservationRegistry
+
     open fun start(): Boolean {
         if (!shouldExecute()) {
             return false
         }
-        logger.info("Start to execute async job[${getJobName()}]")
-        val jobContext = createJobContext()
-        val wasExecuted = if (isExclusive) {
-            var wasExecuted = false
-            lockProvider.lock(getLockConfiguration()).ifPresent {
-                lock = it
-                it.use { doStart(jobContext) }
-                lock = null
-                wasExecuted = true
+        return TraceUtils.newSpan(registry, getJobName(), init = true) {
+            logger.info("Start to execute async job[${getJobName()}]")
+            val wasExecuted = if (isExclusive) {
+                var wasExecuted = false
+                lockProvider.lock(getLockConfiguration()).ifPresent {
+                    lock = it
+                    it.use { doStart(createJobContext()) }
+                    lock = null
+                    wasExecuted = true
+                }
+                wasExecuted
+            } else {
+                doStart(createJobContext())
+                true
+            }
+            if (!wasExecuted) {
+                logger.info("Job[${getJobName()}] already execution.")
             }
             wasExecuted
-        } else {
-            doStart(jobContext)
-            true
         }
-        if (!wasExecuted) {
-            logger.info("Job[${getJobName()}] already execution.")
-        }
-        return wasExecuted
     }
 
     /**

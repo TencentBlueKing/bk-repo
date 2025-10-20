@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.api.cluster.ClusterMetadataClient
+import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.springframework.web.bind.annotation.RestController
@@ -62,6 +63,14 @@ class ClusterMetadataController(
         with(request) {
             permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, fullPath)
             metadataService.addForbidMetadata(this)
+            return ResponseBuilder.success()
+        }
+    }
+
+    override fun saveMetadataForDeletedNode(request: DeletedNodeMetadataSaveRequest): Response<Void> {
+        with(request.metadataSaveRequest) {
+            permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, fullPath)
+            metadataService.saveMetadataForDeletedNode(request)
             return ResponseBuilder.success()
         }
     }

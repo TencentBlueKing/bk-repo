@@ -95,6 +95,15 @@ class BlockNodeServiceImpl(
         return blockNodeDao.find(query)
     }
 
+    override fun listAllBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        createdDate: String
+    ): List<TBlockNode> {
+        return blockNodeDao.find(BlockNodeQueryHelper.listQuery(projectId, repoName, fullPath, createdDate, null))
+    }
+
     override fun listBlocksInUploadId(
         projectId: String,
         repoName: String,
@@ -126,9 +135,11 @@ class BlockNodeServiceImpl(
             val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, true)
             val blocks = blockNodeDao.find(Query(criteria))
             blocks.forEach {
+                val updateCriteria = Criteria.where(ID).isEqualTo(it.id)
+                    .and(TBlockNode::projectId).isEqualTo(projectId)
+                    .and(TBlockNode::repoName).isEqualTo(repoName)
                 val update = Update().set(TBlockNode::nodeFullPath.name, it.nodeFullPath.replace(fullPath, dstFullPath))
-                val query = Query(Criteria.where(ID).isEqualTo(it.id).and(TBlockNode::repoName).isEqualTo(repoName))
-                blockNodeDao.updateMulti(query, update)
+                blockNodeDao.updateMulti(Query(updateCriteria), update)
             }
         } else {
             val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)

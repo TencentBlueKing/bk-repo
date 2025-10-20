@@ -58,6 +58,11 @@ import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RestController
 
+/**
+ * 通过block-node进行分块上传，优化旧版本分块上传最后需要合并操作耗时过久的问题
+ *
+ * 由于block_node表默认分表键为仓库名，在存在大量同名仓库时会导致数据集中在几张表中，可参考driver模块README的注意事项修改分表键
+ */
 @RestController
 class SeparateBlockController(
     private val uploadService: UploadService,

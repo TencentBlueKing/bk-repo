@@ -33,6 +33,13 @@ rootProject.name = "bk-repo-proxy"
 
 pluginManagement {
     repositories {
+        maven {
+            name = "Central Portal Snapshots"
+            url = java.net.URI("https://central.sonatype.com/repository/maven-snapshots/")
+            mavenContent {
+                snapshotsOnly()
+            }
+        }
         if (System.getenv("GITHUB_WORKFLOW") == null) {
             maven(url = "https://mirrors.tencent.com/nexus/repository/gradle-plugins/")
             maven(url = "https://mirrors.tencent.com/nexus/repository/maven-public")

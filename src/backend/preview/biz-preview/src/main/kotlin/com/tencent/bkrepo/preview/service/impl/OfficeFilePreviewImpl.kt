@@ -38,12 +38,9 @@ import com.tencent.bkrepo.preview.exception.PreviewSystemException
 import com.tencent.bkrepo.preview.pojo.DownloadResult
 import com.tencent.bkrepo.preview.pojo.FileAttribute
 import com.tencent.bkrepo.preview.service.FileTransferService
-import com.tencent.bkrepo.preview.service.OfficeToPdfService
+import com.tencent.bkrepo.preview.service.OfficeFileConverter
 import com.tencent.bkrepo.preview.service.cache.impl.PreviewFileCacheServiceImpl
 import com.tencent.bkrepo.preview.utils.EncodingDetects
-import org.jodconverter.core.office.OfficeException
-import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Service
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.FileInputStream
@@ -52,6 +49,9 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
+import org.jodconverter.core.office.OfficeException
+import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Service
 
 /**
  * 处理office文件
@@ -59,7 +59,7 @@ import java.nio.charset.StandardCharsets
 @Service
 class OfficeFilePreviewImpl(
     private val config: PreviewConfig,
-    private val officeToPdfService: OfficeToPdfService,
+    private val officeFileConverter: OfficeFileConverter,
     private val fileTransferService: FileTransferService,
     private val previewFileCacheService: PreviewFileCacheServiceImpl,
     private val nodeService: NodeService
@@ -79,7 +79,7 @@ class OfficeFilePreviewImpl(
         var finalFilePath: String
         try {
             finalFilePath = if (isNeedConvert(fileAttribute)) {
-                officeToPdfService.openOfficeToPDF(filePath, outFilePath!!, fileAttribute)
+                officeFileConverter.convertFile(filePath, outFilePath!!, fileAttribute)
                 outFilePath
             } else {
                 filePath

@@ -28,8 +28,10 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.replication-lock-cleanup")
-data class ReplicationLockCleanupJobProperties(
-    override var cron: String = "0 0 4/24 * * ?",
-) : MongodbJobProperties()
+class ReplicationLockCleanupJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 4/24 * * ?"
+}

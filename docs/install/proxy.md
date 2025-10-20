@@ -17,7 +17,7 @@ generic:
 使用管理员账号通过[下载接口](../apidoc/proxy/proxy.md#%20下载proxy)下载proxy.jar
 
 5.运行proxy
-**运行依赖JDK版本 1.8**
+**运行依赖JDK版本 17**
 配置项storage.filesystem.path为文件存储目录，需要确保此目录已创建
 
 - Windows
@@ -62,7 +62,7 @@ systemctl start service-proxy
 6.配置router
 使用管理员账号通过[接口](../apidoc/proxy/router.md#增加路由策略)配置路由策略
 ```bash
-curl -X POST --header 'Content-Type: application/json' 'bkrepo.example.com/router-controller/api/router/admin/policy' --data '{
+curl -X POST --header 'Content-Type: application/json' 'bkrepo.example.com/opdata/api/router/admin/policy' --data '{
   "destRouterNodeId": "{proxy_name}",
   "projectIds": [
     "{projectId}"

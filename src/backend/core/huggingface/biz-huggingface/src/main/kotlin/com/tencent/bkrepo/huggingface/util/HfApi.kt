@@ -29,34 +29,34 @@ package com.tencent.bkrepo.huggingface.util
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.ACCEPT_ENCODING
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.huggingface.constants.ERROR_CODE_HEADER
 import com.tencent.bkrepo.huggingface.constants.ERROR_MSG_HEADER
 import com.tencent.bkrepo.huggingface.exception.HfApiException
 import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.BeanFactory
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Component
 
 @Component
 class HfApi(
-    private val beanFactory: BeanFactory,
+    private val registry: ObservationRegistry
 ) {
 
     init {
-        Companion.beanFactory = beanFactory
+        Companion.registry = registry
     }
 
     companion object {
-        private lateinit var beanFactory: BeanFactory
+        private lateinit var registry: ObservationRegistry
         private val httpClient by lazy {
-            HttpClientBuilderFactory.create(beanFactory = beanFactory)
+            HttpClientBuilderFactory.create(registry = registry)
                 .addInterceptor(RedirectInterceptor())
                 .followRedirects(false).build()
         }
@@ -95,7 +95,7 @@ class HfApi(
                 // https://github.com/square/okhttp/issues/259#issuecomment-22056176
                 // 使用默认gzip编码时，Content-Length可能被okhttp剥离
                 .header(ACCEPT_ENCODING, "identity")
-                .method(method ?: HttpMethod.GET.name, null)
+                .method(method ?: HttpMethod.GET.name(), null)
                 .build()
             val response = httpClient.newCall(request).execute()
             throwExceptionWhenFailed(response)

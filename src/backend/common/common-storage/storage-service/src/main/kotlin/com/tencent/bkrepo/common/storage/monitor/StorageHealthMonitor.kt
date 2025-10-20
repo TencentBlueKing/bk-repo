@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.api.util.HumanReadable.time
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -37,6 +38,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.Collections
+import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
@@ -125,11 +127,11 @@ class StorageHealthMonitor(
                             executorService
                         ).get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
                         onCheckSuccess()
-                    } catch (ignored: TimeoutException) {
+                    } catch (_: TimeoutException) {
                         onCheckFailed(IO_TIMEOUT_MESSAGE)
-                    } catch (exception: InterruptedException) {
+                    } catch (_: InterruptedException) {
                         onCheckFailed(INTERRUPTED_MESSAGE)
-                    } catch (exception: CancellationException) {
+                    } catch (_: CancellationException) {
                         onCheckFailed(CANCELLED_MESSAGE)
                     } catch (exception: ExecutionException) {
                         onCheckFailed(exception.cause?.message ?: UNKNOWN)
@@ -137,7 +139,7 @@ class StorageHealthMonitor(
                         onCheckFailed(exception.message ?: UNKNOWN)
                     } finally {
                         try {
-                            val future = executorService.submit { checker?.closeQuietly() }
+                            val future = executorService.submit(Callable { checker?.closeQuietly() }.trace())
                             future.get(1, TimeUnit.SECONDS)
                         } catch (e: Exception) {
                             logger.warn("Close checker failed: ", e)

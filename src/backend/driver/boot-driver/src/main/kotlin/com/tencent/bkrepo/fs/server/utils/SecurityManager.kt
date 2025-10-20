@@ -31,7 +31,9 @@ import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jws
+import org.springframework.stereotype.Component
 
+@Component
 class SecurityManager(
     private val jwtProperties: JwtAuthProperties
 ) {

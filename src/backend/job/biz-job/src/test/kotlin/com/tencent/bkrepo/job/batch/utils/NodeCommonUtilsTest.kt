@@ -31,7 +31,7 @@ import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.auth.api.ServiceBkiamV3ResourceClient
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.UT_PROJECT_ID
@@ -42,7 +42,6 @@ import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.mockRepositoryCommonUtils
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -53,9 +52,9 @@ import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 
@@ -65,28 +64,26 @@ import java.time.LocalDateTime
 class NodeCommonUtilsTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
 ) : JobBaseTest() {
-    @MockBean
-    private lateinit var routerControllerClient: RouterControllerClient
 
-    @MockBean
+    @MockitoBean
     lateinit var servicePermissionClient: ServicePermissionClient
 
-    @MockBean
+    @MockitoBean
     lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
-    @MockBean
+    @MockitoBean
     lateinit var messageSupplier: MessageSupplier
 
-    @MockBean
+    @MockitoBean
     lateinit var archiveClient: ArchiveClient
 
-    @MockBean
+    @MockitoBean
     lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
-    @MockBean
+    @MockitoBean
     lateinit var separationTaskService: SeparationTaskService
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
     private val nodeCollectionName = "node_${HashShardingUtils.shardingSequenceFor(UT_PROJECT_ID, SHARDING_COUNT)}"
@@ -105,7 +102,7 @@ class NodeCommonUtilsTest @Autowired constructor(
     fun `throw IllegalStateException when repo was migrating`() {
         whenever(separationTaskService.findDistinctSeparationDate()).thenReturn(emptySet())
         mockNode()
-        assertThrows<IllegalStateException> { NodeCommonUtils.exist(Query(), null) }
+        assertThrows<IllegalStateException> { NodeCommonUtils.nodeExist(Query(), null) }
     }
 
     @Test

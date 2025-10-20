@@ -31,13 +31,11 @@
 
 package com.tencent.bkrepo.common.service.feign
 
-import com.tencent.bkrepo.common.service.condition.ConditionalOnMicroService
 import com.tencent.bkrepo.common.service.condition.ConditionalOnNotAssembly
 import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-@ConditionalOnMicroService
 @ConditionalOnNotAssembly
 @EnableFeignClients(basePackages = ["com.tencent.bkrepo"])
 class ClientConfiguration

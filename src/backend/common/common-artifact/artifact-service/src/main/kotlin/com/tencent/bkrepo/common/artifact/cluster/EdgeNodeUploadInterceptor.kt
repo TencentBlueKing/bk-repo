@@ -8,10 +8,10 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpMethod
 import org.springframework.web.servlet.HandlerInterceptor
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpServletResponse
 
 /**
  * edge节点上传拦截器
@@ -37,8 +37,8 @@ class EdgeNodeUploadInterceptor(private val clusterProperties: ClusterProperties
      * */
     private fun isRegistryUploadRequest(request: HttpServletRequest): Boolean {
         val repositoryType = ArtifactContextHolder.getCurrentArtifactConfigurer().getRepositoryType()
-        if (request.method == HttpMethod.GET.name ||
-            request.method == HttpMethod.HEAD.name ||
+        if (request.method == HttpMethod.GET.name() ||
+            request.method == HttpMethod.HEAD.name() ||
             repositoryType == RepositoryType.NONE
         ) {
             return false

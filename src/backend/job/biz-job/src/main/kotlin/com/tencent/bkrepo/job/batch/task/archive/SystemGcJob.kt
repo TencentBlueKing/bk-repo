@@ -36,7 +36,7 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.service.exception.RemoteErrorCodeException
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -45,18 +45,17 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.SystemGcJobProperties
 import org.apache.commons.text.similarity.HammingDistance
-import java.time.Duration
-import java.time.LocalDateTime
-import kotlin.math.abs
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Component
+import java.time.Duration
+import java.time.LocalDateTime
+import kotlin.math.abs
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.system.measureNanoTime
 
@@ -65,7 +64,6 @@ import kotlin.system.measureNanoTime
  * 找到相似的节点，进行增量压缩，以减少不必要的存储。
  * */
 @Component
-@EnableConfigurationProperties(SystemGcJobProperties::class)
 class SystemGcJob(
     val properties: SystemGcJobProperties,
     private val mongoTemplate: MongoTemplate,

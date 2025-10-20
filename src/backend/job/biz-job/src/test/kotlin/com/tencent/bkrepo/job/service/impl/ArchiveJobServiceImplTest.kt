@@ -16,11 +16,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 @DisplayName("归档任务服务测试")
@@ -32,16 +32,16 @@ class ArchiveJobServiceImplTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
     private val service: ArchiveJobServiceImpl,
 ) {
-    @MockBean
+    @MockitoBean
     private lateinit var archiveJob: IdleNodeArchiveJob
 
-    @MockBean
+    @MockitoBean
     private lateinit var archiveClient: ArchiveClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
-    @MockBean
+    @MockitoBean
     private lateinit var migrateArchivedFileService: MigrateArchivedFileServiceImpl
 
     @Test

@@ -29,8 +29,10 @@ package com.tencent.bkrepo.job.batch.task.ddc
 
 import com.tencent.bkrepo.job.config.properties.MongodbJobProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(value = "job.ddc-blob-cleanup")
-class DdcBlobCleanupJobProperties(
-    override var cron: String = "0 0 3 * * ?",
-) : MongodbJobProperties()
+class DdcBlobCleanupJobProperties : MongodbJobProperties() {
+    override var cron: String = "0 0 3 * * ?"
+}

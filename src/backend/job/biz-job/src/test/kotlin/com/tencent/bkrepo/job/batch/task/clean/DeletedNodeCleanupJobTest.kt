@@ -7,7 +7,7 @@ import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.constant.ID
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -18,7 +18,6 @@ import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.batch.context.DeletedNodeCleanupJobContext
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -32,12 +31,12 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.findOne
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import java.time.LocalDateTime
 
 @DisplayName("已删除Node清理Job测试")
@@ -47,31 +46,28 @@ class DeletedNodeCleanupJobTest @Autowired constructor(
     private val mongoTemplate: MongoTemplate,
 ) : JobBaseTest() {
 
-    @MockBean
+    @MockitoBean
     private lateinit var messageSupplier: MessageSupplier
 
-    @MockBean
+    @MockitoBean
     private lateinit var servicePermissionClient: ServicePermissionClient
 
-    @MockBean
-    private lateinit var routerControllerClient: RouterControllerClient
-
-    @MockBean
+    @MockitoBean
     private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var archiveClient: ArchiveClient
 
-    @MockBean
+    @MockitoBean
     private lateinit var migrateRepoStorageService: MigrateRepoStorageService
 
-    @MockBean
+    @MockitoBean
     private lateinit var storageCredentialService: StorageCredentialService
 
-    @MockBean
+    @MockitoBean
     lateinit var separationTaskService: SeparationTaskService
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
     @BeforeAll

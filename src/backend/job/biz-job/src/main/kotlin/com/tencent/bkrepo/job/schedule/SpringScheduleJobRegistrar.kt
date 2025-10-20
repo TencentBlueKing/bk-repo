@@ -27,8 +27,10 @@
 
 package com.tencent.bkrepo.job.schedule
 
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
+import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
-import org.springframework.boot.task.TaskSchedulerBuilder
+import org.springframework.boot.task.ThreadPoolTaskSchedulerBuilder
 import org.springframework.scheduling.config.CronTask
 import org.springframework.scheduling.config.FixedDelayTask
 import org.springframework.scheduling.config.FixedRateTask
@@ -39,7 +41,8 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar
  * Spring调度任务注册
  * */
 class SpringScheduleJobRegistrar(
-    private val builder: TaskSchedulerBuilder,
+    private val builder: ThreadPoolTaskSchedulerBuilder,
+    private val observationRegistry: ObservationRegistry
 ) : JobRegistrar {
     private var initial = false
     lateinit var taskRegistrar: ScheduledTaskRegistrar
@@ -50,7 +53,9 @@ class SpringScheduleJobRegistrar(
         if (!initial) {
             val taskScheduler = builder.build()
             taskScheduler.initialize()
+            taskScheduler.setTaskDecorator { it.trace() }
             taskRegistrar.setTaskScheduler(taskScheduler)
+            taskRegistrar.observationRegistry = observationRegistry
             initial = true
         }
     }

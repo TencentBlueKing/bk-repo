@@ -1,5 +1,17 @@
 package com.tencent.bkrepo.media.stream
 
+import com.tencent.bkrepo.common.metrics.constant.PACKET_HANDLER_COUNTER
+import com.tencent.bkrepo.common.metrics.constant.PACKET_HANDLER_COUNTER_DESC
+import com.tencent.bkrepo.common.metrics.constant.PACKET_HANDLER_SIZE_COUNTER
+import com.tencent.bkrepo.common.metrics.constant.PACKET_HANDLER_SIZE_COUNTER_DESC
+import com.tencent.bkrepo.common.metrics.constant.PACKET_LOSS_COUNTER
+import com.tencent.bkrepo.common.metrics.constant.PACKET_LOSS_COUNTER_DESC
+import com.tencent.bkrepo.common.metrics.constant.PACKET_QUEUE_COUNTER
+import com.tencent.bkrepo.common.metrics.constant.PACKET_QUEUE_COUNTER_DESC
+import com.tencent.bkrepo.common.metrics.constant.PACKET_RECV_COUNTER
+import com.tencent.bkrepo.common.metrics.constant.PACKET_RECV_COUNTER_DESC
+import com.tencent.bkrepo.common.metrics.constant.RECORDING_COUNTER
+import com.tencent.bkrepo.common.metrics.constant.RECORDING_COUNTER_DESC
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
@@ -36,18 +48,6 @@ class MediaMetrics(private val streamManger: StreamManger) : MeterBinder {
 
     companion object {
         lateinit var registry: MeterRegistry
-        private const val PACKET_RECV_COUNTER = "packet.recv.count"
-        private const val PACKET_RECV_COUNTER_DESC = "包接受数量"
-        private const val PACKET_HANDLER_COUNTER = "packet.handler.count"
-        private const val PACKET_HANDLER_COUNTER_DESC = "包写入数量"
-        private const val PACKET_HANDLER_SIZE_COUNTER = "packet.handler.size.count"
-        private const val PACKET_HANDLER_SIZE_COUNTER_DESC = "包写入大小"
-        private const val PACKET_LOSS_COUNTER = "packet.loss.count"
-        private const val PACKET_LOSS_COUNTER_DESC = "丢包数量"
-        private const val PACKET_QUEUE_COUNTER = "packet.queue.count"
-        private const val PACKET_QUEUE_COUNTER_DESC = "包队列大小"
-        private const val RECORDING_COUNTER = "recording.count"
-        private const val RECORDING_COUNTER_DESC = "正在录制数量"
 
         fun getCounter(action: Action): Counter {
             val builder = when (action) {

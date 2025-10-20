@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.metadata.service.webhook
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.CUSTOM
@@ -47,13 +48,13 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.okhttp.PlatformAuthInterceptor
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.UserRepoCreateRequest
 import com.tencent.bkrepo.common.metadata.pojo.webhook.BkCiDevXEnabledPayload
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Dns
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -76,20 +77,20 @@ class DevXBkciWebhookListener(
     private val devXProperties: DevXProperties,
     private val projectService: ProjectService,
     private val repositoryService: RepositoryService,
+    private val registry: ObservationRegistry
 ) : BkciWebhookListener {
 
     private val client by lazy { createClient() }
 
     override fun onDevXEnabled(payload: BkCiDevXEnabledPayload) {
-        if (!devXProperties.enabled) {
-            return
-        }
         // 创建远程制品库集群仓库
-        createRemoteRepo(payload.projectCode, LSYNC)
-        createRemoteRepo(payload.projectCode, "$PIPELINE$DEVX_SUFFIX")
-        createRemoteRepo(payload.projectCode, "$CUSTOM$DEVX_SUFFIX")
-        createRemoteRepo(payload.projectCode, "$REPORT$DEVX_SUFFIX")
-        createRemoteRepo(payload.projectCode, LOG)
+        if (devXProperties.remoteBkRepoUrl.isNotEmpty()) {
+            createRemoteRepo(payload.projectCode, LSYNC)
+            createRemoteRepo(payload.projectCode, "$PIPELINE$DEVX_SUFFIX")
+            createRemoteRepo(payload.projectCode, "$CUSTOM$DEVX_SUFFIX")
+            createRemoteRepo(payload.projectCode, "$REPORT$DEVX_SUFFIX")
+            createRemoteRepo(payload.projectCode, LOG)
+        }
 
         // 创建本地项目及仓库
         createLocalProject(payload)
@@ -178,8 +179,8 @@ class DevXBkciWebhookListener(
         display: Boolean,
         retry: Int = 3
     ) {
-        val configuration = CompositeConfiguration(
-            ProxyConfiguration(
+        val configuration = if (devXProperties.remoteBkRepoUrl.isNotEmpty()) {
+            val proxyConfiguration = ProxyConfiguration(
                 listOf(
                     ProxyChannelSetting(
                         public = false,
@@ -188,7 +189,10 @@ class DevXBkciWebhookListener(
                     )
                 )
             )
-        )
+            CompositeConfiguration(proxyConfiguration)
+        } else {
+            CompositeConfiguration()
+        }
         val request = RepoCreateRequest(
             projectId = projectId,
             name = repoName,
@@ -217,7 +221,7 @@ class DevXBkciWebhookListener(
     }
 
     private fun createClient(): OkHttpClient {
-        val builder = HttpClientBuilderFactory.create()
+        val builder = HttpClientBuilderFactory.create(registry = registry)
         val ak = devXProperties.remoteBkRepoAccessKey
         val sk = devXProperties.remoteBkRepoSecretKey
         // 使用系统用户身份操作

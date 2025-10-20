@@ -13,9 +13,13 @@ metadata:
   {{- end }}
 data:
   application.yml: |-
+    {{- if keys $.Values.job.config }}
+    {{- toYaml .Values.job.config | nindent 4 }}
+    {{- end}}
     job.repoRefreshJobProperties.concurrentLevel: COLLECTION
     job.repoRefreshJobProperties.permitsPerSecond: 512
     job.repoRefreshJobProperties.types: HELM,OCI
     job.deleted-node-cleanup.deletedNodeReserveDays: {{ .Values.repository.config.deletedNodeReserveDays }}
     job.artifact-cleanup.enabled: true
+    job.helm-replication-refresh.enabled: true
 {{- end }}

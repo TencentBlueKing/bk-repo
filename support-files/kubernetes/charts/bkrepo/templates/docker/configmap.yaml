@@ -27,6 +27,6 @@ data:
       url: http://{{ .Values.gateway.host }}
       {{- end }}
     {{- if keys $.Values.docker.config }}
-      {{- toYaml .Values.docker.config | nindent 6 }}
+      {{- toYaml .Values.docker.config | nindent 4 }}
     {{- end}}
 {{- end }}

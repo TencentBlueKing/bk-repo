@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.helm.listener
 
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.helm.listener.event.ChartDeleteEvent
 import com.tencent.bkrepo.helm.listener.event.ChartUploadEvent
 import com.tencent.bkrepo.helm.listener.event.ChartVersionDeleteEvent
@@ -110,7 +111,7 @@ class ChartEventListener : AbstractChartService() {
                         chartService = this,
                         lock = lock
                     )
-                    threadPoolExecutor.submit(task)
+                    threadPoolExecutor.submit(task.trace())
                 } catch (e: Exception) {
                     logger.warn("Failed to create refresh task " +
                                      "for repo [${record.projectId}/${record.repoName}], error is $e")

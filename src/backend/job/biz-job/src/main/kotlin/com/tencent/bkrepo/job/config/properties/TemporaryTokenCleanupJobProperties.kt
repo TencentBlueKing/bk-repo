@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.temporary-token-cleanup")
-class TemporaryTokenCleanupJobProperties(
-    override var cron: String = "0 0 3 * * ?",
+class TemporaryTokenCleanupJobProperties: BatchJobProperties() {
+    override var cron: String = "0 0 3 * * ?"
     var reserveDays: Long = 7L
-) : BatchJobProperties()
+}

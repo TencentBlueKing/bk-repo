@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.service.shutdown
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import org.slf4j.LoggerFactory
 import org.springframework.context.SmartLifecycle
 import org.springframework.stereotype.Component
@@ -50,11 +51,11 @@ class ServiceShutdownHook(
         logger.info("start to ensure task finish, total task count: ${hookList.size}")
         val latestTimestampToWait =
             System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(shutdownProperties.maxWaitMinute)
-        val futureList = hookList.map { executor.submit(it) }
+        val futureList = hookList.map { executor.submit(it.trace()) }
         futureList.forEach {
             try {
                 it.get(getTimeout(latestTimestampToWait), TimeUnit.MILLISECONDS)
-            } catch (e: TimeoutException) {
+            } catch (_: TimeoutException) {
                 logger.warn("wait task finish timeout")
             } catch (e: Exception) {
                 logger.error("task execute failed", e)

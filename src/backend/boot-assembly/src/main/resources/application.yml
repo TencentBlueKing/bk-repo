@@ -42,8 +42,8 @@ cns:
   enabled: true
 
 logging:
-  config: classpath:logback-config.xml
-  path: /data/logs
+  config: classpath:logback-spring.xml
+  file.path: /data/logs
   level:
     com.tencent: DEBUG
 

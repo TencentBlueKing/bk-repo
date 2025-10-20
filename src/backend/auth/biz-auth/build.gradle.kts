@@ -39,9 +39,7 @@ dependencies {
     api(project(":common:common-lock"))
     implementation("com.google.guava:guava")
     implementation("com.tencent.bk.sdk:iam-java-sdk:${Versions.IamJavaSdk}")
-    implementation("org.apache.httpcomponents:httpclient")
     implementation("com.tencent.bk.sdk:crypto-java-sdk")
     implementation("io.micrometer:micrometer-registry-prometheus")
-    api(project(":router-controller:api-router-controller"))
     api(project(":common:common-metadata:metadata-service"))
 }

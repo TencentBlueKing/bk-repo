@@ -41,11 +41,11 @@ import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsag
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUploadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.util.unit.DataSize
 import java.io.InputStream
-import javax.servlet.http.HttpServletRequest
 
 class RequestLimitCheckService(
     private val rateLimiterProperties: RateLimiterProperties,

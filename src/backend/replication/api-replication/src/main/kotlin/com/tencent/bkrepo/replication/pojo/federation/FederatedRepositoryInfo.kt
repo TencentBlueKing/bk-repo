@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.replication.pojo.federation
 
+import java.time.LocalDateTime
+
 data class FederatedRepositoryInfo(
     val name: String,
     val federationId: String,
@@ -34,4 +36,7 @@ data class FederatedRepositoryInfo(
     val repoName: String,
     val clusterId: String,
     val federatedClusters: List<FederatedCluster>,
+    val isFullSyncing: Boolean = false,
+    val lastFullSyncStartTime: LocalDateTime? = null,
+    val lastFullSyncEndTime: LocalDateTime? = null
 )

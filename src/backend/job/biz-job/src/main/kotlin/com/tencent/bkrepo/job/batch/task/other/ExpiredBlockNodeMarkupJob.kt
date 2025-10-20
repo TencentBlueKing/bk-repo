@@ -1,14 +1,15 @@
 
 package com.tencent.bkrepo.job.batch.task.other
 
+import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
+import com.tencent.bkrepo.job.COLLECTION_NAME_BLOCK_NODE
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.base.DefaultContextMongoDbJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.TimeUtils
 import com.tencent.bkrepo.job.config.properties.ExpiredBlockNodeMarkupJobProperties
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -22,9 +23,9 @@ import kotlin.reflect.KClass
  * 标记已过期的节点为已删除
  */
 @Component
-@EnableConfigurationProperties(ExpiredBlockNodeMarkupJobProperties::class)
 class ExpiredBlockNodeMarkupJob(
     properties: ExpiredBlockNodeMarkupJobProperties,
+    private val blockNodeProperties: BlockNodeProperties,
     private val blockNodeService: BlockNodeService
 ) : DefaultContextMongoDbJob<ExpiredBlockNodeMarkupJob.BlockNode>(properties) {
 
@@ -40,11 +41,8 @@ class ExpiredBlockNodeMarkupJob(
     override fun getLockAtMostFor(): Duration = Duration.ofDays(1)
 
     override fun collectionNames(): List<String> {
-        val collectionNames = mutableListOf<String>()
-        for (i in 0 until SHARDING_COUNT) {
-            collectionNames.add("$COLLECTION_NAME_PREFIX$i")
-        }
-        return collectionNames
+        val collectionNamePrefix = blockNodeProperties.collectionName.ifEmpty { COLLECTION_NAME_BLOCK_NODE }
+        return (0 until SHARDING_COUNT).map { "${collectionNamePrefix}_$it" }
     }
 
     override fun buildQuery(): Query {
@@ -81,6 +79,5 @@ class ExpiredBlockNodeMarkupJob(
 
     companion object {
         private val logger = LoggerFactory.getLogger(ExpiredBlockNodeMarkupJob::class.java)
-        private const val COLLECTION_NAME_PREFIX = "block_node_"
     }
 }

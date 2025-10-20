@@ -36,6 +36,7 @@ dependencies {
     api(project(":common:common-bksync"))
     api(project(":common:common-storage:storage-api"))
     api(project(":common:common-artifact:artifact-api"))
+    api(project(":common:common-metrics:metrics-api"))
     api("io.micrometer:micrometer-core")
     api("commons-codec:commons-codec")
     api("commons-io:commons-io")
@@ -49,7 +50,7 @@ dependencies {
     implementation("com.tencent.bk.sdk:crypto-java-sdk")
     compileOnly("org.springframework.boot:spring-boot-starter-data-redis")
     testImplementation(project(":common:common-redis"))
-    testImplementation("it.ozimov:embedded-redis:${Versions.EmbeddedRedis}") {
+    testImplementation("com.github.codemonstur:embedded-redis:${Versions.EmbeddedRedis}") {
         exclude("org.slf4j", "slf4j-simple")
     }
     testImplementation("org.mockito.kotlin:mockito-kotlin")

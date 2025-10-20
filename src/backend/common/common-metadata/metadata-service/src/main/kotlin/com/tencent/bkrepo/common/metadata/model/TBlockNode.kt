@@ -28,10 +28,12 @@
 package com.tencent.bkrepo.common.metadata.model
 
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
+import com.tencent.bkrepo.common.api.mongo.ShardingKey
 import com.tencent.bkrepo.common.metadata.constant.SHARDING_COUNT
 import com.tencent.bkrepo.common.metadata.model.TBlockNode.Companion.BLOCK_IDX
 import com.tencent.bkrepo.common.metadata.model.TBlockNode.Companion.BLOCK_IDX_DEF
-import com.tencent.bkrepo.common.api.mongo.ShardingKey
+import com.tencent.bkrepo.common.metadata.model.TBlockNode.Companion.SHA256_IDX
+import com.tencent.bkrepo.common.metadata.model.TBlockNode.Companion.SHA256_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
@@ -41,7 +43,8 @@ import java.time.LocalDateTime
  * */
 @ShardingDocument("block_node")
 @CompoundIndexes(
-    CompoundIndex(name = BLOCK_IDX, def = BLOCK_IDX_DEF)
+    CompoundIndex(name = BLOCK_IDX, def = BLOCK_IDX_DEF),
+    CompoundIndex(name = SHA256_IDX, def = SHA256_IDX_DEF, background = true),
 )
 data class TBlockNode(
     var id: String? = null,
@@ -62,6 +65,8 @@ data class TBlockNode(
 ) {
     companion object {
         const val BLOCK_IDX = "start_pos_idx"
+        const val SHA256_IDX = "sha256_idx"
         const val BLOCK_IDX_DEF = "{'projectId': 1, 'repoName': 1,'nodeFullPath':1, 'startPos': 1, 'isDeleted': 1}"
+        const val SHA256_IDX_DEF = "{'sha256': 1}"
     }
 }

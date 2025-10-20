@@ -34,8 +34,8 @@ package com.tencent.bkrepo.common.service.util
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
+import io.micrometer.tracing.Tracer
 import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.Tracer
 
 object ResponseBuilder {
 

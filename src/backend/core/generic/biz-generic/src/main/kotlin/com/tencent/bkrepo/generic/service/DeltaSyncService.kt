@@ -5,8 +5,10 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.api.util.IpUtils
 import com.tencent.bkrepo.common.api.util.UrlFormatter
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJson
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -31,9 +33,7 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.redis.RedisOperation
 import com.tencent.bkrepo.common.security.util.SecurityUtils
-import com.tencent.bkrepo.common.service.otel.util.AsyncUtils.trace
 import com.tencent.bkrepo.common.service.util.HeaderUtils
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
 import com.tencent.bkrepo.generic.artifact.GenericLocalRepository
@@ -53,11 +53,11 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.apache.commons.text.similarity.LevenshteinDistance
-import org.apache.pulsar.shade.org.eclipse.util.UrlEncoded
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.http.HttpMethod
@@ -65,6 +65,7 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
 import java.io.InputStream
+import java.net.URLDecoder
 import java.time.LocalDateTime
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
@@ -85,6 +86,7 @@ class DeltaSyncService(
     val signFileDao: SignFileDao,
     val repositoryService: RepositoryService,
     private val redisOperation: RedisOperation,
+    private val registry: ObservationRegistry
 ) : ArtifactService() {
 
     private val deltaProperties = genericProperties.delta
@@ -99,7 +101,7 @@ class DeltaSyncService(
         repositoryService.getRepoDetail(signFileProjectId, signFileRepoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, signFileRepoName)
     }
-    private val httpClient = HttpClientBuilderFactory.create().build()
+    private val httpClient = HttpClientBuilderFactory.create(registry = registry).build()
 
     /**
      * 签名文件
@@ -109,7 +111,7 @@ class DeltaSyncService(
             val md5 = queryMd5 ?: getMd5FromNode(this)
             val signNode = signFileDao.findByDetail(projectId, repoName, md5, blockSize)
                 ?: throw NotFoundException(GenericMessageCode.SIGN_FILE_NOT_FOUND, md5)
-            if (request.method == HttpMethod.HEAD.name) {
+            if (request.method == HttpMethod.HEAD.name()) {
                 return
             }
             val artifactInfo = GenericArtifactInfo(signNode.projectId, signNode.repoName, signNode.fullPath)
@@ -132,7 +134,7 @@ class DeltaSyncService(
                 ArtifactInfo(
                     projectId,
                     repoName,
-                    UrlEncoded.decodeString(oldFilePath, 0, oldFilePath.length, Charsets.UTF_8)
+                    URLDecoder.decode(oldFilePath, Charsets.UTF_8)
                 ),
             )
             if (node == null || node.folder) {
@@ -253,10 +255,12 @@ class DeltaSyncService(
             "ORDER BY dtEventTimeStamp DESC LIMIT 100"
         val url = UrlFormatter.format(bkBaseProperties.domain, "/prod/v3/dataquery/query/")
         val query = QueryRequest(token = bkBaseProperties.token, sql = sql)
-        val authHeader = toJson(mapOf(
-            "bk_app_code" to bkBaseProperties.appCode,
-            "bk_app_secret" to bkBaseProperties.appSecret
-        ))
+        val authHeader = toJson(
+            mapOf(
+                "bk_app_code" to bkBaseProperties.appCode,
+                "bk_app_secret" to bkBaseProperties.appSecret
+            )
+        )
         val requestBody = query.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
         val request = Request.Builder()
             .url(url)
@@ -542,7 +546,7 @@ class DeltaSyncService(
                 )
                 signFileDao.save(signFile)
                 logger.info("Success to save sign file[$signFileFullPath].")
-            } catch (ignore: DuplicateKeyException) {
+            } catch (_: DuplicateKeyException) {
                 // 说明文件已存在，可以忽略
             }
         }

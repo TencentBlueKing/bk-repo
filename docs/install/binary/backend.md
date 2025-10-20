@@ -13,7 +13,7 @@
 
 ## 1.服务器要求
 
-jdk: 1.8 ,java 运行时
+jdk: 17 ,java 运行时
 consul: 1.0 (服务器本地启动consul agent,并且加入到consul 服务集群)，用作配置中心与服务发现
 
 

@@ -35,6 +35,8 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.metrics.constant.DRIVE_CLIENT_HEARTBEAT
+import com.tencent.bkrepo.common.metrics.constant.DRIVE_CLIENT_HEARTBEAT_DESC
 import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.metrics.push.custom.enums.DataModel
@@ -55,10 +57,13 @@ import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.stereotype.Service
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+@Service
 class ClientService(
     private val clientRepository: ClientRepository,
     private val dailyClientRepository: DailyClientRepository,
@@ -76,11 +81,13 @@ class ClientService(
             )
             val client = clientRepository.findOne(query)
             recordDairyClient(request, "start")
-            return if (client == null) {
+            val newClient = if (client == null) {
                 insertClient(request)
             } else {
                 updateClient(request, client)
-            }.convert()
+            }
+            pushHeartbeatMetrics(newClient)
+            return newClient.convert()
         }
     }
 
@@ -107,8 +114,8 @@ class ClientService(
             ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, clientId)
         client.heartbeatTime = LocalDateTime.now()
         client.online = true
-        clientRepository.save(client)
-        recordDairyClient(client)
+        val newClient = clientRepository.save(client)
+        pushHeartbeatMetrics(newClient)
     }
 
     suspend fun listClients(request: ClientListRequest): Page<ClientDetail> {
@@ -124,6 +131,28 @@ class ClientService(
         val count = clientRepository.count(query)
         val data = clientRepository.find(query.with(pageRequest))
         return Pages.ofResponse(pageRequest, count, data.map { it.convert() })
+    }
+
+    suspend fun pushHeartbeatMetrics(client: TClient) {
+        with(client) {
+            val metricItem = MetricsItem(
+                name = DRIVE_CLIENT_HEARTBEAT,
+                help = DRIVE_CLIENT_HEARTBEAT_DESC,
+                dataModel = DataModel.DATAMODEL_GAUGE,
+                keepHistory = false,
+                value = heartbeatTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli().toDouble(),
+                labels = mutableMapOf(
+                    TClient::projectId.name to projectId,
+                    TClient::repoName.name to repoName,
+                    TClient::mountPoint.name to mountPoint,
+                    TClient::userId.name to userId,
+                    TClient::ip.name to ip,
+                    TClient::version.name to version,
+                    TClient::os.name to os,
+                )
+            )
+            customMetricsExporter?.reportMetrics(metricItem)
+        }
     }
 
     suspend fun pushMetrics(request: ClientPushMetricsRequest) {
@@ -194,25 +223,6 @@ class ClientService(
         insertDairyClient(request, action)
     }
 
-    private suspend fun recordDairyClient(client: TClient) {
-        val query = Query(
-            Criteria.where(TDailyClient::projectId.name).isEqualTo(client.projectId)
-                .and(TDailyClient::repoName.name).isEqualTo(client.repoName)
-                .and(TDailyClient::ip.name).isEqualTo(client.ip)
-                .and(TDailyClient::action.name).isEqualTo("working")
-                .and(TDailyClient::mountPoint.name).isEqualTo(client.mountPoint)
-                .and(TDailyClient::time.name).gt(LocalDate.now().atStartOfDay())
-                .lt(LocalDate.now().atStartOfDay().plusDays(1))
-        )
-        val dailyClient = dailyClientRepository.findOne(query)
-        val request = convertClientRequest(client)
-        if (dailyClient == null) {
-            insertDairyClient(request, "working")
-        } else {
-            updateDairyClient(dailyClient)
-        }
-    }
-
     private suspend fun insertDairyClient(request: ClientCreateRequest, action: String): TDailyClient {
         val client = TDailyClient(
             projectId = request.projectId,
@@ -227,13 +237,6 @@ class ClientService(
             time = LocalDateTime.now()
         )
         return dailyClientRepository.save(client)
-    }
-
-    private suspend fun updateDairyClient(client: TDailyClient): TDailyClient {
-        val newClient = client.copy(
-            time = LocalDateTime.now()
-        )
-        return dailyClientRepository.save(newClient)
     }
 
     suspend fun listDailyClients(request: DailyClientListRequest): Page<DailyClientDetail> {

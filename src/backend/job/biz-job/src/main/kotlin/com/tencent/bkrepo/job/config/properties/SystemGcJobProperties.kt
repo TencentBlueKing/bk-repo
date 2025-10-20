@@ -28,45 +28,47 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 
+@Component
 @ConfigurationProperties(value = "job.system-gc")
-data class SystemGcJobProperties(
-    override var cron: String = "0 0 0 * * ?",
+class SystemGcJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 0 0 * * ?"
     /**
      * 处理文件大小阈值
      * */
-    var fileSizeThreshold: DataSize = DataSize.ofMegabytes(100),
+    var fileSizeThreshold: DataSize = DataSize.ofMegabytes(100)
     /**
      * 仓库信息
      * project/repo
      * */
-    var repos: Set<String> = emptySet(),
+    var repos: Set<String> = emptySet()
     /**
      * 编辑距离阈值
      * */
-    var edThreshold: Double = 0.3,
+    var edThreshold: Double = 0.3
     /**
      * 保留最新次数
      * */
-    var retain: Int = 3,
+    var retain: Int = 3
 
     /**
      * 访问时间限制
      * */
-    var idleDays: Int = 30,
+    var idleDays: Int = 30
 
     /**
      * 最大批处理数量
      * */
-    var maxBatchSize: Int = 10000,
+    var maxBatchSize: Int = 10000
 
     /**
      * 只有超过该节点数量，才会进行gc
      * */
-    var nodeLimit: Int = 1000,
+    var nodeLimit: Int = 1000
     /**
      * 最大的采样数量
      * */
-    var maxSampleNum: Int = 10000,
-) : MongodbJobProperties()
+    var maxSampleNum: Int = 10000
+}

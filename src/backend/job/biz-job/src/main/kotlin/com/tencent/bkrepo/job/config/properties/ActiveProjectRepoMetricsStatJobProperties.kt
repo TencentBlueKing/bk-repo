@@ -28,12 +28,14 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
 /**
  * 活跃项目仓库指标统计任务配置项
  */
+@Component
 @ConfigurationProperties("job.active-project-repo-metrics-stat")
-class ActiveProjectRepoMetricsStatJobProperties(
-    override var enabled: Boolean = true,
-    override var cron: String = "0 0/30 * * * ?",
-) : ProjectRepoMetricsStatJobProperties()
+class ActiveProjectRepoMetricsStatJobProperties : ProjectRepoMetricsStatJobProperties() {
+    override var enabled: Boolean = true
+    override var cron: String = "0 0/30 * * * ?"
+}

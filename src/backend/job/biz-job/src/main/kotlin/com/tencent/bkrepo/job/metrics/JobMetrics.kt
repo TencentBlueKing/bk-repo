@@ -27,16 +27,16 @@
 
 package com.tencent.bkrepo.job.metrics
 
-import com.tencent.bkrepo.job.JOB_ASYNC_TASK_ACTIVE_COUNT
-import com.tencent.bkrepo.job.JOB_ASYNC_TASK_ACTIVE_COUNT_DESC
-import com.tencent.bkrepo.job.JOB_ASYNC_TASK_QUEUE_SIZE
-import com.tencent.bkrepo.job.JOB_ASYNC_TASK_QUEUE_SIZE_DESC
-import com.tencent.bkrepo.job.JOB_BATCH_JOB_ACTIVE_COUNT
-import com.tencent.bkrepo.job.JOB_BATCH_JOB_ACTIVE_DESC
-import com.tencent.bkrepo.job.JOB_TASK_COUNT
-import com.tencent.bkrepo.job.JOB_TASK_COUNT_DESC
-import com.tencent.bkrepo.job.JOB_TIME_CONSUME
-import com.tencent.bkrepo.job.JOB_TIME_CONSUME_DESC
+import com.tencent.bkrepo.common.metrics.constant.JOB_ASYNC_TASK_ACTIVE_COUNT
+import com.tencent.bkrepo.common.metrics.constant.JOB_ASYNC_TASK_ACTIVE_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.JOB_ASYNC_TASK_QUEUE_SIZE
+import com.tencent.bkrepo.common.metrics.constant.JOB_ASYNC_TASK_QUEUE_SIZE_DESC
+import com.tencent.bkrepo.common.metrics.constant.JOB_BATCH_JOB_ACTIVE_COUNT
+import com.tencent.bkrepo.common.metrics.constant.JOB_BATCH_JOB_ACTIVE_DESC
+import com.tencent.bkrepo.common.metrics.constant.JOB_TASK_COUNT
+import com.tencent.bkrepo.common.metrics.constant.JOB_TASK_COUNT_DESC
+import com.tencent.bkrepo.common.metrics.constant.JOB_TIME_CONSUME
+import com.tencent.bkrepo.common.metrics.constant.JOB_TIME_CONSUME_DESC
 import com.tencent.bkrepo.job.TAG_NAME
 import com.tencent.bkrepo.job.TAG_STATUS
 import com.tencent.bkrepo.job.executor.BlockThreadPoolTaskExecutorDecorator

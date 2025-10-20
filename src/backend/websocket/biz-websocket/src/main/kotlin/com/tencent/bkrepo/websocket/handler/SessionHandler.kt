@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.PLATFORM_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.PLATFORM_KEY
 import com.tencent.bkrepo.common.api.constant.USER_KEY
+import com.tencent.bkrepo.common.api.util.TraceUtils
 import com.tencent.bkrepo.common.artifact.stream.closeQuietly
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
@@ -49,9 +50,11 @@ import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.UnsupportedJwtException
 import io.jsonwebtoken.security.SignatureException
+import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.WebSocketHandler
+import org.springframework.web.socket.WebSocketMessage
 import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.handler.WebSocketHandlerDecorator
 import java.util.Base64
@@ -61,7 +64,8 @@ class SessionHandler(
     private val websocketService: WebsocketService,
     private val authenticationManager: AuthenticationManager,
     private val webSocketMetrics: WebSocketMetrics,
-    jwtProperties: JwtAuthProperties
+    jwtProperties: JwtAuthProperties,
+    private val registry: ObservationRegistry
 ) : WebSocketHandlerDecorator(delegate) {
 
     private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
@@ -98,6 +102,13 @@ class SessionHandler(
             } else {
                 throw e
             }
+        }
+    }
+
+    @Throws(java.lang.Exception::class)
+    override fun handleMessage(session: WebSocketSession, message: WebSocketMessage<*>) {
+        TraceUtils.newSpan(registry, "websocket.session", init = true) {
+            super.handleMessage(session, message)
         }
     }
 

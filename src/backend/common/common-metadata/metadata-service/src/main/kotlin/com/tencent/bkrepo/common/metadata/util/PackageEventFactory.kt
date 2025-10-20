@@ -113,7 +113,8 @@ object PackageEventFactory {
         packageName: String,
         versionName: String?,
         createdBy: String,
-        realIpAddress: String?
+        realIpAddress: String?,
+        deletedDate: String,
     ): VersionDeletedEvent {
         return VersionDeletedEvent(
             projectId = projectId,
@@ -123,7 +124,8 @@ object PackageEventFactory {
             packageName = packageName,
             packageVersion = versionName,
             userId = createdBy,
-            realIpAddress = realIpAddress
+            realIpAddress = realIpAddress,
+            deletedDate = deletedDate
         )
     }
 }

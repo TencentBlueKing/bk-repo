@@ -31,19 +31,18 @@
 
 package com.tencent.bkrepo.common.mongo.dao.sharding
 
-import com.mongodb.BasicDBList
-import com.tencent.bkrepo.common.api.mongo.ShardingDocument
-import com.tencent.bkrepo.common.api.mongo.ShardingKey
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.determineShardingCount
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.determineShardingFields
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.shardingValues
+import com.tencent.bkrepo.common.mongo.api.util.MongoDaoHelper.shardingValuesOf
+import com.tencent.bkrepo.common.mongo.api.util.sharding.ShardingUtils
 import com.tencent.bkrepo.common.mongo.dao.AbstractMongoDao
 import com.tencent.bkrepo.common.mongo.dao.util.MongoIndexResolver
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.ShardingUtils
-import org.apache.commons.lang3.reflect.FieldUtils
-import org.apache.commons.lang3.reflect.FieldUtils.getFieldsListWithAnnotation
-import org.bson.Document
+import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.annotation.AnnotationUtils
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -52,7 +51,6 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.index.IndexDefinition
 import org.springframework.data.mongodb.core.query.Query
 import java.lang.reflect.Field
-import javax.annotation.PostConstruct
 
 /**
  * mongodb 支持分表的数据访问层抽象类
@@ -68,14 +66,9 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     private val fixedShardingCount: Int? = null
 
     /**
-     * 分表Field
+     * 分表Field，key为列名
      */
-    protected val shardingField: Field
-
-    /**
-     * 分表列名
-     */
-    private val shardingColumn: String
+    protected lateinit var shardingFields: LinkedHashMap<String, Field>
 
     /**
      * 分表数
@@ -89,21 +82,10 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         determineShardingUtils()
     }
 
-    init {
-        @Suppress("LeakingThis")
-        val fieldsWithShardingKey = getFieldsListWithAnnotation(classType, ShardingKey::class.java)
-        require(fieldsWithShardingKey.size == 1) {
-            "Only one field could be annotated with ShardingKey annotation but find ${fieldsWithShardingKey.size}!"
-        }
-
-        this.shardingField = fieldsWithShardingKey[0]
-        this.shardingColumn = determineShardingColumn()
-        this.shardingCount = determineShardingCount()
-    }
-
     @PostConstruct
     private fun init() {
-        updateShardingCountIfNecessary()
+        this.shardingFields = determineShardingFields(classType, customShardingColumns())
+        this.shardingCount = determineShardingCount(classType, shardingUtils, customShardingCount())
         ensureIndex()
     }
 
@@ -142,45 +124,24 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
         }
     }
 
-    private fun shardingKeyToCollectionName(shardValue: Any): String {
-        val shardingSequence = shardingUtils.shardingSequenceFor(shardValue, shardingCount)
-        return parseSequenceToCollectionName(shardingSequence)
+    private fun shardingKeyToCollectionName(shardValues: List<Any>): String {
+        return parseSequenceToCollectionName(shardingUtils.shardingSequenceFor(shardValues, shardingCount))
     }
 
     fun parseSequenceToCollectionName(sequence: Int): String {
         return collectionName + "_" + sequence
     }
 
-    private fun updateShardingCountIfNecessary() {
-        if (fixedShardingCount != null) {
-            this.shardingCount = fixedShardingCount
-        }
+    protected open fun customShardingColumns(): List<String> {
+        return emptyList()
     }
 
-    private fun determineShardingCount(): Int {
-        val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-        return shardingUtils.shardingCountFor(shardingKey.count)
-    }
-
-    private fun determineShardingColumn(): String {
-        val shardingKey = AnnotationUtils.getAnnotation(shardingField, ShardingKey::class.java)!!
-        if (shardingKey.column.isNotEmpty()) {
-            return shardingKey.column
-        }
-        val fieldJavaClass = org.springframework.data.mongodb.core.mapping.Field::class.java
-        val fieldAnnotation = AnnotationUtils.getAnnotation(shardingField, fieldJavaClass)
-        if (fieldAnnotation != null && fieldAnnotation.value.isNotEmpty()) {
-            return fieldAnnotation.value
-        }
-        return shardingField.name
+    protected open fun customShardingCount(): Int? {
+        return fixedShardingCount
     }
 
     override fun determineCollectionName(): String {
-        if (classType.isAnnotationPresent(ShardingDocument::class.java)) {
-            val document = classType.getAnnotation(ShardingDocument::class.java)
-            return document.collection
-        }
-        return super.determineCollectionName()
+        return MongoDaoHelper.determineShardingCollectionName(classType) ?: super.determineCollectionName()
     }
 
     override fun determineMongoTemplate(): MongoTemplate {
@@ -188,52 +149,19 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     }
 
     override fun determineCollectionName(entity: E): String {
-        val shardingValue = FieldUtils.readField(shardingField, entity, true)
-        requireNotNull(shardingValue) { "Sharding value can not be empty !" }
-
-        return shardingKeyToCollectionName(shardingValue)
+        return shardingKeyToCollectionName(shardingValues(entity as Any, shardingFields))
     }
 
     override fun determineCollectionName(query: Query): String {
-        val shardingValue = determineCollectionName(query.queryObject)
-        requireNotNull(shardingValue) { "Sharding value can not empty !" }
-
-        return shardingKeyToCollectionName(shardingValue)
+        val shardingValues = shardingValuesOf(query.queryObject, shardingFields)
+        requireNotNull(shardingValues) { "Sharding value can not empty!" }
+        return shardingKeyToCollectionName(shardingValues)
     }
 
     override fun determineCollectionName(aggregation: Aggregation): String {
-        var shardingValue: Any? = null
-        val pipeline = aggregation.toPipeline(Aggregation.DEFAULT_CONTEXT)
-        for (document in pipeline) {
-            if (document.containsKey("\$match")) {
-                val subDocument = document["\$match"]
-                require(subDocument is Document)
-                shardingValue = subDocument["projectId"]
-                break
-            }
-        }
-
-        requireNotNull(shardingValue) { "sharding value can not be empty!" }
-        return shardingKeyToCollectionName(shardingValue)
-    }
-
-    fun determineCollectionName(document: Document): Any? {
-        for ((key, value) in document) {
-            if (key == shardingColumn) return value
-            if (key == "\$and") {
-                require(value is BasicDBList)
-                determineCollectionName(value)?.let { return it }
-            }
-        }
-        return null
-    }
-
-    private fun determineCollectionName(list: BasicDBList): Any? {
-        for (element in list) {
-            require(element is Document)
-            determineCollectionName(element)?.let { return it }
-        }
-        return null
+        val shardingValues = shardingValuesOf(aggregation, shardingFields)
+        require(!shardingValues.isNullOrEmpty()) { "Sharding values can not be empty!" }
+        return shardingKeyToCollectionName(shardingValues)
     }
 
     override fun <T> findAll(clazz: Class<T>): List<T> {
@@ -310,7 +238,6 @@ abstract class ShardingMongoDao<E> : AbstractMongoDao<E>() {
     abstract fun determineShardingUtils(): ShardingUtils
 
     companion object {
-
         private val logger = LoggerFactory.getLogger(ShardingMongoDao::class.java)
         const val MAX_SHARDING_COUNT_OF_PAGE_QUERY = 256
     }

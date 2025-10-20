@@ -40,7 +40,6 @@ dependencies {
     api(project(":common:common-stream"))
     api(project(":common:common-query:query-mongo"))
     api(project(":archive:api-archive"))
-    api(project(":router-controller:api-router-controller"))
     api(project(":driver:api-driver"))
 
     compileOnly(project(":common:common-mongo-reactive"))
@@ -48,5 +47,9 @@ dependencies {
     compileOnly(project(":common:common-service:service-servlet"))
     compileOnly(project(":common:common-service:service-reactive"))
 
+    testImplementation(project(":common:common-service:service-servlet"))
+    testImplementation(project(":common:common-mongo-reactive"))
+    testImplementation(project(":common:common-mongo"))
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("org.mockito.kotlin:mockito-kotlin")
 }

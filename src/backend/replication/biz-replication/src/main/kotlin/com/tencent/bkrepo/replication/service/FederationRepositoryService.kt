@@ -30,6 +30,8 @@ package com.tencent.bkrepo.replication.service
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryDeleteRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
 
 /**
  * 联邦仓库同步接口
@@ -45,7 +47,7 @@ interface FederationRepositoryService {
     /**
      * 在联邦集群上创建对应集群信息以及任务存储联邦仓库配置
      */
-    fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest)
+    fun saveFederationRepositoryConfig(request: FederatedRepositoryConfigRequest): Boolean
 
     /**
      * 根据项目id和仓库名称和federationId查询相关联的联邦仓库配置
@@ -55,17 +57,47 @@ interface FederationRepositoryService {
     ): List<FederatedRepositoryInfo>
 
     /**
-     * 删除联邦仓库配置（本地+remote）
+     * 删除联邦仓库配置（解散整个联邦）
      */
-    fun deleteFederationRepositoryConfig(projectId: String, repoName: String, federationId: String)
+    fun deleteFederationRepositoryConfig(
+        projectId: String,
+        repoName: String,
+        federationId: String,
+        deleteRemote: Boolean = true
+    )
 
     /**
-     * 删除本地联邦仓库配置
+     * 从联邦中移除指定集群
      */
-    fun deleteLocalFederationRepositoryConfig(projectId: String, repoName: String, federationId: String)
+    fun removeClusterFromFederation(request: FederatedRepositoryDeleteRequest)
+
+    /**
+     * 从联邦中移除指定集群（不解散联邦）
+     */
+    fun removeClusterFromFederation(
+        projectId: String,
+        repoName: String,
+        federationId: String,
+        remoteClusterName: String,
+        remoteProjectId: String,
+        remoteRepoName: String,
+        deleteRemote: Boolean = true
+    )
 
     /**
      * 根据项目仓库获取当前集群名
      */
     fun getCurrentClusterName(projectId: String, repoName: String, federationId: String): String?
+
+    /**
+     * 执行联邦仓库fullSync
+     */
+    fun fullSyncFederationRepository(projectId: String, repoName: String, federationId: String)
+
+    /**
+     * 更新联邦仓库配置
+     */
+    fun updateFederationRepository(request: FederatedRepositoryUpdateRequest): Boolean
+
+
 }

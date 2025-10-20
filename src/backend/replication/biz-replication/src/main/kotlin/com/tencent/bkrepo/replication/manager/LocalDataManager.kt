@@ -46,7 +46,7 @@ import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.mongo.dao.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -291,18 +291,20 @@ class LocalDataManager(
         fullPath: String,
         pageNumber: Int,
         pageSize: Int,
+        includeDeleted: Boolean = false
     ): List<NodeInfo> {
         val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val nodePath = PathUtils.toPath(fullPath)
         val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
             .and(REPO_NAME).isEqualTo(repoName)
-            .and(DELETED).isEqualTo(null)
             .and(NODE_PATH).isEqualTo(nodePath)
-
-        val query = Query(criteria)
-        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
-        val records = mongoTemplate.find(query.with(pageRequest), Node::class.java, collectionName)
-        return records.map { convert(it)!! }
+            .apply {
+                if (!includeDeleted) {
+                    and(DELETED).isEqualTo(null)
+                }
+            }
+        val query = Query(criteria).with(Pages.ofRequest(pageNumber, pageSize))
+        return mongoTemplate.find(query, Node::class.java, collectionName).mapNotNull { convert(it) }
     }
 
     /**

@@ -108,6 +108,7 @@ body .bk-dialog-wrapper .bk-dialog-body {
     }
     .subMessage{
         margin-top: 10px;
+        white-space: pre-wrap;
     }
     @keyframes rotate-loading {
         0% {
@@ -147,6 +148,7 @@ body .bk-dialog-wrapper .bk-dialog-body {
         margin-top: 20px;
         font-size: 14px;
         color: #979797;
+        white-space: pre-wrap;
     }
     @keyframes rotate-loading {
         0% {

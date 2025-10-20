@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import io.micrometer.observation.ObservationRegistry
 import org.springframework.web.multipart.MultipartFile
 
 class MultipartArtifactFile(
@@ -39,10 +40,11 @@ class MultipartArtifactFile(
     monitor: StorageHealthMonitor,
     storageProperties: StorageProperties,
     storageCredentials: StorageCredentials,
-    requestLimitCheckService: RequestLimitCheckService
+    requestLimitCheckService: RequestLimitCheckService,
+    registry: ObservationRegistry
 ) : StreamArtifactFile(
     multipartFile.inputStream, monitor, storageProperties, storageCredentials, multipartFile.size,
-    requestLimitCheckService
+    requestLimitCheckService, registry
 ) {
     fun getOriginalFilename() = multipartFile.originalFilename.orEmpty()
 }

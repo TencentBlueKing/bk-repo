@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.project.ProjectDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.router.NodeLocationDao
 import com.tencent.bkrepo.common.metadata.listener.ResourcePermissionListener
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
@@ -73,7 +74,9 @@ import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.router.api.RouterControllerClient
+import io.micrometer.observation.ObservationRegistry
+import io.micrometer.tracing.Tracer
+import io.micrometer.tracing.otel.bridge.OtelTracer
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -83,12 +86,10 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.cloud.sleuth.Tracer
-import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Import
 import org.springframework.test.context.TestPropertySource
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 
 @Import(
     ClusterProperties::class,
@@ -102,58 +103,62 @@ import org.springframework.test.context.TestPropertySource
     RouterControllerProperties::class,
     RepositoryProperties::class,
     EnableMultiTenantProperties::class,
+    NodeLocationDao::class
 )
 @ComponentScan(value = ["com.tencent.bkrepo.repository.service", "com.tencent.bkrepo.common.metadata"])
 @TestPropertySource(locations = ["classpath:bootstrap-ut.properties", "classpath:center-ut.properties"])
 open class ServiceBaseTest {
 
-    @MockBean
+    @MockitoBean
     lateinit var storageService: StorageService
 
-    @MockBean
+    @MockitoBean
     lateinit var roleResource: ServiceRoleClient
 
-    @MockBean
+    @MockitoBean
     lateinit var userResource: ServiceUserClient
 
-    @MockBean
+    @MockitoBean
     lateinit var servicePermissionClient: ServicePermissionClient
 
-    @MockBean
+    @MockitoBean
     lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
-    @MockBean
+    @MockitoBean
     lateinit var permissionManager: PermissionManager
 
-    @MockBean
+    @MockitoBean
     lateinit var ciPermissionManager: CIPermissionManager
 
-    @MockBean
+    @MockitoBean
     lateinit var messageSupplier: MessageSupplier
 
-    @MockBean
+    @MockitoBean
     lateinit var resourcePermissionListener: ResourcePermissionListener
-
-    @MockBean
-    lateinit var routerControllerClient: RouterControllerClient
 
     @Autowired
     lateinit var springContextUtils: SpringContextUtils
 
-    @MockBean
+    @MockitoBean
     lateinit var archiveClient: ArchiveClient
 
     @Autowired
     lateinit var storageCredentialHelper: StorageCredentialHelper
 
-    @MockBean
+    @MockitoBean
     lateinit var resourceClearService: ResourceClearService
 
     @Autowired
     lateinit var repositoryServiceHelper: RepositoryServiceHelper
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
+
+    @Autowired
+    lateinit var registry: ObservationRegistry
+
+    @MockitoBean
+    lateinit var nodeLocationDao: NodeLocationDao
 
     fun initMock() {
         val tracer = mockk<OtelTracer>()

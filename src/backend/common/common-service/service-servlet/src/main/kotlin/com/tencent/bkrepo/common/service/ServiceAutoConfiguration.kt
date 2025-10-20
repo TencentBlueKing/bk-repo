@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.service.message.MessageSourceConfiguration
 import com.tencent.bkrepo.common.service.metrics.UndertowMetrics
 import com.tencent.bkrepo.common.service.otel.mongodb.OtelMongoConfiguration
 import com.tencent.bkrepo.common.service.otel.web.OtelWebConfiguration
+import com.tencent.bkrepo.common.service.servlet.ServletConfiguration
 import com.tencent.bkrepo.common.service.shutdown.ServiceShutdownConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureOrder
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -77,6 +78,7 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
     OtelWebConfiguration::class,
     StandaloneJobAspect::class,
     LogDataConfiguration::class,
+    ServletConfiguration::class,
     )
 class ServiceAutoConfiguration {
 

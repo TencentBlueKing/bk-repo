@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
@@ -40,7 +41,6 @@ import com.tencent.bkrepo.common.security.interceptor.devx.ApiAuth
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXProperties
 import com.tencent.bkrepo.common.security.interceptor.devx.DevXWorkSpace
 import com.tencent.bkrepo.common.security.util.JwtUtils
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_PERMIT
 import com.tencent.bkrepo.fs.server.constant.JWT_CLAIMS_REPOSITORY
 import com.tencent.bkrepo.websocket.dispatch.TransferDispatch
@@ -52,6 +52,7 @@ import com.tencent.bkrepo.websocket.pojo.fs.CopyPDU
 import com.tencent.bkrepo.websocket.pojo.fs.PastePDU
 import com.tencent.bkrepo.websocket.pojo.fs.PingPongPDU
 import com.tencent.devops.api.pojo.Response
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
 import okio.IOException
 import org.slf4j.LoggerFactory
@@ -64,9 +65,10 @@ class ClipboardService(
     private val jwtAuthProperties: JwtAuthProperties,
     private val permissionManager: PermissionManager,
     private val serviceUserClient: ServiceUserClient,
+    registry: ObservationRegistry
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create().build()
+    private val httpClient = HttpClientBuilderFactory.create(registry = registry).build()
     private val signingKey = JwtUtils.createSigningKey(jwtAuthProperties.secretKey)
 
     fun ping(userId: String, pingPDU: PingPongPDU) {
@@ -90,8 +92,8 @@ class ClipboardService(
         transferDispatch.dispatch(copyPDUTransferPush)
     }
 
-    fun paste(pastePDU: PastePDU) {
-        logger.info("PastePDU: $pastePDU")
+    fun paste(userId: String, pastePDU: PastePDU) {
+        logger.info("userId: $userId, PastePDU: $pastePDU")
         val pastePDUTransferPush = PastePDUTransferPush(pastePDU)
         transferDispatch.dispatch(pastePDUTransferPush)
     }

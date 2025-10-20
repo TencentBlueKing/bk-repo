@@ -58,6 +58,7 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.TOPIC
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.checkNodeListOption
@@ -80,11 +81,11 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
+import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeLinkRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateAccessDateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUpdateRequest
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
@@ -107,7 +108,7 @@ abstract class NodeBaseService(
     open val repositoryProperties: RepositoryProperties,
     open val messageSupplier: MessageSupplier,
     open val servicePermissionClient: ServicePermissionClient,
-    open val routerControllerClient: RouterControllerClient,
+    open val routerControllerService: RouterControllerService,
     open val routerControllerProperties: RouterControllerProperties,
     open val blockNodeService: BlockNodeService,
     open val projectService: ProjectService,
@@ -250,11 +251,30 @@ abstract class NodeBaseService(
         }
     }
 
+    @Transactional(rollbackFor = [Throwable::class])
+    override fun replicaDeletedNode(request: DeletedNodeReplicationRequest): NodeDetail {
+        with(request.nodeCreateRequest) {
+            // 判断父目录是否存在，不存在先创建
+            mkdirs(projectId, repoName, PathUtils.resolveParent(fullPath), operator)
+            // 创建节点
+            val node = buildDeletedNode(request)
+            doCreate(node, separate = separate)
+            logger.info("replica deleted node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
+            return convertToDetail(node)!!
+        }
+    }
+
     open fun buildTNode(request: NodeCreateRequest): TNode {
         val metadata = NodeBaseServiceHelper.resolveMetadata(
             request, metadataCustomizer, repositoryProperties.allowUserAddSystemMetadata
         )
         return NodeBaseServiceHelper.buildTNode(request, metadata)
+    }
+
+    private fun buildDeletedNode(request: DeletedNodeReplicationRequest): TNode {
+        return buildTNode(request.nodeCreateRequest).apply {
+            deleted = request.deleted
+        }
     }
 
     private fun getTotalNodeNum(artifact: ArtifactInfo, query: Query): Long {
@@ -312,7 +332,7 @@ abstract class NodeBaseService(
      */
     private fun createRouter(node: TNode) {
         HeaderUtils.getHeader(PROXY_HEADER_NAME)?.let {
-            routerControllerClient.addNode(node.projectId, node.repoName, node.fullPath, it)
+            routerControllerService.addNode(node.projectId, node.repoName, node.fullPath, it)
         }
     }
 
@@ -364,7 +384,7 @@ abstract class NodeBaseService(
                 .and(TNode::deleted).isEqualTo(null)
                 .and(TNode::fullPath).isEqualTo(node.fullPath)
                 .and(TNode::folder).isEqualTo(false)
-            val query = Query(criteria).withHint(TNode.FULL_PATH_IDX)
+            val query = Query(criteria)
             val update = Update().set(TNode::lastAccessDate.name, accessDate)
             nodeDao.updateFirst(query, update)
             logger.info("Update node access time [$this] success.")
@@ -379,7 +399,9 @@ abstract class NodeBaseService(
                 if (node.sha256 != FAKE_SHA256) {
                     incrementFileReference(node, repository)
                 }
-                quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
+                if (node.deleted == null) {
+                    quotaService.increaseUsedVolume(node.projectId, node.repoName, node.size)
+                }
             }
         } catch (exception: DuplicateKeyException) {
             if (separate){

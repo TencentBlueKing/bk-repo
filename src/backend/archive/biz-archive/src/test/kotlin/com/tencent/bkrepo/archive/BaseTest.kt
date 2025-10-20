@@ -3,14 +3,14 @@ package com.tencent.bkrepo.archive
 import com.tencent.bkrepo.archive.utils.ArchiveUtils
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.common.storage.util.StorageUtils
+import io.micrometer.tracing.Tracer
+import io.micrometer.tracing.otel.bridge.OtelTracer
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.cloud.sleuth.Tracer
-import org.springframework.cloud.sleuth.otel.bridge.OtelTracer
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.test.context.TestPropertySource
 
@@ -25,6 +25,9 @@ class BaseTest {
 
     @Autowired
     lateinit var storageUtils: StorageUtils
+
+    @Autowired
+    lateinit var registry: NoopObservationRegistry
 
     fun initMock() {
         mockkObject(SpringContextUtils)

@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.generic.config
 
-data class UserShareInterceptorProperties(
+class UserShareInterceptorProperties(
     var enabled: Boolean = false,
     var repoName: String = "",
     var pathRegex: String = "",

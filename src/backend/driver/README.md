@@ -37,3 +37,40 @@ bk-repo-fs是在bk-repo之上构建的一套文件系统，得益于bk-repo强�
 
 面向块存储的文件系统架构
 ![面向块存储的文件系统的读写示意图](../../../../docs/resource/fs-arch.png)
+
+## 注意事项
+
+### block_node单表数据过多问题
+
+由于block_node默认分表键为`repoName`,如果存在大量同名仓库会导致数据集中在几张表中，可参考下方配置，
+添加配置到`application.yaml`中修改分表键
+```yaml
+block-node:
+  collectionName: block_node_v2
+  shardingColumns: 
+    - projectId
+    - repoName
+  shardingCount: 256
+```
+
+如果已经存在数据，且数据量较少，可参考下方步骤进行迁移，需注意提前做好数据备份
+
+1. 增加block-node分表相关配置
+2. 暂停DeletedBlockNodeCleanupJob，ExpiredBlockNodeMarkupJob
+3. 停止repository/generic/driver服务 
+4. 发布job服务，调用接口触发数据迁移
+5. 部署新版本repository/generic/driver服务
+6. 开启DeleteBlockNodeCleanupJob与ExpiredBlockNodeMarkupJob
+
+```http request
+POST {host}/job/api/job/migrate/block
+Content-Type: application/json
+Authorization: Basic xxxx
+
+{
+    "oldCollectionNamePrefix": "block_node",
+    "newCollectionNamePrefix": "block_node_v2",
+    "newShardingColumns": ["projectId", "repoName"],
+    "newShardingCount": 256
+}
+```

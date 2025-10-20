@@ -28,9 +28,11 @@
 package com.tencent.bkrepo.job.config.properties
 
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties("job.user-share-cleanup")
-class UserShareCleanupJobProperties(
-    override var cron: String = "0 30 2 * * ?",
+class UserShareCleanupJobProperties: MongodbJobProperties() {
+    override var cron: String = "0 30 2 * * ?"
     var reserveDays: Long = 7L
-) : MongodbJobProperties()
+}

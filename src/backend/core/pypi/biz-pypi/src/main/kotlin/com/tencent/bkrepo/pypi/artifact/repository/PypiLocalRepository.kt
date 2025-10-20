@@ -34,6 +34,9 @@ import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
+import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
+import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.path.PathUtils.ROOT
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
@@ -47,9 +50,6 @@ import com.tencent.bkrepo.common.artifact.util.PackageKeys
 import com.tencent.bkrepo.common.metadata.service.packages.StageService
 import com.tencent.bkrepo.common.metadata.util.version.SemVersion
 import com.tencent.bkrepo.common.metadata.util.version.SemVersionParser
-import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
-import com.tencent.bkrepo.common.artifact.audit.NODE_DELETE_ACTION
-import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -83,6 +83,8 @@ import com.tencent.bkrepo.repository.constant.FULL_PATH
 import com.tencent.bkrepo.repository.constant.METADATA
 import com.tencent.bkrepo.repository.constant.NAME
 import com.tencent.bkrepo.repository.constant.NODE_METADATA
+import com.tencent.bkrepo.repository.constant.PROJECT_ID
+import com.tencent.bkrepo.repository.constant.REPO_NAME
 import com.tencent.bkrepo.repository.constant.SHA256
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -414,17 +416,16 @@ class PypiLocalRepository(
         val sortedNodeList = nodeList.sortedBy { node ->
             try {
                 SemVersionParser.parse(
-                    (node[NODE_METADATA] as List<Map<String, Any?>>).find { it["key"] == VERSION }
-                        ?.get("value").toString()
+                    getNodeMetadata(node).find { it.key == VERSION }?.value.toString()
                 )
-            } catch (ignore: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 SemVersion(0, 0, 0)
             }
         }
         // data-requires-python属性值中的"<"和">"需要转换为HTML编码
         sortedNodeList.forEachIndexed { i, node ->
-            val requiresPython = (node[NODE_METADATA] as List<Map<String, Any?>>)
-                .find { it["key"] == REQUIRES_PYTHON }?.get("value")?.toString()?.ifBlank { null }
+            val requiresPython = getNodeMetadata(node)
+                .find { it.key == REQUIRES_PYTHON }?.value?.toString()?.ifBlank { null }
             builder.append(
                 buildPackageFileNodeLink(
                     fullPath = node[FULL_PATH].toString(),
@@ -436,6 +437,16 @@ class PypiLocalRepository(
             if (i != nodeList.size - 1) builder.append("\n")
         }
         return builder.toString()
+    }
+
+    private fun getNodeMetadata(node: Map<String, Any?>): List<MetadataModel> {
+        return try {
+            node[NODE_METADATA] as List<MetadataModel>
+        } catch (e: ClassCastException) {
+            logger.error("node[${node[PROJECT_ID]}/${node[REPO_NAME]}${node[FULL_PATH]}] " +
+                    "metadata is not List<MetadataModel>, ${e.message}")
+            emptyList()
+        }
     }
 
     /**

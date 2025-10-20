@@ -33,11 +33,20 @@ rootProject.name = "bk-repo-backend"
 
 pluginManagement {
     repositories {
+        val snapshotsRepo = maven {
+            name = "Central Portal Snapshots"
+            url = java.net.URI("https://central.sonatype.com/repository/maven-snapshots/")
+            mavenContent {
+                snapshotsOnly()
+            }
+        }
         if (System.getenv("GITHUB_WORKFLOW") == null) {
+            snapshotsRepo
             maven(url = "https://mirrors.tencent.com/nexus/repository/gradle-plugins/")
             maven(url = "https://mirrors.tencent.com/nexus/repository/maven-public")
             maven(url = "https://repo.spring.io/milestone")
         } else {
+            snapshotsRepo
             mavenCentral()
             maven(url = "https://repo.spring.io/milestone")
             gradlePluginPortal()
@@ -62,7 +71,6 @@ includeAll(":common:common-storage")
 includeAll(":common:common-query")
 includeAll(":common:common-artifact")
 includeAll(":common:common-notify")
-includeAll(":common:common-ratelimiter")
 includeAll(":core:generic")
 includeAll(":core:composer")
 includeAll(":core:helm")
@@ -91,10 +99,10 @@ includeAll(":common:common-checker")
 includeAll(":driver")
 includeAll(":config")
 includeAll(":archive")
-includeAll(":router-controller")
 includeAll(":media")
 includeAll(":common:common-metadata")
 includeAll(":common:common-service")
 includeAll(":preview")
 includeAll(":websocket")
 includeAll(":common:common-archive")
+includeAll(":common:common-metrics")

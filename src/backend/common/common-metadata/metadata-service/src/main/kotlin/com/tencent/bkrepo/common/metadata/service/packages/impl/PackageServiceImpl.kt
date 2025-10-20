@@ -285,6 +285,7 @@ class PackageServiceImpl(
 
     override fun deletePackage(projectId: String, repoName: String, packageKey: String, realIpAddress: String?) {
         val tPackage = packageDao.findByKeyExcludeHistoryVersion(projectId, repoName, packageKey) ?: return
+        val deletedDate = LocalDateTime.now()
         packageVersionDao.deleteByPackageId(tPackage.id!!)
         packageDao.deleteByKey(projectId, repoName, packageKey)
         publishEvent(
@@ -296,7 +297,8 @@ class PackageServiceImpl(
                 packageName = tPackage.name,
                 versionName = null,
                 createdBy = SecurityUtils.getUserId(),
-                realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
+                realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress(),
+                deletedDate = deletedDate.toString()
             )
         )
         logger.info("Delete package [$projectId/$repoName/$packageKey] success")
@@ -314,6 +316,7 @@ class PackageServiceImpl(
         val packageId = tPackage.id!!
         val tPackageVersion = packageVersionDao.findByName(packageId, versionName) ?: return
         checkCluster(tPackageVersion)
+        val deletedDate = LocalDateTime.now()
         val deleted = packageVersionDao.deleteByNameAndPath(packageId, tPackageVersion.name, contentPath)
         if (deleted) {
             tPackage = packageDao.decreaseVersions(packageId) ?: return
@@ -337,7 +340,8 @@ class PackageServiceImpl(
                     packageName = tPackage.name,
                     versionName = versionName,
                     createdBy = SecurityUtils.getUserId(),
-                    realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress()
+                    realIpAddress = realIpAddress ?: HttpContextHolder.getClientAddress(),
+                    deletedDate = deletedDate.toString()
                 )
             )
         }

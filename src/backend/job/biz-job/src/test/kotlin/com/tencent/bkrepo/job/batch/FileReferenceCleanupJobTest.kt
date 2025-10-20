@@ -35,22 +35,30 @@ import com.tencent.bkrepo.common.artifact.constant.DEFAULT_STORAGE_KEY
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.local.LocalConfiguration
+import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.properties.BlockNodeProperties
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils.shardingSequenceFor
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.SHARDING_COUNT
+import com.tencent.bkrepo.job.UT_CRC64_ECMA
+import com.tencent.bkrepo.job.UT_PROJECT_ID
+import com.tencent.bkrepo.job.UT_REPO_NAME
+import com.tencent.bkrepo.job.UT_SHA256
+import com.tencent.bkrepo.job.UT_USER
 import com.tencent.bkrepo.job.batch.task.clean.FileReferenceCleanupJob
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.repository.JobSnapshotRepository
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.bson.Document
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -65,7 +73,7 @@ import org.mockito.Mockito
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.find
 import org.springframework.data.mongodb.core.findOne
@@ -73,37 +81,40 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.test.context.bean.override.mockito.MockitoBean
+import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicInteger
 
 @DisplayName("文件引用清理Job测试")
+@Import(BlockNodeProperties::class)
 @DataMongoTest
 class FileReferenceCleanupJobTest : JobBaseTest() {
 
-    @MockBean
+    @Autowired
+    private lateinit var nodeDao: NodeDao
+
+    @MockitoBean
     lateinit var storageService: StorageService
 
-    @MockBean
+    @MockitoBean
     lateinit var storageCredentialService: StorageCredentialService
 
-    @MockBean
+    @MockitoBean
     lateinit var archiveClient: ArchiveClient
 
-    @MockBean
+    @MockitoBean
     lateinit var repositoryService: RepositoryService
 
-    @MockBean
+    @MockitoBean
     private lateinit var messageSupplier: MessageSupplier
 
-    @MockBean
+    @MockitoBean
     private lateinit var servicePermissionClient: ServicePermissionClient
 
-    @MockBean
-    private lateinit var routerControllerClient: RouterControllerClient
-
-    @MockBean
+    @MockitoBean
     private lateinit var serviceBkiamV3ResourceClient: ServiceBkiamV3ResourceClient
 
-    @MockBean
+    @MockitoBean
     lateinit var jobSnapshotRepository: JobSnapshotRepository
 
     @Autowired
@@ -124,7 +135,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
     @Autowired
     lateinit var fileReferenceCleanupJobProperties: FileReferenceCleanupJobProperties
 
-    @MockBean
+    @MockitoBean
     lateinit var operateLogService: OperateLogService
 
     @BeforeEach
@@ -155,6 +166,7 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         )
         RepositoryCommonUtils.updateService(repositoryService, storageCredentialService)
         fileReferenceCleanupJobProperties.expectedNodes = 50_000
+        fileReferenceCleanupJobProperties.expectedBlockNodes = 50_000
     }
 
     @AfterEach
@@ -229,6 +241,26 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
         val query = Query.query(Criteria.where("sha256").isEqualTo("0"))
         val find = mongoTemplate.findOne<Map<String, Any?>>(query, collectionName)
         Assertions.assertEquals(1L, find?.get("count"))
+    }
+
+    @DisplayName("测试存在对应的blockNode时候不删除文件引用及其数据")
+    @Test
+    fun testNotCleanRefOfExistBlockNode() {
+        val sha2561 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c1"
+        val sha2562 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c2"
+        val sha2563 = "688787d8ff144c502c7f5cffaafe2cc588d86079f9de88304c26b0cb99ce91c3"
+        val collectionName = fileReferenceCleanupJob.collectionNames().first()
+        insertOne(sha2561, "0", 0, collectionName)
+        insertOne(sha2562, "key2", 1, collectionName)
+        insertOne(sha2563, "key3", 0, collectionName)
+        val blockNodeCollectionName = shardingSequenceFor(listOf(UT_PROJECT_ID, UT_REPO_NAME), SHARDING_COUNT)
+        mongoTemplate.insert(buildBlockNode(sha256 = sha2561), "block_node_$blockNodeCollectionName")
+
+        fileReferenceCleanupJob.start()
+
+        assertTrue(mongoTemplate.exists(Query(Criteria.where("sha256").isEqualTo(sha2561)), collectionName))
+        assertTrue(mongoTemplate.exists(Query(Criteria.where("sha256").isEqualTo(sha2562)), collectionName))
+        assertFalse(mongoTemplate.exists(Query(Criteria.where("sha256").isEqualTo(sha2563)), collectionName))
     }
 
     @Test
@@ -337,4 +369,22 @@ class FileReferenceCleanupJobTest : JobBaseTest() {
             )
         }
     }
+
+    fun buildBlockNode(
+        projectId: String = UT_PROJECT_ID,
+        repoName: String = UT_REPO_NAME,
+        fullPath: String = "/a/b/c.txt",
+        sha256: String = UT_SHA256,
+    ) = TBlockNode(
+        id = null,
+        createdBy = UT_USER,
+        createdDate = LocalDateTime.now(),
+        nodeFullPath = fullPath,
+        startPos = 0,
+        sha256 = sha256,
+        crc64ecma = UT_CRC64_ECMA,
+        projectId = projectId,
+        repoName = repoName,
+        size = 1024L,
+    )
 }

@@ -29,6 +29,7 @@ package com.tencent.bkrepo.analyst.controller
 
 import com.tencent.bkrepo.analyst.api.ScanClient
 import com.tencent.bkrepo.analyst.pojo.ScanTask
+import com.tencent.bkrepo.analyst.pojo.ScanTaskWaitingTime
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
 import com.tencent.bkrepo.analyst.pojo.SubScanTask
 import com.tencent.bkrepo.analyst.pojo.license.SpdxLicenseInfo
@@ -40,8 +41,8 @@ import com.tencent.bkrepo.analyst.service.SpdxLicenseService
 import com.tencent.bkrepo.analyst.service.TemporaryScanTokenService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
@@ -55,7 +56,7 @@ class ScanController @Autowired constructor(
 
     override fun scan(scanRequest: ScanRequest): Response<ScanTask> {
         return ResponseBuilder.success(
-            scanService.scan(scanRequest, ScanTriggerType.ON_NEW_ARTIFACT, SecurityUtils.getUserId())
+            scanService.scan(scanRequest, ScanTriggerType.ON_NEW_ARTIFACT, SYSTEM_USER)
         )
     }
 
@@ -93,5 +94,9 @@ class ScanController @Autowired constructor(
 
     override fun getTask(taskId: String): Response<ScanTask> {
         return ResponseBuilder.success(scanTaskService.task(taskId))
+    }
+
+    override fun getTaskWaitingTime(taskId: String): Response<ScanTaskWaitingTime> {
+        return ResponseBuilder.success(scanTaskService.taskWaitTime(taskId))
     }
 }

@@ -27,8 +27,8 @@
 
 package com.tencent.bkrepo.common.service.util
 
+import io.micrometer.tracing.Tracer
 import org.springframework.beans.BeansException
-import org.springframework.cloud.sleuth.Tracer
 import org.springframework.context.ApplicationContext
 import org.springframework.context.ApplicationContextAware
 

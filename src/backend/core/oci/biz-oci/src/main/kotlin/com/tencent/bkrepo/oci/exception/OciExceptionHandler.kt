@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.oci.exception
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
+import com.tencent.bkrepo.common.api.constant.BKREPO_TRACE
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.USER_KEY
@@ -40,16 +41,19 @@ import com.tencent.bkrepo.common.api.util.JsonUtils
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.oci.artifact.auth.OciLoginAuthHandler
 import com.tencent.bkrepo.oci.config.OciProperties
+import com.tencent.bkrepo.oci.constant.DOCKER_API_VERSION
+import com.tencent.bkrepo.oci.constant.DOCKER_HEADER_API_VERSION
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_CODE
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_DESCRIPTION
 import com.tencent.bkrepo.oci.constant.UNAUTHORIZED_MESSAGE
 import com.tencent.bkrepo.oci.pojo.response.OciErrorResponse
 import com.tencent.bkrepo.oci.pojo.response.OciResponse
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -71,7 +75,9 @@ class OciExceptionHandler(
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     fun handleException(exception: AuthenticationException) {
         val response = HttpContextHolder.getResponse()
+        TraceHeaderUtils.setResponseHeader()
         response.contentType = MediaTypes.APPLICATION_JSON
+        response.setHeader(DOCKER_HEADER_API_VERSION, DOCKER_API_VERSION)
         response.addHeader(
             HttpHeaders.WWW_AUTHENTICATE,
             OciLoginAuthHandler.AUTH_CHALLENGE_SERVICE_SCOPE.format(
@@ -148,6 +154,7 @@ class OciExceptionHandler(
         } else {
             response
         }
+        httpResponse.setHeader(BKREPO_TRACE, TraceHeaderUtils.buildB3Header())
         httpResponse.writer.println(responseString)
     }
 
@@ -156,7 +163,7 @@ class OciExceptionHandler(
         val uri = HttpContextHolder.getRequest().requestURI
         logger.warn(
             "User[$userId] access oci resource[$uri] failed[${exception.javaClass.simpleName}]:" +
-                    " ${responseObject.message}"
+                " ${responseObject.message}"
         )
     }
 

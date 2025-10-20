@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
+import org.springframework.stereotype.Component
 import org.springframework.util.unit.DataSize
 import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.ExchangeStrategies
@@ -57,7 +58,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import reactor.core.publisher.toMono
+import reactor.kotlin.core.publisher.toMono
 import reactor.netty.http.client.HttpClient
 import reactor.netty.http.client.PrematureCloseException
 import reactor.netty.resources.ConnectionProvider
@@ -67,7 +68,7 @@ import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.stream.Collectors
 
-
+@Component
 class DevxWorkspaceUtils(
     devXProperties: DevXProperties
 ) {
@@ -139,6 +140,9 @@ class DevxWorkspaceUtils(
         }
 
         suspend fun getWorkspace(): Mono<DevXWorkSpace?> {
+            if (devXProperties.workspaceUrl.isEmpty()) {
+                return Mono.empty()
+            }
             val type = object : ParameterizedTypeReference<QueryResponse<List<DevXWorkSpace>>>() {}
             return httpClient
                 .get()
@@ -151,8 +155,9 @@ class DevxWorkspaceUtils(
                 listIpFromProject(projectId),
                 listIpFromProps(projectId),
                 listCvmIpFromProject(projectId),
-                listIpFromProjects(projectId))
-                .map { it.t1 + it.t2 + it.t3 + it.t4}
+                listIpFromProjects(projectId)
+            )
+                .map { it.t1 + it.t2 + it.t3 + it.t4 }
         }
 
         private fun listIpFromProject(projectId: String): Mono<Set<String>> {

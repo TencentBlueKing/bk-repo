@@ -52,6 +52,7 @@ import com.tencent.bkrepo.common.metadata.service.node.impl.NodeStatsSupport
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.ignoreException
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.nodeLevelNotFoundError
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.repoLevelNotFoundError
@@ -71,7 +72,6 @@ import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeUnCompressedRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodesDeleteRequest
-import com.tencent.bkrepo.router.api.RouterControllerClient
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
@@ -90,7 +90,7 @@ class EdgeNodeServiceImpl(
     override val messageSupplier: MessageSupplier,
     override val servicePermissionClient: ServicePermissionClient,
     override val clusterProperties: ClusterProperties,
-    override val routerControllerClient: RouterControllerClient,
+    override val routerControllerService: RouterControllerService,
     override val routerControllerProperties: RouterControllerProperties,
     override val blockNodeService: BlockNodeService,
     override val projectService: ProjectService,
@@ -105,7 +105,7 @@ class EdgeNodeServiceImpl(
     quotaService,
     repositoryProperties,
     messageSupplier,
-    routerControllerClient,
+    routerControllerService,
     servicePermissionClient,
     routerControllerProperties,
     blockNodeService,
@@ -214,8 +214,9 @@ class EdgeNodeServiceImpl(
         fullPath: String,
         operator: String,
         nodeId: String,
+        deleteTime: LocalDateTime
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNodeById(projectId, repoName, fullPath, operator, nodeId)
+        return NodeDeleteSupport(this).deleteNodeById(projectId, repoName, fullPath, operator, nodeId, deleteTime)
     }
 
     @Transactional(rollbackFor = [Throwable::class])

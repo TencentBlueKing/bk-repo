@@ -29,10 +29,8 @@ package com.tencent.bkrepo.replication.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
-import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
@@ -47,11 +45,15 @@ import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
+import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
+import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -96,8 +98,16 @@ class ArtifactReplicaController(
         projectId: String,
         repoName: String,
         fullPath: String,
+        deleted: String?
     ): Response<Boolean> {
-        return ResponseBuilder.success(nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath)))
+        val result = if (deleted == null) {
+            nodeService.checkExist(ArtifactInfo(projectId, repoName, fullPath))
+        } else {
+            val deletedDate = LocalDateTime.parse(deleted, DateTimeFormatter.ISO_DATE_TIME)
+            val nodeDetail = nodeService.getDeletedNodeDetail(projectId, repoName, fullPath, deletedDate)
+            nodeDetail != null
+        }
+        return ResponseBuilder.success(result)
     }
 
     override fun checkNodeExistList(
@@ -113,8 +123,23 @@ class ArtifactReplicaController(
     }
 
     override fun replicaNodeCreateRequest(request: NodeCreateRequest): Response<NodeDetail> {
-        federatedCheck(request.projectId, request.repoName, request.fullPath, request.createdDate!!, request.source)
+        federatedNodeDeletedCheck(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            fullPath = request.fullPath,
+            compareDate = request.createdDate!!,
+            source = request.source
+        )
         return ResponseBuilder.success(nodeService.createNode(request))
+    }
+
+    override fun replicaDeletedNodeReplicationRequest(request: DeletedNodeReplicationRequest): Response<NodeDetail> {
+        val existingNode = checkAndHandleExistingNodes(request)
+        return if (existingNode != null) {
+            ResponseBuilder.success(existingNode)
+        } else {
+            ResponseBuilder.success(nodeService.replicaDeletedNode(request))
+        }
     }
 
     override fun replicaNodeRenameRequest(request: NodeRenameRequest): Response<Void> {
@@ -127,18 +152,16 @@ class ArtifactReplicaController(
         return ResponseBuilder.success()
     }
 
-    override fun replicaNodeCopyRequest(request: NodeMoveCopyRequest): Response<Void> {
-        nodeService.copyNode(request)
-        return ResponseBuilder.success()
+    override fun replicaNodeCopyRequest(request: NodeMoveCopyRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(nodeService.copyNode(request))
     }
 
-    override fun replicaNodeMoveRequest(request: NodeMoveCopyRequest): Response<Void> {
-        nodeService.moveNode(request)
-        return ResponseBuilder.success()
+    override fun replicaNodeMoveRequest(request: NodeMoveCopyRequest): Response<NodeDetail> {
+        return ResponseBuilder.success(nodeService.moveNode(request))
     }
 
     override fun replicaNodeDeleteRequest(request: NodeDeleteRequest): Response<NodeDeleteResult> {
-        federatedCheck(
+        federatedNodeDeletedCheck(
             request.projectId,
             request.repoName,
             request.fullPath,
@@ -192,6 +215,11 @@ class ArtifactReplicaController(
         return ResponseBuilder.success()
     }
 
+    override fun replicaMetadataSaveRequestForDeletedNode(request: DeletedNodeMetadataSaveRequest): Response<Void> {
+        metadataService.saveMetadataForDeletedNode(request)
+        return ResponseBuilder.success()
+    }
+
     override fun replicaMetadataDeleteRequest(request: MetadataDeleteRequest): Response<Void> {
         metadataService.deleteMetadata(request)
         return ResponseBuilder.success()
@@ -216,7 +244,35 @@ class ArtifactReplicaController(
         return ResponseBuilder.success()
     }
 
-    private fun federatedCheck(
+    override fun replicaPackageDeleteRequest(request: PackageDeleteRequest): Response<Void> {
+        with(request) {
+            federatedPackageDeletedCheck(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = packageKey,
+                compareDate = LocalDateTime.parse(deletedDate, DateTimeFormatter.ISO_DATE_TIME)
+            )
+            packageService.deletePackage(projectId, repoName, packageKey)
+        }
+        return ResponseBuilder.success()
+    }
+
+    override fun replicaPackageVersionDeleteRequest(request: PackageVersionDeleteRequest): Response<Void> {
+        with(request) {
+            federatedPackageDeletedCheck(
+                projectId = projectId,
+                repoName = repoName,
+                packageKey = packageKey,
+                compareDate = LocalDateTime.parse(deletedDate, DateTimeFormatter.ISO_DATE_TIME),
+                versionName = versionName
+            )
+            packageService.deleteVersion(projectId, repoName, packageKey, versionName)
+        }
+        return ResponseBuilder.success()
+    }
+
+
+    private fun federatedNodeDeletedCheck(
         projectId: String,
         repoName: String,
         fullPath: String,
@@ -228,8 +284,58 @@ class ArtifactReplicaController(
         if (existNode != null) {
             val existCreatedDate = LocalDateTime.parse(existNode.createdDate, DateTimeFormatter.ISO_DATE_TIME)
             if (existCreatedDate.isAfter(compareDate)) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+                return
             }
+        }
+    }
+
+    private fun federatedPackageDeletedCheck(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        compareDate: LocalDateTime,
+        versionName: String? = null,
+    ) {
+        val existPackage = packageService.findPackageByKey(projectId, repoName, packageKey) ?: return
+
+        // 检查包的创建日期是否晚于比较日期
+        if (existPackage.createdDate.isAfter(compareDate)) {
+            return
+        }
+
+        // 如果未指定版本名称，则无需检查版本
+        if (versionName.isNullOrEmpty()) return
+
+        // 检查指定版本是否存在
+        val existVersion = packageService.findVersionByName(projectId, repoName, packageKey, versionName) ?: return
+
+        // 检查版本的修改日期是否晚于比较日期
+        if (existVersion.lastModifiedDate.isAfter(compareDate)) {
+            return
+        }
+    }
+
+    private fun checkAndHandleExistingNodes(request: DeletedNodeReplicationRequest): NodeDetail? {
+        with(request.nodeCreateRequest) {
+            // 检查是否存在已删除的节点
+            val deletedNode = nodeService.getDeletedNodeDetail(projectId, repoName, fullPath, request.deleted)
+            if (deletedNode != null) {
+                return deletedNode
+            }
+
+            // 检查是否存在活跃节点
+            val existNode = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
+            if (existNode != null) {
+                val existCreatedDate = LocalDateTime.parse(existNode.createdDate, DateTimeFormatter.ISO_DATE_TIME)
+                if (existCreatedDate.isEqual(createdDate) && existNode.createdBy == createdBy) {
+                    // 如果活跃节点符合条件，则删除并返回
+                    nodeService.deleteNodeById(
+                        projectId, repoName, fullPath, operator, existNode.nodeInfo.id!!, request.deleted
+                    )
+                    return nodeService.getDeletedNodeDetail(projectId, repoName, fullPath, request.deleted)
+                }
+            }
+            return null
         }
     }
 }

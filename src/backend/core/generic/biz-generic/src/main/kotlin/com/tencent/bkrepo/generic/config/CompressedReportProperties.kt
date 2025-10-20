@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.generic.config
 
-data class CompressedReportProperties(
+class CompressedReportProperties(
     var enabled: Boolean = false,
     var zipFileName: String = "bkrepo_compressed_report.zip"
 )

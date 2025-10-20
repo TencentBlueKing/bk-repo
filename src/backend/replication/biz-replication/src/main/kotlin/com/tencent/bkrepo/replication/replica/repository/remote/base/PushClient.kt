@@ -27,9 +27,9 @@
 
 package com.tencent.bkrepo.replication.replica.repository.remote.base
 
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.blob.RequestTag
@@ -38,6 +38,7 @@ import com.tencent.bkrepo.replication.replica.base.interceptor.RetryInterceptor
 import com.tencent.bkrepo.replication.replica.base.interceptor.progress.ProgressInterceptor
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import org.slf4j.LoggerFactory
@@ -48,7 +49,8 @@ import java.util.concurrent.TimeUnit
  */
 abstract class PushClient(
     val replicationProperties: ReplicationProperties,
-    val localDataManager: LocalDataManager
+    val localDataManager: LocalDataManager,
+    val registry: ObservationRegistry
 ) {
     val httpClient: OkHttpClient = buildClient()
 
@@ -146,7 +148,7 @@ abstract class PushClient(
     }
 
     private fun buildClient(): OkHttpClient {
-        return HttpClientBuilderFactory.create()
+        return HttpClientBuilderFactory.create(registry = registry)
             .protocols(listOf(Protocol.HTTP_1_1))
             .readTimeout(DEFAULT_READ_TIMEOUT_MINUTES, TimeUnit.MINUTES)
             .connectTimeout(DEFAULT_CONNECT_TIMEOUT_MINUTES, TimeUnit.MINUTES)

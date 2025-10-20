@@ -38,9 +38,13 @@ import com.tencent.bkrepo.analyst.dao.ScanPlanDao
 import com.tencent.bkrepo.analyst.dao.ScanTaskDao
 import com.tencent.bkrepo.analyst.dao.SubScanTaskDao
 import com.tencent.bkrepo.analyst.exception.ScanTaskNotFoundException
+import com.tencent.bkrepo.analyst.exception.SubScanTaskNotFoundException
 import com.tencent.bkrepo.analyst.model.LeakDetailExport
 import com.tencent.bkrepo.analyst.model.ScanPlanExport
+import com.tencent.bkrepo.analyst.model.TSubScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTask
+import com.tencent.bkrepo.analyst.pojo.ScanTaskWaitingTime
+import com.tencent.bkrepo.analyst.pojo.TaskMetadata.Companion.TASK_METADATA_DISPATCHER
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactVulnerabilityRequest
 import com.tencent.bkrepo.analyst.pojo.request.FileScanResultDetailRequest
 import com.tencent.bkrepo.analyst.pojo.request.FileScanResultOverviewRequest
@@ -67,7 +71,9 @@ import com.tencent.bkrepo.analyst.utils.ScanLicenseConverter
 import com.tencent.bkrepo.analyst.utils.ScanPlanConverter
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.analysis.pojo.scanner.ScanType
+import com.tencent.bkrepo.common.analysis.pojo.scanner.Scanner
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
+import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanner
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
@@ -78,13 +84,17 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.sign.SignConfigService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.time.Duration
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.ceil
 
 @Service
 class ScanTaskServiceImpl(
@@ -100,7 +110,8 @@ class ScanTaskServiceImpl(
     private val repositoryService: RepositoryService,
     private val resultManagers: Map<String, ScanExecutorResultManager>,
     private val scannerConverters: Map<String, ScannerConverter>,
-    private val filterRuleService: FilterRuleService
+    private val filterRuleService: FilterRuleService,
+    private val signConfigService: SignConfigService
 ) : ScanTaskService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -337,6 +348,77 @@ class ScanTaskServiceImpl(
 
     override fun subtaskLicenseOverview(subtaskId: String): FileLicensesResultOverview {
         return planLicensesArtifact(subtaskId, archiveSubScanTaskDao)
+    }
+
+    override fun taskWaitTime(taskId: String): ScanTaskWaitingTime {
+        val task = scanTaskDao.findById(taskId) ?: throw ScanTaskNotFoundException(taskId)
+        val taskScanner = scannerService.get(task.scanner)
+        val dispatcher = task.metadata.find { it.key == TASK_METADATA_DISPATCHER }?.value.orEmpty()
+        val expireDay = getNodeExpireDay(taskScanner, task.projectId.orEmpty())
+        val currentTaskExecuteTime = getCurrentTaskExecuteTime(taskId, taskScanner)
+        val unfinishSubTasks = subScanTaskDao.tasksCreatedBefore(task.createdDate, dispatcher)
+
+        val queueTasks = unfinishSubTasks.filter { it.status != SubScanTaskStatus.EXECUTING.name }
+        // 没有排队时，返回当前任务预估执行时间
+        if (queueTasks.isEmpty()) {
+            return ScanTaskWaitingTime(0, currentTaskExecuteTime, expireDay)
+        }
+        // 有排队时，返回执行中任务剩余时间+排队任务预估执行时间
+        val executingSubTaskRemainTimes = getExecutingSubTaskRemainTimes(unfinishSubTasks, taskScanner)
+        val currentTaskWaitExecuteTime = getCurrentTaskWaitExecuteTime(executingSubTaskRemainTimes, queueTasks)
+        return ScanTaskWaitingTime(
+            queueTasks.size,
+            currentTaskWaitExecuteTime + currentTaskExecuteTime,
+            expireDay
+        )
+    }
+
+    private fun getCurrentTaskWaitExecuteTime(
+        executingSubTaskRemainTimes: List<Long>,
+        queueTasks: List<TSubScanTask>
+    ): Long = if (executingSubTaskRemainTimes.isEmpty()) {
+        0
+    } else if (queueTasks.size > executingSubTaskRemainTimes.size) {
+        executingSubTaskRemainTimes.last()
+    } else {
+        executingSubTaskRemainTimes[queueTasks.size - 1]
+    }
+
+    private fun getExecutingSubTaskRemainTimes(
+        unfinishSubTasks: List<TSubScanTask>,
+        taskScanner: Scanner
+    ): List<Long> {
+        val executingSubTasks = unfinishSubTasks.filter { it.status == SubScanTaskStatus.EXECUTING.name }
+        return executingSubTasks.map {
+            val time = ceil(it.size.toDouble() / taskScanner.scanRate).toInt()
+            val executedTime = Duration.between(it.startDateTime!!, LocalDateTime.now()).seconds
+            if (time > executedTime) {
+                time - executedTime
+            } else {
+                Duration.between(it.startDateTime, it.timeoutDateTime).seconds - executedTime
+            }
+        }.sorted()
+    }
+
+    private fun getCurrentTaskExecuteTime(
+        taskId: String,
+        taskScanner: Scanner
+    ): Long {
+        val subTasks = subScanTaskDao.findByParentId(taskId)
+        if (subTasks.isEmpty()) {
+            throw SubScanTaskNotFoundException(taskId)
+        }
+        val currentTaskExecuteTime = ceil(subTasks.maxOf { it.size }.toDouble() / taskScanner.scanRate).toLong()
+        return currentTaskExecuteTime
+    }
+
+    private fun getNodeExpireDay(taskScanner: Scanner, projectId: String): Int {
+        val expireDay = if (taskScanner is StandardScanner) {
+            taskScanner.args.find { it.key == "expire" }?.value?.toInt()
+        } else {
+            null
+        }
+        return expireDay ?: signConfigService.find(projectId)?.expireDays ?: -1
     }
 
     private fun <Req, Res> resultDetail(

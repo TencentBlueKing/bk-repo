@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.webhook.executor
 
 import com.tencent.bkrepo.common.api.constant.MediaTypes
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.webhook.config.WebHookProperties
 import com.tencent.bkrepo.webhook.constant.WebHookRequestStatus
 import com.tencent.bkrepo.webhook.dao.WebHookLogDao
@@ -39,15 +39,15 @@ import com.tencent.bkrepo.webhook.model.TWebHook
 import com.tencent.bkrepo.webhook.model.TWebHookLog
 import com.tencent.bkrepo.webhook.payload.EventPayloadFactory
 import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Headers
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.BeanFactory
 import org.springframework.cloud.endpoint.event.RefreshEvent
 import org.springframework.context.event.EventListener
 import org.springframework.core.annotation.Order
@@ -65,10 +65,10 @@ class WebHookExecutor(
     private val eventPayloadFactory: EventPayloadFactory,
     private val webHookProperties: WebHookProperties,
     private val webHookMetrics: WebHookMetrics,
-    private val beanFactory: BeanFactory
+    private val registry: ObservationRegistry
 ) {
 
-    private val httpClient = HttpClientBuilderFactory.create(beanFactory = beanFactory).build()
+    private val httpClient = HttpClientBuilderFactory.create(registry = registry).build()
 
     init {
         httpClient.dispatcher.maxRequests = webHookProperties.maxRequests ?: 200
@@ -126,9 +126,9 @@ class WebHookExecutor(
         val log = buildWebHookLog(webHook, request, payload)
         webHookMetrics.executingCount.incrementAndGet()
         httpClient.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, exception: IOException) {
-                logger.info("Execute webhook[id=${webHook.id}, url=${webHook.url}] error. ${exception.cause}")
-                buildWebHookFailedLog(log, startTimestamp, exception.message)
+            override fun onFailure(call: Call, e: IOException) {
+                logger.info("Execute webhook[id=${webHook.id}, url=${webHook.url}] error. ${e.cause}")
+                buildWebHookFailedLog(log, startTimestamp, e.message)
                 webHookLogDao.insert(log)
                 webHookMetrics.executingCount.decrementAndGet()
             }
@@ -198,7 +198,7 @@ class WebHookExecutor(
         webHook: TWebHook,
         payload: CommonEventPayload
     ): Request {
-        val requestBody = RequestBody.create(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull(), payload.toJsonString())
+        val requestBody = payload.toJsonString().toRequestBody(MediaTypes.APPLICATION_JSON.toMediaTypeOrNull())
         val builder = Request.Builder().url(webHook.url).post(requestBody)
         builder.addHeader(WEBHOOK_EVENT_HEADER, payload.eventType.name)
         webHook.headers?.forEach { (k, v) ->
@@ -210,7 +210,7 @@ class WebHookExecutor(
     private fun Headers.toMap(): Map<String, String> {
         val map = mutableMapOf<String, String>()
         for (name in names()) {
-            val key = name.toLowerCase(Locale.US)
+            val key = name.lowercase(Locale.US)
             val value = get(key)
             map[key] = value!!
         }

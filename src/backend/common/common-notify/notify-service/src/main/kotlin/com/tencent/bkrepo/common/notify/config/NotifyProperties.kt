@@ -45,6 +45,10 @@ data class NotifyProperties(
     @NestedConfigurationProperty
     var devopsServer: String = "",
     /**
+     * 蓝盾OpenApi地址
+     */
+    var devopsApigw: String = "",
+    /**
      * 企业微信api地址
      */
     var weworkApiHost: String = ""

@@ -68,6 +68,7 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.pojo.download.PackageDownloadRecord
+import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
@@ -120,6 +121,9 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
 
     @Autowired
     lateinit var redirectManager: DownloadRedirectManager
+
+    @Autowired
+    lateinit var registry: ObservationRegistry
 
     override fun upload(context: ArtifactUploadContext) {
         try {

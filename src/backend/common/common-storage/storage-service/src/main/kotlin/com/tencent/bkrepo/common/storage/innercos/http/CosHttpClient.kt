@@ -31,8 +31,9 @@
 
 package com.tencent.bkrepo.common.storage.innercos.http
 
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
-import okhttp3.OkHttpClient
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Request
 import okhttp3.Response
 import org.slf4j.LoggerFactory
@@ -41,73 +42,86 @@ import java.net.HttpURLConnection.HTTP_NOT_FOUND
 import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
 
-object CosHttpClient {
-    private val logger = LoggerFactory.getLogger(CosHttpClient::class.java)
-    private const val CONNECT_TIMEOUT = 30L
-    private const val WRITE_TIMEOUT = 30L
-    private const val READ_TIMEOUT = 30L
+class CosHttpClient(
+    private val registry: ObservationRegistry
+) {
 
-    private val client = OkHttpClient().newBuilder()
-        .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
-        .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
-        .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
-        .build()
+    init {
+        Companion.registry = registry
+    }
 
-    fun request(request: Request): Response {
-        return try {
-            client.newCall(request).execute()
-        } catch (exception: IOException) {
-            val message = buildMessage(request)
-            throw InnerCosException("Failed to execute http request: $message", exception)
+    companion object {
+        private lateinit var registry: ObservationRegistry
+        private val logger = LoggerFactory.getLogger(CosHttpClient::class.java)
+        private const val CONNECT_TIMEOUT = 30L
+        private const val WRITE_TIMEOUT = 30L
+        private const val READ_TIMEOUT = 30L
+
+        private val client by lazy {
+            HttpClientBuilderFactory.create(registry = registry)
+                .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
+                .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+                .build()
         }
-    }
 
-    fun <T> execute(request: Request, handler: HttpResponseHandler<T>): T {
-        val response = request(request)
-        return resolveResponse(request, response, handler)
-    }
-
-    private fun <T> resolveResponse(request: Request, response: Response, handler: HttpResponseHandler<T>): T {
-        response.useOnCondition(!handler.keepConnection(response)) {
-            try {
-                if (it.isSuccessful) {
-                    return handler.handle(it)
-                } else if (it.code == HTTP_NOT_FOUND) {
-                    val handle404Result = handler.handle404()
-                    if (handle404Result != null) {
-                        return handle404Result
-                    }
-                }
-                throw IOException("Response status error: ${it.code}")
+        fun request(request: Request): Response {
+            return try {
+                client.newCall(request).execute()
             } catch (exception: IOException) {
-                val message = buildMessage(request, it)
+                val message = buildMessage(request)
                 throw InnerCosException("Failed to execute http request: $message", exception)
             }
         }
-    }
 
-    private fun buildMessage(request: Request, response: Response? = null): String {
-        val requestTitle = "${request.method} ${request.url} ${response?.protocol}"
+        fun <T> execute(request: Request, handler: HttpResponseHandler<T>): T {
+            val response = request(request)
+            return resolveResponse(request, response, handler)
+        }
 
-        val builder = StringBuilder()
-            .append("\n>>>> ")
-            .appendLine(requestTitle)
-            .appendLine(request.headers)
-
-        if (response != null) {
-            builder.append("<<<< ")
-                .append(requestTitle)
-                .append(response.code)
-                .appendLine("[${response.message}]")
-                .appendLine(response.headers)
-            try {
-                builder.appendLine(response.body?.bytes()?.toString(Charset.forName("GB2312")))
-            } catch (e: Exception) {
-                logger.warn("read body error", e)
+        private fun <T> resolveResponse(request: Request, response: Response, handler: HttpResponseHandler<T>): T {
+            response.useOnCondition(!handler.keepConnection(response)) {
+                try {
+                    if (it.isSuccessful) {
+                        return handler.handle(it)
+                    } else if (it.code == HTTP_NOT_FOUND) {
+                        val handle404Result = handler.handle404()
+                        if (handle404Result != null) {
+                            return handle404Result
+                        }
+                    }
+                    throw IOException("Response status error: ${it.code}")
+                } catch (exception: IOException) {
+                    val message = buildMessage(request, it)
+                    throw InnerCosException("Failed to execute http request: $message", exception)
+                }
             }
         }
-        val message = builder.toString()
-        logger.warn(message)
-        return message
+
+        private fun buildMessage(request: Request, response: Response? = null): String {
+            val requestTitle = "${request.method} ${request.url} ${response?.protocol}"
+
+            val builder = StringBuilder()
+                .append("\n>>>> ")
+                .appendLine(requestTitle)
+                .appendLine(request.headers)
+
+            if (response != null) {
+                builder.append("<<<< ")
+                    .append(requestTitle)
+                    .append(response.code)
+                    .appendLine("[${response.message}]")
+                    .appendLine(response.headers)
+                try {
+                    builder.appendLine(response.body?.bytes()?.toString(Charset.forName("GB2312")))
+                } catch (e: Exception) {
+                    logger.warn("read body error", e)
+                }
+            }
+            val message = builder.toString()
+            logger.warn(message)
+            return message
+        }
     }
+
 }

@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.FileStorage
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.job.COLLECTION_NAME_FILE_REFERENCE
 import com.tencent.bkrepo.job.CREDENTIALS
 import com.tencent.bkrepo.job.SHA256
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
@@ -17,7 +18,6 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.config.properties.FileReferenceCleanupJobProperties
 import com.tencent.bkrepo.job.config.properties.StorageReconcileJobProperties
 import org.slf4j.LoggerFactory
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query
@@ -31,7 +31,6 @@ import java.nio.charset.StandardCharsets
  * 只要数据库存在文件引用，就不会删除实际存储。
  * */
 @Component
-@EnableConfigurationProperties(StorageReconcileJobProperties::class)
 @Suppress("UnstableApiUsage")
 class StorageReconcileJob(
     private val properties: StorageReconcileJobProperties,
@@ -102,11 +101,8 @@ class StorageReconcileJob(
         }
         val query = Query(criteria)
         query.fields().include(SHA256)
-        NodeCommonUtils.forEachRefByCollectionParallel(query) {
-            val sha256 = it[SHA256]?.toString()
-            if (sha256 != null) {
-                bf.put(sha256)
-            }
+        NodeCommonUtils.forEachByCollectionParallel(COLLECTION_NAME_FILE_REFERENCE, query) {
+            it[SHA256]?.toString()?.let { sha256 -> bf.put(sha256) }
         }
         val count = "${bf.approximateElementCount()}/${bloomFilterProp.expectedNodes}"
         val fpp = bf.expectedFpp()

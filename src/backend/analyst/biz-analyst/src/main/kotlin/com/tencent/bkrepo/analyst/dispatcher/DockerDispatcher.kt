@@ -123,9 +123,9 @@ class DockerDispatcher(
     }
 
     override fun availableCount(): Int {
-        val executingCount = subScanTaskDao
-            .countTaskByStatusIn(listOf(SubScanTaskStatus.EXECUTING.name), executionCluster.name)
-            .toInt()
+        val executingCount = subScanTaskDao.limitCountTaskByStatusIn(
+            listOf(SubScanTaskStatus.EXECUTING.name), executionCluster.name, executionCluster.maxTaskCount
+        ).toInt()
         return executionCluster.maxTaskCount - executingCount
     }
 

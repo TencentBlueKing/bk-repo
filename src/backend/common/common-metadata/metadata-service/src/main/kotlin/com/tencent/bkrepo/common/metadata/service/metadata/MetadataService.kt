@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.common.metadata.service.metadata
 
+import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 
@@ -68,4 +69,11 @@ interface MetadataService {
      * @param allowDeleteSystemMetadata 是否允许删除系统元数据
      */
     fun deleteMetadata(request: MetadataDeleteRequest, allowDeleteSystemMetadata: Boolean = true)
+
+    /**
+     * 根据请求request保存或者更新元数据， 只针对已删除节点
+     * 如果元数据key已经存在则更新，否则创建新的
+     */
+    fun saveMetadataForDeletedNode(request: DeletedNodeMetadataSaveRequest)
+
 }

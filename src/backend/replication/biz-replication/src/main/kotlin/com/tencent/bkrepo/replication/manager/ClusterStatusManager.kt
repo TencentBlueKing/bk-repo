@@ -50,7 +50,7 @@ class ClusterStatusManager(
     private val clusterNodeService: ClusterNodeService,
     private val clusterProperties: ClusterProperties
 ) {
-    @Scheduled(initialDelay = 30 * 1000L, fixedDelay = 30 * 1000L) // 每隔30s检测一次
+    @Scheduled(initialDelay = 600 * 1000L, fixedDelay = 600 * 1000L) // 每隔10min检测一次
     @StandaloneJob
     fun start() {
         val clusterNodeList = clusterNodeService.listClusterNodes(name = null, type = null)

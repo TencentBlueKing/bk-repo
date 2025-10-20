@@ -29,17 +29,18 @@ package com.tencent.bkrepo.common.artifact.repository.remote
 
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
+import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.NetworkProxyConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteCredentialsConfiguration
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.service.util.okhttp.BasicAuthInterceptor
-import com.tencent.bkrepo.common.service.util.okhttp.HttpClientBuilderFactory
 import com.tencent.bkrepo.common.service.util.okhttp.TokenAuthInterceptor
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import io.micrometer.observation.ObservationRegistry
 import okhttp3.Authenticator
 import okhttp3.Credentials
 import okhttp3.Interceptor
@@ -90,9 +91,10 @@ fun createAuthenticateInterceptor(configuration: RemoteCredentialsConfiguration)
 fun buildOkHttpClient(
     configuration: RemoteConfiguration,
     addInterceptor: Boolean = true,
-    followRedirect: Boolean = false
+    followRedirect: Boolean = false,
+    registry: ObservationRegistry? = null,
 ): OkHttpClient.Builder {
-    val builder = HttpClientBuilderFactory.create()
+    val builder = HttpClientBuilderFactory.create(registry = registry)
     builder.readTimeout(configuration.network.readTimeout, TimeUnit.MILLISECONDS)
     builder.connectTimeout(configuration.network.connectTimeout, TimeUnit.MILLISECONDS)
     builder.proxy(createProxy(configuration.network.proxy))

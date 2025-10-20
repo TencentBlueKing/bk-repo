@@ -44,9 +44,9 @@ import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_BODY
 import com.tencent.bkrepo.common.service.util.HttpSigner.SIGN_TIME
 import com.tencent.bkrepo.common.service.util.HttpSigner.TIME_SPLIT
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import jakarta.servlet.http.HttpServletRequest
 import org.apache.commons.codec.digest.HmacAlgorithms
 import org.springframework.web.servlet.HandlerMapping
-import javax.servlet.http.HttpServletRequest
 
 /**
  * 检查签名
@@ -73,7 +73,7 @@ class SignAuthHandler(
         * 表单Body签名，因为包含文件，所以将除非文件外的表项，添加到query当中统一排序签名，request.parameterMap能直接获取表单参数。
         * */
         val secretKey = authenticationManager.findSecretKey(authCredentials.appId, authCredentials.accessKey)
-            // 账号非法
+        // 账号非法
             ?: throw AuthenticationException("AppId or accessKey error.")
         val uri = getUrlPath(request)
         val bodyHash = request.getAttribute(SIGN_BODY).toString()
