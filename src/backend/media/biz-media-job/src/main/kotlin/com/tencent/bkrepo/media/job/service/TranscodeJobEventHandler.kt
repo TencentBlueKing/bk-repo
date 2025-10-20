@@ -3,7 +3,6 @@ package com.tencent.bkrepo.media.job.service
 import com.google.gson.JsonSyntaxException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
-import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
 import io.kubernetes.client.informer.ResourceEventHandler
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
