@@ -69,8 +69,6 @@ class TranscodeJobService @Autowired constructor(
                     api.readNamespacedConfigMap(
                         configMapName,
                         k8sProperties.namespace,
-                        null,
-                        null,
                         null
                     )
                 } == null) {
@@ -173,11 +171,12 @@ class TranscodeJobService @Autowired constructor(
             .metadata(metadata)
             .spec(jobSpec)
         api.createNamespacedJob(
-            k8sProperties.namespace,
-            kJob,
-            null,
-            null,
-            null,
+            /* namespace = */ k8sProperties.namespace,
+            /* body = */ kJob,
+            /* pretty = */ null,
+            /* dryRun = */ null,
+            /* fieldManager = */ null,
+            /* fieldValidation = */ null
         )
         logger.info("created job $jobName in namespace ${k8sProperties.namespace}")
     }
@@ -341,11 +340,12 @@ class TranscodeJobService @Autowired constructor(
             .metadata(metadata)
             .spec(jobSpec)
         api.createNamespacedJob(
-            k8sProperties.namespace,
-            kJob,
-            null,
-            null,
-            null,
+            /* namespace = */ k8sProperties.namespace,
+            /* body = */ kJob,
+            /* pretty = */ null,
+            /* dryRun = */ null,
+            /* fieldManager = */ null,
+            /* fieldValidation = */ null
         )
         logger.info("created cos job $jobName in namespace ${k8sProperties.namespace}")
     }

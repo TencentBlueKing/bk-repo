@@ -122,6 +122,7 @@ class TranscodeJobEventHandler @Autowired constructor(
                 /* propagationPolicy = */ "Background",
                 /* resourceVersion = */ null,
                 /* resourceVersionMatch = */ null,
+                /* sendInitialEvents = */ null,
                 /* timeoutSeconds = */ null,
                 /* body = */ null,
             )

@@ -40,6 +40,7 @@ class TranscodeJobInformerController @Autowired constructor(
                     /* limit = */ null,
                     /* resourceVersion = */ params.resourceVersion,
                     /* resourceVersionMatch = */ null,
+                    /* sendInitialEvents = */ null,
                     /* timeoutSeconds = */ params.timeoutSeconds,
                     /* watch = */ params.watch,
                     /* _callback = */ null
