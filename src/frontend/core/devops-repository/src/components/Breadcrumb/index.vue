@@ -5,11 +5,13 @@
             v-for="item in list"
             :key="item.name"
             :class="{ 'omit-middle': omitMiddle && list && list.length > 2 }">
-            <span class="bk-breadcrumb-item-inner is-link"
-                v-bk-tooltips=" { content: item.name, placements: ['bottom'] ,disabled: !item.name }"
-                @click="() => item.cilckHandler && item.cilckHandler(item)">
-                {{ item.name }}
-            </span>
+            <bk-popover :content="item.name" placement="bottom">
+                <span
+                    class="bk-breadcrumb-item-inner is-link"
+                    @click="() => item.cilckHandler && item.cilckHandler(item)">
+                    {{ item.name }}
+                </span>
+            </bk-popover>
         </bk-breadcrumb-item>
     </bk-breadcrumb>
 </template>
