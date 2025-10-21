@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 -- 敏感参数列表（不区分大小写）
 local sensitive_params = {
     "token", "secretkey", "access_token", "accesstoken", 
-    "authorization", "password", "passwd", "pwd", "secret"
+    "authorization", "password", "passwd", "pwd", "secret", "x-devops-bk-token", "x-devops-bk-ticket"
 }
 
 -- 创建敏感参数查找表，提高性能

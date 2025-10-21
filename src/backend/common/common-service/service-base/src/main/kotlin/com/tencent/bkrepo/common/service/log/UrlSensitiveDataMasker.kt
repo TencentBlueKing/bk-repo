@@ -23,6 +23,8 @@ object UrlSensitiveDataMasker {
         "passwd",
         "pwd",
         "secret",
+        "x-devops-bk-token",
+        "x-devops-bk-ticket"
     )
 
     /**
