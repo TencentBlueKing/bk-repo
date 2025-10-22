@@ -278,7 +278,7 @@ class RRepositoryServiceImpl(
     @Transactional(rollbackFor = [Throwable::class])
     override suspend fun updateRepo(repoUpdateRequest: RepoUpdateRequest) {
         repoUpdateRequest.apply {
-            Preconditions.checkArgument((description?.length ?: 0) < REPO_DESC_MAX_LENGTH, this::description.name)
+            Preconditions.checkArgument((description?.length ?: 0) <= REPO_DESC_MAX_LENGTH, this::description.name)
             Preconditions.checkArgument(checkInterceptorConfig(configuration), this::configuration.name)
             val repository = checkRepository(projectId, name)
             quota?.let {
