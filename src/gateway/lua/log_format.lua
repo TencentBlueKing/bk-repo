@@ -23,6 +23,15 @@ local sensitive_params = {
     "authorization", "password", "passwd", "pwd", "secret", "x-devops-bk-token", "x-devops-bk-ticket"
 }
 
+
+-- 需要脱敏的URI前缀列表
+local sensitive_uri_prefixes = {
+    "/repository/api/share/",
+    "/generic/temporary/",
+    "/web/websocket/ws/user/",
+    "/web/websocket/ws/desktop/"
+}
+
 -- 创建敏感参数查找表，提高性能
 local sensitive_param_set = {}
 for _, param in ipairs(sensitive_params) do
@@ -139,6 +148,21 @@ local function safe_execute(func, default_value, ...)
     end
 end
 
+
+-- 判断URI是否需要脱敏
+local function should_mask_uri(uri)
+    if not uri or uri == "" then
+        return false
+    end
+    
+    for _, prefix in ipairs(sensitive_uri_prefixes) do
+        if string.sub(uri, 1, #prefix) == prefix then
+            return true
+        end
+    end
+    return false
+end
+
 -- 设置脱敏后的请求行（带异常保护）
 local request = ngx.var.request
 if not request or request == "" then
@@ -147,7 +171,17 @@ if not request or request == "" then
     local protocol = ngx.var.server_protocol or ""
     request = method .. " " .. uri .. " " .. protocol
 end
-local masked_request = safe_execute(mask_request_line, request, request)
+
+-- 获取当前请求的URI
+local current_uri = ngx.var.request_uri or ""
+
+-- 只对匹配前缀的请求进行脱敏处理
+local masked_request
+if should_mask_uri(current_uri) then
+    masked_request = safe_execute(mask_request_line, request, request)
+else
+    masked_request = request
+end
 ngx.var.masked_request = masked_request
 
 ngx.var.request_time_ms = math.floor(tonumber(ngx.var.request_time) * 1000)
