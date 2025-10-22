@@ -24,12 +24,12 @@ local sensitive_params = {
 }
 
 
--- 需要脱敏的URI前缀列表
-local sensitive_uri_prefixes = {
+-- 需要脱敏的URI列表
+local sensitive_uri_str = {
     "/repository/api/share/",
     "/generic/temporary/",
-    "/web/websocket/ws/user/",
-    "/web/websocket/ws/desktop/"
+    "/websocket/ws/user",
+    "/websocket/ws/desktop"
 }
 
 -- 创建敏感参数查找表，提高性能
@@ -155,8 +155,8 @@ local function should_mask_uri(uri)
         return false
     end
     
-    for _, prefix in ipairs(sensitive_uri_prefixes) do
-        if string.sub(uri, 1, #prefix) == prefix then
+    for _, uri_str in ipairs(sensitive_uri_str) do
+        if string.find(uri, uri_str, 1, true) then
             return true
         end
     end
