@@ -346,7 +346,17 @@ class LocalDataManager(
      */
     fun listBlockNode(nodeInfo: NodeInfo): List<TBlockNode> {
         with(nodeInfo) {
-            return blockNodeService.listAllBlocks(projectId, repoName, fullPath, createdDate)
+            if (deleted != null) {
+                return blockNodeService.listDeletedBlocks(
+                    projectId = projectId,
+                    repoName = repoName,
+                    fullPath = fullPath,
+                    nodeCreateDate = LocalDateTime.parse(createdDate, DateTimeFormatter.ISO_DATE_TIME),
+                    nodeDeleteDate = LocalDateTime.parse(deleted!!, DateTimeFormatter.ISO_DATE_TIME),
+                )
+            } else {
+                return blockNodeService.listAllBlocks(projectId, repoName, fullPath, createdDate)
+            }
         }
     }
 
@@ -475,7 +485,7 @@ class LocalDataManager(
         if (nodes.isEmpty() && throwIfEmpty) {
             throw NodeNotFoundException(fullPath)
         }
-        
+
         while (nodes.isNotEmpty()) {
             nodes.forEach(nodeProcessor)
             pageNumber++

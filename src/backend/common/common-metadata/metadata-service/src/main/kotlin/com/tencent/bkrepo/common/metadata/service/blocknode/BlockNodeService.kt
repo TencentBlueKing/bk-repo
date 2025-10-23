@@ -128,4 +128,15 @@ interface BlockNodeService {
      * 检查分块是否存在
      * */
     fun checkBlockExist(blockNode: TBlockNode): Boolean
+
+    /**
+     *  查询已删除的分块
+     * */
+    fun listDeletedBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeCreateDate: LocalDateTime,
+        nodeDeleteDate: LocalDateTime
+    ): List<TBlockNode>
 }

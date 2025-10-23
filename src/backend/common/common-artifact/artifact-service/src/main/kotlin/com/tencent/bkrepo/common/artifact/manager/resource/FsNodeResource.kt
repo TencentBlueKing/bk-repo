@@ -62,17 +62,16 @@ class FsNodeResource(
              * */
             val copyFromCredentialsKey = node.copyFromCredentialsKey
             return storageService.load(blocks, range) { regionResource ->
-                val input = if (isFederating && clusterInfo != null) {
+                var input = storageService.loadResource(regionResource, storageCredentials)
+                    ?: loadFromCopyIfNecessary(regionResource, copyFromCredentialsKey)
+                if (isFederating && clusterInfo != null) {
                     val blockRange = Range(
                         regionResource.off, regionResource.off + regionResource.len - 1, regionResource.size
                     )
                     val remoteNodeResource = RemoteNodeResource(
                         regionResource.digest, blockRange, storageCredentials, clusterInfo, storageService
                     )
-                    remoteNodeResource.getArtifactInputStream()
-                } else {
-                    storageService.loadResource(regionResource, storageCredentials)
-                        ?: loadFromCopyIfNecessary(regionResource, copyFromCredentialsKey)
+                    input = remoteNodeResource.getArtifactInputStream()
                 }
                 check(input != null) { "Block[${regionResource.digest}] miss." }
                 input

@@ -48,7 +48,6 @@ import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
 import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
@@ -185,15 +184,28 @@ class BlockNodeServiceImpl(
 
     override fun checkBlockExist(blockNode: TBlockNode): Boolean {
         with(blockNode) {
-            val criteria = where(TBlockNode::nodeFullPath).isEqualTo(nodeFullPath)
-                .and(TBlockNode::projectId).isEqualTo(projectId)
-                .and(TBlockNode::repoName).isEqualTo(repoName)
-                .and(TBlockNode::deleted).isEqualTo(null)
-                .and(TBlockNode::uploadId).isEqualTo(uploadId)
-                .and(TBlockNode::sha256).isEqualTo(sha256)
-                .and(TBlockNode::startPos).isEqualTo(startPos)
+            val criteria = BlockNodeQueryHelper.findBlockCriteria(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = nodeFullPath,
+                startPos = startPos,
+                sha256 = sha256,
+                deleted = deleted
+            )
             return blockNodeDao.exists(Query(criteria))
         }
+    }
+
+    override fun listDeletedBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeCreateDate: LocalDateTime,
+        nodeDeleteDate: LocalDateTime
+    ): List<TBlockNode> {
+        val criteria =
+            BlockNodeQueryHelper.deletedCriteria(projectId, repoName, fullPath, nodeCreateDate, nodeDeleteDate)
+        return blockNodeDao.find(Query(criteria))
     }
 
     companion object {

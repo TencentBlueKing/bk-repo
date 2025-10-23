@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
@@ -40,6 +41,7 @@ import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.constant.FEDERATED
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
@@ -269,13 +271,22 @@ class FederationReplicator(
             if (blockNodeList.isEmpty()) {
                 logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
             }
+            val uploadId = "${StringPool.uniqueId()}/${node.id}"
 
             // 传输所有blocknode元数据
             blockNodeList.forEach { blockNode ->
-                buildBlockNodeCreateRequest(this, blockNode)?.let { blockNodeCreateRequest ->
+                buildBlockNodeCreateRequest(this, blockNode, uploadId)?.let { blockNodeCreateRequest ->
                     context.artifactReplicaClient!!.replicaBlockNodeCreateRequest(blockNodeCreateRequest)
                 }
             }
+            artifactReplicaClient!!.replicaBlockNodeCreateFinishRequest(
+                BlockNodeCreateFinishRequest(
+                    projectId = remoteProjectId!!,
+                    repoName = remoteRepoName!!,
+                    uploadId = uploadId,
+                    fullPath = node.fullPath
+                )
+            )
 
             // 同步节点
             if (!syncNodeToFederatedCluster(this, node)) return false
@@ -659,7 +670,11 @@ class FederationReplicator(
         }
     }
 
-    private fun buildBlockNodeCreateRequest(context: ReplicaContext, blockNode: TBlockNode): BlockNodeCreateRequest? {
+    private fun buildBlockNodeCreateRequest(
+        context: ReplicaContext,
+        blockNode: TBlockNode,
+        uploadId: String
+    ): BlockNodeCreateRequest? {
         with(context) {
             // 外部集群仓库没有project/repoName
             if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return null
@@ -675,7 +690,9 @@ class FederationReplicator(
                 endPos = blockNode.endPos,
                 createdBy = blockNode.createdBy,
                 createdDate = blockNode.createdDate,
-                uploadId = blockNode.uploadId
+                uploadId = uploadId,
+                deleted = blockNode.deleted,
+                source = getCurrentClusterName(localProjectId, localRepoName, task.name)
             )
         }
     }

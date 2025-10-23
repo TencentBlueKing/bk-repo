@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
+import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
@@ -282,18 +283,30 @@ class ArtifactReplicaController(
         // 获取仓库信息，如果不存在则抛出异常
         val repo = repositoryService.getRepoDetail(request.projectId, request.repoName)
             ?: throw ErrorCodeException(ArtifactMessageCode.REPOSITORY_NOT_FOUND, request.repoName)
-        
+
         // 构建块节点对象
         val blockNode = buildTBlockNode(request)
-        
+
         // 检查块是否已存在，如果存在直接返回
         if (blockNodeService.checkBlockExist(blockNode)) {
             return ResponseBuilder.success(toBlockNodeDetail(blockNode))
         }
-        
+
         // 创建新的块节点
         val createdBlockNode = blockNodeService.createBlock(blockNode, repo.storageCredentials)
         return ResponseBuilder.success(toBlockNodeDetail(createdBlockNode))
+    }
+
+    override fun replicaBlockNodeCreateFinishRequest(request: BlockNodeCreateFinishRequest): Response<Void> {
+        with(request) {
+            blockNodeService.updateBlockUploadId(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                uploadId = uploadId
+            )
+            return ResponseBuilder.success()
+        }
     }
 
     private fun buildTBlockNode(request: BlockNodeCreateRequest): TBlockNode {
@@ -310,7 +323,8 @@ class ArtifactReplicaController(
                 sha256 = sha256,
                 crc64ecma = crc64ecma,
                 uploadId = uploadId,
-                expireDate = expireDate
+                expireDate = expireDate,
+                deleted = deleted
             )
         }
     }

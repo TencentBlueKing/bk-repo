@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.api
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
@@ -183,4 +184,9 @@ interface ArtifactReplicaClient {
     fun replicaBlockNodeCreateRequest(
         @RequestBody request: BlockNodeCreateRequest,
     ): Response<BlockNodeDetail>
+
+    @PostMapping("/block/node/finish")
+    fun replicaBlockNodeCreateFinishRequest(
+        @RequestBody request: BlockNodeCreateFinishRequest,
+    ): Response<Void>
 }

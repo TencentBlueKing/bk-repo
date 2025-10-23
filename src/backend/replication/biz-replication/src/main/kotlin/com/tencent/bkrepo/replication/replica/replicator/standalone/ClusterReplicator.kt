@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.cache.CacheBuilder
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
@@ -36,6 +37,7 @@ import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.base.AbstractFileReplicator
@@ -211,11 +213,20 @@ class ClusterReplicator(
                 logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
                 return true
             }
+            val uploadId = "${StringPool.uniqueId()}/${node.id}"
             blockNodeList.forEach { blockNode ->
-                buildBlockNodeCreateRequest(this, blockNode)?.let { blockNodeCreateRequest ->
+                buildBlockNodeCreateRequest(this, blockNode, uploadId)?.let { blockNodeCreateRequest ->
                     executeBlockNodePush(this, blockNode, blockNodeCreateRequest)
                 }
             }
+            artifactReplicaClient!!.replicaBlockNodeCreateFinishRequest(
+                BlockNodeCreateFinishRequest(
+                    projectId = remoteProjectId!!,
+                    repoName = remoteRepoName!!,
+                    uploadId = uploadId,
+                    fullPath = node.fullPath
+                )
+            )
             return true
         }
     }
@@ -354,7 +365,11 @@ class ClusterReplicator(
         }
     }
 
-    private fun buildBlockNodeCreateRequest(context: ReplicaContext, blockNode: TBlockNode): BlockNodeCreateRequest? {
+    private fun buildBlockNodeCreateRequest(
+        context: ReplicaContext,
+        blockNode: TBlockNode,
+        uploadId: String
+    ): BlockNodeCreateRequest? {
         with(context) {
             // 外部集群仓库没有project/repoName
             if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return null
@@ -370,7 +385,8 @@ class ClusterReplicator(
                 endPos = blockNode.endPos,
                 createdBy = blockNode.createdBy,
                 createdDate = blockNode.createdDate,
-                uploadId = blockNode.uploadId
+                uploadId = uploadId,
+                deleted = blockNode.deleted
             )
         }
     }

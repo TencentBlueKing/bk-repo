@@ -35,7 +35,7 @@ data class BlockNodeCreateRequest(
     @get:Schema(title = "上传id")
     val uploadId: String? = null,
     @get:Schema(title = "删除时间")
-    var deleted: String? = null,
+    var deleted: LocalDateTime? = null,
     @get:Schema(title = "操作用户")
     override val operator: String = SYSTEM_USER,
     override val createdBy: String,
