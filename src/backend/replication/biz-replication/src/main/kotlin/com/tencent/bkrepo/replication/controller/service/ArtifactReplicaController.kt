@@ -123,13 +123,14 @@ class ArtifactReplicaController(
     }
 
     override fun replicaNodeCreateRequest(request: NodeCreateRequest): Response<NodeDetail> {
-        federatedNodeDeletedCheck(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            fullPath = request.fullPath,
-            compareDate = request.createdDate!!,
-            source = request.source
-        )
+        if (!request.source.isNullOrEmpty()) {
+            federatedNodeDeletedCheck(
+                projectId = request.projectId,
+                repoName = request.repoName,
+                fullPath = request.fullPath,
+                compareDate = request.createdDate!!,
+            )
+        }
         return ResponseBuilder.success(nodeService.createNode(request))
     }
 
@@ -161,13 +162,14 @@ class ArtifactReplicaController(
     }
 
     override fun replicaNodeDeleteRequest(request: NodeDeleteRequest): Response<NodeDeleteResult> {
-        federatedNodeDeletedCheck(
-            request.projectId,
-            request.repoName,
-            request.fullPath,
-            LocalDateTime.parse(request.deletedDate!!, DateTimeFormatter.ISO_DATE_TIME),
-            request.source
-        )
+        if (!request.source.isNullOrEmpty()) {
+            federatedNodeDeletedCheck(
+                request.projectId,
+                request.repoName,
+                request.fullPath,
+                LocalDateTime.parse(request.deletedDate!!, DateTimeFormatter.ISO_DATE_TIME),
+            )
+        }
         return ResponseBuilder.success(nodeService.deleteNode(request))
     }
 
@@ -271,15 +273,12 @@ class ArtifactReplicaController(
         return ResponseBuilder.success()
     }
 
-
     private fun federatedNodeDeletedCheck(
         projectId: String,
         repoName: String,
         fullPath: String,
         compareDate: LocalDateTime,
-        source: String?,
     ) {
-        if (source.isNullOrEmpty()) return
         val existNode = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         if (existNode != null) {
             val existCreatedDate = LocalDateTime.parse(existNode.createdDate, DateTimeFormatter.ISO_DATE_TIME)
