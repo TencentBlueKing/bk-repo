@@ -16,5 +16,5 @@ interface FileConsumer : Consumer<File> {
      * */
     fun accept(file: File, name: String)
 
-    fun accept(file: ArtifactFile, name: String)
+    fun accept(name: String, file: ArtifactFile, extraFiles: Map<String, ArtifactFile>?)
 }
