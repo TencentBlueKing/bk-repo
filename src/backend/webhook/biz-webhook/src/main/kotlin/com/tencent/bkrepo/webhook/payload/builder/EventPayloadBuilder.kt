@@ -30,11 +30,9 @@ package com.tencent.bkrepo.webhook.payload.builder
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.webhook.exception.WebHookMessageCode
 import com.tencent.bkrepo.webhook.pojo.payload.CommonEventPayload
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -61,7 +59,20 @@ abstract class EventPayloadBuilder(
             )
         } else {
             userResource.userInfoById(userId).data
-                ?: throw ErrorCodeException(WebHookMessageCode.WEBHOOK_USER_NOT_FOUND)
+            /**
+             * 通过联邦仓库同步创建的制品触发webhook时, 来源于源节点的userId在当前节点可能不存在，此时虚构一个用户信息
+             * @see [com.tencent.bkrepo.common.metadata.service.node.impl.NodeBaseService.afterCreate]
+             */
+                ?: UserInfo(
+                    userId = userId,
+                    name = userId,
+                    email = null,
+                    phone = null,
+                    createdDate = null,
+                    locked = false,
+                    admin = false,
+                    group = false,
+                )
         }
     }
 }
