@@ -47,6 +47,7 @@ import com.tencent.bkrepo.replication.replica.executor.FederationFileThreadPoolE
 import com.tencent.bkrepo.replication.replica.replicator.base.AbstractFileReplicator
 import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterArtifactReplicationHandler
 import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
+import com.tencent.bkrepo.replication.service.FederationMetadataTrackingService
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
@@ -81,6 +82,7 @@ class FederationReplicator(
     artifactReplicationHandler: ClusterArtifactReplicationHandler,
     replicationProperties: ReplicationProperties,
     private val federationRepositoryService: FederationRepositoryService,
+    private val federationMetadataTrackingService: FederationMetadataTrackingService,
     private val replicaRecordService: ReplicaRecordService,
 ) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties) {
 
@@ -240,7 +242,10 @@ class FederationReplicator(
             // 1. 同步节点
             if (!syncNodeToFederatedCluster(this, node)) return false
 
-            // 2. 同步文件
+            // 2. 记录文件传输开始标识
+            recordFileTransferStart(this, node)
+
+            // 3. 同步文件
             return if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
                 // 异步执行
                 executor.execute(
@@ -248,6 +253,8 @@ class FederationReplicator(
                         try {
                             pushFileToFederatedCluster(this, node)
                             completeFileReplicaRecord(context)
+                            // 记录文件传输完成标识
+                            recordFileTransferComplete(this, node)
                         } catch (throwable: Throwable) {
                             logger.error(
                                 "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
@@ -265,6 +272,8 @@ class FederationReplicator(
                 try {
                     pushFileToFederatedCluster(this, node)
                     completeFileReplicaRecord(context)
+                    // 记录文件传输完成标识
+                    recordFileTransferComplete(this, node)
                 } catch (throwable: Throwable) {
                     logger.error(
                         "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
@@ -283,6 +292,46 @@ class FederationReplicator(
         with(context) {
             if (task.record == false || recordDetailId.isNullOrEmpty()) return
             replicaRecordService.updateRecordDetailProgress(recordDetailId!!, success)
+        }
+    }
+
+    /**
+     * 记录文件传输开始标识
+     */
+    private fun recordFileTransferStart(context: ReplicaContext, node: NodeInfo) {
+        with(context) {
+            try {
+                if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return
+
+                federationMetadataTrackingService.createTrackingRecord(
+                    taskKey = task.key,
+                    remoteClusterId = remoteCluster.id!!,
+                    projectId = localProjectId,
+                    localRepoName = localRepoName,
+                    remoteProjectId = remoteProjectId,
+                    remoteRepoName = remoteRepoName,
+                    nodePath = node.fullPath,
+                    nodeId = node.id!!
+                )
+            } catch (e: Exception) {
+                logger.warn("Failed to record file transfer start for node ${node.fullPath}: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * 记录文件传输完成标识
+     */
+    private fun recordFileTransferComplete(context: ReplicaContext, node: NodeInfo) {
+        with(context) {
+            try {
+                if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return
+
+                // 删除跟踪记录，表示传输完成
+                federationMetadataTrackingService.deleteByTaskKeyAndNodeId(task.key, node.id!!)
+            } catch (e: Exception) {
+                logger.warn("Failed to delete file transfer record for node ${node.fullPath}: ${e.message}")
+            }
         }
     }
 
@@ -307,6 +356,13 @@ class FederationReplicator(
                 }
             }
         )
+    }
+
+    /**
+     * 推送文件到联邦集群（供定时任务调用）
+     */
+    fun pushFileToFederatedClusterPublic(context: ReplicaContext, node: NodeInfo): Boolean {
+        return pushFileToFederatedCluster(context, node)
     }
 
     override fun replicaDir(context: ReplicaContext, node: NodeInfo) {

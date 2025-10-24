@@ -40,6 +40,7 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
@@ -49,6 +50,7 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ErrorStrategy
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaExecutionContext
+import com.tencent.bkrepo.replication.service.ReplicaFailureRecordService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationRecordDetailMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
@@ -73,6 +75,7 @@ import java.time.format.DateTimeFormatter
 abstract class AbstractReplicaService(
     private val replicaRecordService: ReplicaRecordService,
     val localDataManager: LocalDataManager,
+    private val replicaFailureRecordService: ReplicaFailureRecordService,
 ) : ReplicaService {
 
     /**
@@ -579,7 +582,7 @@ abstract class AbstractReplicaService(
     ) {
         with(context) {
             val record = ReplicationRecord(
-                packageName = packageSummary.name,
+                packageName = packageSummary.key,
                 version = version.name,
                 size = version.size.toString()
             )
@@ -687,6 +690,10 @@ abstract class AbstractReplicaService(
                 )
                 replicaContext.replicaProgress.failed++
                 setErrorStatus(this, throwable)
+
+                // 记录分发失败
+                recordFailureToDatabase(context, record, throwable)
+
                 // 非全量同步且配置了快速失败策略时，直接抛出异常
                 if (shouldFastFail(replicaContext)) {
                     throw throwable
@@ -811,6 +818,47 @@ abstract class AbstractReplicaService(
         context.appendErrorReason(throwable.message.orEmpty())
         context.replicaContext.status = ExecutionStatus.FAILED
         context.replicaContext.errorMessage = throwable.message.orEmpty()
+    }
+
+    /**
+     * 记录分发失败到数据库
+     */
+    private fun recordFailureToDatabase(
+        context: ReplicaExecutionContext,
+        record: ReplicationRecord,
+        throwable: Throwable
+    ) {
+        try {
+            with(context.replicaContext) {
+                if (task.replicaType == ReplicaType.RUN_ONCE) {
+                    return
+                }
+                // 根据记录类型确定失败类型
+                val failureType = when {
+                    record.packageName != null -> ReplicaObjectType.PACKAGE
+                    record.path != null -> ReplicaObjectType.PATH
+                    else -> return // 无法确定失败类型，跳过记录
+                }
+
+                // 记录失败信息
+                replicaFailureRecordService.recordFailure(
+                    taskKey = task.key,
+                    remoteClusterId = remoteCluster.id!!,
+                    projectId = localProjectId,
+                    localRepoName = localRepoName,
+                    remoteProjectId = remoteProjectId ?: "",
+                    remoteRepoName = remoteRepoName ?: "",
+                    failureType = failureType,
+                    packageKey = record.packageName,
+                    packageVersion = record.version,
+                    fullPath = record.path,
+                    failureReason = throwable.message ?: "Unknown error"
+                )
+                logger.info("Recorded failure for task[${task.key}], type[$failureType], reason[${throwable.message}]")
+            }
+        } catch (e: Exception) {
+            logger.warn("Failed to record failure to database", e)
+        }
     }
 
     /**

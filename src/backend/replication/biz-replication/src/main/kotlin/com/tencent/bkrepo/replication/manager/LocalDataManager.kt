@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.ProjectNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
+import com.tencent.bkrepo.common.artifact.manager.resource.RemoteNodeResource
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.model.TNode
@@ -45,15 +46,19 @@ import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
+import com.tencent.bkrepo.replication.constant.FEDERATED
 import com.tencent.bkrepo.replication.constant.MD5
 import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.replication.constant.SIZE
+import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
@@ -90,25 +95,61 @@ class LocalDataManager(
     private val storageCredentialService: StorageCredentialService,
     private val storageProperties: StorageProperties,
     private val mongoTemplate: MongoTemplate,
+    private val clusterNodeService: ClusterNodeService
 ) {
 
     /**
      * 获取blob文件数据
      */
-    fun getBlobData(sha256: String, length: Long, repoInfo: RepositoryDetail): InputStream {
+    fun getBlobData(
+        sha256: String,
+        length: Long,
+        repoInfo: RepositoryDetail,
+        federatedSource: String? = null
+    ): InputStream {
         val range = Range.full(length)
-        return storageService.load(sha256, range, repoInfo.storageCredentials)
-            ?: loadFromOtherStorage(sha256, range, repoInfo.storageCredentials)
-            ?: throw ArtifactNotFoundException(sha256)
+        return getBlobDataByRange(
+            sha256 = sha256,
+            range = range,
+            repoInfo = repoInfo,
+            federatedSource = federatedSource
+        )
     }
 
     /**
      * 获取blob文件数据
      */
-    fun getBlobDataByRange(sha256: String, range: Range, repoInfo: RepositoryDetail): InputStream {
-        return storageService.load(sha256, range, repoInfo.storageCredentials)
-            ?: loadFromOtherStorage(sha256, range, repoInfo.storageCredentials)
-            ?: throw ArtifactNotFoundException(sha256)
+    fun getBlobDataByRange(
+        sha256: String,
+        range: Range,
+        repoInfo: RepositoryDetail,
+        federatedSource: String? = null
+    ): InputStream {
+        return if (!federatedSource.isNullOrEmpty()) {
+            val clusterInfo = clusterNodeService.getByClusterName(federatedSource)?.let {
+                ClusterInfo(
+                    url = it.url,
+                    certificate = it.certificate.orEmpty(),
+                    appId = it.appId,
+                    accessKey = it.accessKey,
+                    secretKey = it.secretKey,
+                    username = it.username,
+                    password = it.password,
+                )
+            } ?: throw ArtifactNotFoundException(sha256)
+            val remoteNodeResource = RemoteNodeResource(
+                sha256 = sha256,
+                range = range,
+                storageCredentials = repoInfo.storageCredentials,
+                centerClusterInfo = clusterInfo,
+                storageService = storageService
+            )
+            remoteNodeResource.getArtifactInputStream() ?: throw ArtifactNotFoundException(sha256)
+        } else {
+            storageService.load(sha256, range, repoInfo.storageCredentials)
+                ?: loadFromOtherStorage(sha256, range, repoInfo.storageCredentials)
+                ?: throw ArtifactNotFoundException(sha256)
+        }
     }
 
     /**
@@ -230,6 +271,17 @@ class LocalDataManager(
     }
 
     /**
+     * 通过id查询node
+     */
+    fun findNodeById(projectId: String, nodeId: String): NodeInfo? {
+        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
+            .and(ID).isEqualTo(nodeId)
+        val query = Query(criteria)
+        return convert(mongoTemplate.findOne(query, Node::class.java, collectionName))
+    }
+
+    /**
      * 根据sha256获取对应节点大小
      */
     fun getNodeBySha256(
@@ -312,24 +364,36 @@ class LocalDataManager(
      */
     fun loadInputStream(nodeInfo: NodeDetail): InputStream {
         with(nodeInfo) {
-            return loadInputStream(sha256!!, size, projectId, repoName)
+            return loadInputStream(sha256!!, size, projectId, repoName, federatedSource(nodeInfo.nodeInfo))
         }
     }
 
     /**
      * 根据项目、仓库、sha256、size读取对应节点的数据流
      */
-    fun loadInputStream(sha256: String, size: Long, projectId: String, repoName: String): InputStream {
+    fun loadInputStream(
+        sha256: String,
+        size: Long,
+        projectId: String,
+        repoName: String,
+        federatedSource: String? = null
+    ): InputStream {
         val repo = findRepoByName(projectId, repoName)
-        return getBlobData(sha256, size, repo)
+        return getBlobData(sha256, size, repo, federatedSource)
     }
 
     /**
      * 根据项目、仓库、sha256、range读取对应节点的数据流
      */
-    fun loadInputStreamByRange(sha256: String, range: Range, projectId: String, repoName: String): InputStream {
+    fun loadInputStreamByRange(
+        sha256: String,
+        range: Range,
+        projectId: String,
+        repoName: String,
+        federatedSource: String? = null
+    ): InputStream {
         val repo = findRepoByName(projectId, repoName)
-        return getBlobDataByRange(sha256, range, repo)
+        return getBlobDataByRange(sha256, range, repo, federatedSource)
     }
 
 
@@ -410,5 +474,14 @@ class LocalDataManager(
         private const val DELETED = "deleted"
         private const val NODE_PATH = "path"
 
+        fun federatedSource(node: NodeInfo): String? {
+            val federatedMetadata = node.nodeMetadata?.firstOrNull { it.key == FEDERATED }
+            val federated = federatedMetadata?.value as? Boolean ?: true
+            return if (!node.federatedSource.isNullOrEmpty() && !federated) {
+                node.federatedSource
+            } else {
+                null
+            }
+        }
     }
 }

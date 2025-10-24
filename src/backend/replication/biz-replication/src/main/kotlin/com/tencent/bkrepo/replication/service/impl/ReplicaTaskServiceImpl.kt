@@ -341,6 +341,7 @@ class ReplicaTaskServiceImpl(
                 ExecutionStrategy.IMMEDIATELY -> {
                     Preconditions.checkArgument(setting.executionPlan.executeImmediately, "executeImmediately")
                 }
+
                 ExecutionStrategy.SPECIFIED_TIME -> {
                     val executeTime = setting.executionPlan.executeTime
                     Preconditions.checkNotBlank(executeTime, "executeTime")
@@ -348,6 +349,7 @@ class ReplicaTaskServiceImpl(
                         Preconditions.checkArgument(it.isAfter(LocalDateTime.now()), "executeTime")
                     }
                 }
+
                 ExecutionStrategy.CRON_EXPRESSION -> {
                     val cronExpression = setting.executionPlan.cronExpression
                     Preconditions.checkNotBlank(cronExpression, "cronExpression")
@@ -366,6 +368,7 @@ class ReplicaTaskServiceImpl(
                     }
                 }
             }
+
             ReplicaObjectType.PACKAGE -> {
                 if (request.replicaTaskObjects.size != 1) {
                     throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID)
@@ -377,6 +380,7 @@ class ReplicaTaskServiceImpl(
                     pkg.versions?.forEach { version -> Preconditions.checkNotBlank(version, "versions") }
                 }
             }
+
             ReplicaObjectType.PATH -> {
                 if (request.replicaTaskObjects.size != 1) {
                     throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID)
@@ -456,7 +460,10 @@ class ReplicaTaskServiceImpl(
                 ?: throw ErrorCodeException(ReplicationMessageCode.REPLICA_TASK_NOT_FOUND, key)
             // 针对ClusterNodeType 为THIRD_PARTY的更新，可以绕过下面那个任务状态限制
             val remoteNode = clusterNodeService.getByClusterId(remoteClusterIds.first())
-            if (remoteNode!!.type != ClusterNodeType.REMOTE && tReplicaTask.replicaType != ReplicaType.RUN_ONCE) {
+            if (remoteNode!!.type != ClusterNodeType.REMOTE
+                && tReplicaTask.replicaType != ReplicaType.RUN_ONCE
+                && tReplicaTask.replicaType != ReplicaType.FEDERATION
+            ) {
                 // 检查任务状态，执行过的任务不让修改
                 if (tReplicaTask.status != ReplicaStatus.WAITING ||
                     tReplicaTask.lastExecutionStatus != null

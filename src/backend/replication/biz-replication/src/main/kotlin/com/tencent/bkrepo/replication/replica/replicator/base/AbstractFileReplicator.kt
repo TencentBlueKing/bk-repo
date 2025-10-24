@@ -9,6 +9,7 @@ import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
+import com.tencent.bkrepo.replication.manager.LocalDataManager.Companion.federatedSource
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
@@ -96,9 +97,10 @@ abstract class AbstractFileReplicator(
                 sha256 = node.sha256,
                 md5 = node.md5,
                 crc64ecma = node.crc64ecma,
+                federatedSource = federatedSource(node)
             ),
             pushType = pushType,
-            downGrade = downGrade
+            downGrade = downGrade,
         )
     }
 
