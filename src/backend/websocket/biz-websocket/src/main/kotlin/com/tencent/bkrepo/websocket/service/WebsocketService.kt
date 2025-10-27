@@ -33,13 +33,11 @@ import org.springframework.stereotype.Service
 import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.WebSocketSession
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 
 @Service
 class WebsocketService {
     // 统一的会话存储，包含sessionId和关闭回调
     private val activeSessions = ConcurrentHashMap<String, LightweightSessionInfo>()
-    private val connectionCount = AtomicInteger(0)
 
     fun addActiveSession(sessionId: String, session: WebSocketSession) {
         // Check if session already exists
@@ -63,27 +61,25 @@ class WebsocketService {
         )
         
         activeSessions[sessionId] = sessionInfo
-        connectionCount.incrementAndGet()
-        logger.debug("Added active session: $sessionId, current connection count: ${connectionCount.get()}")
+        logger.debug("Added active session: $sessionId, current connection count: ${activeSessions.size}")
     }
 
     // Clear cached session from instance
     fun removeCacheSession(sessionId: String) {
         activeSessions.remove(sessionId)
-        connectionCount.decrementAndGet()
-        logger.debug("Removed session: $sessionId, current connection count: ${connectionCount.get()}")
+        logger.debug("Removed session: $sessionId, current connection count: ${activeSessions.size}")
     }
 
     /**
      * Get current connection count
      */
-    fun getConnectionCount(): Int = connectionCount.get()
+    fun getConnectionCount(): Int = activeSessions.size
 
     /**
      * Close all WebSocket connections
      */
     fun closeAllConnections() {
-        val currentCount = connectionCount.get()
+        val currentCount = activeSessions.size
         logger.info("Starting to close all WebSocket connections, current active connections: $currentCount")
         
         if (currentCount == 0) {
@@ -103,7 +99,6 @@ class WebsocketService {
         
         // Clear all caches
         activeSessions.clear()
-        connectionCount.set(0)
         
         logger.info("All WebSocket connections have been closed")
     }
