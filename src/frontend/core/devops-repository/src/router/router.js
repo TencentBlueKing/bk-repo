@@ -30,6 +30,7 @@ const commonPackageDetail = () => import('@repository/views/repoCommon/commonPac
 const repoSearch = () => import('@repository/views/repoSearch')
 
 const WebError440 = () => import('@repository/components/Exception/440')
+const WebError404 = () => import('@repository/components/Exception/404')
 
 const oauth = () => import('@repository/views/oauth')
 const userGroup = () => import('@repository/views/userGroup')
@@ -344,6 +345,11 @@ const routes = [
                         { name: 'commonPackage', label: '{packageKey}', template: 'commonPackage' }
                     ]
                 }
+            },
+            {
+                path: '/:pathMatch(.*)*',
+                name: 'NotFound',
+                component: WebError404
             }
         ]
     }
