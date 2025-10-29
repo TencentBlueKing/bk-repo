@@ -54,7 +54,7 @@
             menuList () {
                 const routerName = this.$route.name
                 const isFilePreview = routerName === 'filePreview' || routerName === 'outsideFilePreview'
-                const isError = routerName === '440' || routerName === 'NotFound'
+                const isError = routerName === '440' || routerName === '404'
                 if (isError || isFilePreview) this.routerStatus = false
                 if (!isFilePreview) window.resetWaterMark()
                 if (MODE_CONFIG === 'ci' || this.projectList.length) {
