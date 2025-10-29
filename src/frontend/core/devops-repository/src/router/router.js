@@ -348,7 +348,7 @@ const routes = [
             },
             {
                 path: '/:pathMatch(.*)*',
-                name: 'NotFound',
+                name: '404',
                 component: WebError404
             }
         ]
