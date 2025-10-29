@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.context.request.async.DeferredResult
 
 @RestController
-@Principal(PrincipalType.ADMIN)
+@Principal(PrincipalType.REPLICATION)
 class ClusterReplicaTaskController(
     private val replicaTaskService: ReplicaTaskService,
     private val edgeReplicaTaskRecordService: EdgeReplicaTaskRecordService

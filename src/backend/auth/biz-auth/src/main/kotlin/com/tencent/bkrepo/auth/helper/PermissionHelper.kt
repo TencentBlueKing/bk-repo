@@ -299,7 +299,7 @@ class PermissionHelper constructor(
     fun getUserCommonRoleProject(roles: List<String>): List<String> {
         val projectList = mutableListOf<String>()
         roleRepository.findByIdIn(roles).forEach {
-            if (it.projectId.isNotEmpty() && it.roleId == PROJECT_VIEWER_ID) {
+            if (!it.projectId.isNullOrEmpty() && it.roleId == PROJECT_VIEWER_ID) {
                 projectList.add(it.projectId)
             }
         }

@@ -40,10 +40,10 @@ data class CreateRoleRequest(
     @get:Schema(title = "角色类型")
     val type: RoleType = RoleType.PROJECT,
     @get:Schema(title = "项目ID")
-    val projectId: String,
+    val projectId: String? = null,
     @get:Schema(title = "仓库名称")
     val repoName: String? = null,
-    @get:Schema(title = "管理员")
+    @get:Schema(title = "项目管理员")
     val admin: Boolean = false,
     @get:Schema(title = "描述信息")
     val description: String? = null,

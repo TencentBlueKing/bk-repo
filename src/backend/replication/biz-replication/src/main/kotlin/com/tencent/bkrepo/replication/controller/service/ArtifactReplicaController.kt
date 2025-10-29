@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
@@ -38,6 +39,7 @@ import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -74,7 +76,6 @@ import java.time.format.DateTimeFormatter
 /**
  * 集群间数据同步接口
  */
-@Principal(type = PrincipalType.ADMIN)
 @RestController
 class ArtifactReplicaController(
     private val projectService: ProjectService,
@@ -92,8 +93,10 @@ class ArtifactReplicaController(
     @Principal(type = PrincipalType.GENERAL)
     override fun ping(token: String) = ResponseBuilder.success()
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun version() = ResponseBuilder.success(version)
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun checkNodeExist(
         projectId: String,
         repoName: String,
@@ -110,6 +113,7 @@ class ArtifactReplicaController(
         return ResponseBuilder.success(result)
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun checkNodeExistList(
         request: NodeExistCheckRequest,
     ): Response<List<String>> {
@@ -122,6 +126,7 @@ class ArtifactReplicaController(
         )
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaNodeCreateRequest(request: NodeCreateRequest): Response<NodeDetail> {
         federatedNodeDeletedCheck(
             projectId = request.projectId,
@@ -133,6 +138,7 @@ class ArtifactReplicaController(
         return ResponseBuilder.success(nodeService.createNode(request))
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaDeletedNodeReplicationRequest(request: DeletedNodeReplicationRequest): Response<NodeDetail> {
         val existingNode = checkAndHandleExistingNodes(request)
         return if (existingNode != null) {
@@ -142,24 +148,29 @@ class ArtifactReplicaController(
         }
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaNodeRenameRequest(request: NodeRenameRequest): Response<Void> {
         nodeService.renameNode(request)
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaNodeUpdateRequest(request: NodeUpdateRequest): Response<Void> {
         nodeService.updateNode(request)
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaNodeCopyRequest(request: NodeMoveCopyRequest): Response<NodeDetail> {
         return ResponseBuilder.success(nodeService.copyNode(request))
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaNodeMoveRequest(request: NodeMoveCopyRequest): Response<NodeDetail> {
         return ResponseBuilder.success(nodeService.moveNode(request))
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaNodeDeleteRequest(request: NodeDeleteRequest): Response<NodeDeleteResult> {
         federatedNodeDeletedCheck(
             request.projectId,
@@ -171,21 +182,25 @@ class ArtifactReplicaController(
         return ResponseBuilder.success(nodeService.deleteNode(request))
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaRepoCreateRequest(request: RepoCreateRequest): Response<RepositoryDetail> {
         return repositoryService.getRepoDetail(request.projectId, request.name)?.let { ResponseBuilder.success(it) }
             ?: ResponseBuilder.success(repositoryService.createRepo(request))
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaRepoUpdateRequest(request: RepoUpdateRequest): Response<Void> {
         repositoryService.updateRepo(request)
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaRepoDeleteRequest(request: RepoDeleteRequest): Response<Void> {
         repositoryService.deleteRepo(request)
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun checkRepoPermission(request: CheckPermissionRequest): Response<Boolean> {
         try {
             // 认证
@@ -205,26 +220,31 @@ class ArtifactReplicaController(
         return ResponseBuilder.success(true)
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaProjectCreateRequest(request: ProjectCreateRequest): Response<ProjectInfo> {
         return projectService.getProjectInfo(request.name)?.let { ResponseBuilder.success(it) }
             ?: ResponseBuilder.success(projectService.createProject(request))
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaMetadataSaveRequest(request: MetadataSaveRequest): Response<Void> {
         metadataService.saveMetadata(request)
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaMetadataSaveRequestForDeletedNode(request: DeletedNodeMetadataSaveRequest): Response<Void> {
         metadataService.saveMetadataForDeletedNode(request)
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaMetadataDeleteRequest(request: MetadataDeleteRequest): Response<Void> {
         metadataService.deleteMetadata(request)
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun checkPackageVersionExist(
         request: PackageVersionExistCheckRequest,
     ): Response<Boolean> {
@@ -237,6 +257,7 @@ class ArtifactReplicaController(
         return ResponseBuilder.success(packageVersion != null)
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaPackageVersionCreatedRequest(
         request: PackageVersionCreateRequest,
     ): Response<Void> {
@@ -244,6 +265,7 @@ class ArtifactReplicaController(
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaPackageDeleteRequest(request: PackageDeleteRequest): Response<Void> {
         with(request) {
             federatedPackageDeletedCheck(
@@ -257,6 +279,7 @@ class ArtifactReplicaController(
         return ResponseBuilder.success()
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaPackageVersionDeleteRequest(request: PackageVersionDeleteRequest): Response<Void> {
         with(request) {
             federatedPackageDeletedCheck(

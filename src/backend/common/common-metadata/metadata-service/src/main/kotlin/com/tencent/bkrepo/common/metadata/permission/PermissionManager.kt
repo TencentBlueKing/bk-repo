@@ -219,6 +219,20 @@ open class PermissionManager(
     }
 
     /**
+     * 校验同步权限
+     * @param action 动作
+     * @param projectId 项目id
+     * @param repoName 仓库名称
+     */
+    open fun checkReplicationPermission(
+        action: PermissionAction,
+        userId: String = SecurityUtils.getUserId()
+    ) {
+        if (serviceRequestCheck()) return
+        checkPermission(type = ResourceType.REPLICATION, action = action, userId = userId)
+    }
+
+    /**
      * 判读READ操作是否对应public仓库或者系统级公开仓库
      */
     private fun isReadPublicOrSystemRepoCheck(
@@ -315,7 +329,7 @@ open class PermissionManager(
     private fun checkPermission(
         type: ResourceType,
         action: PermissionAction,
-        projectId: String,
+        projectId: String? = null,
         repoName: String? = null,
         paths: List<String>? = null,
         anonymous: Boolean = false,
@@ -339,12 +353,16 @@ open class PermissionManager(
             throw PermissionException()
         }
 
-        // 自定义外部权限校验
-        val externalPermission = getExternalPermission(projectId, repoName)
-        if (externalPermission != null) {
-            checkExternalPermission(externalPermission, userId, type, action, projectId, repoName, paths)
-            return
+        projectId?.let {
+            // 自定义外部权限校验
+            val externalPermission = getExternalPermission(projectId, repoName)
+            if (externalPermission != null) {
+                checkExternalPermission(externalPermission, userId, type, action, projectId, repoName, paths)
+                return
+            }
+
         }
+
 
         // 去auth微服务校验资源权限
         val checkRequest = CheckPermissionRequest(
@@ -366,6 +384,9 @@ open class PermissionManager(
         if (checkPermissionFromAuthService(checkRequest) != true) {
             // 无权限，响应403错误
             val reason: String?
+            if (projectId.isNullOrEmpty()) {
+                throw PermissionException()
+            }
             if (repoName.isNullOrEmpty()) {
                 val param = arrayOf(userId, action, projectId)
                 reason = LocaleMessageUtils.getLocalizedMessage("permission.project.denied", param)

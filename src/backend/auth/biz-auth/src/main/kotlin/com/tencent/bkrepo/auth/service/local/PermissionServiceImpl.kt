@@ -36,6 +36,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
+import com.tencent.bkrepo.auth.constant.REPLICATION_MANAGE_ID
 import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
@@ -58,6 +59,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPLICATION
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionContext
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -201,8 +203,9 @@ open class PermissionServiceImpl constructor(
             if (user.locked) return false
             // check user admin permission
             if (user.admin) return true
-            // user is not system admin and projectId is null
-            if (projectId == null) return false
+            if (projectId == null) {
+                return checkReplicationPermission(uid, resourceType, action)
+            }
 
             if (isUserLocalProjectAdmin(uid, projectId!!)) return true
             val context = CheckPermissionContext(
@@ -265,7 +268,7 @@ open class PermissionServiceImpl constructor(
         // 管理员角色关联权限
         val roleList = roleRepository.findByIdIn(user.roles)
         roleList.forEach {
-            if (it.admin) {
+            if (it.admin && it.projectId != null) {
                 projectList.add(it.projectId)
             } else {
                 noAdminRole.add(it.id!!)
@@ -483,6 +486,29 @@ open class PermissionServiceImpl constructor(
             if (result.officeDenyGroupSet!!.intersect(roles).isNotEmpty()) return true
         }
         return false
+    }
+
+    /**
+     * 校验用户是否有同步权限
+     * 当projectId为null时，针对REPLICATION类型的资源进行权限校验
+     */
+    fun checkReplicationPermission(userId: String, resourceType: String, action: String): Boolean {
+        if (REPLICATION.name != resourceType) {
+            return false
+        }
+
+        val replicationRoles = roleRepository.findFirstByTypeAndRoleId(RoleType.SERVICE, REPLICATION_MANAGE_ID)
+            ?: return false
+
+        val permissions = permissionDao.listByRoleAndResource(listOf(replicationRoles.roleId), REPLICATION.name)
+        val hasPermission = permissions.any { perm ->
+            perm.users.contains(userId)
+        }
+        if (!hasPermission) {
+            return false
+        }
+        logger.debug("user has service role permission for resourceType [$userId, $resourceType, $action]")
+        return true
     }
 
     companion object {

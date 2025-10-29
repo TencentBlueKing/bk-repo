@@ -37,7 +37,7 @@ import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@Principal(PrincipalType.ADMIN)
+@Principal(PrincipalType.REPLICATION)
 class ClusterReplicaRecordController(
     private val replicaRecordService: ReplicaRecordService
 ) : ClusterReplicaRecordClient {
