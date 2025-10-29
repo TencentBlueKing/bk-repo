@@ -45,7 +45,7 @@ class ConanSearchServiceImpl : ConanSearchService {
     lateinit var packageService: PackageService
 
     @Autowired
-    lateinit var commonService: CommonService
+    lateinit var conanCommonService: ConanCommonService
 
     @Autowired
     lateinit var conanMetadataService: ConanMetadataService
@@ -65,13 +65,14 @@ class ConanSearchServiceImpl : ConanSearchService {
         with(conanArtifactInfo) {
             val realRevision = if (revision.isNullOrEmpty()) {
                 val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-                commonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
-                commonService.getLastRevision(projectId, repoName, conanFileReference)?.revision ?: return emptyMap()
+                conanCommonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
+                conanCommonService.getLastRevision(projectId, repoName, conanFileReference)?.revision
+                    ?: return emptyMap()
             } else {
                 revision
             }
             val conanFileReference = convertToConanFileReference(conanArtifactInfo, realRevision)
-            return commonService.getPackageConanInfo(projectId, repoName, conanFileReference)
+            return conanCommonService.getPackageConanInfo(projectId, repoName, conanFileReference)
         }
     }
 
