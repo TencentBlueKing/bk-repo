@@ -113,7 +113,7 @@
                 this.showError()
                 return
             }
-            const param = Base64.decode(this.extraParam)
+            const param = Base64.decode(decodeURIComponent(this.extraParam))
             await getPreviewRemoteOfficeFileInfo(Base64.encode(param)).then(res => {
                 // 需解析传递参数，如果传递参数里面携带，优先渲染传递的水印
                 const obj = JSON.parse(param)

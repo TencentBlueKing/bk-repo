@@ -833,7 +833,7 @@
                             url: remotePath
                         }
                         const json = JSON.stringify(object)
-                        extraParam = Base64.encodeURL(json)
+                        extraParam = encodeURIComponent(Base64.encodeURL(json))
                     }
                     const url = routeBase + '/' + this.projectId + '/filePreview/' + typeParam + extraParam + '/' + this.repoName + row.fullPath
                     window.open(url, '_blank')
