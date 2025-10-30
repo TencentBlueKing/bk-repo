@@ -27,9 +27,8 @@
 
 package com.tencent.bkrepo.replication.replica.replicator.commitedge
 
-import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
-import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
+import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
@@ -53,10 +52,10 @@ class CenterClusterReplicator(
     replicationProperties: ReplicationProperties,
     private val clusterProperties: ClusterProperties,
     private val edgeReplicaTaskRecordService: EdgeReplicaTaskRecordService
-): ClusterReplicator(localDataManager, clusterArtifactReplicationHandler, replicationProperties) {
+) : ClusterReplicator(localDataManager, clusterArtifactReplicationHandler, replicationProperties) {
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
-        if (node.sha256 == FAKE_SHA256) {
+        if (unNormalNode(node) && !blockNode(node)) {
             logger.warn("Node ${node.fullPath} in repo ${node.projectId}|${node.repoName} is link node.")
             return false
         }

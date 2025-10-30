@@ -287,19 +287,38 @@ class ReplicaTaskServiceImpl(
     }
 
     private fun computeNodeSize(localProjectId: String, replicaTaskObjects: List<ReplicaObjectInfo>): Long {
+        require(replicaTaskObjects.isNotEmpty()) { "replicaTaskObjects cannot be empty" }
+        
         val taskObject = replicaTaskObjects.first()
-        return taskObject.pathConstraints!!.sumOf {
-            val node = localDataManager.findNodeDetail(localProjectId, taskObject.localRepoName, it.path!!)
-            if (node.folder && node.size == 0L) {
-                try {
-                    localDataManager.listNode(localProjectId, taskObject.localRepoName, it.path!!).sumOf { n -> n.size }
-                } catch (e: Exception) {
-                    logger.warn("compute node[$localProjectId/${taskObject.localRepoName}${it.path}] size error: ", e)
-                    0
+        val pathConstraints = taskObject.pathConstraints
+            ?: return 0L // 如果没有路径约束，返回0
+        
+        return pathConstraints.sumOf { pathConstraint ->
+            computePathSize(localProjectId, taskObject.localRepoName, pathConstraint.path!!)
+        }
+    }
+
+
+    private fun computePathSize(projectId: String, repoName: String, path: String): Long {
+        return try {
+            val node = localDataManager.findNode(projectId, repoName, path)
+            when {
+                node == null -> {
+                    // 节点不存在，传递的path可能是正则匹配，使用正则路径匹配计算大小
+                    localDataManager.computeRegexPathNodesSize(projectId, repoName, path)
                 }
-            } else {
-                node.size
+                node.folder && node.size == 0L -> {
+                    // 文件夹且大小为0，需要计算子节点大小
+                    localDataManager.listNode(projectId, repoName, path).sumOf { it.size }
+                }
+                else -> {
+                    // 直接返回节点大小
+                    node.size
+                }
             }
+        } catch (e: Exception) {
+            logger.warn("Failed to compute node size for [$projectId/$repoName$path]: ${e.message}", e)
+            0L
         }
     }
 
