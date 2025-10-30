@@ -75,11 +75,11 @@ const routes = [
                 }
             },
             {
-                path: 'outsideFilePreview/:extraParam',
+                path: 'outsideFilePreview/*',
                 name: 'outsideFilePreview',
                 component: outsideFilePreview,
                 props: route => ({
-                    extraParam: route.params.extraParam
+                    extraParam: route.params.pathMatch // 捕获所有后续的路径
                 })
             },
             {

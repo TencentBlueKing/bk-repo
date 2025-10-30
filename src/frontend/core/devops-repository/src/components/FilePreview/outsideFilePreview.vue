@@ -113,69 +113,74 @@
                 this.showError()
                 return
             }
-            const param = Base64.decode(decodeURIComponent(this.extraParam))
-            await getPreviewRemoteOfficeFileInfo(Base64.encode(param)).then(res => {
-                // 需解析传递参数，如果传递参数里面携带，优先渲染传递的水印
-                const obj = JSON.parse(param)
-                if (obj.watermarkTxt) {
-                    const watermark = {
-                        watermarkTxt: obj.watermarkTxt,
-                        watermark_x_space: obj.watermarkXSpace ? Number(obj.watermarkXSpace) : 0,
-                        watermark_y_space: obj.watermarkYSpace ? Number(obj.watermarkYSpace) : 0,
-                        watermark_font: obj.watermarkFont ? obj.watermarkFont : '',
-                        watermark_fontsize: obj.watermarkFontsize ? obj.watermarkFontsize : '',
-                        watermark_color: obj.watermarkColor ? obj.watermarkColor : '',
-                        watermark_alpha: obj.watermarkAlpha ? obj.watermarkAlpha : '',
-                        watermark_width: obj.watermarkWidth ? Number(obj.watermarkWidth) : 0,
-                        watermark_height: obj.watermarkHeight ? Number(obj.watermarkHeight) : 0,
-                        watermark_angle: obj.watermarkHeight ? Number(obj.watermarkAngle) : 0
-                    }
-                    this.initWaterMark(watermark)
-                } else if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
-                    this.initWaterMark(res.data.data.watermark)
-                }
-                if (isOutDisplayType(res.data.data.suffix)) {
-                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(fileDate => {
-                        this.loading = false
-                        if (isExcel(res.data.data.suffix)) {
-                            this.previewExcel = true
-                            this.excelOptions.xls = res.data.data.suffix.endsWith('xls')
-                            this.dataSource = fileDate.data
-                        } else if (isHtmlType(res.data.data.suffix)) {
-                            const url = URL.createObjectURL(fileDate.data)
-                            this.showFrame = true
-                            this.pageUrl = url
-                        } else if (isText(res.data.data.suffix)) {
-                            this.previewBasic = true
-                            const reader = new FileReader()
-                            reader.onload = function (event) {
-                                // 读取的文本内容,强行赋值渲染
-                                document.getElementById('basicFileText').value = Base64.decode(event.target.result)
-                            }
-                            reader.readAsText(fileDate.data)
-                        } else if (isPic(res.data.data.suffix)) {
-                            this.imgShow = true
-                            this.imgUrl = URL.createObjectURL(fileDate.data)
-                            this.$nextTick(() => {
-                                const viewer = new Viewer(document.getElementById('image'), {
-                                    inline: true,
-                                    viewed () {
-                                        viewer.zoomTo(1)
-                                    }
-                                })
-                            })
-                        } else if (res.data.data.suffix.endsWith('csv')) {
-                            this.csvShow = true
-                            this.dealCsv(fileDate)
-                        } else {
-                            this.pdfShow = true
-                            this.loadFile(URL.createObjectURL(fileDate.data))
+            try {
+                const param = Base64.decode(decodeURIComponent(this.extraParam))
+                await getPreviewRemoteOfficeFileInfo(Base64.encode(param)).then(res => {
+                    // 需解析传递参数，如果传递参数里面携带，优先渲染传递的水印
+                    const obj = JSON.parse(param)
+                    if (obj.watermarkTxt) {
+                        const watermark = {
+                            watermarkTxt: obj.watermarkTxt,
+                            watermark_x_space: obj.watermarkXSpace ? Number(obj.watermarkXSpace) : 0,
+                            watermark_y_space: obj.watermarkYSpace ? Number(obj.watermarkYSpace) : 0,
+                            watermark_font: obj.watermarkFont ? obj.watermarkFont : '',
+                            watermark_fontsize: obj.watermarkFontsize ? obj.watermarkFontsize : '',
+                            watermark_color: obj.watermarkColor ? obj.watermarkColor : '',
+                            watermark_alpha: obj.watermarkAlpha ? obj.watermarkAlpha : '',
+                            watermark_width: obj.watermarkWidth ? Number(obj.watermarkWidth) : 0,
+                            watermark_height: obj.watermarkHeight ? Number(obj.watermarkHeight) : 0,
+                            watermark_angle: obj.watermarkHeight ? Number(obj.watermarkAngle) : 0
                         }
-                    }).catch(() => this.showError())
-                } else {
-                    this.showError()
-                }
-            }).catch(() => this.showError())
+                        this.initWaterMark(watermark)
+                    } else if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                        this.initWaterMark(res.data.data.watermark)
+                    }
+                    if (isOutDisplayType(res.data.data.suffix)) {
+                        customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(fileDate => {
+                            this.loading = false
+                            if (isExcel(res.data.data.suffix)) {
+                                this.previewExcel = true
+                                this.excelOptions.xls = res.data.data.suffix.endsWith('xls')
+                                this.dataSource = fileDate.data
+                            } else if (isHtmlType(res.data.data.suffix)) {
+                                const url = URL.createObjectURL(fileDate.data)
+                                this.showFrame = true
+                                this.pageUrl = url
+                            } else if (isText(res.data.data.suffix)) {
+                                this.previewBasic = true
+                                const reader = new FileReader()
+                                reader.onload = function (event) {
+                                    // 读取的文本内容,强行赋值渲染
+                                    document.getElementById('basicFileText').value = Base64.decode(event.target.result)
+                                }
+                                reader.readAsText(fileDate.data)
+                            } else if (isPic(res.data.data.suffix)) {
+                                this.imgShow = true
+                                this.imgUrl = URL.createObjectURL(fileDate.data)
+                                this.$nextTick(() => {
+                                    const viewer = new Viewer(document.getElementById('image'), {
+                                        inline: true,
+                                        viewed () {
+                                            viewer.zoomTo(1)
+                                        }
+                                    })
+                                })
+                            } else if (res.data.data.suffix.endsWith('csv')) {
+                                this.csvShow = true
+                                this.dealCsv(fileDate)
+                            } else {
+                                this.pdfShow = true
+                                this.loadFile(URL.createObjectURL(fileDate.data))
+                            }
+                        })
+                    } else {
+                        this.showError()
+                    }
+                })
+            } catch (error) {
+                console.error(error)
+                this.showError()
+            }
         },
         destroyed () {
             this.cancel()
