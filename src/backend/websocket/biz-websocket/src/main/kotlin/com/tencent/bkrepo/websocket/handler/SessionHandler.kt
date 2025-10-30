@@ -119,7 +119,7 @@ class SessionHandler(
         when {
             uri == null -> throw AuthenticationException("uri is null")
             uri.path.startsWith(USER_ENDPOINT) || uri.path.startsWith(DESKTOP_ENDPOINT) -> {
-                val platformToken = session.handshakeHeaders[HttpHeaders.AUTHORIZATION]?.firstOrNull()?.toString()
+                val platformToken = session.handshakeHeaders[HttpHeaders.AUTHORIZATION]?.firstOrNull()
                     ?.removePrefix(PLATFORM_AUTH_PREFIX) ?: throw AuthenticationException("platform credential is null")
                 val (accessKey, secretKey) = String(Base64.getDecoder().decode(platformToken)).split(COLON)
                 val appId = authenticationManager.checkPlatformAccount(accessKey, secretKey)
@@ -128,12 +128,12 @@ class SessionHandler(
             }
             uri.path.startsWith(APP_ENDPOINT) -> {
                 val token = session.handshakeHeaders[HttpHeaders.AUTHORIZATION]?.firstOrNull().orEmpty()
-                val claims = JwtUtils.validateToken(signingKey, token).body
+                val claims = JwtUtils.validateToken(signingKey, token).payload
                 session.attributes[USER_KEY] = claims.subject
             }
             else -> throw AuthenticationException("invalid uri")
         }
-        websocketService.addCacheSession(sessionId!!)
+        websocketService.addActiveSession(sessionId!!, session)
         session.attributes[SESSION_ID] = sessionId
         logger.info("connection success: |$sessionId| $uri | $remoteId | ${session.attributes[USER_KEY]} ")
         webSocketMetrics.connectionCount.incrementAndGet()

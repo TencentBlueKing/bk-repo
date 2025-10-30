@@ -27,34 +27,80 @@
 
 package com.tencent.bkrepo.websocket.service
 
+import com.tencent.bkrepo.websocket.pojo.LightweightSessionInfo
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import java.util.Collections
+import org.springframework.web.socket.CloseStatus
+import org.springframework.web.socket.WebSocketSession
+import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class WebsocketService {
-    private val cacheSessionList = Collections.synchronizedList(mutableListOf<String>())
+    // 统一的会话存储，包含sessionId和关闭回调
+    private val activeSessions = ConcurrentHashMap<String, LightweightSessionInfo>()
 
-    fun addCacheSession(sessionId: String) {
-        if (cacheSessionList.contains(sessionId)) {
-            logger.warn("this session[$sessionId] already in cacheSession")
+    fun addActiveSession(sessionId: String, session: WebSocketSession) {
+        // Check if session already exists
+        if (activeSessions.containsKey(sessionId)) {
+            logger.warn("Session[$sessionId] already exists in cache")
             return
         }
-        cacheSessionList.add(sessionId)
+        
+        // Create lightweight session info with close callback only
+        val sessionInfo = LightweightSessionInfo(
+            sessionId = sessionId,
+            closeCallback = {
+                try {
+                    if (session.isOpen) {
+                        session.close(CloseStatus.GOING_AWAY)
+                    }
+                } catch (e: Exception) {
+                    logger.warn("Exception occurred while closing WebSocket connection: ${e.message}", e)
+                }
+            }
+        )
+        
+        activeSessions[sessionId] = sessionInfo
+        logger.debug("Added active session: $sessionId, current connection count: ${activeSessions.size}")
     }
 
-    // 清楚实例内部缓存的session
+    // Clear cached session from instance
     fun removeCacheSession(sessionId: String) {
-        cacheSessionList.remove(sessionId)
+        activeSessions.remove(sessionId)
+        logger.debug("Removed session: $sessionId, current connection count: ${activeSessions.size}")
     }
 
-    // 判断获取到的session是否由该实例持有
-    fun isCacheSession(sessionId: String): Boolean {
-        if (cacheSessionList.contains(sessionId)) {
-            logger.debug("sessionId[$sessionId] is in this host")
-            return true
+    /**
+     * Get current connection count
+     */
+    fun getConnectionCount(): Int = activeSessions.size
+
+    /**
+     * Close all WebSocket connections
+     */
+    fun closeAllConnections() {
+        val currentCount = activeSessions.size
+        logger.info("Starting to close all WebSocket connections, current active connections: $currentCount")
+        
+        if (currentCount == 0) {
+            logger.info("No active connections to close")
+            return
         }
-        return false
+        
+        // Execute close callbacks in parallel
+        activeSessions.values.parallelStream().forEach { sessionInfo ->
+            try {
+                sessionInfo.closeCallback()
+                logger.debug("Closed WebSocket connection: ${sessionInfo.sessionId}")
+            } catch (e: Exception) {
+                logger.warn("Exception occurred while closing WebSocket connection ${sessionInfo.sessionId}: ", e)
+            }
+        }
+        
+        // Clear all caches
+        activeSessions.clear()
+        
+        logger.info("All WebSocket connections have been closed")
     }
 
     companion object {
