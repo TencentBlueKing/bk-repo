@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.constant.BASIC_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.service.log.UrlSensitiveDataMasker
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import okhttp3.MediaType
@@ -57,8 +58,14 @@ class HttpProxyUtil(
         val httpUserAgent = getHeader(HttpHeaders.USER_AGENT)
         val url = upRes.request.url.host
         val requestBodyBytes = contentLengthLong
+
+        // 对请求URI进行脱敏处理
+        val maskedRequestURI = UrlSensitiveDataMasker.maskSensitiveData(
+            if (queryString.isNullOrEmpty()) requestURI else "$requestURI?$queryString"
+        )
+
         logger.info(
-            "\"$method $requestURI $protocol\" - " +
+            "\"$method $maskedRequestURI $protocol\" - " +
                 "user:$user up_status: ${upRes.code} ms:$requestTime up:$url agent:$httpUserAgent $requestBodyBytes",
         )
     }

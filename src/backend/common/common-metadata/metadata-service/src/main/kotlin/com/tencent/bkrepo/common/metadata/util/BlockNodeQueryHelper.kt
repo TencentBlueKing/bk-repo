@@ -118,4 +118,19 @@ object BlockNodeQueryHelper {
         return Update().set(TBlockNode::deleted.name, null)
     }
 
+    fun findBlockCriteria(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        sha256: String,
+        startPos: Long,
+        deleted: LocalDateTime?
+    ): Criteria {
+        return where(TBlockNode::nodeFullPath).isEqualTo(fullPath)
+            .and(TBlockNode::projectId).isEqualTo(projectId)
+            .and(TBlockNode::repoName).isEqualTo(repoName)
+            .and(TBlockNode::sha256).isEqualTo(sha256)
+            .and(TBlockNode::startPos).isEqualTo(startPos)
+            .and(TBlockNode::deleted).isEqualTo(deleted)
+    }
 }

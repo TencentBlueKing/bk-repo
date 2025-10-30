@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.maven.api.MavenWebResource
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
@@ -130,5 +131,9 @@ class MavenWebController(
 
     override fun searchJar(request: MavenJarSearchRequest): Response<MavenJarInfoResponse> {
         return ResponseBuilder.success(mavenService.searchJar(request))
+    }
+
+    override fun searchGroup(request: MavenGroupSearchRequest): Response<Page<String>> {
+        return ResponseBuilder.success(mavenExtService.searchGroup(request))
     }
 }

@@ -29,16 +29,19 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.HttpStatus
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.constant.FEDERATED
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
@@ -50,6 +53,7 @@ import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMap
 import com.tencent.bkrepo.replication.service.FederationMetadataTrackingService
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.repository.pojo.blocknode.service.BlockNodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -72,6 +76,9 @@ import org.springframework.stereotype.Component
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 联邦仓库数据同步类
@@ -239,52 +246,198 @@ class FederationReplicator(
 
     override fun replicaFile(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
-            // 1. 同步节点
+            //  同步block node
+            if (unNormalNode(node)) {
+                return replicaBlockNode(context, node)
+            }
+
+            // 同步Node节点
             if (!syncNodeToFederatedCluster(this, node)) return false
 
             // 2. 记录文件传输开始标识
             recordFileTransferStart(this, node)
 
-            // 3. 同步文件
-            return if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
+            //  同步文件
+            return replicaNormalFile(context, node)
+        }
+    }
+
+    /**
+     * 复制块节点文件
+     */
+    private fun replicaBlockNode(context: ReplicaContext, node: NodeInfo): Boolean {
+        with(context) {
+            if (!blockNode(node)) {
+                logger.warn("Node ${node.fullPath} in repo ${node.projectId}|${node.repoName} is link node.")
+                return false
+            }
+
+            val blockNodeList = localDataManager.listBlockNode(node)
+            if (blockNodeList.isEmpty()) {
+                logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
+            }
+            val uploadId = "${StringPool.uniqueId()}/${node.id}"
+
+            // 传输所有blocknode元数据
+            blockNodeList.forEach { blockNode ->
+                buildBlockNodeCreateRequest(this, blockNode, uploadId)?.let { blockNodeCreateRequest ->
+                    context.artifactReplicaClient!!.replicaBlockNodeCreateRequest(blockNodeCreateRequest)
+                }
+            }
+            artifactReplicaClient!!.replicaBlockNodeCreateFinishRequest(
+                BlockNodeCreateFinishRequest(
+                    projectId = remoteProjectId!!,
+                    repoName = remoteRepoName!!,
+                    uploadId = uploadId,
+                    fullPath = node.fullPath
+                )
+            )
+
+            // 同步节点
+            if (!syncNodeToFederatedCluster(this, node)) return false
+
+            // 并发传输文件
+            val success = executeBlockFileTransfer(context, node, blockNodeList)
+            if (!success) return false
+
+            // 保存元数据标识传输完成
+            saveNodeMetadata(context, node)
+            return true
+        }
+    }
+
+    /**
+     * 复制普通文件
+     */
+    private fun replicaNormalFile(context: ReplicaContext, node: NodeInfo): Boolean {
+        return if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
+            // 异步执行
+            executeFileTransferAsync(context, node)
+        } else {
+            // 同步执行
+            executeFileTransferSync(context, node)
+        }
+    }
+
+    /**
+     * 执行块文件传输
+     */
+    private fun executeBlockFileTransfer(
+        context: ReplicaContext,
+        node: NodeInfo,
+        blockNodeList: List<TBlockNode>
+    ): Boolean {
+        val latch = CountDownLatch(blockNodeList.size)
+        val failureCount = AtomicInteger(0)
+
+        blockNodeList.forEach { blockNode ->
+            if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
                 // 异步执行
                 executor.execute(
                     Runnable {
                         try {
-                            pushFileToFederatedCluster(this, node)
-                            completeFileReplicaRecord(context)
-                            // 记录文件传输完成标识
-                            recordFileTransferComplete(this, node)
+                            pushBlockFileToFederatedCluster(context, blockNode)
                         } catch (throwable: Throwable) {
-                            logger.error(
-                                "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
-                                    "${node.projectId}|${node.repoName} failed, error is" +
-                                    " ${Throwables.getStackTraceAsString(throwable)}"
-                            )
-                            completeFileReplicaRecord(context, false)
+                            handleBlockFileTransferError(context, node, throwable)
+                            failureCount.incrementAndGet()
+                        } finally {
+                            latch.countDown()
                         }
                     }.trace()
                 )
-                true
             } else {
                 // 同步执行
-                var result: Boolean = true
                 try {
-                    pushFileToFederatedCluster(this, node)
-                    completeFileReplicaRecord(context)
+                    pushBlockFileToFederatedCluster(context, blockNode)
+                } catch (throwable: Throwable) {
+                    handleBlockFileTransferError(context, node, throwable)
+                    failureCount.incrementAndGet()
+                } finally {
+                    latch.countDown()
+                }
+            }
+        }
+
+        // 等待所有文件传输完成
+        latch.await()
+        return failureCount.get() == 0
+    }
+
+    /**
+     * 异步执行文件传输
+     */
+    private fun executeFileTransferAsync(context: ReplicaContext, node: NodeInfo): Boolean {
+        val latch = CountDownLatch(1)
+        val result = AtomicBoolean(true)
+
+        executor.execute(
+            Runnable {
+                try {
+                    pushFileToFederatedCluster(context, node)
                     // 记录文件传输完成标识
                     recordFileTransferComplete(this, node)
                 } catch (throwable: Throwable) {
-                    logger.error(
-                        "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
-                            "${node.projectId}|${node.repoName} failed, error is" +
-                            " ${Throwables.getStackTraceAsString(throwable)}"
-                    )
-                    completeFileReplicaRecord(context, false)
-                    result = false
+                    handleFileTransferError(context, node, throwable)
+                    result.set(false)
+                } finally {
+                    latch.countDown()
                 }
-                return result
-            }
+            }.trace()
+        )
+
+        latch.await()
+        return result.get()
+    }
+
+    /**
+     * 同步执行文件传输
+     */
+    private fun executeFileTransferSync(context: ReplicaContext, node: NodeInfo): Boolean {
+        return try {
+            pushFileToFederatedCluster(context, node)
+            // 记录文件传输完成标识
+            recordFileTransferComplete(this, node)
+            true
+        } catch (throwable: Throwable) {
+            handleFileTransferError(context, node, throwable)
+            false
+        }
+    }
+
+    /**
+     * 处理块文件传输错误
+     */
+    private fun handleBlockFileTransferError(context: ReplicaContext, node: NodeInfo, throwable: Throwable) {
+        logger.error(
+            "replica block file of ${node.fullPath} with sha256 ${node.sha256} in repo " +
+                "${node.projectId}|${node.repoName} failed, error is ${Throwables.getStackTraceAsString(throwable)}"
+        )
+        completeFileReplicaRecord(context, false)
+    }
+
+    /**
+     * 处理文件传输错误
+     */
+    private fun handleFileTransferError(context: ReplicaContext, node: NodeInfo, throwable: Throwable) {
+        logger.error(
+            "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
+                "${node.projectId}|${node.repoName} failed, error is ${Throwables.getStackTraceAsString(throwable)}"
+        )
+        completeFileReplicaRecord(context, false)
+    }
+
+    /**
+     * 保存节点元数据
+     */
+    private fun saveNodeMetadata(context: ReplicaContext, node: NodeInfo) {
+        if (node.deleted != null) {
+            context.artifactReplicaClient!!.replicaMetadataSaveRequestForDeletedNode(
+                buildDeletedNodeMetadataSaveRequest(context, node, context.task.name)
+            )
+        } else {
+            context.artifactReplicaClient!!.replicaMetadataSaveRequest(
+                buildMetadataSaveRequest(context, node, context.task.name)
+            )
         }
     }
 
@@ -335,15 +488,26 @@ class FederationReplicator(
         }
     }
 
+    private fun pushBlockFileToFederatedCluster(context: ReplicaContext, blockNode: TBlockNode) {
+        executeFilePush(
+            context = context,
+            node = blockNode,
+            logPrefix = "[Federation-Block] ",
+            afterCompletion = { ctx, _ ->
+                completeFileReplicaRecord(ctx)
+            }
+        )
+    }
+
     /**
      * 推送文件到联邦集群
      */
-    private fun pushFileToFederatedCluster(context: ReplicaContext, node: NodeInfo): Boolean {
-        return executeFilePush(
+    private fun pushFileToFederatedCluster(context: ReplicaContext, node: NodeInfo) {
+        executeFilePush(
             context = context,
             node = node,
             logPrefix = "[Federation] ",
-            postPush = { ctx, nodeInfo ->
+            afterCompletion = { ctx, nodeInfo ->
                 // 通过文件传输完成标识
                 if (nodeInfo.deleted != null) {
                     ctx.artifactReplicaClient!!.replicaMetadataSaveRequestForDeletedNode(
@@ -557,6 +721,33 @@ class FederationReplicator(
                 createdDate = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = node.lastModifiedBy,
                 lastModifiedDate = LocalDateTime.parse(node.lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME),
+                source = getCurrentClusterName(localProjectId, localRepoName, task.name)
+            )
+        }
+    }
+
+    private fun buildBlockNodeCreateRequest(
+        context: ReplicaContext,
+        blockNode: TBlockNode,
+        uploadId: String
+    ): BlockNodeCreateRequest? {
+        with(context) {
+            // 外部集群仓库没有project/repoName
+            if (remoteProjectId.isNullOrBlank() || remoteRepoName.isNullOrBlank()) return null
+            return BlockNodeCreateRequest(
+                projectId = remoteProjectId,
+                repoName = remoteRepoName,
+                fullPath = blockNode.nodeFullPath,
+                expireDate = blockNode.expireDate,
+                size = blockNode.size,
+                sha256 = blockNode.sha256,
+                crc64ecma = blockNode.crc64ecma,
+                startPos = blockNode.startPos,
+                endPos = blockNode.endPos,
+                createdBy = blockNode.createdBy,
+                createdDate = blockNode.createdDate,
+                uploadId = uploadId,
+                deleted = blockNode.deleted,
                 source = getCurrentClusterName(localProjectId, localRepoName, task.name)
             )
         }
