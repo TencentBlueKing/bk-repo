@@ -42,7 +42,7 @@ import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.AUTHEN
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.CHECK_CREDENTIALS_V1
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.CHECK_CREDENTIALS_V2
 import com.tencent.bkrepo.conan.pojo.artifact.ConanArtifactInfo.Companion.PING_V1
-import com.tencent.bkrepo.conan.service.ConanCommonService
+import com.tencent.bkrepo.conan.service.ConanAuthService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -53,7 +53,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 class ConanCommonController(
-    private val conanCommonService: ConanCommonService
+    private val conanAuthService: ConanAuthService
 ) {
     @GetMapping(PING_V1)
     fun ping(
@@ -71,7 +71,7 @@ class ConanCommonController(
     ): ResponseEntity<Any> {
         val authorizationHeader = HttpContextHolder.getRequest().getHeader(HttpHeaders.AUTHORIZATION)
             ?: throw AuthenticationException("Logged user needed!")
-        val jwtToken = conanCommonService.checkCredentials(authorizationHeader)
+        val jwtToken = conanAuthService.checkCredentials(authorizationHeader)
         return buildResponse(jwtToken, TEXT_PLAIN)
     }
 
@@ -82,7 +82,7 @@ class ConanCommonController(
     ): ResponseEntity<Any> {
         val authorizationHeader = HttpContextHolder.getRequest().getHeader(HttpHeaders.AUTHORIZATION)
             ?: throw AuthenticationException("Wrong user or password")
-        val jwtToken = conanCommonService.authenticate(authorizationHeader)
+        val jwtToken = conanAuthService.authenticate(authorizationHeader)
         return buildResponse(jwtToken, TEXT_PLAIN)
     }
 

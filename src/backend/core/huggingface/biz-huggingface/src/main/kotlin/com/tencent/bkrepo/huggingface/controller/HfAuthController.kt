@@ -46,7 +46,7 @@ import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/{projectId}/{repoName}/api")
-class AuthController(
+class HfAuthController(
     private val serviceUserClient: ServiceUserClient,
     private val permissionManager: PermissionManager,
 ) {

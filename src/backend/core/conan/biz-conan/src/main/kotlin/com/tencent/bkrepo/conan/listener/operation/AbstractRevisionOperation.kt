@@ -29,14 +29,14 @@ package com.tencent.bkrepo.conan.listener.operation
 
 import com.tencent.bkrepo.conan.pojo.IndexInfo
 import com.tencent.bkrepo.conan.pojo.RevisionOperationRequest
-import com.tencent.bkrepo.conan.service.impl.CommonService
+import com.tencent.bkrepo.conan.service.impl.ConanCommonService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.util.StopWatch
 
 abstract class AbstractRevisionOperation(
     private val request: RevisionOperationRequest,
-    private val commonService: CommonService
+    private val conanCommonService: ConanCommonService
 ) : Runnable {
     override fun run() {
         with(request) {
@@ -45,7 +45,7 @@ abstract class AbstractRevisionOperation(
                     "in repo [$projectId/$repoName] by User [$operator]"
             )
             stopWatch.start()
-            commonService.lockAction(projectId, repoName, revPath) { handleOperation(this) }
+            conanCommonService.lockAction(projectId, repoName, revPath) { handleOperation(this) }
             stopWatch.stop()
             logger.info(
                 "Total cost for refreshing index.json" +
@@ -70,7 +70,7 @@ abstract class AbstractRevisionOperation(
                 } else {
                     Pair(pRevPath!!, pRefStr!!)
                 }
-                val indexInfo = commonService.getRevisionsList(projectId, repoName, tempRevPath, tempRefStr)
+                val indexInfo = conanCommonService.getRevisionsList(projectId, repoName, tempRevPath, tempRefStr)
                 stopWatch.stop()
                 logger.info(
                     "query index.json " +
@@ -78,7 +78,7 @@ abstract class AbstractRevisionOperation(
                 )
                 handleEvent(indexInfo)
                 logger.info("index.json in repo [$projectId/$repoName] is ready to upload...")
-                commonService.uploadIndexJson(
+                conanCommonService.uploadIndexJson(
                     projectId = projectId,
                     repoName = repoName,
                     fullPath = "/$tempRevPath",

@@ -55,7 +55,7 @@ import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.springframework.stereotype.Service
 
 @Service
-class ObjectService(
+class HfObjectService(
     private val repositoryService: RepositoryService,
     private val permissionManager: PermissionManager,
     private val huggingfaceProperties: HuggingfaceProperties,

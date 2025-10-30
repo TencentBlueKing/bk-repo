@@ -54,7 +54,7 @@ import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.base.CargoMetadata
 import com.tencent.bkrepo.cargo.pojo.event.CargoPackageDeleteRequest
-import com.tencent.bkrepo.cargo.service.impl.CommonService
+import com.tencent.bkrepo.cargo.service.impl.CargoCommonService
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoFileFullPath
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoJsonFullPath
 import com.tencent.bkrepo.cargo.utils.CargoUtils.isValidPackageName
@@ -90,7 +90,7 @@ import java.nio.charset.StandardCharsets
 
 @Component
 class CargoLocalRepository(
-    private val commonService: CommonService,
+    private val cargoCommonService: CargoCommonService,
 ) : LocalRepository() {
 
 
@@ -226,10 +226,10 @@ class CargoLocalRepository(
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ) = commonService.buildDownloadRecord(context.userId, context.artifactInfo as CargoArtifactInfo)
+    ) = cargoCommonService.buildDownloadRecord(context.userId, context.artifactInfo as CargoArtifactInfo)
 
     override fun remove(context: ArtifactRemoveContext) {
-        commonService.removeCargoRelatedNode(context)
+        cargoCommonService.removeCargoRelatedNode(context)
         with(context.artifactInfo as CargoDeleteArtifactInfo) {
             val event = CargoPackageDeleteEvent(
                 CargoPackageDeleteRequest(

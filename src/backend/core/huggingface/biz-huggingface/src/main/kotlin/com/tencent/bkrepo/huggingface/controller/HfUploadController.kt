@@ -35,14 +35,14 @@ import com.tencent.bkrepo.huggingface.pojo.ValidateYamlRequest
 import com.tencent.bkrepo.huggingface.pojo.ValidateYamlResponse
 import com.tencent.bkrepo.huggingface.pojo.user.UserCommitRequest
 import com.tencent.bkrepo.huggingface.pojo.user.UserPreUploadRequest
-import com.tencent.bkrepo.huggingface.service.UploadService
+import com.tencent.bkrepo.huggingface.service.HfUploadService
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class UploadController(private val uploadService: UploadService) {
+class HfUploadController(private val hfUploadService: HfUploadService) {
 
     @PostMapping("{projectId}/{repoName}/api/{type}s/{organization}/{name}/preupload/{revision}")
     fun preUpload(
@@ -63,7 +63,7 @@ class UploadController(private val uploadService: UploadService) {
             repoId = repoId,
             files = request.files
         )
-        return uploadService.preUpload(preUploadRequest)
+        return hfUploadService.preUpload(preUploadRequest)
     }
 
     @PostMapping("/{projectId}/{repoName}/api/validate-yaml")
@@ -95,6 +95,6 @@ class UploadController(private val uploadService: UploadService) {
             repoId = "$organization/$name",
             requests = requests
         )
-        return uploadService.commit(commitRequest)
+        return hfUploadService.commit(commitRequest)
     }
 }
