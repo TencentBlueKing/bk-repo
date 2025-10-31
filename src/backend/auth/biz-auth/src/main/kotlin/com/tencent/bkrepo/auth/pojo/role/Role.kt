@@ -41,7 +41,7 @@ data class Role(
     @get:Schema(title = "角色名")
     val name: String,
     @get:Schema(title = "项目ID")
-    val projectId: String,
+    val projectId: String? = null,
     @get:Schema(title = "仓库名称")
     val repoName: String? = null,
     @get:Schema(title = "管理员")

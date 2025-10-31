@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.replication.controller.api
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -35,8 +37,7 @@ import com.tencent.bkrepo.common.artifact.cns.CnsService
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
@@ -66,7 +67,6 @@ import org.springframework.web.multipart.MultipartFile
  * blob数据同步接口
  * 用于同个集群中不同节点之间blob数据同步
  */
-@Principal(type = PrincipalType.ADMIN)
 @RestController
 class BlobReplicaController(
     private val storageService: StorageService,
@@ -78,6 +78,7 @@ class BlobReplicaController(
     private var cnsService: CnsService? = null
 
     @PostMapping(BLOB_PULL_URI)
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     fun pull(@RequestBody request: BlobPullRequest): ResponseEntity<InputStreamResource> {
         with(request) {
             val credentials = baseCacheHandler.credentialsCache.get(storageKey.orEmpty())
@@ -88,6 +89,7 @@ class BlobReplicaController(
     }
 
     @PostMapping(BLOB_PUSH_URI)
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     fun push(
         @RequestPart file: MultipartFile,
         @RequestParam sha256: String,
@@ -116,12 +118,13 @@ class BlobReplicaController(
             val randomId = System.nanoTime()
             // 文件名加个随机值，避免并发存储同一个文件时，
             // 前一个文件存储完后删除临时文件，导致其他线程读取时大小为0，导致文件存储异常
-            val filepath: String = credentials.upload.location + "/" + fileName+"-$randomId"
+            val filepath: String = credentials.upload.location + "/" + fileName + "-$randomId"
             ArtifactFileFactory.build(file, filepath)
         }
     }
 
     @GetMapping(BLOB_CHECK_URI)
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     fun check(
         @RequestParam sha256: String,
         @RequestParam storageKey: String? = null,
@@ -143,6 +146,7 @@ class BlobReplicaController(
      * 3:Close the session (PUT)
      */
     @PostMapping(BOLBS_UPLOAD_FIRST_STEP_URL)
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     fun startBlobUpload(
         @RequestParam sha256: String,
         @PathVariable projectId: String,
@@ -163,6 +167,7 @@ class BlobReplicaController(
         method = [RequestMethod.PATCH],
         value = [BOLBS_UPLOAD_SECOND_STEP_URL]
     )
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     fun uploadChunkedBlob(
         artifactFile: ArtifactFile,
         @RequestParam sha256: String,
@@ -187,6 +192,7 @@ class BlobReplicaController(
         method = [RequestMethod.PUT],
         value = [BOLBS_UPLOAD_SECOND_STEP_URL]
     )
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     fun finishBlobUpload(
         artifactFile: ArtifactFile,
         @RequestParam sha256: String,

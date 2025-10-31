@@ -33,6 +33,8 @@ package com.tencent.bkrepo.auth.controller.user
 
 import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_PREFIX
 import com.tencent.bkrepo.auth.controller.OpenResource
+import com.tencent.bkrepo.auth.message.AuthMessageCode
+import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
@@ -41,6 +43,7 @@ import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.util.RequestUtil.buildProjectAdminRequest
 import com.tencent.bkrepo.auth.util.RequestUtil.buildRepoAdminRequest
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.v3.oas.annotations.Operation
@@ -65,7 +68,8 @@ class RoleController @Autowired constructor(
     @Operation(summary = "创建角色")
     @PostMapping("/create")
     fun createRole(@RequestBody request: CreateRoleRequest): Response<String?> {
-        preCheckProjectAdmin(request.projectId)
+        validateParams(request)
+        checkRolePermission(request.projectId)
         val id = roleService.createRole(request)
         return ResponseBuilder.success(id)
     }
@@ -92,7 +96,7 @@ class RoleController @Autowired constructor(
     @DeleteMapping("/delete/{id}")
     fun deleteRole(@PathVariable id: String): Response<Boolean> {
         val role = roleService.detail(id) ?: return ResponseBuilder.success(false)
-        preCheckProjectAdmin(role.projectId)
+        checkRolePermission(role.projectId)
         roleService.deleteRoleById(id)
         return ResponseBuilder.success(true)
     }
@@ -101,7 +105,7 @@ class RoleController @Autowired constructor(
     @GetMapping("/detail/{id}")
     fun detail(@PathVariable id: String): Response<Role?> {
         val role = roleService.detail(id) ?: return ResponseBuilder.success(null)
-        preCheckProjectAdmin(role.projectId)
+        checkRolePermission(role.projectId)
         return ResponseBuilder.success(role)
     }
 
@@ -129,7 +133,7 @@ class RoleController @Autowired constructor(
     @GetMapping("/users/{id}")
     fun listUserByRole(@PathVariable id: String): Response<Set<UserResult>> {
         val role = roleService.detail(id) ?: return ResponseBuilder.success(emptySet())
-        preCheckProjectAdmin(role.projectId)
+        checkRolePermission(role.projectId)
         return ResponseBuilder.success(roleService.listUserByRoleId(id))
     }
 
@@ -141,7 +145,7 @@ class RoleController @Autowired constructor(
         @RequestBody updateRoleRequest: UpdateRoleRequest
     ): Response<Boolean> {
         val role = roleService.detail(id) ?: return ResponseBuilder.success(false)
-        preCheckProjectAdmin(role.projectId)
+        checkRolePermission(role.projectId)
         return ResponseBuilder.success(roleService.updateRoleInfo(id, updateRoleRequest))
     }
 
@@ -151,5 +155,33 @@ class RoleController @Autowired constructor(
     ): Response<List<Role>> {
         preCheckProjectAdmin(projectId)
         return ResponseBuilder.success(roleService.listRoleByProject(projectId))
+    }
+
+    private fun validateParams(request: CreateRoleRequest) {
+        // 验证projectId与角色类型的关系
+        if (request.projectId == null) {
+            // projectId为null时，只能创建非项目管理员的SERVICE角色
+            if (request.type != RoleType.SERVICE || request.admin) {
+                throw ErrorCodeException(AuthMessageCode.AUTH_CREATE_ROLE_INVALID_WITHOUT_PROJECT)
+            }
+        } else {
+            // projectId不为null时，不能创建SERVICE角色
+            if (request.type == RoleType.SERVICE) {
+                throw ErrorCodeException(AuthMessageCode.AUTH_CREATE_SERVICE_ROLE_WITH_PROJECT)
+            }
+        }
+    }
+
+    /**
+     * 根据projectId检查权限
+     * - projectId为null时，检查是否为系统管理员
+     * - projectId不为null时，检查是否为项目管理员
+     */
+    private fun checkRolePermission(projectId: String?) {
+        if (projectId == null) {
+            preCheckUserAdmin()
+        } else {
+            preCheckProjectAdmin(projectId)
+        }
     }
 }

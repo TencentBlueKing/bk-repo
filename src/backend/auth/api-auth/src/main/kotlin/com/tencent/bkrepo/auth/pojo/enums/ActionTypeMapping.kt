@@ -47,7 +47,10 @@ enum class ActionTypeMapping(val resType: String, val pAction: String) {
     NODE_DOWNLOAD(ResourceType.NODE.name, PermissionAction.DOWNLOAD.name),
     NODE_EDIT(ResourceType.NODE.name, PermissionAction.UPDATE.name),
     NODE_WRITE(ResourceType.NODE.name, PermissionAction.WRITE.name),
-    NODE_DELETE(ResourceType.NODE.name, PermissionAction.DELETE.name);
+    NODE_DELETE(ResourceType.NODE.name, PermissionAction.DELETE.name),
+    REPLICATION_MANAGE(ResourceType.REPLICATION.name, PermissionAction.MANAGE.name),
+    REPLICATION_EXECUTE(ResourceType.REPLICATION.name, PermissionAction.WRITE.name),
+    REPLICATION_VIEW(ResourceType.REPLICATION.name, PermissionAction.READ.name);
 
     fun id() = this.name.toLowerCase()
 
