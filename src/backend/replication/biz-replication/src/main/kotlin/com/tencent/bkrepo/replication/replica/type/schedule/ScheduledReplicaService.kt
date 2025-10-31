@@ -28,10 +28,10 @@
 package com.tencent.bkrepo.replication.replica.type.schedule
 
 import com.tencent.bkrepo.replication.manager.LocalDataManager
-import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.replication.service.ReplicaFailureRecordService
+import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.springframework.stereotype.Component
 
 /**
@@ -41,8 +41,8 @@ import org.springframework.stereotype.Component
 class ScheduledReplicaService(
     replicaRecordService: ReplicaRecordService,
     localDataManager: LocalDataManager,
-    replicaFailureRecordService: ReplicaFailureRecordService
-) : AbstractReplicaService(replicaRecordService, localDataManager, replicaFailureRecordService) {
+    failureRecordRepository: FailureRecordRepository
+) : AbstractReplicaService(replicaRecordService, localDataManager, failureRecordRepository) {
 
     override fun replica(context: ReplicaContext) {
         replicaTaskObjects(context)

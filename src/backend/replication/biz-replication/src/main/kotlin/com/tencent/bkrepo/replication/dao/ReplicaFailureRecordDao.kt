@@ -3,6 +3,7 @@ package com.tencent.bkrepo.replication.dao
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -35,49 +36,8 @@ class ReplicaFailureRecordDao : SimpleMongoDao<TReplicaFailureRecord>() {
         this.updateFirst(query, update)
     }
 
-    fun incrementRetryCount(recordId: String, failureReason: String?) {
-        val query = Query.query(Criteria.where(ID).isEqualTo(recordId))
-        val update = Update().inc(TReplicaFailureRecord::retryCount.name, 1)
-            .set(TReplicaFailureRecord::retrying.name, false)
-            .set(TReplicaFailureRecord::lastModifiedDate.name, LocalDateTime.now())
-        if (failureReason != null) {
-            update.set(TReplicaFailureRecord::failureReason.name, failureReason)
-        }
-        this.updateFirst(query, update)
-    }
-
     fun deleteById(recordId: String) {
         this.removeById(recordId)
-    }
-
-    /**
-     * 查找是否存在相同的失败记录
-     * 判断条件：taskKey + remoteClusterId + projectId + localRepoName + failureType + 约束条件
-     */
-    fun findExistingRecord(
-        taskKey: String,
-        projectId: String,
-        remoteClusterId: String,
-        localRepoName: String,
-        remoteProjectId: String,
-        remoteRepoName: String,
-        failureType: ReplicaObjectType,
-        packageKey: String? = null,
-        packageVersion: String? = null,
-        fullPath: String? = null
-    ): TReplicaFailureRecord? {
-        val query = Query(
-            where(TReplicaFailureRecord::taskKey).isEqualTo(taskKey)
-                .and(TReplicaFailureRecord::remoteClusterId.name).isEqualTo(remoteClusterId)
-                .and(TReplicaFailureRecord::projectId.name).isEqualTo(projectId)
-                .and(TReplicaFailureRecord::repoName.name).isEqualTo(localRepoName)
-                .and(TReplicaFailureRecord::failureType.name).isEqualTo(failureType)
-                .and(TReplicaFailureRecord::packageKey.name).isEqualTo(packageKey)
-                .and(TReplicaFailureRecord::packageVersion.name).isEqualTo(packageVersion)
-                .and(TReplicaFailureRecord::fullPath.name).isEqualTo(fullPath)
-        )
-
-        return this.findOne(query)
     }
 
     /**
@@ -113,5 +73,53 @@ class ReplicaFailureRecordDao : SimpleMongoDao<TReplicaFailureRecord>() {
                 .and(TReplicaFailureRecord::lastModifiedDate.name).lt(expireBefore)
         )
         return this.remove(query).deletedCount
+    }
+
+    /**
+     * 根据条件构建查询
+     */
+    fun buildQuery(
+        taskKey: String?,
+        remoteClusterId: String?,
+        projectId: String?,
+        repoName: String?,
+        remoteProjectId: String?,
+        remoteRepoName: String?,
+        failureType: ReplicaObjectType?,
+        retrying: Boolean?,
+        maxRetryCount: Int?,
+        sortField: String?,
+        sortDirection: Sort.Direction?
+    ): Query {
+        val criteria = Criteria()
+        taskKey?.let { criteria.and(TReplicaFailureRecord::taskKey.name).`is`(it) }
+        remoteClusterId?.let { criteria.and(TReplicaFailureRecord::remoteClusterId.name).`is`(it) }
+        projectId?.let { criteria.and(TReplicaFailureRecord::projectId.name).`is`(it) }
+        repoName?.let { criteria.and(TReplicaFailureRecord::repoName.name).`is`(it) }
+        remoteProjectId?.let { criteria.and(TReplicaFailureRecord::remoteProjectId.name).`is`(it) }
+        remoteRepoName?.let { criteria.and(TReplicaFailureRecord::remoteRepoName.name).`is`(it) }
+        failureType?.let { criteria.and(TReplicaFailureRecord::failureType.name).`is`(it) }
+        retrying?.let { criteria.and(TReplicaFailureRecord::retrying.name).`is`(it) }
+        maxRetryCount?.let { criteria.and(TReplicaFailureRecord::retryCount.name).gt(it) }
+
+        val query = Query(criteria)
+        sortField?.let {
+            val direction = sortDirection ?: Sort.Direction.DESC
+            query.with(Sort.by(direction, it))
+        }
+
+        return query
+    }
+
+
+    /**
+     * 根据条件批量删除记录
+     */
+    fun deleteByConditions(ids: List<String>?, maxRetryCount: Int?): Long {
+        if (ids.isNullOrEmpty() && maxRetryCount == null) return 0
+        val criteria = Criteria()
+        ids?.takeIf { it.isNotEmpty() }?.let { criteria.and(ID).`in`(it) }
+        maxRetryCount?.let { criteria.and(TReplicaFailureRecord::retryCount.name).gt(it) }
+        return remove(Query(criteria)).deletedCount
     }
 }

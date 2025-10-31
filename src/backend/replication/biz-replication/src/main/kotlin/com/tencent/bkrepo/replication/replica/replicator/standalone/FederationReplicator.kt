@@ -296,12 +296,18 @@ class FederationReplicator(
             // 同步节点
             if (!syncNodeToFederatedCluster(this, node)) return false
 
+
+            // 2. 记录文件传输开始标识
+            recordFileTransferStart(this, node)
+
             // 并发传输文件
             val success = executeBlockFileTransfer(context, node, blockNodeList)
             if (!success) return false
 
             // 保存元数据标识传输完成
             saveNodeMetadata(context, node)
+            // 记录文件传输完成标识
+            recordFileTransferComplete(context, node)
             return true
         }
     }
@@ -375,7 +381,7 @@ class FederationReplicator(
                 try {
                     pushFileToFederatedCluster(context, node)
                     // 记录文件传输完成标识
-                    recordFileTransferComplete(this, node)
+                    recordFileTransferComplete(context, node)
                 } catch (throwable: Throwable) {
                     handleFileTransferError(context, node, throwable)
                     result.set(false)
@@ -396,7 +402,7 @@ class FederationReplicator(
         return try {
             pushFileToFederatedCluster(context, node)
             // 记录文件传输完成标识
-            recordFileTransferComplete(this, node)
+            recordFileTransferComplete(context, node)
             true
         } catch (throwable: Throwable) {
             handleFileTransferError(context, node, throwable)
@@ -526,7 +532,8 @@ class FederationReplicator(
      * 推送文件到联邦集群（供定时任务调用）
      */
     fun pushFileToFederatedClusterPublic(context: ReplicaContext, node: NodeInfo): Boolean {
-        return pushFileToFederatedCluster(context, node)
+         pushFileToFederatedCluster(context, node)
+        return true
     }
 
     override fun replicaDir(context: ReplicaContext, node: NodeInfo) {

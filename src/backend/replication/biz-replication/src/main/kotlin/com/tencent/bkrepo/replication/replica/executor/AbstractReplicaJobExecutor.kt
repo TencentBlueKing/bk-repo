@@ -38,11 +38,13 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import com.tencent.bkrepo.replication.pojo.record.ReplicaProgress
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.record.ResultsSummary
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
-import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
+import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
@@ -55,7 +57,8 @@ open class AbstractReplicaJobExecutor(
     private val clusterNodeService: ClusterNodeService,
     private val localDataManager: LocalDataManager,
     private val replicaService: ReplicaService,
-    private val replicationProperties: ReplicationProperties
+    private val replicationProperties: ReplicationProperties,
+    private val failureRecordRepository: FailureRecordRepository,
 ) {
 
     private val threadPoolExecutor: ThreadPoolExecutor = ReplicaThreadPoolExecutor.instance
@@ -76,6 +79,7 @@ open class AbstractReplicaJobExecutor(
         return threadPoolExecutor.submit<ExecutionResult>(
             Callable {
                 var replicaProgress = ReplicaProgress()
+                var context: ReplicaContext? = null
                 try {
                     val clusterNode = clusterNodeService.getByClusterId(clusterNodeName.id)
                     require(clusterNode != null) { "Cluster[${clusterNodeName.id}] does not exist." }
@@ -87,7 +91,7 @@ open class AbstractReplicaJobExecutor(
                             taskObject.localRepoName,
                             taskObject.repoType.toString()
                         )
-                        val context = ReplicaContext(
+                        context = ReplicaContext(
                             taskDetail = taskDetail,
                             taskObject = taskObject,
                             taskRecord = taskRecord,
@@ -96,23 +100,67 @@ open class AbstractReplicaJobExecutor(
                             replicationProperties = replicationProperties
                         )
                         event?.let {
-                            context.event = it
-                            context.executeType = TaskExecuteType.DELTA
+                            context!!.event = it
+                            context!!.executeType = TaskExecuteType.DELTA
                         }
-                        replicaService.replica(context)
-                        replicaProgress = replicaProgress.plus(context.replicaProgress)
-                        if (context.status == ExecutionStatus.FAILED) {
-                            status = context.status
-                            message = context.errorMessage
+                        replicaService.replica(context!!)
+                        replicaProgress = replicaProgress.plus(context!!.replicaProgress)
+                        if (context!!.status == ExecutionStatus.FAILED) {
+                            status = context!!.status
+                            message = context!!.errorMessage
                         }
                     }
                     ExecutionResult(status = status, errorReason = message, progress = replicaProgress)
                 } catch (exception: Throwable) {
                     logger.error("${taskDetail.task.name}/$clusterNodeName] replica exception:${exception}")
+                    // 记录分发失败到数据库（针对抛出异常的情况）
+                    recordFailureToDatabase(context, exception)
                     ExecutionResult.fail("${clusterNodeName.name}:${exception.message}\n", replicaProgress)
                 }
             }.trace()
         )
+    }
+
+    /**
+     * 记录分发失败到数据库（针对抛出异常的情况）
+     */
+    private fun recordFailureToDatabase(context: ReplicaContext?, exception: Throwable) {
+        if (context == null) return
+        with(context) {
+            try {
+                if (task.replicaType == ReplicaType.RUN_ONCE) {
+                    return
+                }
+                val event = try {
+                    if (event != null) event else null
+                } catch (e: Exception) {
+                    null
+                }
+
+                // 记录失败信息
+                failureRecordRepository.recordFailure(
+                    taskKey = task.key,
+                    remoteClusterId = remoteCluster.id!!,
+                    projectId = localProjectId,
+                    localRepoName = localRepoName,
+                    remoteProjectId = remoteProjectId ?: "",
+                    remoteRepoName = remoteRepoName ?: "",
+                    failureType = task.replicaObjectType,
+                    packageConstraint = taskObject.packageConstraints?.firstOrNull(),
+                    pathConstraint = taskObject.pathConstraints?.firstOrNull(),
+                    failureReason = exception.message ?: "Unknown error",
+                    event = event,
+                    failedRecordId = failedRecordId
+                )
+                logger.info(
+                    "Recorded failure for task[${task.key}], cluster[${remoteCluster.name}], " +
+                        "reason[${exception.message}]"
+                )
+            } catch (e: Exception) {
+                logger.warn("Failed to record failure to database in submit", e)
+            }
+        }
+
     }
 
     /**

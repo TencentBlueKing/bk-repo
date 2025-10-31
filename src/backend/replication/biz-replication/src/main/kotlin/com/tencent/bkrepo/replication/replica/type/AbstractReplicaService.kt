@@ -39,7 +39,6 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.request.RecordDetailInitialRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
-import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
@@ -49,8 +48,8 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ErrorStrategy
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaExecutionContext
-import com.tencent.bkrepo.replication.service.ReplicaFailureRecordService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationRecordDetailMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -74,7 +73,7 @@ import java.time.format.DateTimeFormatter
 abstract class AbstractReplicaService(
     private val replicaRecordService: ReplicaRecordService,
     val localDataManager: LocalDataManager,
-    private val replicaFailureRecordService: ReplicaFailureRecordService,
+    private val failureRecordRepository: FailureRecordRepository,
 ) : ReplicaService {
 
     /**
@@ -490,7 +489,7 @@ abstract class AbstractReplicaService(
             val record = ReplicationRecord(
                 path = node.fullPath,
                 sha256 = node.sha256,
-                size = node.size.toString()
+                size = node.size.toString(),
             )
             val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
             runActionAndPrintLog(context, record) {
@@ -596,7 +595,7 @@ abstract class AbstractReplicaService(
             val record = ReplicationRecord(
                 packageName = packageSummary.key,
                 version = version.name,
-                size = version.size.toString()
+                size = version.size.toString(),
             )
             val fullPath = "${packageSummary.name}-${version.name}"
             runActionAndPrintLog(context, record) {
@@ -697,17 +696,21 @@ abstract class AbstractReplicaService(
                 status = ExecutionStatus.FAILED
                 errorReason = throwable.message.orEmpty()
                 logger.error(
-                    "replica file failed, " +
-                        "error is ${Throwables.getStackTraceAsString(throwable)}"
+                    "replica file failed, error is ${Throwables.getStackTraceAsString(throwable)}"
                 )
                 replicaContext.replicaProgress.failed++
                 setErrorStatus(this, throwable)
 
-                // 记录分发失败
-                recordFailureToDatabase(context, record, throwable)
-
                 // 非全量同步且配置了快速失败策略时，直接抛出异常
-                if (shouldFastFail(replicaContext)) {
+                val willThrow = shouldFastFail(replicaContext)
+
+                // 只针对不抛异常的进行记录
+                if (!willThrow) {
+                    // 记录分发失败
+                    recordFailureToDatabase(context, record, throwable)
+                }
+
+                if (willThrow) {
                     throw throwable
                 }
             } finally {
@@ -845,28 +848,36 @@ abstract class AbstractReplicaService(
                 if (task.replicaType == ReplicaType.RUN_ONCE) {
                     return
                 }
-                // 根据记录类型确定失败类型
-                val failureType = when {
-                    record.packageName != null -> ReplicaObjectType.PACKAGE
-                    record.path != null -> ReplicaObjectType.PATH
-                    else -> return // 无法确定失败类型，跳过记录
+
+                val artifactEvent = try {
+                    if (event != null) event else null
+                } catch (e: Exception) {
+                    null
+                }
+                val (packageConstraint, pathConstraint) = if (artifactEvent != null) {
+                    Pair(null, null)
+                } else {
+                    Pair(context.detail.packageConstraint, context.detail.pathConstraint)
                 }
 
                 // 记录失败信息
-                replicaFailureRecordService.recordFailure(
+                failureRecordRepository.recordFailure(
                     taskKey = task.key,
                     remoteClusterId = remoteCluster.id!!,
                     projectId = localProjectId,
                     localRepoName = localRepoName,
                     remoteProjectId = remoteProjectId ?: "",
                     remoteRepoName = remoteRepoName ?: "",
-                    failureType = failureType,
-                    packageKey = record.packageName,
-                    packageVersion = record.version,
-                    fullPath = record.path,
-                    failureReason = throwable.message ?: "Unknown error"
+                    failureType = task.replicaObjectType,
+                    packageConstraint = packageConstraint,
+                    pathConstraint = pathConstraint,
+                    failureReason = throwable.message ?: "Unknown error",
+                    event = event,
+                    failedRecordId = failedRecordId
                 )
-                logger.info("Recorded failure for task[${task.key}], type[$failureType], reason[${throwable.message}]")
+                logger.info(
+                    "Recorded failure for task[${task.key}],  reason[${throwable.message}]"
+                )
             }
         } catch (e: Exception) {
             logger.warn("Failed to record failure to database", e)

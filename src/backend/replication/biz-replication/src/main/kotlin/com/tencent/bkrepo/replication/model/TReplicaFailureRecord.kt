@@ -1,6 +1,9 @@
 package com.tencent.bkrepo.replication.model
 
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.LocalDateTime
 
@@ -41,12 +44,13 @@ data class TReplicaFailureRecord(
      * 失败类型：PATH(节点分发失败)、PACKAGE(版本分发失败)
      */
     val failureType: ReplicaObjectType,
+
     /**
      * 失败的对象标识
      */
-    val packageKey: String? = null,
-    val packageVersion: String? = null,
-    val fullPath: String? = null,
+    val packageConstraint: PackageConstraint? = null,
+    val pathConstraint: PathConstraint? = null,
+    val event: ArtifactEvent? = null,
     /**
      * 失败原因
      */

@@ -110,6 +110,8 @@ class ReplicaContext(
 
     var recordDetailId: String? = null
 
+    var failedRecordId: String? = null
+
     init {
         cluster = ClusterInfo(
             name = remoteCluster.name,

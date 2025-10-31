@@ -2,6 +2,7 @@ package com.tencent.bkrepo.replication.dao
 
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.replication.model.TFederationMetadataTracking
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
@@ -19,7 +20,6 @@ class FederationMetadataTrackingDao : SimpleMongoDao<TFederationMetadataTracking
         val criteria = Criteria.where(ID).isEqualTo(id)
         val query = Query(criteria)
         val update = Update()
-            .inc(TFederationMetadataTracking::retryCount.name, 1)
             .set(TFederationMetadataTracking::failureReason.name, failureReason)
             .set(TFederationMetadataTracking::retrying.name, false)
             .set(TFederationMetadataTracking::lastModifiedDate.name, LocalDateTime.now())
@@ -65,6 +65,51 @@ class FederationMetadataTrackingDao : SimpleMongoDao<TFederationMetadataTracking
     fun deleteExpiredFailedRecords(maxRetryNum: Int, beforeDate: LocalDateTime): Long {
         val criteria = Criteria.where(TFederationMetadataTracking::retryCount.name).gt(maxRetryNum)
             .and(TFederationMetadataTracking::lastModifiedDate.name).lt(beforeDate)
+        return remove(Query(criteria)).deletedCount
+    }
+
+    /**
+     * 根据条件构建查询
+     */
+    fun buildQuery(
+        taskKey: String?,
+        remoteClusterId: String?,
+        projectId: String?,
+        localRepoName: String?,
+        remoteProjectId: String?,
+        remoteRepoName: String?,
+        retrying: Boolean?,
+        maxRetryCount: Int?,
+        sortField: String?,
+        sortDirection: Sort.Direction?
+    ): Query {
+        val criteria = Criteria()
+        taskKey?.let { criteria.and(TFederationMetadataTracking::taskKey.name).`is`(it) }
+        remoteClusterId?.let { criteria.and(TFederationMetadataTracking::remoteClusterId.name).`is`(it) }
+        projectId?.let { criteria.and(TFederationMetadataTracking::projectId.name).`is`(it) }
+        localRepoName?.let { criteria.and(TFederationMetadataTracking::localRepoName.name).`is`(it) }
+        remoteProjectId?.let { criteria.and(TFederationMetadataTracking::remoteProjectId.name).`is`(it) }
+        remoteRepoName?.let { criteria.and(TFederationMetadataTracking::remoteRepoName.name).`is`(it) }
+        retrying?.let { criteria.and(TFederationMetadataTracking::retrying.name).`is`(it) }
+        maxRetryCount?.let { criteria.and(TFederationMetadataTracking::retryCount.name).gt(it) }
+
+        val query = Query(criteria)
+        sortField?.let {
+            val direction = sortDirection ?: Sort.Direction.DESC
+            query.with(Sort.by(direction, it))
+        }
+
+        return query
+    }
+
+    /**
+     * 根据条件批量删除记录
+     */
+    fun deleteByConditions(ids: List<String>?, maxRetryCount: Int?): Long {
+        if (ids.isNullOrEmpty() && maxRetryCount == null) return 0
+        val criteria = Criteria()
+        ids?.takeIf { it.isNotEmpty() }?.let { criteria.and(ID).`in`(it) }
+        maxRetryCount?.let { criteria.and(TFederationMetadataTracking::retryCount.name).gt(it) }
         return remove(Query(criteria)).deletedCount
     }
 }

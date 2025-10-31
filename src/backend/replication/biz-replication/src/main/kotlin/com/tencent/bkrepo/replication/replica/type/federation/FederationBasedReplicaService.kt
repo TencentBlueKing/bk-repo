@@ -39,8 +39,8 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
-import com.tencent.bkrepo.replication.service.ReplicaFailureRecordService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -55,8 +55,8 @@ import org.springframework.stereotype.Component
 class FederationBasedReplicaService(
     replicaRecordService: ReplicaRecordService,
     localDataManager: LocalDataManager,
-    replicaFailureRecordService: ReplicaFailureRecordService,
-) : AbstractReplicaService(replicaRecordService, localDataManager, replicaFailureRecordService) {
+    failureRecordRepository: FailureRecordRepository,
+) : AbstractReplicaService(replicaRecordService, localDataManager, failureRecordRepository) {
 
     override fun replica(context: ReplicaContext) {
         // 全量同步的场景需要同步已删除节点
