@@ -29,8 +29,8 @@ package com.tencent.bkrepo.replication.replica.replicator.base.internal
 
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
-import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.common.artifact.util.http.StreamRequestBody
+import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.constant.BLOB_PUSH_URI
 import com.tencent.bkrepo.replication.constant.BOLBS_UPLOAD_FIRST_STEP_URL_STRING
@@ -49,8 +49,8 @@ import okhttp3.Request
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.annotation.Lazy
 import org.springframework.cloud.context.config.annotation.RefreshScope
+import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Component
 
 @RefreshScope
@@ -78,7 +78,7 @@ class ClusterArtifactReplicationHandler(
         filePushContext: FilePushContext,
         pushType: String,
         downGrade: Boolean
-    ) : Boolean {
+    ): Boolean {
         val newType = filterRepoWithPushType(
             pushType = pushType,
             projectId = filePushContext.context.localProjectId,
@@ -90,10 +90,12 @@ class ClusterArtifactReplicationHandler(
             WayOfPushArtifact.PUSH_WITH_CHUNKED.value -> {
                 super.blobPush(filePushContext, newType, downGrade)
             }
+
             WayOfPushArtifact.PUSH_WITH_FDTP.value -> {
                 require(::fdtpPusher.isInitialized) { "fdtp is disabled" }
                 fdtpPusher.pushBlob(filePushContext)
             }
+
             else -> {
                 pushBlob(filePushContext)
                 true
@@ -115,7 +117,7 @@ class ClusterArtifactReplicationHandler(
             WayOfPushArtifact.PUSH_WITH_FDTP.value
         } else if (filterProjectRepo(projectId, repoName, httpRepos)) {
             WayOfPushArtifact.PUSH_WITH_DEFAULT.value
-        } else if (filterFileSize(size)){
+        } else if (filterFileSize(size)) {
             WayOfPushArtifact.PUSH_WITH_CHUNKED.value
         } else {
             pushType
@@ -130,7 +132,7 @@ class ClusterArtifactReplicationHandler(
         }
     }
 
-    override fun buildSessionRequestInfo(filePushContext: FilePushContext) : Pair<String, String?> {
+    override fun buildSessionRequestInfo(filePushContext: FilePushContext): Pair<String, String?> {
         with(filePushContext) {
             val url = BOLBS_UPLOAD_FIRST_STEP_URL_STRING.format(context.remoteProjectId, context.remoteRepoName)
             val postUrl = buildUrl(context.cluster.url, url, context)
@@ -141,14 +143,14 @@ class ClusterArtifactReplicationHandler(
     override fun buildChunkUploadRequestInfo(
         sha256: String,
         filePushContext: FilePushContext
-    ) : Pair<String?, List<Int>>{
+    ): Pair<String?, List<Int>> {
         return Pair(buildParams(sha256, filePushContext), emptyList())
     }
 
     override fun buildSessionCloseRequestParam(
         fileInfo: FileInfo,
         filePushContext: FilePushContext
-    ) : String {
+    ): String {
         return buildParams(
             sha256 = fileInfo.sha256,
             filePushContext = filePushContext,
@@ -161,7 +163,7 @@ class ClusterArtifactReplicationHandler(
     override fun buildBlobUploadWithSingleChunkRequestParam(
         sha256: String,
         filePushContext: FilePushContext
-    ) : String? {
+    ): String? {
         return buildParams(sha256, filePushContext)
     }
 
@@ -173,13 +175,18 @@ class ClusterArtifactReplicationHandler(
     ) {
         with(filePushContext) {
             logger.info("File $sha256 will be pushed using the default way.")
-            val artifactInputStream = localDataManager.getBlobData(sha256!!, size!!, context.localRepo)
+            val artifactInputStream = localDataManager.getBlobData(
+                sha256 = sha256!!,
+                length = size!!,
+                repoInfo = context.localRepo,
+                federatedSource = federatedSource
+            )
             val rateLimitInputStream = artifactInputStream.rateLimit(
                 replicationProperties.rateLimit.toBytes()
             )
             val storageKey = context.remoteRepo?.storageCredentials?.key
             val requestTag = buildRequestTag(context, sha256, size)
-            val pushUrl =  buildUrl(context.cluster.url, BLOB_PUSH_URI, context)
+            val pushUrl = buildUrl(context.cluster.url, BLOB_PUSH_URI, context)
             val requestBody = MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart(FILE, sha256, StreamRequestBody(rateLimitInputStream, size))

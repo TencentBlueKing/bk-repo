@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.manager.LocalDataManager.Companion.federatedSource
 import com.tencent.bkrepo.replication.pojo.remote.DefaultHandlerResult
 import com.tencent.bkrepo.replication.pojo.remote.RequestProperty
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
@@ -168,7 +169,8 @@ class HelmArtifactPushClient(
             sha256 = node.sha256!!,
             size = node.size,
             projectId = node.projectId,
-            repoName = node.repoName
+            repoName = node.repoName,
+            federatedSource = federatedSource(node.nodeInfo)
         )
         val fileName = CHART_FILE_NAME.format(name, version)
         val requestProperty = if (chartMuseum) {
