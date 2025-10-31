@@ -164,7 +164,7 @@ class DevopsPermissionServiceImpl constructor(
 
             // 当projectId为null时，需要针对service类型的resourceType进行特定判断
             if (projectId == null) {
-                return checkReplicationPermission(uid, resourceType, action)
+                return checkReplicationPermission(uid, user.roles, resourceType, action)
             }
             // 开启仓库内请求拦截
             if (checkRepoAccessDenyGroup(uid, projectId!!, repoName, user.roles.toSet(), requestSource)) return false

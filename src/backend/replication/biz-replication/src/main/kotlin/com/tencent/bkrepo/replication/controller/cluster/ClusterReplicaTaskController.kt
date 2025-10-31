@@ -27,9 +27,10 @@
 
 package com.tencent.bkrepo.replication.controller.cluster
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaTaskClient
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
@@ -43,7 +44,6 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.context.request.async.DeferredResult
 
 @RestController
-@Principal(PrincipalType.REPLICATION)
 class ClusterReplicaTaskController(
     private val replicaTaskService: ReplicaTaskService,
     private val edgeReplicaTaskRecordService: EdgeReplicaTaskRecordService
@@ -52,6 +52,7 @@ class ClusterReplicaTaskController(
         return ResponseBuilder.success(replicaTaskService.getByTaskId(taskId))
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun list(
         replicaType: ReplicaType,
         lastId: String,
@@ -60,10 +61,12 @@ class ClusterReplicaTaskController(
         return ResponseBuilder.success(replicaTaskService.listTaskByType(replicaType, lastId, size))
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun listObject(taskKey: String): Response<List<ReplicaObjectInfo>> {
         return ResponseBuilder.success(replicaTaskService.listTaskObject(taskKey))
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun getEdgeReplicaTask(
         clusterName: String,
         replicatingNum: Int
@@ -73,6 +76,7 @@ class ClusterReplicaTaskController(
         return deferredResult
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun reportEdgeReplicaTaskResult(edgeReplicaTaskRecord: EdgeReplicaTaskRecord): Response<Void> {
         edgeReplicaTaskRecordService.updateStatus(
             id = edgeReplicaTaskRecord.id!!,

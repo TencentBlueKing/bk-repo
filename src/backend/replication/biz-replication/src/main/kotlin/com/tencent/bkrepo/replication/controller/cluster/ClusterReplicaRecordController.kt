@@ -27,9 +27,10 @@
 
 package com.tencent.bkrepo.replication.controller.cluster
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.cluster.ClusterReplicaRecordClient
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
@@ -37,10 +38,10 @@ import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@Principal(PrincipalType.REPLICATION)
 class ClusterReplicaRecordController(
     private val replicaRecordService: ReplicaRecordService
 ) : ClusterReplicaRecordClient {
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun writeBack(replicaRecordInfo: ReplicaRecordInfo): Response<Void> {
         replicaRecordService.writeBack(replicaRecordInfo)
         return ResponseBuilder.success()

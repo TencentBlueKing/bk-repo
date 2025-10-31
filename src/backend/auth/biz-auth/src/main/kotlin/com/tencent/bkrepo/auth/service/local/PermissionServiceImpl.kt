@@ -184,6 +184,19 @@ open class PermissionServiceImpl constructor(
                     permHelper.removeUserFromRoleBatchCommon(addRoleUserList, adminRoleId!!)
                     return true
                 }
+                REPLICATION_MANAGE_ID -> {
+                    if (!projectId.isNullOrEmpty()) {
+                        throw ErrorCodeException(AuthMessageCode.AUTH_CREATE_ROLE_INVALID_WITHOUT_PROJECT)
+                    }
+                    val replicationAdminRequest = RequestUtil.buildReplicationAdminRequest()
+                    val replicationRoleId = userHelper.createRoleCommon(replicationAdminRequest)
+                    val serviceUsers = permHelper.getServiceUser(REPLICATION_MANAGE_ID)
+                    val addRoleUserList = userId.filter { !serviceUsers.contains(it) }
+                    val removeRoleUserList = serviceUsers.filter { !userId.contains(it) }
+                    userHelper.addUserToRoleBatchCommon(addRoleUserList, replicationRoleId!!)
+                    permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, replicationRoleId)
+                    return true
+                }
                 else -> {
                     permHelper.checkPermissionExist(permissionId)
                     return permHelper.updatePermissionById(permissionId, TPermission::users.name, userId)
@@ -204,7 +217,7 @@ open class PermissionServiceImpl constructor(
             // check user admin permission
             if (user.admin) return true
             if (projectId == null) {
-                return checkReplicationPermission(uid, resourceType, action)
+                return checkReplicationPermission(uid, user.roles, resourceType, action)
             }
 
             if (isUserLocalProjectAdmin(uid, projectId!!)) return true
@@ -268,8 +281,10 @@ open class PermissionServiceImpl constructor(
         // 管理员角色关联权限
         val roleList = roleRepository.findByIdIn(user.roles)
         roleList.forEach {
-            if (it.admin && it.projectId != null) {
-                projectList.add(it.projectId)
+            if (it.admin) {
+                if (it.projectId != null) {
+                    projectList.add(it.projectId)
+                }
             } else {
                 noAdminRole.add(it.id!!)
             }
@@ -492,18 +507,20 @@ open class PermissionServiceImpl constructor(
      * 校验用户是否有同步权限
      * 当projectId为null时，针对REPLICATION类型的资源进行权限校验
      */
-    fun checkReplicationPermission(userId: String, resourceType: String, action: String): Boolean {
+    fun checkReplicationPermission(
+        userId: String,
+        roles: List<String>,
+        resourceType: String,
+        action: String
+    ): Boolean {
         if (REPLICATION.name != resourceType) {
             return false
         }
 
-        val replicationRoles = roleRepository.findFirstByTypeAndRoleId(RoleType.SERVICE, REPLICATION_MANAGE_ID)
+        val replicationRole = roleRepository.findFirstByTypeAndRoleId(RoleType.SERVICE, REPLICATION_MANAGE_ID)
             ?: return false
 
-        val permissions = permissionDao.listByRoleAndResource(listOf(replicationRoles.roleId), REPLICATION.name)
-        val hasPermission = permissions.any { perm ->
-            perm.users.contains(userId)
-        }
+        val hasPermission = roles.contains(replicationRole.id)
         if (!hasPermission) {
             return false
         }
