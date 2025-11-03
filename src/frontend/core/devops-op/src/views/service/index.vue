@@ -15,7 +15,7 @@
         width="180"
       >
         <template slot-scope="scope">
-          {{ scope.row.instances.length }}
+          {{ scope.row.instances ? scope.row.instances.length: 0 }}
         </template>
       </el-table-column>
       <el-table-column label="操作">

@@ -120,7 +120,7 @@ class OpServiceController @Autowired constructor(
      * 根据服务和ip删除对应存储的带宽数据
      */
     @DeleteMapping("/{serviceName}/bandwidth/{hostIp}/delete")
-    @LogOperate(type = "SERVICE_INSTANCE_BANDWIDTH_DELETE")
+    @LogOperate(type = "SERVICE_INSTANCE_UP")
     fun deleteBandwidthDataByServiceAndIp(
         @PathVariable serviceName: String,
         @PathVariable hostIp: String,
@@ -142,5 +142,10 @@ class OpServiceController @Autowired constructor(
         returnAll: Boolean = false,
     ): Response<List<String>> {
         return success(opServiceService.serviceBandwidthIps(serviceName, activeSeconds, returnAll))
+    }
+
+    @GetMapping("/isConsul")
+    fun checkConsulPattern(): Response<Boolean> {
+        return success(opServiceService.checkConsulAlive())
     }
 }

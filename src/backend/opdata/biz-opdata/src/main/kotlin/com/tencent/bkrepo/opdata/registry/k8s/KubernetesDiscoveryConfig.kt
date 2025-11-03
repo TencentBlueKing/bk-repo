@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent. All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,20 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.opdata.message
+package com.tencent.bkrepo.opdata.registry.k8s
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.opdata.registry.RegistryClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.cloud.client.discovery.DiscoveryClient
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-enum class OpDataMessageCode(private val key: String) : MessageCode {
+@Configuration
+@ConditionalOnProperty(value = ["spring.cloud.consul.enabled"], havingValue = "false")
+class KubernetesDiscoveryConfig (
+    private val discoveryClient: DiscoveryClient,
+    private val podLabelConfig: PodLabelConfig
+){
 
-    ServiceInstanceNotFound("op.service.instance.not-found"),
-    ServiceInstanceDeregisterConflict("op.service.instance.deregister.conflict"),
-    ConfigValueTypeInvalid("config.value.type.invalid"),
-    CONFIG_CLIENT_NOT_FOUND("config.client.not-found"),
-    NOT_SUPPORT("function.not-supported"),
-    REGISTRY_CLIENT_NOT_FOUND("registry.client.not-found");
-
-    override fun getBusinessCode() = ordinal + 1
-    override fun getKey() = key
-    override fun getModuleCode() = 14
+    @Bean
+    fun createK8sClient(): RegistryClient {
+        return KubernetesServiceDiscovery(discoveryClient, podLabelConfig)
+    }
 }
