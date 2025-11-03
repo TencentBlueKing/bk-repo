@@ -20,7 +20,7 @@ request.interceptors.request.use(config => {
     if (param) {
         config.headers['X-BKREPO-PROJECT-ID'] = param
     }
-    config.headers['X-BKREPO-TIME-ZONE'] = new Date().getTimezoneOffset()
+    config.headers['X-BKREPO-TIME-ZONE'] = new Date().getTimezoneOffset() / 60 // 小时偏移，如+8，-5
     return config
 })
 
