@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
@@ -176,9 +177,9 @@ class SpdxLicenseServiceImpl(
         return with(tSpdxLicense) {
             SpdxLicenseInfo(
                 createdBy = createdBy,
-                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                createdDate = createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedDate = lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 name = name,
                 licenseId = licenseId,
                 seeAlso = seeAlso,

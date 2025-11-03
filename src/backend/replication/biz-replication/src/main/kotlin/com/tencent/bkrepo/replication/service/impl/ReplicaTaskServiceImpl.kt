@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.replication.dao.ReplicaObjectDao
 import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
@@ -624,9 +625,9 @@ class ReplicaTaskServiceImpl(
                     record = it.record,
                     recordReserveDays = it.recordReserveDays,
                     createdBy = it.createdBy,
-                    createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                    createdDate = it.createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME)
+                    lastModifiedDate = it.lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME)
                 )
             }
         }

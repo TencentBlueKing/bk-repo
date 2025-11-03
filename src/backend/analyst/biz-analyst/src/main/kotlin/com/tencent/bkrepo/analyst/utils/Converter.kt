@@ -46,6 +46,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.CveOverviewKey
 import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import java.time.format.DateTimeFormatter
 
@@ -61,10 +62,10 @@ object Converter {
             projectId = projectId,
             projectIds = projectIds,
             createdBy = createdBy,
-            lastModifiedDateTime = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
-            triggerDateTime = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
-            startDateTime = startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
-            finishedDateTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+            lastModifiedDateTime = lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+            triggerDateTime = createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+            startDateTime = startDateTime?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+            finishedDateTime = finishedDateTime?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
             triggerType = triggerType,
             status = status,
             scanPlan = scanPlan?.let { ScanPlanConverter.convert(it) },
@@ -119,10 +120,10 @@ object Converter {
                 repoName = repoName,
                 highestLeakLevel = scanResultOverview?.let { highestLeakLevel(it) },
                 duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),
-                finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                finishTime = finishedDateTime?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 status = ScanPlanConverter.convertToScanStatus(status, qualityRedLine).name,
                 createdBy = createdBy,
-                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                createdDate = createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 qualityRedLine = qualityRedLine
             )
         }
@@ -176,7 +177,7 @@ object Converter {
                 medium = medium,
                 low = low,
                 total = critical + high + medium + low,
-                finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                finishTime = finishedDateTime?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 qualityRedLine = qualityRedLine,
                 scanQuality = scanQuality,
                 duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),

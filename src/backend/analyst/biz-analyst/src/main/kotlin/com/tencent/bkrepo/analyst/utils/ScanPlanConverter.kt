@@ -54,6 +54,7 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import java.time.Duration
 import java.time.LocalDateTime
@@ -79,9 +80,9 @@ object ScanPlanConverter {
                 repoNames = repoNames,
                 rule = rule.readJsonString(),
                 createdBy = createdBy,
-                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                createdDate = createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedDate = lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 scanQuality = scanQuality,
                 readOnly = readOnly
             )
@@ -150,9 +151,9 @@ object ScanPlanConverter {
                 low = low,
                 total = critical + high + medium + low,
                 createdBy = createdBy,
-                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                createdDate = createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedDate = lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 lastScanDate = null,
                 readOnly = readOnly
             )
@@ -195,10 +196,10 @@ object ScanPlanConverter {
                 low = low,
                 total = critical + high + medium + low,
                 createdBy = createdBy,
-                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                createdDate = createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                lastScanDate = latestScanTask?.startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedDate = lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                lastScanDate = latestScanTask?.startDateTime?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                 readOnly = readOnly
             )
         }

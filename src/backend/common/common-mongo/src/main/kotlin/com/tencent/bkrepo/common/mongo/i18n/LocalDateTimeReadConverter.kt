@@ -12,7 +12,7 @@ import java.util.Date
  * 优先使用ZoneIdContext中的时区（从请求头获取），如果没有则使用构造时指定的默认时区
  */
 @ReadingConverter
-class LocalDateTimeReadConverter() : Converter<Date, LocalDateTime> {
+class LocalDateTimeReadConverter : Converter<Date, LocalDateTime> {
 
     override fun convert(source: Date): LocalDateTime {
         // 优先使用上下文中的时区（从请求头获取）

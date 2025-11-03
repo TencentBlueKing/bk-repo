@@ -57,6 +57,7 @@ import com.tencent.bkrepo.repository.pojo.share.ShareRecordInfo
 import com.tencent.bkrepo.repository.service.file.ShareService
 import org.slf4j.LoggerFactory
 import com.tencent.bkrepo.common.metadata.util.DesensitizedUtils
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -218,7 +219,7 @@ class ShareServiceImpl(
                     shareUrl = generateShareUrl(it),
                     authorizedUserList = it.authorizedUserList,
                     authorizedIpList = it.authorizedIpList,
-                    expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME),
+                    expireDate = it.expireDate?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
                     createdBy = it.createdBy,
                 )
             }
