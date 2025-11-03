@@ -20,6 +20,7 @@ request.interceptors.request.use(config => {
     if (param) {
         config.headers['X-BKREPO-PROJECT-ID'] = param
     }
+    config.headers['X-BKREPO-TIME-ZONE'] = new Date().getTimezoneOffset()
     return config
 })
 
