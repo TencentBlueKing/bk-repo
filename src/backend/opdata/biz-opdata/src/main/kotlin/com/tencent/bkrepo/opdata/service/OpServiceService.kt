@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.opdata.service
 
-import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMetrics.Companion.COS_ASYNC_UPLOAD_SUFFIX
 import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMetrics.Companion.DOWNLOAD_SUFFIX
 import com.tencent.bkrepo.common.artifact.metrics.bandwidth.InstanceBandWidthMetrics.Companion.INSTANCE_BANDWIDTH
