@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.metadata.model.TProject
 import com.tencent.bkrepo.common.metadata.model.TProjectMetrics
-import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
@@ -77,9 +76,9 @@ object ProjectServiceHelper {
                 displayName = it.displayName,
                 description = it.description,
                 createdBy = it.createdBy,
-                createdDate = it.createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = it.lastModifiedBy,
-                lastModifiedDate = it.lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 metadata = it.metadata,
                 credentialsKey = it.credentialsKey,
                 rbacFlag = rbacFlag,

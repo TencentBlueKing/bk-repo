@@ -38,7 +38,6 @@ import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.UrlFormatter
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import com.tencent.bkrepo.common.security.util.RsaUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
@@ -363,9 +362,9 @@ class ClusterNodeServiceImpl(
                     secretKey = it.secretKey,
                     udpPort = it.udpPort,
                     createdBy = it.createdBy,
-                    createdDate = it.createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                    createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     lastModifiedBy = it.lastModifiedBy,
-                    lastModifiedDate = it.lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                    lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                     detectType = it.detectType,
                     lastReportTime = it.lastReportTime
                 )

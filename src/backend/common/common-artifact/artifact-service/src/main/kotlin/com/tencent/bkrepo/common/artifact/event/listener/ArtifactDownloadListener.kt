@@ -41,7 +41,6 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactClient
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.metadata.service.log.OperateLogService
-import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -184,7 +183,7 @@ class ArtifactDownloadListener(
             projectId = projectId,
             repoName = repoName,
             resourceKey = id,
-            accessDate = accessDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+            accessDate = accessDate.format(DateTimeFormatter.ISO_DATE_TIME),
             userId = SYSTEM_USER
         )
     }

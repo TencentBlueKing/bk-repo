@@ -86,7 +86,6 @@ import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.sign.SignConfigService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
-import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -223,7 +222,7 @@ class ScanTaskServiceImpl(
                 FileScanResultOverview(
                     status = status,
                     sha256 = it.sha256,
-                    scanDate = scannerResult.startDateTime.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                    scanDate = scannerResult.startDateTime.format(DateTimeFormatter.ISO_DATE_TIME),
                     overview = scannerResult.overview
                 )
             }

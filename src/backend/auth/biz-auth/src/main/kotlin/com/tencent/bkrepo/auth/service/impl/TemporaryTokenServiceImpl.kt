@@ -36,7 +36,6 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.handler.MaskPartString
-import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import org.slf4j.LoggerFactory
@@ -125,7 +124,7 @@ class TemporaryTokenServiceImpl(
                     token = it.token,
                     authorizedUserList = it.authorizedUserList,
                     authorizedIpList = it.authorizedIpList,
-                    expireDate = it.expireDate?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                    expireDate = it.expireDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                     type = it.type,
                     permits = it.permits,
                     createdBy = it.createdBy

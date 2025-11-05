@@ -140,23 +140,26 @@ object ZoneIdContext {
     }
 
     /**
-     * 根据时区格式化 LocalDateTime
-     * 将 LocalDateTime（视为 sourceZoneId 时区的本地时间）转换为 targetZoneId 时区的本地时间
-     * 输出不带时区偏移的 ISO 格式字符串
+     * 根据时区解析字符串为 LocalDateTime
+     * 将字符串（视为 sourceZoneId 时区的本地时间）转换为 targetZoneId 时区的本地时间
+     * 输入不带时区偏移的字符串
      *
+     * @param dateTimeStr 日期时间字符串
+     * @param formatter 日期时间格式化器
+     * @return 解析后的 LocalDateTime（targetZoneId 时区的本地时间）
      */
-    fun LocalDateTime.zoneFormat(formatter: DateTimeFormatter): String{
-        val sourceZoneId = getDefaultZoneId()
-        val targetZoneId = getZoneIdOrNull() ?: sourceZoneId
+    fun zoneParse(dateTimeStr: CharSequence, formatter: DateTimeFormatter): LocalDateTime {
+        val targetZoneId = getDefaultZoneId()
+        val sourceZoneId = getZoneId()
+        // 将字符串解析为 LocalDateTime（视为目标时区的本地时间）
+        val sourceLocalDateTime = LocalDateTime.parse(dateTimeStr, formatter)
         if (sourceZoneId.equals(targetZoneId)) {
-            return format(formatter)
+            return sourceLocalDateTime
         }
-        // 将 LocalDateTime 视为 sourceZoneId 时区的本地时间，转换为 Instant
-        val instant = atZone(sourceZoneId).toInstant()
-        // 转换为目标时区的本地时间
-        val targetLocalDateTime = instant.atZone(targetZoneId).toLocalDateTime()
-        // 格式化为不带时区偏移的 ISO 格式
-        return targetLocalDateTime.format(formatter)
+        // 将源时区的 LocalDateTime 转换为 Instant
+        val instant = sourceLocalDateTime.atZone(sourceZoneId).toInstant()
+        // 转换为服务端时区的本地时间
+        return instant.atZone(targetZoneId).toLocalDateTime()
     }
 
 }

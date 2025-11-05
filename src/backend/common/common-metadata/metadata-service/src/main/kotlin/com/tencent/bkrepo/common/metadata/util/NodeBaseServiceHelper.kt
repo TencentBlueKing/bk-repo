@@ -6,7 +6,6 @@ import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
-import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
@@ -94,9 +93,9 @@ object NodeBaseServiceHelper {
             NodeInfo(
                 id = it.id,
                 createdBy = it.createdBy,
-                createdDate = it.createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                createdDate = it.createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = it.lastModifiedBy,
-                lastModifiedDate = it.lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedDate = it.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 projectId = it.projectId,
                 repoName = it.repoName,
                 folder = it.folder,
@@ -114,8 +113,8 @@ object NodeBaseServiceHelper {
                 nodeMetadata = MetadataUtils.toList(it.metadata, metadataLabels),
                 copyFromCredentialsKey = it.copyFromCredentialsKey,
                 copyIntoCredentialsKey = it.copyIntoCredentialsKey,
-                deleted = it.deleted?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
-                lastAccessDate = it.lastAccessDate?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastAccessDate = it.lastAccessDate?.format(DateTimeFormatter.ISO_DATE_TIME),
                 clusterNames = it.clusterNames,
                 archived = it.archived,
                 compressed = it.compressed,

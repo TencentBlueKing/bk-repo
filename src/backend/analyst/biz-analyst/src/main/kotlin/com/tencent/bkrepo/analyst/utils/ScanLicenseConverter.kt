@@ -41,7 +41,6 @@ import com.tencent.bkrepo.analyst.model.TScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanStatus
 import com.tencent.bkrepo.analyst.pojo.response.FileLicensesResultOverview
 import com.tencent.bkrepo.analyst.pojo.response.ScanLicensePlanInfo
-import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.zoneFormat
 import java.time.format.DateTimeFormatter
 
 object ScanLicenseConverter {
@@ -71,9 +70,9 @@ object ScanLicenseConverter {
                 unknown = unknown,
                 total = total,
                 createdBy = createdBy,
-                createdDate = createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastScanDate = null
             )
         }
@@ -108,10 +107,10 @@ object ScanLicenseConverter {
                 unknown = unknown,
                 total = total,
                 createdBy = createdBy,
-                createdDate = createdDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                createdDate = createdDate.format(DateTimeFormatter.ISO_DATE_TIME),
                 lastModifiedBy = lastModifiedBy,
-                lastModifiedDate = lastModifiedDate.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
-                lastScanDate = latestScanTask?.startDateTime?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME)
+                lastModifiedDate = lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                lastScanDate = latestScanTask?.startDateTime?.format(DateTimeFormatter.ISO_DATE_TIME)
             )
         }
     }
@@ -137,7 +136,7 @@ object ScanLicenseConverter {
                 low = low,
                 nil = nil,
                 total = total,
-                finishTime = finishedDateTime?.zoneFormat(DateTimeFormatter.ISO_DATE_TIME),
+                finishTime = finishedDateTime?.format(DateTimeFormatter.ISO_DATE_TIME),
                 qualityRedLine = qualityRedLine,
                 scanQuality = scanQuality,
                 duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),
