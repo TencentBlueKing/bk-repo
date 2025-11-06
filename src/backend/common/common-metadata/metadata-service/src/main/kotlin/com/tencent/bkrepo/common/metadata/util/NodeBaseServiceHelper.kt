@@ -6,6 +6,7 @@ import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
@@ -78,9 +79,9 @@ object NodeBaseServiceHelper {
                 nodeNum = null,
                 metadata = metadata,
                 createdBy = createdBy ?: operator,
-                createdDate = createdDate ?: LocalDateTime.now(),
+                createdDate = createdDate ?: LocalDateTime.now(ZoneIdContext.getZoneId()),
                 lastModifiedBy = createdBy ?: operator,
-                lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
+                lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(ZoneIdContext.getZoneId()),
                 lastAccessDate = LocalDateTime.now(),
                 federatedSource = source
             )
