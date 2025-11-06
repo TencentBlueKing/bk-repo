@@ -146,7 +146,7 @@ class OpServiceController @Autowired constructor(
     }
 
     @GetMapping("/configs")
-    fun checkConsulPattern(): Response<List<ConsulKeyValue>> {
+    fun serviceConfig(): Response<List<ConsulKeyValue>> {
         return success(opServiceService.getConfigs())
     }
 }
