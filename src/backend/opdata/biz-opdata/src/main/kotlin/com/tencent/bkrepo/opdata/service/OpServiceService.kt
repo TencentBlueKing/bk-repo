@@ -44,6 +44,7 @@ import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryClient
+import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulKeyValue
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Autowired
@@ -67,6 +68,10 @@ class OpServiceService @Autowired constructor(
      */
     fun listServices(): List<ServiceInfo> {
         return registryClient().services()
+    }
+
+    fun getConfigs(): List<ConsulKeyValue> {
+        return registryClient().configs()
     }
 
     /**

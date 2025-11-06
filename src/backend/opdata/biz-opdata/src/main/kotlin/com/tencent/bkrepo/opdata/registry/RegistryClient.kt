@@ -29,11 +29,13 @@ package com.tencent.bkrepo.opdata.registry
 
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
+import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulKeyValue
 
 /**
  * 微服务注册中心api接口
  */
 interface RegistryClient {
+    fun configs(): List<ConsulKeyValue>
     fun services(): List<ServiceInfo>
     fun instances(serviceName: String): List<InstanceInfo>
     fun deregister(serviceName: String, instanceId: String): InstanceInfo

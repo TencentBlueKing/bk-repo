@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder.success
 import com.tencent.bkrepo.opdata.pojo.bandwidth.BandwidthInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
+import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulKeyValue
 import com.tencent.bkrepo.opdata.service.OpServiceService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -142,5 +143,10 @@ class OpServiceController @Autowired constructor(
         returnAll: Boolean = false,
     ): Response<List<String>> {
         return success(opServiceService.serviceBandwidthIps(serviceName, activeSeconds, returnAll))
+    }
+
+    @GetMapping("/configs")
+    fun checkConsulPattern(): Response<List<ConsulKeyValue>> {
+        return success(opServiceService.getConfigs())
     }
 }

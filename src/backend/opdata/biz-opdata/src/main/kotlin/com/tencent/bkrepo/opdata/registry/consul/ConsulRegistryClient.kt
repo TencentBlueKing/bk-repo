@@ -39,18 +39,31 @@ import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceCheck
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceCheck.Companion.STATUS_PASSING
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceHealth
 import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulInstanceId
+import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulKeyValue
 import com.tencent.bkrepo.opdata.util.parseResAndThrowExceptionOnRequestFailed
 import com.tencent.bkrepo.opdata.util.requestBuilder
 import com.tencent.bkrepo.opdata.util.throwExceptionOnRequestFailed
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.internal.EMPTY_REQUEST
+import org.slf4j.LoggerFactory
 import org.springframework.cloud.consul.ConsulProperties
 
 class ConsulRegistryClient constructor(
     private val httpClient: OkHttpClient,
     private val consulProperties: ConsulProperties
 ) : RegistryClient {
+    override fun configs(): List<ConsulKeyValue> {
+        val kv = urlBuilder().addPathSegments(CONSUL_KEY_VALUE).addQueryParameter("recurse",null).build()
+        val kvRequest = kv.requestBuilder().build()
+        val res = httpClient.newCall(kvRequest).execute()
+        return res.use {
+            parseResAndThrowExceptionOnRequestFailed(res) { response ->
+                val responseBody = response.body!!.string()
+                responseBody.readJsonString<List<ConsulKeyValue>>()
+            }
+        }
+    }
 
     override fun services(): List<ServiceInfo> {
         val url = urlBuilder().addPathSegments(CONSUL_LIST_SERVICES_PATH).build()
@@ -207,6 +220,7 @@ class ConsulRegistryClient constructor(
         .port(consulProperties.port)
 
     companion object {
+        private val logger = LoggerFactory.getLogger(ConsulRegistryClient::class.java)
         private const val CONSUL_DEFAULT_SCHEME = "http"
 
         private const val CONSUL_QUERY_PARAM_ENABLE = "enable"
@@ -214,6 +228,7 @@ class ConsulRegistryClient constructor(
         private const val CONSUL_FILTER_SELECTOR_SERVICE_ID = "Service.ID"
         private const val CONSUL_FILTER_SELECTOR_NODE_NAME = "Node.Node"
 
+        private const val CONSUL_KEY_VALUE ="v1/kv"
         private const val CONSUL_LIST_SERVICES_PATH = "v1/catalog/services"
         private const val CONSUL_LIST_SERVICE_HEALTH_PATH = "v1/health/service"
         private const val CONSUL_DEREGISTER_PATH = "v1/agent/service/deregister"
