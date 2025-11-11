@@ -163,7 +163,7 @@ class ScanQualityServiceImpl(
         ruleMatcher: (rule: Rule) -> Boolean
     ): Boolean {
         return scanPlanDao
-            .findByProjectIdAndRepoName(projectId, repoName, repoType)
+            .findByProjectIdAndRepoName(projectId, repoName, repoType, true)
             .any {
                 val forbidNotScanned = it.scanQuality[ScanQuality::forbidNotScanned.name] == true
                 val forbid = forbidNotScanned && ruleMatcher(it.rule.readJsonString())
