@@ -233,7 +233,7 @@ class AuthInterceptor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)// 凭证格式常量：用户名:密码 或 appId:secret
+        private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)
         private const val CREDENTIAL_PARTS_SIZE = 2
 
         // 项目内权限校验api, 开放给项目内有权限用户使用，具体校验权限在方法内
