@@ -29,6 +29,7 @@ package com.tencent.bkrepo.opdata.registry.consul
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.opdata.message.OpDataMessageCode.ServiceInstanceNotFound
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceStatus
@@ -53,14 +54,14 @@ class ConsulRegistryClient constructor(
     private val httpClient: OkHttpClient,
     private val consulProperties: ConsulProperties
 ) : RegistryClient {
-    override fun configs(): List<ConsulKeyValue> {
+    override fun configs(): String {
         val kv = urlBuilder().addPathSegments(CONSUL_KEY_VALUE).addQueryParameter("recurse",null).build()
         val kvRequest = kv.requestBuilder().build()
         val res = httpClient.newCall(kvRequest).execute()
         return res.use {
             parseResAndThrowExceptionOnRequestFailed(res) { response ->
                 val responseBody = response.body!!.string()
-                responseBody.readJsonString<List<ConsulKeyValue>>()
+                responseBody.readJsonString<List<ConsulKeyValue>>().toJsonString()
             }
         }
     }

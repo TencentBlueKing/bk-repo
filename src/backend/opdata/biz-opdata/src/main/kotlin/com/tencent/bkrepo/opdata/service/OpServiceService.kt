@@ -42,7 +42,6 @@ import com.tencent.bkrepo.opdata.pojo.registry.InstanceDetail
 import com.tencent.bkrepo.opdata.pojo.registry.InstanceInfo
 import com.tencent.bkrepo.opdata.pojo.registry.ServiceInfo
 import com.tencent.bkrepo.opdata.registry.RegistryClient
-import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulKeyValue
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.redis.core.RedisTemplate
@@ -60,16 +59,11 @@ class OpServiceService @Autowired constructor(
     private val executor: ThreadPoolTaskExecutor,
     private val redisTemplate: RedisTemplate<String, String>,
 ) {
-
     /**
      * 获取服务列表
      */
     fun listServices(): List<ServiceInfo> {
         return registryClient.services()
-    }
-
-    fun getConfigs(): List<ConsulKeyValue> {
-        return registryClient().configs()
     }
 
     /**
@@ -247,6 +241,10 @@ class OpServiceService @Autowired constructor(
 
     fun checkConsulAlive() : Boolean {
         return registryClient.isConsulEnabled()
+    }
+
+    fun getConfigs() : String {
+        return registryClient.configs()
     }
 
     companion object {

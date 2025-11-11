@@ -19,6 +19,7 @@
     "core-js": "3.38.1",
     "element-ui": "2.15.14",
     "js-cookie": "2.2.0",
+    "js-yaml": "^4.1.0",
     "jsencrypt": "^3.2.1",
     "lodash": "^4.17.21",
     "moment": "^2.29.3",

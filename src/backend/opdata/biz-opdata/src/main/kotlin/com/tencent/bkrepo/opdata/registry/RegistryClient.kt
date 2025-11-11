@@ -35,7 +35,7 @@ import com.tencent.bkrepo.opdata.registry.consul.pojo.ConsulKeyValue
  * 微服务注册中心api接口
  */
 interface RegistryClient {
-    fun configs(): List<ConsulKeyValue>
+    fun configs(): String
     fun services(): List<ServiceInfo>
     fun instances(serviceName: String): List<InstanceInfo>
     fun deregister(serviceName: String, instanceId: String): InstanceInfo
