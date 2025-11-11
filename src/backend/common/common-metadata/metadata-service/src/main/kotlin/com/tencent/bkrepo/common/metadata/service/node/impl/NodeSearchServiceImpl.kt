@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCac
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoListOption
@@ -50,7 +51,6 @@ import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.util.Date
 import java.util.concurrent.TimeUnit
 import kotlin.system.measureTimeMillis
@@ -180,7 +180,10 @@ class NodeSearchServiceImpl(
         private val logger = LoggerFactory.getLogger(NodeSearchServiceImpl::class.java)
         fun convertDateTime(value: Any): LocalDateTime? {
             return if (value is Date) {
-                LocalDateTime.ofInstant(value.toInstant(), ZoneId.systemDefault())
+                LocalDateTime.ofInstant(
+                    value.toInstant(),
+                    ZoneIdContext.getZoneId()
+                )
             } else null
         }
     }

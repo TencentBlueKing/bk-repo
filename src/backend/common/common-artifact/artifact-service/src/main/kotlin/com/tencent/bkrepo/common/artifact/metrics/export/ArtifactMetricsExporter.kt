@@ -81,7 +81,6 @@ class ArtifactMetricsExporter(
         labels[ArtifactTransferRecord::agent.name] = record.agent
         labels[ArtifactTransferRecord::userId.name] = record.userId
         labels[ArtifactTransferRecord::serverIp.name] = record.serverIp
-        labels[ArtifactTransferRecord::traceId.name] = record.traceId
         return labels
     }
 

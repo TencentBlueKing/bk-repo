@@ -145,6 +145,11 @@ class OpServiceController @Autowired constructor(
         return success(opServiceService.serviceBandwidthIps(serviceName, activeSeconds, returnAll))
     }
 
+    @GetMapping("/isConsul")
+    fun checkConsulPattern(): Response<Boolean> {
+        return success(opServiceService.checkConsulAlive())
+    }
+
     @GetMapping("/configs")
     fun serviceConfig(): Response<List<ConsulKeyValue>> {
         return success(opServiceService.getConfigs())

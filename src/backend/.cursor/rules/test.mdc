@@ -1,0 +1,79 @@
+---
+description: 测试开发规范
+globs: **/src/test/**/*Test.kt
+alwaysApply: false
+---
+
+## 测试类结构
+
+1. 测试类命名：`{Class}Test`
+2. 测试方法命名：使用反引号描述，如 `fun \`should create project successfully\`()`
+3. 添加 `@DisplayName("测试类描述")` 注解
+
+## 单元测试
+
+1. 使用 MockK 创建 Mock：`val mockDao = mockk<ProjectDao>()`
+2. Mock 返回值：`every { mockDao.findByName("test") } returns testProject`
+3. 参数匹配：`every { mockDao.save(any()) } answers { firstArg() }`
+4. 验证调用：`verify(exactly = 1) { mockDao.findByName("test") }`
+5. 测试前设置：`@BeforeEach fun setup() { mockDao = mockk() }`
+
+## 集成测试
+
+1. 添加注解：`@SpringBootTest`, `@TestPropertySource(locations = ["classpath:bootstrap-test.properties"])`
+2. 尽量注入真实依赖：`@Autowired private lateinit var service: ProjectService`，无法注入时mock依赖
+3. 测试后清理：`@AfterEach fun cleanup() { cleanupTestData() }`
+4. 继承测试基类：`class ProjectServiceTest : ServiceBaseTest()`
+
+## 测试结构（AAA 模式）
+
+1. **Arrange**（准备）：准备测试数据和 Mock
+2. **Act**（执行）：调用被测试的方法
+3. **Assert**（断言）：验证结果
+```kotlin
+// Given
+val request = ProjectCreateRequest(...)
+every { dao.existsByName(any()) } returns false
+
+// When
+val result = service.create(request)
+
+// Then
+assertNotNull(result)
+assertEquals("test-project", result)
+```
+
+## 断言
+
+1. JUnit 断言：`assertEquals(expected, actual)`, `assertNotNull(value)`, `assertTrue(condition)`
+2. 异常断言：`assertThrows<ErrorCodeException> { service.create(request) }`
+3. 集合断言：`assertIterableEquals(expected, actual)`
+
+## Controller 层测试
+
+1. 使用 `@AutoConfigureMockMvc` 和 `MockMvc`
+2. 发送请求：
+   ```kotlin
+   mockMvc.perform(post("/api/project/create")
+       .contentType(MediaType.APPLICATION_JSON)
+       .content(objectMapper.writeValueAsString(request)))
+       .andExpect(status().isOk)
+       .andExpect(jsonPath("$.code").value(0))
+   ```
+
+## 禁止事项
+
+1. 不要测试间相互依赖
+2. 不要使用硬编码的测试数据
+3. 不要测试后不清理数据
+4. 不要忽略异常测试
+5. 不要编写慢测试（单元测试应 < 1秒）
+
+## 最佳实践
+
+1. 每个测试独立，不依赖其他测试
+2. 使用描述性的测试名称
+3. 测试正常情况和异常情况
+4. 一个测试只验证一个行为
+5. 快速执行（单元测试）
+6. 清理测试数据（集成测试）
