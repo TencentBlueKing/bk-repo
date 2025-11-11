@@ -126,41 +126,49 @@ open class AbstractReplicaJobExecutor(
      */
     private fun recordFailureToDatabase(context: ReplicaContext?, exception: Throwable) {
         if (context == null) return
-        with(context) {
-            try {
-                if (task.replicaType == ReplicaType.RUN_ONCE) {
-                    return
-                }
-                val event = try {
-                    if (event != null) event else null
-                } catch (e: Exception) {
-                    null
-                }
+        if (context.task.replicaType == ReplicaType.RUN_ONCE) return
 
-                // 记录失败信息
-                failureRecordRepository.recordFailure(
-                    taskKey = task.key,
-                    remoteClusterId = remoteCluster.id!!,
-                    projectId = localProjectId,
-                    localRepoName = localRepoName,
-                    remoteProjectId = remoteProjectId ?: "",
-                    remoteRepoName = remoteRepoName ?: "",
-                    failureType = task.replicaObjectType,
-                    packageConstraint = taskObject.packageConstraints?.firstOrNull(),
-                    pathConstraint = taskObject.pathConstraints?.firstOrNull(),
-                    failureReason = exception.message ?: "Unknown error",
-                    event = event,
-                    failedRecordId = failedRecordId
-                )
-                logger.info(
-                    "Recorded failure for task[${task.key}], cluster[${remoteCluster.name}], " +
-                        "reason[${exception.message}]"
-                )
-            } catch (e: Exception) {
-                logger.warn("Failed to record failure to database in submit", e)
-            }
+        try {
+            val event = getEventSafely(context)
+            recordFailure(context, exception, event)
+        } catch (e: Exception) {
+            logger.warn("Failed to record failure to database in submit", e)
         }
+    }
 
+    /**
+     * 安全获取事件对象
+     */
+    private fun getEventSafely(context: ReplicaContext): ArtifactEvent? {
+        return try {
+            context.event
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 记录失败信息到数据库
+     */
+    private fun recordFailure(
+        context: ReplicaContext,
+        exception: Throwable,
+        event: ArtifactEvent?
+    ) {
+        failureRecordRepository.recordFailure(
+            taskKey = context.task.key,
+            remoteClusterId = context.remoteCluster.id!!,
+            projectId = context.localProjectId,
+            localRepoName = context.localRepoName,
+            remoteProjectId = context.remoteProjectId ?: "",
+            remoteRepoName = context.remoteRepoName ?: "",
+            failureType = context.task.replicaObjectType,
+            packageConstraint = context.taskObject.packageConstraints?.firstOrNull(),
+            pathConstraint = context.taskObject.pathConstraints?.firstOrNull(),
+            failureReason = exception.message ?: "Unknown error",
+            event = event,
+            failedRecordId = context.failedRecordId
+        )
     }
 
     /**

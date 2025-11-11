@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.replica.type
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -707,7 +708,7 @@ abstract class AbstractReplicaService(
                 // 只针对不抛异常的进行记录
                 if (!willThrow) {
                     // 记录分发失败
-                    recordFailureToDatabase(context, record, throwable)
+                    recordFailureToDatabase(context, throwable)
                 }
 
                 if (willThrow) {
@@ -838,49 +839,81 @@ abstract class AbstractReplicaService(
     /**
      * 记录分发失败到数据库
      */
-    private fun recordFailureToDatabase(
-        context: ReplicaExecutionContext,
-        record: ReplicationRecord,
-        throwable: Throwable
-    ) {
+    private fun recordFailureToDatabase(context: ReplicaExecutionContext, throwable: Throwable) {
         try {
-            with(context.replicaContext) {
-                if (task.replicaType == ReplicaType.RUN_ONCE) {
-                    return
-                }
-
-                val artifactEvent = try {
-                    if (event != null) event else null
-                } catch (e: Exception) {
-                    null
-                }
-                val (packageConstraint, pathConstraint) = if (artifactEvent != null) {
-                    Pair(null, null)
-                } else {
-                    Pair(context.detail.packageConstraint, context.detail.pathConstraint)
-                }
-
-                // 记录失败信息
-                failureRecordRepository.recordFailure(
-                    taskKey = task.key,
-                    remoteClusterId = remoteCluster.id!!,
-                    projectId = localProjectId,
-                    localRepoName = localRepoName,
-                    remoteProjectId = remoteProjectId ?: "",
-                    remoteRepoName = remoteRepoName ?: "",
-                    failureType = task.replicaObjectType,
-                    packageConstraint = packageConstraint,
-                    pathConstraint = pathConstraint,
-                    failureReason = throwable.message ?: "Unknown error",
-                    event = event,
-                    failedRecordId = failedRecordId
-                )
-                logger.info(
-                    "Recorded failure for task[${task.key}],  reason[${throwable.message}]"
-                )
+            val replicaContext = context.replicaContext
+            if (replicaContext.task.replicaType == ReplicaType.RUN_ONCE) {
+                return
             }
+
+            val artifactEvent = getArtifactEventSafely(replicaContext)
+            val (packageConstraint, pathConstraint) = getConstraints(context, artifactEvent)
+
+            recordFailureToRepository(
+                replicaContext = replicaContext,
+                packageConstraint = packageConstraint,
+                pathConstraint = pathConstraint,
+                throwable = throwable,
+                artifactEvent = artifactEvent
+            )
         } catch (e: Exception) {
             logger.warn("Failed to record failure to database", e)
+        }
+    }
+
+    /**
+     * 安全获取 artifactEvent
+     */
+    private fun getArtifactEventSafely(replicaContext: ReplicaContext): ArtifactEvent? {
+        return try {
+            replicaContext.event
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 获取包约束和路径约束
+     */
+    private fun getConstraints(
+        context: ReplicaExecutionContext,
+        artifactEvent: ArtifactEvent?
+    ): Pair<PackageConstraint?, PathConstraint?> {
+        return if (artifactEvent != null) {
+            Pair(null, null)
+        } else {
+            Pair(context.detail.packageConstraint, context.detail.pathConstraint)
+        }
+    }
+
+    /**
+     * 记录失败信息到仓库
+     */
+    private fun recordFailureToRepository(
+        replicaContext: ReplicaContext,
+        packageConstraint: PackageConstraint?,
+        pathConstraint: PathConstraint?,
+        throwable: Throwable,
+        artifactEvent: ArtifactEvent?
+    ) {
+        with(replicaContext) {
+            failureRecordRepository.recordFailure(
+                taskKey = task.key,
+                remoteClusterId = remoteCluster.id!!,
+                projectId = localProjectId,
+                localRepoName = localRepoName,
+                remoteProjectId = remoteProjectId ?: "",
+                remoteRepoName = remoteRepoName ?: "",
+                failureType = task.replicaObjectType,
+                packageConstraint = packageConstraint,
+                pathConstraint = pathConstraint,
+                failureReason = throwable.message ?: "Unknown error",
+                event = artifactEvent,
+                failedRecordId = failedRecordId
+            )
+            logger.info(
+                "Recorded failure for task[${task.key}],  reason[${throwable.message}]"
+            )
         }
     }
 

@@ -52,7 +52,8 @@ class FederationEventBasedReplicaJobExecutor(
     replicaRecordService: ReplicaRecordService,
     failureRecordRepository: FailureRecordRepository
 ) : CommonEventBasedReplicaJobExecutor(
-    clusterNodeService, localDataManager, replicaService, replicationProperties, replicaRecordService, failureRecordRepository
+    clusterNodeService, localDataManager, replicaService,
+    replicationProperties, replicaRecordService, failureRecordRepository
 ) {
 
     /**

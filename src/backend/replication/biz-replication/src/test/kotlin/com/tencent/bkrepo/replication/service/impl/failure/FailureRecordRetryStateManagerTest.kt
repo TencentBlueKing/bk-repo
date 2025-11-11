@@ -13,7 +13,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 @DisplayName("失败记录重试状态管理器测试")
 class FailureRecordRetryStateManagerTest {
@@ -87,7 +86,10 @@ class FailureRecordRetryStateManagerTest {
         // 应该先设置为 true，然后因为异常，重置为 false，并增加重试次数
         verify(failureRecordRepository, times(1)).updateRetryStatus(eq("record-id"), eq(true))
         verify(failureRecordRepository, times(1)).updateRetryStatus(eq("record-id"), eq(false))
-        verify(failureRecordRepository, times(1)).incrementRetryCount(eq("record-id"), eq("RuntimeException: Test exception"))
+        verify(failureRecordRepository, times(1)).incrementRetryCount(
+            eq("record-id"),
+            eq("RuntimeException: Test exception")
+        )
     }
 
     @Test
@@ -100,7 +102,10 @@ class FailureRecordRetryStateManagerTest {
         }
 
         assertFalse(result)
-        verify(failureRecordRepository, times(1)).incrementRetryCount(eq("record-id"), eq("RuntimeException: Unknown error"))
+        verify(failureRecordRepository, times(1)).incrementRetryCount(
+            eq("record-id"),
+            eq("RuntimeException: Unknown error")
+        )
     }
 
     @Test

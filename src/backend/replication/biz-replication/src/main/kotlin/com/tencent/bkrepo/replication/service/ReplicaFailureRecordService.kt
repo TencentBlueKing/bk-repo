@@ -1,14 +1,10 @@
 package com.tencent.bkrepo.replication.service
 
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.pojo.failure.ReplicaFailureRecordDeleteRequest
 import com.tencent.bkrepo.replication.pojo.failure.ReplicaFailureRecordListOption
 import com.tencent.bkrepo.replication.pojo.failure.ReplicaFailureRecordRetryRequest
-import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
-import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
-import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 
 /**
  * 同步失败记录服务接口

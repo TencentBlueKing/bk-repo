@@ -3,16 +3,12 @@ package com.tencent.bkrepo.replication.service.impl.failure
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.pojo.failure.ReplicaFailureRecordDeleteRequest
 import com.tencent.bkrepo.replication.pojo.failure.ReplicaFailureRecordListOption
 import com.tencent.bkrepo.replication.pojo.failure.ReplicaFailureRecordRetryRequest
-import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
-import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
-import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.service.ReplicaFailureRecordService
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort

@@ -185,7 +185,10 @@ class ReplicaRetryServiceImpl(
             // 检查执行结果
             val success = context.status != ExecutionStatus.FAILED
             if (success) {
-                logger.info("Successfully retried failure record[${failureRecord.id}], taskKey[${failureRecord.taskKey}]")
+                logger.info(
+                    "Successfully retried failure record[${failureRecord.id}], " +
+                        "taskKey[${failureRecord.taskKey}]"
+                )
             } else {
                 logger.warn(
                     "Retry failed for record[${failureRecord.id}], taskKey[${failureRecord.taskKey}], " +
