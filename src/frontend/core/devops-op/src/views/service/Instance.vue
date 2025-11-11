@@ -92,6 +92,7 @@
         </template>
         <template slot-scope="scope">
           <el-button
+            v-if="isConsul"
             :disabled="disableChangeInstanceStatusBtn(scope.row.status)"
             type="primary"
             size="mini"
@@ -120,7 +121,8 @@ export default {
     return {
       loading: true,
       instances: [],
-      search: ''
+      search: '',
+      isConsul: true
     }
   },
   created() {
@@ -137,6 +139,9 @@ export default {
       })
     }).catch(() => {
       this.loading = false
+    })
+    checkConsulPattern().then(res => {
+      this.isConsul = res.data
     })
   },
   methods: {
