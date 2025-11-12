@@ -17,7 +17,7 @@ class FederationFileTransferRetryJob(
 ) {
 
     @StandaloneJob
-    @Scheduled(fixedDelay = 3600 * 1000) // 每30分钟执行一次
+    @Scheduled(fixedDelay = 3600 * 1000)
     @SchedulerLock(name = "FederationFileTransferRetryJob", lockAtMostFor = "PT168H")
     fun retryPendingFileTransfers() {
         logger.info("Starting federation file transfer retry job")

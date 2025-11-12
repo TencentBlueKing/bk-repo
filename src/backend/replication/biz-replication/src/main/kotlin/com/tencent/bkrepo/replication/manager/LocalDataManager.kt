@@ -50,8 +50,8 @@ import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
-import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.mongo.constant.ID
+import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -130,31 +130,37 @@ class LocalDataManager(
         repoInfo: RepositoryDetail,
         federatedSource: String? = null
     ): InputStream {
-        return if (!federatedSource.isNullOrEmpty()) {
-            val clusterInfo = clusterNodeService.getByClusterName(federatedSource)?.let {
-                ClusterInfo(
-                    url = it.url,
-                    certificate = it.certificate.orEmpty(),
-                    appId = it.appId,
-                    accessKey = it.accessKey,
-                    secretKey = it.secretKey,
-                    username = it.username,
-                    password = it.password,
-                )
-            } ?: throw ArtifactNotFoundException(sha256)
-            val remoteNodeResource = RemoteNodeResource(
-                sha256 = sha256,
-                range = range,
-                storageCredentials = repoInfo.storageCredentials,
-                centerClusterInfo = clusterInfo,
-                storageService = storageService
+        return storageService.load(sha256, range, repoInfo.storageCredentials)
+            ?: loadFromOtherStorage(sha256, range, repoInfo.storageCredentials)
+            ?: loadFromFederatedSource(sha256, range, repoInfo, federatedSource)
+    }
+
+    private fun loadFromFederatedSource(
+        sha256: String,
+        range: Range,
+        repoInfo: RepositoryDetail,
+        federatedSource: String? = null
+    ): InputStream {
+        if (federatedSource.isNullOrEmpty()) throw ArtifactNotFoundException(sha256)
+        val clusterInfo = clusterNodeService.getByClusterName(federatedSource)?.let {
+            ClusterInfo(
+                url = it.url,
+                certificate = it.certificate.orEmpty(),
+                appId = it.appId,
+                accessKey = it.accessKey,
+                secretKey = it.secretKey,
+                username = it.username,
+                password = it.password,
             )
-            remoteNodeResource.getArtifactInputStream() ?: throw ArtifactNotFoundException(sha256)
-        } else {
-            storageService.load(sha256, range, repoInfo.storageCredentials)
-                ?: loadFromOtherStorage(sha256, range, repoInfo.storageCredentials)
-                ?: throw ArtifactNotFoundException(sha256)
-        }
+        } ?: throw ArtifactNotFoundException(sha256)
+        val remoteNodeResource = RemoteNodeResource(
+            sha256 = sha256,
+            range = range,
+            storageCredentials = repoInfo.storageCredentials,
+            centerClusterInfo = clusterInfo,
+            storageService = storageService
+        )
+        return remoteNodeResource.getArtifactInputStream() ?: throw ArtifactNotFoundException(sha256)
     }
 
     /**

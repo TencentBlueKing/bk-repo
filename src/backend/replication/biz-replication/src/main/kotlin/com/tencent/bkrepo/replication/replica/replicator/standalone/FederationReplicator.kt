@@ -267,15 +267,7 @@ class FederationReplicator(
      */
     private fun replicaBlockNode(context: ReplicaContext, node: NodeInfo): Boolean {
         with(context) {
-            if (!blockNode(node)) {
-                logger.warn("Node ${node.fullPath} in repo ${node.projectId}|${node.repoName} is link node.")
-                return false
-            }
-
-            val blockNodeList = localDataManager.listBlockNode(node)
-            if (blockNodeList.isEmpty()) {
-                logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
-            }
+            val blockNodeList = validateAndGetBlockNodeList(context, node) ?: return false
             val uploadId = "${StringPool.uniqueId()}/${node.id}"
 
             // 传输所有blocknode元数据
@@ -296,19 +288,16 @@ class FederationReplicator(
             // 同步节点
             if (!syncNodeToFederatedCluster(this, node)) return false
 
-
             // 2. 记录文件传输开始标识
             recordFileTransferStart(this, node)
 
-            // 并发传输文件
-            val success = executeBlockFileTransfer(context, node, blockNodeList)
-            if (!success) return false
-
-            // 保存元数据标识传输完成
-            saveNodeMetadata(context, node)
-            // 记录文件传输完成标识
-            recordFileTransferComplete(context, node)
-            return true
+            // 并发传输文件并保存元数据
+            val result = transferBlockNodeFilesAndSaveMetadata(context, node, blockNodeList)
+            if (result) {
+                // 记录文件传输完成标识
+                recordFileTransferComplete(context, node)
+            }
+            return result
         }
     }
 
@@ -532,7 +521,56 @@ class FederationReplicator(
      * 推送文件到联邦集群（供定时任务调用）
      */
     fun pushFileToFederatedClusterPublic(context: ReplicaContext, node: NodeInfo): Boolean {
-         pushFileToFederatedCluster(context, node)
+        with(context) {
+            // 同步block node
+            if (unNormalNode(node)) {
+                return pushBlockNodeFiles(context, node)
+            }
+
+            // 同步普通文件
+            pushFileToFederatedCluster(context, node)
+            return true
+        }
+    }
+
+    /**
+     * 推送块节点文件（仅传输文件，不处理元数据同步）
+     */
+    private fun pushBlockNodeFiles(context: ReplicaContext, node: NodeInfo): Boolean {
+        val blockNodeList = validateAndGetBlockNodeList(context, node) ?: return false
+        return transferBlockNodeFilesAndSaveMetadata(context, node, blockNodeList)
+    }
+
+    /**
+     * 验证并获取块节点列表
+     */
+    private fun validateAndGetBlockNodeList(context: ReplicaContext, node: NodeInfo): List<TBlockNode>? {
+        if (!blockNode(node)) {
+            logger.warn("Node ${node.fullPath} in repo ${node.projectId}|${node.repoName} is link node.")
+            return null
+        }
+
+        val blockNodeList = localDataManager.listBlockNode(node)
+        if (blockNodeList.isEmpty()) {
+            logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
+        }
+        return blockNodeList
+    }
+
+    /**
+     * 传输块节点文件并保存元数据
+     */
+    private fun transferBlockNodeFilesAndSaveMetadata(
+        context: ReplicaContext,
+        node: NodeInfo,
+        blockNodeList: List<TBlockNode>
+    ): Boolean {
+        // 并发传输文件
+        val success = executeBlockFileTransfer(context, node, blockNodeList)
+        if (!success) return false
+
+        // 保存元数据标识传输完成
+        saveNodeMetadata(context, node)
         return true
     }
 

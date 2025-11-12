@@ -709,9 +709,7 @@ abstract class AbstractReplicaService(
                 if (!willThrow) {
                     // 记录分发失败
                     recordFailureToDatabase(context, throwable)
-                }
-
-                if (willThrow) {
+                } else {
                     throw throwable
                 }
             } finally {
