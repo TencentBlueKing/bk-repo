@@ -29,9 +29,11 @@ package com.tencent.bkrepo.common.ratelimiter.config
 
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.stereotype.Component
 
+@Component
 @ConfigurationProperties(prefix = "rate.limiter")
-data class RateLimiterProperties(
+class RateLimiterProperties(
     var enabled: Boolean = false,
     var dryRun: Boolean = false,
     // 配置规则刷新频率 单位为秒
