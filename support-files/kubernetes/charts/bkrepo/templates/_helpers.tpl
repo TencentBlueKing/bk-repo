@@ -2,7 +2,26 @@
 Return the proper Docker Image Registry Secret Names
 */}}
 {{- define "bkrepo.imagePullSecrets" -}}
-{{- include "common.images.pullSecrets" (dict "images" (list .Values.gateway.image .Values.repository.image .Values.auth.image .Values.init.mongodb.image .Values.generic.image .Values.docker.image .Values.npm.image .Values.pypi.image .Values.helm.image) "global" .Values.global) -}}
+{{- include "common.images.pullSecrets" (dict "images" (list
+    .Values.gateway.image
+    .Values.repository.image
+    .Values.auth.image
+    .Values.init.curl.image
+    .Values.init.mongodb.image
+    .Values.init.iam.image
+    .Values.generic.image
+    .Values.docker.image
+    .Values.npm.image
+    .Values.pypi.image
+    .Values.helm.image
+    .Values.job.image
+    .Values.maven.image
+    .Values.opdata.image
+    .Values.preview.image
+    .Values.replication.image
+    .Values.routercontroller.image
+    .Values.s3.image
+) "global" .Values.global) -}}
 {{- end -}}
 
 {{/*
