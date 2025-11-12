@@ -28,7 +28,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              curl  -X POST http://{{ include "common.names.fullname" . }}-repository.{{ .Release.Namespace }}.svc.cluster.local/api/repo/create -d '{
+              curl  -X POST http://{{ include "common.names.fullname" . }}-repository.{{ .Release.Namespace }}.svc.cluster.local./api/repo/create -d '{
                 "projectId": "{{ include "bkrepo.init.project" . }}",
                 "name": "public-cr",
                 "type": "DOCKER",
@@ -46,7 +46,7 @@ spec:
               "storageCredentialsKey": null
               }' --header 'Content-Type: application/json' --header 'Accept: application/json' -u {{ .Values.common.username }}:{{ .Values.common.password }}
               
-              curl  -X POST http://{{ include "common.names.fullname" . }}-repository.{{ .Release.Namespace }}.svc.cluster.local/api/repo/create -d '{
+              curl  -X POST http://{{ include "common.names.fullname" . }}-repository.{{ .Release.Namespace }}.svc.cluster.local./api/repo/create -d '{
                 "projectId": "{{ include "bkrepo.init.project" . }}",
                 "name": "public-charts",
                 "type": "HELM",
