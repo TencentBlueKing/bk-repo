@@ -159,7 +159,7 @@ class RepoService(
         val cleanupStrategy = CleanupStrategy(
             enable = map[CleanupStrategy::enable.name] as? Boolean ?: false,
             cleanupType = map[CleanupStrategy::cleanupType.name] as? String,
-            cleanupValue = map[CleanupStrategy::cleanupValue.name] as? String,
+            cleanupValue = map[CleanupStrategy::cleanupValue.name]?.toString(),
             cleanTargets = map[CleanupStrategy::cleanTargets.name] as? List<String>,
         )
         if (cleanupStrategy.cleanupType.isNullOrEmpty() || cleanupStrategy.cleanupValue.isNullOrEmpty())
