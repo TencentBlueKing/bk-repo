@@ -9,7 +9,6 @@ import com.tencent.bkrepo.replication.dao.FederationMetadataTrackingDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.model.TFederationMetadataTracking
-import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.pojo.tracking.FederationMetadataTrackingDeleteRequest
 import com.tencent.bkrepo.replication.pojo.tracking.FederationMetadataTrackingListOption
 import com.tencent.bkrepo.replication.pojo.tracking.FederationMetadataTrackingRetryRequest
@@ -142,13 +141,30 @@ class FederationMetadataTrackingServiceImpl(
 
     /**
      * 查找需要重试的记录（重试次数小于指定值且不在重试中）
+     * 当 retryCount == 0 时，只有最后修改时间在当前时间减去配置的时间间隔之前的记录才会被重试
      */
     private fun findByRetryingFalse(maxRetryNum: Int): List<TFederationMetadataTracking> {
+        // 先查询所有符合条件的记录
         val query = Query(
-            where(TReplicaFailureRecord::retrying).isEqualTo(false)
-                .and(TReplicaFailureRecord::retryCount.name).lte(maxRetryNum)
+            where(TFederationMetadataTracking::retrying).isEqualTo(false)
+                .and(TFederationMetadataTracking::retryCount.name).lte(maxRetryNum)
         )
-        return federationMetadataTrackingDao.find(query)
+        val allRecords = federationMetadataTrackingDao.find(query)
+        
+        // 在应用层进行时间过滤
+        val now = LocalDateTime.now()
+        val retryInterval = replicationProperties.federatedRetryInterval
+        val cutoffTime = now.minus(retryInterval)
+        
+        return allRecords.filter { record ->
+            // 当 retryCount == 0 时，需要检查时间间隔
+            // 当 retryCount > 0 时，不需要时间限制
+            if (record.retryCount == 0) {
+                record.lastModifiedDate.isBefore(cutoffTime)
+            } else {
+                true
+            }
+        }
     }
 
     /**
