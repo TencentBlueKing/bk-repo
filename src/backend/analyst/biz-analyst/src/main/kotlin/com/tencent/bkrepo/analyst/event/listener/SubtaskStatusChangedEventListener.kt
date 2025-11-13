@@ -171,7 +171,13 @@ class SubtaskStatusChangedEventListener(
         subtask.qualityRedLine?.let {
             metadata.add(MetadataModel(key = SubScanTaskDefinition::qualityRedLine.name, value = it, system = true))
         }
-        val currentForbidType = metadataService.listMetadata(projectId, repoName, fullPath)[FORBID_TYPE]
+        val currentForbidType = with(subtask) {
+            if (repoType == RepositoryType.GENERIC.name) {
+                metadataService.listMetadata(projectId, repoName, fullPath)[FORBID_TYPE]
+            } else if (!packageKey.isNullOrEmpty() && !version.isNullOrEmpty()) {
+                packageMetadataService.listMetadata(projectId, repoName, packageKey, version)[FORBID_TYPE]
+            }
+        }
         if (currentForbidType == ForbidType.MANUAL.name) {
             // 手动禁用的情况不处理
             return
