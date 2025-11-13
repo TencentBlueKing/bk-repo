@@ -258,8 +258,8 @@ class IdleNodeArchiveJob(
         * 满足以下条件之一，则不进行归档
         * 1. 其他项目存在相同sha256的节点。（跨项目的文件会无法归档）
         * */
-        (0 until SHARDING_COUNT).forEach {
-            val collectionName = COLLECTION_NAME_PREFIX.plus(it)
+        for (i in 0 until SHARDING_COUNT) {
+            val collectionName = COLLECTION_NAME_PREFIX.plus(i)
             val query = Query.query(
                 Criteria.where("sha256").isEqualTo(sha256)
                     .and("deleted").isEqualTo(null)
