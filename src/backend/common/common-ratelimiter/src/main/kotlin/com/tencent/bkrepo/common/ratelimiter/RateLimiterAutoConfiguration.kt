@@ -45,7 +45,6 @@ import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUploadUsageR
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -56,9 +55,11 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
-@EnableConfigurationProperties(RateLimiterProperties::class)
 @ConditionalOnWebApplication
-@Import(RateLimitRepository::class)
+@Import(
+    RateLimitRepository::class,
+    RateLimiterProperties::class
+)
 class RateLimiterAutoConfiguration {
 
     @Bean
