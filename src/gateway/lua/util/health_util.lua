@@ -19,6 +19,42 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 local _M = {}
 
+-- 上报心跳信息到Redis
+function _M:report_heartbeat(red)
+
+    local timestamp = ngx.now()
+
+    -- Redis key格式: bkrepo:gateway:heartbeat:{ip}
+    local redis_key = "bkrepo:gateway:heartbeat:" .. ip
+
+    -- 使用hash存储心跳信息
+    local ok, err = red:hmset(redis_key,
+            "ip", internal_ip,
+            "tag", config.ns.tag,
+            "timestamp", timestamp,
+            "last_update", os.date("%Y-%m-%d %H:%M:%S", timestamp)
+    )
+
+    if not ok then
+        ngx.log(ngx.ERR, "failed to report heartbeat to redis: ", err)
+        red:close()
+    end
+
+    -- 设置过期时间为180秒（心跳间隔60秒，允许最多丢失2次心跳）
+    red:expire(redis_key, 180)
+
+    -- 同时维护一个gateway列表，用于快速查询所有在线的gateway
+    local list_key = "bkrepo:gateway:list"
+    red:sadd(list_key, ip)
+    red:expire(list_key, 180)
+    -- 将连接放回连接池
+    local ok, err = red:set_keepalive(10000, 100)
+    if not ok then
+        ngx.log(ngx.ERR, "failed to set keepalive: ", err)
+        red:close()
+    end
+end
+
 --[[判断字符串是否在数组中]]
 function _M:check_path(service_name)
     local security_paths = config.security_paths
