@@ -77,6 +77,7 @@ enum class AuthMessageCode(private val businessCode: Int, private val key: Strin
     AUTH_PROXY_NOT_EXIST(39,"auth.proxy.not-exist"),
     AUTH_CREATE_ROLE_INVALID_WITHOUT_PROJECT(40, "auth.create.role.invalid.without-project"),
     AUTH_CREATE_SERVICE_ROLE_WITH_PROJECT(41, "auth.create.service-role.with-project"),
+    AUTH_PLATFORM_ONLY(42, "auth.platform.only"),
     ;
 
     override fun getBusinessCode() = businessCode

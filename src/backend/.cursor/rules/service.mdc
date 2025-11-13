@@ -1,0 +1,56 @@
+---
+description: Service 层业务逻辑实现规范
+globs: **/service/**/*Service.kt, **/service/**/*ServiceImpl.kt
+alwaysApply: false
+---
+
+## 基本结构
+
+1. 定义接口：`interface ProjectService { fun create(...): String }`
+2. 实现类：添加 `@Service` 注解
+3. 包结构：
+   - 接口：`com.tencent.bkrepo.{module}.service`
+   - 实现：`com.tencent.bkrepo.{module}.service.impl`
+
+## 方法实现流程
+
+1. 参数验证：使用 `require()` 或抛出 `ErrorCodeException`
+2. 业务规则检查：检查是否存在、是否有权限、配额等
+3. 数据操作：通过 DAO 层操作数据库
+4. 后续操作：创建关联数据、发布事件等
+5. 记录日志：`logger.info("Create project [$name] success by user [$operator]")`
+6. 返回结果
+
+## 异常处理
+
+1. 资源不存在：`throw ErrorCodeException(messageCode = XXX_NOT_FOUND, params = arrayOf(id))`
+2. 资源已存在：`throw ErrorCodeException(messageCode = XXX_EXISTED, params = arrayOf(name))`
+3. 业务规则违反：`throw ErrorCodeException(messageCode = XXX_INVALID)`
+4. 带原因的异常：`throw ErrorCodeException(messageCode = STORE_ERROR, cause = e)`
+5. 不要捕获业务异常后重新抛出（无意义）
+
+## 事务管理
+
+1. 需要事务时使用：`@Transactional(rollbackFor = [Exception::class])`
+2. 避免在事务中执行耗时操作（网络调用、文件操作）
+
+## 日志记录
+
+1. 关键操作必须记录日志（创建、更新、删除、重要查询）
+2. 异常必须记录：`logger.error("Failed to store file [$digest]", exception)`
+
+## 实体转换
+
+1. Request to Entity：`fun ProjectCreateRequest.toEntity(): TProject`
+2. Entity to DTO：`fun TProject.to(): Project`
+3. 在 Service 层统一转换，不要在 DAO 层
+
+## 禁止事项
+
+1. 不要直接操作 MongoDB（使用 DAO）
+2. 不要依赖 Controller 层组件
+3. 不要硬编码业务规则和配置
+4. 不要忽略或吞掉异常
+5. 不要在 Service 层使用 `@Transactional` 注解（除非确实需要事务）
+6. 避免方法过长（超过 100 行考虑拆分）
+7. 避免 Service 之间循环依赖

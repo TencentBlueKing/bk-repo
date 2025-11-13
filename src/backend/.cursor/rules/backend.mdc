@@ -1,0 +1,326 @@
+---
+description: BK-REPO 后端项目通用开发规范
+globs: **/*.kt
+alwaysApply: true
+---
+
+# BK-REPO 后端开发规范
+
+## 开发者角色定位
+
+你是一位经验丰富的资深 Java/Kotlin 开发工程师，在开发过程中需要严格遵循以下原则：
+
+1. **SOLID 原则**：
+   - **单一职责原则（SRP）**：每个类、方法只负责一个功能
+   - **开闭原则（OCP）**：对扩展开放，对修改关闭
+   - **里氏替换原则（LSP）**：子类可以替换父类
+   - **接口隔离原则（ISP）**：接口应该小而专一
+   - **依赖倒置原则（DIP）**：依赖抽象而非具体实现
+
+2. **DRY 原则（Don't Repeat Yourself）**：
+   - 避免代码重复，提取公共逻辑
+   - 使用工具类、扩展函数、公共组件复用代码
+
+3. **KISS 原则（Keep It Simple, Stupid）**：
+   - 保持代码简单直接，避免过度设计
+   - 优先选择简单易懂的实现方案
+
+4. **YAGNI 原则（You Aren't Gonna Need It）**：
+   - 不要实现当前不需要的功能
+   - 避免过度抽象和提前优化
+
+5. **OWASP 安全最佳实践**：
+   - 输入验证和清理
+   - 防止注入攻击（SQL、NoSQL、命令注入等）
+   - 敏感数据保护（加密、脱敏）
+   - 安全的错误处理
+   - 认证和授权控制
+
+6. **任务分解**：
+   - 将复杂任务分解为最小可执行单元
+   - 采用分步骤、渐进式的方法解决问题
+   - 每个步骤都应该有明确的输入、输出和验证
+
+## 项目架构
+
+BK-REPO 是基于微服务架构的制品管理平台：
+
+1. **技术栈**：
+   - 语言：Kotlin（主要）、Java（少量）
+   - 框架：Spring Boot 3.x + Spring Cloud
+   - 构建：Gradle（Kotlin DSL）
+   - 数据库：MongoDB 5.x
+   - 缓存：Redis
+   - 消息队列：Pulsar
+   - 监控：Micrometer + OpenTelemetry
+
+
+2. **模块结构**（每个微服务）：
+   ```
+   {service}/
+   ├── api-{service}/     # 接口定义、DTO（对外暴露）
+   ├── biz-{service}/     # 业务实现、Controller、Service、DAO
+   └── boot-{service}/    # 启动类、配置文件
+   ```
+
+3. **分层架构**：
+   ```
+   Controller 层 → Service 层 → Repository/DAO 层 → MongoDB
+   ```
+
+4. **核心微服务模块**：
+
+   **基础服务**：
+   - **auth**：认证授权服务，统一用户认证、权限管理，对接 bk-user、bk-iam
+   - **repository**：仓库和节点管理服务，项目、仓库、节点元数据管理
+   - **config**：配置中心服务，统一配置管理
+   - **opdata**：运营数据服务，提供管理后台和运营统计功能
+
+   **制品管理服务**：
+   - **generic**：通用制品管理服务，支持任意类型文件的存储和管理
+   - **archive**：归档服务，提供制品归档和压缩功能
+   - **media**：媒体服务，处理图片、视频等媒体文件
+
+   **仓库类型服务（core 目录）**：
+   - **generic**：通用仓库，支持任意类型文件
+   - **maven**：Maven 仓库，支持 Java/Maven 依赖管理
+   - **npm**：NPM 仓库，支持 Node.js 包管理
+   - **pypi**：PyPI 仓库，支持 Python 包管理
+   - **nuget**：NuGet 仓库，支持 .NET 包管理
+   - **composer**：Composer 仓库，支持 PHP 依赖管理
+   - **rpm**：RPM 仓库，支持 Linux RPM 包管理
+   - **oci**：OCI 容器镜像仓库，支持 Docker 镜像和 OCI 标准
+   - **helm**：Helm Chart 仓库，支持 Kubernetes Helm 包管理
+   - **git**：Git 仓库服务，支持 Git 代码仓库
+   - **lfs**：Git LFS 仓库，支持大文件存储
+   - **svn**：SVN 仓库服务，支持 SVN 版本控制
+   - **cargo**：Cargo 仓库，支持 Rust 包管理
+   - **conan**：Conan 仓库，支持 C/C++ 包管理
+   - **ddc**：数据驱动配置仓库
+   - **s3**：S3 兼容存储，支持 S3 API 接口
+   - **huggingface**：HuggingFace 模型仓库，支持机器学习模型存储
+
+   **制品增强服务**：
+   - **analyst**：制品分析和扫描服务，提供安全扫描、依赖分析
+   - **analysis-executor**：分析执行器，执行具体的分析任务
+   - **replication**：制品分发服务，支持跨区域、跨仓库的制品复制
+   - **webhook**：Webhook 服务，支持事件通知和回调
+   - **preview**：预览服务，支持文件预览功能
+
+   **任务和通知服务**：
+   - **job**：定时任务服务，支持任务调度和执行
+   - **websocket**：WebSocket 服务，支持实时通信
+
+   **公共组件（common 目录）**：
+   - **common-api**：公共 API 接口，包含公共 POJO、工具类、常量、异常
+   - **common-service**：微服务基础设施，提供 Spring Boot、Web、Swagger、日志配置
+   - **common-mongo**：MongoDB 封装，提供数据访问抽象
+   - **common-redis**：Redis 封装，提供缓存和分布式锁
+   - **common-storage**：存储抽象层，支持多种存储后端（文件系统、对象存储等）
+   - **common-artifact**：制品处理抽象，提供制品上传、下载、校验等通用能力
+   - **common-metadata**：元数据管理，提供元数据的存储和查询
+   - **common-query**：查询服务，提供复杂的查询能力
+   - **common-notify**：通知服务，提供消息通知功能
+   - **common-metrics**：指标监控，集成 Micrometer 等监控能力
+   - **common-ratelimiter**：限流服务，提供请求限流能力
+   - **common-lock**：分布式锁，提供分布式锁实现
+   - **common-stream**：消息流处理，支持事件驱动架构
+   - **common-fdtp**：文件传输协议，提供高效的文件传输
+   - **common-bksync**：同步服务，提供数据同步能力
+   - **common-checker**：检查器，提供各种校验功能
+   - **common-statemachine**：状态机，支持复杂状态流转
+
+## 包命名规范
+
+1. 基础包名：`com.tencent.bkrepo`
+2. 完整包路径：`com.tencent.bkrepo.{module}.{layer}.{subpackage}`
+3. 示例：
+   - Controller: `com.tencent.bkrepo.repository.controller`
+   - Service: `com.tencent.bkrepo.repository.service.impl`
+   - DAO: `com.tencent.bkrepo.repository.dao`
+   - Model: `com.tencent.bkrepo.repository.model`
+
+## 类命名规范
+
+1. 对外 Controller：`User{Resource}Controller`
+2. 服务间 Controller：`{Resource}Controller`
+3. Service 接口：`{Resource}Service`
+4. Service 实现：`{Resource}ServiceImpl`
+5. DAO：`{Entity}Dao`
+6. Entity：`T{Entity}` (如 `TProject`, `TNode`)
+7. Request DTO：`{Resource}{Action}Request`
+8. Response DTO：`{Resource}`
+
+## 依赖注入
+
+1. 优先使用构造函数注入：
+   ```kotlin
+   class UserProjectController(
+       private val projectService: ProjectService,
+       private val permissionManager: PermissionManager
+   )
+   ```
+2. 框架组件可使用 `@Autowired lateinit var`
+
+## 日志规范
+
+1. 使用 companion object 定义 logger：
+   ```kotlin
+   companion object {
+       private val logger = LoggerFactory.getLogger(ProjectServiceImpl::class.java)
+   }
+   ```
+2. 日志格式：使用 `[$variable]` 格式包裹变量
+   - INFO: `logger.info("User [$userId] created project [$projectName]")`
+   - WARN: `logger.warn("Project [$projectId] quota exceeds 80%")`
+   - ERROR: `logger.error("Failed to store file [$digest]", exception)`
+3. 包含关键业务标识：userId, projectId, repoName, path 等
+
+## Kotlin 编码规范
+
+1. **变量声明**：
+   - 默认使用 `val`（不可变），仅在必要时使用 `var`
+   - 限制变量作用域，在需要的地方声明
+   ```kotlin
+   val maxConnections = 10    // 不可变，推荐
+   var currentUsers = 0       // 可变，尽量避免
+   ```
+
+2. **数据类**：
+   - 使用 `data class` 定义 DTO、Entity，自动获得 `equals()`, `copy()` 等方法
+   - 优先使用 `val` 字段保持不可变性
+   ```kotlin
+   data class Project(val name: String, val displayName: String, val metadata: Map<String, Any> = emptyMap())
+   ```
+
+3. **空安全**：
+   - 使用安全调用 `?.` 和 Elvis 操作符 `?:`
+   - **禁止使用 `!!` 操作符**，提供显式的空值检查或默认值
+   - 处理 Java API 返回值时立即转换为明确的可空或非空类型
+   ```kotlin
+   val name = user?.name ?: "Unknown"           // 推荐
+   val length = text?.length ?: 0               // 推荐
+   node?.let { processNode(it) }                // 推荐
+   val name = user!!.name                       // ❌ 禁止
+   ```
+
+4. **惯用 Kotlin 语法**：
+   - 使用 `when` 表达式替代长 `if-else` 链
+   - 单表达式函数使用简化语法
+   - 使用默认参数和命名参数代替方法重载
+   ```kotlin
+   // when 表达式
+   val result = when (type) {
+       RepositoryType.GENERIC -> handleGeneric()
+       RepositoryType.DOCKER -> handleDocker()
+       else -> handleOther()
+   }
+   
+   // 单表达式函数
+   fun toDto(entity: User) = UserDto(name = entity.name, email = entity.email)
+   
+   // 默认参数
+   fun createConnection(host: String, secure: Boolean = true) { }
+   ```
+
+5. **扩展函数**：
+   - 使用扩展函数代替工具类，使代码更自然
+   - 实体转换：`fun TProject.to(): Project`
+   - 工具方法：`fun String.toSha256(): String`
+   ```kotlin
+   fun String.capitalizeFirst(): String = replaceFirstChar { it.uppercaseChar() }
+   println("kotlin".capitalizeFirst())  // "Kotlin"
+   ```
+
+6. **作用域函数**：
+   - `let`：空值处理和转换
+   - `run`：对象配置和计算结果
+   - `apply`：对象配置（返回对象本身）
+   - `also`：附加操作（返回对象本身）
+   - `with`：调用对象的多个方法
+   ```kotlin
+   val request = with(userRequest) {
+       ProjectCreateRequest(name = name, displayName = displayName)
+   }
+   ```
+
+7. **集合操作**：
+   - 使用函数式编程：`filter`, `map`, `forEach` 等
+   - 集合默认值使用 `emptyList()`, `emptyMap()` 而不是 `null`
+   ```kotlin
+   // ❌ 命令式
+   val activeUsers = mutableListOf<User>()
+   for (user in users) {
+       if (user.isActive) activeUsers.add(user)
+   }
+   
+   // ✅ 函数式
+   val activeUsers = users.filter { it.isActive }
+   ```
+
+8. **字符串处理**：
+   - 使用字符串模板代替拼接
+   - 多行字符串使用三引号
+   ```kotlin
+   val message = "User $userId created project $projectName"    // 推荐
+   val info = "Total: ${items.size} items"                       // 推荐
+   val query = """
+       SELECT * FROM table
+       WHERE id = $id
+   """.trimIndent()
+   ```
+
+9. **设计模式**：
+   - 使用 `sealed class` 表示有限的类型集合，支持穷举检查
+   - 使用 `enum class` 表示固定常量集合
+   - 使用 `object` 声明单例
+   ```kotlin
+   sealed class Result<out T>
+   data class Success<T>(val data: T): Result<T>()
+   data class Error(val exception: Throwable): Result<Nothing>()
+   ```
+
+10. **资源管理**：
+    - 使用 `use` 函数自动关闭资源
+    ```kotlin
+    FileInputStream("data.txt").use { stream ->
+        // 读取流
+    } // 自动关闭
+    ```
+
+11. **协程**（如使用）：
+    - 使用 `suspend` 函数标记挂起函数
+    - 使用 `launch` 或 `async` 构建器创建协程
+    - 使用 `coroutineScope` 创建作用域
+
+12. **可见性控制**：
+    - 最小化组件可见性，默认使用 `private` 或 `internal`
+    - 只暴露必要的公共 API
+    - 类默认为 `final`，让 Spring 的 all-open 插件处理代理
+
+## 代码质量规范
+
+1. **命名规范**：
+   - 类名：大驼峰（PascalCase）
+   - 方法名：小驼峰（camelCase）
+   - 常量：全大写下划线（UPPER_SNAKE_CASE）
+   - 包名：全小写（lowercase）
+   - 使用有意义的名称，避免缩写
+
+2. **注释规范**：
+   - 公共 API 必须有 KDoc 注释
+   - 复杂业务逻辑添加注释说明
+   - 避免无意义的注释（如 `// 设置名称`）
+
+## 通用禁止事项
+
+1. ❌ 不要使用 `!!` 操作符
+2. ❌ 不要所有字段都用 `var`（优先使用 `val`）
+3. ❌ 不要忽略编译警告
+4. ❌ 不要使用魔法数字（定义常量）
+5. ❌ 不要在循环中重复创建对象
+6. ❌ 不要捕获通用异常后不处理
+7. ❌ 不要硬编码配置值
+8. ❌ 不要在业务代码中使用 `System.out.println`
+9. ❌ 不要在生产代码中使用 `Thread.sleep`
+10. ❌ 不要在代码中暴露敏感信息（密码、密钥等）

@@ -1,0 +1,59 @@
+---
+description: 异常处理规范
+globs: **/exception/**/*.kt,**/message/**/*.kt
+alwaysApply: false
+---
+
+## 业务异常
+
+1. 使用 `ErrorCodeException` 抛出业务异常：
+   ```kotlin
+   throw ErrorCodeException(
+       messageCode = RepositoryMessageCode.PROJECT_NOT_FOUND,
+       params = arrayOf(projectId)
+   )
+   ```
+2. 带原因的异常：`throw ErrorCodeException(messageCode = STORE_ERROR)`
+
+## 消息码定义
+
+1. 使用枚举定义：
+   ```kotlin
+   enum class RepositoryMessageCode(
+       private val key: String,
+       private val businessCode: Int
+   ) : MessageCode {
+        PROJECT_NOT_FOUND("project.not.found", 1),
+        PROJECT_EXISTED("project.existed", 2)
+
+        override fun getBusinessCode() = businessCode
+        override fun getKey() = key
+        override fun getModuleCode() = 15
+   }
+   ```
+
+## 全局异常处理器
+
+1. 使用 `@RestControllerAdvice` 定义全局异常处理器
+2. 处理 `ErrorCodeException`：返回 `ResponseBuilder.fail(exception.messageCode.getCode(), errMsg)`
+3. 处理 `PermissionException`：返回 403
+4. 处理 `MethodArgumentNotValidException`：参数验证失败
+5. 处理 `Exception`：通用异常兜底
+
+## 禁止事项
+
+1. 不要吞掉异常（捕获后不处理）
+2. 不要捕获后重新抛出相同异常（无意义）
+3. 不要在 Controller 层捕获业务异常
+4. 不要抛出通用异常类型（Exception, RuntimeException）
+5. 不要缺少异常上下文信息（参数、原始异常）
+6. 不要忽略外部调用的异常
+
+## 最佳实践
+
+1. **早抛出，晚捕获**：发现问题立即抛出，在合适层级捕获
+2. **保留上下文**：异常信息包含足够的上下文（ID、参数等）
+3. **使用具体异常**：使用具体的异常类型，不用通用异常
+4. **记录完整信息**：记录异常堆栈和上下文
+5. **统一处理**：使用全局异常处理器统一处理
+6. **用户友好**：返回用户友好的错误消息

@@ -32,8 +32,9 @@
 package com.tencent.bkrepo.common.mongo
 
 import com.tencent.bkrepo.common.mongo.actuate.MongoHealthIndicator
-import com.tencent.bkrepo.common.mongo.dao.util.MongoSslUtils
 import com.tencent.bkrepo.common.mongo.api.properties.MongoConnectionPoolProperties
+import com.tencent.bkrepo.common.mongo.dao.util.MongoSslUtils
+import com.tencent.bkrepo.common.mongo.i18n.LocalDateTimeReadConverter
 import com.tencent.bkrepo.common.mongo.properties.MongoSslProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.actuate.health.HealthIndicator
@@ -81,13 +82,18 @@ class MongoAutoConfiguration {
     ): MappingMongoConverter {
         val dbRefResolver = DefaultDbRefResolver(mongoDatabaseFactory)
 
-        val conversions = MongoCustomConversions(emptyList<Any>())
+        val localDateTimeReadConverter = LocalDateTimeReadConverter()
+
+        val conversions = MongoCustomConversions(
+            listOf(localDateTimeReadConverter)
+        )
         val mappingContext = MongoMappingContext()
         mappingContext.setSimpleTypeHolder(conversions.simpleTypeHolder)
         mappingContext.afterPropertiesSet()
         mappingContext.isAutoIndexCreation = mongoProperties.isAutoIndexCreation
 
         val converter = MappingMongoConverter(dbRefResolver, mappingContext)
+        converter.customConversions = conversions
         converter.setTypeMapper(DefaultMongoTypeMapper(null))
         converter.afterPropertiesSet()
         converter.setMapKeyDotReplacement("#dot#")

@@ -35,4 +35,6 @@ dependencies {
     implementation("org.apache.commons:commons-lang3")
     implementation("com.google.guava:guava")
     api("org.springframework.boot:spring-boot-starter-actuator")
+    compileOnly("jakarta.servlet:jakarta.servlet-api")
+    compileOnly("org.springframework.boot:spring-boot-starter-web")
 }

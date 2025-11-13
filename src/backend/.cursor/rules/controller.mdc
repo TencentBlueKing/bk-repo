@@ -1,0 +1,60 @@
+---
+description: Controller 层 REST API 接口开发规范
+globs: **/controller/**/*Controller.kt
+alwaysApply: false
+---
+
+## 基本结构
+
+1. Controller 分类：
+   - 对外接口（用户调用）：放在 `controller.user` 包
+   - 服务间调用：放在 `controller.service` 包
+   - 集群间调用：放在 `controller.cluster` 包
+
+## 注解
+
+1. 类级别：`@Tag(name = "中文描述")`, `@RestController`, `@RequestMapping("/api/{path}")`
+2. 方法级别：`@Operation(summary = "中文描述")`, `@Principal(PrincipalType.GENERAL)`,`@Permission(type = ResourceType.REPO, action = PermissionAction.READ)`
+3. 重要操作（创建/更新/删除）需添加审计注解：
+   ```kotlin
+   @AuditEntry(actionId = RESOURCE_CREATE_ACTION)
+   @ActionAuditRecord(
+       actionId = RESOURCE_CREATE_ACTION,
+       instance = AuditInstanceRecord(resourceType = RESOURCE_TYPE, instanceIds = "#request?.id"),
+       scopeId = "#request?.projectId",
+       content = ActionAuditContent.RESOURCE_CREATE_CONTENT
+   )
+   ```
+
+## 统一响应
+
+1. 所有接口返回 `Response<T>` 格式
+2. 成功：`ResponseBuilder.success(data)` 或 `ResponseBuilder.success()`
+3. 失败：抛出 `ErrorCodeException`，由全局异常处理器处理
+4. 不要在 Controller 层捕获业务异常
+
+## 参数处理
+
+1. 用户 ID：`@RequestAttribute userId: String`
+2. 路径变量：`@PathVariable id: String`
+3. 查询参数：`@RequestParam(required = false) name: String?`
+4. 请求体：`@RequestBody request: CreateRequest`, 审计操作需加 `@AuditRequestBody`
+
+## 权限检查
+
+1. 所有需要登录的接口必须添加 `@Principal` 注解
+2. 细粒度权限检查：`permissionManager.checkProjectPermission(userId, projectId, PermissionAction.WRITE)`
+3. 粗粒度权限检查：`@Permission(type = ResourceType.REPO, action = PermissionAction.READ)`
+
+## 日志记录
+
+1. 记录关键操作：创建、更新、删除操作必须记录日志
+2. 日志示例：`logger.info("User [$userId] created project [$projectName]")`
+
+## 禁止事项
+
+1. 不要在 Controller 中编写业务逻辑
+2. 不要直接注入 DAO/Repository
+3. 不要捕获业务异常（让全局处理）
+4. 不要返回 null，使用 Response 包装
+5. 不要遗漏 `@Operation` 和 `@Principal` 注解

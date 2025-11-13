@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 Tencent.  All rights reserved.
+ * Copyright (C) 2025 Tencent. All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,30 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.ratelimiter.config
+package com.tencent.bkrepo.opdata.registry.k8s
 
-import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
-import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.stereotype.Component
+import com.tencent.bkrepo.opdata.registry.RegistryClient
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.cloud.client.discovery.DiscoveryClient
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 
-@Component
-@ConfigurationProperties(prefix = "rate.limiter")
-class RateLimiterProperties(
-    var enabled: Boolean = false,
-    var dryRun: Boolean = false,
-    // 配置规则刷新频率 单位为秒
-    var refreshDuration: Long = 10L,
-    // 本地缓存限流算法实现的最大个数
-    var cacheCapacity: Long = 1024L,
-    // 限流配置
-    var rules: List<ResourceLimit> = mutableListOf(),
-    // 只对指定url进行从request body解析项目仓库信息
-    var specialUrls: List<String> = emptyList(),
-    var bandwidthProperties: BandwidthProperties = BandwidthProperties(),
-    // 是否开启项目访问白名单
-    var projectWhiteListEnabled: Boolean = false,
-    // 项目访问白名单。 当开启白名单访问后，只有在白名单列表上的项目才允许访问
-    var projectWhiteList: List<String> = emptyList(),
-    // 针对开启访问白名单的场景下，部分url没有办法获取到项目信息时，直接放通
-    var specialUrlsIgnoreProjectWhiteList: List<String> = emptyList()
-)
+@Configuration
+@ConditionalOnProperty(value = ["spring.cloud.consul.enabled"], havingValue = "false")
+class KubernetesDiscoveryConfig (
+    private val discoveryClient: DiscoveryClient,
+    private val podLabelConfig: PodLabelConfig
+){
+
+    @Bean
+    fun createK8sClient(): RegistryClient {
+        return KubernetesServiceDiscovery(discoveryClient, podLabelConfig)
+    }
+}
