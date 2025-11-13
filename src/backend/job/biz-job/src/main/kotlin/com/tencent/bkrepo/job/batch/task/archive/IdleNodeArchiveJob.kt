@@ -168,20 +168,14 @@ class IdleNodeArchiveJob(
             logger.info("Find it[$row] in use by cache,skip archive.")
             return
         }
-        val af = archiveClient.get(sha256, credentialsKey).data
-        if (af == null) {
-            val count = fileReferenceService.count(sha256, credentialsKey)
-            // 归档任务不存在
-            if (count == 1L) {
-                // 快速归档
-                createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
-            } else {
-                synchronized(sha256.intern()) {
-                    slowArchive(row, credentialsKey, context, storageClass, archiveCredentialsKey, days)
-                }
-            }
+        val count = fileReferenceService.count(sha256, credentialsKey)
+        if (count == 1L) {
+            // 快速归档
+            createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
         } else {
-            logger.info("Archive[$row] job already exist[${af.status}].")
+            synchronized(sha256.intern()) {
+                slowArchive(row, credentialsKey, context, storageClass, archiveCredentialsKey, days)
+            }
         }
     }
 
@@ -194,17 +188,12 @@ class IdleNodeArchiveJob(
         days: Int,
     ) {
         with(row) {
-            val af = archiveClient.get(sha256, credentialsKey).data
-            if (af == null) {
-                val inUse = nodeUseInfoCache[sha256] ?: checkUse(sha256, days, row.projectId)
-                if (inUse) {
-                    // 只需要缓存被使用的情况，这可以避免sha256被重复搜索。当sha256未被使用时，它会创建一条归档记录，所以无需缓存。
-                    nodeUseInfoCache[sha256] = true
-                } else {
-                    createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
-                }
+            val inUse = nodeUseInfoCache[sha256] ?: checkUse(sha256, days, row.projectId)
+            if (inUse) {
+                // 只需要缓存被使用的情况，这可以避免sha256被重复搜索。当sha256未被使用时，它会创建一条归档记录，所以无需缓存。
+                nodeUseInfoCache[sha256] = true
             } else {
-                logger.info("Archive[$row] job already exist[${af.status}].")
+                createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
             }
         }
     }
