@@ -47,7 +47,7 @@ import java.util.regex.Pattern
 
 object UserRequestUtil {
 
-    const val USER_ID_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_]{1,99}"
+    const val USER_ID_PATTERN = "[a-zA-Z_][a-zA-Z0-9\\-_@]{1,99}"
     const val USER_ID_LENGTH_MIN = 2
     const val USER_ID_LENGTH_MAX = 100
     fun convToCreateRepoUserRequest(request: CreateUserToRepoRequest): CreateUserRequest {
