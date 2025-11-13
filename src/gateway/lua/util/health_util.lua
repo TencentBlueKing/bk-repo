@@ -45,7 +45,7 @@ function _M:report_heartbeat(red)
 
     -- 同时维护一个gateway列表，用于快速查询所有在线的gateway
     local list_key = "bkrepo:gateway:list"
-    red:sadd(list_key, ip)
+    red:sadd(list_key, internal_ip)
     red:expire(list_key, 180)
     -- 将连接放回连接池
     local ok, err = red:set_keepalive(10000, 100)
