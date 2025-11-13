@@ -114,7 +114,7 @@ open class OpenResource(private val permissionService: PermissionService) {
         val appId = SecurityUtils.getPlatformId()
         if (appId.isNullOrEmpty()) {
             logger.warn("Platform appId is required but not provided")
-            throw ErrorCodeException(AuthMessageCode.AUTH_ACCOUT_FORAUTH_NOT_PERM)
+            throw ErrorCodeException(AuthMessageCode.AUTH_PLATFORM_ONLY)
         }
         
         val request = buildPermissionRequest(
