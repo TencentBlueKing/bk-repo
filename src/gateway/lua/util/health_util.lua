@@ -26,7 +26,7 @@ function _M:report_heartbeat(red)
 
     -- Redis key格式: bkrepo:gateway:heartbeat:{ip}
     local redis_key = "bkrepo:gateway:heartbeat:" .. internal_ip
-
+    ngx.log(ngx.ERR, "redis key: ", redis_key)
     -- 使用hash存储心跳信息
     local ok, err = red:hmset(redis_key,
             "ip", internal_ip,
