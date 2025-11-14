@@ -84,7 +84,7 @@ import java.time.LocalDateTime
 import java.util.Base64
 
 @Service
-class UploadService(
+class HfUploadService(
     private val repositoryService: RepositoryService,
     private val packageService: PackageService,
     private val nodeService: NodeService,
@@ -341,6 +341,6 @@ class UploadService(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(UploadService::class.java)
+        private val logger = LoggerFactory.getLogger(HfUploadService::class.java)
     }
 }

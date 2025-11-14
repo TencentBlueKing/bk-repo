@@ -78,7 +78,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 @Component
-class CommonService(
+class ConanCommonService(
     private val properties: ConanProperties
 ) {
     @Autowired
@@ -606,7 +606,7 @@ class CommonService(
     }
 
     companion object {
-        val logger: Logger = LoggerFactory.getLogger(CommonService::class.java)
+        val logger: Logger = LoggerFactory.getLogger(ConanCommonService::class.java)
         const val REDIS_LOCK_KEY_PREFIX = "conan:lock:indexJson:"
     }
 }

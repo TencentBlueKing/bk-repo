@@ -32,15 +32,15 @@ import com.tencent.bkrepo.common.api.util.BasicAuthUtils
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.security.http.jwt.JwtAuthProperties
 import com.tencent.bkrepo.common.security.util.JwtUtils
-import com.tencent.bkrepo.conan.service.ConanCommonService
+import com.tencent.bkrepo.conan.service.ConanAuthService
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import org.springframework.stereotype.Service
 
 @Service
-class ConanCommonServiceImpl(
+class ConanAuthServiceImpl(
     private val jwtProperties: JwtAuthProperties
-) : ConanCommonService {
+) : ConanAuthService {
 
     private val signingKey = JwtUtils.createSigningKey(jwtProperties.secretKey)
 

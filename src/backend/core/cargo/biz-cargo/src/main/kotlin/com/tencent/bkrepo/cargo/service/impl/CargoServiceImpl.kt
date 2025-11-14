@@ -73,7 +73,7 @@ import org.springframework.stereotype.Service
 class CargoServiceImpl(
     private val cargoProperties: CargoProperties,
     private val permissionManager: PermissionManager,
-    private val commonService: CommonService
+    private val cargoCommonService: CargoCommonService
 ) : CargoService {
 
 
@@ -138,12 +138,12 @@ class CargoServiceImpl(
         with(cargoArtifactInfo) {
             validParams(cargoArtifactInfo)
             val crateFilePath = getCargoFileFullPath(crateName!!, crateVersion!!)
-            commonService.getNodeDetail(projectId, repoName, crateFilePath)
+            cargoCommonService.getNodeDetail(projectId, repoName, crateFilePath)
                 ?: throw CargoFileNotFoundException(
                     CargoMessageCode.CARGO_FILE_NOT_FOUND, crateFilePath, "$projectId|$repoName"
                 )
             val metadata = mutableMapOf<String, Any>(YANKED to yanked)
-            commonService.updateNodeMetaData(
+            cargoCommonService.updateNodeMetaData(
                 projectId, repoName, crateFilePath, metadata
             )
             publishEvent(

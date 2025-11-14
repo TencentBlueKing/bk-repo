@@ -72,7 +72,7 @@ class ConanExtServiceImpl(
     lateinit var packageService: PackageService
 
     @Autowired
-    lateinit var commonService: CommonService
+    lateinit var conanCommonService: ConanCommonService
 
     @Autowired
     lateinit var conanMetadataService: ConanMetadataService
@@ -213,7 +213,7 @@ class ConanExtServiceImpl(
                 val date = LocalDateTime.parse(it.second, DateTimeFormatter.ISO_DATE_TIME)
                 indexInfo.addRevision(RevisionInfo(it.first, TimeFormatUtil.convertToUtcTime(date)))
             }
-            commonService.uploadIndexJson(
+            conanCommonService.uploadIndexJson(
                 projectId = projectId,
                 repoName = repoName,
                 fullPath = fullPath,

@@ -29,46 +29,35 @@ package com.tencent.bkrepo.huggingface.controller
 
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactInfo
-import com.tencent.bkrepo.huggingface.service.ObjectService
-import com.tencent.bkrepo.lfs.pojo.BatchRequest
-import com.tencent.bkrepo.lfs.pojo.BatchResponse
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestParam
+import com.tencent.bkrepo.huggingface.artifact.HuggingfaceRevisionInfo
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-class LfsController(
-    private val objectService: ObjectService,
-) {
+class HfDownloadController : ArtifactService() {
 
-    @PostMapping(
-        "/{projectId}/{repoName}/{organization}/{name}.git/info/lfs/objects/batch",
-        "/{projectId}/{repoName}/{type}s/{organization}/{name}.git/info/lfs/objects/batch"
-    )
-    @Permission(type = ResourceType.REPO, action = PermissionAction.WRITE)
-    fun batch(
-        @PathVariable projectId: String,
-        @PathVariable repoName: String,
-        @PathVariable organization: String,
-        @PathVariable name: String,
-        @RequestBody request: BatchRequest
-    ): BatchResponse {
-        return objectService.batch(projectId, repoName, organization, name, request)
+    @GetMapping("/{projectId}/{repoName}/{organization}/{name}/resolve/{revision}/**",
+        "/{projectId}/{repoName}/{type}s/{organization}/{name}/resolve/{revision}/**")
+    @Permission(type = ResourceType.NODE, action = PermissionAction.READ)
+    fun download(@ArtifactPathVariable artifactInfo: HuggingfaceArtifactInfo) {
+        val context = ArtifactDownloadContext()
+        repository.download(context)
     }
 
-    @PutMapping("/lfs/{projectId}/{repoName}/**")
-    fun upload(
-        @ArtifactPathVariable huggingfaceArtifactInfo: HuggingfaceArtifactInfo,
-        file: ArtifactFile,
-        @RequestParam token: String,
-    ) {
-        objectService.upload(huggingfaceArtifactInfo, file, token)
+    @GetMapping(
+        "/{projectId}/{repoName}/api/{type}s/{organization}/{name}",
+        "/{projectId}/{repoName}/api/{type}s/{organization}/{name}/revision/{revision}",
+    )
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    fun info(
+        @ArtifactPathVariable artifactInfo: HuggingfaceRevisionInfo,
+    ): Any? {
+        return repository.query(ArtifactQueryContext())
     }
 }

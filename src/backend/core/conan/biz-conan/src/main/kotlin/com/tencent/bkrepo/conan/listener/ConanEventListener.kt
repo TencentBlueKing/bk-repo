@@ -37,14 +37,14 @@ import com.tencent.bkrepo.conan.listener.operation.ConanPackageUploadOperation
 import com.tencent.bkrepo.conan.listener.operation.ConanRecipeDeleteOperation
 import com.tencent.bkrepo.conan.listener.operation.ConanRecipeUploadOperation
 import com.tencent.bkrepo.conan.pool.ConanThreadPoolExecutor
-import com.tencent.bkrepo.conan.service.impl.CommonService
+import com.tencent.bkrepo.conan.service.impl.ConanCommonService
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
 
 @Component
 class ConanEventListener(
-    val commonService: CommonService
+    val conanCommonService: ConanCommonService
 ) {
 
     val threadPoolExecutor: ThreadPoolExecutor = ConanThreadPoolExecutor.instance
@@ -54,7 +54,7 @@ class ConanEventListener(
      */
     @EventListener(ConanPackageDeleteEvent::class)
     fun handle(event: ConanPackageDeleteEvent) {
-        val task = ConanPackageDeleteOperation(event.request, commonService).trace()
+        val task = ConanPackageDeleteOperation(event.request, conanCommonService).trace()
         threadPoolExecutor.submit(task)
     }
 
@@ -63,7 +63,7 @@ class ConanEventListener(
      */
     @EventListener(ConanRecipeDeleteEvent::class)
     fun handle(event: ConanRecipeDeleteEvent) {
-        val task = ConanRecipeDeleteOperation(event.request, commonService).trace()
+        val task = ConanRecipeDeleteOperation(event.request, conanCommonService).trace()
         threadPoolExecutor.submit(task)
     }
 
@@ -72,7 +72,7 @@ class ConanEventListener(
      */
     @EventListener(ConanRecipeUploadEvent::class)
     fun handle(event: ConanRecipeUploadEvent) {
-        val task = ConanRecipeUploadOperation(event.request, commonService).trace()
+        val task = ConanRecipeUploadOperation(event.request, conanCommonService).trace()
         threadPoolExecutor.submit(task)
     }
 
@@ -81,7 +81,7 @@ class ConanEventListener(
      */
     @EventListener(ConanPackageUploadEvent::class)
     fun handle(event: ConanPackageUploadEvent) {
-        val task = ConanPackageUploadOperation(event.request, commonService).trace()
+        val task = ConanPackageUploadOperation(event.request, conanCommonService).trace()
         threadPoolExecutor.submit(task)
     }
 }

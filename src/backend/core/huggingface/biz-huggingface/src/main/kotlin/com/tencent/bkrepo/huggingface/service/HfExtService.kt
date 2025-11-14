@@ -47,7 +47,7 @@ import java.time.format.DateTimeFormatter
 @Service
 class HfExtService(
     private val huggingfaceProperties: HuggingfaceProperties,
-    private val repoService: RepoService,
+    private val hfRepoService: HfRepoService,
     private val packageService: PackageService,
     private val nodeService: NodeService,
 ) {
@@ -95,7 +95,7 @@ class HfExtService(
                 type = type!!,
                 revision = getRevision(),
             )
-            repoService.delete(repoDeleteRequest)
+            hfRepoService.delete(repoDeleteRequest)
         }
         logger.info(
             "user[${SecurityUtils.getUserId()}] delete " +

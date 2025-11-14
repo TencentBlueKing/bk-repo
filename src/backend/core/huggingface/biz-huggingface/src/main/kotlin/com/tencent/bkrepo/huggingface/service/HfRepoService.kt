@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 @Service
-class RepoService(
+class HfRepoService(
     private val repositoryService: RepositoryService,
     private val packageService: PackageService,
     private val nodeService: NodeService,
@@ -197,6 +197,6 @@ class RepoService(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(RepoService::class.java)
+        private val logger = LoggerFactory.getLogger(HfRepoService::class.java)
     }
 }

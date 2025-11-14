@@ -29,7 +29,7 @@ package com.tencent.bkrepo.cargo.listener.operation
 
 import com.tencent.bkrepo.cargo.pojo.event.CargoOperationRequest
 import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
-import com.tencent.bkrepo.cargo.service.impl.CommonService
+import com.tencent.bkrepo.cargo.service.impl.CargoCommonService
 import com.tencent.bkrepo.cargo.utils.CargoUtils.getCargoIndexFullPath
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil.buildNodeCreateRequest
 import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
@@ -42,7 +42,7 @@ import java.io.InputStream
 
 abstract class AbstractCargoOperation(
     private val request: CargoOperationRequest,
-    private val commonService: CommonService
+    private val cargoCommonService: CargoCommonService
 ) : Runnable {
     override fun run() {
         with(request) {
@@ -52,7 +52,7 @@ abstract class AbstractCargoOperation(
             )
             stopWatch.start()
             val indexFullPath = getCargoIndexFullPath(name)
-            commonService.lockAction(projectId, repoName, indexFullPath) { handleOperation(this, indexFullPath) }
+            cargoCommonService.lockAction(projectId, repoName, indexFullPath) { handleOperation(this, indexFullPath) }
             stopWatch.stop()
             logger.info(
                 "Total cost for refreshing index of crate $name " +
@@ -72,8 +72,8 @@ abstract class AbstractCargoOperation(
                         "in repo [$projectId/$repoName] by User [$userId]"
                 )
                 stopWatch.start()
-                val indexInputStream = commonService.getStreamOfCrate(projectId, repoName, indexFullPath)
-                val storageCredentials = commonService.getStorageCredentials(projectId, repoName)
+                val indexInputStream = cargoCommonService.getStreamOfCrate(projectId, repoName, indexFullPath)
+                val storageCredentials = cargoCommonService.getStorageCredentials(projectId, repoName)
                 logger.info(
                     "query index.json " +
                         "in repo [$projectId/$repoName] by User [$userId] cost: ${stopWatch.totalTimeSeconds}s"
@@ -87,7 +87,7 @@ abstract class AbstractCargoOperation(
                     operator = userId,
                     artifactFile = artifactFile
                 )
-                commonService.uploadIndexOfCrate(artifactFile, nodeCreateRequest)
+                cargoCommonService.uploadIndexOfCrate(artifactFile, nodeCreateRequest)
                 logger.info(
                     "Index of crate $name has been refreshed by User [$userId] " +
                         "in repo [$projectId/$repoName] !"
@@ -109,9 +109,9 @@ abstract class AbstractCargoOperation(
         storageCredentials: StorageCredentials?,
     ): ArtifactFile {
         try {
-            var versions = commonService.convertToCrateIndex(inputStream)
+            var versions = cargoCommonService.convertToCrateIndex(inputStream)
             versions = handleEvent(versions)
-            return commonService.buildIndexArtifactFile(versions, storageCredentials)
+            return cargoCommonService.buildIndexArtifactFile(versions, storageCredentials)
         } catch (e: Exception) {
             logger.error("Failed to handle index update event $request: ${e.message}")
             // TODO 如果失败了如何处理？？
