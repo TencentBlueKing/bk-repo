@@ -25,11 +25,12 @@ function _M:report_heartbeat(red)
     local timestamp = ngx.now()
 
     -- Redis key格式: bkrepo:gateway:heartbeat:{ip}
-    local redis_key = "bkrepo:gateway:heartbeat:" .. internal_ip
+    local ip = string.gsub(internal_ip, "[\r\n]+", "")
+    local redis_key = "bkrepo:gateway:heartbeat:" .. ip
     ngx.log(ngx.ERR, "redis key: ", redis_key)
     -- 使用hash存储心跳信息
     local ok, err = red:hmset(redis_key,
-            "ip", internal_ip,
+            "ip", ip,
             "tag", config.ns.tag,
             "timestamp", timestamp,
             "last_update", os.date("%Y-%m-%d %H:%M:%S", timestamp)
@@ -45,7 +46,7 @@ function _M:report_heartbeat(red)
 
     -- 同时维护一个gateway列表，用于快速查询所有在线的gateway
     local list_key = "bkrepo:gateway:list"
-    red:sadd(list_key, internal_ip)
+    red:sadd(list_key, ip)
     red:expire(list_key, 180)
     -- 将连接放回连接池
     local ok, err = red:set_keepalive(10000, 100)
