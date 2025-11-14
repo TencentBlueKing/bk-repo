@@ -70,11 +70,6 @@ allprojects {
             dependency("com.tencent.bk.sdk:crypto-java-sdk:${Versions.CryptoJavaSdk}")
             dependency("org.apache.tika:tika-core:${Versions.TiKa}")
             dependency("com.tencent.bk.sdk:spring-boot-bk-audit-starter:${Versions.Audit}")
-            dependency("com.tencent.devops:devops-schedule-common:${Versions.DevopsBootSNAPSHOT}")
-            dependency("com.tencent.devops:devops-schedule-model:${Versions.DevopsBootSNAPSHOT}")
-            dependency("com.tencent.devops:devops-schedule-server:${Versions.DevopsBootSNAPSHOT}")
-            dependency("com.tencent.devops:devops-schedule-model-mongodb:${Versions.DevopsBootSNAPSHOT}")
-            dependency("com.tencent.devops:devops-schedule-worker:${Versions.DevopsBootSNAPSHOT}")
             dependency("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x:${Versions.EmbeddedMongo}")
             // pulsar-client中依赖的版本太旧，和otel trace中的版本冲突
             dependency("io.opentelemetry:opentelemetry-api-incubator:1.43.0-alpha")

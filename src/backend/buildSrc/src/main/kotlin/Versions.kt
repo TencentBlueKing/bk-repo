@@ -31,8 +31,7 @@ object Release {
 }
 
 object Versions {
-    const val DevopsBoot = "1.1.0-SNAPSHOT"
-    const val DevopsBootSNAPSHOT = "1.1.0-SNAPSHOT"
+    const val DevopsBoot = "1.1.0"
     const val Jersey = "2.35"
     const val Jsoup = "1.17.2"
     const val Redline = "1.2.10"
@@ -66,7 +65,6 @@ object Versions {
     const val FFmpegPlatform = "6.0-1.5.9"
     const val JavaCpp = "1.5.9"
     const val Notice = "1.0.0"
-    const val SpringCloudFunction = "3.2.11"
     const val Audit = "2.0.1"
     const val JodConverter = "4.4.6"
     const val Galimatias = "0.2.1"
