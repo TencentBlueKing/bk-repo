@@ -23,6 +23,7 @@ spec:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: init-iam-rbac
     spec:
+      {{- include "bkrepo.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: init-iam-rbac
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.iam.image "global" .Values.global "bkrepo" .Values.common) }}
