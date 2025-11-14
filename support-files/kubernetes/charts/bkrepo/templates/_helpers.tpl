@@ -19,7 +19,6 @@ Return the proper Docker Image Registry Secret Names
     .Values.opdata.image
     .Values.preview.image
     .Values.replication.image
-    .Values.routercontroller.image
     .Values.s3.image
 ) "global" .Values.global) -}}
 {{- end -}}
