@@ -17,6 +17,8 @@ do
     echo $service
     if [ ${service} = "job-schedule" ] || [ ${service} = "job-worker" ];then
        ./gradlew job:boot-${service}:build ${build_args} -x test
+    elif [ ${service} = "media-job" ];then
+       ./gradlew media:boot-${service}:build ${build_args} -x test
     elif [[ " ${core_service[@]} " == *" ${service} "* ]];then
        ./gradlew :core:${service}:boot-${service}:build ${build_args} -x test
     else
