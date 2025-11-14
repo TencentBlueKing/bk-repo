@@ -20,6 +20,10 @@ commonAnnotations: {}
 ##
 rbac:
   create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["configmaps"]
+      verbs: ["get", "list", "watch"]
 
 ## Specifies whether a ServiceAccount should be created
 ##

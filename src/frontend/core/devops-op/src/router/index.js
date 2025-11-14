@@ -3,6 +3,7 @@ import Router from 'vue-router'
 export const TITLE_HOME = sidebarTitle
 export const ROUTER_NAME_ACCOUNT = 'Account'
 export const ROUTER_NAME_SERVICE = 'Service'
+export const ROUTER_NAME_SERVICE_CONFIG = 'ServiceConfig'
 export const ROUTER_NAME_NODE = 'Node'
 export const ROUTER_NAME_EMPTY_FOLDER = 'EmptyFolder'
 export const ROUTER_NAME_FIRST_LEVEL_FOLDER = 'FirstLevelFolder'
@@ -128,13 +129,21 @@ export const asyncRoutes = [
   {
     path: '/services',
     component: Layout,
+    meta: { title: '服务管理', icon: 'service' },
+    redirect: '/services/services',
     hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
     children: [
       {
-        path: '/',
+        path: 'services',
         name: ROUTER_NAME_SERVICE,
         meta: { title: '服务管理', icon: 'service' },
         component: () => import('@/views/service/index')
+      },
+      {
+        path: 'configs',
+        name: ROUTER_NAME_SERVICE_CONFIG,
+        meta: { title: '配置管理', icon: 'service' },
+        component: () => import('@/views/serviceConfig/index')
       },
       {
         path: ':serviceName/instances',
