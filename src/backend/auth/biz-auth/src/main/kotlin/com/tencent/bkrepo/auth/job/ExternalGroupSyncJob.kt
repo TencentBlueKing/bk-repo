@@ -51,7 +51,7 @@ class ExternalGroupSyncJob(
         val indexIdMap = mutableMapOf<String, String>()
         val projectIdMap = mutableMapOf<String, String>()
         roleList.forEach {
-            projectIdSet.add(it.projectId)
+            projectIdSet.add(it.projectId!!)
             indexIdMap[it.roleId] = it.id!!
             projectIdMap[it.roleId] = it.projectId
         }

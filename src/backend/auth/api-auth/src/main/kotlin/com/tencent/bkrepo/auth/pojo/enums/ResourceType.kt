@@ -36,7 +36,8 @@ enum class ResourceType {
     PROJECT,
     REPO,
     NODE,
-    ENDPOINT;
+    ENDPOINT,
+    REPLICATION;
 
     fun id() = this.name.toLowerCase()
 

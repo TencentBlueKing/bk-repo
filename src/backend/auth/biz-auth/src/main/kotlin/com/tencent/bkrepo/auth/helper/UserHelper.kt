@@ -121,7 +121,7 @@ class UserHelper constructor(
                 roleRepository.findFirstByTypeAndRoleIdAndProjectIdAndRepoName(
                     type = RoleType.REPO,
                     roleId = request.roleId,
-                    projectId = request.projectId,
+                    projectId = request.projectId!!,
                     repoName = request.repoName!!
                 )
             }
@@ -129,7 +129,7 @@ class UserHelper constructor(
                 if (request.source == null) {
                     roleRepository.findFirstByTypeAndProjectIdAndName(
                         type = RoleType.PROJECT,
-                        projectId = request.projectId,
+                        projectId = request.projectId!!,
                         name = request.name
                     )
                 } else {
@@ -137,10 +137,17 @@ class UserHelper constructor(
                     roleRepository.findFirstByTypeAndRoleIdAndProjectIdAndSource(
                         type = RoleType.PROJECT,
                         roleId = request.roleId,
-                        projectId = request.projectId,
+                        projectId = request.projectId!!,
                         source = request.source
                     )
                 }
+            }
+            RoleType.SERVICE -> {
+                require(request.roleId != null && request.projectId == null)
+                roleRepository.findFirstByTypeAndRoleId(
+                    roleId = request.roleId,
+                    type = request.type
+                )
             }
         }
 
@@ -151,7 +158,8 @@ class UserHelper constructor(
 
         val roleId = when (request.type) {
             RoleType.REPO -> request.roleId!!
-            RoleType.PROJECT -> findUsableProjectTypeRoleId(request.roleId, request.projectId)
+            RoleType.PROJECT -> findUsableProjectTypeRoleId(request.roleId, request.projectId!!)
+            RoleType.SERVICE -> request.roleId!!
         }
 
         val result = roleRepository.insert(RoleRequestUtil.conv2TRole(roleId, request))
