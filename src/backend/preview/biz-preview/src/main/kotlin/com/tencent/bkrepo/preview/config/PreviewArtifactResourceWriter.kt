@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.api.exception.SystemErrorException
+import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_CRC64ECMA
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactResponseException
@@ -119,6 +120,7 @@ class PreviewArtifactResourceWriter(
             response.setHeader(HttpHeaders.ETAG, it.sha256)
             response.setHeader(X_CHECKSUM_MD5, it.md5)
             response.setHeader(X_CHECKSUM_SHA256, it.sha256)
+            it.crc64ecma?.let { crc64 -> response.setHeader(X_CHECKSUM_CRC64ECMA, crc64) }
             response.setDateHeader(HttpHeaders.LAST_MODIFIED, resolveLastModified(it.lastModifiedDate))
         }
         return writeRangeStream(resource, request, response)
