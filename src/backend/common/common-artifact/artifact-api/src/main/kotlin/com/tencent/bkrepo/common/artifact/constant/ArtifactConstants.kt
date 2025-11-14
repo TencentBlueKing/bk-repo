@@ -106,6 +106,7 @@ const val DEFAULT_STORAGE_KEY = "default"
  */
 const val X_CHECKSUM_MD5 = "X-Checksum-Md5"
 const val X_CHECKSUM_SHA256 = "X-Checksum-Sha256"
+const val X_CHECKSUM_CRC64ECMA = "X-Checksum-Crc64ecma"
 
 /**
  * 流水线仓库

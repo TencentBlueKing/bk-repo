@@ -32,6 +32,14 @@
   |X-BKREPO-META-{key}|string|否|无|文件元数据，{key}表示元数据key，可以添加多个。key大小写不敏感，按小写存储|file metadata|
   |X-BKREPO-META|string|否|无|文件元数据，格式为base64(key1=value1&key2=value2)。key大小写敏感。当`X-BKREPO-META-{key}`不能满足需求时可用此字段代替|file metadata|
 
+- 响应头
+
+  | 字段                   | 类型     | 说明             | Description                |
+    |----------------------|--------|----------------|----------------------------|
+  | X-Checksum-Sha256    | string | 上传文件的Sha256    | Sha256 of uploaded file    |
+  | X-Checksum-Md5       | string | 上传文件的Md5       | Md5 of uploaded file       |
+  | X-Checksum-Crc64ecma | string | 上传文件的Crc64ecma | Crc64ecma of uploaded file |
+
 
 - 响应体
 
@@ -106,18 +114,21 @@
 
 - 响应头
 
-  |字段|类型|说明|Description|
-  |---|---|---|---|
-  |Accept-Ranges|string|RFC 2616 中定义的服务器接收Range范围|RFC 2616 Accept-Ranges|
-  |Cache-Control|string|RFC 2616 中定义的缓存指令|RFC 2616 Cache-Control|
-  |Connection|string|RFC 2616 中定义，表明响应完成后是否会关闭网络连接。枚举值：keep-alive，close。|RFC 2616 Connection|
-  |Content-Disposition|string|RFC 2616 中定义的文件名称，当download=true才会添加此参数|RFC 2616 Content-Disposition|
-  |Content-Length|long|RFC 2616 中定义的 HTTP 响应内容长度（字节）|RFC 2616 Content Length|
-  |Content-Range|string|RFC 2616 中定义的返回内容的字节范围，仅当请求中指定了 Range 请求头部时才会返回该头部|RFC 2616 Content-Range|
-  |Content-Type|string|RFC 2616 中定义的 HTTP 响应内容类型（MIME）|RFC 2616 Content Length|
-  |Date|string|RFC 1123 中定义的 GMT 格式服务端响应时间，例如Mon, 27 Jul 2020 08:51:59 GMT|RFC 1123 Content Length|
-  |Etag|string|ETag 全称为 Entity Tag，是文件被创建时标识对象内容的信息标签，可用于检查对象的内容是否发生变化，通用制品文件会返回文件的sha256值|ETag, file sha256 checksum|
-  |Last-Modified|string|文件的最近一次上传的时间，例如Mon, 27 Jul 2020 08:51:58 GMT|file last modified time|
+  | 字段                   | 类型     | 说明                                                                          | Description                  |
+  |----------------------|--------|-----------------------------------------------------------------------------|------------------------------|
+  | Accept-Ranges        | string | RFC 2616 中定义的服务器接收Range范围                                                   | RFC 2616 Accept-Ranges       |
+  | Cache-Control        | string | RFC 2616 中定义的缓存指令                                                           | RFC 2616 Cache-Control       |
+  | Connection           | string | RFC 2616 中定义，表明响应完成后是否会关闭网络连接。枚举值：keep-alive，close。                         | RFC 2616 Connection          |
+  | Content-Disposition  | string | RFC 2616 中定义的文件名称，当download=true才会添加此参数                                     | RFC 2616 Content-Disposition |
+  | Content-Length       | long   | RFC 2616 中定义的 HTTP 响应内容长度（字节）                                               | RFC 2616 Content Length      |
+  | Content-Range        | string | RFC 2616 中定义的返回内容的字节范围，仅当请求中指定了 Range 请求头部时才会返回该头部                          | RFC 2616 Content-Range       |
+  | Content-Type         | string | RFC 2616 中定义的 HTTP 响应内容类型（MIME）                                             | RFC 2616 Content Length      |
+  | Date                 | string | RFC 1123 中定义的 GMT 格式服务端响应时间，例如Mon, 27 Jul 2020 08:51:59 GMT                 | RFC 1123 Content Length      |
+  | Etag                 | string | ETag 全称为 Entity Tag，是文件被创建时标识对象内容的信息标签，可用于检查对象的内容是否发生变化，通用制品文件会返回文件的sha256值 | ETag, file sha256 checksum   |
+  | Last-Modified        | string | 文件的最近一次上传的时间，例如Mon, 27 Jul 2020 08:51:58 GMT                                | file last modified time      |
+  | X-Checksum-Sha256    | string | 下载文件的完整Sha256                                                               | Sha256 of download file      |
+  | X-Checksum-Md5       | string | 下载文件的完整Md5                                                                  | Md5 of download file         |
+  | X-Checksum-Crc64ecma | string | 下载文件的完整Crc64ecma,历史数据可能不存在crc64                                             | Crc64ecma of download file   |
 
 - 响应体
   [文件流]
