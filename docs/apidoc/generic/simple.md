@@ -128,7 +128,7 @@
   | Last-Modified        | string | 文件的最近一次上传的时间，例如Mon, 27 Jul 2020 08:51:58 GMT                                | file last modified time      |
   | X-Checksum-Sha256    | string | 下载文件的完整Sha256                                                               | Sha256 of download file      |
   | X-Checksum-Md5       | string | 下载文件的完整Md5                                                                  | Md5 of download file         |
-  | X-Checksum-Crc64ecma | string | 下载文件的完整Crc64ecma                                                            | Crc64ecma of download file   |
+  | X-Checksum-Crc64ecma | string | 下载文件的完整Crc64ecma,历史数据可能不存在crc64                                             | Crc64ecma of download file   |
 
 - 响应体
   [文件流]
