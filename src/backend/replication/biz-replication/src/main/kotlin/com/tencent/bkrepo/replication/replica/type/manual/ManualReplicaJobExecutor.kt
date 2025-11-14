@@ -37,6 +37,7 @@ import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecuto
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.impl.ReplicaRecordServiceImpl.Companion.isCronJob
+import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationTaskDetailMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import org.slf4j.LoggerFactory
@@ -53,8 +54,11 @@ class ManualReplicaJobExecutor(
     localDataManager: LocalDataManager,
     replicaService: ManualBasedReplicaService,
     replicationProperties: ReplicationProperties,
-    private val replicaRecordService: ReplicaRecordService
-) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService, replicationProperties) {
+    private val replicaRecordService: ReplicaRecordService,
+    failureRecordRepository: FailureRecordRepository,
+) : AbstractReplicaJobExecutor(
+    clusterNodeService, localDataManager, replicaService, replicationProperties, failureRecordRepository
+) {
 
     /**
      * 执行仅执行一次的同步任务，仅限remote类型节点同步
@@ -68,12 +72,14 @@ class ManualReplicaJobExecutor(
             .copy(startTime = LocalDateTime.now())
         try {
             logger.info(
-                toJson(convertToReplicationTaskDetailMetricsRecord(
-                    taskDetail = taskDetail,
-                    record = taskRecord,
-                    status = ExecutionStatus.RUNNING,
-                    taskStatus = ReplicaStatus.REPLICATING
-                ))
+                toJson(
+                    convertToReplicationTaskDetailMetricsRecord(
+                        taskDetail = taskDetail,
+                        record = taskRecord,
+                        status = ExecutionStatus.RUNNING,
+                        taskStatus = ReplicaStatus.REPLICATING
+                    )
+                )
             )
             val result = taskDetail.task.remoteClusters.map { submit(taskDetail, taskRecord, it) }.map { it.get() }
             val resultsSummary = getResultsSummary(result)
@@ -90,13 +96,15 @@ class ManualReplicaJobExecutor(
             val taskStatus = if (isCronJob(taskDetail.task.setting, taskDetail.task.replicaType))
                 ReplicaStatus.WAITING else ReplicaStatus.COMPLETED
             logger.info(
-                toJson(convertToReplicationTaskDetailMetricsRecord(
-                taskDetail = taskDetail,
-                record = taskRecord,
-                status = status,
-                taskStatus = taskStatus,
-                errorReason = errorReason
-            ))
+                toJson(
+                    convertToReplicationTaskDetailMetricsRecord(
+                        taskDetail = taskDetail,
+                        record = taskRecord,
+                        status = status,
+                        taskStatus = taskStatus,
+                        errorReason = errorReason
+                    )
+                )
             )
             logger.info("Run once replica task[${taskDetail.task.key}], record[${taskRecord.id}] finished")
         }

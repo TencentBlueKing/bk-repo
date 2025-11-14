@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.config
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.util.unit.DataSize
+import java.time.Duration
 
 @ConfigurationProperties("replication")
 data class ReplicationProperties(
@@ -104,4 +105,29 @@ data class ReplicationProperties(
      * 联邦仓库分发文件并行数
      */
     var federatedFileConcurrencyNum: Int = 3,
+
+    /**
+     * 失败任务最大重试次数
+     */
+    var maxRetryNum: Int = 3,
+
+    /**
+     * 是否自动清理过期失败记录
+     * true: 清理超过最大重试次数且超过保留时间的失败记录
+     * false: 不自动清理失败记录
+     */
+    var autoCleanExpiredFailedRecords: Boolean = false,
+
+    /**
+     * 失败记录保留天数，超过该时间的记录将被清理
+     * 仅当 autoCleanExpiredFailedRecords 为 true 时生效
+     */
+    var failedRecordRetentionDays: Long = 30L,
+
+    /**
+     * 联邦仓库同步文件记录重试时间间隔
+     * 当 retryCount == 0 时，只有最后修改时间在当前时间减去该时间间隔之前的记录才会被重试
+     * 用于避免正在传输的记录立即重试
+     */
+    var federatedRetryInterval: Duration = Duration.ofMinutes(60),
     )

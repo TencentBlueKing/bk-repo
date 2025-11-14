@@ -36,6 +36,7 @@ import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecuto
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -50,10 +51,13 @@ class ScheduledReplicaJobExecutor(
     localDataManager: LocalDataManager,
     replicaService: ScheduledReplicaService,
     replicationProperties: ReplicationProperties,
+    failureRecordRepository: FailureRecordRepository,
     private val replicaTaskService: ReplicaTaskService,
     private val replicaRecordService: ReplicaRecordService,
     private val replicaTaskScheduler: ReplicaTaskScheduler
-) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService, replicationProperties) {
+) : AbstractReplicaJobExecutor(
+    clusterNodeService, localDataManager, replicaService, replicationProperties, failureRecordRepository
+) {
 
     /**
      * 执行同步任务

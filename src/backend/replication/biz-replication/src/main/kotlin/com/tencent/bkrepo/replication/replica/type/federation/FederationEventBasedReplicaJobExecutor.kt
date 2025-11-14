@@ -35,6 +35,7 @@ import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.type.event.CommonEventBasedReplicaJobExecutor
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -49,8 +50,10 @@ class FederationEventBasedReplicaJobExecutor(
     replicaService: FederationBasedReplicaService,
     replicationProperties: ReplicationProperties,
     replicaRecordService: ReplicaRecordService,
+    failureRecordRepository: FailureRecordRepository
 ) : CommonEventBasedReplicaJobExecutor(
-    clusterNodeService, localDataManager, replicaService, replicationProperties, replicaRecordService
+    clusterNodeService, localDataManager, replicaService,
+    replicationProperties, replicaRecordService, failureRecordRepository
 ) {
 
     /**

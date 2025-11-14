@@ -40,7 +40,8 @@ class FilePushContext(
     val name: String,
     val token: String? = null,
     val responseType: Class<*> = Response::class.java,
-    httpClient: OkHttpClient? = null
+    httpClient: OkHttpClient? = null,
+    val federatedSource: String? = null
 ) {
     val httpClient: OkHttpClient = httpClient ?: context.httpClient
 }

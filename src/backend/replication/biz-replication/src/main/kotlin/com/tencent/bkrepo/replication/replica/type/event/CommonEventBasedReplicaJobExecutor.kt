@@ -36,6 +36,7 @@ import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecuto
 import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.slf4j.LoggerFactory
 
 /**
@@ -46,8 +47,11 @@ open class CommonEventBasedReplicaJobExecutor(
     localDataManager: LocalDataManager,
     replicaService: ReplicaService,
     replicationProperties: ReplicationProperties,
-    val replicaRecordService: ReplicaRecordService
-) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService, replicationProperties) {
+    val replicaRecordService: ReplicaRecordService,
+    failureRecordRepository: FailureRecordRepository
+) : AbstractReplicaJobExecutor(
+    clusterNodeService, localDataManager, replicaService, replicationProperties, failureRecordRepository
+) {
 
     /**
      * 执行同步
@@ -64,7 +68,7 @@ open class CommonEventBasedReplicaJobExecutor(
                 replicaOverview.failed += overview.failed
                 replicaOverview.conflict += overview.conflict
                 replicaOverview.fileSuccess += overview.fileSuccess
-                replicaOverview.fileFailed  += overview.fileFailed
+                replicaOverview.fileFailed += overview.fileFailed
             }
             replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
             logger.info("Replica ${event.getFullResourceKey()} completed.")
