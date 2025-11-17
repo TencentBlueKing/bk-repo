@@ -37,11 +37,11 @@ import org.springframework.context.annotation.Configuration
 @ConditionalOnProperty(value = ["spring.cloud.consul.enabled"], havingValue = "false")
 class KubernetesDiscoveryConfig (
     private val discoveryClient: DiscoveryClient,
-    private val podLabelConfig: PodLabelConfig
+    private val podConfig: PodConfig
 ){
 
     @Bean
     fun createK8sClient(): RegistryClient {
-        return KubernetesServiceDiscovery(discoveryClient, podLabelConfig)
+        return KubernetesServiceDiscovery(discoveryClient, podConfig)
     }
 }

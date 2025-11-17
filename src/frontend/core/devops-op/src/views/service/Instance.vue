@@ -107,7 +107,15 @@
   </div>
 </template>
 <script>
-import { bandwidths, down, INSTANCE_STATUS_DEREGISTER, INSTANCE_STATUS_RUNNING, instances, up } from '@/api/service'
+import {
+  bandwidths,
+  checkConsulPattern,
+  down,
+  INSTANCE_STATUS_DEREGISTER,
+  INSTANCE_STATUS_RUNNING,
+  instances,
+  up
+} from '@/api/service'
 
 export default {
   name: 'Instance',

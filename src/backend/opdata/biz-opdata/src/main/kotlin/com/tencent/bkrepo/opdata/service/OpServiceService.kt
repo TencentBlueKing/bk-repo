@@ -59,7 +59,6 @@ class OpServiceService @Autowired constructor(
     private val executor: ThreadPoolTaskExecutor,
     private val redisTemplate: RedisTemplate<String, String>,
 ) {
-
     /**
      * 获取服务列表
      */
@@ -242,6 +241,10 @@ class OpServiceService @Autowired constructor(
 
     fun checkConsulAlive() : Boolean {
         return registryClient.isConsulEnabled()
+    }
+
+    fun getConfigs() : String {
+        return registryClient.configs()
     }
 
     companion object {
