@@ -1,8 +1,12 @@
 package com.tencent.bkrepo.replication.dao
 
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
+import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
+import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -121,5 +125,67 @@ class ReplicaFailureRecordDao : SimpleMongoDao<TReplicaFailureRecord>() {
         ids?.takeIf { it.isNotEmpty() }?.let { criteria.and(ID).`in`(it) }
         maxRetryCount?.let { criteria.and(TReplicaFailureRecord::retryCount.name).gt(it) }
         return remove(Query(criteria)).deletedCount
+    }
+
+    /**
+     * 记录分发失败
+     * 如果存在相同记录，则更新失败原因和重试次数；否则创建新记录
+     */
+    fun recordFailure(
+        taskKey: String,
+        remoteClusterId: String,
+        projectId: String,
+        localRepoName: String,
+        remoteProjectId: String,
+        remoteRepoName: String,
+        failureType: ReplicaObjectType,
+        packageConstraint: PackageConstraint?,
+        pathConstraint: PathConstraint?,
+        failureReason: String?,
+        event: ArtifactEvent?,
+        failedRecordId: String?
+    ) {
+        val existingRecord = if (failedRecordId.isNullOrEmpty()) {
+            null
+        } else {
+            findById(failedRecordId)
+        }
+        if (existingRecord != null) {
+            // 如果存在相同记录，则更新失败原因和重试次数
+            updateExistingRecord(existingRecord.id!!, failureReason)
+        } else {
+            // 如果不存在相同记录，则创建新记录
+            val failureRecord = TReplicaFailureRecord(
+                taskKey = taskKey,
+                projectId = projectId,
+                repoName = localRepoName,
+                remoteProjectId = remoteProjectId,
+                remoteRepoName = remoteRepoName,
+                failureType = failureType,
+                packageConstraint = packageConstraint,
+                pathConstraint = pathConstraint,
+                failureReason = failureReason,
+                event = event,
+                retryCount = 0,
+                retrying = false,
+                remoteClusterId = remoteClusterId
+            )
+            save(failureRecord)
+            logger.info(
+                "Created new failure record for task[$taskKey], type[$failureType] reason[$failureReason]"
+            )
+        }
+    }
+
+    /**
+     * 增加重试次数
+     */
+    fun incrementRetryCount(recordId: String, failureReason: String?) {
+        updateExistingRecord(recordId, failureReason, incrementRetryCount = true)
+        logger.info("Incremented retry count for record[$recordId]")
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ReplicaFailureRecordDao::class.java)
     }
 }

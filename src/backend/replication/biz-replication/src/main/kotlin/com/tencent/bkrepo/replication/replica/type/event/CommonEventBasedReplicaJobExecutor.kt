@@ -33,10 +33,10 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
-import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.slf4j.LoggerFactory
 
 /**
@@ -48,9 +48,9 @@ open class CommonEventBasedReplicaJobExecutor(
     replicaService: ReplicaService,
     replicationProperties: ReplicationProperties,
     val replicaRecordService: ReplicaRecordService,
-    failureRecordRepository: FailureRecordRepository
+    replicaFailureRecordDao: ReplicaFailureRecordDao
 ) : AbstractReplicaJobExecutor(
-    clusterNodeService, localDataManager, replicaService, replicationProperties, failureRecordRepository
+    clusterNodeService, localDataManager, replicaService, replicationProperties, replicaFailureRecordDao
 ) {
 
     /**

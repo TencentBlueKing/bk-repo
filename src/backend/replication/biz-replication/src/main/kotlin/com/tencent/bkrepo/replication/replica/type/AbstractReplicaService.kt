@@ -49,8 +49,8 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ErrorStrategy
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaExecutionContext
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
-import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationRecordDetailMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -74,7 +74,7 @@ import java.time.format.DateTimeFormatter
 abstract class AbstractReplicaService(
     private val replicaRecordService: ReplicaRecordService,
     val localDataManager: LocalDataManager,
-    private val failureRecordRepository: FailureRecordRepository,
+    private val replicaFailureRecordDao: ReplicaFailureRecordDao,
 ) : ReplicaService {
 
     /**
@@ -895,7 +895,7 @@ abstract class AbstractReplicaService(
         artifactEvent: ArtifactEvent?
     ) {
         with(replicaContext) {
-            failureRecordRepository.recordFailure(
+            replicaFailureRecordDao.recordFailure(
                 taskKey = task.key,
                 remoteClusterId = remoteCluster.id!!,
                 projectId = localProjectId,

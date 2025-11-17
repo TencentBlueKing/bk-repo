@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.service.impl.failure
 
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.service.ReplicaRetryService
@@ -21,7 +22,7 @@ import org.mockito.kotlin.whenever
 class FailureRecordRetryExecutorTest {
 
     private val replicaRetryService: ReplicaRetryService = mock()
-    private val failureRecordRepository: FailureRecordRepository = mock()
+    private val replicaFailureRecordDao: ReplicaFailureRecordDao = mock()
 
     private lateinit var failureRecordRetryExecutor: FailureRecordRetryExecutor
     private val testTaskKey = "test-task-key"
@@ -35,7 +36,7 @@ class FailureRecordRetryExecutorTest {
     fun setUp() {
         failureRecordRetryExecutor = FailureRecordRetryExecutor(
             replicaRetryService = replicaRetryService,
-            failureRecordRepository = failureRecordRepository
+            replicaFailureRecordDao = replicaFailureRecordDao
         )
     }
 
@@ -49,7 +50,7 @@ class FailureRecordRetryExecutorTest {
 
         assertTrue(result)
         verify(replicaRetryService, times(1)).retryFailureRecord(record)
-        verify(failureRecordRepository, times(1)).deleteById("record-id")
+        verify(replicaFailureRecordDao, times(1)).deleteById("record-id")
     }
 
     @Test
@@ -62,7 +63,7 @@ class FailureRecordRetryExecutorTest {
 
         assertFalse(result)
         verify(replicaRetryService, times(1)).retryFailureRecord(record)
-        verify(failureRecordRepository, never()).deleteById(any())
+        verify(replicaFailureRecordDao, never()).deleteById(any())
     }
 
     @Test
@@ -77,7 +78,7 @@ class FailureRecordRetryExecutorTest {
         }
 
         verify(replicaRetryService, times(1)).retryFailureRecord(record)
-        verify(failureRecordRepository, never()).deleteById(any())
+        verify(replicaFailureRecordDao, never()).deleteById(any())
     }
 
     @Test
@@ -101,7 +102,7 @@ class FailureRecordRetryExecutorTest {
         val result = failureRecordRetryExecutor.execute(record)
 
         assertFalse(result)
-        verify(failureRecordRepository, never()).deleteById(eq("record-id"))
+        verify(replicaFailureRecordDao, never()).deleteById(eq("record-id"))
     }
 
     // ========== 辅助方法 ==========

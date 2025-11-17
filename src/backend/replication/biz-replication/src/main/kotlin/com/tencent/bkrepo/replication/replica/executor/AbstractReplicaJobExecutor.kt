@@ -42,9 +42,9 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
-import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
@@ -58,7 +58,7 @@ open class AbstractReplicaJobExecutor(
     private val localDataManager: LocalDataManager,
     private val replicaService: ReplicaService,
     private val replicationProperties: ReplicationProperties,
-    private val failureRecordRepository: FailureRecordRepository,
+    private val replicaFailureRecordDao: ReplicaFailureRecordDao,
 ) {
 
     private val threadPoolExecutor: ThreadPoolExecutor = ReplicaThreadPoolExecutor.instance
@@ -155,7 +155,7 @@ open class AbstractReplicaJobExecutor(
         exception: Throwable,
         event: ArtifactEvent?
     ) {
-        failureRecordRepository.recordFailure(
+        replicaFailureRecordDao.recordFailure(
             taskKey = context.task.key,
             remoteClusterId = context.remoteCluster.id!!,
             projectId = context.localProjectId,

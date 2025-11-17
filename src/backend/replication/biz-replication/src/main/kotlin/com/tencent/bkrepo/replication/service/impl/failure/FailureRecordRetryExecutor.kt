@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.service.impl.failure
 
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.service.ReplicaRetryService
 import org.slf4j.LoggerFactory
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Component
 @Component
 class FailureRecordRetryExecutor(
     private val replicaRetryService: ReplicaRetryService,
-    private val failureRecordRepository: FailureRecordRepository
+    private val replicaFailureRecordDao: ReplicaFailureRecordDao
 ) {
 
     /**
@@ -25,7 +26,7 @@ class FailureRecordRetryExecutor(
 
             if (success) {
                 // 成功后删除记录
-                failureRecordRepository.deleteById(record.id!!)
+                replicaFailureRecordDao.deleteById(record.id!!)
                 logger.info("Successfully retried and deleted record[${record.id}]")
                 true
             } else {

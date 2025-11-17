@@ -30,9 +30,11 @@ package com.tencent.bkrepo.replication.replica.type.federation
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.replication.dao.EventRecordDao
 import com.tencent.bkrepo.replication.replica.executor.FederationThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.type.event.EventConsumer
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
 
 /**
@@ -43,6 +45,7 @@ import org.springframework.stereotype.Component
 class FederationArtifactEventConsumer(
     private val replicaTaskService: ReplicaTaskService,
     private val federationBasedReplicaJobExecutor: FederationEventBasedReplicaJobExecutor,
+    private val eventRecordDao: EventRecordDao,
 ) : EventConsumer() {
 
     private val federationExecutors = FederationThreadPoolExecutor.instance
@@ -69,11 +72,27 @@ class FederationArtifactEventConsumer(
         return !message.source.isNullOrEmpty()
     }
 
-    override fun action(event: ArtifactEvent) {
+    override fun action(message: Message<ArtifactEvent>) {
+        val event = message.payload
+        // 获取所有相关的任务
+        val tasks = replicaTaskService.listFederationTasks(event.projectId, event.repoName)
+        if (tasks.isEmpty()) {
+            logger.debug("No federation tasks found for event: ${event.getFullResourceKey()}")
+            return
+        }
+
+        // 生成唯一的事件ID
+        val eventId = generateEventId(event)
+        
+        // 在消费前保存事件到数据库
+        val taskKeys = tasks.map { it.task.key }
+        saveEventRecord(eventRecordDao, eventId, event, taskKeys, "FEDERATION")
+
+        // 执行任务，传递事件ID用于跟踪
         federationExecutors.execute(
             Runnable {
-                replicaTaskService.listFederationTasks(event.projectId, event.repoName).forEach {
-                    federationBasedReplicaJobExecutor.execute(it, event)
+                tasks.forEach { task ->
+                    federationBasedReplicaJobExecutor.execute(task, event, eventId)
                 }
             }.trace()
         )
