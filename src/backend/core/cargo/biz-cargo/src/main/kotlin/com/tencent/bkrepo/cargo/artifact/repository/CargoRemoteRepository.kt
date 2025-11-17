@@ -49,7 +49,7 @@ import com.tencent.bkrepo.cargo.pojo.artifact.CargoArtifactInfo.Companion.CARGO_
 import com.tencent.bkrepo.cargo.pojo.artifact.CargoDeleteArtifactInfo
 import com.tencent.bkrepo.cargo.pojo.event.CargoPackageDeleteRequest
 import com.tencent.bkrepo.cargo.pojo.index.IndexConfiguration
-import com.tencent.bkrepo.cargo.service.impl.CommonService
+import com.tencent.bkrepo.cargo.service.impl.CargoCommonService
 import com.tencent.bkrepo.cargo.utils.ObjectBuilderUtil
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -74,7 +74,7 @@ import kotlin.text.ifEmpty
 
 @Component
 class CargoRemoteRepository(
-    private val commonService: CommonService,
+    private val cargoCommonService: CargoCommonService,
 ) : RemoteRepository() {
 
     private val downloadHostCache = CacheBuilder.newBuilder().maximumSize(100)
@@ -239,7 +239,7 @@ class CargoRemoteRepository(
     override fun buildDownloadRecord(
         context: ArtifactDownloadContext,
         artifactResource: ArtifactResource
-    ) = commonService.buildDownloadRecord(context.userId, context.artifactInfo as CargoArtifactInfo)
+    ) = cargoCommonService.buildDownloadRecord(context.userId, context.artifactInfo as CargoArtifactInfo)
 
     private fun parseConfigResponse(response: Response): IndexConfiguration? {
         return response.body?.byteStream().use {
@@ -248,7 +248,7 @@ class CargoRemoteRepository(
     }
 
     override fun remove(context: ArtifactRemoveContext) {
-        commonService.removeCargoRelatedNode(context)
+        cargoCommonService.removeCargoRelatedNode(context)
         with(context.artifactInfo as CargoDeleteArtifactInfo) {
             val event = CargoPackageDeleteEvent(
                 CargoPackageDeleteRequest(

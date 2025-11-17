@@ -122,4 +122,15 @@ class UserFederationRepositoryController(
         federationRepositoryService.fullSyncFederationRepository(projectId, repoName, federationId)
         return ResponseBuilder.success()
     }
+
+    @Operation(summary = "更新全量同步结束状态")
+    @PutMapping("/fullSync/end/{projectId}/{repoName}/{federationId}")
+    fun updateFullSyncEnd(
+        @PathVariable("projectId") projectId: String,
+        @PathVariable("repoName") repoName: String,
+        @PathVariable("federationId") federationId: String,
+    ): Response<Void> {
+        federationRepositoryService.updateFullSyncEnd(projectId, repoName, federationId)
+        return ResponseBuilder.success()
+    }
 }

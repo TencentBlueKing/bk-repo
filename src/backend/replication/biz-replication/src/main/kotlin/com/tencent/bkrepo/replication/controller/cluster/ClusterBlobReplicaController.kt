@@ -27,11 +27,12 @@
 
 package com.tencent.bkrepo.replication.controller.cluster
 
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
-import com.tencent.bkrepo.common.security.permission.Principal
-import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.replication.constant.BLOB_PULL_URI
 import com.tencent.bkrepo.replication.pojo.blob.BlobPullRequest
@@ -44,13 +45,13 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/cluster")
-@Principal(type = PrincipalType.ADMIN)
 class ClusterBlobReplicaController(
     private val storageService: StorageService,
     private val storageCredentialService: StorageCredentialService
-)  {
+) {
 
     @PostMapping(BLOB_PULL_URI)
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     fun pull(@RequestBody request: BlobPullRequest): ResponseEntity<InputStreamResource> {
         with(request) {
             val credentials = storageCredentialService.findByKey(storageKey)

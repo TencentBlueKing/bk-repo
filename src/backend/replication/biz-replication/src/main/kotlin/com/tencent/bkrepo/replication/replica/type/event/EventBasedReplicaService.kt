@@ -35,9 +35,10 @@ import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
-import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.springframework.stereotype.Component
 
 /**
@@ -46,8 +47,9 @@ import org.springframework.stereotype.Component
 @Component
 class EventBasedReplicaService(
     replicaRecordService: ReplicaRecordService,
-    localDataManager: LocalDataManager
-) : AbstractReplicaService(replicaRecordService, localDataManager) {
+    localDataManager: LocalDataManager,
+    failureRecordRepository: FailureRecordRepository
+) : AbstractReplicaService(replicaRecordService, localDataManager, failureRecordRepository) {
 
     override fun replica(context: ReplicaContext) {
         with(context) {
@@ -65,18 +67,21 @@ class EventBasedReplicaService(
                     val pathConstraint = PathConstraint(event.resourceKey)
                     replicaByPathConstraint(this, pathConstraint)
                 }
+
                 EventType.VERSION_CREATED -> {
                     val packageKey = event.data["packageKey"].toString()
                     val packageVersion = event.data["packageVersion"].toString()
                     val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
                     replicaByPackageConstraint(this, packageConstraint)
                 }
+
                 EventType.VERSION_UPDATED -> {
                     val packageKey = event.data["packageKey"].toString()
                     val packageVersion = event.data["packageVersion"].toString()
                     val packageConstraint = PackageConstraint(packageKey, listOf(packageVersion))
                     replicaByPackageConstraint(this, packageConstraint)
                 }
+
                 else -> throw UnsupportedOperationException()
             }
         }

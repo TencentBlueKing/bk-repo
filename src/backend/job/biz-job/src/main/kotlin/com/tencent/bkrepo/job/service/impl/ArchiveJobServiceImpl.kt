@@ -56,7 +56,7 @@ class ArchiveJobServiceImpl(
         val context = NodeContext()
         NodeCommonUtils.findByCollectionAsync(query, BATCH_SIZE, collectionName) {
             val node = archiveJob.mapToEntity(it)
-            archiveJob.archiveNode(node, context, storageClass, key, days)
+            archiveJob.archiveNode(node, context, storageClass, key)
         }.subscribe {
             logger.info("Success to archive project[$projectId], $context")
         }

@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.replica.type
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.manager.LocalDataManager
@@ -49,6 +50,7 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ErrorStrategy
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaExecutionContext
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationRecordDetailMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -72,6 +74,7 @@ import java.time.format.DateTimeFormatter
 abstract class AbstractReplicaService(
     private val replicaRecordService: ReplicaRecordService,
     val localDataManager: LocalDataManager,
+    private val failureRecordRepository: FailureRecordRepository,
 ) : ReplicaService {
 
     /**
@@ -487,7 +490,7 @@ abstract class AbstractReplicaService(
             val record = ReplicationRecord(
                 path = node.fullPath,
                 sha256 = node.sha256,
-                size = node.size.toString()
+                size = node.size.toString(),
             )
             val fullPath = "${node.projectId}/${node.repoName}${node.fullPath}"
             runActionAndPrintLog(context, record) {
@@ -591,9 +594,9 @@ abstract class AbstractReplicaService(
     ) {
         with(context) {
             val record = ReplicationRecord(
-                packageName = packageSummary.name,
+                packageName = packageSummary.key,
                 version = version.name,
-                size = version.size.toString()
+                size = version.size.toString(),
             )
             val fullPath = "${packageSummary.name}-${version.name}"
             runActionAndPrintLog(context, record) {
@@ -694,13 +697,19 @@ abstract class AbstractReplicaService(
                 status = ExecutionStatus.FAILED
                 errorReason = throwable.message.orEmpty()
                 logger.error(
-                    "replica file failed, " +
-                        "error is ${Throwables.getStackTraceAsString(throwable)}"
+                    "replica file failed, error is ${Throwables.getStackTraceAsString(throwable)}"
                 )
                 replicaContext.replicaProgress.failed++
                 setErrorStatus(this, throwable)
+
                 // 非全量同步且配置了快速失败策略时，直接抛出异常
-                if (shouldFastFail(replicaContext)) {
+                val willThrow = shouldFastFail(replicaContext)
+
+                // 只针对不抛异常的进行记录
+                if (!willThrow) {
+                    // 记录分发失败
+                    recordFailureToDatabase(context, throwable)
+                } else {
                     throw throwable
                 }
             } finally {
@@ -823,6 +832,87 @@ abstract class AbstractReplicaService(
         context.appendErrorReason(throwable.message.orEmpty())
         context.replicaContext.status = ExecutionStatus.FAILED
         context.replicaContext.errorMessage = throwable.message.orEmpty()
+    }
+
+    /**
+     * 记录分发失败到数据库
+     */
+    private fun recordFailureToDatabase(context: ReplicaExecutionContext, throwable: Throwable) {
+        try {
+            val replicaContext = context.replicaContext
+            if (replicaContext.task.replicaType == ReplicaType.RUN_ONCE) {
+                return
+            }
+
+            val artifactEvent = getArtifactEventSafely(replicaContext)
+            val (packageConstraint, pathConstraint) = getConstraints(context, artifactEvent)
+
+            recordFailureToRepository(
+                replicaContext = replicaContext,
+                packageConstraint = packageConstraint,
+                pathConstraint = pathConstraint,
+                throwable = throwable,
+                artifactEvent = artifactEvent
+            )
+        } catch (e: Exception) {
+            logger.warn("Failed to record failure to database", e)
+        }
+    }
+
+    /**
+     * 安全获取 artifactEvent
+     */
+    private fun getArtifactEventSafely(replicaContext: ReplicaContext): ArtifactEvent? {
+        return try {
+            replicaContext.event
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 获取包约束和路径约束
+     */
+    private fun getConstraints(
+        context: ReplicaExecutionContext,
+        artifactEvent: ArtifactEvent?
+    ): Pair<PackageConstraint?, PathConstraint?> {
+        return if (artifactEvent != null) {
+            Pair(null, null)
+        } else {
+            Pair(context.detail.packageConstraint, context.detail.pathConstraint)
+        }
+    }
+
+    /**
+     * 记录失败信息到仓库
+     */
+    private fun recordFailureToRepository(
+        replicaContext: ReplicaContext,
+        packageConstraint: PackageConstraint?,
+        pathConstraint: PathConstraint?,
+        throwable: Throwable,
+        artifactEvent: ArtifactEvent?
+    ) {
+        with(replicaContext) {
+            failureRecordRepository.recordFailure(
+                taskKey = task.key,
+                remoteClusterId = remoteCluster.id!!,
+                projectId = localProjectId,
+                localRepoName = localRepoName,
+                remoteProjectId = remoteProjectId ?: "",
+                remoteRepoName = remoteRepoName ?: "",
+                failureType = task.replicaObjectType,
+                packageConstraint = packageConstraint,
+                pathConstraint = pathConstraint,
+                failureReason = throwable.message ?: "Unknown error",
+                event = artifactEvent,
+                failedRecordId = failedRecordId
+            )
+            logger.info(
+                "Recorded failure for task[${task.key}],  reason[${throwable.message}]"
+            )
+        }
     }
 
     /**

@@ -12,6 +12,7 @@ import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
+import com.tencent.bkrepo.replication.manager.LocalDataManager.Companion.federatedSource
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
@@ -104,15 +105,19 @@ abstract class AbstractFileReplicator(
                 size = node.size,
                 sha256 = node.sha256,
                 md5 = node.md5,
-                crc64ecma = node.crc64ecma
+                crc64ecma = node.crc64ecma,
+                federatedSource = federatedSource(node)
             )
+
             is TBlockNode -> NodeInfoData(
                 name = node.nodeFullPath,
                 size = node.size,
                 sha256 = node.sha256,
                 md5 = null,  // TBlockNode没有md5属性
-                crc64ecma = node.crc64ecma
+                crc64ecma = node.crc64ecma,
+                federatedSource = null
             )
+
             else -> throw IllegalArgumentException("Unsupported node type: ${node!!::class.simpleName}")
         }
 
@@ -124,6 +129,7 @@ abstract class AbstractFileReplicator(
                 sha256 = nodeInfoData.sha256,
                 md5 = nodeInfoData.md5,
                 crc64ecma = nodeInfoData.crc64ecma,
+                federatedSource = nodeInfoData.federatedSource
             ),
             pushType = pushType,
             downGrade = downGrade
@@ -136,7 +142,8 @@ abstract class AbstractFileReplicator(
         val size: Long,
         val sha256: String?,
         val md5: String?,
-        val crc64ecma: String?
+        val crc64ecma: String?,
+        val federatedSource: String?
     )
 
     /**
