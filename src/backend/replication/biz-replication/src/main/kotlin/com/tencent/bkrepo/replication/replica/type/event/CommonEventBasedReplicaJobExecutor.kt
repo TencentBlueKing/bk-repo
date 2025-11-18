@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.type.event
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.replication.config.ReplicationProperties
+import com.tencent.bkrepo.replication.dao.EventRecordDao
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
@@ -48,7 +49,8 @@ open class CommonEventBasedReplicaJobExecutor(
     replicaService: ReplicaService,
     replicationProperties: ReplicationProperties,
     val replicaRecordService: ReplicaRecordService,
-    replicaFailureRecordDao: ReplicaFailureRecordDao
+    replicaFailureRecordDao: ReplicaFailureRecordDao,
+    protected val eventRecordDao: EventRecordDao?
 ) : AbstractReplicaJobExecutor(
     clusterNodeService, localDataManager, replicaService, replicationProperties, replicaFailureRecordDao
 ) {
@@ -56,10 +58,19 @@ open class CommonEventBasedReplicaJobExecutor(
     /**
      * 执行同步
      */
-    fun execute(taskDetail: ReplicaTaskDetail, event: ArtifactEvent) {
-        if (!replicaObjectCheck(taskDetail, event)) return
+    fun execute(taskDetail: ReplicaTaskDetail, event: ArtifactEvent, eventId: String? = null) {
         val task = taskDetail.task
+        val taskKey = task.key
+        if (!replicaObjectCheck(taskDetail, event)) {
+            eventId?.let {
+                // 如果任务不匹配，认为任务已完成（跳过），但不算失败
+                updateEventRecordAfterTaskCompletion(eventId, taskKey, true)
+            }
+            return
+        }
         val taskRecord: ReplicaRecordInfo = replicaRecordService.findOrCreateLatestRecord(task.key)
+        var taskSucceeded = true
+
         try {
             val results = task.remoteClusters.map { submit(taskDetail, taskRecord, it, event) }.map { it.get() }
             val replicaOverview = getResultsSummary(results).replicaOverview
@@ -71,9 +82,16 @@ open class CommonEventBasedReplicaJobExecutor(
                 replicaOverview.fileFailed += overview.fileFailed
             }
             replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
+            taskSucceeded = !results.any { it?.progress?.failed != 0L || it?.progress?.fileFailed != 0L}
             logger.info("Replica ${event.getFullResourceKey()} completed.")
         } catch (exception: Exception) {
             logger.error("Replica ${event.getFullResourceKey()}} failed: $exception", exception)
+            taskSucceeded = false
+        } finally {
+            eventId?.let {
+                // 更新事件记录状态
+                updateEventRecordAfterTaskCompletion(eventId, taskKey, taskSucceeded)
+            }
         }
     }
 
@@ -85,6 +103,47 @@ open class CommonEventBasedReplicaJobExecutor(
         return true
     }
 
+    /**
+     * 更新事件记录的任务完成状态
+     * 当任务完成时，如果成功则删除记录，如果失败则保留记录用于重试并增加重试次数
+     * @param eventId 事件ID
+     * @param taskKey 任务key
+     * @param taskSucceeded 任务是否成功执行
+     */
+    private fun updateEventRecordAfterTaskCompletion(
+        eventId: String,
+        taskKey: String,
+        taskSucceeded: Boolean
+    ) {
+        if (eventRecordDao == null) {
+            return
+        }
+        try {
+            // 使用原子操作更新任务完成状态
+            val eventRecord = eventRecordDao.updateTaskStatus(eventId, taskKey, taskSucceeded)
+            if (eventRecord == null) {
+                logger.warn("Event record not found for eventId: $eventId")
+                return
+            }
+
+            // 如果任务完成
+            if (eventRecord.taskCompleted) {
+                if (eventRecord.taskSucceeded) {
+                    // 任务成功，删除记录
+                    eventRecordDao.deleteByEventId(eventId)
+                } else {
+                    // 任务失败，增加重试次数并保留记录用于重试
+                    eventRecordDao.incrementRetryCount(eventId)
+                    logger.info(
+                        "Task completed for eventId: $eventId, taskKey: $taskKey, but failed. " +
+                            "Event record kept for retry. Retry count incremented."
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            logger.warn("Failed to update event record for eventId: $eventId, taskKey: $taskKey", e)
+        }
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(CommonEventBasedReplicaJobExecutor::class.java)

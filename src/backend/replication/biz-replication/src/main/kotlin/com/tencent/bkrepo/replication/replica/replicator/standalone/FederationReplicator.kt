@@ -78,20 +78,19 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 联邦仓库数据同步类
  */
 @Component
 class FederationReplicator(
-    private val localDataManager: LocalDataManager,
+    localDataManager: LocalDataManager,
     artifactReplicationHandler: ClusterArtifactReplicationHandler,
     replicationProperties: ReplicationProperties,
     private val federationRepositoryService: FederationRepositoryService,
     private val federationMetadataTrackingService: FederationMetadataTrackingService,
     private val replicaRecordService: ReplicaRecordService,
-) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties) {
+) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties, localDataManager) {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
     private var version: String = DEFAULT_VERSION
@@ -314,49 +313,6 @@ class FederationReplicator(
         }
     }
 
-    /**
-     * 执行块文件传输
-     */
-    private fun executeBlockFileTransfer(
-        context: ReplicaContext,
-        node: NodeInfo,
-        blockNodeList: List<TBlockNode>
-    ): Boolean {
-        val latch = CountDownLatch(blockNodeList.size)
-        val failureCount = AtomicInteger(0)
-
-        blockNodeList.forEach { blockNode ->
-            if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
-                // 异步执行
-                executor.execute(
-                    Runnable {
-                        try {
-                            pushBlockFileToFederatedCluster(context, blockNode)
-                        } catch (throwable: Throwable) {
-                            handleBlockFileTransferError(context, node, throwable)
-                            failureCount.incrementAndGet()
-                        } finally {
-                            latch.countDown()
-                        }
-                    }.trace()
-                )
-            } else {
-                // 同步执行
-                try {
-                    pushBlockFileToFederatedCluster(context, blockNode)
-                } catch (throwable: Throwable) {
-                    handleBlockFileTransferError(context, node, throwable)
-                    failureCount.incrementAndGet()
-                } finally {
-                    latch.countDown()
-                }
-            }
-        }
-
-        // 等待所有文件传输完成
-        latch.await()
-        return failureCount.get() == 0
-    }
 
     /**
      * 异步执行文件传输
@@ -541,21 +497,6 @@ class FederationReplicator(
         return transferBlockNodeFilesAndSaveMetadata(context, node, blockNodeList)
     }
 
-    /**
-     * 验证并获取块节点列表
-     */
-    private fun validateAndGetBlockNodeList(context: ReplicaContext, node: NodeInfo): List<TBlockNode>? {
-        if (!blockNode(node)) {
-            logger.warn("Node ${node.fullPath} in repo ${node.projectId}|${node.repoName} is link node.")
-            return null
-        }
-
-        val blockNodeList = localDataManager.listBlockNode(node)
-        if (blockNodeList.isEmpty()) {
-            logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
-        }
-        return blockNodeList
-    }
 
     /**
      * 传输块节点文件并保存元数据
@@ -566,7 +507,14 @@ class FederationReplicator(
         blockNodeList: List<TBlockNode>
     ): Boolean {
         // 并发传输文件
-        val success = executeBlockFileTransfer(context, node, blockNodeList)
+        val success = executeBlockFileTransfer(
+            blockNodeExecutor = executor,
+            context = context,
+            node = node,
+            blockNodeList = blockNodeList,
+            pushBlockFile = { ctx, blockNode -> pushBlockFileToFederatedCluster(ctx, blockNode) },
+            handleError = { ctx, nodeInfo, throwable -> handleBlockFileTransferError(ctx, nodeInfo, throwable) }
+        )
         if (!success) return false
 
         // 保存元数据标识传输完成

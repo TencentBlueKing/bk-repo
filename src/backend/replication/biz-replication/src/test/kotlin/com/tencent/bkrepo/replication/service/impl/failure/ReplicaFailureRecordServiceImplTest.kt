@@ -87,7 +87,6 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
             packageConstraint = null,
             pathConstraint = null,
             failureReason = testFailureReason,
-            event = null,
             failedRecordId = null
         )
 
@@ -115,7 +114,6 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
             packageConstraint = null,
             pathConstraint = null,
             failureReason = "New reason",
-            event = null,
             failedRecordId = existingRecord.id
         )
 
@@ -139,7 +137,6 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
             packageConstraint = null,
             pathConstraint = null,
             failureReason = testFailureReason,
-            event = null,
             failedRecordId = ""
         )
 

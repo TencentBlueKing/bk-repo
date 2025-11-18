@@ -130,7 +130,8 @@ open class AbstractReplicaJobExecutor(
 
         try {
             val event = getEventSafely(context)
-            recordFailure(context, exception, event)
+            if (event != null) return
+            recordFailure(context, exception)
         } catch (e: Exception) {
             logger.warn("Failed to record failure to database in submit", e)
         }
@@ -150,11 +151,7 @@ open class AbstractReplicaJobExecutor(
     /**
      * 记录失败信息到数据库
      */
-    private fun recordFailure(
-        context: ReplicaContext,
-        exception: Throwable,
-        event: ArtifactEvent?
-    ) {
+    private fun recordFailure(context: ReplicaContext, exception: Throwable) {
         replicaFailureRecordDao.recordFailure(
             taskKey = context.task.key,
             remoteClusterId = context.remoteCluster.id!!,
@@ -166,7 +163,6 @@ open class AbstractReplicaJobExecutor(
             packageConstraint = context.taskObject.packageConstraints?.firstOrNull(),
             pathConstraint = context.taskObject.pathConstraints?.firstOrNull(),
             failureReason = exception.message ?: "Unknown error",
-            event = event,
             failedRecordId = context.failedRecordId
         )
     }

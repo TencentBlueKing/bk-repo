@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.replication.dao
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
@@ -142,7 +141,6 @@ class ReplicaFailureRecordDao : SimpleMongoDao<TReplicaFailureRecord>() {
         packageConstraint: PackageConstraint?,
         pathConstraint: PathConstraint?,
         failureReason: String?,
-        event: ArtifactEvent?,
         failedRecordId: String?
     ) {
         val existingRecord = if (failedRecordId.isNullOrEmpty()) {
@@ -165,7 +163,6 @@ class ReplicaFailureRecordDao : SimpleMongoDao<TReplicaFailureRecord>() {
                 packageConstraint = packageConstraint,
                 pathConstraint = pathConstraint,
                 failureReason = failureReason,
-                event = event,
                 retryCount = 0,
                 retrying = false,
                 remoteClusterId = remoteClusterId

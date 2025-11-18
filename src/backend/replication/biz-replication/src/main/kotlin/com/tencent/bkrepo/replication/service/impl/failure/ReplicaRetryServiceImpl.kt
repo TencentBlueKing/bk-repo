@@ -7,7 +7,6 @@ import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
-import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.type.ReplicaService
@@ -89,6 +88,8 @@ class ReplicaRetryServiceImpl(
             logger.warn("Task[${failureRecord.taskKey}] is disabled, skip retry")
             return false
         }
+        if (failureRecord.pathConstraint == null && failureRecord.packageConstraint == null)
+            return false
         return true
     }
 
@@ -169,12 +170,6 @@ class ReplicaRetryServiceImpl(
                 remoteCluster = remoteCluster,
                 replicationProperties = replicationProperties
             )
-
-            // 如果有event，设置到context中
-            failureRecord.event?.let {
-                context.event = it
-                context.executeType = TaskExecuteType.DELTA
-            }
 
             // 设置失败记录ID，用于在重试成功后删除记录
             context.failedRecordId = failureRecord.id

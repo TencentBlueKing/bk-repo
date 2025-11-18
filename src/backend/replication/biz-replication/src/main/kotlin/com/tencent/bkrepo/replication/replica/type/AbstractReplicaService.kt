@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.metrics.ReplicationRecord
 import com.tencent.bkrepo.replication.pojo.record.ExecutionResult
@@ -49,7 +50,6 @@ import com.tencent.bkrepo.replication.pojo.task.setting.ConflictStrategy
 import com.tencent.bkrepo.replication.pojo.task.setting.ErrorStrategy
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaExecutionContext
-import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.convertToReplicationRecordDetailMetricsRecord
 import com.tencent.bkrepo.replication.util.ReplicationMetricsRecordUtil.toJson
@@ -845,14 +845,15 @@ abstract class AbstractReplicaService(
             }
 
             val artifactEvent = getArtifactEventSafely(replicaContext)
-            val (packageConstraint, pathConstraint) = getConstraints(context, artifactEvent)
-
+            if (artifactEvent != null) {
+                // event类型的失败在event_record中会进行重试处理
+                return
+            }
             recordFailureToRepository(
                 replicaContext = replicaContext,
-                packageConstraint = packageConstraint,
-                pathConstraint = pathConstraint,
+                packageConstraint = context.detail.packageConstraint,
+                pathConstraint = context.detail.pathConstraint,
                 throwable = throwable,
-                artifactEvent = artifactEvent
             )
         } catch (e: Exception) {
             logger.warn("Failed to record failure to database", e)
@@ -870,19 +871,6 @@ abstract class AbstractReplicaService(
         }
     }
 
-    /**
-     * 获取包约束和路径约束
-     */
-    private fun getConstraints(
-        context: ReplicaExecutionContext,
-        artifactEvent: ArtifactEvent?
-    ): Pair<PackageConstraint?, PathConstraint?> {
-        return if (artifactEvent != null) {
-            Pair(null, null)
-        } else {
-            Pair(context.detail.packageConstraint, context.detail.pathConstraint)
-        }
-    }
 
     /**
      * 记录失败信息到仓库
@@ -892,7 +880,6 @@ abstract class AbstractReplicaService(
         packageConstraint: PackageConstraint?,
         pathConstraint: PathConstraint?,
         throwable: Throwable,
-        artifactEvent: ArtifactEvent?
     ) {
         with(replicaContext) {
             replicaFailureRecordDao.recordFailure(
@@ -906,7 +893,6 @@ abstract class AbstractReplicaService(
                 packageConstraint = packageConstraint,
                 pathConstraint = pathConstraint,
                 failureReason = throwable.message ?: "Unknown error",
-                event = artifactEvent,
                 failedRecordId = failedRecordId
             )
             logger.info(

@@ -34,7 +34,6 @@ import com.tencent.bkrepo.replication.dao.EventRecordDao
 import com.tencent.bkrepo.replication.replica.executor.FederationThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.type.event.EventConsumer
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
-import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
 
 /**
@@ -72,27 +71,21 @@ class FederationArtifactEventConsumer(
         return !message.source.isNullOrEmpty()
     }
 
-    override fun action(message: Message<ArtifactEvent>) {
-        val event = message.payload
+    override fun action(event: ArtifactEvent) {
         // 获取所有相关的任务
         val tasks = replicaTaskService.listFederationTasks(event.projectId, event.repoName)
         if (tasks.isEmpty()) {
-            logger.debug("No federation tasks found for event: ${event.getFullResourceKey()}")
             return
         }
+        // 为每个taskKey创建一条独立的event记录，并执行任务
+        val keyMap = storeEventRecord(tasks, eventRecordDao, event, "FEDERATION")
 
-        // 生成唯一的事件ID
-        val eventId = generateEventId(event)
-        
-        // 在消费前保存事件到数据库
-        val taskKeys = tasks.map { it.task.key }
-        saveEventRecord(eventRecordDao, eventId, event, taskKeys, "FEDERATION")
-
-        // 执行任务，传递事件ID用于跟踪
+        // 为每个taskKey创建一条独立的event记录，并执行任务
         federationExecutors.execute(
             Runnable {
                 tasks.forEach { task ->
-                    federationBasedReplicaJobExecutor.execute(task, event, eventId)
+                    // 执行任务，传递事件ID用于跟踪
+                    federationBasedReplicaJobExecutor.execute(task, event, keyMap[task.task.key])
                 }
             }.trace()
         )

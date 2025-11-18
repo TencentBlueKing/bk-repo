@@ -29,6 +29,9 @@ package com.tencent.bkrepo.replication.replica.type.event
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.replication.dao.EventRecordDao
+import com.tencent.bkrepo.replication.model.TEventRecord
+import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 
 /**
  * 构件事件消费者，用于实时同步
@@ -46,18 +49,68 @@ open class EventConsumer {
      */
     open fun getAcceptTypes(): Set<EventType> = emptySet()
 
-    fun accept(message: ArtifactEvent) {
-        if (!getAcceptTypes().contains(message.type)) {
+    fun accept(event: ArtifactEvent) {
+        if (!getAcceptTypes().contains(event.type)) {
             return
         }
-        if (sourceCheck(message)) {
+        if (sourceCheck(event)) {
             return
         }
-        action(message)
+        action(event)
     }
 
     /**
      * 执行具体的业务
      */
     open fun action(event: ArtifactEvent) {}
+
+
+    protected fun storeEventRecord(
+        tasks: List<ReplicaTaskDetail>,
+        eventRecordDao: EventRecordDao,
+        event: ArtifactEvent,
+        eventType: String
+    ): Map<String, String?> {
+        // 为每个taskKey创建一条独立的event记录，并执行任务
+        val keyMap = mutableMapOf<String, String?>()
+        tasks.forEach { task ->
+            // 在消费前保存事件到数据库，每个taskKey单独记录一条
+            val eventRecordId = saveEventRecord(eventRecordDao, event, task.task.key, eventType)
+            keyMap[task.task.key] = eventRecordId
+        }
+        return keyMap
+    }
+
+    /**
+     * 保存事件记录到数据库
+     * 为每个taskKey创建一条独立的记录
+     * @param eventRecordDao 事件记录数据访问对象
+     * @param event 事件对象
+     * @param taskKey 任务key
+     * @param eventType 事件类型：NORMAL 或 FEDERATION
+     * @return record id
+     */
+    private fun saveEventRecord(
+        eventRecordDao: EventRecordDao,
+        event: ArtifactEvent,
+        taskKey: String,
+        eventType: String
+    ): String? {
+        // 为每个taskKey创建一条独立的记录
+        val eventRecord = TEventRecord(
+            eventType = eventType,
+            event = event,
+            taskKey = taskKey,
+            taskCompleted = false,
+            taskSucceeded = false,
+        )
+
+        return try {
+            val record = eventRecordDao.saveEventRecord(eventRecord)
+            record.id
+        } catch (e: Exception) {
+            // 即使保存失败，也继续处理事件，避免阻塞
+            null
+        }
+    }
 }
