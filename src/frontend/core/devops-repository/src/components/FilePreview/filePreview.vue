@@ -205,7 +205,7 @@
                 window.resetWaterMark()
             },
             dealWaterMark () {
-                const param = this.extraParam !== '0' ? Base64.decode(this.extraParam) : ''
+                const param = this.extraParam !== '0' ? Base64.decode(decodeURIComponent(this.extraParam)) : ''
                 const obj = param !== '' ? JSON.parse(param) : ''
                 if (obj && obj.watermarkTxt) {
                     const watermark = {
