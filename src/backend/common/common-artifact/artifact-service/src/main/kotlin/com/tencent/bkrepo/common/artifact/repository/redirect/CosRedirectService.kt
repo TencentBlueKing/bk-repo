@@ -32,7 +32,10 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
-import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
+import com.tencent.bkrepo.common.metadata.dao.blocknode.BlockNodeDao
+import com.tencent.bkrepo.common.metadata.model.TBlockNode
+import com.tencent.bkrepo.common.metadata.util.BlockNodeQueryHelper
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -45,7 +48,7 @@ import com.tencent.bkrepo.common.storage.innercos.http.HttpProtocol
 import com.tencent.bkrepo.common.storage.innercos.request.CosRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.urlEncode
-import com.tencent.bkrepo.repository.pojo.node.NodeDetail
+import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import org.slf4j.LoggerFactory
 import org.springframework.core.annotation.Order
 import org.springframework.http.HttpHeaders
@@ -63,7 +66,7 @@ import java.util.Locale
 class CosRedirectService(
     private val storageProperties: StorageProperties,
     private val storageService: StorageService,
-    private val permissionManager: PermissionManager,
+    private val blockNodeDao: BlockNodeDao,
 ) : DownloadRedirectService {
     override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
         if (!storageProperties.redirect.enabled) {
@@ -102,17 +105,37 @@ class CosRedirectService(
 
         val redirectTo = HttpContextHolder.getRequest().getHeader("X-BKREPO-DOWNLOAD-REDIRECT-TO")
         val needToRedirect = repoSupportRedirectTo ||
-            redirectTo == RedirectTo.INNERCOS.name ||
-            storageProperties.redirect.redirectAllDownload
+                redirectTo == RedirectTo.INNERCOS.name ||
+                storageProperties.redirect.redirectAllDownload
 
-        // 文件存在于COS上时才会被重定向
-        return needToRedirect && isProjectAllowed(context.projectId) && guessFileExists(node, storageCredentials)
+        if (!needToRedirect || !isProjectAllowed(context.projectId)) {
+            return false
+        }
+
+        // 判断fsNode还是node，是否可重定向
+        return if (node.metadata.containsKey(FS_ATTR_KEY)) {
+            val request = HttpContextHolder.getRequest()
+            val range = HttpRangeUtils.resolveRange(request, node.size)
+            val query = BlockNodeQueryHelper.blockNodeQuery(
+                node.projectId, node.repoName, node.fullPath, range.start, range.length,
+            )
+            blockNodeDao.findOne(query)?.let {
+                request.setAttribute(ATTR_KEY_REDIRECT_TO_BLOCK_NODE, it)
+                guessFileExists(it.sha256, it.size, it.createdDate, storageCredentials)
+            } ?: false
+        } else {
+            // 文件存在于COS上时才会被重定向
+            val createdDateTime = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
+            guessFileExists(node.sha256!!, node.size, createdDateTime, storageCredentials)
+        }
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
         val credentials = context.repositoryDetail.storageCredentials ?: storageProperties.defaultStorageCredentials()
         require(credentials is InnerCosCredentials)
         val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo)!!
+        val blockNode = HttpContextHolder.getRequest().getAttribute(ATTR_KEY_REDIRECT_TO_BLOCK_NODE) as? TBlockNode
+        val sha256 = blockNode?.sha256 ?: node.sha256!!
 
         // 创建请求并签名
         val clientConfig = ClientConfig(credentials).apply {
@@ -121,12 +144,15 @@ class CosRedirectService(
             endpointResolver = DefaultEndpointResolver()
             httpProtocol = HttpProtocol.HTTPS
         }
-        val request = GetObjectRequest(node.sha256!!)
+        val request = GetObjectRequest(sha256)
         val range = HttpContextHolder.getRequest().getHeader(Headers.RANGE)
         if (!range.isNullOrEmpty()) {
             request.headers[Headers.RANGE] = range
         }
-        addCosResponseHeaders(context, request, node)
+        val cacheControl = node.metadata[HttpHeaders.CACHE_CONTROL]?.toString()
+            ?: node.metadata[HttpHeaders.CACHE_CONTROL.lowercase(Locale.getDefault())]?.toString()
+            ?: StringPool.NO_CACHE
+        addCosResponseHeaders(context, request, cacheControl)
         val urlencodedSign = request.sign(credentials, clientConfig).urlEncode(true)
         if (request.parameters.isEmpty()) {
             request.url += "?sign=$urlencodedSign"
@@ -135,15 +161,16 @@ class CosRedirectService(
         }
 
         // 重定向
-        logger.info("Redirect request of download node[${node.sha256}] to cos[${credentials.key}]")
+        logger.info("Redirect request of download sha256[${sha256}] to cos[${credentials.key}]")
         context.response.sendRedirect(request.url)
     }
 
-    private fun addCosResponseHeaders(context: ArtifactDownloadContext, request: CosRequest, node: NodeDetail) {
+    private fun addCosResponseHeaders(
+        context: ArtifactDownloadContext,
+        request: CosRequest,
+        cacheControl: String
+    ) {
         val filename = context.artifactInfo.getResponseName()
-        val cacheControl = node.metadata[HttpHeaders.CACHE_CONTROL]?.toString()
-            ?: node.metadata[HttpHeaders.CACHE_CONTROL.lowercase(Locale.getDefault())]?.toString()
-            ?: StringPool.NO_CACHE
         request.parameters["response-cache-control"] = cacheControl
         val mime = determineMediaType(filename, storageProperties.response.mimeMappings)
         request.parameters["response-content-type"] = mime
@@ -156,26 +183,31 @@ class CosRedirectService(
     /**
      * 推测文件是否在COS上存在
      */
-    private fun guessFileExists(node: NodeDetail, storageCredentials: StorageCredentials): Boolean {
+    private fun guessFileExists(
+        sha256: String,
+        size: Long,
+        createdDateTime: LocalDateTime,
+        storageCredentials: StorageCredentials
+    ): Boolean {
         // 判断文件存在时间，文件存在时间超过预期的上传耗时则认为文件已上传到COS，避免频繁请求COS判断文件是否存在
-        val createdDateTime = LocalDateTime.parse(node.createdDate, DateTimeFormatter.ISO_DATE_TIME)
         val existsDuration = Duration.between(createdDateTime, LocalDateTime.now())
-        val expectedUploadSeconds = node.size / storageProperties.redirect.uploadSizePerSecond.toBytes()
+        val expectedUploadSeconds = size / storageProperties.redirect.uploadSizePerSecond.toBytes()
         if (existsDuration.seconds > expectedUploadSeconds) {
             return true
         }
 
         // 判断文件是否已经上传到COS
-        logger.info("Checking node[${node.sha256}] exist in cos, createdDateTime[${node.createdDate}]")
-        return storageService.exist(node.sha256!!, storageCredentials)
+        logger.info("Checking node[${sha256}] exist in cos, createdDateTime[${createdDateTime}]")
+        return storageService.exist(sha256, storageCredentials)
     }
 
-    private fun isProjectAllowed(projectId: String ): Boolean {
+    private fun isProjectAllowed(projectId: String): Boolean {
         val blackProjectList = storageProperties.redirect.projectBlackList
         return !blackProjectList.contains(projectId)
     }
 
     companion object {
+        private const val ATTR_KEY_REDIRECT_TO_BLOCK_NODE = "REDIRECT_TO_BLOCK_NODE"
         private val logger = LoggerFactory.getLogger(CosRedirectService::class.java)
     }
 }

@@ -81,6 +81,13 @@ object BlockNodeQueryHelper {
         return Query(criteria)
     }
 
+    fun blockNodeQuery(projectId: String, repoName: String, fullPath: String, startPos: Long, size: Long): Query {
+        val criteria = fullPathCriteria(projectId, repoName, fullPath, false)
+            .and(TBlockNode::startPos.name).isEqualTo(startPos)
+            .and(TBlockNode::size.name).isEqualTo(size)
+        return Query(criteria).with(Sort.by(TBlockNode::createdDate.name).descending())
+    }
+
     fun fullPathCriteria(projectId: String, repoName: String, fullPath: String, deep: Boolean): Criteria {
         val criteria = if (deep) {
             where(TBlockNode::nodeFullPath).regex("^${EscapeUtils.escapeRegex(fullPath)}/")
