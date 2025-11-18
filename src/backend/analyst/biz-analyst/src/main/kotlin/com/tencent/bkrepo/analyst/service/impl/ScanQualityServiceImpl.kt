@@ -197,19 +197,23 @@ class ScanQualityServiceImpl(
         plan: TScanPlan,
         planSubtask: TPlanArtifactLatestSubScanTask?
     ): CheckForbidResult {
-        // 未扫描过且开启了禁用未扫描制品
         val scanned = planSubtask?.sha256 == sha256 &&
                 planSubtask.projectId == projectId &&
                 planSubtask.repoName == repoName &&
                 planSubtask.fullPath == fullPath
-        if (!scanned && plan.scanQuality[ScanQuality::forbidNotScanned.name] == true) {
-            logger.info("forbid [$projectId/$repoName$fullPath][$sha256][${plan.id}], reason: forbid not scanned")
-            return CheckForbidResult(true, ForbidType.NOT_SCANNED.name, ScanPlanConverter.convert(plan))
-        }
-
-        // 未扫描过时不禁用
         if (!scanned) {
-            return CheckForbidResult()
+            // 未扫描过，且同时满足以下条件时禁用：1.扫描方案开启了自动扫描；2.扫描方案开启了禁用未扫描制品; 3.自动扫描的制品匹配规则匹配当前制品
+            return if (
+                plan.scanOnNewArtifact &&
+                plan.scanQuality[ScanQuality::forbidNotScanned.name] == true &&
+                RuleUtil.match(plan.rule.readJsonString(), projectId, repoName, fullPath)
+            ) {
+                logger.info("forbid [$projectId/$repoName$fullPath][$sha256][${plan.id}], reason: forbid not scanned")
+                CheckForbidResult(true, ForbidType.NOT_SCANNED.name, ScanPlanConverter.convert(plan))
+            } else {
+                // 未扫描过，且未同时满足以上条件时不禁用
+                CheckForbidResult()
+            }
         }
 
         // 扫描过时判断是否通过质量规则
