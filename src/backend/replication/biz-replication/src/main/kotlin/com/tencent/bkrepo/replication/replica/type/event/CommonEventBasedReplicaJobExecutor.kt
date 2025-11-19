@@ -35,6 +35,7 @@ import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
 import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
@@ -82,7 +83,10 @@ open class CommonEventBasedReplicaJobExecutor(
                 replicaOverview.fileFailed += overview.fileFailed
             }
             replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
-            taskSucceeded = !results.any { it?.progress?.failed != 0L || it?.progress?.fileFailed != 0L}
+            taskSucceeded = !results.any { result ->
+                result?.progress?.failed != 0L || result.progress?.fileFailed != 0L ||
+                result.status == ExecutionStatus.FAILED
+            }
             logger.info("Replica ${event.getFullResourceKey()} completed.")
         } catch (exception: Exception) {
             logger.error("Replica ${event.getFullResourceKey()}} failed: $exception", exception)
