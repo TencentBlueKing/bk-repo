@@ -214,6 +214,7 @@
     "previewCompressedLimitTips": "You can preview only compressed files smaller than 1Gb",
     "previewFileTips": "Note: Text files larger than 50 MB will only display the first 50 MB of content.",
     "telephone": "Telephone",
+    "wrongTelephone": "Wrong Number",
     "accountPermission": "Account Permission",
     "newPassword": "New password",
     "currentPassword": "Current password",
