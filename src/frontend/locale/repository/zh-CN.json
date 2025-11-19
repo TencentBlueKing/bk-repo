@@ -220,6 +220,7 @@
     "previewCompressedLimitTips": "仅支持预览1Gb以内的压缩文件",
     "previewFileTips": "注意：超过50M的文本文件只展示前50M的内容",
     "telephone": "电话",
+    "wrongTelephone": "电话号码错误",
     "accountPermission": "账号权限",
     "newPassword": "新密码",
     "currentPassword": "原密码",

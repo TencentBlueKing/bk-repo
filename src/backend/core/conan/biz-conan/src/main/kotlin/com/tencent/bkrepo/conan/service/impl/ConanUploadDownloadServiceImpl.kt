@@ -50,7 +50,7 @@ import org.springframework.stereotype.Service
 class ConanUploadDownloadServiceImpl : ConanUploadDownloadService {
 
     @Autowired
-    lateinit var commonService: CommonService
+    lateinit var conanCommonService: ConanCommonService
 
     override fun uploadFile(conanArtifactInfo: ConanArtifactInfo, artifactFile: ArtifactFile) {
         val checksumDeploy = HttpContextHolder.getRequest().getHeader(X_CHECKSUM_DEPLOY)?.toBoolean() ?: false
@@ -60,7 +60,7 @@ class ConanUploadDownloadServiceImpl : ConanUploadDownloadService {
         } else {
             // conan客户端上传文件前会使用同样请求去确认文件是否存在, 此时会上传sha1进行对比，但是没有sha1, 默认全部重新上传，
             val fullPath = generateFullPath(conanArtifactInfo)
-            val nodeDetail = commonService.getNodeDetail(
+            val nodeDetail = conanCommonService.getNodeDetail(
                 conanArtifactInfo.projectId, conanArtifactInfo.repoName, fullPath
             )
             val sha1 = HttpContextHolder.getRequest().getHeader(X_CHECKSUM_SHA1)?.toString()

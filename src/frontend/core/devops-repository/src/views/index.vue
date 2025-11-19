@@ -53,8 +53,10 @@
             ...mapState(['userInfo', 'projectList']),
             menuList () {
                 const routerName = this.$route.name
-                if (routerName === '440' || routerName === 'filePreview' || routerName === 'outsideFilePreview') this.routerStatus = false
-                if (routerName !== 'filePreview' || routerName !== 'outsideFilePreview') window.resetWaterMark()
+                const isFilePreview = routerName === 'filePreview' || routerName === 'outsideFilePreview'
+                const isError = routerName === '440' || routerName === '404'
+                if (isError || isFilePreview) this.routerStatus = false
+                if (!isFilePreview) window.resetWaterMark()
                 if (MODE_CONFIG === 'ci' || this.projectList.length) {
                     const showRepoScan = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
                     return {
@@ -86,11 +88,7 @@
         },
         watch: {
             '$route' (to, from) {
-                if (to.name === '440' || to.name === 'filePreview' || to.name === 'outsideFilePreview') {
-                    this.routerStatus = false
-                } else {
-                    this.routerStatus = true
-                }
+                this.routerStatus = !(to.name === '440' || to.name === '404' || to.name === 'filePreview' || to.name === 'outsideFilePreview')
             }
         },
         mounted () {

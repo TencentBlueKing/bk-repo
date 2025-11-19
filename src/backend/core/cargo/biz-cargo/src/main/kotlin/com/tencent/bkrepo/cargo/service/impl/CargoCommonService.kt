@@ -73,7 +73,7 @@ import org.springframework.stereotype.Component
 import java.io.InputStream
 
 @Component
-class CommonService {
+class CargoCommonService {
 
     @Autowired
     lateinit var lockOperation: LockOperation
@@ -307,7 +307,7 @@ class CommonService {
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(CommonService::class.java)
+        private val logger = LoggerFactory.getLogger(CargoCommonService::class.java)
         const val REDIS_LOCK_KEY_PREFIX = "cargo:lock:index:"
 
     }

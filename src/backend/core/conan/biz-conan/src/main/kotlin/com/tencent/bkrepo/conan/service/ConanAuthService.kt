@@ -28,9 +28,9 @@
 package com.tencent.bkrepo.conan.service
 
 /**
- * 基础公共服务接口
+ * Conan认证接口
  */
-interface ConanCommonService {
+interface ConanAuthService {
     /**
      * 校验token合法性
      */

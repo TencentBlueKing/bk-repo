@@ -38,7 +38,7 @@ import com.tencent.bkrepo.huggingface.pojo.user.UserRepoCreateRequest
 import com.tencent.bkrepo.huggingface.pojo.user.UserRepoDeleteRequest
 import com.tencent.bkrepo.huggingface.pojo.user.UserRepoMoveRequest
 import com.tencent.bkrepo.huggingface.pojo.user.UserRepoUpdateRequest
-import com.tencent.bkrepo.huggingface.service.RepoService
+import com.tencent.bkrepo.huggingface.service.HfRepoService
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -53,8 +53,8 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/{projectId}/{repoName}")
-class RepoController(
-    private val repoService: RepoService,
+class HfRepoController(
+    private val hfRepoService: HfRepoService,
     private val permissionManager: PermissionManager,
 ) {
 
@@ -72,7 +72,7 @@ class RepoController(
             private = request.private,
             type = request.type
         )
-        return repoService.create(repoCreateRequest)
+        return hfRepoService.create(repoCreateRequest)
     }
 
     @PutMapping("/api/{type}s/{organization}/{name}/settings")
@@ -94,7 +94,7 @@ class RepoController(
             type = type,
             repoId = repoId
         )
-        repoService.update(repoUpdateRequest)
+        hfRepoService.update(repoUpdateRequest)
     }
 
     @PostMapping("/api/repos/move")
@@ -111,7 +111,7 @@ class RepoController(
             toRepo = request.toRepo,
             type = request.type
         )
-        repoService.move(repoMoveRequest)
+        hfRepoService.move(repoMoveRequest)
     }
 
     @DeleteMapping("/api/repos/delete")
@@ -128,6 +128,6 @@ class RepoController(
             type = request.type,
             revision = null,
         )
-        repoService.delete(repoDeleteRequest)
+        hfRepoService.delete(repoDeleteRequest)
     }
 }
