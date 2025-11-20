@@ -5,6 +5,7 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
+import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.objects.ReplicaObjectInfo
@@ -71,7 +72,7 @@ class ReplicaRetryServiceImpl(
             // 构建ReplicaContext并调用replica方法进行重试
             buildAndRetry(taskDetail, failureRecord, remoteCluster, replicaService)
         } catch (e: Exception) {
-            logger.error("Failed to retry failure record[${failureRecord.id}]: ${e.message}", e)
+            logger.warn("Failed to retry failure record[${failureRecord.id}]: ${e.message}", e)
             false
         }
     }
@@ -88,7 +89,8 @@ class ReplicaRetryServiceImpl(
             logger.warn("Task[${failureRecord.taskKey}] is disabled, skip retry")
             return false
         }
-        if (failureRecord.pathConstraint == null && failureRecord.packageConstraint == null)
+        if (failureRecord.pathConstraint == null && failureRecord.packageConstraint == null
+            && failureRecord.failureType != ReplicaObjectType.REPOSITORY)
             return false
         return true
     }
@@ -192,7 +194,7 @@ class ReplicaRetryServiceImpl(
             }
             success
         } catch (e: Exception) {
-            logger.error("Failed to retry failure record[${failureRecord.id}]: ${e.message}", e)
+            logger.warn("Failed to retry failure record[${failureRecord.id}]: ${e.message}", e)
             false
         }
     }

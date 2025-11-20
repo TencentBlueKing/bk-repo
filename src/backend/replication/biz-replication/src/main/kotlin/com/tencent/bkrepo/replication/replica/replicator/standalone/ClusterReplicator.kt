@@ -265,7 +265,7 @@ class ClusterReplicator(
      * 处理块文件传输错误
      */
     private fun handleBlockFileTransferError(context: ReplicaContext, node: NodeInfo, throwable: Throwable) {
-        logger.error(
+        logger.warn(
             "replica block file of ${node.fullPath} with sha256 ${node.sha256} in repo " +
                 "${node.projectId}|${node.repoName} failed, error is ${Throwables.getStackTraceAsString(throwable)}"
         )

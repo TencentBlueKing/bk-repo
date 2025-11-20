@@ -186,7 +186,7 @@ class FederationReplicator(
                 replicaFile(context, node.nodeInfo)
             }
             val packageMetadata = packageVersion.packageMetadata as MutableList<MetadataModel>
-            packageMetadata.add(MetadataModel(FEDERATED, false, true))
+            packageMetadata.add(MetadataModel(FEDERATED, true, true))
             // 包数据
             val request = PackageVersionCreateRequest(
                 projectId = remoteProjectId,
@@ -359,7 +359,7 @@ class FederationReplicator(
      * 处理块文件传输错误
      */
     private fun handleBlockFileTransferError(context: ReplicaContext, node: NodeInfo, throwable: Throwable) {
-        logger.error(
+        logger.warn(
             "replica block file of ${node.fullPath} with sha256 ${node.sha256} in repo " +
                 "${node.projectId}|${node.repoName} failed, error is ${Throwables.getStackTraceAsString(throwable)}"
         )
@@ -370,7 +370,7 @@ class FederationReplicator(
      * 处理文件传输错误
      */
     private fun handleFileTransferError(context: ReplicaContext, node: NodeInfo, throwable: Throwable) {
-        logger.error(
+        logger.warn(
             "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
                 "${node.projectId}|${node.repoName} failed, error is ${Throwables.getStackTraceAsString(throwable)}"
         )
@@ -697,7 +697,10 @@ class FederationReplicator(
             } else {
                 emptyList()
             }
-            val updatedMetadata = metadata.plus(MetadataModel(FEDERATED, false, true))
+            val updatedMetadata = mergeMetadata(
+                metadata, mutableListOf(MetadataModel(FEDERATED, false, true))
+            )
+
             return NodeCreateRequest(
                 projectId = remoteProjectId,
                 repoName = remoteRepoName,
@@ -717,6 +720,15 @@ class FederationReplicator(
                 source = getCurrentClusterName(localProjectId, localRepoName, task.name)
             )
         }
+    }
+
+    private fun mergeMetadata(
+        oldMetadata: List<MetadataModel>,
+        addMetadata: List<MetadataModel>
+    ): List<MetadataModel> {
+        val metadataMap = oldMetadata.associateByTo(HashMap(oldMetadata.size + addMetadata.size)) { it.key }
+        addMetadata.forEach { metadataMap[it.key] = it }
+        return metadataMap.values.toMutableList()
     }
 
     private fun buildBlockNodeCreateRequest(

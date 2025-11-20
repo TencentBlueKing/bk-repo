@@ -15,6 +15,7 @@ import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.manager.LocalDataManager.Companion.federatedSource
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
@@ -236,6 +237,46 @@ abstract class AbstractFileReplicator(
         // 等待所有文件传输完成
         latch.await()
         return failureCount.get() == 0
+    }
+
+    override fun checkNodeExist(
+        context: ReplicaContext,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        deleted: String?
+    ): Boolean {
+        return try {
+            context.artifactReplicaClient?.checkNodeExist(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                deleted = deleted
+            )?.data == true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override fun checkPackageVersionExist(
+        context: ReplicaContext,
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        versionName: String
+    ): Boolean {
+        return try {
+            context.artifactReplicaClient?.checkPackageVersionExist(
+                PackageVersionExistCheckRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageKey = packageKey,
+                    versionName = versionName
+                )
+            )?.data == true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     companion object {

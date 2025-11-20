@@ -28,7 +28,7 @@ class FailureRecordRetryStateManager(
                 replicaFailureRecordDao.updateRetryStatus(record.id!!, true)
             } catch (e: Exception) {
                 // 即使设置状态失败，也继续执行重试逻辑
-                logger.error("Failed to set retry status for record[${record.id}]", e)
+                logger.warn("Failed to set retry status for record[${record.id}]", e)
             }
             
             success = block()
