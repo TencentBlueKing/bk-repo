@@ -32,7 +32,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.determineMediaType
 import com.tencent.bkrepo.common.artifact.util.http.HttpHeaderUtils.encodeDisposition
-import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.core.StorageService
@@ -63,7 +63,6 @@ import java.util.Locale
 class CosRedirectService(
     private val storageProperties: StorageProperties,
     private val storageService: StorageService,
-    private val permissionManager: PermissionManager,
 ) : DownloadRedirectService {
     override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
         if (!storageProperties.redirect.enabled) {
@@ -78,7 +77,8 @@ class CosRedirectService(
             node.folder ||
             artifact == null ||
             node.compressed == true || // 压缩文件不支持重定向
-            node.archived == true // 归档文件不支持重定向
+            node.archived == true || // 归档文件不支持重定向
+            node.sha256 == FAKE_SHA256 // block-node或link-node不支持重定向
         ) {
             return false
         }
