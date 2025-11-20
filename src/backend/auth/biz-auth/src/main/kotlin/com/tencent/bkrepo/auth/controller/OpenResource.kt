@@ -176,14 +176,16 @@ open class OpenResource(private val permissionService: PermissionService) {
      */
     fun checkRequest(request: CheckPermissionRequest) {
         with(request) {
-            // 所有资源类型都需要 projectId
-            validateParameter(projectId, "projectId")
-            
             when (resourceType) {
+                ResourceType.PROJECT.toString() -> {
+                    validateParameter(projectId, "projectId")
+                }
                 ResourceType.REPO.toString() -> {
+                    validateParameter(projectId, "projectId")
                     validateParameter(repoName, "repoName")
                 }
                 ResourceType.NODE.toString() -> {
+                    validateParameter(projectId, "projectId")
                     validateParameter(repoName, "repoName")
                     validateParameter(path, "path")
                 }
