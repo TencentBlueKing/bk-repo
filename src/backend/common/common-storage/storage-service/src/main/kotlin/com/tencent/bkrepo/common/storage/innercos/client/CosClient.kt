@@ -350,6 +350,10 @@ class CosClient(val credentials: InnerCosCredentials) {
         return Callable {
             retry(RETRY_COUNT) {
                 CosHttpClient.request(downloadRequest).use {
+                    if (!it.isSuccessful) {
+                        throw InnerCosException("download object failed, " +
+                                "url:${it.request.url}, code:${it.code}")
+                    }
                     val putObjectRequest = buildHttpRequest(
                         StreamUploadPartRequest(
                             key = key,
