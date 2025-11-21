@@ -192,3 +192,8 @@ const val SHA256_STR_LENGTH = 64
  * 下载请求参数，用于指示从远程仓库下载时是否读取缓存
  */
 const val FLAG_QUERY_CACHE = "queryCacheFlag"
+
+/**
+ * 制品加解密key请求头
+ */
+const val HEADER_CRYPT_KEY = "X-BKREPO-CRYPT-KEY"
