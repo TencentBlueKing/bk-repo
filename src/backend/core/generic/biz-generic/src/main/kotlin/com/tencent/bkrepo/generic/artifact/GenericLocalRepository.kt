@@ -198,6 +198,7 @@ class GenericLocalRepository(
         }
         // 二次检查，防止接收文件过程中，有并发上传成功的情况
         checkNodeExist(context)
+        checkCopyHeader(context)
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
@@ -295,6 +296,23 @@ class GenericLocalRepository(
         copy(context)
     }
 
+    /**
+     * 检查转存仓库权限
+     * 因为onUpload成功后已经写入response，onUploadSuccess执行复制出错时无法返回异常信息，所以在onUploadBefore中检查权限
+     */
+    private fun checkCopyHeader(context: ArtifactUploadContext) {
+        with(context) {
+            val dstProjectId = request.getHeader(HEADER_CP_PROJECT) ?: projectId
+            val dstRepoName = request.getHeader(HEADER_CP_REPO) ?: repoName
+            val dstFullPath = request.getHeader(HEADER_CP_FULLPATH) ?: artifactInfo.getArtifactFullPath()
+            if (dstProjectId == projectId && dstRepoName == repoName &&
+                dstFullPath == artifactInfo.getArtifactFullPath()) {
+                return
+            }
+            permissionManager.checkNodePermission(PermissionAction.WRITE, dstProjectId, dstRepoName, dstFullPath)
+        }
+    }
+
     private fun copy(context: ArtifactUploadContext) {
         val request = HttpContextHolder.getRequestOrNull() ?: return
         with(context.artifactInfo) {
@@ -304,7 +322,6 @@ class GenericLocalRepository(
             if (dstProjectId == projectId && dstRepoName == repoName && dstFullPath == getArtifactFullPath()) {
                 return
             }
-            permissionManager.checkNodePermission(PermissionAction.WRITE, dstProjectId, dstRepoName, dstFullPath)
             val copyRequest = NodeMoveCopyRequest(
                 srcProjectId = projectId,
                 srcRepoName = repoName,

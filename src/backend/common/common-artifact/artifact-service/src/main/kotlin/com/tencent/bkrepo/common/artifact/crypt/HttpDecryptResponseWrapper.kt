@@ -15,7 +15,7 @@ class HttpDecryptResponseWrapper(
     response: HttpServletResponse,
 ) : HttpServletResponseWrapper(response) {
     override fun getOutputStream(): ServletOutputStream {
-        val keyBytes = SecretKeyProvider.getKeyBytes(key)
+        val keyBytes = key.toByteArray()
         return DelegatingServletOutputStream(SM4DecryptOutputStream(super.getOutputStream(), keyBytes))
     }
 

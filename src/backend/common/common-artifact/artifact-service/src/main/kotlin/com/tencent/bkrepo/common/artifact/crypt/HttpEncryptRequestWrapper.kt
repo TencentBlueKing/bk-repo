@@ -16,7 +16,7 @@ class HttpEncryptRequestWrapper(
     private val random = SecureRandom()
 
     override fun getInputStream(): ServletInputStream {
-        val keyBytes = SecretKeyProvider.getKeyBytes(key)
+        val keyBytes = key.toByteArray()
         val cipher = createSM4Cipher(keyBytes, Cipher.ENCRYPT_MODE)
         return DelegatingServletInputStream(EncryptInputStream(super.getInputStream(), cipher, DEFAULT_BUFFER_SIZE))
     }
