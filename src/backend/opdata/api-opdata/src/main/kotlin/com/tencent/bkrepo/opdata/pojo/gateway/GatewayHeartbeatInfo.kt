@@ -27,26 +27,14 @@
 
 package com.tencent.bkrepo.opdata.pojo.gateway
 
-import io.swagger.annotations.ApiModel
-import io.swagger.annotations.ApiModelProperty
 
 /**
  * Gateway心跳信息
  */
-@ApiModel("Gateway心跳信息")
 data class GatewayHeartbeatInfo(
-    @ApiModelProperty("Gateway IP地址")
     val ip: String,
-    
-    @ApiModelProperty("Gateway标签")
     val tag: String,
-    
-    @ApiModelProperty("心跳时间戳")
     val timestamp: String,
-    
-    @ApiModelProperty("最后更新时间")
     val lastUpdate: String,
-    
-    @ApiModelProperty("是否在线")
     val online: Boolean = true
 )

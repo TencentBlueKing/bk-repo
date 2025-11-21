@@ -28,15 +28,12 @@
 package com.tencent.bkrepo.opdata.controller
 
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.metadata.annotation.LogOperate
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder.success
 import com.tencent.bkrepo.opdata.pojo.gateway.GatewayHeartbeatInfo
 import com.tencent.bkrepo.opdata.service.GatewayHeartbeatService
-import io.swagger.annotations.Api
-import io.swagger.annotations.ApiOperation
-import io.swagger.annotations.ApiParam
+import org.apache.pulsar.shade.io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -46,7 +43,6 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * Gateway心跳管理接口
  */
-@Api(tags = ["Gateway心跳管理"])
 @RestController
 @RequestMapping("/api/gateway/heartbeat")
 @Principal(PrincipalType.ADMIN)
@@ -59,7 +55,6 @@ class GatewayHeartbeatController @Autowired constructor(
      */
     @ApiOperation("获取所有Gateway的tag列表")
     @GetMapping("/tags")
-    @LogOperate(type = "GATEWAY_HEARTBEAT_TAGS")
     fun listAllTags(): Response<List<String>> {
         return success(gatewayHeartbeatService.listAllTags())
     }
@@ -69,9 +64,7 @@ class GatewayHeartbeatController @Autowired constructor(
      */
     @ApiOperation("根据tag获取Gateway列表")
     @GetMapping("/tag/{tag}")
-    @LogOperate(type = "GATEWAY_HEARTBEAT_BY_TAG")
     fun listGatewaysByTag(
-        @ApiParam("Gateway标签", required = true)
         @PathVariable tag: String
     ): Response<List<GatewayHeartbeatInfo>> {
         return success(gatewayHeartbeatService.listGatewaysByTag(tag))
