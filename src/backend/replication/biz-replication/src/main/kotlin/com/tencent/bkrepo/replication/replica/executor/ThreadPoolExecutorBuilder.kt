@@ -115,6 +115,12 @@ object ThreadPoolExecutorBuilder {
             maxPoolSizeMultiplier = 4
         )
 
+        val CLUSTER_BLOCK_FILE = ThreadPoolConfig(
+            threadNamePrefix = "cluster-block-file-worker",
+            corePoolSizeMultiplier = 2,
+            maxPoolSizeMultiplier = 4
+        )
+
         val FEDERATION_FULL_SYNC = ThreadPoolConfig(
             threadNamePrefix = "fullSync-worker",
             corePoolSizeMultiplier = 2,

@@ -5,9 +5,9 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
-import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -22,9 +22,9 @@ class FederationFullSyncReplicaJobExecutor(
     replicaService: FederationBasedReplicaService,
     replicationProperties: ReplicationProperties,
     private val replicaRecordService: ReplicaRecordService,
-    failureRecordRepository: FailureRecordRepository,
+    replicaFailureRecordDao: ReplicaFailureRecordDao,
 ) : AbstractReplicaJobExecutor(
-    clusterNodeService, localDataManager, replicaService, replicationProperties, failureRecordRepository
+    clusterNodeService, localDataManager, replicaService, replicationProperties, replicaFailureRecordDao
 ) {
 
 

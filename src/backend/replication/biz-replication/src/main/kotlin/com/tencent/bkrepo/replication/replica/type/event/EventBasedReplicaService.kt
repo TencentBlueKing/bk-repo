@@ -36,9 +36,9 @@ import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
-import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.springframework.stereotype.Component
 
 /**
@@ -48,8 +48,8 @@ import org.springframework.stereotype.Component
 class EventBasedReplicaService(
     replicaRecordService: ReplicaRecordService,
     localDataManager: LocalDataManager,
-    failureRecordRepository: FailureRecordRepository
-) : AbstractReplicaService(replicaRecordService, localDataManager, failureRecordRepository) {
+    replicaFailureRecordDao: ReplicaFailureRecordDao
+) : AbstractReplicaService(replicaRecordService, localDataManager, replicaFailureRecordDao) {
 
     override fun replica(context: ReplicaContext) {
         with(context) {

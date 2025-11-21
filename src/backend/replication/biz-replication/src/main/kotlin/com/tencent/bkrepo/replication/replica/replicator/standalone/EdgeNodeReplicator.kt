@@ -51,10 +51,10 @@ import org.springframework.stereotype.Component
  */
 @Component
 class EdgeNodeReplicator(
-    private val localDataManager: LocalDataManager,
+    localDataManager: LocalDataManager,
     artifactReplicationHandler: ClusterArtifactReplicationHandler,
     replicationProperties: ReplicationProperties
-) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties) {
+) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties, localDataManager) {
 
     override fun checkVersion(context: ReplicaContext) {
         // do nothing

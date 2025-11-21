@@ -130,4 +130,11 @@ data class ReplicationProperties(
      * 用于避免正在传输的记录立即重试
      */
     var federatedRetryInterval: Duration = Duration.ofMinutes(60),
+
+    /**
+     * 事件记录重试时间间隔
+     * 只有创建时间在当前时间减去该时间间隔之前且未完成的事件记录才会被重试
+     * 用于避免正在处理的事件立即重试
+     */
+    var eventRecordRetryInterval: Duration = Duration.ofMinutes(60),
     )

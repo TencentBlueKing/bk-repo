@@ -36,4 +36,5 @@ data class ReplicationRecord(
     var path: String? = null,
     var size: String? = null,
     var sha256: String? = null,
+    var deleted: String? = null,
 )

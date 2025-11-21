@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.service.impl.failure
 
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class FailureRecordRetryStateManager(
-    private val failureRecordRepository: FailureRecordRepository
+    private val replicaFailureRecordDao: ReplicaFailureRecordDao
 ) {
 
     /**
@@ -24,10 +25,10 @@ class FailureRecordRetryStateManager(
         return try {
             // 设置重试状态为 true
             try {
-                failureRecordRepository.updateRetryStatus(record.id!!, true)
+                replicaFailureRecordDao.updateRetryStatus(record.id!!, true)
             } catch (e: Exception) {
                 // 即使设置状态失败，也继续执行重试逻辑
-                logger.error("Failed to set retry status for record[${record.id}]", e)
+                logger.warn("Failed to set retry status for record[${record.id}]", e)
             }
             
             success = block()
@@ -44,7 +45,7 @@ class FailureRecordRetryStateManager(
             // 只有在重试失败时才需要重置状态
             // 如果重试成功，记录已被删除，不需要重置状态
             if (!success) {
-                failureRecordRepository.updateRetryStatus(record.id!!, false)
+                replicaFailureRecordDao.updateRetryStatus(record.id!!, false)
             }
         }
     }
@@ -53,7 +54,7 @@ class FailureRecordRetryStateManager(
      * 处理重试失败
      */
     private fun handleRetryFailure(record: TReplicaFailureRecord, errorMessage: String) {
-        failureRecordRepository.incrementRetryCount(record.id!!, errorMessage)
+        replicaFailureRecordDao.incrementRetryCount(record.id!!, errorMessage)
         logger.warn("Failed to retry record[${record.id}]: $errorMessage")
     }
 

@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.pojo.failure.ReplicaFailureRecordDeleteRequest
@@ -20,7 +21,7 @@ import java.time.LocalDateTime
  */
 @Service
 class ReplicaFailureRecordServiceImpl(
-    private val failureRecordRepository: FailureRecordRepository,
+    private val replicaFailureRecordDao: ReplicaFailureRecordDao,
     private val failureRecordRetryExecutor: FailureRecordRetryExecutor,
     private val retryStateManager: FailureRecordRetryStateManager
 ) : ReplicaFailureRecordService {
@@ -30,24 +31,24 @@ class ReplicaFailureRecordServiceImpl(
     }
 
     override fun getRecordsForRetry(maxRetryTimes: Int): List<TReplicaFailureRecord> {
-        return failureRecordRepository.findByTriedTimesLessThanAndRetryingFalse(maxRetryTimes)
+        return replicaFailureRecordDao.findByTriedTimesLessThanAndRetryingFalse(maxRetryTimes)
     }
 
     override fun updateRetryStatus(recordId: String, retrying: Boolean) {
-        failureRecordRepository.updateRetryStatus(recordId, retrying)
+        replicaFailureRecordDao.updateRetryStatus(recordId, retrying)
     }
 
     override fun incrementRetryCount(recordId: String, failureReason: String?) {
-        failureRecordRepository.incrementRetryCount(recordId, failureReason)
+        replicaFailureRecordDao.incrementRetryCount(recordId, failureReason)
     }
 
     override fun deleteRecord(recordId: String) {
-        failureRecordRepository.deleteById(recordId)
+        replicaFailureRecordDao.deleteById(recordId)
     }
 
     override fun cleanExpiredRecords(maxRetryNum: Int, retentionDays: Long): Long {
         val expireBefore = LocalDateTime.now().minusDays(retentionDays)
-        return failureRecordRepository.deleteExpiredRecords(maxRetryNum, expireBefore)
+        return replicaFailureRecordDao.deleteExpiredRecords(maxRetryNum, expireBefore)
     }
 
     override fun listPage(option: ReplicaFailureRecordListOption): Page<TReplicaFailureRecord> {
@@ -59,32 +60,44 @@ class ReplicaFailureRecordServiceImpl(
             }
         } ?: Sort.Direction.DESC
 
-        val query = failureRecordRepository.buildQuery(option, direction)
+        val query = replicaFailureRecordDao.buildQuery(
+            taskKey = option.taskKey,
+            remoteClusterId = option.remoteClusterId,
+            projectId = option.projectId,
+            repoName = option.repoName,
+            remoteProjectId = option.remoteProjectId,
+            remoteRepoName = option.remoteRepoName,
+            failureType = option.failureType,
+            retrying = option.retrying,
+            maxRetryCount = option.maxRetryCount,
+            sortField = option.sortField,
+            sortDirection = direction
+        )
 
         val pageRequest = Pages.ofRequest(option.pageNumber, option.pageSize)
-        val totalRecords = failureRecordRepository.count(query)
-        val records = failureRecordRepository.find(query.with(pageRequest))
+        val totalRecords = replicaFailureRecordDao.count(query)
+        val records = replicaFailureRecordDao.find(query.with(pageRequest))
         return Pages.ofResponse(pageRequest, totalRecords, records)
     }
 
     override fun findById(id: String): TReplicaFailureRecord? {
-        return failureRecordRepository.findById(id)
+        return replicaFailureRecordDao.findById(id)
     }
 
     override fun deleteByConditions(request: ReplicaFailureRecordDeleteRequest): Long {
         // 安全检查：至少需要一个删除条件，避免误删所有记录
-        if (!failureRecordRepository.validateDeleteConditions(request)) {
+        if (request.ids.isNullOrEmpty() && request.maxRetryCount == null) {
             throw ErrorCodeException(
                 CommonMessageCode.PARAMETER_MISSING,
                 "At least one delete condition is required"
             )
         }
 
-        return failureRecordRepository.deleteByConditions(request.ids, request.maxRetryCount)
+        return replicaFailureRecordDao.deleteByConditions(request.ids, request.maxRetryCount)
     }
 
     override fun retryRecord(request: ReplicaFailureRecordRetryRequest): Boolean {
-        val record = failureRecordRepository.findById(request.id)
+        val record = replicaFailureRecordDao.findById(request.id)
             ?: throw ErrorCodeException(
                 ReplicationMessageCode.REPLICA_FAILURE_RECORD_NOT_FOUND,
                 request.id
