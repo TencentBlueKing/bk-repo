@@ -65,6 +65,16 @@ class PackageMetadataServiceImpl(
     private val packageVersionDao: PackageVersionDao
 ) : PackageMetadataService {
 
+    override fun listMetadata(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String
+    ): Map<String, Any> {
+        val tPackage = getPackage(projectId, repoName, packageKey)
+        return MetadataUtils.toMap(packageVersionDao.findByName(tPackage.id!!, version)?.metadata)
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun saveMetadata(request: PackageMetadataSaveRequest) {
         with(request) {
