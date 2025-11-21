@@ -134,10 +134,8 @@ class RepoNameRuleInterceptor(
 
     private fun buildRule(projectId: String, repoNames: List<String>): Rule {
         if (repoNames.isEmpty()) {
-            throw PermissionException(
-                "${SecurityUtils.getUserId()} hasn't any PermissionRepo in project [$projectId], " +
-                        "or project [$projectId] hasn't any repo"
-            )
+            checkProjectPermission(projectId)
+            return Rule.QueryRule(NodeInfo::repoName.name, repoNames, OperationType.IN).toFixed()
         }
         if (repoNames.size == 1) {
             // 单仓库查询
@@ -238,6 +236,12 @@ class RepoNameRuleInterceptor(
             false
         } catch (ignored: RepoNotFoundException) {
             false
+        }
+    }
+
+    private fun checkProjectPermission(projectId: String) {
+        if (HttpContextHolder.getRequestOrNull() != null && !SecurityUtils.isServiceRequest()) {
+            permissionManager.checkProjectPermission(PermissionAction.READ, projectId)
         }
     }
 
