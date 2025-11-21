@@ -32,8 +32,8 @@
 package com.tencent.bkrepo.opdata.service
 
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.ProjectModel
-import com.tencent.bkrepo.opdata.model.RepoModel
+import com.tencent.bkrepo.opdata.service.model.ProjectModel
+import com.tencent.bkrepo.opdata.service.model.RepoModel
 import com.tencent.bkrepo.opdata.pojo.QueryRequest
 import com.tencent.bkrepo.opdata.pojo.SearchRequest
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
