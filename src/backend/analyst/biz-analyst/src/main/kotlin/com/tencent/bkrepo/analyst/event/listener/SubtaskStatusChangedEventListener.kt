@@ -37,10 +37,7 @@ import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.constant.FORBID_REASON
-import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
-import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.lock.service.LockOperation
@@ -186,7 +183,7 @@ class SubtaskStatusChangedEventListener(
             return
         } else {
             // 全部方案均通过时移除禁用元数据
-            deleteMetadata(subtask, setOf(FORBID_STATUS, FORBID_REASON, FORBID_USER, FORBID_TYPE))
+            deleteMetadata(subtask, MetadataUtils.FORBID_KEYS)
         }
     }
 
