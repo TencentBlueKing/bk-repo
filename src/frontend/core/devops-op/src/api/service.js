@@ -9,6 +9,13 @@ export function services() {
   })
 }
 
+export function getServicesConfig() {
+  return request({
+    url: `${PREFIX_SERVICES}/configs`,
+    method: 'get'
+  })
+}
+
 export function instances(serviceName) {
   return request({
     url: `${PREFIX_SERVICES}/${serviceName}/instances`,
