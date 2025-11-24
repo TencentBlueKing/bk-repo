@@ -35,9 +35,9 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.executor.ManualThreadPoolExecutor
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
-import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.springframework.stereotype.Component
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
@@ -50,9 +50,9 @@ import java.util.concurrent.Semaphore
 class ManualBasedReplicaService(
     replicaRecordService: ReplicaRecordService,
     localDataManager: LocalDataManager,
-    failureRecordRepository: FailureRecordRepository,
+    replicaFailureRecordDao: ReplicaFailureRecordDao,
     private val replicationProperties: ReplicationProperties
-) : AbstractReplicaService(replicaRecordService, localDataManager, failureRecordRepository) {
+) : AbstractReplicaService(replicaRecordService, localDataManager, replicaFailureRecordDao) {
     private val executor = ManualThreadPoolExecutor.instance
     override fun replica(context: ReplicaContext) {
         replicaTaskObjects(context)

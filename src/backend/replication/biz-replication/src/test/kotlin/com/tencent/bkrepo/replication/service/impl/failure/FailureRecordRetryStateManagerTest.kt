@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.service.impl.failure
 
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.model.TReplicaFailureRecord
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -17,7 +18,7 @@ import org.mockito.kotlin.verify
 @DisplayName("失败记录重试状态管理器测试")
 class FailureRecordRetryStateManagerTest {
 
-    private val failureRecordRepository: FailureRecordRepository = mock()
+    private val replicaFailureRecordDao: ReplicaFailureRecordDao = mock()
 
     private lateinit var failureRecordRetryStateManager: FailureRecordRetryStateManager
     private val testTaskKey = "test-task-key"
@@ -30,7 +31,7 @@ class FailureRecordRetryStateManagerTest {
     @BeforeEach
     fun setUp() {
         failureRecordRetryStateManager = FailureRecordRetryStateManager(
-            failureRecordRepository = failureRecordRepository
+            replicaFailureRecordDao = replicaFailureRecordDao
         )
     }
 
@@ -47,9 +48,9 @@ class FailureRecordRetryStateManagerTest {
         assertTrue(result)
         assertTrue(blockExecuted)
         // 应该先设置为 true，然后因为成功，记录被删除，不需要重置
-        verify(failureRecordRepository, times(1)).updateRetryStatus(eq("record-id"), eq(true))
-        verify(failureRecordRepository, never()).updateRetryStatus(eq("record-id"), eq(false))
-        verify(failureRecordRepository, never()).incrementRetryCount(any(), any())
+        verify(replicaFailureRecordDao, times(1)).updateRetryStatus(eq("record-id"), eq(true))
+        verify(replicaFailureRecordDao, never()).updateRetryStatus(eq("record-id"), eq(false))
+        verify(replicaFailureRecordDao, never()).incrementRetryCount(any(), any())
     }
 
     @Test
@@ -65,9 +66,9 @@ class FailureRecordRetryStateManagerTest {
         assertFalse(result)
         assertTrue(blockExecuted)
         // 应该先设置为 true，然后因为失败，重置为 false，并增加重试次数
-        verify(failureRecordRepository, times(1)).updateRetryStatus(eq("record-id"), eq(true))
-        verify(failureRecordRepository, times(1)).updateRetryStatus(eq("record-id"), eq(false))
-        verify(failureRecordRepository, times(1)).incrementRetryCount(eq("record-id"), eq("Retry failed"))
+        verify(replicaFailureRecordDao, times(1)).updateRetryStatus(eq("record-id"), eq(true))
+        verify(replicaFailureRecordDao, times(1)).updateRetryStatus(eq("record-id"), eq(false))
+        verify(replicaFailureRecordDao, times(1)).incrementRetryCount(eq("record-id"), eq("Retry failed"))
     }
 
     @Test
@@ -84,9 +85,9 @@ class FailureRecordRetryStateManagerTest {
         assertFalse(result)
         assertTrue(blockExecuted)
         // 应该先设置为 true，然后因为异常，重置为 false，并增加重试次数
-        verify(failureRecordRepository, times(1)).updateRetryStatus(eq("record-id"), eq(true))
-        verify(failureRecordRepository, times(1)).updateRetryStatus(eq("record-id"), eq(false))
-        verify(failureRecordRepository, times(1)).incrementRetryCount(
+        verify(replicaFailureRecordDao, times(1)).updateRetryStatus(eq("record-id"), eq(true))
+        verify(replicaFailureRecordDao, times(1)).updateRetryStatus(eq("record-id"), eq(false))
+        verify(replicaFailureRecordDao, times(1)).incrementRetryCount(
             eq("record-id"),
             eq("RuntimeException: Test exception")
         )
@@ -102,7 +103,7 @@ class FailureRecordRetryStateManagerTest {
         }
 
         assertFalse(result)
-        verify(failureRecordRepository, times(1)).incrementRetryCount(
+        verify(replicaFailureRecordDao, times(1)).incrementRetryCount(
             eq("record-id"),
             eq("RuntimeException: Unknown error")
         )
@@ -118,8 +119,8 @@ class FailureRecordRetryStateManagerTest {
 
         assertTrue(result)
         // 成功时不应该重置状态（因为记录已被删除）
-        verify(failureRecordRepository, times(1)).updateRetryStatus(eq("record-id"), eq(true))
-        verify(failureRecordRepository, never()).updateRetryStatus(eq("record-id"), eq(false))
+        verify(replicaFailureRecordDao, times(1)).updateRetryStatus(eq("record-id"), eq(true))
+        verify(replicaFailureRecordDao, never()).updateRetryStatus(eq("record-id"), eq(false))
     }
 
     @Test
@@ -132,8 +133,8 @@ class FailureRecordRetryStateManagerTest {
 
         assertFalse(result)
         // 失败时应该重置状态
-        verify(failureRecordRepository, times(1)).updateRetryStatus(eq("record-id"), eq(true))
-        verify(failureRecordRepository, times(1)).updateRetryStatus(eq("record-id"), eq(false))
+        verify(replicaFailureRecordDao, times(1)).updateRetryStatus(eq("record-id"), eq(true))
+        verify(replicaFailureRecordDao, times(1)).updateRetryStatus(eq("record-id"), eq(false))
     }
 
     // ========== 辅助方法 ==========

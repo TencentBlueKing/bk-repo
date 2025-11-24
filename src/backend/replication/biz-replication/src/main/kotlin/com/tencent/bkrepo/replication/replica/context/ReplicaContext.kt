@@ -200,14 +200,6 @@ class ReplicaContext(
         return taskObject.packageConstraints!!.first().targetVersions
     }
 
-    fun updateProgress(executed: Boolean) {
-        if (executed) {
-            replicaProgress.success++
-        } else {
-            replicaProgress.skip++
-        }
-    }
-
     companion object {
         private val logger = LoggerFactory.getLogger(ReplicaContext::class.java)
         const val READ_TIMEOUT = 60 * 60 * 1000L

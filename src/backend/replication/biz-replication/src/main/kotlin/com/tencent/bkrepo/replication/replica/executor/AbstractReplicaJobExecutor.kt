@@ -42,9 +42,9 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
-import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Callable
 import java.util.concurrent.Future
@@ -58,7 +58,7 @@ open class AbstractReplicaJobExecutor(
     private val localDataManager: LocalDataManager,
     private val replicaService: ReplicaService,
     private val replicationProperties: ReplicationProperties,
-    private val failureRecordRepository: FailureRecordRepository,
+    private val replicaFailureRecordDao: ReplicaFailureRecordDao,
 ) {
 
     private val threadPoolExecutor: ThreadPoolExecutor = ReplicaThreadPoolExecutor.instance
@@ -130,7 +130,8 @@ open class AbstractReplicaJobExecutor(
 
         try {
             val event = getEventSafely(context)
-            recordFailure(context, exception, event)
+            if (event != null) return
+            recordFailure(context, exception)
         } catch (e: Exception) {
             logger.warn("Failed to record failure to database in submit", e)
         }
@@ -150,12 +151,8 @@ open class AbstractReplicaJobExecutor(
     /**
      * 记录失败信息到数据库
      */
-    private fun recordFailure(
-        context: ReplicaContext,
-        exception: Throwable,
-        event: ArtifactEvent?
-    ) {
-        failureRecordRepository.recordFailure(
+    private fun recordFailure(context: ReplicaContext, exception: Throwable) {
+        replicaFailureRecordDao.recordFailure(
             taskKey = context.task.key,
             remoteClusterId = context.remoteCluster.id!!,
             projectId = context.localProjectId,
@@ -166,7 +163,6 @@ open class AbstractReplicaJobExecutor(
             packageConstraint = context.taskObject.packageConstraints?.firstOrNull(),
             pathConstraint = context.taskObject.pathConstraints?.firstOrNull(),
             failureReason = exception.message ?: "Unknown error",
-            event = event,
             failedRecordId = context.failedRecordId
         )
     }

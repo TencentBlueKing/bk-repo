@@ -38,9 +38,9 @@ import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
-import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -55,8 +55,8 @@ import org.springframework.stereotype.Component
 class FederationBasedReplicaService(
     replicaRecordService: ReplicaRecordService,
     localDataManager: LocalDataManager,
-    failureRecordRepository: FailureRecordRepository,
-) : AbstractReplicaService(replicaRecordService, localDataManager, failureRecordRepository) {
+    replicaFailureRecordDao: ReplicaFailureRecordDao,
+) : AbstractReplicaService(replicaRecordService, localDataManager, replicaFailureRecordDao) {
 
     override fun replica(context: ReplicaContext) {
         // 全量同步的场景需要同步已删除节点
@@ -67,33 +67,53 @@ class FederationBasedReplicaService(
      * 是否包含所有仓库数据
      */
     override fun includeAllData(context: ReplicaContext): Boolean {
-        try {
+        val eventFlag = try {
             context.event != null
-            return false
         } catch (e: Exception) {
-            return true
+            false
         }
+        return !eventFlag && (context.taskObject.packageConstraints.isNullOrEmpty() &&
+            context.taskObject.pathConstraints.isNullOrEmpty())
     }
 
     override fun replicaTaskObjectConstraints(replicaContext: ReplicaContext) {
         with(replicaContext) {
             // 只有非third party集群支持该消息
-            if (remoteCluster.type == ClusterNodeType.REMOTE)
+            if (remoteCluster.type == ClusterNodeType.REMOTE) {
                 throw UnsupportedOperationException()
-            replicaContext.executeType = TaskExecuteType.DELTA
-            when (event.type) {
-                EventType.METADATA_DELETED -> handleMetadataDeleted(replicaContext)
-                EventType.METADATA_SAVED -> handleMetadataSaved(replicaContext)
-                EventType.NODE_RENAMED -> handleNodeRenamed(replicaContext)
-                EventType.NODE_COPIED -> handleNodeCopied(replicaContext)
-                EventType.NODE_MOVED -> handleNodeMoved(replicaContext)
-                EventType.NODE_DELETED -> handleNodeDeleted(replicaContext)
-                EventType.NODE_CREATED -> handleNodeCreated(replicaContext)
-                EventType.VERSION_CREATED -> handleVersionCreated(replicaContext)
-                EventType.VERSION_UPDATED -> handleVersionUpdated(replicaContext)
-                EventType.VERSION_DELETED -> handleVersionDeleted(replicaContext)
-                else -> throw UnsupportedOperationException()
             }
+
+            // 优先处理包约束
+            taskObject.packageConstraints?.takeIf { it.isNotEmpty() }?.let { constraints ->
+                constraints.forEach { replicaByPackageConstraint(this, it) }
+                return
+            }
+
+            // 其次处理路径约束
+            taskObject.pathConstraints?.takeIf { it.isNotEmpty() }?.let { constraints ->
+                constraints.forEach { replicaByPathConstraint(this, it) }
+                return
+            }
+
+            // 无约束时，根据事件类型处理
+            executeType = TaskExecuteType.DELTA
+            handleEventByType(replicaContext)
+        }
+    }
+
+    private fun handleEventByType(replicaContext: ReplicaContext) {
+        when (replicaContext.event.type) {
+            EventType.METADATA_DELETED -> handleMetadataDeleted(replicaContext)
+            EventType.METADATA_SAVED -> handleMetadataSaved(replicaContext)
+            EventType.NODE_RENAMED -> handleNodeRenamed(replicaContext)
+            EventType.NODE_COPIED -> handleNodeCopied(replicaContext)
+            EventType.NODE_MOVED -> handleNodeMoved(replicaContext)
+            EventType.NODE_DELETED -> handleNodeDeleted(replicaContext)
+            EventType.NODE_CREATED -> handleNodeCreated(replicaContext)
+            EventType.VERSION_CREATED -> handleVersionCreated(replicaContext)
+            EventType.VERSION_UPDATED -> handleVersionUpdated(replicaContext)
+            EventType.VERSION_DELETED -> handleVersionDeleted(replicaContext)
+            else -> throw UnsupportedOperationException("Unsupported event type: ${replicaContext.event.type}")
         }
     }
 

@@ -1,6 +1,5 @@
 package com.tencent.bkrepo.replication.model
 
-import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
@@ -50,7 +49,7 @@ data class TReplicaFailureRecord(
      */
     val packageConstraint: PackageConstraint? = null,
     val pathConstraint: PathConstraint? = null,
-    val event: ArtifactEvent? = null,
+
     /**
      * 失败原因
      */
