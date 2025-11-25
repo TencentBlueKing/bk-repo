@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2022 Tencent.  All rights reserved.
+ * Copyright (C) 2023 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,21 +25,27 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.repository.message
+package com.tencent.bkrepo.repository.controller.proxy
 
-import com.tencent.bkrepo.common.api.message.MessageCode
+import com.tencent.bkrepo.common.api.exception.MethodNotAllowedException
+import org.springframework.web.bind.annotation.RequestAttribute
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RestController
 
-enum class RepositoryMessageCode(private val key: String, private val businessCode: Int) : MessageCode {
-    UNKNOWN_STORAGE_CREDENTIALS_TYPE("repository.storage.credentials.type.unknown", 1),
-    STORAGE_CREDENTIALS_IN_USE("repository.storage.credentials.inuse", 2),
-    STORAGE_CREDENTIALS_NOT_FOUND("repository.storage.credentials.not.found", 3),
-    METADATA_KEY_RESERVED("repository.metadata.key.reserved", 4),
-    PIPELINE_METADATA_UPDATE_NOT_ALLOWED("repository.pipleine.metadata.update.not-allowed", 5),
-    APP_EXPERIENCE_CONFIG_ERROR("repository.app.experience.config.error", 6),
-    BKDIRVE_CONFIG_ERROR("repository.bkdirve.config.error", 7),
-    ;
+/**
+ * BkDrive CI 接口通用转发控制器
+ *
+ * 注意：实际的请求转发由 DriveProxyInterceptor 拦截器处理
+ * 此 Controller 仅用于定义路由和权限控制
+ */
+@RestController
+@RequestMapping("/api/drive")
+class UserDriveController {
 
-    override fun getBusinessCode() = businessCode
-    override fun getKey() = key
-    override fun getModuleCode() = 15
+    @RequestMapping("/**")
+    fun proxy(
+        @RequestAttribute userId: String,
+    ) {
+        throw MethodNotAllowedException()
+    }
 }
