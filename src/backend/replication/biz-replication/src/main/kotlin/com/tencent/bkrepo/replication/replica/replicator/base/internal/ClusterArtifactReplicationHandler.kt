@@ -79,13 +79,18 @@ class ClusterArtifactReplicationHandler(
         pushType: String,
         downGrade: Boolean
     ): Boolean {
-        val newType = filterRepoWithPushType(
+        var newType = filterRepoWithPushType(
             pushType = pushType,
             projectId = filePushContext.context.localProjectId,
             repoName = filePushContext.context.localRepoName,
             downGrade = downGrade,
             size = filePushContext.size
         )
+        // 由于blocknode没有md5值，当md5值不存在时，只能使用非PUSH_WITH_CHUNKED方式
+        // 如果此时newType为PUSH_WITH_CHUNKED，则使用默认方式
+        if (newType == WayOfPushArtifact.PUSH_WITH_CHUNKED.value && filePushContext.md5.isNullOrEmpty()) {
+            newType = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+        }
         return when (newType) {
             WayOfPushArtifact.PUSH_WITH_CHUNKED.value -> {
                 super.blobPush(filePushContext, newType, downGrade)

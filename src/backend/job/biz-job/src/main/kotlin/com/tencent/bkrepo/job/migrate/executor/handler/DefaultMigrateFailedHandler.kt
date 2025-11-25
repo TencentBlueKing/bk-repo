@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.job.migrate.executor.handler
 
+import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.job.migrate.dao.MigrateFailedNodeDao
 import com.tencent.bkrepo.job.migrate.model.TMigrateFailedNode
 import com.tencent.bkrepo.job.migrate.pojo.MigrateRepoStorageTask
@@ -44,7 +45,7 @@ class DefaultMigrateFailedHandler(
     override fun handle(task: MigrateRepoStorageTask, node: Node, e: Exception) {
         saveMigrateFailedNode(task.id!!, node)
         val msg = "${task.state} node[${node.fullPath}] failed, task[${task.projectId}/${task.repoName}]"
-        if (e is FileNotFoundException || e is IllegalStateException) {
+        if (e is FileNotFoundException || e is IllegalStateException || e is StorageErrorException) {
             logger.warn(msg, e)
         } else {
             logger.error(msg, e)

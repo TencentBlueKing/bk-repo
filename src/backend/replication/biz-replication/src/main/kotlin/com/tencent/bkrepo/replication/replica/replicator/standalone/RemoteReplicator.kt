@@ -183,6 +183,26 @@ class RemoteReplicator : Replicator {
         return true
     }
 
+    override fun checkNodeExist(
+        context: ReplicaContext,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        deleted: String?
+    ): Boolean {
+        return false
+    }
+
+    override fun checkPackageVersionExist(
+        context: ReplicaContext,
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        versionName: String
+    ): Boolean {
+        return false
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(RemoteReplicator::class.java)
     }
