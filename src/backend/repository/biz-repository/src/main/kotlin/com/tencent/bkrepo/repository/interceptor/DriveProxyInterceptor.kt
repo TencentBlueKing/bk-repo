@@ -4,7 +4,6 @@ import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
 import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
-import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -24,7 +23,7 @@ class DriveProxyInterceptor(
     private val properties: DriveProperties,
     private val principalManagerProvider: ObjectProvider<PrincipalManager>
 ) : HandlerInterceptor {
-    
+
     private val client = HttpClientBuilderFactory.create()
         .readTimeout(15, TimeUnit.MINUTES)
         .writeTimeout(15, TimeUnit.MINUTES)
@@ -32,20 +31,20 @@ class DriveProxyInterceptor(
     private val httpProxyUtil = HttpProxyUtil(client)
 
     override fun preHandle(
-        request: HttpServletRequest, 
-        response: HttpServletResponse, 
+        request: HttpServletRequest,
+        response: HttpServletResponse,
         handler: Any
     ): Boolean {
         val requestURI = request.requestURI
-        
+
         // 只处理 /api/drive/** 路径的请求
         if (!requestURI.startsWith(DRIVE_API_PREFIX)) {
             return true
         }
-        
+
         // 权限检查：要求用户已认证（GENERAL 类型）
         checkPermission(request)
-        
+
         // 验证配置
         validateConfiguration()
         val targetGateway = request.getHeader(HEADER_DEVOPS_TARGET) ?: DEFAULT_TARGET_GATEWAY
@@ -60,7 +59,7 @@ class DriveProxyInterceptor(
                 prefix = DRIVE_API_PREFIX,
                 proxyCallHandler = proxyHandler
             )
-            
+
             logger.info("Drive request forwarded successfully: [${request.method}] $requestURI")
         } catch (e: Exception) {
             logger.error("Failed to forward drive request: [${request.method}] $requestURI", e)
@@ -72,13 +71,13 @@ class DriveProxyInterceptor(
 
         return false
     }
-    
+
     /**
      * 权限检查
      */
     private fun checkPermission(request: HttpServletRequest) {
         val userId = request.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
-        
+
         try {
             // 从 ObjectProvider 获取 PrincipalManager 实例
             val principalManager = principalManagerProvider.getObject()
@@ -89,7 +88,7 @@ class DriveProxyInterceptor(
             throw exception
         }
     }
-    
+
     /**
      * 验证配置是否完整
      */
@@ -101,7 +100,7 @@ class DriveProxyInterceptor(
             )
         }
     }
-    
+
     companion object {
         private val logger = LoggerFactory.getLogger(DriveProxyInterceptor::class.java)
         private const val DRIVE_API_PREFIX = "/api/drive"

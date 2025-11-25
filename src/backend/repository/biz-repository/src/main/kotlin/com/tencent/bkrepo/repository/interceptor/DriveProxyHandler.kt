@@ -15,20 +15,20 @@ import org.slf4j.LoggerFactory
 class DriveProxyHandler(
     private val properties: DriveProperties
 ) : DefaultProxyCallHandler() {
-    
+
     /**
      * 请求转发前的处理
      * 添加 CI 服务所需的认证和标识请求头
      */
     override fun before(
-        proxyRequest: HttpServletRequest, 
-        proxyResponse: HttpServletResponse, 
+        proxyRequest: HttpServletRequest,
+        proxyResponse: HttpServletResponse,
         request: Request
     ): Request {
         val userId = proxyRequest.getAttribute("userId") as String
 
         logger.debug("Preparing proxy request for user: {}, url: {}", userId, request.url)
-        
+
         return request.newBuilder()
             // 添加必需的认证请求头
             .header(HEADER_DEVOPS_TOKEN, properties.ciToken)
@@ -47,17 +47,17 @@ class DriveProxyHandler(
      * 使用默认实现，转发响应状态码、响应头和响应体
      */
     override fun after(
-        proxyRequest: HttpServletRequest, 
-        proxyResponse: HttpServletResponse, 
+        proxyRequest: HttpServletRequest,
+        proxyResponse: HttpServletResponse,
         response: Response
     ) {
         logger.debug("Proxy response received: status=${response.code}, url=${response.request.url}")
         super.after(proxyRequest, proxyResponse, response)
     }
-    
+
     companion object {
         private val logger = LoggerFactory.getLogger(DriveProxyHandler::class.java)
-        
+
         // CI 服务请求头常量
         private const val HEADER_DEVOPS_TOKEN = "X-DEVOPS-BK-TOKEN"
         private const val HEADER_DEVOPS_UID = "X-DEVOPS-UID"
