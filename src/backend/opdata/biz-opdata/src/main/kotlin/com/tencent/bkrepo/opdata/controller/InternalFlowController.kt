@@ -73,21 +73,12 @@ class InternalFlowController(
     }
 
     @Operation(summary = "创建内部流转配置")
-    @PostMapping
+    @PostMapping("/create")
     fun createInternalFlow(@RequestBody request: InternalFlowRequest): Response<TInternalFlow> {
         val flow = internalFlowService.createInternalFlow(request)
         return ResponseBuilder.success(flow)
     }
 
-    @Operation(summary = "更新内部流转配置")
-    @PutMapping("/{id}")
-    fun updateInternalFlow(
-        @PathVariable id: String,
-        @RequestBody request: InternalFlowRequest
-    ): Response<TInternalFlow> {
-        val flow = internalFlowService.updateInternalFlow(id, request)
-        return ResponseBuilder.success(flow)
-    }
 
     @Operation(summary = "删除内部流转配置")
     @DeleteMapping("/{id}")
