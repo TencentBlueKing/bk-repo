@@ -3,6 +3,8 @@ package com.tencent.bkrepo.media.job.service
 import com.google.gson.JsonSyntaxException
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
+import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import io.kubernetes.client.informer.ResourceEventHandler
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component
 @Component
 class TranscodeJobEventHandler @Autowired constructor(
     private val apiClient: ApiClient,
+    private val mediaTranscodeJobDao: MediaTranscodeJobDao,
 ) : ResourceEventHandler<V1Job?> {
 
     @Autowired
@@ -149,6 +152,7 @@ class TranscodeJobEventHandler @Autowired constructor(
                 logger.warn("checkTranscodeFileDone not found: $projectId|$repoName|$fileName")
                 return false
             }
+            mediaTranscodeJobDao.updateStatus(projectId, repoName, fileName, MediaTranscodeJobStatus.DONE)
             logger.info("checkTranscodeFileDone found: $projectId|$repoName|$fileName")
             return true
         } catch (e: Exception) {

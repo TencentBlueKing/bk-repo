@@ -6,5 +6,6 @@ enum class MediaTranscodeJobStatus {
     INIT, // 任务创建完成
     RUNNING,
     SUCCESS,
-    FAIL;
+    FAIL,
+    DONE; // FAIL -> SUCCESS 已经失败的任务重试成功，单独标记下方便查数据
 }
