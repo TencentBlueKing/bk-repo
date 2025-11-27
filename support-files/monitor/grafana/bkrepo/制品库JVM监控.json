@@ -1224,7 +1224,7 @@
               ],
               "refId": "C",
               "showLastPoint": false,
-              "source": "sum(rate(bkmonitor:http_server_requests_seconds_count{bk_target_ip=\"$ip\",service=\"$service\",status=~\"4[0-9]{2}\"}[1m]))",
+              "source": "sum(increase(bkmonitor:http_server_requests_seconds_count{bk_target_ip=\"$ip\",service=\"$service\",status=~\"4[0-9]{2}\"}[1m]))",
               "step": "",
               "type": "range"
             },
@@ -1297,7 +1297,7 @@
               ],
               "refId": "A",
               "showLastPoint": false,
-              "source": "sum(rate(bkmonitor:http_server_requests_seconds_count{bk_target_ip=\"$ip\",service=\"$service\",status=~\"5[0-9]{2}\"}[1m]))",
+              "source": "sum(increase(bkmonitor:http_server_requests_seconds_count{bk_target_ip=\"$ip\",service=\"$service\",status=~\"5[0-9]{2}\"}[1m]))",
               "step": "",
               "type": "range"
             }
