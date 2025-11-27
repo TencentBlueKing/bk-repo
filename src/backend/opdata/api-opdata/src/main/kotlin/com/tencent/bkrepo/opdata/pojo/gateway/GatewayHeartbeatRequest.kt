@@ -29,11 +29,10 @@ package com.tencent.bkrepo.opdata.pojo.gateway
 
 
 /**
- * Gateway心跳信息
+ * Gateway心跳上报请求
  */
-data class GatewayHeartbeatInfo(
+data class GatewayHeartbeatRequest(
     val ip: String,
-    val tag: String,
-    val lastUpdate: String,
-    val online: Boolean = true
+    val tag: String
 )
+

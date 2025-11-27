@@ -19,41 +19,69 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 local _M = {}
 
--- 上报心跳信息到Redis
-function _M:report_heartbeat(red)
-
-    local timestamp = ngx.now()
-
-    -- Redis key格式: bkrepo:gateway:heartbeat:{ip}
+-- 上报心跳信息到opdata服务
+function _M:report_heartbeat()
     local ip = string.gsub(internal_ip, "[\r\n]+", "")
-    local redis_key = "bkrepo:gateway:heartbeat:" .. ip
-    ngx.log(ngx.ERR, "redis key: ", redis_key)
-    -- 使用hash存储心跳信息
-    local ok, err = red:hmset(redis_key,
-            "ip", ip,
-            "tag", config.ns.tag,
-            "timestamp", timestamp,
-            "last_update", os.date("%Y-%m-%d %H:%M:%S", timestamp)
-    )
-
-    if not ok then
-        ngx.log(ngx.ERR, "failed to report heartbeat to redis: ", err)
-        red:close()
+    
+    -- 构建心跳数据（timestamp 和 last_update 由服务端生成）
+    local heartbeat_data = {
+        ip = ip,
+        tag = config.ns.tag
+    }
+    
+    -- 转换为JSON
+    local request_body = json.encode(heartbeat_data)
+    if not request_body then
+        ngx.log(ngx.ERR, "failed to encode heartbeat data to json")
+        return
     end
 
-    -- 设置过期时间为180秒（心跳间隔60秒，允许最多丢失2次心跳）
-    red:expire(redis_key, 180)
-
-    -- 同时维护一个gateway列表，用于快速查询所有在线的gateway
-    local list_key = "bkrepo:gateway:list"
-    red:sadd(list_key, ip)
-    red:expire(list_key, 180)
-    -- 将连接放回连接池
-    local ok, err = red:set_keepalive(10000, 100)
-    if not ok then
-        ngx.log(ngx.ERR, "failed to set keepalive: ", err)
-        red:close()
+    -- 初始化HTTP连接
+    local httpc = http.new()
+    local addr = "http://" .. hostUtil:get_addr("opdata")
+    local path = "/api/heartbeat/gateway"
+    
+    -- 如果是boot assembly部署，需要添加服务前缀
+    if config.service_name ~= nil and config.service_name ~= "" then
+        path = "/opdata" .. path
     end
+    
+    -- 设置超时时间
+    httpc:set_timeout(3000)
+    httpc:connect(addr)
+    
+    -- 构建请求头
+    local request_headers = {
+        ["Content-Type"] = "application/json",
+        ["Accept"] = "application/json",
+        ["X-BKREPO-UID"] = "admin" ,
+        ["Authorization"] = config.bkrepo.authorization
+    }
+
+    -- 发送HTTP请求
+    local res, err = httpc:request_uri(addr, {
+        path = path,
+        method = "POST",
+        headers = request_headers,
+        body = request_body
+    })
+    
+    -- 判断是否出错
+    if not res then
+        ngx.log(ngx.ERR, "failed to report heartbeat to opdata: ", err)
+        return
+    end
+    
+    -- 判断返回的状态码
+    if res.status ~= 200 then
+        ngx.log(ngx.ERR, "failed to report heartbeat, status: ", res.status, ", body: ", res.body or "")
+        return
+    end
+    
+    -- 设置HTTP保持连接
+    httpc:set_keepalive(60000, 5)
+    
+    ngx.log(ngx.INFO, "heartbeat reported successfully for ip: ", ip)
 end
 
 --[[判断字符串是否在数组中]]

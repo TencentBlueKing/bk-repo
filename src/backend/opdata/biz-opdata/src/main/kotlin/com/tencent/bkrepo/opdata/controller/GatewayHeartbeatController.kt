@@ -32,11 +32,14 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder.success
 import com.tencent.bkrepo.opdata.pojo.gateway.GatewayHeartbeatInfo
+import com.tencent.bkrepo.opdata.pojo.gateway.GatewayHeartbeatRequest
 import com.tencent.bkrepo.opdata.service.GatewayHeartbeatService
 import org.apache.pulsar.shade.io.swagger.annotations.ApiOperation
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -44,17 +47,28 @@ import org.springframework.web.bind.annotation.RestController
  * Gateway心跳管理接口
  */
 @RestController
-@RequestMapping("/api/gateway/heartbeat")
-@Principal(PrincipalType.ADMIN)
+@RequestMapping("/api/heartbeat")
 class GatewayHeartbeatController @Autowired constructor(
     private val gatewayHeartbeatService: GatewayHeartbeatService
 ) {
 
     /**
+     * 接收Gateway心跳上报
+     * 此接口不需要权限验证，允许Gateway直接调用
+     */
+    @ApiOperation("接收Gateway心跳上报")
+    @PostMapping("/gateway")
+    fun reportHeartbeat(@RequestBody request: GatewayHeartbeatRequest): Response<Void> {
+        gatewayHeartbeatService.saveHeartbeat(request)
+        return success()
+    }
+
+    /**
      * 获取所有Gateway的tag列表
      */
     @ApiOperation("获取所有Gateway的tag列表")
-    @GetMapping("/tags")
+    @GetMapping("/gateway/tags")
+    @Principal(PrincipalType.ADMIN)
     fun listAllTags(): Response<List<String>> {
         return success(gatewayHeartbeatService.listAllTags())
     }
@@ -63,7 +77,8 @@ class GatewayHeartbeatController @Autowired constructor(
      * 根据tag获取Gateway列表（只返回在线的Gateway）
      */
     @ApiOperation("根据tag获取Gateway列表")
-    @GetMapping("/tag/{tag}")
+    @GetMapping("/gateway/tag/{tag}")
+    @Principal(PrincipalType.ADMIN)
     fun listGatewaysByTag(
         @PathVariable tag: String
     ): Response<List<GatewayHeartbeatInfo>> {
