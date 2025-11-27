@@ -43,18 +43,20 @@ class InternalFlowService(
 ) {
 
     /**
-     * 根据级别查询去重后的名称列表及对应的tag
+     * 根据级别查询去重后的名称列表及对应的tag和region
      * @param level 级别类型
-     * @return 去重后的名称和tag列表（每个name只取第一个tag）
+     * @return 去重后的名称和tag、region列表（每个name只取第一个元素的tag和region）
      */
     fun getDistinctNamesByLevel(level: LevelType): List<NameWithTag> {
         val flows = internalFlowRepository.findByLevel(level)
-        // 按name分组，每个name只取第一个tag
+        // 按name分组，每个name只取第一个元素的tag和region
         return flows.groupBy { it.name }
             .map { (name, flowList) ->
+                val firstFlow = flowList.first()
                 NameWithTag(
                     name = name,
-                    tag = flowList.first().tag
+                    tag = firstFlow.tag,
+                    region = firstFlow.region
                 )
             }.sortedBy { it.name }
     }
@@ -80,8 +82,10 @@ class InternalFlowService(
             level = request.level,
             name = request.name,
             tag = request.tag,
+            region = request.region,
             next = request.next,
-            forward = request.forward
+            forward = request.forward,
+            forwardTip = request.forwardTip
         )
         return internalFlowRepository.save(flow)
     }

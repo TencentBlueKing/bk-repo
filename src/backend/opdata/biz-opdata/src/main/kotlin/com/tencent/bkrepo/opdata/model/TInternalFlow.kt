@@ -10,6 +10,8 @@ data class TInternalFlow(
     val level: LevelType,
     val name: String,
     val tag: String,
+    val region: String,
     val next: String?,
-    val forward: ForwardType?
+    val forward: ForwardType?,
+    val forwardTip: String?
 )

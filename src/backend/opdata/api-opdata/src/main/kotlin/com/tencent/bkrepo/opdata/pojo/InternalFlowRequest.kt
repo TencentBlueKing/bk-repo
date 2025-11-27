@@ -45,9 +45,15 @@ data class InternalFlowRequest(
     @get:Schema(title = "标签", required = true)
     val tag: String,
     
+    @get:Schema(title = "区域", required = true)
+    val region: String,
+    
     @get:Schema(title = "下一个节点标签")
     val next: String? = null,
     
     @get:Schema(title = "流转方向")
-    val forward: ForwardType? = null
+    val forward: ForwardType? = null,
+    
+    @get:Schema(title = "流转提示")
+    val forwardTip: String? = null
 )

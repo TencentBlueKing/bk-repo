@@ -29,13 +29,9 @@ package com.tencent.bkrepo.opdata.pojo
 
 import io.swagger.v3.oas.annotations.media.Schema
 
-/**
- * 名称及对应的tag
- */
-@Schema(title = "名称及对应的tag")
+
 data class NameWithTag(
-    @get:Schema(title = "名称")
     val name: String,
-    @get:Schema(title = "标签")
-    val tag: String
+    val tag: String,
+    val region: String
 )
