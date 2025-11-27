@@ -24,8 +24,7 @@ export const ciDisableRepoEnum = [
     'npm',
     'composer',
     'rpm',
-    'git',
-    'nuget'
+    'git'
 ]
 
 // 文件类型
