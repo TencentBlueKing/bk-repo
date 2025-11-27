@@ -27,8 +27,6 @@
 
 package com.tencent.bkrepo.opdata.pojo
 
-import io.swagger.v3.oas.annotations.media.Schema
-
 
 data class NameWithTag(
     val name: String,

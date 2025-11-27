@@ -2,7 +2,6 @@ package com.tencent.bkrepo.opdata.service.model
 
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.opdata.config.OpArchiveOrGcProperties
-import com.tencent.bkrepo.opdata.service.model.GcInfoModel
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
