@@ -32,6 +32,10 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.replication.dao.EventRecordDao
 import com.tencent.bkrepo.replication.model.TEventRecord
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
+import org.springframework.integration.IntegrationMessageHeaderAccessor.ACKNOWLEDGMENT_CALLBACK
+import org.springframework.integration.acks.AcknowledgmentCallback
+import org.springframework.messaging.Message
+
 
 /**
  * 构件事件消费者，用于实时同步
@@ -49,35 +53,50 @@ open class EventConsumer {
      */
     open fun getAcceptTypes(): Set<EventType> = emptySet()
 
-    fun accept(event: ArtifactEvent) {
-        if (!getAcceptTypes().contains(event.type)) {
+    fun accept(message: Message<ArtifactEvent>) {
+        if (!getAcceptTypes().contains(message.payload.type)) {
+            // 不处理的消息立即ack
+            ackMessage(message)
             return
         }
-        if (sourceCheck(event)) {
+        if (sourceCheck(message.payload)) {
+            // 来源检查不通过的消息立即ack
+            ackMessage(message)
             return
         }
-        action(event)
+        action(message)
     }
 
     /**
      * 执行具体的业务
      */
-    open fun action(event: ArtifactEvent) {}
+    open fun action(message: Message<ArtifactEvent>) {}
+
+
+    protected fun ackMessage(message: Message<ArtifactEvent>) {
+        try {
+            val acknowledgmentCallback = message.headers[ACKNOWLEDGMENT_CALLBACK] as? AcknowledgmentCallback
+            acknowledgmentCallback?.acknowledge(AcknowledgmentCallback.Status.ACCEPT)
+        } catch (e: Exception) {
+            // 忽略ack失败，避免影响业务处理
+        }
+    }
 
 
     protected fun storeEventRecord(
         tasks: List<ReplicaTaskDetail>,
         eventRecordDao: EventRecordDao,
-        event: ArtifactEvent,
+        message: Message<ArtifactEvent>,
         eventType: String
     ): Map<String, String?> {
         // 为每个taskKey创建一条独立的event记录，并执行任务
         val keyMap = mutableMapOf<String, String?>()
         tasks.forEach { task ->
             // 在消费前保存事件到数据库，每个taskKey单独记录一条
-            val eventRecordId = saveEventRecord(eventRecordDao, event, task.task.key, eventType)
+            val eventRecordId = saveEventRecord(eventRecordDao, message.payload, task.task.key, eventType)
             keyMap[task.task.key] = eventRecordId
         }
+        ackMessage(message)
         return keyMap
     }
 
