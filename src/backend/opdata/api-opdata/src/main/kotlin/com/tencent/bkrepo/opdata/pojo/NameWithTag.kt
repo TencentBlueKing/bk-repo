@@ -30,6 +30,6 @@ package com.tencent.bkrepo.opdata.pojo
 
 data class NameWithTag(
     val name: String,
-    val tag: String,
+    val tag: String?,
     val region: String
 )

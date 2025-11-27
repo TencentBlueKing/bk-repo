@@ -9,7 +9,7 @@ data class TInternalFlow(
     var id: String? = null,
     val level: LevelType,
     val name: String,
-    val tag: String,
+    val tag: String? = null,
     val region: String,
     val next: String?,
     val forward: ForwardType?,
