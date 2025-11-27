@@ -28,7 +28,7 @@ function _M:get_addr(service_name)
     end
 
     -- return k8s service address
-    if ngx.var.name_space ~= "" then
+    if ngx.var.name_space ~= nil and ngx.var.name_space ~= "" then
         return service_prefix .. service_name .. "." .. ngx.var.name_space .. ".svc.cluster.local"
     end
 
