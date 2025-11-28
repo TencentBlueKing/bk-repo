@@ -33,6 +33,7 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.replication.dao.EventRecordDao
 import com.tencent.bkrepo.replication.replica.executor.EventConsumerThreadPoolExecutor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
 
 /**
@@ -59,20 +60,27 @@ class ArtifactEventConsumer(
         )
     }
 
-    override fun action(event: ArtifactEvent) {
+    override fun action(message: Message<ArtifactEvent>) {
+        val event = message.payload
         // 获取所有相关的任务
         val tasks = replicaTaskService.listRealTimeTasks(event.projectId, event.repoName)
         if (tasks.isEmpty()) {
+            // 没有任务需要处理，立即ack
+            ackMessage(message)
             return
         }
         // 为每个taskKey创建一条独立的event记录，并执行任务
-        val keyMap = storeEventRecord(tasks, eventRecordDao, event, "NORMAL")
+        val keyMap = storeEventRecord(tasks, eventRecordDao, message, "NORMAL")
 
         executors.execute(
             Runnable {
-                tasks.forEach { task ->
-                    // 执行任务，传递事件ID用于跟踪
-                    eventBasedReplicaJobExecutor.execute(task, event, keyMap[task.task.key])
+                try {
+                    tasks.forEach { task ->
+                        // 执行任务，传递事件ID用于跟踪
+                        eventBasedReplicaJobExecutor.execute(task, event, keyMap[task.task.key])
+                    }
+                } catch (e: Exception) {
+                    throw e
                 }
             }.trace()
         )
