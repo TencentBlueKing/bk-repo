@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 local _M = {}
 
 -- 上报心跳信息到opdata服务
-function _M:report_heartbeat()
+function _M:report_heartbeat(domain)
 
     -- 构建心跳数据（timestamp 和 last_update 由服务端生成）
     local ip = string.gsub(internal_ip, "[\r\n]+", "")
@@ -38,12 +38,12 @@ function _M:report_heartbeat()
 
     -- 初始化HTTP连接
     local httpc = http.new()
-    local addr = "http://" .. hostUtil:get_addr("opdata", false)
-    local path = "/api/heartbeat/gateway"
-
-    -- 如果是boot assembly部署，需要添加服务前缀
-    if config.service_name ~= nil and config.service_name ~= "" then
-        path = "/opdata" .. path
+    local addr
+    if not domain then
+        domain = hostUtil:get_addr("opdata", false)
+        addr = "http://" .. domain .. "/api/heartbeat/gateway"
+    else
+        addr = "http://" .. domain .. "/opdata/api/heartbeat/gateway"
     end
 
     -- 设置超时时间
