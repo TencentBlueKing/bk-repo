@@ -37,10 +37,12 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
-import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.util.Optional
 import java.util.concurrent.TimeUnit
 
 @Component
@@ -57,10 +59,12 @@ class AuthenticationManager {
     @Autowired
     private lateinit var serviceTemporaryTokenClient: ServiceTemporaryTokenClient
 
-    private val oauthTokenCache: Cache<String, OauthToken?> = CacheBuilder.newBuilder()
+    private val oauthTokenCache: LoadingCache<String, Optional<OauthToken>> = CacheBuilder.newBuilder()
         .maximumSize(3000)
         .expireAfterWrite(1, TimeUnit.MINUTES)
-        .build()
+        .build(CacheLoader.from { accessToken ->
+            Optional.ofNullable(serviceOauthAuthorizationClient.getToken(accessToken).data)
+        })
 
     /**
      * 校验普通用户类型账户
@@ -123,12 +127,7 @@ class AuthenticationManager {
     }
 
     fun findOauthToken(accessToken: String): OauthToken? {
-        oauthTokenCache.getIfPresent(accessToken)?.let { return it }
-        val token = serviceOauthAuthorizationClient.getToken(accessToken).data
-        if (token != null) {
-            oauthTokenCache.put(accessToken, token)
-        }
-        return token
+        return oauthTokenCache.get(accessToken).orElse(null)
     }
 
     /**
