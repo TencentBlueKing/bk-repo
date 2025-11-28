@@ -1,7 +1,6 @@
 package com.tencent.bkrepo.repository.interceptor
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -36,7 +35,7 @@ class DriveProxyInterceptor(
 
         // 验证请求是否在白名单中
         if (!isRequestAllowed(requestMethod, requestURI)) {
-            logger.warn("Request [$requestMethod $requestURI] is not in the allowed API whitelist")
+            logger.warn("[DriveProxy] Request [$requestMethod $requestURI] is not in the allowed API whitelist")
             throw ErrorCodeException(
                 RepositoryMessageCode.DRIVE_API_NOT_ALLOWED,
                 "API [$requestMethod $requestURI] is not allowed"
@@ -48,18 +47,13 @@ class DriveProxyInterceptor(
 
         // 验证配置
         validateConfiguration()
-        try {
-            httpProxyUtil.proxy(
-                proxyRequest = request,
-                proxyResponse = response,
-                targetUrl = properties.ciServer,
-                prefix = DRIVE_API_PREFIX,
-                proxyCallHandler = proxyHandler
-            )
-        } catch (e: IllegalArgumentException) {
-            logger.error("Drive proxy request failed: ${e.message}")
-            throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID, e.message ?: "Invalid request")
-        }
+        httpProxyUtil.proxy(
+            proxyRequest = request,
+            proxyResponse = response,
+            targetUrl = properties.ciServer,
+            prefix = DRIVE_API_PREFIX,
+            proxyCallHandler = proxyHandler
+        )
 
         return false
     }
@@ -74,9 +68,9 @@ class DriveProxyInterceptor(
             // 从 ObjectProvider 获取 PrincipalManager 实例
             val principalManager = principalManagerProvider.getObject()
             principalManager.checkPrincipal(userId, PrincipalType.GENERAL)
-            logger.debug("User[$userId] permission check passed for drive request")
+            logger.debug("[DriveProxy] User[$userId] permission check passed for drive request")
         } catch (exception: PermissionException) {
-            logger.warn("User[$userId] permission check failed for drive request: ${exception.message}")
+            logger.warn("[DriveProxy] User[$userId] permission check failed for drive request: ${exception.message}")
             throw exception
         }
     }
@@ -86,9 +80,9 @@ class DriveProxyInterceptor(
      */
     private fun validateConfiguration() {
         require(
-            properties.ciServer.isNotBlank() && 
-            properties.bkAppCode.isNotBlank() && 
-            properties.bkAppSecret.isNotBlank()
+            properties.ciServer.isNotBlank() &&
+                properties.bkAppCode.isNotBlank() &&
+                properties.bkAppSecret.isNotBlank()
         ) {
             throw ErrorCodeException(
                 RepositoryMessageCode.BKDIRVE_CONFIG_ERROR,
@@ -106,13 +100,13 @@ class DriveProxyInterceptor(
     private fun isRequestAllowed(method: String, uri: String): Boolean {
         // 如果白名单为空，拒绝所有请求（安全优先）
         if (properties.allowedApis.isEmpty()) {
-            logger.warn("Allowed API whitelist is empty, rejecting all requests")
+            logger.warn("[DriveProxy] Allowed API whitelist is empty, rejecting all requests")
             return false
         }
 
         // 获取该HTTP方法对应的路径模式列表
         val pathPatterns = properties.allowedApis[method.uppercase()] ?: return false
-        
+
         // 检查请求路径是否匹配任一模式
         return pathPatterns.any { pattern -> pathMatcher.match(pattern, uri) }
     }
