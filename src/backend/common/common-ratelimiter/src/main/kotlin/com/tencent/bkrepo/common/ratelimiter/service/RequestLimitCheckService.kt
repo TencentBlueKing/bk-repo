@@ -91,17 +91,28 @@ class RequestLimitCheckService(
     @Qualifier(RateLimiterAutoConfiguration.UPLOAD_BANDWIDTH_RATELIMITER_ERVICE)
     private lateinit var uploadBandwidthRateLimiterService: UploadBandwidthRateLimiterService
 
-    fun preLimitCheck(request: HttpServletRequest) {
+    /**
+     * 需要用户校验的限流检查
+     */
+    fun preLimitCheckForUser(request: HttpServletRequest) {
         if (!rateLimiterProperties.enabled) {
             return
         }
-        // TODO 可以优化
-        urlRepoRateLimiterService.limit(request)
         userUrlRepoRateLimiterService.limit(request)
         userUrlRateLimiterService.limit(request)
         userUploadUsageRateLimiterService.limit(request)
-        urlRateLimiterService.limit(request)
         uploadUsageRateLimiterService.limit(request)
+    }
+
+    /**
+     * 不需要用户校验的限流检查
+     */
+    fun preLimitCheckForNonUser(request: HttpServletRequest) {
+        if (!rateLimiterProperties.enabled) {
+            return
+        }
+        urlRepoRateLimiterService.limit(request)
+        urlRateLimiterService.limit(request)
     }
 
     fun postLimitCheck(applyPermits: Long) {
