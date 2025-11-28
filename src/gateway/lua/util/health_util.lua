@@ -23,8 +23,9 @@ local _M = {}
 function _M:report_heartbeat()
     
     -- 构建心跳数据（timestamp 和 last_update 由服务端生成）
+    local ip = string.gsub(internal_ip, "[\r\n]+", "")
     local heartbeat_data = {
-        ip = internal_ip,
+        ip = ip,
         tag = config.ns.tag
     }
     
@@ -80,7 +81,7 @@ function _M:report_heartbeat()
     -- 设置HTTP保持连接
     httpc:set_keepalive(60000, 5)
     
-    ngx.log(ngx.INFO, "heartbeat reported successfully for ip: ", internal_ip)
+    ngx.log(ngx.INFO, "heartbeat reported successfully for ip: ", ip)
 end
 
 --[[判断字符串是否在数组中]]
