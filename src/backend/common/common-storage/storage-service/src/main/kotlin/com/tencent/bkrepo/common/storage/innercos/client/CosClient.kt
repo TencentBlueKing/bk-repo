@@ -794,11 +794,6 @@ class CosClient(val credentials: InnerCosCredentials) {
         }
 
         /**
-         * 获取上传的 key
-         */
-        fun getKey(): String = key
-
-        /**
          * 获取 uploadId
          */
         fun getUploadId(): String? = uploadId
