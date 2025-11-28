@@ -10,4 +10,5 @@ data class MediaProperties(
     var serverAddress: String = "",
     var transcodeConfig: Map<String, TranscodeConfig> = mutableMapOf(),
     var repoHost: String = "",
+    var storageCredentialsKey: String? = null,
 )

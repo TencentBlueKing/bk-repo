@@ -3,6 +3,7 @@ package com.tencent.bkrepo.media.service
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -14,12 +15,16 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.config.MediaProperties
+import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
+import com.tencent.bkrepo.media.common.model.TMediaTranscodeJob
+import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import com.tencent.bkrepo.media.stream.TranscodeConfig
-import com.tencent.bkrepo.media.stream.TranscodeHelper
 import com.tencent.bkrepo.media.stream.TranscodeParam
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.time.Duration
+import java.time.LocalDateTime
 
 /**
  * 视频转码服务
@@ -29,16 +34,46 @@ class TranscodeService(
     private val tokenService: TokenService,
     private val mediaProperties: MediaProperties,
     private val metadataService: MetadataService,
+    private val mediaTranscodeJobDao: MediaTranscodeJobDao
 ) :
     ArtifactService() {
 
     /**
      * 视频转码
      * */
-    fun transcode(artifactInfo: ArtifactInfo, transcodeConfig: TranscodeConfig, userId: String) {
-        val transcodeParam = generateTranscodeParam(artifactInfo, transcodeConfig, userId)
-        TranscodeHelper.addTask(transcodeConfig.jobId, transcodeParam)
-        logger.info("Add transcode task for artifact[$artifactInfo]")
+    fun transcode(
+        artifactInfo: ArtifactInfo,
+        transcodeConfig: TranscodeConfig,
+        userId: String,
+        extraFiles: List<ArtifactInfo>?,
+        author: String?,
+        videoStartTime: Long?,
+        videoEndTime: Long?,
+    ) {
+        val transcodeParam =
+            generateTranscodeParam(artifactInfo, transcodeConfig, userId, author, videoStartTime, videoEndTime)
+        transcodeParam.extraFiles = extraFiles?.map {
+            val p = generateTranscodeParam(it, transcodeConfig, userId, author, videoStartTime, videoEndTime)
+            mapOf(
+                "inputFileName" to p.inputFileName,
+                "inputUrl" to p.inputUrl
+            )
+        }
+        logger.info(
+            "add transcode task for artifact[$artifactInfo][$extraFiles],param[${transcodeParam.toJsonString()}]"
+        )
+        mediaTranscodeJobDao.insert(
+            TMediaTranscodeJob(
+                id = null,
+                projectId = artifactInfo.projectId,
+                repoName = artifactInfo.repoName,
+                fileName = artifactInfo.getResponseName(),
+                status = MediaTranscodeJobStatus.WAITING,
+                param = transcodeParam.toJsonString(),
+                createdTime = LocalDateTime.now(),
+                updateTime = LocalDateTime.now()
+            )
+        )
     }
 
     /**
@@ -89,10 +124,13 @@ class TranscodeService(
         artifactInfo: ArtifactInfo,
         transcodeConfig: TranscodeConfig,
         userId: String,
+        author: String?,
+        videoStartTime: Long?,
+        videoEndTime: Long?,
     ): TranscodeParam {
         with(transcodeConfig) {
             val outputArtifactInfo = covertOutputArtifactInfo(artifactInfo, scale)
-            val (inputUrl, callbackUrl) = generateUrl(
+            val (inputUrl, callbackUrl, reportUrl) = generateUrl(
                 artifactInfo,
                 outputArtifactInfo,
                 mediaProperties.repoHost,
@@ -101,12 +139,17 @@ class TranscodeService(
             return TranscodeParam(
                 inputUrl = inputUrl,
                 callbackUrl = callbackUrl,
+                reportUrl = reportUrl,
                 scale = scale,
                 videoCodec = videoCodec,
                 audioCodec = audioCodec,
                 inputFileName = artifactInfo.getResponseName(),
                 outputFileName = outputArtifactInfo.getResponseName(),
                 extraParams = transcodeConfig.extraParams.orEmpty(),
+                extraFiles = null,
+                author = author,
+                videoStartTime = videoStartTime,
+                videoEndTime = videoEndTime,
             )
         }
     }
@@ -126,13 +169,14 @@ class TranscodeService(
         output: ArtifactInfo,
         host: String,
         userId: String,
-    ): Pair<String, String> {
+    ): Triple<String, String, String> {
         val inputToken = createAccessToken(input, userId)
         val outputToken = createAccessToken(output, userId)
         val downloadUrl = "$host/media/user/transcode/download$input?token=$inputToken"
         val callbackUrl = "$host/media/user/transcode/upload$output?token=$outputToken" +
-            "&origin=${input.getArtifactFullPath()}&originToken=$inputToken"
-        return Pair(downloadUrl, callbackUrl)
+                "&origin=${input.getArtifactFullPath()}&originToken=$inputToken"
+        val reportUrl = "$host/media-job/user/media/job/report$input?token=$inputToken"
+        return Triple(downloadUrl, callbackUrl, reportUrl)
     }
 
     private fun createAccessToken(artifactInfo: ArtifactInfo, userId: String): String {
@@ -143,6 +187,7 @@ class TranscodeService(
                 fullPathSet = setOf(getArtifactFullPath()),
                 type = TokenType.ALL,
                 createdBy = userId,
+                expireSeconds = Duration.ofDays(7).seconds,
             )
             return tokenService.createToken(tokenRequest).firstOrNull().orEmpty()
         }
