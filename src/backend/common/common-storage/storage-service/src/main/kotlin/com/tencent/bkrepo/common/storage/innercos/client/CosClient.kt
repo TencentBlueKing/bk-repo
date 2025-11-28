@@ -95,6 +95,7 @@ import org.apache.commons.logging.LogFactory
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
+import com.tencent.bkrepo.common.artifact.stream.BoundedInputStream
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.Callable
@@ -171,6 +172,17 @@ class CosClient(val credentials: InnerCosCredentials) {
     fun getObject(cosRequest: GetObjectRequest): CosObject {
         val httpRequest = buildHttpRequest(cosRequest)
         return CosHttpClient.execute(httpRequest, GetObjectResponseHandler())
+    }
+
+    /**
+     * 获取对象的输入流
+     *
+     * @param key 对象 key
+     * @return 输入流
+     */
+    fun getObjectInputStream(key: String): InputStream {
+        return getObject(GetObjectRequest(key)).inputStream
+            ?: throw InnerCosException("Failed to get object[$key] from COS")
     }
 
     /**
@@ -656,6 +668,145 @@ class CosClient(val credentials: InnerCosCredentials) {
             logger.info("File[$filePath] download success, $throughput")
             return filePath.toFile()
         }
+    }
+
+    /**
+     * 创建分片上传会话
+     *
+     * @param key COS 对象 key
+     * @param length 文件大小，必须提供，用于计算分片大小和确定最后一个分片的大小
+     * @param storageClass 存储类型
+     * @return 分片上传会话
+     */
+    fun createMultipartUploadSession(
+        key: String,
+        length: Long,
+        storageClass: String? = null,
+    ): MultipartUploadSession {
+        require(length >= 0) { "contentLength must be non-negative" }
+        return MultipartUploadSession(key, length, storageClass)
+    }
+
+    /**
+     * 分片上传会话，管理流式分片上传的状态
+     * 使用 BoundedInputStream 直接从 InputStream 流式上传到 COS，不落盘
+     * 注意：必须提供 length，否则无法确定最后一个分片的大小
+     *
+     * @param key COS 对象 key
+     * @param length 文件大小，必须提供
+     * @param storageClass 存储类型
+     */
+    inner class MultipartUploadSession(
+        val key: String,
+        private val length: Long,
+        private val storageClass: String? = null,
+    ) {
+        private var uploadId: String? = null
+        private var partNumber: Int = 1
+        private val partETagList: MutableList<PartETag> = mutableListOf()
+        private var completed: Boolean = false
+        private var aborted: Boolean = false
+        private val partSize: Long = calculateOptimalPartSize(length, true)
+
+        /**
+         * 从 InputStream 读取数据并上传到 COS
+         *
+         * @param inputStream 数据输入流
+         * @return 上传响应
+         */
+        fun upload(inputStream: InputStream): PutObjectResponse {
+            require(!completed && !aborted) { "Upload session is already completed or aborted" }
+            
+            // 空文件直接上传空对象
+            if (length == 0L) {
+                completed = true
+                return putObject(PutObjectRequest(key, StringPool.EMPTY.byteInputStream(), 0, storageClass))
+            }
+            
+            try {
+                uploadId = initiateMultipartUpload(key, storageClass)
+                doUpload(inputStream)
+                return complete()
+            } catch (e: Exception) {
+                abort()
+                throw e
+            }
+        }
+
+        /**
+         * 执行分片上传
+         */
+        private fun doUpload(inputStream: InputStream) {
+            // 使用 BoundedInputStream 限制每个分片读取的字节数，直接流式上传，不落盘
+            var remaining = length
+            while (remaining > 0) {
+                val currentPartSize = minOf(partSize, remaining)
+                val boundedStream = BoundedInputStream(inputStream, currentPartSize)
+                uploadPart(boundedStream, currentPartSize)
+                remaining -= currentPartSize
+            }
+        }
+
+        /**
+         * 上传分片
+         */
+        private fun uploadPart(inputStream: InputStream, size: Long) {
+            val request = StreamUploadPartRequest(
+                key = key,
+                uploadId = uploadId!!,
+                partNumber = partNumber,
+                partSize = size,
+                inputStream = inputStream,
+            )
+            val httpRequest = buildHttpRequest(request)
+            val response = CosHttpClient.execute(httpRequest, UploadPartResponseHandler().enableSpeedSlowLog())
+            partETagList.add(PartETag(partNumber, response.eTag))
+            partNumber++
+        }
+
+        /**
+         * 完成分片上传
+         */
+        private fun complete(): PutObjectResponse {
+            val response = completeMultipartUpload(key, uploadId!!, partETagList)
+            completed = true
+            logger.info("Completed multipart upload for key[$key], uploadId[$uploadId], parts[${partETagList.size}]")
+            return response
+        }
+
+        /**
+         * 取消分片上传
+         */
+        private fun abort() {
+            if (aborted || completed) {
+                return
+            }
+            aborted = true
+            uploadId?.let {
+                try {
+                    abortMultipartUpload(key, it)
+                    logger.info("Aborted multipart upload for key[$key], uploadId[$it]")
+                } catch (e: Exception) {
+                    logger.error("Failed to abort multipart upload for key[$key], uploadId[$it]", e)
+                }
+            }
+            partETagList.clear()
+        }
+
+        /**
+         * 获取上传的 key
+         */
+        fun getKey(): String = key
+
+        /**
+         * 获取 uploadId
+         */
+        fun getUploadId(): String? = uploadId
+
+        /**
+         * 是否已完成上传
+         */
+        fun isCompleted(): Boolean = completed
     }
 
     companion object {
