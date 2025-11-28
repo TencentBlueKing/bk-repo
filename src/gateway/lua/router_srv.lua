@@ -82,8 +82,7 @@ if healthUtil:check_path(service_name) == false then
     return
 end
 
-
-ngx.var.target = hostUtil:get_addr(service_name)
+ngx.var.target = hostUtil:get_addr(service_name, true)
 
 if ngx.var.assembly ~= nil and ngx.var.assembly ~= "" then
     ngx.var.target = ngx.var.target .. "/" .. service_name
