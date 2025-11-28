@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 local _M = {}
 
 --[[获取微服务真实地址]]
-function _M:get_addr(service_name)
+function _M:get_addr(service_name, check_name_space)
 
     local service_prefix = config.service_prefix
     if service_prefix == nil then
@@ -28,7 +28,7 @@ function _M:get_addr(service_name)
     end
 
     -- return k8s service address
-    if ngx.var.name_space ~= nil and ngx.var.name_space ~= "" then
+    if check_name_space and ngx.var.name_space ~= "" then
         return service_prefix .. service_name .. "." .. ngx.var.name_space .. ".svc.cluster.local"
     end
 

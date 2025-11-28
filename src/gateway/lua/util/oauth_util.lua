@@ -270,7 +270,7 @@ function _M:verify_bkrepo_token(bkrepo_login_token)
     if user_cache_value == nil then
         --- 初始化HTTP连接
         local httpc = http.new()
-        local addr = "http://" .. hostUtil:get_addr("auth")
+        local addr = "http://" .. hostUtil:get_addr("auth", true)
         local path = "/api/user/verify?bkrepo_ticket=" .. bkrepo_login_token
         if config.service_name ~= nil and config.service_name ~= "" then
             path = "/auth" .. path

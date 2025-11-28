@@ -21,14 +21,14 @@ local _M = {}
 
 -- 上报心跳信息到opdata服务
 function _M:report_heartbeat()
-    
+
     -- 构建心跳数据（timestamp 和 last_update 由服务端生成）
     local ip = string.gsub(internal_ip, "[\r\n]+", "")
     local heartbeat_data = {
         ip = ip,
         tag = config.ns.tag
     }
-    
+
     -- 转换为JSON
     local request_body = json.encode(heartbeat_data)
     if not request_body then
@@ -38,23 +38,23 @@ function _M:report_heartbeat()
 
     -- 初始化HTTP连接
     local httpc = http.new()
-    local addr = "http://" .. hostUtil:get_addr("opdata")
+    local addr = "http://" .. hostUtil:get_addr("opdata", false)
     local path = "/api/heartbeat/gateway"
-    
+
     -- 如果是boot assembly部署，需要添加服务前缀
     if config.service_name ~= nil and config.service_name ~= "" then
         path = "/opdata" .. path
     end
-    
+
     -- 设置超时时间
     httpc:set_timeout(3000)
     httpc:connect(addr)
-    
+
     -- 构建请求头
     local request_headers = {
         ["Content-Type"] = "application/json",
         ["Accept"] = "application/json",
-        ["X-BKREPO-UID"] = "admin" ,
+        ["X-BKREPO-UID"] = "admin",
         ["Authorization"] = config.bkrepo.authorization
     }
 
@@ -65,22 +65,22 @@ function _M:report_heartbeat()
         headers = request_headers,
         body = request_body
     })
-    
+
     -- 判断是否出错
     if not res then
         ngx.log(ngx.ERR, "failed to report heartbeat to opdata: ", err)
         return
     end
-    
+
     -- 判断返回的状态码
     if res.status ~= 200 then
         ngx.log(ngx.ERR, "failed to report heartbeat, status: ", res.status, ", body: ", res.body or "")
         return
     end
-    
+
     -- 设置HTTP保持连接
     httpc:set_keepalive(60000, 5)
-    
+
     ngx.log(ngx.INFO, "heartbeat reported successfully for ip: ", ip)
 end
 
