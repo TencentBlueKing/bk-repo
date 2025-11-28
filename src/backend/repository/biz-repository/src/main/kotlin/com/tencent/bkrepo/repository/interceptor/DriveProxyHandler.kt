@@ -1,12 +1,11 @@
 package com.tencent.bkrepo.repository.interceptor
 
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.proxy.DefaultProxyCallHandler
 import com.tencent.bkrepo.repository.config.DriveProperties
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import okhttp3.Request
-import okhttp3.Response
-import org.slf4j.LoggerFactory
 
 /**
  * BkDrive 代理请求处理器
@@ -18,23 +17,21 @@ class DriveProxyHandler(
 
     /**
      * 请求转发前的处理
-     * 添加 CI 服务所需的认证和标识请求头
+     * 保留原始请求的所有请求头，但移除 Host 头（避免路由错误），并添加业务认证头
      */
     override fun before(
         proxyRequest: HttpServletRequest,
         proxyResponse: HttpServletResponse,
         request: Request
     ): Request {
-        val userId = proxyRequest.getAttribute("userId") as String
-
-        logger.debug("Preparing proxy request for user: {}, url: {}", userId, request.url)
+        val userId = SecurityUtils.getUserId()
 
         return request.newBuilder()
-            // 添加必需的认证请求头
-            .header(HEADER_DEVOPS_TOKEN, properties.ciToken)
+            .removeHeader(HEADER_HOST)
+            .header(HEADER_BKAPI_AUTH, buildAuthHeader())
             .header(HEADER_DEVOPS_UID, userId)
             .apply {
-                // 添加灰度标识（如果配置了）
+                // 添加灰度标识（如果配置）
                 if (properties.gray.isNotEmpty()) {
                     header(HEADER_DEVOPS_GRAY, properties.gray)
                 }
@@ -43,23 +40,17 @@ class DriveProxyHandler(
     }
 
     /**
-     * 请求转发后的处理
-     * 使用默认实现，转发响应状态码、响应头和响应体
+     * 构建 BkApi 认证请求头
+     * 使用 JSON 格式包含应用编码和密钥
      */
-    override fun after(
-        proxyRequest: HttpServletRequest,
-        proxyResponse: HttpServletResponse,
-        response: Response
-    ) {
-        logger.debug("Proxy response received: status=${response.code}, url=${response.request.url}")
-        super.after(proxyRequest, proxyResponse, response)
+    private fun buildAuthHeader(): String {
+        return "{\"bk_app_code\":\"${properties.bkAppCode}\",\"bk_app_secret\":\"${properties.bkAppSecret}\"}"
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(DriveProxyHandler::class.java)
-
-        // CI 服务请求头常量
-        private const val HEADER_DEVOPS_TOKEN = "X-DEVOPS-BK-TOKEN"
+        // 请求头常量
+        private const val HEADER_HOST = "Host"
+        private const val HEADER_BKAPI_AUTH = "X-Bkapi-Authorization"
         private const val HEADER_DEVOPS_UID = "X-DEVOPS-UID"
         private const val HEADER_DEVOPS_GRAY = "X-GATEWAY-TAG"
     }

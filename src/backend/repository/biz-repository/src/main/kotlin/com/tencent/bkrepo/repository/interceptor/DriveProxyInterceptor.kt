@@ -1,12 +1,11 @@
 package com.tencent.bkrepo.repository.interceptor
 
-import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
-import com.tencent.bkrepo.common.api.util.okhttp.HttpClientBuilderFactory
+import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.security.exception.PermissionException
 import com.tencent.bkrepo.common.security.manager.PrincipalManager
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.proxy.HttpProxyUtil
 import com.tencent.bkrepo.common.service.util.proxy.ProxyCallHandler
 import com.tencent.bkrepo.repository.config.DriveProperties
@@ -15,8 +14,8 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.ObjectProvider
+import org.springframework.util.AntPathMatcher
 import org.springframework.web.servlet.HandlerInterceptor
-import java.util.concurrent.TimeUnit
 
 class DriveProxyInterceptor(
     private val proxyHandler: ProxyCallHandler,
@@ -24,11 +23,8 @@ class DriveProxyInterceptor(
     private val principalManagerProvider: ObjectProvider<PrincipalManager>
 ) : HandlerInterceptor {
 
-    private val client = HttpClientBuilderFactory.create()
-        .readTimeout(15, TimeUnit.MINUTES)
-        .writeTimeout(15, TimeUnit.MINUTES)
-        .build()
-    private val httpProxyUtil = HttpProxyUtil(client)
+    private val httpProxyUtil = HttpProxyUtil()
+    private val pathMatcher = AntPathMatcher()
 
     override fun preHandle(
         request: HttpServletRequest,
@@ -36,37 +32,33 @@ class DriveProxyInterceptor(
         handler: Any
     ): Boolean {
         val requestURI = request.requestURI
+        val requestMethod = request.method
 
-        // 只处理 /api/drive/** 路径的请求
-        if (!requestURI.startsWith(DRIVE_API_PREFIX)) {
-            return true
+        // 验证请求是否在白名单中
+        if (!isRequestAllowed(requestMethod, requestURI)) {
+            logger.warn("Request [$requestMethod $requestURI] is not in the allowed API whitelist")
+            throw ErrorCodeException(
+                RepositoryMessageCode.DRIVE_API_NOT_ALLOWED,
+                "API [$requestMethod $requestURI] is not allowed"
+            )
         }
 
         // 权限检查：要求用户已认证（GENERAL 类型）
-        checkPermission(request)
+        checkPermission()
 
         // 验证配置
         validateConfiguration()
-        val targetGateway = request.getHeader(HEADER_DEVOPS_TARGET) ?: DEFAULT_TARGET_GATEWAY
-
-        logger.info("Intercepting drive request: [${request.method}] $requestURI")
         try {
-            // 使用 HttpProxyUtil 进行代理转发
             httpProxyUtil.proxy(
                 proxyRequest = request,
                 proxyResponse = response,
-                targetUrl = properties.ciServer + "/ms/${targetGateway}/api/open",
+                targetUrl = properties.ciServer,
                 prefix = DRIVE_API_PREFIX,
                 proxyCallHandler = proxyHandler
             )
-
-            logger.info("Drive request forwarded successfully: [${request.method}] $requestURI")
-        } catch (e: Exception) {
-            logger.error("Failed to forward drive request: [${request.method}] $requestURI", e)
-            throw ErrorCodeException(
-                RepositoryMessageCode.BKDIRVE_CONFIG_ERROR,
-                "Failed to forward request: ${e.message}"
-            )
+        } catch (e: IllegalArgumentException) {
+            logger.error("Drive proxy request failed: ${e.message}")
+            throw ErrorCodeException(CommonMessageCode.REQUEST_CONTENT_INVALID, e.message ?: "Invalid request")
         }
 
         return false
@@ -75,8 +67,8 @@ class DriveProxyInterceptor(
     /**
      * 权限检查
      */
-    private fun checkPermission(request: HttpServletRequest) {
-        val userId = request.getAttribute(USER_KEY) as? String ?: ANONYMOUS_USER
+    private fun checkPermission() {
+        val userId = SecurityUtils.getUserId()
 
         try {
             // 从 ObjectProvider 获取 PrincipalManager 实例
@@ -93,7 +85,11 @@ class DriveProxyInterceptor(
      * 验证配置是否完整
      */
     private fun validateConfiguration() {
-        require(properties.ciServer.isNotBlank() && properties.ciToken.isNotBlank()) {
+        require(
+            properties.ciServer.isNotBlank() && 
+            properties.bkAppCode.isNotBlank() && 
+            properties.bkAppSecret.isNotBlank()
+        ) {
             throw ErrorCodeException(
                 RepositoryMessageCode.BKDIRVE_CONFIG_ERROR,
                 "CI server URL or token is not configured"
@@ -101,10 +97,28 @@ class DriveProxyInterceptor(
         }
     }
 
+    /**
+     * 检查请求是否在白名单中
+     * @param method HTTP方法
+     * @param uri 请求URI
+     * @return 是否允许访问
+     */
+    private fun isRequestAllowed(method: String, uri: String): Boolean {
+        // 如果白名单为空，拒绝所有请求（安全优先）
+        if (properties.allowedApis.isEmpty()) {
+            logger.warn("Allowed API whitelist is empty, rejecting all requests")
+            return false
+        }
+
+        // 获取该HTTP方法对应的路径模式列表
+        val pathPatterns = properties.allowedApis[method.uppercase()] ?: return false
+        
+        // 检查请求路径是否匹配任一模式
+        return pathPatterns.any { pattern -> pathMatcher.match(pattern, uri) }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(DriveProxyInterceptor::class.java)
-        private const val DRIVE_API_PREFIX = "/api/drive"
-        private const val HEADER_DEVOPS_TARGET = "X-DEVOPS-PROXY-TARGET"
-        private const val DEFAULT_TARGET_GATEWAY = "artifactory"
+        private const val DRIVE_API_PREFIX = "/api/drive/ci"
     }
 }

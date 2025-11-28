@@ -35,11 +35,12 @@ import org.springframework.web.bind.annotation.RestController
 /**
  * BkDrive CI 接口通用转发控制器
  *
- * 注意：实际的请求转发由 DriveProxyInterceptor 拦截器处理
- * 此 Controller 仅用于定义路由和权限控制
+ * 注意：
+ * 1. 实际的请求转发由 DriveProxyInterceptor 拦截器处理
+ * 2. 此 API 仅用于代理 bk-ci 相关接口，不应用于其他用途
  */
 @RestController
-@RequestMapping("/api/drive")
+@RequestMapping("/api/drive/ci")
 class UserDriveController {
 
     @RequestMapping("/**")
