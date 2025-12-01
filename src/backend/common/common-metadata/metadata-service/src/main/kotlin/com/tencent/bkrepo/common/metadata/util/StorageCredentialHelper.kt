@@ -83,7 +83,10 @@ class StorageCredentialHelper(
         }
 
         fun convert(credentials: TStorageCredentials): StorageCredentials {
-            return credentials.credentials.readJsonString<StorageCredentials>().apply { this.key = credentials.id }
+            return credentials.credentials.readJsonString<StorageCredentials>().apply {
+                key = credentials.id
+                storageRegion = credentials.region.toString()
+            }
         }
 
         fun buildStorageCredential(

@@ -51,6 +51,7 @@ data class HDFSCredentials(
     override var upload: UploadProperties = UploadProperties(),
     override var encrypt: EncryptProperties = EncryptProperties(),
     override var compress: CompressProperties = CompressProperties(),
+    override var storageRegion: String? = null,
 ) : StorageCredentials(key, cache, upload, encrypt, compress) {
     companion object {
         const val type = "hdfs"

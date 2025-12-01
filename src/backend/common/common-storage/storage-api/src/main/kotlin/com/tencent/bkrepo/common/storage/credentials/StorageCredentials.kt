@@ -53,4 +53,5 @@ open class StorageCredentials(
     open var upload: UploadProperties,
     open var encrypt: EncryptProperties,
     open var compress: CompressProperties,
+    open var storageRegion: String? = null,
 )
