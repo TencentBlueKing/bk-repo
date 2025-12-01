@@ -33,13 +33,14 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.web.servlet.HandlerInterceptor
 
 /**
- * 针对http请求添加限流拦截
+ * 针对不需要用户校验的http请求添加限流拦截
  */
-class RateLimitHandlerInterceptor(
+class NonUserRateLimitHandlerInterceptor(
     private val requestLimitCheckService: RequestLimitCheckService
 ) : HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        requestLimitCheckService.preLimitCheck(request)
+        requestLimitCheckService.preLimitCheckForNonUser(request)
         return super.preHandle(request, response, handler)
     }
 }
+
