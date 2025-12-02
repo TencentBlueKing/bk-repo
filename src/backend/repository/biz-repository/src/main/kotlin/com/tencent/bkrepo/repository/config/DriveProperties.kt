@@ -42,5 +42,18 @@ class DriveProperties(
      *       POST:
      *         - /api/drive/ci/upload
      */
-    var allowedApis: Map<String, List<String>> = emptyMap()
+    var allowedApis: Map<String, List<String>> = emptyMap(),
+    /**
+     * 允许保留的请求头白名单
+     * 只有在此列表中的请求头才会被转发到目标服务
+     * 默认为空列表，表示丢弃所有原始请求头
+     * 示例配置:
+     * repository:
+     *   drive:
+     *     allowedHeaders:
+     *       - Content-Type
+     *       - User-Agent
+     *       - Accept
+     */
+    var allowedHeaders: List<String> = emptyList()
 )
