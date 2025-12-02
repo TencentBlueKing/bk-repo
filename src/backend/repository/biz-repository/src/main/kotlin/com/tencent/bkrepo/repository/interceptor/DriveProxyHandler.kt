@@ -25,36 +25,50 @@ class DriveProxyHandler(
         request: Request
     ): Request {
         val userId = SecurityUtils.getUserId()
-        val originalHeaders = request.headers
         
-        // 构建新请求，只添加白名单中的请求头
+        // 构建新请求
         val builder = Request.Builder()
             .url(request.url)
             .method(request.method, request.body)
         
-        // 只保留白名单中的请求头
-        if (properties.allowedHeaders.isNotEmpty()) {
-            val allowedHeadersLowerCase = properties.allowedHeaders.map { it.lowercase() }.toSet()
-            
-            originalHeaders.names().forEach { headerName ->
-                if (allowedHeadersLowerCase.contains(headerName.lowercase())) {
-                    originalHeaders[headerName]?.let { headerValue ->
-                        builder.header(headerName, headerValue)
-                    }
+        // 添加白名单中的请求头
+        addAllowedHeaders(builder, request.headers)
+        
+        // 添加业务认证头
+        addAuthHeaders(builder, userId)
+        
+        return builder.build()
+    }
+    
+    /**
+     * 添加白名单中的请求头（大小写不敏感）
+     */
+    private fun addAllowedHeaders(builder: Request.Builder, originalHeaders: okhttp3.Headers) {
+        if (properties.allowedHeaders.isEmpty()) {
+            return
+        }
+        
+        val allowedHeadersLowerCase = properties.allowedHeaders.map { it.lowercase() }.toSet()
+        
+        originalHeaders.names().forEach { headerName ->
+            if (allowedHeadersLowerCase.contains(headerName.lowercase())) {
+                originalHeaders[headerName]?.let { headerValue ->
+                    builder.header(headerName, headerValue)
                 }
             }
         }
-        
-        // 添加业务认证头
+    }
+    
+    /**
+     * 添加业务认证头和灰度标识
+     */
+    private fun addAuthHeaders(builder: Request.Builder, userId: String) {
         builder.header(HEADER_BKAPI_AUTH, buildAuthHeader())
             .header(HEADER_DEVOPS_UID, userId)
         
-        // 添加灰度标识（如果配置）
         if (properties.gray.isNotEmpty()) {
             builder.header(HEADER_DEVOPS_GRAY, properties.gray)
         }
-        
-        return builder.build()
     }
 
     /**
