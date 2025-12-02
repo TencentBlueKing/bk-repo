@@ -17,7 +17,7 @@ class DriveProxyHandler(
 
     /**
      * 请求转发前的处理
-     * 保留原始请求的所有请求头，但移除 Host 头（避免路由错误），并添加业务认证头
+     * 使用白名单机制：默认丢弃所有原始请求头，只保留白名单中指定的请求头，然后添加业务认证头
      */
     override fun before(
         proxyRequest: HttpServletRequest,
@@ -25,18 +25,36 @@ class DriveProxyHandler(
         request: Request
     ): Request {
         val userId = SecurityUtils.getUserId()
-
-        return request.newBuilder()
-            .removeHeader(HEADER_HOST)
-            .header(HEADER_BKAPI_AUTH, buildAuthHeader())
-            .header(HEADER_DEVOPS_UID, userId)
-            .apply {
-                // 添加灰度标识（如果配置）
-                if (properties.gray.isNotEmpty()) {
-                    header(HEADER_DEVOPS_GRAY, properties.gray)
+        val originalHeaders = request.headers
+        
+        // 构建新请求，只添加白名单中的请求头
+        val builder = Request.Builder()
+            .url(request.url)
+            .method(request.method, request.body)
+        
+        // 只保留白名单中的请求头
+        if (properties.allowedHeaders.isNotEmpty()) {
+            val allowedHeadersLowerCase = properties.allowedHeaders.map { it.lowercase() }.toSet()
+            
+            originalHeaders.names().forEach { headerName ->
+                if (allowedHeadersLowerCase.contains(headerName.lowercase())) {
+                    originalHeaders[headerName]?.let { headerValue ->
+                        builder.header(headerName, headerValue)
+                    }
                 }
             }
-            .build()
+        }
+        
+        // 添加业务认证头
+        builder.header(HEADER_BKAPI_AUTH, buildAuthHeader())
+            .header(HEADER_DEVOPS_UID, userId)
+        
+        // 添加灰度标识（如果配置）
+        if (properties.gray.isNotEmpty()) {
+            builder.header(HEADER_DEVOPS_GRAY, properties.gray)
+        }
+        
+        return builder.build()
     }
 
     /**
@@ -49,7 +67,6 @@ class DriveProxyHandler(
 
     companion object {
         // 请求头常量
-        private const val HEADER_HOST = "Host"
         private const val HEADER_BKAPI_AUTH = "X-Bkapi-Authorization"
         private const val HEADER_DEVOPS_UID = "X-DEVOPS-UID"
         private const val HEADER_DEVOPS_GRAY = "X-GATEWAY-TAG"
