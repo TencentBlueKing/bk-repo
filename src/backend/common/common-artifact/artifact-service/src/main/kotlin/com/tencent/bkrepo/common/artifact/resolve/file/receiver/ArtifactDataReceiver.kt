@@ -133,8 +133,8 @@ class ArtifactDataReceiver(
         source.use {
             var bytes = source.read(buffer)
             while (bytes >= 0) {
-                val millis = measureTimeMillis { writeData(buffer, 0, bytes) }
-                onReceived(buffer, 0, bytes, millis)
+                writeData(buffer, 0, bytes)
+                onReceived(buffer, 0, bytes)
                 bytes = source.read(buffer)
             }
         }
@@ -183,11 +183,12 @@ class ArtifactDataReceiver(
      */
     private fun writeData(buffer: ByteArray, offset: Int, length: Int) {
         checkFallback()
-        outputStream.write(buffer, offset, length)
+        val millis = measureTimeMillis { outputStream.write(buffer, offset, length) }
+        recordQuiet(length, Duration.ofMillis(millis))
     }
 
-    override fun onReceived(chunk: ByteArray, offset: Int, length: Int, elapsed: Long) {
-        super.onReceived(chunk, offset, length, elapsed)
+    override fun onReceived(chunk: ByteArray, offset: Int, length: Int) {
+        super.onReceived(chunk, offset, length)
         checkThreshold()
     }
 

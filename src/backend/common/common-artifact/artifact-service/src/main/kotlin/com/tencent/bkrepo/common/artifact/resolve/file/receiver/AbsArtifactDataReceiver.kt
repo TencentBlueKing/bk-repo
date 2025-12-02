@@ -20,7 +20,6 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.time.Duration
-import kotlin.system.measureTimeMillis
 
 /**
  * Artifact数据接收器
@@ -60,26 +59,31 @@ abstract class AbsArtifactDataReceiver(
      * 文件数据是否在内存缓存
      */
     var inMemory: Boolean = true
+        protected set
 
     /**
      * 接收开始时间
      */
     var startTime = 0L
+        private set
 
     /**
      * 接收结束时间
      */
     var endTime = 0L
+        private set
 
     /**
      * 接收字节数
      */
     var received = 0L
+        private set
 
     /**
      * 接收是否完成
      */
     var finished = false
+        private set
 
     private var trafficHandler: TrafficHandler? = null
 
@@ -102,12 +106,9 @@ abstract class AbsArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
-            requestLimitCheckService?.uploadBandwidthCheck(
-                length.toLong(),
-                receiveProperties.circuitBreakerThreshold
-            )
-            val millis = measureTimeMillis { doReceiveChunk(chunk, offset, length) }
-            onReceived(chunk, offset, length, millis)
+            requestLimitCheckService?.uploadBandwidthCheck(length.toLong(), receiveProperties.circuitBreakerThreshold)
+            doReceiveChunk(chunk, offset, length)
+            onReceived(chunk, offset, length)
         } catch (exception: IOException) {
             handleIOException(exception)
         } catch (overloadEx: OverloadException) {
@@ -127,9 +128,7 @@ abstract class AbsArtifactDataReceiver(
             startTime = System.nanoTime()
         }
         try {
-            requestLimitCheckService?.uploadBandwidthCheck(
-                1, receiveProperties.circuitBreakerThreshold
-            )
+            requestLimitCheckService?.uploadBandwidthCheck(1, receiveProperties.circuitBreakerThreshold)
             doReceive(b)
         } catch (exception: IOException) {
             handleIOException(exception)
@@ -180,10 +179,8 @@ abstract class AbsArtifactDataReceiver(
      * @param chunk 接收到的数据
      * @param offset 偏移量
      * @param length 数据大小
-     * @param elapsed 接收数据耗时
      */
-    protected open fun onReceived(chunk: ByteArray, offset: Int, length: Int, elapsed: Long) {
-        recordQuiet(length, Duration.ofMillis(elapsed))
+    protected open fun onReceived(chunk: ByteArray, offset: Int, length: Int) {
         listener.data(chunk, offset, length)
         received += length
     }
@@ -196,23 +193,6 @@ abstract class AbsArtifactDataReceiver(
     protected open fun onReceived(b: Int) {
         listener.data(b)
         received += 1
-    }
-
-    /**
-     * 数据接收完成,当数据传输完毕后需要调用该函数
-     */
-    fun finish(): Throughput {
-        if (!finished) {
-            try {
-                finished = true
-                endTime = System.nanoTime()
-                checkSize()
-                listener.finished()
-            } finally {
-                cleanOriginalOutputStream()
-            }
-        }
-        return Throughput(received, endTime - startTime)
     }
 
     /**
@@ -247,21 +227,6 @@ abstract class AbsArtifactDataReceiver(
     }
 
     /**
-     * 关闭原始输出流
-     */
-    fun cleanOriginalOutputStream() {
-        try {
-            outputStream.flush()
-        } catch (ignored: IOException) {
-        }
-
-        try {
-            outputStream.close()
-        } catch (ignored: IOException) {
-        }
-    }
-
-    /**
      * 处理限流请求
      */
     private fun handleOverloadException(exception: OverloadException) {
@@ -275,8 +240,40 @@ abstract class AbsArtifactDataReceiver(
         close()
     }
 
+    /**
+     * 数据接收完成,当数据传输完毕后需要调用该函数
+     */
+    fun finish(): Throughput {
+        if (!finished) {
+            try {
+                finished = true
+                endTime = System.nanoTime()
+                checkSize()
+                listener.finished()
+            } finally {
+                cleanOriginalOutputStream()
+            }
+        }
+        return Throughput(received, endTime - startTime)
+    }
+
     override fun close() {
         cleanOriginalOutputStream()
+    }
+
+    /**
+     * 关闭原始输出流
+     */
+    fun cleanOriginalOutputStream() {
+        try {
+            outputStream.flush()
+        } catch (ignored: IOException) {
+        }
+
+        try {
+            outputStream.close()
+        } catch (ignored: IOException) {
+        }
     }
 
     /**
