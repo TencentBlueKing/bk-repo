@@ -20,6 +20,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.time.Duration
+import kotlin.system.measureTimeMillis
 
 /**
  * Artifact数据接收器
@@ -73,6 +74,8 @@ abstract class AbsArtifactDataReceiver(
     var endTime = 0L
         private set
 
+    protected var flushTime = 0L
+
     /**
      * 接收字节数
      */
@@ -108,7 +111,7 @@ abstract class AbsArtifactDataReceiver(
         try {
             requestLimitCheckService?.uploadBandwidthCheck(length.toLong(), receiveProperties.circuitBreakerThreshold)
             doReceiveChunk(chunk, offset, length)
-            onReceived(chunk, offset, length)
+            afterReceived(chunk, offset, length)
         } catch (exception: IOException) {
             handleIOException(exception)
         } catch (overloadEx: OverloadException) {
@@ -174,26 +177,61 @@ abstract class AbsArtifactDataReceiver(
     protected abstract fun doReceiveStream(source: InputStream)
 
     /**
-     * 完成数据接收的回调
+     * 完成数据接收的回调，完成哈希计算、缓存阈值检测写盘等操作
      *
      * @param chunk 接收到的数据
      * @param offset 偏移量
      * @param length 数据大小
      */
-    protected open fun onReceived(chunk: ByteArray, offset: Int, length: Int) {
+    protected open fun afterReceived(chunk: ByteArray, offset: Int, length: Int) {
         listener.data(chunk, offset, length)
         received += length
+        checkThresholdAndFlush()
     }
 
     /**
-     * 当接收到数据时调用
+     * 完成数据接收的回调，完成哈希计算、缓存阈值检测写盘等操作
      *
      * @param b 接收到的数据
      */
-    protected open fun onReceived(b: Int) {
+    protected open fun afterReceived(b: Int) {
         listener.data(b)
         received += 1
+        checkThresholdAndFlush()
     }
+
+    /**
+     * 检查文件接受阈值，超过内存阈值时将写入文件中，
+     * 同时检查是否超过本地上传阈值，如果未超过，则使用本地磁盘
+     */
+    private fun checkThresholdAndFlush() {
+        if (inMemory && received > fileSizeThreshold) {
+            flush(false)
+        }
+    }
+
+    /**
+     * 将内存数据写入到磁盘中
+     * @param closeStream 写入后是否关闭原始output stream, 当用户主动触发时，需要设置为true
+     */
+    open fun flush(closeStream: Boolean = true) {
+        if (inMemory) {
+            flushTime = System.currentTimeMillis()
+            val millis = measureTimeMillis { outputStream = doFlush() }
+            inMemory = false
+            recordQuiet(contentBytes!!.size(), Duration.ofMillis(millis), true)
+            if (closeStream) {
+                cleanOriginalOutputStream()
+            }
+            // help gc
+            contentBytes = null
+        }
+    }
+
+    /**
+     * 将数据刷入持久化输出流并返回新建的输出流
+     */
+    protected abstract fun doFlush(): OutputStream
 
     /**
      * 接收完毕后，检查接收到的字节数和实际的字节数是否一致

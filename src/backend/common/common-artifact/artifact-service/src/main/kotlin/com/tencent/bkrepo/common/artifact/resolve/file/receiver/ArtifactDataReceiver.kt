@@ -40,6 +40,7 @@ import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.InputStream
+import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
@@ -61,15 +62,15 @@ import kotlin.system.measureTimeMillis
  *
  */
 class ArtifactDataReceiver(
-    private val receiveProperties: ReceiveProperties,
+    receiveProperties: ReceiveProperties,
     monitorProperties: MonitorProperties,
     private var path: Path,
     private val filename: String = generateRandomName(),
     private val randomPath: Boolean = false,
     private val originPath: Path = path,
-    private val requestLimitCheckService: RequestLimitCheckService? = null,
-    private val contentLength: Long? = null,
-    private val registry: ObservationRegistry
+    requestLimitCheckService: RequestLimitCheckService? = null,
+    contentLength: Long? = null,
+    registry: ObservationRegistry
 ) : StorageHealthMonitor.Observer, AbsArtifactDataReceiver(
     receiveProperties,
     requestLimitCheckService,
@@ -103,8 +104,6 @@ class ArtifactDataReceiver(
      */
     var fallback: Boolean = false
 
-    private var flushTime = 0L
-
     init {
         initPath()
     }
@@ -124,8 +123,7 @@ class ArtifactDataReceiver(
     override fun doReceive(b: Int) {
         checkFallback()
         outputStream.write(b)
-        onReceived(b)
-        checkThreshold()
+        afterReceived(b)
     }
 
     override fun doReceiveStream(source: InputStream) {
@@ -134,7 +132,7 @@ class ArtifactDataReceiver(
             var bytes = source.read(buffer)
             while (bytes >= 0) {
                 writeData(buffer, 0, bytes)
-                onReceived(buffer, 0, bytes)
+                afterReceived(buffer, 0, bytes)
                 bytes = source.read(buffer)
             }
         }
@@ -146,20 +144,14 @@ class ArtifactDataReceiver(
      */
     @Synchronized
     fun flushToFile(closeStream: Boolean = true) {
-        if (inMemory) {
-            flushTime = System.currentTimeMillis()
-            val filePath = this.filePath.apply { this.createFile() }
-            val fileOutputStream = Files.newOutputStream(filePath)
-            val millis = measureTimeMillis { contentBytes!!.writeTo(fileOutputStream) }
-            outputStream = fileOutputStream
-            inMemory = false
-            recordQuiet(contentBytes!!.size(), Duration.ofMillis(millis), true)
-            if (closeStream) {
-                cleanOriginalOutputStream()
-            }
-            // help gc
-            contentBytes = null
-        }
+        super.flush(closeStream)
+    }
+
+    override fun doFlush(): OutputStream {
+        val filePath = this.filePath.apply { this.createFile() }
+        val fileOutputStream = Files.newOutputStream(filePath)
+        contentBytes!!.writeTo(fileOutputStream)
+        return fileOutputStream
     }
 
     /**
@@ -185,11 +177,6 @@ class ArtifactDataReceiver(
         checkFallback()
         val millis = measureTimeMillis { outputStream.write(buffer, offset, length) }
         recordQuiet(length, Duration.ofMillis(millis))
-    }
-
-    override fun onReceived(chunk: ByteArray, offset: Int, length: Int) {
-        super.onReceived(chunk, offset, length)
-        checkThreshold()
     }
 
     /**
@@ -234,14 +221,8 @@ class ArtifactDataReceiver(
         }
     }
 
-    /**
-     * 检查文件接受阈值，超过内存阈值时将写入文件中，
-     * 同时检查是否超过本地上传阈值，如果未超过，则使用本地磁盘
-     */
-    private fun checkThreshold() {
-        if (inMemory && received > fileSizeThreshold) {
-            flushToFile(false)
-        }
+    override fun flush(closeStream: Boolean) {
+        flushToFile()
     }
 
     override fun doCheckSize() {
