@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.opdata.handler.impl
 
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.StorageCredentialsModel
+import com.tencent.bkrepo.opdata.service.model.StorageCredentialsModel
 import com.tencent.bkrepo.opdata.pojo.NodeResult
 import com.tencent.bkrepo.opdata.pojo.Target
 import com.tencent.bkrepo.opdata.pojo.enums.Metrics
