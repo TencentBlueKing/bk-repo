@@ -88,7 +88,7 @@ abstract class AbsArtifactDataReceiver(
     var finished = false
         private set
 
-    private var trafficHandler: TrafficHandler? = null
+    protected var trafficHandler: TrafficHandler? = null
 
     /**
      * 缓存数组
@@ -318,7 +318,7 @@ abstract class AbsArtifactDataReceiver(
      * 刷新流量处理器
      * 当文件冲刷到本地时，需要更新流量处理器，以进行正确的度量计算
      * */
-    protected fun refreshTrafficHandler() {
+    protected open fun refreshTrafficHandler() {
         trafficHandler = TrafficHandler(
             ArtifactMetrics.getUploadingCounters(this),
             ArtifactMetrics.getUploadingTimer(this),
