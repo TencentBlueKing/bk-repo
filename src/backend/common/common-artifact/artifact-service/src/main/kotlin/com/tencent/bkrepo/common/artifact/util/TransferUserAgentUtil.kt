@@ -61,9 +61,10 @@ object TransferUserAgentUtil {
         val android = userAgent.contains(DownloadInterceptorFactory.ANDROID_APP_USER_AGENT)
             || userAgent.contains(DownloadInterceptorFactory.ANDROID_APP_USER_AGENT_NEW)
         val ios = userAgent.contains(DownloadInterceptorFactory.IOS_APP_USER_AGENT)
+        val repoClient = userAgent.contains(DownloadInterceptorFactory.REPO_CLIENT)
         val otherClient = clientAgentList.firstOrNull { userAgent.startsWith(it) } != null
         val desktopClient = (platformId == webPlatformId) && referer.isNullOrBlank()
-        return android || ios || otherClient || desktopClient
+        return android || ios || otherClient || desktopClient || repoClient
     }
 
     private fun isBuilder(userAgent: String, builderAgentList: List<String>): Boolean {
