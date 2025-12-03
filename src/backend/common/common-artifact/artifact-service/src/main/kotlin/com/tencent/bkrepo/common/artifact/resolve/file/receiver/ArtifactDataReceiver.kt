@@ -79,6 +79,12 @@ class ArtifactDataReceiver(
 ) {
 
     /**
+     * 接收字节数
+     */
+    var received = 0L
+        private set
+
+    /**
      * 传输过程中发生存储降级时，是否将数据转移到本地磁盘
      */
     private val enableTransfer = monitorProperties.enableTransfer
@@ -123,7 +129,9 @@ class ArtifactDataReceiver(
     override fun doReceive(b: Int) {
         checkFallback()
         outputStream.write(b)
-        afterReceived(b)
+        listener.data(b)
+        received += 1
+        checkThresholdAndFlush()
     }
 
     override fun doReceiveStream(source: InputStream) {
@@ -132,10 +140,13 @@ class ArtifactDataReceiver(
             var bytes = source.read(buffer)
             while (bytes >= 0) {
                 writeData(buffer, 0, bytes)
-                afterReceived(buffer, 0, bytes)
                 bytes = source.read(buffer)
             }
         }
+    }
+
+    override fun receivedSize(): Long {
+        return received
     }
 
     /**
@@ -144,14 +155,30 @@ class ArtifactDataReceiver(
      */
     @Synchronized
     fun flushToFile(closeStream: Boolean = true) {
-        super.flush(closeStream)
+        if (inMemory) {
+            flushTime = System.currentTimeMillis()
+            val filePath = this.filePath.apply { this.createFile() }
+            val fileOutputStream = Files.newOutputStream(filePath)
+            val millis = measureTimeMillis { contentBytes!!.writeTo(fileOutputStream) }
+            outputStream = fileOutputStream
+            inMemory = false
+            recordQuiet(contentBytes!!.size(), Duration.ofMillis(millis), true)
+            if (closeStream) {
+                cleanOriginalOutputStream()
+            }
+            // help gc
+            contentBytes = null
+        }
     }
 
-    override fun doFlush(): OutputStream {
-        val filePath = this.filePath.apply { this.createFile() }
-        val fileOutputStream = Files.newOutputStream(filePath)
-        contentBytes!!.writeTo(fileOutputStream)
-        return fileOutputStream
+    /**
+     * 检查文件接受阈值，超过内存阈值时将写入文件中，
+     * 同时检查是否超过本地上传阈值，如果未超过，则使用本地磁盘
+     */
+    private fun checkThresholdAndFlush() {
+        if (inMemory && received > fileSizeThreshold) {
+            flushToFile(false)
+        }
     }
 
     /**
@@ -177,6 +204,9 @@ class ArtifactDataReceiver(
         checkFallback()
         val millis = measureTimeMillis { outputStream.write(buffer, offset, length) }
         recordQuiet(length, Duration.ofMillis(millis))
+        listener.data(buffer, offset, length)
+        received += length
+        checkThresholdAndFlush()
     }
 
     /**
@@ -219,10 +249,6 @@ class ArtifactDataReceiver(
         if (path == fallBackPath) {
             refreshTrafficHandler()
         }
-    }
-
-    override fun flush(closeStream: Boolean) {
-        flushToFile()
     }
 
     override fun doCheckSize() {

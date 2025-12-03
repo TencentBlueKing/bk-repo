@@ -77,12 +77,6 @@ abstract class AbsArtifactDataReceiver(
     protected var flushTime = 0L
 
     /**
-     * 接收字节数
-     */
-    var received = 0L
-        private set
-
-    /**
      * 接收是否完成
      */
     var finished = false
@@ -111,7 +105,6 @@ abstract class AbsArtifactDataReceiver(
         try {
             requestLimitCheckService?.uploadBandwidthCheck(length.toLong(), receiveProperties.circuitBreakerThreshold)
             doReceiveChunk(chunk, offset, length)
-            afterReceived(chunk, offset, length)
         } catch (exception: IOException) {
             handleIOException(exception)
         } catch (overloadEx: OverloadException) {
@@ -177,71 +170,15 @@ abstract class AbsArtifactDataReceiver(
     protected abstract fun doReceiveStream(source: InputStream)
 
     /**
-     * 完成数据接收的回调，完成哈希计算、缓存阈值检测写盘等操作
-     *
-     * @param chunk 接收到的数据
-     * @param offset 偏移量
-     * @param length 数据大小
-     */
-    protected open fun afterReceived(chunk: ByteArray, offset: Int, length: Int) {
-        listener.data(chunk, offset, length)
-        received += length
-        checkThresholdAndFlush()
-    }
-
-    /**
-     * 完成数据接收的回调，完成哈希计算、缓存阈值检测写盘等操作
-     *
-     * @param b 接收到的数据
-     */
-    protected open fun afterReceived(b: Int) {
-        listener.data(b)
-        received += 1
-        checkThresholdAndFlush()
-    }
-
-    /**
-     * 检查文件接受阈值，超过内存阈值时将写入文件中，
-     * 同时检查是否超过本地上传阈值，如果未超过，则使用本地磁盘
-     */
-    private fun checkThresholdAndFlush() {
-        if (inMemory && received > fileSizeThreshold) {
-            flush(false)
-        }
-    }
-
-    /**
-     * 将内存数据写入到磁盘中
-     * @param closeStream 写入后是否关闭原始output stream, 当用户主动触发时，需要设置为true
-     */
-    open fun flush(closeStream: Boolean = true) {
-        if (inMemory) {
-            flushTime = System.currentTimeMillis()
-            val millis = measureTimeMillis { outputStream = doFlush() }
-            inMemory = false
-            recordQuiet(contentBytes!!.size(), Duration.ofMillis(millis), true)
-            if (closeStream) {
-                cleanOriginalOutputStream()
-            }
-            // help gc
-            contentBytes = null
-        }
-    }
-
-    /**
-     * 将数据刷入持久化输出流并返回新建的输出流
-     */
-    protected abstract fun doFlush(): OutputStream
-
-    /**
      * 接收完毕后，检查接收到的字节数和实际的字节数是否一致
      * 生产环境中出现过不一致的情况，所以加此校验
      */
     private fun checkSize() {
         if (inMemory) {
             val actualSize = contentBytes!!.size().toLong()
-            require(received == actualSize) {
-                "$received bytes received, but $actualSize bytes saved in memory."
+            val receivedSize = receivedSize()
+            require(receivedSize == actualSize) {
+                "$receivedSize bytes received, but $actualSize bytes saved in memory."
             }
         } else {
             doCheckSize()
@@ -251,6 +188,11 @@ abstract class AbsArtifactDataReceiver(
     protected abstract fun doCheckSize()
 
     abstract fun getInputStream(): InputStream
+
+    /**
+     * 获取已接收的数据大小
+     */
+    abstract fun receivedSize(): Long
 
     /**
      * 处理IO异常
@@ -292,7 +234,7 @@ abstract class AbsArtifactDataReceiver(
                 cleanOriginalOutputStream()
             }
         }
-        return Throughput(received, endTime - startTime)
+        return Throughput(receivedSize(), endTime - startTime)
     }
 
     override fun close() {
