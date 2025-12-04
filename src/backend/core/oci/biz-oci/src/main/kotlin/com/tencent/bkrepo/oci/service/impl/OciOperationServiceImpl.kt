@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.configuration.RepositoryConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
 import com.tencent.bkrepo.common.artifact.pojo.configuration.remote.RemoteConfiguration
@@ -853,7 +854,9 @@ class OciOperationServiceImpl(
         with(ociArtifactInfo) {
             // 并发情况下，版本目录下可能存在着非该版本的blob
             // 覆盖上传时会先删除原有目录，并发情况下可能导致blobs节点不存在
-            val nodeProperty = getNodeByDigest(projectId, repoName, descriptor.digest) ?: run {
+            val nodeProperty = getNodeByDigest(
+                projectId, repoName, descriptor.digest, PathUtils.normalizePath(packageName)
+            ) ?: run {
                 nodeService.getDeletedNodeDetailBySha256(projectId, repoName, descriptor.sha256)?.let {
                     NodeProperty(StringPool.EMPTY, it.md5, it.size)
                 } ?: return false
@@ -973,21 +976,17 @@ class OciOperationServiceImpl(
         projectId: String,
         repoName: String,
         digestStr: String,
-        path: String?
+        path: String
     ): NodeProperty? {
         val ociDigest = OciDigest(digestStr)
-        // 优化查询：移除排序操作以提升性能，因为只需要返回一条记录
         val queryModel = NodeQueryBuilder()
             .select(NODE_FULL_PATH, MD5, OCI_NODE_SIZE)
             .projectId(projectId)
             .repoName(repoName)
             .sha256(ociDigest.getDigestHex())
+            .rule(NodeDetail::folder.name, false, OperationType.EQ)
+            .path(path, OperationType.PREFIX)
             .page(DEFAULT_PAGE_NUMBER, 1)
-            .apply {
-                path?.let {
-                    this.path(path, OperationType.PREFIX)
-                }
-            }
         val result = nodeSearchService.searchWithoutCount(queryModel.build())
         if (result.records.isEmpty()) {
             logger.warn(
@@ -1018,7 +1017,7 @@ class OciOperationServiceImpl(
                         projectId = artifactInfo.projectId,
                         repoName = artifactInfo.repoName,
                         digestStr = artifactInfo.reference,
-                        path = "/${artifactInfo.packageName}/"
+                        path = PathUtils.normalizePath(artifactInfo.packageName)
                     )?.fullPath
                 }
                 return "/${artifactInfo.packageName}/${artifactInfo.reference}/manifest.json"
@@ -1029,7 +1028,8 @@ class OciOperationServiceImpl(
                 return getNodeByDigest(
                     projectId = artifactInfo.projectId,
                     repoName = artifactInfo.repoName,
-                    digestStr = digestStr
+                    digestStr = digestStr,
+                    path = PathUtils.normalizePath(artifactInfo.packageName)
                 )?.fullPath
             }
 

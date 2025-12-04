@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactRemoveContext
@@ -138,7 +139,7 @@ class OciBlobServiceImpl(
                 }
             }
             val nodeProperty = ociOperationService.getNodeByDigest(
-                mountProjectId, mountRepoName, ociDigest.toString()
+                mountProjectId, mountRepoName, ociDigest.toString(), PathUtils.normalizePath(packageName)
             ) ?: run {
                 logger.warn("Could not find $ociDigest in repo $mountProjectId|$mountRepoName to mount")
                 buildSessionIdLocationForUpload(this, domain)
