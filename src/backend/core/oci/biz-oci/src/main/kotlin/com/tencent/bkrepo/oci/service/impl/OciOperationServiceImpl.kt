@@ -976,13 +976,14 @@ class OciOperationServiceImpl(
         path: String?
     ): NodeProperty? {
         val ociDigest = OciDigest(digestStr)
+        // 优化查询：移除排序操作以提升性能，因为只需要返回一条记录
         val queryModel = NodeQueryBuilder()
             .select(NODE_FULL_PATH, MD5, OCI_NODE_SIZE)
             .projectId(projectId)
             .repoName(repoName)
             .sha256(ociDigest.getDigestHex())
             .page(DEFAULT_PAGE_NUMBER, 1)
-            .sortByAsc(NODE_FULL_PATH).apply {
+            .apply {
                 path?.let {
                     this.path(path, OperationType.PREFIX)
                 }
