@@ -259,4 +259,21 @@ interface PackageService {
      * 查询包数量
      */
     fun getPackageCount(projectId: String, repoName: String): Long
+
+    /**
+     * 创建tag
+     */
+    fun createTag(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        versionName: String,
+        tag: String,
+        msg: String? = null
+    )
+
+    /**
+     * 删除tag
+     */
+    fun deleteTag(projectId: String, repoName: String, packageKey: String, tag: String)
 }

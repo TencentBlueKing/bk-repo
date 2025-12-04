@@ -35,6 +35,9 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.TagExistedException
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
@@ -50,6 +53,7 @@ import com.tencent.bkrepo.common.metadata.util.PackageEventFactory
 import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildUpdatedEvent
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
+import com.tencent.bkrepo.common.metadata.util.TagUtils
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -474,6 +478,44 @@ class PackageServiceImpl(
         return packageDao.count(query)
     }
 
+
+    override fun createTag(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        versionName: String,
+        tag: String,
+        msg: String?
+    ) {
+        val packageSummary = findPackageByKey(projectId, repoName, packageKey)
+            ?: throw PackageNotFoundException(packageKey)
+        if (packageSummary.versionTag.keys.contains(tag)) {
+            throw TagExistedException(tag)
+        }
+        val packageVersion = findVersionByName(projectId, repoName, packageKey, versionName)
+            ?: throw VersionNotFoundException(versionName)
+        packageDao.addTag(packageSummary.id, versionName, tag)
+        packageVersionDao.addTag(packageSummary.id, packageVersion.name, tag, msg)
+        logger.info("Add package[$packageKey] version[$versionName] tag[$tag] success")
+    }
+
+    override fun deleteTag(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        tag: String
+    ) {
+        val packageSummary = findPackageByKey(projectId, repoName, packageKey)
+            ?: throw PackageNotFoundException(packageKey)
+        if (!packageSummary.versionTag.keys.contains(tag)) {
+            return
+        }
+        val versionName = packageSummary.versionTag[tag].orEmpty()
+        packageDao.removeTag(packageSummary.id, tag)
+        packageVersionDao.removeTag(packageSummary.id, versionName, tag)
+        logger.info("Delete package[$packageKey] version[$versionName] tag[$tag] success")
+    }
+
     /**
      * 更新已经存在的版本信息
      */
@@ -509,7 +551,7 @@ class PackageServiceImpl(
 
     private fun TPackageVersion.buildArtifactPaths(request: PackageVersionCreateRequest): MutableSet<String>? {
         request.artifactPath?.let {
-             return if (!request.multiArtifact) {
+            return if (!request.multiArtifact) {
                 mutableSetOf(it)
             } else {
                 artifactPaths?.add(it)
@@ -588,7 +630,7 @@ class PackageServiceImpl(
                     downloads = it.downloads,
                     versions = it.versions,
                     description = it.description,
-                    versionTag = it.versionTag.orEmpty(),
+                    versionTag = it.versionTag.orEmpty().mapKeys { m -> TagUtils.decodeTag(m.key) },
                     extension = it.extension.orEmpty(),
                     historyVersion = it.historyVersion
                 )
