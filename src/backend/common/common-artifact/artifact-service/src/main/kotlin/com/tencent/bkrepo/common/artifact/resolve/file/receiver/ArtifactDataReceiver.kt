@@ -82,6 +82,12 @@ class ArtifactDataReceiver(
     registry,
     contentLength
 ) {
+
+    /**
+     * 传输过程中发生存储降级时，是否将数据转移到本地磁盘
+     */
+    private val enableTransfer = monitorProperties.enableTransfer
+
     /**
      * 数据传输buffer大小
      */
@@ -101,11 +107,6 @@ class ArtifactDataReceiver(
      * outputStream，初始化指向内存缓存数组
      */
     private var outputStream: OutputStream = contentBytes!!
-
-    /**
-     * 传输过程中发生存储降级时，是否将数据转移到本地磁盘
-     */
-    private val enableTransfer = monitorProperties.enableTransfer
 
     /**
      * 数据是否转移到本地磁盘
@@ -134,12 +135,15 @@ class ArtifactDataReceiver(
     var received = 0L
         private set
 
+    var trafficHandler: TrafficHandler? = null
+
     /**
      * 缓存数组
      */
     val cachedByteArray: ByteArray?
         get() = contentBytes?.toByteArray()
 
+    private var flushTime = 0L
 
     init {
         initPath()
@@ -162,7 +166,7 @@ class ArtifactDataReceiver(
         outputStream.write(b)
         listener.data(b)
         received += 1
-        checkThresholdAndFlush()
+        checkThreshold()
     }
 
     override fun doReceiveStream(source: InputStream) {
@@ -184,7 +188,9 @@ class ArtifactDataReceiver(
         try {
             return super.finish()
         } finally {
-            cleanOriginalOutputStream()
+            if (!finished) {
+                cleanOriginalOutputStream()
+            }
         }
     }
 
@@ -207,16 +213,6 @@ class ArtifactDataReceiver(
             }
             // help gc
             contentBytes = null
-        }
-    }
-
-    /**
-     * 检查文件接受阈值，超过内存阈值时将写入文件中，
-     * 同时检查是否超过本地上传阈值，如果未超过，则使用本地磁盘
-     */
-    private fun checkThresholdAndFlush() {
-        if (inMemory && received > fileSizeThreshold) {
-            flushToFile(false)
         }
     }
 
@@ -259,7 +255,7 @@ class ArtifactDataReceiver(
         recordQuiet(length, Duration.ofMillis(millis))
         listener.data(buffer, offset, length)
         received += length
-        checkThresholdAndFlush()
+        checkThreshold()
     }
 
     /**
@@ -304,12 +300,21 @@ class ArtifactDataReceiver(
         }
     }
 
+    /**
+     * 检查文件接受阈值，超过内存阈值时将写入文件中，
+     * 同时检查是否超过本地上传阈值，如果未超过，则使用本地磁盘
+     */
+    private fun checkThreshold() {
+        if (inMemory && received > fileSizeThreshold) {
+            flushToFile(false)
+        }
+    }
+
     override fun checkSize() {
         if (inMemory) {
             val actualSize = contentBytes!!.size().toLong()
-            val receivedSize = receivedSize()
-            require(receivedSize == actualSize) {
-                "$receivedSize bytes received, but $actualSize bytes saved in memory."
+            require(received == actualSize) {
+                "$received bytes received, but $actualSize bytes saved in memory."
             }
         } else {
             retry(times = RETRY_CHECK_TIMES, delayInSeconds = 1) {

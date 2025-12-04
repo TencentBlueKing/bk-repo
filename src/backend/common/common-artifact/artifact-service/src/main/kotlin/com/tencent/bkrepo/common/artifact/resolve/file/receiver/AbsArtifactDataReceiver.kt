@@ -55,15 +55,11 @@ abstract class AbsArtifactDataReceiver(
     var endTime = 0L
         private set
 
-    protected var flushTime = 0L
-
     /**
      * 接收是否完成
      */
     var finished = false
         private set
-
-    protected var trafficHandler: TrafficHandler? = null
 
     /**
      * 接收数据块
