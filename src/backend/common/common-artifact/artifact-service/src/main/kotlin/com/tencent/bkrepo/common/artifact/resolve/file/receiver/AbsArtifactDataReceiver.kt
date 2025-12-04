@@ -3,9 +3,7 @@ package com.tencent.bkrepo.common.artifact.resolve.file.receiver
 import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.api.util.TraceUtils
 import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
-import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
-import com.tencent.bkrepo.common.artifact.metrics.TrafficHandler
-import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
+import com.tencent.bkrepo.common.artifact.stream.StreamReceiveListener
 import com.tencent.bkrepo.common.artifact.stream.rateLimit
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
@@ -14,13 +12,8 @@ import com.tencent.bkrepo.common.storage.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import io.micrometer.common.KeyValues
 import io.micrometer.observation.ObservationRegistry
-import org.slf4j.LoggerFactory
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.OutputStream
-import java.time.Duration
-import kotlin.system.measureTimeMillis
 
 /**
  * Artifact数据接收器
@@ -35,25 +28,23 @@ abstract class AbsArtifactDataReceiver(
     /**
      * 数据摘要计算监听类
      */
-    val listener = DigestCalculateListener()
+    abstract val listener: StreamReceiveListener
 
     /**
      * 文件数据是否在内存缓存
      */
-    var inMemory: Boolean = true
+    abstract var inMemory: Boolean
         protected set
 
     /**
      * 接收开始时间
      */
-    var startTime = 0L
-        private set
+    private var startTime = 0L
 
     /**
      * 接收结束时间
      */
-    var endTime = 0L
-        private set
+    private var endTime = 0L
 
     /**
      * 接收是否完成
@@ -189,9 +180,5 @@ abstract class AbsArtifactDataReceiver(
             listener.finished()
         }
         return Throughput(receivedSize(), endTime - startTime)
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(AbsArtifactDataReceiver::class.java)
     }
 }

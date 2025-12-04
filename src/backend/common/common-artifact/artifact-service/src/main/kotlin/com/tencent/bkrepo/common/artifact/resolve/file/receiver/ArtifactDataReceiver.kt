@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.TrafficHandler
+import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.config.ReceiveProperties
@@ -123,6 +124,10 @@ class ArtifactDataReceiver(
      */
     val filePath: Path
         get() = path.resolve(filename)
+
+    override val listener: DigestCalculateListener = DigestCalculateListener()
+
+    override var inMemory: Boolean = true
 
     /**
      * 是否发生降级
