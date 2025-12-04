@@ -16,9 +16,19 @@ import java.time.LocalDateTime
     CompoundIndex(
         name = "completed_idx", def = "{'taskCompleted': 1}", background = true
     ),
+    CompoundIndex(
+        name = "message_task_idx",
+        def = "{'taskKey': 1,'messageId': 1}",
+        background = true
+    ),
 )
 data class TEventRecord(
     var id: String? = null,
+
+    /**
+     * 消息唯一标识
+     */
+    val messageId: String? = null,
 
     /**
      * 事件类型：NORMAL（普通事件）或 FEDERATION（联邦事件）

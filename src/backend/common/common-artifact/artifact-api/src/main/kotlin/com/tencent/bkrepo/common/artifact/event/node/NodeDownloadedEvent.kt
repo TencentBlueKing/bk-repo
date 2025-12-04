@@ -38,12 +38,14 @@ class NodeDownloadedEvent(
     override val repoName: String,
     override val resourceKey: String,
     override val userId: String,
-    override val data: Map<String, Any>
+    override val data: Map<String, Any>,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.NODE_DOWNLOADED,
     projectId = projectId,
     repoName = repoName,
     resourceKey = resourceKey,
     userId = userId,
-    data = data
+    data = data,
+    eventId = eventId
 )

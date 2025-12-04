@@ -37,11 +37,13 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 data class ProjectCreatedEvent(
     override val projectId: String,
     override val userId: String,
-    val createPermission: Boolean
+    val createPermission: Boolean,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.PROJECT_CREATED,
     projectId = projectId,
     repoName = StringPool.EMPTY,
     resourceKey = projectId,
-    userId = userId
+    userId = userId,
+    eventId = eventId
 )
