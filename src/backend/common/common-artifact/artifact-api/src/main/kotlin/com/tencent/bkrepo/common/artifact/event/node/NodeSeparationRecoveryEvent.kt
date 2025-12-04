@@ -39,11 +39,13 @@ class NodeSeparationRecoveryEvent(
     override val resourceKey: String,
     override val userId: String,
     val repoType: String,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.NODE_SEPARATION_RECOVERY,
     projectId = projectId,
     repoName = repoName,
     resourceKey = resourceKey,
     userId = userId,
-    data = mapOf("repoType" to repoType)
+    data = mapOf("repoType" to repoType),
+    eventId = eventId
 )

@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.replication.replica.type.federation
 
-import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.replication.dao.EventRecordDao
@@ -73,29 +72,13 @@ class FederationArtifactEventConsumer(
     }
 
     override fun action(message: Message<ArtifactEvent>) {
-        val event = message.payload
-        // 获取所有相关的任务
-        val tasks = replicaTaskService.listFederationTasks(event.projectId, event.repoName)
-        if (tasks.isEmpty()) {
-            // 没有任务需要处理，立即ack
-            ackMessage(message)
-            return
-        }
-        // 为每个taskKey创建一条独立的event记录，并执行任务
-        val keyMap = storeEventRecord(tasks, eventRecordDao, message, "FEDERATION")
-
-        // 为每个taskKey创建一条独立的event记录，并执行任务
-        federationExecutors.execute(
-            Runnable {
-                try {
-                    tasks.forEach { task ->
-                        // 执行任务，传递事件ID用于跟踪
-                        federationBasedReplicaJobExecutor.execute(task, event, keyMap[task.task.key])
-                    }
-                } catch (e: Exception) {
-                    throw e
-                }
-            }.trace()
+        processAction(
+            message = message,
+            eventRecordDao = eventRecordDao,
+            getTasks = { projectId, repoName -> replicaTaskService.listFederationTasks(projectId, repoName) },
+            eventType = "FEDERATION",
+            executor = federationExecutors,
+            executeTask = { task, event, recordId -> federationBasedReplicaJobExecutor.execute(task, event, recordId) }
         )
     }
 }

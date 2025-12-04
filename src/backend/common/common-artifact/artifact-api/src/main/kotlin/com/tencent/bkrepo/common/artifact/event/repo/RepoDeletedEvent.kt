@@ -38,11 +38,13 @@ data class RepoDeletedEvent(
     override val repoName: String,
     override val userId: String,
     override val source: String?,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.REPO_DELETED,
     projectId = projectId,
     repoName = repoName,
     resourceKey = repoName,
     userId = userId,
-    source = source
+    source = source,
+    eventId = eventId
 )
