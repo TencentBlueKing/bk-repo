@@ -29,16 +29,21 @@ package com.tencent.bkrepo.common.artifact.resolve.file.receiver
 
 import com.tencent.bkrepo.common.api.constant.retry
 import com.tencent.bkrepo.common.artifact.hash.sha256
+import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
+import com.tencent.bkrepo.common.artifact.metrics.TrafficHandler
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
+import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.common.storage.util.delete
 import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.file.Files
@@ -77,12 +82,25 @@ class ArtifactDataReceiver(
     registry,
     contentLength
 ) {
+    /**
+     * 数据传输buffer大小
+     */
+    private val bufferSize = receiveProperties.bufferSize.toBytes().toInt()
 
     /**
-     * 接收字节数
+     * 动态阈值，超过该阈值将数据落磁盘
      */
-    var received = 0L
-        private set
+    private val fileSizeThreshold = receiveProperties.fileSizeThreshold.toBytes()
+
+    /**
+     * 内存缓存数组
+     */
+    private var contentBytes: ByteArrayOutputStream? = ByteArrayOutputStream(bufferSize)
+
+    /**
+     * outputStream，初始化指向内存缓存数组
+     */
+    private var outputStream: OutputStream = contentBytes!!
 
     /**
      * 传输过程中发生存储降级时，是否将数据转移到本地磁盘
@@ -109,6 +127,19 @@ class ArtifactDataReceiver(
      * 是否发生降级
      */
     var fallback: Boolean = false
+
+    /**
+     * 接收字节数
+     */
+    var received = 0L
+        private set
+
+    /**
+     * 缓存数组
+     */
+    val cachedByteArray: ByteArray?
+        get() = contentBytes?.toByteArray()
+
 
     init {
         initPath()
@@ -147,6 +178,14 @@ class ArtifactDataReceiver(
 
     override fun receivedSize(): Long {
         return received
+    }
+
+    override fun finish(): Throughput {
+        try {
+            return super.finish()
+        } finally {
+            cleanOriginalOutputStream()
+        }
     }
 
     /**
@@ -193,6 +232,20 @@ class ArtifactDataReceiver(
         }
     }
 
+    /**
+     * 关闭原始输出流
+     */
+    fun cleanOriginalOutputStream() {
+        try {
+            outputStream.flush()
+        } catch (ignored: IOException) {
+        }
+
+        try {
+            outputStream.close()
+        } catch (ignored: IOException) {
+        }
+    }
 
     /**
      * 写入数据
@@ -251,11 +304,19 @@ class ArtifactDataReceiver(
         }
     }
 
-    override fun doCheckSize() {
-        retry(times = RETRY_CHECK_TIMES, delayInSeconds = 1) {
-            val actualSize = Files.size(this.filePath)
-            require(received == actualSize) {
-                "$received bytes received, but $actualSize bytes saved in file."
+    override fun checkSize() {
+        if (inMemory) {
+            val actualSize = contentBytes!!.size().toLong()
+            val receivedSize = receivedSize()
+            require(receivedSize == actualSize) {
+                "$receivedSize bytes received, but $actualSize bytes saved in memory."
+            }
+        } else {
+            retry(times = RETRY_CHECK_TIMES, delayInSeconds = 1) {
+                val actualSize = Files.size(this.filePath)
+                require(received == actualSize) {
+                    "$received bytes received, but $actualSize bytes saved in file."
+                }
             }
         }
     }
@@ -287,8 +348,8 @@ class ArtifactDataReceiver(
      * 关闭接收器，清理资源
      * */
     override fun close() {
-        super.close()
         try {
+            cleanOriginalOutputStream()
             deleteTempFile()
         } catch (ignored: NoSuchFileException) {
             // already deleted
@@ -310,6 +371,31 @@ class ArtifactDataReceiver(
     private fun initPath() {
         if (randomPath) {
             path = generateRandomPath(path, filename)
+        }
+    }
+
+    /**
+     * 刷新流量处理器
+     * 当文件冲刷到本地时，需要更新流量处理器，以进行正确的度量计算
+     * */
+    private fun refreshTrafficHandler() {
+        trafficHandler = TrafficHandler(
+            ArtifactMetrics.getUploadingCounters(this),
+            ArtifactMetrics.getUploadingTimer(this),
+        )
+    }
+
+    /**
+     * 静默采集metrics
+     * */
+    private fun recordQuiet(size: Int, elapse: Duration, refresh: Boolean = false) {
+        try {
+            if (refresh || trafficHandler == null) {
+                refreshTrafficHandler()
+            }
+            trafficHandler?.record(size, elapse)
+        } catch (e: Exception) {
+            logger.error("Record upload metrics error", e)
         }
     }
 

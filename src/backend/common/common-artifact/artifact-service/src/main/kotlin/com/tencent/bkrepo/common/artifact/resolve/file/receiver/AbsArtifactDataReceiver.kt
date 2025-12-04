@@ -31,25 +31,6 @@ abstract class AbsArtifactDataReceiver(
     private val registry: ObservationRegistry,
     private val contentLength: Long? = null,
 ) : AutoCloseable {
-    /**
-     * 数据传输buffer大小
-     */
-    protected val bufferSize = receiveProperties.bufferSize.toBytes().toInt()
-
-    /**
-     * 动态阈值，超过该阈值将数据落磁盘
-     */
-    protected val fileSizeThreshold = receiveProperties.fileSizeThreshold.toBytes()
-
-    /**
-     * 内存缓存数组
-     */
-    protected var contentBytes: ByteArrayOutputStream? = ByteArrayOutputStream(bufferSize)
-
-    /**
-     * outputStream，初始化指向内存缓存数组
-     */
-    protected var outputStream: OutputStream = contentBytes!!
 
     /**
      * 数据摘要计算监听类
@@ -83,13 +64,6 @@ abstract class AbsArtifactDataReceiver(
         private set
 
     protected var trafficHandler: TrafficHandler? = null
-
-    /**
-     * 缓存数组
-     */
-    val cachedByteArray: ByteArray?
-        get() = contentBytes?.toByteArray()
-
 
     /**
      * 接收数据块
@@ -173,19 +147,7 @@ abstract class AbsArtifactDataReceiver(
      * 接收完毕后，检查接收到的字节数和实际的字节数是否一致
      * 生产环境中出现过不一致的情况，所以加此校验
      */
-    private fun checkSize() {
-        if (inMemory) {
-            val actualSize = contentBytes!!.size().toLong()
-            val receivedSize = receivedSize()
-            require(receivedSize == actualSize) {
-                "$receivedSize bytes received, but $actualSize bytes saved in memory."
-            }
-        } else {
-            doCheckSize()
-        }
-    }
-
-    protected abstract fun doCheckSize()
+    protected abstract fun checkSize()
 
     abstract fun getInputStream(): InputStream
 
@@ -223,62 +185,14 @@ abstract class AbsArtifactDataReceiver(
     /**
      * 数据接收完成,当数据传输完毕后需要调用该函数
      */
-    fun finish(): Throughput {
+    open fun finish(): Throughput {
         if (!finished) {
-            try {
-                finished = true
-                endTime = System.nanoTime()
-                checkSize()
-                listener.finished()
-            } finally {
-                cleanOriginalOutputStream()
-            }
+            finished = true
+            endTime = System.nanoTime()
+            checkSize()
+            listener.finished()
         }
         return Throughput(receivedSize(), endTime - startTime)
-    }
-
-    override fun close() {
-        cleanOriginalOutputStream()
-    }
-
-    /**
-     * 关闭原始输出流
-     */
-    fun cleanOriginalOutputStream() {
-        try {
-            outputStream.flush()
-        } catch (ignored: IOException) {
-        }
-
-        try {
-            outputStream.close()
-        } catch (ignored: IOException) {
-        }
-    }
-
-    /**
-     * 刷新流量处理器
-     * 当文件冲刷到本地时，需要更新流量处理器，以进行正确的度量计算
-     * */
-    protected open fun refreshTrafficHandler() {
-        trafficHandler = TrafficHandler(
-            ArtifactMetrics.getUploadingCounters(this),
-            ArtifactMetrics.getUploadingTimer(this),
-        )
-    }
-
-    /**
-     * 静默采集metrics
-     * */
-    protected fun recordQuiet(size: Int, elapse: Duration, refresh: Boolean = false) {
-        try {
-            if (refresh || trafficHandler == null) {
-                refreshTrafficHandler()
-            }
-            trafficHandler?.record(size, elapse)
-        } catch (e: Exception) {
-            logger.error("Record upload metrics error", e)
-        }
     }
 
     companion object {
