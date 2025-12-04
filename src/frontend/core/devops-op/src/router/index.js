@@ -34,6 +34,7 @@ export const ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG = 'MigrationConfig'
 export const ROUTER_NAME_MIGRATE_PROJECT_GRAYSCALE_CONFIG = 'ProjectGrayscaleConfig'
 export const ROUTER_NAME_SERVER_LOG = 'ServerLog'
 export const ROUTER_NAME_SIGN_CONFIG = 'SignConfig'
+export const ROUTER_NAME_NT = 'NT'
 
 Vue.use(Router)
 
@@ -90,6 +91,18 @@ export const constantRoutes = [
  * the routes that need to be dynamically loaded based on user roles
  */
 export const asyncRoutes = [
+  {
+    path: '/nt',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_NT,
+        meta: { title: '网络拓扑', icon: 'nt' },
+        component: () => import('@/views/net-topology/index')
+      }
+    ]
+  },
   {
     path: '/account',
     component: Layout,
