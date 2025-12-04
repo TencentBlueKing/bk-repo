@@ -22,7 +22,7 @@ abstract class AbsArtifactDataReceiver(
     private val receiveProperties: ReceiveProperties,
     private val requestLimitCheckService: RequestLimitCheckService? = null,
     private val registry: ObservationRegistry,
-    private val contentLength: Long? = null,
+    protected val contentLength: Long? = null,
 ) : AutoCloseable {
 
     /**

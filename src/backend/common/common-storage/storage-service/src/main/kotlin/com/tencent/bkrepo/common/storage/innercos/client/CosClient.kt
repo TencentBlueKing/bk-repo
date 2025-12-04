@@ -175,17 +175,6 @@ class CosClient(val credentials: InnerCosCredentials) {
     }
 
     /**
-     * 获取对象的输入流
-     *
-     * @param key 对象 key
-     * @return 输入流
-     */
-    fun getObjectInputStream(key: String): InputStream {
-        return getObject(GetObjectRequest(key)).inputStream
-            ?: throw InnerCosException("Failed to get object[$key] from COS")
-    }
-
-    /**
      * 分块下载文件
      * 分块下载文件，可以利用线程并行，多连接同时下载，以突破单连接的限速。
      * 以下几种情况不使用分块下载，转换成普通下载
@@ -406,8 +395,8 @@ class CosClient(val credentials: InnerCosCredentials) {
         }
     }
 
-    private fun initiateMultipartUpload(key: String, storageClass: String?): String {
-        val cosRequest = InitiateMultipartUploadRequest(key, storageClass)
+    private fun initiateMultipartUpload(key: String, storageClass: String?, overwrite: Boolean = true): String {
+        val cosRequest = InitiateMultipartUploadRequest(key, storageClass, overwrite)
         val httpRequest = buildHttpRequest(cosRequest)
         return CosHttpClient.execute(httpRequest, InitiateMultipartUploadResponseHandler())
     }
@@ -676,15 +665,17 @@ class CosClient(val credentials: InnerCosCredentials) {
      * @param key COS 对象 key
      * @param length 文件大小，必须提供，用于计算分片大小和确定最后一个分片的大小
      * @param storageClass 存储类型
+     * @param overwrite 是否覆盖文件，COS默认为覆盖上传
      * @return 分片上传会话
      */
     fun createMultipartUploadSession(
         key: String,
         length: Long,
         storageClass: String? = null,
+        overwrite: Boolean = true,
     ): MultipartUploadSession {
         require(length >= 0) { "contentLength must be non-negative" }
-        return MultipartUploadSession(key, length, storageClass)
+        return MultipartUploadSession(key, length, storageClass, overwrite)
     }
 
     /**
@@ -695,16 +686,22 @@ class CosClient(val credentials: InnerCosCredentials) {
      * @param key COS 对象 key
      * @param length 文件大小，必须提供
      * @param storageClass 存储类型
+     * @param overwrite 是否覆盖上传
      */
     inner class MultipartUploadSession(
         val key: String,
         private val length: Long,
         private val storageClass: String? = null,
+        private val overwrite: Boolean = true,
     ) {
-        private var uploadId: String? = null
+        var uploadId: String? = null
+            private set
         private var partNumber: Int = 1
+        var uploaded: Long = 0
+            private set
         private val partETagList: MutableList<PartETag> = mutableListOf()
-        private var completed: Boolean = false
+        var completed: Boolean = false
+            private set
         private var aborted: Boolean = false
         private val partSize: Long = calculateOptimalPartSize(length, true)
 
@@ -724,7 +721,7 @@ class CosClient(val credentials: InnerCosCredentials) {
             }
             
             try {
-                uploadId = initiateMultipartUpload(key, storageClass)
+                uploadId = initiateMultipartUpload(key, storageClass, overwrite)
                 doUpload(inputStream)
                 return complete()
             } catch (e: Exception) {
@@ -744,6 +741,7 @@ class CosClient(val credentials: InnerCosCredentials) {
                 val boundedStream = BoundedInputStream(inputStream, currentPartSize)
                 uploadPart(boundedStream, currentPartSize)
                 remaining -= currentPartSize
+                uploaded += currentPartSize
             }
         }
 
@@ -757,6 +755,7 @@ class CosClient(val credentials: InnerCosCredentials) {
                 partNumber = partNumber,
                 partSize = size,
                 inputStream = inputStream,
+                closeStream = false
             )
             val httpRequest = buildHttpRequest(request)
             val response = CosHttpClient.execute(httpRequest, UploadPartResponseHandler().enableSpeedSlowLog())
@@ -792,16 +791,6 @@ class CosClient(val credentials: InnerCosCredentials) {
             }
             partETagList.clear()
         }
-
-        /**
-         * 获取 uploadId
-         */
-        fun getUploadId(): String? = uploadId
-
-        /**
-         * 是否已完成上传
-         */
-        fun isCompleted(): Boolean = completed
     }
 
     companion object {
