@@ -31,7 +31,8 @@ import java.time.LocalDateTime
 
 data class UserInfo(
     val name: String,
-    val auth: Auth
+    val auth: Auth,
+    val orgs: Map<Any, Any> = emptyMap(),
 )
 
 data class Auth(

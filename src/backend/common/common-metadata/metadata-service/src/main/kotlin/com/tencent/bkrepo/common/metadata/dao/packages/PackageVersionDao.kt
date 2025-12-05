@@ -100,4 +100,20 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
     fun countVersion(packageId: String): Long {
         return this.count(PackageQueryHelper.versionQuery(packageId))
     }
+
+    fun addTag(packageId: String, name: String, tag: String, msg: String? = null) {
+        val query = PackageQueryHelper.versionQuery(packageId, name = name)
+        val update = Update().addToSet(TPackageVersion::tags.name, tag)
+            .apply {
+                msg?.let { set("${TPackageVersion::extension.name}.tag_$tag", msg) }
+            }
+        this.updateFirst(query, update)
+    }
+
+    fun removeTag(packageId: String, name: String, tag: String) {
+        val query = PackageQueryHelper.versionQuery(packageId, name = name)
+        val update = Update().pull(TPackageVersion::tags.name, tag)
+            .unset("${TPackageVersion::extension.name}.tag_$tag")
+        this.updateFirst(query, update)
+    }
 }
