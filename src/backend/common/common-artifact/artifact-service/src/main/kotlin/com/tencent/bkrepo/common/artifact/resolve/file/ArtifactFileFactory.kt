@@ -52,6 +52,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.multipart.MultipartFile
+import org.springframework.web.servlet.HandlerMapping
 import java.io.File
 import java.io.InputStream
 
@@ -280,9 +281,11 @@ class ArtifactFileFactory(
                 }
 
                 // 判断仓库是否开启了直连上传
-                val req = HttpContextHolder.getRequestOrNull()
-                val projectId = req?.getAttribute(PROJECT_ID)?.toString()
-                val repoName = req?.getAttribute(REPO_NAME)?.toString()
+                val attr = HttpContextHolder
+                    .getRequestOrNull()
+                    ?.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as? Map<*, *>
+                val projectId = attr?.get(PROJECT_ID)?.toString()
+                val repoName = attr?.get(REPO_NAME)?.toString()
                 return if (projectId == null || repoName == null) {
                     false
                 } else {
