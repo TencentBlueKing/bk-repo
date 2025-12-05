@@ -29,19 +29,25 @@ package com.tencent.bkrepo.common.artifact.resolve.file
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
+import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
+import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.file.bksync.BkSyncArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.chunk.RandomAccessArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.multipart.MultipartArtifactFile
+import com.tencent.bkrepo.common.artifact.resolve.file.stream.CosStreamArtifactFile
 import com.tencent.bkrepo.common.artifact.resolve.file.stream.StreamArtifactFile
 import com.tencent.bkrepo.common.bksync.BlockChannel
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
+import com.tencent.bkrepo.common.service.util.HttpContextHolder
+import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import io.micrometer.observation.ObservationRegistry
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.context.request.RequestAttributes.SCOPE_REQUEST
 import org.springframework.web.context.request.RequestContextHolder
@@ -69,6 +75,7 @@ class ArtifactFileFactory(
 
     companion object {
 
+        private val logger = LoggerFactory.getLogger(ArtifactFileFactory::class.java)
         private lateinit var monitorHelper: StorageHealthMonitorHelper
         private lateinit var properties: StorageProperties
         private lateinit var requestLimitCheckService: RequestLimitCheckService
@@ -134,17 +141,29 @@ class ArtifactFileFactory(
          * @param inputStream 输入流
          */
         fun buildWithRateLimiter(inputStream: InputStream, contentLength: Long? = null): ArtifactFile {
-            return StreamArtifactFile(
-                source = inputStream,
-                monitor = getMonitor(),
-                storageProperties = properties,
-                storageCredentials = getStorageCredentials(),
-                contentLength = contentLength,
-                requestLimitCheckService = requestLimitCheckService,
-                registry = observationRegistry
-            ).apply {
-                track(this)
+            val storageCredentials = getStorageCredentials()
+            val artifactFile = if (shouldUploadToCos(properties, storageCredentials, contentLength)) {
+                CosStreamArtifactFile(
+                    source = inputStream,
+                    storageProperties = properties,
+                    storageCredentials = storageCredentials as InnerCosCredentials,
+                    contentLength = contentLength!!,
+                    requestLimitCheckService = requestLimitCheckService,
+                    registry = observationRegistry
+                )
+            } else {
+                StreamArtifactFile(
+                    source = inputStream,
+                    monitor = getMonitor(),
+                    storageProperties = properties,
+                    storageCredentials = storageCredentials,
+                    contentLength = contentLength,
+                    requestLimitCheckService = requestLimitCheckService,
+                    registry = observationRegistry
+                )
             }
+            track(artifactFile)
+            return artifactFile
         }
 
         /**
@@ -229,6 +248,50 @@ class ArtifactFileFactory(
         ): StorageHealthMonitor {
             val credentials = storageCredentials ?: getStorageCredentials()
             return monitorHelper.getMonitor(properties, credentials)
+        }
+
+        /**
+         * 判断是否直传COS
+         */
+        private fun shouldUploadToCos(
+            storageProperties: StorageProperties,
+            storageCredentials: StorageCredentials,
+            contentLength: Long?
+        ): Boolean {
+            try {
+                // 仅COS存储类型支持直连上传
+                if (storageCredentials !is InnerCosCredentials) {
+                    return false
+                }
+
+                // 判断是否开启了直连上传且文件大小符合要求
+                val enabled = storageProperties.receive.enableCosDirectUpload && storageCredentials.directUploadToCos
+                val fileSizeThreshold = storageProperties.receive.fileSizeThreshold.toBytes()
+                val exceedThreshold = contentLength != null && contentLength > fileSizeThreshold
+
+                if (!enabled || !exceedThreshold) {
+                    return false
+                }
+
+                // 仓库配置为空时所有仓库都将直连上传
+                val enabledCosDirectUploadRepos = storageProperties.receive.enabledCosDirectUploadRepos
+                if (enabledCosDirectUploadRepos.isEmpty()) {
+                    return true
+                }
+
+                // 判断仓库是否开启了直连上传
+                val req = HttpContextHolder.getRequestOrNull()
+                val projectId = req?.getAttribute(PROJECT_ID)?.toString()
+                val repoName = req?.getAttribute(REPO_NAME)?.toString()
+                return if (projectId == null || repoName == null) {
+                    false
+                } else {
+                    "$projectId/$repoName" in enabledCosDirectUploadRepos
+                }
+            } catch (e: Exception) {
+                logger.error("check should upload to cos failed", e)
+            }
+            return false
         }
     }
 }

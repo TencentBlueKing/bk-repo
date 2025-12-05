@@ -90,4 +90,9 @@ data class ReceiveProperties(
      * 默认 false，需要同时开启 InnerCosCredentials.directUploadToCos 才生效
      */
     var enableCosDirectUpload: Boolean = false,
+
+    /**
+     * 开启COS直传的仓库，为空时所有仓库都将直传COS，格式为projectId/repoName
+     */
+    var enabledCosDirectUploadRepos: Set<String> = emptySet()
 )
