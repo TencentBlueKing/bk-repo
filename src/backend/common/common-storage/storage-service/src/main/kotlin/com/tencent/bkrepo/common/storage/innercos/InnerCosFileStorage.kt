@@ -78,7 +78,7 @@ open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredential
         return try {
             client.deleteObject(DeleteObjectRequest(name))
         } catch (ignored: IOException) {
-            // ignored
+            logger.error("delete obj[$name] from ${client.credentials.key} failed", ignored)
         }
     }
 
@@ -111,6 +111,18 @@ open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredential
         } else {
             toClient.migrateObject(MigrateObjectRequest(fromClient, fromName, toName))
         }
+    }
+
+    override fun move(
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
+        fromClient: CosClient,
+        toClient: CosClient
+    ) {
+        copy(fromPath, fromName, toPath, toName, fromClient, toClient)
+        delete(fromPath, fromName, fromClient)
     }
 
     override fun checkRestore(path: String, name: String, client: CosClient): Boolean {

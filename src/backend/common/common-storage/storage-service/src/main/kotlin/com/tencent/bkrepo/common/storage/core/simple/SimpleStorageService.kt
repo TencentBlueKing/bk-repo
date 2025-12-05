@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.common.storage.core.simple
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.InDestinationArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.stream.artifactStream
@@ -57,6 +58,13 @@ class SimpleStorageService : AbstractStorageService() {
 
             artifactFile.isFallback() -> {
                 fileStorage.store(path, filename, artifactFile.traceableFlushToFile(), credentials, storageClass)
+            }
+
+            artifactFile is InDestinationArtifactFile -> {
+                // 制品已在目标存储，直接重命名即可
+                val fromPath = artifactFile.getPath()
+                val fromName = artifactFile.getName()
+                fileStorage.move(fromPath, fromName, path, filename, credentials, credentials)
             }
 
             else -> {

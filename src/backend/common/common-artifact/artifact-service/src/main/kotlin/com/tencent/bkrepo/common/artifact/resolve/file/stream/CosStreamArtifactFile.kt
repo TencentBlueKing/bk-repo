@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.common.artifact.resolve.file.stream
 
-import com.tencent.bkrepo.common.artifact.api.ArtifactFile
+import com.tencent.bkrepo.common.artifact.api.InDestinationArtifactFile
 import com.tencent.bkrepo.common.artifact.event.ArtifactReceivedEvent
 import com.tencent.bkrepo.common.artifact.hash.sha1
 import com.tencent.bkrepo.common.artifact.resolve.file.receiver.CosArtifactDataReceiver
@@ -17,12 +17,12 @@ import java.io.InputStream
  */
 class CosStreamArtifactFile(
     private val source: InputStream,
-    private val storageProperties: StorageProperties,
+    storageProperties: StorageProperties,
     private val storageCredentials: InnerCosCredentials,
-    private val contentLength: Long,
-    private val requestLimitCheckService: RequestLimitCheckService? = null,
-    private val registry: ObservationRegistry
-) : ArtifactFile {
+    contentLength: Long,
+    requestLimitCheckService: RequestLimitCheckService? = null,
+    registry: ObservationRegistry
+) : InDestinationArtifactFile {
 
     /**
      * 是否初始化
@@ -104,6 +104,10 @@ class CosStreamArtifactFile(
         init()
         return receiver.listener.getCrc64ecma()
     }
+
+    override fun getPath() = ""
+
+    override fun getName() = receiver.getObjKey()
 
     private fun init() {
         if (initialized) {

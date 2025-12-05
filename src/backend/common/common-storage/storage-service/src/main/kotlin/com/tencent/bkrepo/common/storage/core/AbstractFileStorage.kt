@@ -50,6 +50,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Path
 import java.util.stream.Stream
+import kotlin.time.measureTime
 
 /**
  * 文件存储抽象模板类
@@ -189,7 +190,11 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     ) {
         val fromClient = getClient(fromCredentials)
         val toClient = getClient(toCredentials)
-        move(fromPath, fromName, toPath, toName, fromClient, toClient)
+        retryTemplate.execute<Unit, Exception>{
+            it.setAttribute(RetryContext.NAME, RETRY_NAME_MOVE_FILE)
+            val elapsed = measureTime { move(fromPath, fromName, toPath, toName, fromClient, toClient) }
+            logger.info("Success to move file from [$fromName] to [$$toName], elapsed[$elapsed].")
+        }
     }
 
     override fun checkRestore(
@@ -268,5 +273,6 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         private const val RETRY_NAME_STORE_FILE = "FileStorage.storeFile"
         private const val RETRY_NAME_STORE_STREAM = "FileStorage.storeStream"
         private const val RETRY_NAME_LOAD_STREAM = "FileStorage.loadStream"
+        private const val RETRY_NAME_MOVE_FILE = "FileStorage.moveFile"
     }
 }
