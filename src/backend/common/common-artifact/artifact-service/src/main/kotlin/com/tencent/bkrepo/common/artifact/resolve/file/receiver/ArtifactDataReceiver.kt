@@ -25,20 +25,14 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.resolve.file
+package com.tencent.bkrepo.common.artifact.resolve.file.receiver
 
 import com.tencent.bkrepo.common.api.constant.retry
-import com.tencent.bkrepo.common.api.exception.OverloadException
-import com.tencent.bkrepo.common.api.util.TraceUtils
-import com.tencent.bkrepo.common.artifact.exception.ArtifactReceiveException
 import com.tencent.bkrepo.common.artifact.hash.sha256
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetrics
 import com.tencent.bkrepo.common.artifact.metrics.TrafficHandler
 import com.tencent.bkrepo.common.artifact.stream.DigestCalculateListener
-import com.tencent.bkrepo.common.artifact.stream.rateLimit
-import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
-import com.tencent.bkrepo.common.ratelimiter.stream.CommonRateLimitInputStream
 import com.tencent.bkrepo.common.storage.config.MonitorProperties
 import com.tencent.bkrepo.common.storage.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.core.locator.HashFileLocator
@@ -46,8 +40,8 @@ import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.util.createFile
 import com.tencent.bkrepo.common.storage.util.delete
-import io.micrometer.common.KeyValues
 import io.micrometer.observation.ObservationRegistry
+import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -62,7 +56,6 @@ import java.security.SecureRandom
 import java.time.Duration
 import kotlin.math.abs
 import kotlin.system.measureTimeMillis
-import org.slf4j.LoggerFactory
 
 /**
  * artifact数据接收类，作用：
@@ -75,16 +68,21 @@ import org.slf4j.LoggerFactory
  *
  */
 class ArtifactDataReceiver(
-    private val receiveProperties: ReceiveProperties,
+    receiveProperties: ReceiveProperties,
     monitorProperties: MonitorProperties,
     private var path: Path,
     private val filename: String = generateRandomName(),
     private val randomPath: Boolean = false,
     private val originPath: Path = path,
-    private val requestLimitCheckService: RequestLimitCheckService? = null,
-    private val contentLength: Long? = null,
-    private val registry: ObservationRegistry
-) : StorageHealthMonitor.Observer, AutoCloseable {
+    requestLimitCheckService: RequestLimitCheckService? = null,
+    contentLength: Long? = null,
+    registry: ObservationRegistry
+) : StorageHealthMonitor.Observer, AbsArtifactDataReceiver(
+    receiveProperties,
+    requestLimitCheckService,
+    registry,
+    contentLength
+) {
 
     /**
      * 传输过程中发生存储降级时，是否将数据转移到本地磁盘
@@ -127,15 +125,9 @@ class ArtifactDataReceiver(
     val filePath: Path
         get() = path.resolve(filename)
 
-    /**
-     * 数据摘要计算监听类
-     */
-    val listener = DigestCalculateListener()
+    override val listener: DigestCalculateListener = DigestCalculateListener()
 
-    /**
-     * 文件数据是否在内存缓存
-     */
-    var inMemory: Boolean = true
+    override var inMemory: Boolean = true
 
     /**
      * 是否发生降级
@@ -143,24 +135,10 @@ class ArtifactDataReceiver(
     var fallback: Boolean = false
 
     /**
-     * 接收开始时间
-     */
-    var startTime = 0L
-
-    /**
-     * 接收结束时间
-     */
-    var endTime = 0L
-
-    /**
      * 接收字节数
      */
     var received = 0L
-
-    /**
-     * 接收是否完成
-     */
-    var finished = false
+        private set
 
     var trafficHandler: TrafficHandler? = null
 
@@ -184,109 +162,41 @@ class ArtifactDataReceiver(
         }
     }
 
-    /**
-     * 接收数据块
-     * @param chunk 字节数组
-     * @param offset 偏移量
-     * @param length 数据长度
-     */
-    fun receiveChunk(chunk: ByteArray, offset: Int, length: Int) {
-        require(!finished) { "Receiver is close" }
-        if (startTime == 0L) {
-            startTime = System.nanoTime()
-        }
-        try {
-            requestLimitCheckService?.uploadBandwidthCheck(
-                length.toLong(),
-                receiveProperties.circuitBreakerThreshold
-            )
-            writeData(chunk, offset, length)
-        } catch (exception: IOException) {
-            handleIOException(exception)
-        } catch (overloadEx: OverloadException) {
-            handleOverloadException(overloadEx)
-        }
+    override fun doReceiveChunk(chunk: ByteArray, offset: Int, length: Int) {
+        writeData(chunk, offset, length)
     }
 
-    /**
-     * 接受单个字节数据
-     * @param b 字节数据
-     * */
-    fun receive(b: Int) {
-        require(!finished) { "Receiver is close" }
-        if (startTime == 0L) {
-            startTime = System.nanoTime()
-        }
-        try {
-            requestLimitCheckService?.uploadBandwidthCheck(
-                1, receiveProperties.circuitBreakerThreshold
-            )
-            checkFallback()
-            outputStream.write(b)
-            listener.data(b)
-            received += 1
-            checkThreshold()
-        } catch (exception: IOException) {
-            handleIOException(exception)
-        } catch (overloadEx: OverloadException) {
-            handleOverloadException(overloadEx)
-        }
+    override fun doReceive(b: Int) {
+        checkFallback()
+        outputStream.write(b)
+        listener.data(b)
+        received += 1
+        checkThreshold()
     }
 
-    /**
-     * 接收数据流
-     * @param source 数据流
-     */
-    fun receiveStream(source: InputStream) {
-        require(!finished) { "Receiver is close" }
-        TraceUtils.newSpan(registry, "receive stream", KeyValues.empty(), KeyValues.empty()) {
-            if (startTime == 0L) {
-                startTime = System.nanoTime()
-            }
-            var rateLimitFlag = false
-            var exp: Exception? = null
-            try {
-                val input = requestLimitCheckService?.bandwidthCheck(
-                    source, receiveProperties.circuitBreakerThreshold, contentLength
-                ) ?: source.rateLimit(receiveProperties.rateLimit.toBytes())
-                rateLimitFlag = input is CommonRateLimitInputStream
-                val buffer = ByteArray(bufferSize)
-                input.use {
-                    var bytes = input.read(buffer)
-                    while (bytes >= 0) {
-                        writeData(buffer, 0, bytes)
-                        bytes = input.read(buffer)
-                    }
-                }
-            } catch (exception: IOException) {
-                exp = exception
-                handleIOException(exception)
-            } catch (overloadEx: OverloadException) {
-                exp = overloadEx
-                handleOverloadException(overloadEx)
-            } finally {
-                if (rateLimitFlag) {
-                    requestLimitCheckService?.bandwidthFinish(exp)
-                }
+    override fun doReceiveStream(source: InputStream) {
+        val buffer = ByteArray(bufferSize)
+        source.use {
+            var bytes = source.read(buffer)
+            while (bytes >= 0) {
+                writeData(buffer, 0, bytes)
+                bytes = source.read(buffer)
             }
         }
     }
 
-    /**
-     * 数据接收完成,当数据传输完毕后需要调用该函数
-     */
-    fun finish(): Throughput {
-        if (!finished) {
-            try {
-                finished = true
-                endTime = System.nanoTime()
-                checkSize()
-                listener.finished()
-            } finally {
+    override fun receivedSize(): Long {
+        return received
+    }
+
+    override fun finish(): Throughput {
+        try {
+            return super.finish()
+        } finally {
+            if (!finished) {
                 cleanOriginalOutputStream()
             }
         }
-        return Throughput(received, endTime - startTime)
     }
 
     /**
@@ -314,7 +224,7 @@ class ArtifactDataReceiver(
     /**
      * 获取文件流，使用完需要手动关闭
      */
-    fun getInputStream(): InputStream {
+    override fun getInputStream(): InputStream {
         require(finished) { "Receiver is not finished" }
         return if (!inMemory) {
             Files.newInputStream(filePath)
@@ -351,32 +261,6 @@ class ArtifactDataReceiver(
         listener.data(buffer, offset, length)
         received += length
         checkThreshold()
-    }
-
-    /**
-     * 处理IO异常
-     */
-    private fun handleIOException(exception: IOException) {
-        finishWithException()
-        if (IOExceptionUtils.isClientBroken(exception)) {
-            throw ArtifactReceiveException(exception.message.orEmpty())
-        } else {
-            throw exception
-        }
-    }
-
-    /**
-     * 处理限流请求
-     */
-    private fun handleOverloadException(exception: OverloadException) {
-        finishWithException()
-        throw exception
-    }
-
-    private fun finishWithException() {
-        finished = true
-        endTime = System.nanoTime()
-        close()
     }
 
     /**
@@ -431,11 +315,7 @@ class ArtifactDataReceiver(
         }
     }
 
-    /**
-     * 接收完毕后，检查接收到的字节数和实际的字节数是否一致
-     * 生产环境中出现过不一致的情况，所以加此校验
-     */
-    private fun checkSize() {
+    override fun checkSize() {
         if (inMemory) {
             val actualSize = contentBytes!!.size().toLong()
             require(received == actualSize) {

@@ -27,53 +27,20 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
-import com.tencent.bkrepo.common.api.util.executeAndMeasureTime
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
-import com.tencent.bkrepo.common.artifact.stream.DelegateInputStream
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
  * 可记录的输入流
  * */
-class RecordAbleInputStream(private val delegate: ArtifactInputStream) :
-    DelegateInputStream(delegate) {
+class RecordAbleInputStream(private val delegate: ArtifactInputStream) : AbsRecordAbleInputStream(delegate) {
     private var trafficHandler: TrafficHandler? = null
-
-    override fun read(): Int {
-        executeAndMeasureTime { super.read() }.apply {
-            val (read, cost) = this
-            if (read > 0) {
-                recordQuiet(1, cost)
-            }
-            return read
-        }
-    }
-
-    override fun read(byteArray: ByteArray): Int {
-        executeAndMeasureTime { super.read(byteArray) }.apply {
-            val (read, cost) = this
-            if (read > 0) {
-                recordQuiet(read, cost)
-            }
-            return read
-        }
-    }
-
-    override fun read(byteArray: ByteArray, off: Int, len: Int): Int {
-        executeAndMeasureTime { super.read(byteArray, off, len) }.apply {
-            val (read, cost) = this
-            if (read > 0) {
-                recordQuiet(read, cost)
-            }
-            return read
-        }
-    }
 
     /**
      * 静默采集metrics
      * */
-    private fun recordQuiet(size: Int, elapse: Duration) {
+    override fun recordQuiet(size: Int, elapse: Duration) {
         try {
             trafficHandler ?: let {
                 trafficHandler = TrafficHandler(
