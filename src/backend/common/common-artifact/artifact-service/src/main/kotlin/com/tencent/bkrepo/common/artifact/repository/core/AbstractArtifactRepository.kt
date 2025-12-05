@@ -268,7 +268,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
                 projectId = context.projectId,
                 repoName = context.repoName,
                 resourceKey = context.artifactInfo.getArtifactFullPath(),
-                userId = context.userId
+                userId = context.userId,
+                eventId = ArtifactEvent.generateEventId()
             )
             messageSupplier.delegateToSupplier(data = event, topic = BINDING_OUT_NAME)
         } else {
@@ -278,7 +279,8 @@ abstract class AbstractArtifactRepository : ArtifactRepository {
                     projectId = context.projectId,
                     repoName = context.repoName,
                     resourceKey = it.getArtifactFullPath(),
-                    userId = context.userId
+                    userId = context.userId,
+                    eventId = ArtifactEvent.generateEventId()
                 )
                 messageSupplier.delegateToSupplier(data = event, topic = BINDING_OUT_NAME)
             }

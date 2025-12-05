@@ -39,10 +39,12 @@ class NodeCleanEvent(
     override val resourceKey: String,
     override val userId: String,
     val deletedDate: String,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.NODE_CLEAN,
     projectId = projectId,
     repoName = repoName,
     resourceKey = resourceKey,
-    userId = userId
+    userId = userId,
+    eventId = eventId
 )

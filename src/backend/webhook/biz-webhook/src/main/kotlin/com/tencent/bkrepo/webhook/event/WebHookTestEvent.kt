@@ -39,12 +39,14 @@ class WebHookTestEvent(
     override val repoName: String,
     override val resourceKey: String,
     override val userId: String,
-    val webHook: WebHook
+    val webHook: WebHook,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.WEBHOOK_TEST,
     projectId = projectId,
     repoName = repoName,
     resourceKey = resourceKey,
     userId = userId,
-    data = mapOf("webHook" to webHook)
+    data = mapOf("webHook" to webHook),
+    eventId = eventId
 )

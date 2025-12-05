@@ -36,6 +36,7 @@ import com.tencent.bkrepo.replication.replica.type.event.ArtifactEventConsumer
 import com.tencent.bkrepo.replication.replica.type.federation.FederationArtifactEventConsumer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.messaging.Message
 import java.util.function.Consumer
 
 @Configuration
@@ -45,7 +46,7 @@ class ReplicationConsumerConfig {
     @Bean("artifactEventReplication")
     fun artifactEventConsumer(
         artifactEventConsumer: ArtifactEventConsumer,
-    ): Consumer<ArtifactEvent> {
+    ): Consumer<Message<ArtifactEvent>> {
         return Consumer {
             artifactEventConsumer.accept(it)
         }
@@ -54,7 +55,7 @@ class ReplicationConsumerConfig {
     @Bean("artifactEventFederation")
     fun federationArtifactEventConsumer(
         federationArtifactEventConsumer: FederationArtifactEventConsumer,
-    ): Consumer<ArtifactEvent> {
+    ): Consumer<Message<ArtifactEvent>> {
         return Consumer {
             federationArtifactEventConsumer.accept(it)
         }
