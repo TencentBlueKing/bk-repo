@@ -114,7 +114,7 @@ interface OciOperationService {
         projectId: String,
         repoName: String,
         digestStr: String,
-        path: String? = null
+        path: String
     ): NodeProperty?
 
     /**
