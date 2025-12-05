@@ -295,38 +295,40 @@ class CosClient(val credentials: InnerCosCredentials) {
         var partNumber = 1
         val futureList = mutableListOf<Future<PartETag>>()
         with(cosRequest) {
-            val uploadId = initiateMultipartUpload(key, null)
-            val cosObject = fromClient.headObject(HeadObjectRequest(key))
+            val uploadId = initiateMultipartUpload(destinationKey, null)
+            val cosObject = fromClient.headObject(HeadObjectRequest(sourceKey))
             val length = cosObject.length!!
             val crc64 = cosObject.crc64ecma
             if (length == 0L) {
-                return putObject(PutObjectRequest(key, StringPool.EMPTY.byteInputStream(), length))
+                return putObject(PutObjectRequest(destinationKey, StringPool.EMPTY.byteInputStream(), length))
             }
             val partSize = calculateOptimalPartSize(length, true)
-            val factory = DownloadPartRequestFactory(key, partSize, 0, length - 1)
+            val factory = DownloadPartRequestFactory(sourceKey, partSize, 0, length - 1)
             while (factory.hasMoreRequests()) {
                 val getObjectRequest = factory.nextDownloadPartRequest()
                 val downloadRequest = fromClient.buildHttpRequest(getObjectRequest)
-                val future = uploadThreadPool.submit(multipartMigrate(key, uploadId, partNumber, downloadRequest))
+                val future = uploadThreadPool.submit(
+                    multipartMigrate(destinationKey, uploadId, partNumber, downloadRequest)
+                )
                 futureList.add(future)
                 partNumber++
             }
             // 等待所有完成
             try {
                 val partETagList = futureList.map { it.get() }
-                val response = completeMultipartUpload(key, uploadId, partETagList)
-                val dstObject = headObject(HeadObjectRequest(key))
+                val response = completeMultipartUpload(destinationKey, uploadId, partETagList)
+                val dstObject = headObject(HeadObjectRequest(destinationKey))
                 // 部分历史文件没有crc64, 此时只校验文件长度
                 if (crc64 != null && dstObject.crc64ecma != crc64 || dstObject.length != length) {
                     throw MigrateFailedException(crc64, length, dstObject.crc64ecma, dstObject.length)
                 }
                 return response
             } catch (exception: MigrateFailedException) {
-                deleteObject(DeleteObjectRequest(key))
+                deleteObject(DeleteObjectRequest(destinationKey))
                 throw exception
             } catch (exception: IOException) {
                 cancelFutureList(futureList)
-                abortMultipartUpload(key, uploadId)
+                abortMultipartUpload(destinationKey, uploadId)
                 throw exception
             }
         }

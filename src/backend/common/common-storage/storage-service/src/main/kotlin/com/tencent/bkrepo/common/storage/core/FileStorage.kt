@@ -115,6 +115,24 @@ interface FileStorage {
     )
 
     /**
+     * 在不同存储实例之间拷贝文件
+     * @param fromPath 文件源路径
+     * @param fromName 文件源名称
+     * @param toPath 文件目标路径
+     * @param toName 文件目标名称
+     * @param fromCredentials 源存储凭证
+     * @param toCredentials 目的存储凭证
+     */
+    fun copy(
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
+        fromCredentials: StorageCredentials,
+        toCredentials: StorageCredentials,
+    )
+
+    /**
      * 在不同存储实例之间移动文件
      * @param fromPath 文件源路径
      * @param fromName 文件源名称

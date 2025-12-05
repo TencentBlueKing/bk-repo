@@ -163,9 +163,20 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         fromCredentials: StorageCredentials,
         toCredentials: StorageCredentials,
     ) {
+        copy(path, name, path, name, fromCredentials, toCredentials)
+    }
+
+    override fun copy(
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
+        fromCredentials: StorageCredentials,
+        toCredentials: StorageCredentials
+    ) {
         val fromClient = getClient(fromCredentials)
         val toClient = getClient(toCredentials)
-        copy(path, name, fromClient, toClient)
+        copy(fromPath, fromName, toPath, toName, fromClient, toClient)
     }
 
     override fun move(
@@ -214,7 +225,14 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
     abstract fun load(path: String, name: String, range: Range, client: Client): InputStream?
     abstract fun delete(path: String, name: String, client: Client)
     abstract fun exist(path: String, name: String, client: Client): Boolean
-    open fun copy(path: String, name: String, fromClient: Client, toClient: Client) {
+    open fun copy(
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
+        fromClient: Client,
+        toClient: Client,
+    ) {
         throw UnsupportedOperationException("Copy operation unsupported")
     }
 
