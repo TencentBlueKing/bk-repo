@@ -648,8 +648,9 @@ class PackageServiceImpl(
                     size = it.size,
                     downloads = it.downloads,
                     stageTag = it.stageTag,
-                    metadata = MetadataUtils.toMap(it.metadata),
-                    packageMetadata = MetadataUtils.toList(it.metadata),
+                    metadata = MetadataUtils.toMap(it.metadata).mapKeys { m -> TagUtils.decodeTag(m.key) },
+                    packageMetadata = MetadataUtils.toList(it.metadata)
+                        .map { m -> m.copy(key = TagUtils.decodeTag(m.key)) },
                     tags = it.tags.orEmpty(),
                     extension = it.extension.orEmpty(),
                     contentPath = it.artifactPath,

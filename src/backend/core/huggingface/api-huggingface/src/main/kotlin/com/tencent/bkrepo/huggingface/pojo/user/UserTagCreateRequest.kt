@@ -9,4 +9,3 @@ data class UserTagCreateRequest(
     @get:Schema(title = "Tag 消息", required = false)
     val message: String? = null
 )
-

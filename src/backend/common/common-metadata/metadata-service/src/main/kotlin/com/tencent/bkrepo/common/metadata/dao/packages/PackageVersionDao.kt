@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.metadata.condition.SyncCondition
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
+import com.tencent.bkrepo.common.metadata.util.TagUtils
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Update
@@ -105,7 +106,7 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
         val query = PackageQueryHelper.versionQuery(packageId, name = name)
         val update = Update().addToSet(TPackageVersion::tags.name, tag)
             .apply {
-                msg?.let { set("${TPackageVersion::extension.name}.tag_$tag", msg) }
+                msg?.let { set("${TPackageVersion::metadata.name}.tag_msg_${TagUtils.encodeTag(tag)}", msg) }
             }
         this.updateFirst(query, update)
     }
@@ -113,7 +114,7 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
     fun removeTag(packageId: String, name: String, tag: String) {
         val query = PackageQueryHelper.versionQuery(packageId, name = name)
         val update = Update().pull(TPackageVersion::tags.name, tag)
-            .unset("${TPackageVersion::extension.name}.tag_$tag")
+            .unset("${TPackageVersion::metadata.name}.tag_msg_${TagUtils.encodeTag(tag)}")
         this.updateFirst(query, update)
     }
 }
