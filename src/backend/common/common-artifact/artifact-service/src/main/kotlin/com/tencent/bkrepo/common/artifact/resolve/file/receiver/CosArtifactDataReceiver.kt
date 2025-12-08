@@ -10,6 +10,7 @@ import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.storage.config.ReceiveProperties
 import com.tencent.bkrepo.common.storage.credentials.InnerCosCredentials
 import com.tencent.bkrepo.common.storage.innercos.client.CosClient
+import com.tencent.bkrepo.common.storage.innercos.exception.InnerCosException
 import com.tencent.bkrepo.common.storage.innercos.request.DeleteObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.monitor.Throughput
@@ -66,8 +67,19 @@ class CosArtifactDataReceiver(
     }
 
     override fun doReceiveStream(source: InputStream) {
-        val res = RecordableDigestInputStream(source, trafficHandler, listener).use { uploadSession.upload(it) }
-        crc64ecma = res.crc64ecma
+        try {
+            val res = RecordableDigestInputStream(source, trafficHandler, listener).use { uploadSession.upload(it) }
+            crc64ecma = res.crc64ecma
+        } catch (e: InnerCosException) {
+            val cause = e.cause
+            val stackStraceOfReadExp = "com.tencent.bkrepo.common.artifact.stream.DelegateInputStream.read"
+            if (cause?.stackTrace?.any { it.toString().startsWith(stackStraceOfReadExp) } == true) {
+                // 可能由于客户端断开连接导致报错，此时需要抛出cause，用于外层判断是否为客户端错误确认日志等级
+                throw cause
+            } else {
+                throw e
+            }
+        }
     }
 
     override fun checkSize() {
@@ -94,8 +106,14 @@ class CosArtifactDataReceiver(
     }
 
     override fun close() {
-        require(uploadSession.completed)
-        client.deleteObject(DeleteObjectRequest((uploadSession.key)))
+        require(uploadSession.completed || uploadSession.aborted)
+        if (uploadSession.aborted) {
+            logger.info("upload session of obj[${uploadSession.key}] was aborted, skip delete")
+        }
+        if (uploadSession.completed) {
+            client.deleteObject(DeleteObjectRequest((uploadSession.key)))
+            logger.info("delete cos obj[${uploadSession.key}] success")
+        }
     }
 
     fun getObjKey() = uploadSession.key

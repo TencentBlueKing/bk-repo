@@ -176,8 +176,8 @@ abstract class AbsArtifactDataReceiver(
         if (!finished) {
             finished = true
             endTime = System.nanoTime()
-            checkSize()
             listener.finished()
+            checkSize()
         }
         return Throughput(receivedSize(), endTime - startTime)
     }

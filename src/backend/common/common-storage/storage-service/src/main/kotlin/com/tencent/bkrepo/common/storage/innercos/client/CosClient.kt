@@ -704,7 +704,8 @@ class CosClient(val credentials: InnerCosCredentials) {
         private val partETagList: MutableList<PartETag> = mutableListOf()
         var completed: Boolean = false
             private set
-        private var aborted: Boolean = false
+        var aborted: Boolean = false
+            private set
         private val partSize: Long = calculateOptimalPartSize(length, true)
 
         /**
