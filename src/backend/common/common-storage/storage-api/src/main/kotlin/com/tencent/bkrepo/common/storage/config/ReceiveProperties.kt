@@ -94,5 +94,5 @@ data class ReceiveProperties(
     /**
      * 开启COS直传的仓库，为空时所有仓库都将直传COS，格式为projectId/repoName
      */
-    var enabledCosDirectUploadRepos: Set<String> = emptySet()
+    var enableCosDirectUploadRepos: Set<String> = emptySet()
 )
