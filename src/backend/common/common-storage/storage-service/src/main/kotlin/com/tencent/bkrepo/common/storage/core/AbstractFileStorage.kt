@@ -193,7 +193,7 @@ abstract class AbstractFileStorage<Credentials : StorageCredentials, Client> : F
         retryTemplate.execute<Unit, Exception>{
             it.setAttribute(RetryContext.NAME, RETRY_NAME_MOVE_FILE)
             val elapsed = measureTime { move(fromPath, fromName, toPath, toName, fromClient, toClient) }
-            logger.info("Success to move file from [$fromName] to [$$toName], elapsed[$elapsed].")
+            logger.info("Success to move file from [$fromName] to [$toName], elapsed[$elapsed].")
         }
     }
 
