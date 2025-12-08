@@ -275,8 +275,8 @@ class ArtifactFileFactory(
                 }
 
                 // 仓库配置为空时所有仓库都将直连上传
-                val enabledCosDirectUploadRepos = storageProperties.receive.enabledCosDirectUploadRepos
-                if (enabledCosDirectUploadRepos.isEmpty()) {
+                val enableCosDirectUploadRepos = storageProperties.receive.enableCosDirectUploadRepos
+                if (enableCosDirectUploadRepos.isEmpty()) {
                     return true
                 }
 
@@ -289,7 +289,7 @@ class ArtifactFileFactory(
                 return if (projectId == null || repoName == null) {
                     false
                 } else {
-                    "$projectId/$repoName" in enabledCosDirectUploadRepos
+                    "$projectId/$repoName" in enableCosDirectUploadRepos
                 }
             } catch (e: Exception) {
                 logger.error("check should upload to cos failed", e)

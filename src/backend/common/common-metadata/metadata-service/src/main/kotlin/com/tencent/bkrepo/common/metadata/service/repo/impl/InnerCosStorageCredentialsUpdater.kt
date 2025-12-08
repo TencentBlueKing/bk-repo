@@ -47,5 +47,6 @@ class InnerCosStorageCredentialsUpdater : StorageCredentialsUpdater {
         old.download = new.download
         old.modId = new.modId
         old.cmdId = new.cmdId
+        old.directUploadToCos = new.directUploadToCos
     }
 }
