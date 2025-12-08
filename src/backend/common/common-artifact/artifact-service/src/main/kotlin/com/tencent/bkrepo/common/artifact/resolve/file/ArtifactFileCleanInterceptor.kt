@@ -55,15 +55,12 @@ class ArtifactFileCleanInterceptor : HandlerInterceptor {
         try {
             val artifactFileList = request.getAttribute(ArtifactFileFactory.ARTIFACT_FILES) as? List<ArtifactFile>
             artifactFileList?.filter { it.hasInitialized() && !it.isInMemory() }?.forEach {
+                val elapsed = measureTimeMillis { it.delete() }
                 if (it is CosStreamArtifactFile) {
-                    measureTimeMillis { it.delete() }.apply {
-                        logger.info("Delete temp cos artifact file [${it.getName()}] success, elapse $this ms")
-                    }
+                    logger.info("Delete temp cos artifact file [${it.getName()}] success, elapse $elapsed ms")
                 } else {
                     val absolutePath = it.getFile()!!.absolutePath
-                    measureTimeMillis { it.delete() }.apply {
-                        logger.info("Delete temp artifact file [$absolutePath] success, elapse $this ms")
-                    }
+                    logger.info("Delete temp artifact file [$absolutePath] success, elapse $elapsed ms")
                 }
             }
         } catch (exception: IOException) {

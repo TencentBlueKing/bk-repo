@@ -102,11 +102,11 @@ open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredential
     ) {
         val fromCredentials = fromClient.credentials
         val toCredentials = toClient.credentials
-        if (fromCredentials.public == toCredentials.public &&
-            fromCredentials.inner == toCredentials.inner &&
-            fromCredentials.region == toCredentials.region &&
-            fromCredentials.bucket == toCredentials.bucket
-        ) {
+        val sameStorage = fromCredentials.public == toCredentials.public &&
+                fromCredentials.inner == toCredentials.inner &&
+                fromCredentials.region == toCredentials.region &&
+                fromCredentials.bucket == toCredentials.bucket
+        if (sameStorage) {
             toClient.copyObject(CopyObjectRequest(fromCredentials.bucket, fromName, toName))
         } else {
             toClient.migrateObject(MigrateObjectRequest(fromClient, fromName, toName))
