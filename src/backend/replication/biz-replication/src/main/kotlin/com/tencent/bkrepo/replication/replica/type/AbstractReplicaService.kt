@@ -31,6 +31,7 @@ import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
@@ -202,7 +203,12 @@ abstract class AbstractReplicaService(
                     replicaByPath(this, nodeInfo)
                 }
             } catch (throwable: Throwable) {
-                logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
+                val msg = "replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}"
+                if (throwable is NodeNotFoundException) {
+                    logger.warn(msg)
+                } else {
+                    logger.error(msg)
+                }
                 setRunOnceTaskFailedRecordMetrics(this, throwable, pathConstraint = constraint)
                 throw throwable
             }
@@ -235,9 +241,12 @@ abstract class AbstractReplicaService(
                 ).nodeInfo
                 replicaFolderNodeOnly(replicaContext, nodeInfo)
             } catch (throwable: Throwable) {
-                logger.error(
-                    "replicaFolderOnlyByPathConstraint ${constraint.path} failed, error is ${throwable.message}"
-                )
+                val msg = "replicaFolderOnlyByPathConstraint ${constraint.path} failed, error is ${throwable.message}"
+                if (throwable is NodeNotFoundException) {
+                    logger.warn(msg)
+                } else {
+                    logger.error(msg)
+                }
                 throw throwable
             }
         }
@@ -284,7 +293,7 @@ abstract class AbstractReplicaService(
                 } ?: return
                 replicaDeletedNode(this, nodeInfo)
             } catch (throwable: Throwable) {
-                logger.error("replicaByPathConstraint ${constraint.path} failed, error is ${throwable.message}")
+                logger.error("replicaByDeletedNode ${constraint.path} failed, error is ${throwable.message}")
                 setRunOnceTaskFailedRecordMetrics(this, throwable, pathConstraint = constraint)
                 throw throwable
             }
