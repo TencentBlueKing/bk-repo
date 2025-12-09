@@ -45,4 +45,5 @@ object MediaTypes {
     const val APPLICATION_ICO = "image/x-icon"
     const val APPLICATION_APK = "application/vnd.android.package-archive"
     const val APPLICATION_WASM = "application/wasm"
+    const val VIDEO_MP4 = "video/mp4"
 }
