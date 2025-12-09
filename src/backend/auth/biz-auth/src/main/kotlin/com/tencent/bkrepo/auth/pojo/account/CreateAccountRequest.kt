@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.auth.pojo.account
 
+import com.tencent.bkrepo.auth.pojo.enums.AccountLimit
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import io.swagger.v3.oas.annotations.media.Schema
@@ -50,6 +51,8 @@ data class CreateAccountRequest(
     val scopeDesc: List<ScopeRule>?,
     @get:Schema(title = "权限范围")
     val scope: Set<ResourceType>?,
+    @get:Schema(title = "账号限制")
+    val limit: AccountLimit?,
     @get:Schema(title = "简要描述")
     val description: String?
 )
