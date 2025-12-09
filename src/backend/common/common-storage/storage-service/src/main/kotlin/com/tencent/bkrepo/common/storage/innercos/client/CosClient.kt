@@ -706,7 +706,6 @@ class CosClient(val credentials: InnerCosCredentials) {
             private set
         var aborted: Boolean = false
             private set
-        private val partSize: Long = calculateOptimalPartSize(length, true)
 
         /**
          * 从 InputStream 读取数据并上传到 COS
@@ -739,6 +738,7 @@ class CosClient(val credentials: InnerCosCredentials) {
         private fun doUpload(inputStream: InputStream) {
             // 使用 BoundedInputStream 限制每个分片读取的字节数，直接流式上传，不落盘
             var remaining = length
+            val partSize = partSize(length)
             while (remaining > 0) {
                 val currentPartSize = minOf(partSize, remaining)
                 val boundedStream = BoundedInputStream(inputStream, currentPartSize)
@@ -793,6 +793,12 @@ class CosClient(val credentials: InnerCosCredentials) {
                 }
             }
             partETagList.clear()
+        }
+
+        private fun partSize(length: Long): Long {
+            val minimumPartSize = 64L * 1024 * 1024
+            val optimalPartSize = length.toDouble() / config.maxUploadParts
+            return max(ceil(optimalPartSize).toLong(), minimumPartSize)
         }
     }
 
