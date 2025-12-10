@@ -35,8 +35,10 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContex
 import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactInfo
+import com.tencent.bkrepo.huggingface.artifact.HuggingfaceArtifactSearchContext
 import com.tencent.bkrepo.huggingface.artifact.HuggingfaceRevisionInfo
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -59,5 +61,17 @@ class HfDownloadController : ArtifactService() {
         @ArtifactPathVariable artifactInfo: HuggingfaceRevisionInfo,
     ): Any? {
         return repository.query(ArtifactQueryContext())
+    }
+
+    @GetMapping(
+        "/{projectId}/{repoName}/api/{type}s/{organization}/{name}/tree/{revision}"
+    )
+    @Permission(type = ResourceType.REPO, action = PermissionAction.READ)
+    fun tree(
+        @ArtifactPathVariable artifactInfo: HuggingfaceArtifactInfo,
+        @RequestParam recursive: Boolean = false,
+        @RequestParam expand: Boolean = false,
+    ): List<Any> {
+        return repository.search(HuggingfaceArtifactSearchContext(recursive = recursive, expand = expand))
     }
 }
