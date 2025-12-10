@@ -282,10 +282,8 @@ class AccountServiceImpl constructor(
     private fun findAccountAndCheckOwner(appId: String, userId: String): TAccount {
         val account = accountDao.findOneByAppId(appId)
             ?: throw ErrorCodeException(AuthMessageCode.AUTH_APPID_NOT_EXIST)
-        if (account.authorizationGrantTypes != null &&
-            !account.authorizationGrantTypes!!.contains(AuthorizationGrantType.PLATFORM) &&
-            !account.owner.isNullOrBlank() && userId != account.owner
-        ) {
+        val isPlatformApp = isPlatformApp(account)
+        if (!isPlatformApp && !account.owner.isNullOrBlank() && userId != account.owner) {
             throw ErrorCodeException(AuthMessageCode.AUTH_OWNER_CHECK_FAILED)
         }
         val isUserAdmin = HttpContextHolder.getRequestOrNull()?.getAttribute(ADMIN_USER) as? Boolean ?: false
