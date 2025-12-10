@@ -30,7 +30,7 @@ package com.tencent.bkrepo.opdata.util
 import com.google.common.cache.CacheBuilder
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
-import com.tencent.bkrepo.opdata.model.ProjectModel
+import com.tencent.bkrepo.opdata.service.model.ProjectModel
 import com.tencent.bkrepo.opdata.model.TProjectMetrics
 import com.tencent.bkrepo.opdata.pojo.enums.ProjectType
 import com.tencent.bkrepo.opdata.repository.ProjectMetricsRepository
