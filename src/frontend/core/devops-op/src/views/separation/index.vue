@@ -294,7 +294,7 @@ export default {
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
       query.taskType = this.clientQuery.taskType
-      this.$router.push({ path: '/separation-config', query: query })
+      this.$router.push({ path: '/ops/job/separate-task', query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

@@ -97,7 +97,7 @@ export default {
     changeRouteQueryParams() {
       this.$refs['form'].validate((valid) => {
         if (valid) {
-          this.$router.push({ path: '/webhook/log', query: this.webhookLogQuery })
+          this.$router.push({ path: '/system/webhook/log', query: this.webhookLogQuery })
         }
       })
     },

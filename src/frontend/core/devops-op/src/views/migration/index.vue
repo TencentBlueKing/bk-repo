@@ -129,7 +129,7 @@ export default {
         page: String(pageNum)
       }
       query.state = this.clientQuery.state
-      this.$router.push({ path: '/migration-config', query: query })
+      this.$router.push({ path: '/ops/job/migration-task', query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

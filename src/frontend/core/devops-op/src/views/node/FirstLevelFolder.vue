@@ -125,7 +125,7 @@ export default {
       }
       query.projectId = this.folderQuery.projectId
       query.repoName = this.folderQuery.repoName
-      this.$router.push({ path: '/nodes/firstLevelFolder', query: query })
+      this.$router.push({ path: '/ops/nodes/firstLevelFolder', query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

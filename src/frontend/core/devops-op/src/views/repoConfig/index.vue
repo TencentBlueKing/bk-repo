@@ -247,7 +247,7 @@ export default {
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
       query.type = this.clientQuery.type
-      this.$router.push({ path: '/repo-config', query: query })
+      this.$router.push({ path: '/system/repoConfig', query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

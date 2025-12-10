@@ -148,7 +148,7 @@ export default {
         pageNumber: String(pageNum)
       }
       query.projectId = this.projectId
-      this.$router.push({ path: '/nodes/ProjectMetrics', query: query })
+      this.$router.push({ path: '/ops/nodes/ProjectMetrics', query: query })
     },
     onRouteUpdate(route) {
       const query = route.query
