@@ -115,7 +115,7 @@ export default {
     changeRouteQueryParams() {
       this.$refs['form'].validate((valid) => {
         if (valid) {
-          this.$router.push({ path: '/webhook', query: this.webhookQuery })
+          this.$router.push({ path: '/system/webhook/list', query: this.webhookQuery })
         }
       })
     },
@@ -167,7 +167,7 @@ export default {
         endTime: moment(new Date()).format('YYYY-MM-DDTHH:mm:ss'),
         pageNumber: 1
       }
-      this.$router.push({ path: '/webhook/log', query: query })
+      this.$router.push({ path: '/system/webhook/log', query: query })
     }
   }
 }

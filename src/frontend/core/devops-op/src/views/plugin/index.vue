@@ -95,7 +95,7 @@ export default {
       this.$refs['form'].clearValidate()
     },
     changeRouteQueryParams() {
-      this.$router.push({ path: '/plugin', query: this.pluginQuery })
+      this.$router.push({ path: '/system/plugin', query: this.pluginQuery })
     },
     onRouteUpdate(route) {
       this.pluginQuery.scope = route.query.scope

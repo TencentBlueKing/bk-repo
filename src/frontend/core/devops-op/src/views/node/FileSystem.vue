@@ -213,7 +213,7 @@ export default {
       query.ip = this.clientQuery.ip
       query.version = this.clientQuery.version
       query.pageSize = this.clientQuery.pageSize
-      this.$router.push({ path: '/nodes/FileSystem', query: query })
+      this.$router.push({ path: '/ops/nodes/FileSystem', query: query })
     },
     onRouteUpdate(route) {
       const query = route.query
