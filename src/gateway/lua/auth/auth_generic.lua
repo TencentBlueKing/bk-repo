@@ -20,7 +20,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 --- head 请求发送到generic服务，顺带鉴权
 local httpc = http.new()
-local addr = "http://" .. hostUtil:get_addr("generic")
+local addr = "http://" .. hostUtil:get_addr("generic",true)
 local path = string.gsub(ngx.var.request_uri, "/generic", "")
 local headers = ngx.req.get_headers()
 
