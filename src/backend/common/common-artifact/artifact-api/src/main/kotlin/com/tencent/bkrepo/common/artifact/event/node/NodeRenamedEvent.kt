@@ -39,7 +39,8 @@ class NodeRenamedEvent(
     override val resourceKey: String,
     override val userId: String,
     override val source: String?,
-    val newFullPath: String
+    val newFullPath: String,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.NODE_RENAMED,
     projectId = projectId,
@@ -47,5 +48,6 @@ class NodeRenamedEvent(
     resourceKey = resourceKey,
     userId = userId,
     data = mapOf("newFullPath" to newFullPath),
-    source = source
+    source = source,
+    eventId = eventId
 )

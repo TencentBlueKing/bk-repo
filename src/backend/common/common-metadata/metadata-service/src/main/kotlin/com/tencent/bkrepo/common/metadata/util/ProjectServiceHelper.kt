@@ -99,8 +99,8 @@ object ProjectServiceHelper {
         }
     }
 
-    fun ProjectCreateRequest.buildProject(tenantId: String?): TProject {
-        if (tenantId != null) {
+    fun ProjectCreateRequest.buildProject(tenantId: String?, enableMultiTenant: Boolean): TProject {
+        if (tenantId != null && enableMultiTenant) {
             return TProject(
                 name = "$tenantId.$name",
                 displayName = displayName,

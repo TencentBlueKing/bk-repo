@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.artifact.event.base
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import java.util.UUID
 
 /**
  * artifact抽象事件
@@ -65,6 +66,11 @@ open class ArtifactEvent(
      * 来源， 正常上传或者是联邦同步
      */
     open val source: String? = null,
+    /**
+     * 事件唯一标识
+     * 用于消息幂等检查
+     */
+    open val eventId: String? = null,
 ) {
     override fun toString(): String {
         return "ArtifactEvent(type=$type, projectId='$projectId', repoName='$repoName', " +
@@ -82,5 +88,13 @@ open class ArtifactEvent(
     @JsonIgnore
     fun getFullResourceKey(): String {
         return "$projectId/$repoName/$resourceKey"
+    }
+
+    companion object {
+        /**
+         * 生成事件唯一标识
+         * 用于消息幂等检查
+         */
+        fun generateEventId(): String = UUID.randomUUID().toString().replace("-", "")
     }
 }

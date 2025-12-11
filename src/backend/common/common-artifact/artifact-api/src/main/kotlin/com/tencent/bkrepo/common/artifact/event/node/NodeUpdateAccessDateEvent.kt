@@ -39,11 +39,13 @@ class NodeUpdateAccessDateEvent(
     override val resourceKey: String,
     override val userId: String,
     val accessDate: String,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.NODE_UPDATE_ACCESS_DATE,
     projectId = projectId,
     repoName = repoName,
     resourceKey = resourceKey,
     userId = userId,
-    data = mapOf("accessDate" to accessDate)
+    data = mapOf("accessDate" to accessDate),
+    eventId = eventId
 )

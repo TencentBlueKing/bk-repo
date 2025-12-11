@@ -32,6 +32,9 @@
 package com.tencent.bkrepo.repository.service
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
+import com.tencent.bkrepo.common.artifact.exception.TagExistedException
+import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageDao
 import com.tencent.bkrepo.common.metadata.dao.packages.PackageVersionDao
 import com.tencent.bkrepo.common.metadata.model.TPackage
@@ -258,6 +261,158 @@ class PackageServiceTest @Autowired constructor(
         val request = buildCreateRequest()
         packageService.createPackageVersion(request)
         packageService.deleteVersion(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "non-exist")
+    }
+
+    @Test
+    @DisplayName("测试创建标签")
+    fun `test create tag`() {
+        val request = buildCreateRequest(version = "1.0.0")
+        packageService.createPackageVersion(request)
+        
+        val tag = "latest"
+        val msg = "This is the latest version"
+        packageService.createTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0", tag, msg)
+        
+        val packageSummary = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
+        Assertions.assertNotNull(packageSummary)
+        Assertions.assertTrue(packageSummary!!.versionTag.containsKey(tag))
+        Assertions.assertEquals("1.0.0", packageSummary.versionTag[tag])
+        
+        val packageVersion = packageService.findVersionByName(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0")
+        Assertions.assertNotNull(packageVersion)
+        Assertions.assertTrue(packageVersion!!.tags.contains(tag))
+    }
+
+    @Test
+    @DisplayName("测试创建标签-包不存在")
+    fun `should throw exception when create tag for non exist package`() {
+        assertThrows<PackageNotFoundException> {
+            packageService.createTag(UT_PROJECT_ID, UT_REPO_NAME, "non-exist-package", "1.0.0", "latest")
+        }
+    }
+
+    @Test
+    @DisplayName("测试创建标签-版本不存在")
+    fun `should throw exception when create tag for non exist version`() {
+        val request = buildCreateRequest(version = "1.0.0")
+        packageService.createPackageVersion(request)
+        
+        assertThrows<VersionNotFoundException> {
+            packageService.createTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "2.0.0", "latest")
+        }
+    }
+
+    @Test
+    @DisplayName("测试创建标签-标签已存在")
+    fun `should throw exception when create tag that already exists`() {
+        val request = buildCreateRequest(version = "1.0.0")
+        packageService.createPackageVersion(request)
+        
+        val tag = "latest"
+        packageService.createTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0", tag)
+        
+        assertThrows<TagExistedException> {
+            packageService.createTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0", tag)
+        }
+    }
+
+    @Test
+    @DisplayName("测试创建标签-不带消息")
+    fun `test create tag without message`() {
+        val request = buildCreateRequest(version = "1.0.0")
+        packageService.createPackageVersion(request)
+        
+        val tag = "v1.0.0"
+        packageService.createTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0", tag, null)
+        
+        val packageSummary = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
+        Assertions.assertNotNull(packageSummary)
+        Assertions.assertTrue(packageSummary!!.versionTag.containsKey(tag))
+        
+        val packageVersion = packageService.findVersionByName(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0")
+        Assertions.assertNotNull(packageVersion)
+        Assertions.assertTrue(packageVersion!!.tags.contains(tag))
+    }
+
+    @Test
+    @DisplayName("测试删除标签")
+    fun `test delete tag`() {
+        val request = buildCreateRequest(version = "1.0.0")
+        packageService.createPackageVersion(request)
+        
+        val tag = "latest"
+        packageService.createTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0", tag)
+        
+        // 验证标签已创建
+        var packageSummary = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
+        Assertions.assertNotNull(packageSummary)
+        Assertions.assertTrue(packageSummary!!.versionTag.containsKey(tag))
+        
+        // 删除标签
+        packageService.deleteTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, tag)
+        
+        // 验证标签已删除
+        packageSummary = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
+        Assertions.assertNotNull(packageSummary)
+        Assertions.assertFalse(packageSummary!!.versionTag.containsKey(tag))
+        
+        val packageVersion = packageService.findVersionByName(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0")
+        Assertions.assertNotNull(packageVersion)
+        Assertions.assertFalse(packageVersion!!.tags.contains(tag))
+    }
+
+    @Test
+    @DisplayName("测试删除标签-包不存在")
+    fun `should throw exception when delete tag for non exist package`() {
+        assertThrows<PackageNotFoundException> {
+            packageService.deleteTag(UT_PROJECT_ID, UT_REPO_NAME, "non-exist-package", "latest")
+        }
+    }
+
+    @Test
+    @DisplayName("测试删除标签-标签不存在")
+    fun `should not throw exception when delete non exist tag`() {
+        val request = buildCreateRequest(version = "1.0.0")
+        packageService.createPackageVersion(request)
+        
+        // 删除不存在的标签应该不会抛异常，直接返回
+        packageService.deleteTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "non-exist-tag")
+        
+        // 验证包仍然存在
+        val packageSummary = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
+        Assertions.assertNotNull(packageSummary)
+    }
+
+    @Test
+    @DisplayName("测试删除标签-多个标签")
+    fun `test delete tag with multiple tags`() {
+        val request = buildCreateRequest(version = "1.0.0")
+        packageService.createPackageVersion(request)
+        
+        val tag1 = "latest"
+        val tag2 = "stable"
+        val tag3 = "v1.0.0"
+        
+        packageService.createTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0", tag1)
+        packageService.createTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0", tag2)
+        packageService.createTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, "1.0.0", tag3)
+        
+        // 验证所有标签都已创建
+        var packageSummary = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
+        Assertions.assertNotNull(packageSummary)
+        Assertions.assertTrue(packageSummary!!.versionTag.containsKey(tag1))
+        Assertions.assertTrue(packageSummary.versionTag.containsKey(tag2))
+        Assertions.assertTrue(packageSummary.versionTag.containsKey(tag3))
+        
+        // 删除其中一个标签
+        packageService.deleteTag(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY, tag2)
+        
+        // 验证只有 tag2 被删除
+        packageSummary = packageService.findPackageByKey(UT_PROJECT_ID, UT_REPO_NAME, UT_PACKAGE_KEY)
+        Assertions.assertNotNull(packageSummary)
+        Assertions.assertTrue(packageSummary!!.versionTag.containsKey(tag1))
+        Assertions.assertFalse(packageSummary.versionTag.containsKey(tag2))
+        Assertions.assertTrue(packageSummary.versionTag.containsKey(tag3))
     }
 
     companion object {
