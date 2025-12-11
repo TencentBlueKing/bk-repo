@@ -35,6 +35,7 @@ import com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
+import com.tencent.bkrepo.preview.config.PreviewArtifactResourceWriter
 import com.tencent.bkrepo.preview.config.PreviewLocalRepository
 import com.tencent.bkrepo.preview.config.PreviewRemoteRepository
 import com.tencent.bkrepo.preview.config.PreviewVirtualRepository
@@ -55,4 +56,6 @@ class PreviewArtifactConfigurer : ArtifactConfigurerSupport() {
         httpAuthSecurity.withPrefix("/preview")
             .includePattern("/api/**")
     }
+
+    override fun getArtifactResourceWriter() = SpringContextUtils.getBean<PreviewArtifactResourceWriter>()
 }

@@ -49,10 +49,12 @@ import com.tencent.bkrepo.s3.constant.DEFAULT_ENCODING
 import com.tencent.bkrepo.s3.constant.S3HttpHeaders
 import com.tencent.bkrepo.s3.utils.TimeUtil
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.stereotype.Component
 
 /**
  * S3协议的响应输出
  */
+@Component
 class S3ArtifactResourceWriter(
     storageProperties: StorageProperties,
     requestLimitCheckService: RequestLimitCheckService
