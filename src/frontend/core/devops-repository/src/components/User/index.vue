@@ -4,6 +4,7 @@
         placement="bottom"
         :arrow="false"
         trigger="click"
+        :disabled="!enableClick"
         ref="popoverRef"
     >
         <div class="user-entry">
@@ -29,6 +30,11 @@
     import { mapState, mapActions } from 'vuex'
     export default {
         name: 'bkrepoUser',
+        data () {
+            return {
+                enableClick: true
+            }
+        },
         computed: {
             ...mapState(['userInfo']),
             menuList () {
@@ -37,6 +43,11 @@
                     'repoToken'
                     // 'repoHelp'
                 ]
+            }
+        },
+        watch: {
+            '$route' (to, from) {
+                this.enableClick = !(to.name === 'filePreview' || to.name === 'outsideFilePreview')
             }
         },
         methods: {
