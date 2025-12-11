@@ -7,7 +7,7 @@
             style="max-height: 100vh; overflow-y: auto"
         />
         <iframe v-if="showFrame" :src="pageUrl" frameborder="0" style="width: 100%; height: 100%"></iframe>
-        <div v-if="pdfShow" :style="`margin:0 auto;width:${pdfWidth};overflow-y:auto;height:100vh`">
+        <div v-if="pdfShow" class="pdf-container-wrapper"">
             <canvas
                 v-for="page in pdfPages"
                 :key="page"
@@ -44,7 +44,7 @@
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import {isExcel, isHtmlType, isOutDisplayType, isPic, isText} from '@repository/utils/file'
+    import { isExcel, isHtmlType, isOutDisplayType, isPic, isText } from '@repository/utils/file'
     import Papa from 'papaparse'
     import Table from '@wolf-table/table'
     import Viewer from 'viewerjs'
@@ -286,6 +286,34 @@
 @import '@vue-office/docx/lib/index.css';
 @import '@vue-office/excel/lib/index.css';
 @import 'viewerjs/dist/viewer.css';
+/* 添加到现有项目中 */
+.pdf-container-wrapper {
+    position: relative !important;
+    width: 100% !important;
+    height: 100vh !important;
+    overflow: auto !important;
+    background: #f5f5f5 !important;
+}
+
+/* 关键：绝对定位居中 */
+.pdf-container {
+    position: absolute !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: 0 !important;
+    padding: 20px !important;
+    min-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Canvas样式重置 */
+canvas {
+    display: block !important;
+    margin: 0 auto 20px auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    background: white !important;
+}
 .preview-file-tips {
     margin-bottom: 10px;
     color: #707070;

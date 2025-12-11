@@ -1,7 +1,7 @@
 <template>
     <div class="bkrepo-header flex-align-center">
         <div class="flex-align-center">
-            <router-link class="flex-align-center bkrepo-logo" :to="{ name: 'repositories' }">
+            <router-link v-if="showProjectSelect" class="flex-align-center bkrepo-logo" :to="{ name: 'repositories' }">
                 <svg
                     :width="34"
                     :height="34"
@@ -91,7 +91,7 @@
                 </template>
             </bk-popover>
         </div>
-        <User />
+        <User v-if="showProjectSelect" />
         <project-info-dialog ref="projectInfoDialog"></project-info-dialog>
         <version-log ref="versionLogDialog"></version-log>
     </div>
