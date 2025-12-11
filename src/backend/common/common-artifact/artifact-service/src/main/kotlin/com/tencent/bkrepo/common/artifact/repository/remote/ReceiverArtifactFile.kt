@@ -29,7 +29,7 @@ package com.tencent.bkrepo.common.artifact.repository.remote
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.hash.sha1
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
+import com.tencent.bkrepo.common.artifact.resolve.file.receiver.ArtifactDataReceiver
 import java.io.File
 import java.io.InputStream
 
