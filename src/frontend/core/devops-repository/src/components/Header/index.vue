@@ -1,7 +1,11 @@
 <template>
     <div class="bkrepo-header flex-align-center">
         <div class="flex-align-center">
-            <router-link class="flex-align-center bkrepo-logo" :to="{ name: 'repositories' }">
+            <router-link
+                class="flex-align-center bkrepo-logo"
+                :to="{ name: 'repositories' }"
+                :event="showProjectSelect ? 'click' : ''"
+            >
                 <svg
                     :width="34"
                     :height="34"
