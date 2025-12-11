@@ -376,11 +376,20 @@ open class PermissionServiceImpl constructor(
             val platform = accountDao.findOneByAppId(appId!!) ?: return false
             // 非平台账号
             if (!permHelper.isPlatformApp(platform)) return false
+            
+            // 检查账号的action限制
+            if (platform.limit != null) {
+                if (!platform.limit!!.isActionAllowed(action)) {
+                    logger.debug("action is not allowed by limit [{}]", platform)
+                    return false
+                }
+            }
+            
             // 不限制scope
             if (platform.scope == null) return true
             // 平台账号，限制scope
             if (!platform.scope!!.contains(ResourceType.lookup(resourceType))) return false
-            // 校验平台账号权限范围
+            // 平台账号不做具体权限校验， 只做范围检验，此段代码即将删除
             when (resourceType) {
                 PROJECT.name -> {
                     return permHelper.checkPlatformProject(projectId, platform.scopeDesc)
