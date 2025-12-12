@@ -74,7 +74,8 @@ class PluginClient @Autowired constructor(
                 val logMsg = "request plugins actuator failed, code: $resCode, message: ${res.message}"
                 if (resCode == HttpStatus.NOT_FOUND.value ||
                     resCode == HttpStatus.UNAUTHORIZED.value ||
-                    resCode == HttpStatus.FORBIDDEN.value) {
+                    resCode == HttpStatus.FORBIDDEN.value
+                ) {
                     logger.warn(logMsg)
                 } else {
                     logger.error(logMsg)
@@ -115,7 +116,10 @@ class PluginClient @Autowired constructor(
     private fun buildRequest(url: String, method: String, requestBody: RequestBody? = null): Request {
         val reqBuilder = Request.Builder()
             .url(url)
-            .addHeader(AuthConstants.AUTHORIZATION, BasicAuthUtils.encode(opProperties.adminUsername, opProperties.adminPassword))
+            .addHeader(
+                AuthConstants.AUTHORIZATION,
+                BasicAuthUtils.encode(opProperties.adminUsername, opProperties.adminPassword)
+            )
             .method(method, requestBody)
         return reqBuilder.build()
     }

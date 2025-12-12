@@ -110,7 +110,10 @@ class ActuatorArtifactMetricsClient @Autowired constructor(
 
         val reqBuilder = Request.Builder()
             .url(url)
-            .addHeader(AuthConstants.AUTHORIZATION, BasicAuthUtils.encode(opProperties.adminUsername, opProperties.adminPassword))
+            .addHeader(
+                AuthConstants.AUTHORIZATION,
+                BasicAuthUtils.encode(opProperties.adminUsername, opProperties.adminPassword)
+            )
 
         return reqBuilder.build()
     }
