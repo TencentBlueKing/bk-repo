@@ -31,4 +31,10 @@
 
 package com.tencent.bkrepo.auth.exception
 
-class AuthFailedException(message: String) : RuntimeException(message)
+import com.tencent.bkrepo.auth.message.AuthMessageCode
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+
+class AuthFailedException(
+    messageCode: AuthMessageCode = AuthMessageCode.AUTH_IAM_TOKEN_CHECK_FAILED,
+    vararg params: Any
+) : ErrorCodeException(messageCode, *params)
