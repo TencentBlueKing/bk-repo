@@ -21,6 +21,37 @@ data:
           uri: {{ include "bkrepo.mongodbUri" . }}
           transaction:
             enabled: false
+      cloud:
+        stream:
+          binders:
+            noop:
+              type: noop
+            file:
+              type: file
+            {{- if ne .Values.kafka.provider "none" }}
+            kafka:
+              type: kafka
+              environment:
+                spring:
+                  cloud:
+                    stream:
+                      kafka:
+                        binder:
+                          brokers: {{ .Values.kafka.url }}
+                          configuration:
+                            allow.auto.create.topics: true
+                            security.protocol: SASL_PLAINTEXT
+                            sasl.mechanism: SCRAM-SHA-512
+                            sasl.jaas.config: {{ include "bkrepo.kafka.jaasConfig" . | quote }} 
+            {{- end }}
+          default-binder: noop
+          {{- $binder := ternary "noop" "kafka" (eq "none" .Values.kafka.provider) }}
+          bindings:
+            artifactEvent-out-0:
+              destination: artifactEvent
+              binder: {{ $binder }}
+          function:
+            autodetect: false
     service.prefix: {{ include "common.names.fullname" . }}-
     {{- if or .Values.ingress.tls .Values.forceHttps }}
     oci.authUrl: https://{{ include "bkrepo.oci.authUrl" . }}
