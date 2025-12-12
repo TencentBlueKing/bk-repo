@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.auth
 
 import com.tencent.bkrepo.auth.constant.AuthConstants
-import com.tencent.bkrepo.auth.constant.RANDOM_KEY_LENGTH
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
 import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
 import com.tencent.bkrepo.auth.pojo.enums.CredentialStatus
