@@ -33,6 +33,7 @@ import com.tencent.bk.sdk.iam.service.TokenService
 import com.tencent.bkrepo.auth.condition.MultipleAuthCondition
 import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.auth.exception.AuthFailedException
+import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import org.slf4j.LoggerFactory
@@ -74,16 +75,24 @@ class BkiamCallbackService @Autowired constructor(
         val credentials = parseCredentials(token)
         val userName = credentials.first
         val password = credentials.second
-        if (userName != callbackUser) {
-            throw AuthFailedException("invalid iam user: $userName")
+        if (userName != callbackUser || callbackUser.isEmpty()) {
+            throw AuthFailedException(
+                AuthMessageCode.AUTH_IAM_TOKEN_CHECK_FAILED, "invalid iam user: $userName"
+            )
         }
         val tokenToCheck = password
         if (bufferedToken.isNotBlank() && bufferedToken == tokenToCheck) {
             return
         }
-        bufferedToken = tokenService.token
+        bufferedToken = try {
+            tokenService.token
+        } catch (e: Exception) {
+            throw AuthFailedException(AuthMessageCode.AUTH_IAM_TOKEN_CHECK_FAILED, "get auth token failed")
+        }
         if (bufferedToken != tokenToCheck) {
-            throw AuthFailedException("[$tokenToCheck] is not a valid credentials")
+            throw AuthFailedException(
+                AuthMessageCode.AUTH_IAM_TOKEN_CHECK_FAILED, "$tokenToCheck is not a valid credentials"
+            )
         }
     }
 
@@ -94,7 +103,9 @@ class BkiamCallbackService @Autowired constructor(
             val parts = decodedToken.split(StringPool.COLON)
             Pair(parts[0], parts[1])
         } catch (exception: IllegalArgumentException) {
-            throw AuthFailedException("[$token] is not a valid token")
+            throw AuthFailedException(
+                AuthMessageCode.AUTH_IAM_TOKEN_CHECK_FAILED, "$token is not a valid token"
+            )
         }
     }
 
