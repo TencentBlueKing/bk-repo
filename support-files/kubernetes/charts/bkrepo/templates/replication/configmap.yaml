@@ -17,6 +17,20 @@ data:
     spring:
       application:
         version: 1.0.0
+      cloud:
+        function:
+          definition: artifactEventReplication;artifactEventFederation
+        stream:
+          {{- $binder := ternary "noop" "kafka" (eq "none" .Values.kafka.provider) }}
+          bindings:
+            artifactEventReplication-in-0:
+              group: replication
+              destination: artifactEvent
+              binder: {{ $binder }}
+            artifactEventFederation-in-0:
+              group: federation
+              destination: artifactEvent
+              binder: {{ $binder }}
     {{- if keys $.Values.replication.config }}
       {{- toYaml .Values.replication.config | nindent 4 }}
     {{- end}}
