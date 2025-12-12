@@ -34,7 +34,6 @@ import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.local.UserServiceImpl
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
-import org.apache.kafka.common.protocol.types.Field
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
