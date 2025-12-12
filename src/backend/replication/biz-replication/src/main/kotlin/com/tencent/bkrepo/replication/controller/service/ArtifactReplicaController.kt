@@ -29,8 +29,8 @@ package com.tencent.bkrepo.replication.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -136,14 +136,18 @@ class ArtifactReplicaController(
 
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaNodeCreateRequest(request: NodeCreateRequest): Response<NodeDetail> {
-        federatedNodeDeletedCheck(
+        val existNode = federatedNodeCheck(
             projectId = request.projectId,
             repoName = request.repoName,
             fullPath = request.fullPath,
             compareDate = request.createdDate!!,
             source = request.source
         )
-        return ResponseBuilder.success(nodeService.createNode(request))
+        return if (existNode != null) {
+            ResponseBuilder.success(existNode)
+        } else {
+            ResponseBuilder.success(nodeService.createNode(request))
+        }
     }
 
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
@@ -180,13 +184,24 @@ class ArtifactReplicaController(
 
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaNodeDeleteRequest(request: NodeDeleteRequest): Response<NodeDeleteResult> {
-        federatedNodeDeletedCheck(
-            request.projectId,
-            request.repoName,
-            request.fullPath,
-            LocalDateTime.parse(request.deletedDate!!, DateTimeFormatter.ISO_DATE_TIME),
-            request.source
-        )
+        // 如果指定了 deletedDate，检查是否存在更新的节点
+        request.deletedDate?.takeIf { it.isNotEmpty() }?.let { deletedDate ->
+            val compareDate = LocalDateTime.parse(deletedDate, DateTimeFormatter.ISO_DATE_TIME)
+            val existNode = federatedNodeCheck(
+                projectId = request.projectId,
+                repoName = request.repoName,
+                fullPath = request.fullPath,
+                compareDate = compareDate,
+                source = request.source
+            )
+            if (existNode != null) {
+                // 存在更新的节点，跳过删除操作
+                return ResponseBuilder.success(
+                    NodeDeleteResult(deletedNumber = 0, deletedSize = 0, deletedTime = LocalDateTime.now())
+                )
+            }
+        }
+        // 执行删除操作
         return ResponseBuilder.success(nodeService.deleteNode(request))
     }
 
@@ -276,13 +291,15 @@ class ArtifactReplicaController(
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaPackageDeleteRequest(request: PackageDeleteRequest): Response<Void> {
         with(request) {
-            federatedPackageDeletedCheck(
+            val existCheck = federatedPackageDeletedCheck(
                 projectId = projectId,
                 repoName = repoName,
                 packageKey = packageKey,
                 compareDate = LocalDateTime.parse(deletedDate, DateTimeFormatter.ISO_DATE_TIME)
             )
-            packageService.deletePackage(projectId, repoName, packageKey)
+            if (!existCheck) {
+                packageService.deletePackage(projectId, repoName, packageKey)
+            }
         }
         return ResponseBuilder.success()
     }
@@ -290,14 +307,16 @@ class ArtifactReplicaController(
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaPackageVersionDeleteRequest(request: PackageVersionDeleteRequest): Response<Void> {
         with(request) {
-            federatedPackageDeletedCheck(
+            val existCheck = federatedPackageDeletedCheck(
                 projectId = projectId,
                 repoName = repoName,
                 packageKey = packageKey,
                 compareDate = LocalDateTime.parse(deletedDate, DateTimeFormatter.ISO_DATE_TIME),
                 versionName = versionName
             )
-            packageService.deleteVersion(projectId, repoName, packageKey, versionName)
+            if (!existCheck) {
+                packageService.deleteVersion(projectId, repoName, packageKey, versionName)
+            }
         }
         return ResponseBuilder.success()
     }
@@ -376,21 +395,22 @@ class ArtifactReplicaController(
     }
 
 
-    private fun federatedNodeDeletedCheck(
+    private fun federatedNodeCheck(
         projectId: String,
         repoName: String,
         fullPath: String,
         compareDate: LocalDateTime,
         source: String?,
-    ) {
-        if (source.isNullOrEmpty()) return
+    ): NodeDetail? {
+        if (source.isNullOrEmpty()) return null
         val existNode = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         if (existNode != null) {
             val existCreatedDate = LocalDateTime.parse(existNode.createdDate, DateTimeFormatter.ISO_DATE_TIME)
             if (existCreatedDate.isAfter(compareDate)) {
-                return
+                return existNode
             }
         }
+        return null
     }
 
     private fun federatedPackageDeletedCheck(
@@ -399,24 +419,23 @@ class ArtifactReplicaController(
         packageKey: String,
         compareDate: LocalDateTime,
         versionName: String? = null,
-    ) {
-        val existPackage = packageService.findPackageByKey(projectId, repoName, packageKey) ?: return
+    ): Boolean {
+        val existPackage = packageService.findPackageByKey(projectId, repoName, packageKey) ?: return false
 
         // 检查包的创建日期是否晚于比较日期
         if (existPackage.createdDate.isAfter(compareDate)) {
-            return
+            return true
         }
 
         // 如果未指定版本名称，则无需检查版本
-        if (versionName.isNullOrEmpty()) return
+        if (versionName.isNullOrEmpty()) return false
 
         // 检查指定版本是否存在
-        val existVersion = packageService.findVersionByName(projectId, repoName, packageKey, versionName) ?: return
+        val existVersion = packageService.findVersionByName(projectId, repoName, packageKey, versionName)
+            ?: return false
 
         // 检查版本的修改日期是否晚于比较日期
-        if (existVersion.lastModifiedDate.isAfter(compareDate)) {
-            return
-        }
+        return existVersion.lastModifiedDate.isAfter(compareDate)
     }
 
     private fun checkAndHandleExistingNodes(request: DeletedNodeReplicationRequest): NodeDetail? {
