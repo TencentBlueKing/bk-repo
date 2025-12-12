@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.opdata.client.actuator
 
-import com.tencent.bkrepo.auth.constant.AUTHORIZATION
+import com.tencent.bkrepo.auth.constant.AuthConstants
 import com.tencent.bkrepo.common.api.constant.HttpStatus.FORBIDDEN
 import com.tencent.bkrepo.common.api.constant.HttpStatus.NOT_FOUND
 import com.tencent.bkrepo.common.api.constant.HttpStatus.UNAUTHORIZED
@@ -110,7 +110,7 @@ class ActuatorArtifactMetricsClient @Autowired constructor(
 
         val reqBuilder = Request.Builder()
             .url(url)
-            .addHeader(AUTHORIZATION, BasicAuthUtils.encode(opProperties.adminUsername, opProperties.adminPassword))
+            .addHeader(AuthConstants.AUTHORIZATION, BasicAuthUtils.encode(opProperties.adminUsername, opProperties.adminPassword))
 
         return reqBuilder.build()
     }

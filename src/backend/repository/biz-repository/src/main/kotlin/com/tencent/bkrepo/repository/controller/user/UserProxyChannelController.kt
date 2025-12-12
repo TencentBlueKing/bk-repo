@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
+import com.tencent.bkrepo.auth.constant.AuthConstants
 import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -101,14 +102,16 @@ class UserProxyChannelController(
             val headers = HttpHeaders()
             if (userName != null && password != null) {
                 val useInfo = userName + StringPool.COLON + RsaUtils.decrypt(password)
-                val authInfo = BASIC_AUTH_HEADER_PREFIX + Base64.getEncoder().encodeToString(useInfo.toByteArray())
+                val authInfo =
+                    AuthConstants.BASIC_AUTH_HEADER_PREFIX + Base64.getEncoder().encodeToString(useInfo.toByteArray())
                 headers.set(HttpHeaders.AUTHORIZATION, authInfo)
             }
             // 暂时只添加了helm类型的校验
-            when(type.uppercase()) {
+            when (type.uppercase()) {
                 RepositoryType.HELM.name -> {
                     return ResponseBuilder.success(checkHelmValid(url, headers))
                 }
+
                 else -> {
                     return ResponseBuilder.success(false)
                 }
@@ -117,11 +120,12 @@ class UserProxyChannelController(
         }
     }
 
-    private fun checkHelmValid(url: String , headers: HttpHeaders): Boolean {
+    private fun checkHelmValid(url: String, headers: HttpHeaders): Boolean {
         val httpEntity = HttpEntity<Any>(headers)
         try {
             val response = restTemplate.exchange(
-                url + "/index.yaml", HttpMethod.HEAD, httpEntity, String::class.java)
+                url + "/index.yaml", HttpMethod.HEAD, httpEntity, String::class.java
+            )
             return if (response.statusCode != HttpStatus.OK) {
                 false
             } else {
@@ -161,10 +165,10 @@ class UserProxyChannelController(
                     name = proxyChannelInfo.name,
                     url = proxyChannelInfo.url,
                     repoType = proxyChannelInfo.repoType,
-                    credentialKey= proxyChannelInfo.credentialKey,
+                    credentialKey = proxyChannelInfo.credentialKey,
                     username = proxyChannelInfo.username,
-                    password = proxyChannelInfo.password?.let{
-                         RsaUtils.encrypt(proxyChannelInfo.password!!)
+                    password = proxyChannelInfo.password?.let {
+                        RsaUtils.encrypt(proxyChannelInfo.password!!)
                     }.orEmpty(),
                     lastSyncStatus = proxyChannelInfo.lastSyncStatus,
                     lastSyncDate = proxyChannelInfo.lastSyncDate

@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
+import com.tencent.bkrepo.auth.service.local.UserServiceImpl
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -39,7 +40,8 @@ import org.springframework.stereotype.Component
 @Component
 class ExternalGroupSyncJob(
     private val roleService: RoleService,
-    private val permissionService: PermissionService
+    private val permissionService: PermissionService,
+    private val userService: UserServiceImpl
 ) {
 
     @Scheduled(cron = "0 */10 * * * ? ")
@@ -63,13 +65,18 @@ class ExternalGroupSyncJob(
             }
             roleList.forEach { role ->
                 if (projectIdMap[role.roleId] == project) {
+                    val userIds = roleUserMap[role.roleId]!!
                     val updateRequest = UpdateRoleRequest(
-                        userIds = roleUserMap[role.roleId]!!.toSet(),
                         description = null,
                         name = null
                     )
                     logger.info("to update external role [${role.roleId}] ")
                     roleService.updateRoleInfo(indexIdMap[role.roleId]!!, updateRequest)
+                    val users = roleService.listUserByRoleId(role.id!!)
+                    if (users.isNotEmpty()) {
+                        userService.removeUserFromRoleBatch(users.map { it.userId }, role.id)
+                    }
+                    userService.addUserToRoleBatch(userIds, role.id)
                 }
             }
         }

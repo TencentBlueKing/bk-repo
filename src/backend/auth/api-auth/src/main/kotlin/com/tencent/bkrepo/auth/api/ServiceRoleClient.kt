@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ROLE_PREFIX
+import com.tencent.bkrepo.auth.constant.PathConstants
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.v3.oas.annotations.Operation
@@ -46,7 +46,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Tag(name = "SERVICE_ROLE", description = "服务-角色接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceRoleResource")
-@RequestMapping(AUTH_SERVICE_ROLE_PREFIX)
+@RequestMapping(PathConstants.AUTH_SERVICE_ROLE_PREFIX)
 interface ServiceRoleClient {
 
     @Operation(summary = "创建项目管理员")

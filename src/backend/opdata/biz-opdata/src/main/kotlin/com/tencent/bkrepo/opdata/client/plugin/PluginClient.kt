@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.opdata.client.plugin
 
-import com.tencent.bkrepo.auth.constant.AUTHORIZATION
+import com.tencent.bkrepo.auth.constant.AuthConstants
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -115,7 +115,7 @@ class PluginClient @Autowired constructor(
     private fun buildRequest(url: String, method: String, requestBody: RequestBody? = null): Request {
         val reqBuilder = Request.Builder()
             .url(url)
-            .addHeader(AUTHORIZATION, BasicAuthUtils.encode(opProperties.adminUsername, opProperties.adminPassword))
+            .addHeader(AuthConstants.AUTHORIZATION, BasicAuthUtils.encode(opProperties.adminUsername, opProperties.adminPassword))
             .method(method, requestBody)
         return reqBuilder.build()
     }

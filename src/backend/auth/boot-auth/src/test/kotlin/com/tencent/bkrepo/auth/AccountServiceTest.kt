@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth
 
+import com.tencent.bkrepo.auth.constant.AuthConstants
 import com.tencent.bkrepo.auth.constant.RANDOM_KEY_LENGTH
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
 import com.tencent.bkrepo.auth.pojo.account.UpdateAccountRequest
@@ -137,7 +138,7 @@ class AccountServiceTest {
         Assertions.assertTrue(account.credentials.size == 3)
         with(credential) {
             Assertions.assertTrue(this.accessKey.length == 32)
-            Assertions.assertTrue(this.secretKey.length == RANDOM_KEY_LENGTH)
+            Assertions.assertTrue(this.secretKey.length == AuthConstants.RANDOM_KEY_LENGTH)
         }
     }
 

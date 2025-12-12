@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.auth.helper
 
-import com.tencent.bkrepo.auth.constant.AUTH_ADMIN
-import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
+import com.tencent.bkrepo.auth.constant.RoleConstants
+import com.tencent.bkrepo.auth.constant.UserConstants
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.UserDao
@@ -151,7 +151,7 @@ class PermissionHelper constructor(
     // 获取此项目一般用户
     fun getProjectCommonUser(projectId: String): List<String> {
         val roleIdArray = mutableListOf<String>()
-        val role = roleRepository.findFirstByRoleIdAndProjectId(PROJECT_VIEWER_ID, projectId)
+        val role = roleRepository.findFirstByRoleIdAndProjectId(RoleConstants.PROJECT_VIEWER_ID, projectId)
         if (role != null) role.id?.let { roleIdArray.add(it) }
         return userDao.findAllByRolesIn(roleIdArray).map { it.userId }.distinct()
     }
@@ -264,8 +264,8 @@ class PermissionHelper constructor(
                 resourceType = REPO.name,
                 createAt = LocalDateTime.now(),
                 updateAt = LocalDateTime.now(),
-                createBy = AUTH_ADMIN,
-                updatedBy = AUTH_ADMIN
+                createBy = UserConstants.AUTH_ADMIN,
+                updatedBy = UserConstants.AUTH_ADMIN
             )
             logger.info("permission not exist, create [$request]")
             permissionDao.insert(request)
@@ -306,7 +306,7 @@ class PermissionHelper constructor(
     fun getUserCommonRoleProject(roles: List<String>): List<String> {
         val projectList = mutableListOf<String>()
         roleRepository.findByIdIn(roles).forEach {
-            if (!it.projectId.isNullOrEmpty() && it.roleId == PROJECT_VIEWER_ID) {
+            if (!it.projectId.isNullOrEmpty() && it.roleId == RoleConstants.PROJECT_VIEWER_ID) {
                 projectList.add(it.projectId)
             }
         }
@@ -424,7 +424,7 @@ class PermissionHelper constructor(
         }
         val roles = user.roles
         return roleRepository.findAllById(roles)
-            .any { role -> role.projectId == projectId && role.roleId == PROJECT_VIEWER_ID }
+            .any { role -> role.projectId == projectId && role.roleId == RoleConstants.PROJECT_VIEWER_ID }
     }
 
     fun getDefaultPersonalPrefix(): String {
