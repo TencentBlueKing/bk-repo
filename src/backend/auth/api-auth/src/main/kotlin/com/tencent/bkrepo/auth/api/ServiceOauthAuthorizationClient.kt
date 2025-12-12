@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_OAUTH_PREFIX
+import com.tencent.bkrepo.auth.constant.PathConstants
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -42,7 +42,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Tag(name = "SERVICE_OAUTHAUTHORIZATION", description = "服务-Oauth授权接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceOauthAuthorizationResource")
-@RequestMapping(AUTH_SERVICE_OAUTH_PREFIX)
+@RequestMapping(PathConstants.AUTH_SERVICE_OAUTH_PREFIX)
 interface ServiceOauthAuthorizationClient {
 
     @Operation(summary = "获取oauth token信息")

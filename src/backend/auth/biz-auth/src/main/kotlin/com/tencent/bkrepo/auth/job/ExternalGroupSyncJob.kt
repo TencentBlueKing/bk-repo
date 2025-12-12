@@ -27,10 +27,12 @@
 
 package com.tencent.bkrepo.auth.job
 
+import com.tencent.bkrepo.auth.pojo.role.Role
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
+import com.tencent.bkrepo.auth.service.local.UserServiceImpl
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
@@ -39,7 +41,8 @@ import org.springframework.stereotype.Component
 @Component
 class ExternalGroupSyncJob(
     private val roleService: RoleService,
-    private val permissionService: PermissionService
+    private val permissionService: PermissionService,
+    private val userService: UserServiceImpl
 ) {
 
     @Scheduled(cron = "0 */10 * * * ? ")
@@ -57,20 +60,35 @@ class ExternalGroupSyncJob(
         }
 
         projectIdSet.forEach { project ->
-            val roleUserMap = mutableMapOf<String, List<String>>()
-            permissionService.listExternalRoleByProject(project, RoleSource.DEVOPS).forEach { externalRole ->
-                roleUserMap[externalRole.roleId] = externalRole.userList
-            }
-            roleList.forEach { role ->
-                if (projectIdMap[role.roleId] == project) {
-                    val updateRequest = UpdateRoleRequest(
-                        userIds = roleUserMap[role.roleId]!!.toSet(),
-                        description = null,
-                        name = null
-                    )
-                    logger.info("to update external role [${role.roleId}] ")
-                    roleService.updateRoleInfo(indexIdMap[role.roleId]!!, updateRequest)
+            run(project, roleList, projectIdMap, indexIdMap)
+        }
+
+    }
+
+    fun run(
+        projectId: String,
+        roleList: List<Role>,
+        projectIdMap: Map<String, String>,
+        indexIdMap: Map<String, String>
+    ) {
+        val roleUserMap = mutableMapOf<String, List<String>>()
+        permissionService.listExternalRoleByProject(projectId, RoleSource.DEVOPS).forEach { externalRole ->
+            roleUserMap[externalRole.roleId] = externalRole.userList
+        }
+        roleList.forEach { role ->
+            if (projectIdMap[role.roleId] == projectId) {
+                val userIds = roleUserMap[role.roleId]!!
+                val updateRequest = UpdateRoleRequest(
+                    description = null,
+                    name = null
+                )
+                logger.info("to update external role [${role.roleId}] ")
+                roleService.updateRoleInfo(indexIdMap[role.roleId]!!, updateRequest)
+                val users = roleService.listUserByRoleId(role.id!!)
+                if (users.isNotEmpty()) {
+                    userService.removeUserFromRoleBatch(users.map { it.userId }, role.id)
                 }
+                userService.addUserToRoleBatch(userIds, role.id)
             }
         }
     }

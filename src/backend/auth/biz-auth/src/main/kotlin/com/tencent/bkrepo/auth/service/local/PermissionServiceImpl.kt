@@ -31,12 +31,9 @@
 
 package com.tencent.bkrepo.auth.service.local
 
-import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_ADMIN
-import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
-import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
-import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
-import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
-import com.tencent.bkrepo.auth.constant.REPLICATION_MANAGE_ID
+
+import com.tencent.bkrepo.auth.constant.RoleConstants
+import com.tencent.bkrepo.auth.constant.UserConstants
 import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
@@ -116,14 +113,23 @@ open class PermissionServiceImpl constructor(
 
     override fun listBuiltinPermission(projectId: String, repoName: String): List<Permission> {
         logger.debug("list builtin permission : [$projectId ,$repoName]")
-        val repoAdmin = permHelper.getOnePermission(projectId, repoName, AUTH_BUILTIN_ADMIN, setOf(MANAGE))
+        val repoAdmin = permHelper.getOnePermission(
+            projectId = projectId,
+            repoName = repoName, permName = UserConstants.AUTH_BUILTIN_ADMIN,
+            actions = setOf(MANAGE)
+        )
         val repoUser = permHelper.getOnePermission(
             projectId = projectId,
             repoName = repoName,
-            permName = AUTH_BUILTIN_USER,
+            permName = UserConstants.AUTH_BUILTIN_USER,
             actions = setOf(WRITE, READ, DELETE, UPDATE)
         )
-        val repoViewer = permHelper.getOnePermission(projectId, repoName, AUTH_BUILTIN_VIEWER, setOf(READ))
+        val repoViewer = permHelper.getOnePermission(
+            projectId = projectId,
+            repoName = repoName,
+            permName = UserConstants.AUTH_BUILTIN_VIEWER,
+            actions = setOf(READ)
+        )
         return listOf(repoAdmin, repoUser, repoViewer).map { PermRequestUtil.convToPermission(it) }
     }
 
@@ -156,7 +162,7 @@ open class PermissionServiceImpl constructor(
         with(request) {
             logger.info("update permission user request: [$request]")
             when (permissionId) {
-                PROJECT_MANAGE_ID -> {
+                RoleConstants.PROJECT_MANAGE_ID -> {
                     val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId!!)
                     val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId)
                     val adminRoleId = userHelper.createRoleCommon(createAdminRequest)
@@ -170,7 +176,8 @@ open class PermissionServiceImpl constructor(
                     permHelper.removeUserFromRoleBatchCommon(addRoleUserList, commonRoleId!!)
                     return true
                 }
-                PROJECT_VIEWER_ID -> {
+
+                RoleConstants.PROJECT_VIEWER_ID -> {
                     val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId!!)
                     val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId)
                     val adminRoleId = userHelper.createRoleCommon(createAdminRequest)
@@ -184,19 +191,21 @@ open class PermissionServiceImpl constructor(
                     permHelper.removeUserFromRoleBatchCommon(addRoleUserList, adminRoleId!!)
                     return true
                 }
-                REPLICATION_MANAGE_ID -> {
+
+                RoleConstants.REPLICATION_MANAGE_ID -> {
                     if (!projectId.isNullOrEmpty()) {
                         throw ErrorCodeException(AuthMessageCode.AUTH_CREATE_ROLE_INVALID_WITHOUT_PROJECT)
                     }
                     val replicationAdminRequest = RequestUtil.buildReplicationAdminRequest()
                     val replicationRoleId = userHelper.createRoleCommon(replicationAdminRequest)
-                    val serviceUsers = permHelper.getServiceUser(REPLICATION_MANAGE_ID)
+                    val serviceUsers = permHelper.getServiceUser(RoleConstants.REPLICATION_MANAGE_ID)
                     val addRoleUserList = userId.filter { !serviceUsers.contains(it) }
                     val removeRoleUserList = serviceUsers.filter { !userId.contains(it) }
                     userHelper.addUserToRoleBatchCommon(addRoleUserList, replicationRoleId!!)
                     permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, replicationRoleId)
                     return true
                 }
+
                 else -> {
                     permHelper.checkPermissionExist(permissionId)
                     return permHelper.updatePermissionById(permissionId, TPermission::users.name, userId)
@@ -385,6 +394,7 @@ open class PermissionServiceImpl constructor(
                 PROJECT.name -> {
                     return permHelper.checkPlatformProject(projectId, platform.scopeDesc)
                 }
+
                 else -> return true
             }
         }
@@ -392,13 +402,13 @@ open class PermissionServiceImpl constructor(
 
     override fun listProjectBuiltinPermission(projectId: String): List<Permission> {
         val projectManager = permHelper.buildBuiltInPermission(
-            permissionId = PROJECT_MANAGE_ID,
+            permissionId = RoleConstants.PROJECT_MANAGE_ID,
             projectId = projectId,
             permissionName = "project_manage_permission",
             userList = permHelper.getProjectAdminUser(projectId)
         )
         val projectViewer = permHelper.buildBuiltInPermission(
-            permissionId = PROJECT_VIEWER_ID,
+            permissionId = RoleConstants.PROJECT_VIEWER_ID,
             projectId = projectId,
             permissionName = "project_view_permission",
             userList = permHelper.getProjectCommonUser(projectId)
@@ -517,8 +527,9 @@ open class PermissionServiceImpl constructor(
             return false
         }
 
-        val replicationRole = roleRepository.findFirstByTypeAndRoleId(RoleType.SERVICE, REPLICATION_MANAGE_ID)
-            ?: return false
+        val replicationRole =
+            roleRepository.findFirstByTypeAndRoleId(RoleType.SERVICE, RoleConstants.REPLICATION_MANAGE_ID)
+                ?: return false
 
         val hasPermission = roles.contains(replicationRole.id)
         if (!hasPermission) {

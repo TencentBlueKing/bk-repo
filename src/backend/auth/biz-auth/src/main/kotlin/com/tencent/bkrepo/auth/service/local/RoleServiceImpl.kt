@@ -32,8 +32,7 @@
 package com.tencent.bkrepo.auth.service.local
 
 import com.tencent.bkrepo.auth.dao.UserDao
-import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
-import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
+import com.tencent.bkrepo.auth.constant.RoleConstants
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
@@ -91,11 +90,6 @@ class RoleServiceImpl constructor(
                 description?.let { role.description = description }
                 roleRepository.save(role)
             }
-            request.userIds?.map { it }?.let { idList ->
-                val users = userDao.findAllByRolesIn(listOf(id))
-                userService.removeUserFromRoleBatch(users.map { it.userId }, id)
-                userService.addUserToRoleBatch(idList, id)
-            }
         }
         return true
     }
@@ -121,7 +115,7 @@ class RoleServiceImpl constructor(
             RoleType.PROJECT,
             projectId,
             false,
-            listOf(PROJECT_MANAGE_ID, PROJECT_VIEWER_ID)
+            listOf(RoleConstants.PROJECT_MANAGE_ID, RoleConstants.PROJECT_VIEWER_ID)
         ).map { transfer(it) }
     }
 

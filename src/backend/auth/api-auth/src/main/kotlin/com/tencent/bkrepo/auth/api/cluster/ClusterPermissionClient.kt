@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.auth.api.cluster
 
-import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PERMISSION_PREFIX
+import com.tencent.bkrepo.auth.constant.PathConstants
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -43,7 +43,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 @Tag(name = "集群间权限服务接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ClusterPermissionResource")
-@RequestMapping(AUTH_CLUSTER_PERMISSION_PREFIX)
+@RequestMapping(PathConstants.AUTH_CLUSTER_PERMISSION_PREFIX)
 interface ClusterPermissionClient {
 
     @Operation(summary = "校验权限")

@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.auth.service.local
 
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
-import com.tencent.bkrepo.auth.constant.DEFAULT_PASSWORD
+import com.tencent.bkrepo.auth.constant.AuthConstants
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
 import com.tencent.bkrepo.auth.helper.UserHelper
@@ -319,7 +319,7 @@ class UserServiceImpl constructor(
 
     override fun findUserByUserToken(userId: String, pwd: String): User? {
         logger.debug("find user userId : [$userId]")
-        if (pwd == DEFAULT_PASSWORD && !bkAuthConfig.allowDefaultPwd) {
+        if (pwd == AuthConstants.DEFAULT_PASSWORD && !bkAuthConfig.allowDefaultPwd) {
             logger.warn("login with default password [$userId]")
             if (!bkAuthConfig.userIdSet.split(",").contains(userId)) {
                 logger.warn("login with default password not in list[$userId]")
@@ -388,7 +388,7 @@ class UserServiceImpl constructor(
 
     override fun resetPassword(userId: String): Boolean {
         // todo 鉴权
-        val newHashPwd = DataDigestUtils.md5FromStr(DEFAULT_PASSWORD)
+        val newHashPwd = DataDigestUtils.md5FromStr(AuthConstants.DEFAULT_PASSWORD)
         return userDao.updatePasswordByUserId(userId, newHashPwd)
     }
 

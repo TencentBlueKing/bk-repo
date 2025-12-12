@@ -31,21 +31,8 @@
 
 package com.tencent.bkrepo.auth.interceptor
 
-import com.tencent.bkrepo.auth.constant.AUTHORIZATION
-import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_AUTH_MODE_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_OAUTH_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_PERMISSION_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PERMISSION_CHECK_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_TOKEN_DECREMENT_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_TOKEN_DELETE_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_CLUSTER_TOKEN_INFO_PREFIX
-import com.tencent.bkrepo.auth.constant.AUTH_FAILED_RESPONSE
-import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
-import com.tencent.bkrepo.auth.constant.PLATFORM_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.auth.constant.AuthConstants
+import com.tencent.bkrepo.auth.constant.PathConstants
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.AccountService
@@ -85,17 +72,17 @@ class AuthInterceptor(
     private val authenticationManager: AuthenticationManager by lazy { SpringContextUtils.getBean() }
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
-        val authHeader = request.getHeader(AUTHORIZATION).orEmpty()
-        var authFailStr = String.format(AUTH_FAILED_RESPONSE, "empty auth header")
+        val authHeader = request.getHeader(AuthConstants.AUTHORIZATION).orEmpty()
+        var authFailStr = String.format(AuthConstants.AUTH_FAILED_RESPONSE, "empty auth header")
         try {
             // basic认证
-            if (authHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
+            if (authHeader.startsWith(AuthConstants.BASIC_AUTH_HEADER_PREFIX)) {
                 return checkUserFromBasic(request, authHeader)
             }
 
             // platform认证
-            if (authHeader.startsWith(PLATFORM_AUTH_HEADER_PREFIX)) {
-                authFailStr = String.format(AUTH_FAILED_RESPONSE, "illegal platform token")
+            if (authHeader.startsWith(AuthConstants.PLATFORM_AUTH_HEADER_PREFIX)) {
+                authFailStr = String.format(AuthConstants.AUTH_FAILED_RESPONSE, "illegal platform token")
                 return checkUserFromPlatform(request, authHeader)
             }
 
@@ -123,7 +110,7 @@ class AuthInterceptor(
 
     private fun checkUserFromBasic(request: HttpServletRequest, authHeader: String): Boolean {
         val userAccess = userAccessApiSet.any { request.requestURI.contains(it) }
-        val encodedCredentials = authHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
+        val encodedCredentials = authHeader.removePrefix(AuthConstants.BASIC_AUTH_HEADER_PREFIX)
         val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
         val parts = decodedHeader.split(COLON)
         require(parts.size == CREDENTIAL_PARTS_SIZE)
@@ -144,7 +131,7 @@ class AuthInterceptor(
 
     private fun checkUserFromPlatform(request: HttpServletRequest, authHeader: String): Boolean {
         // platform认证
-        val encodedCredentials = authHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
+        val encodedCredentials = authHeader.removePrefix(AuthConstants.PLATFORM_AUTH_HEADER_PREFIX)
         val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
         val parts = decodedHeader.split(COLON)
         require(parts.size == CREDENTIAL_PARTS_SIZE)
@@ -238,20 +225,20 @@ class AuthInterceptor(
 
         // 项目内权限校验api, 开放给项目内有权限用户使用，具体校验权限在方法内
         private val userAccessApiSet = setOf(
-            AUTH_API_USER_PREFIX,
-            AUTH_API_ACCOUNT_PREFIX,
-            AUTH_API_ROLE_PREFIX,
-            AUTH_API_PERMISSION_PREFIX,
-            AUTH_API_OAUTH_PREFIX,
-            AUTH_API_AUTH_MODE_PREFIX,
-            AUTH_CLUSTER_PREFIX
+            PathConstants.AUTH_API_USER_PREFIX,
+            PathConstants.AUTH_API_ACCOUNT_PREFIX,
+            PathConstants.AUTH_API_ROLE_PREFIX,
+            PathConstants.AUTH_API_PERMISSION_PREFIX,
+            PathConstants.AUTH_API_OAUTH_PREFIX,
+            PathConstants.AUTH_API_AUTH_MODE_PREFIX,
+            PathConstants.AUTH_CLUSTER_PREFIX
         )
 
         private val anonymousAccessApiSet = setOf(
-            AUTH_CLUSTER_PERMISSION_CHECK_PREFIX,
-            AUTH_CLUSTER_TOKEN_INFO_PREFIX,
-            AUTH_CLUSTER_TOKEN_DELETE_PREFIX,
-            AUTH_CLUSTER_TOKEN_DECREMENT_PREFIX
+            PathConstants.AUTH_CLUSTER_PERMISSION_CHECK_PREFIX,
+            PathConstants.AUTH_CLUSTER_TOKEN_INFO_PREFIX,
+            PathConstants.AUTH_CLUSTER_TOKEN_DELETE_PREFIX,
+            PathConstants.AUTH_CLUSTER_TOKEN_DECREMENT_PREFIX
         )
     }
 }

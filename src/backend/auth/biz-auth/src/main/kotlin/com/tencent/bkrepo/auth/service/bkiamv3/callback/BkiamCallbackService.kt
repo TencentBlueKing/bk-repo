@@ -31,7 +31,7 @@ import com.tencent.bk.sdk.iam.dto.callback.request.CallbackRequestDTO
 import com.tencent.bk.sdk.iam.dto.callback.response.CallbackBaseResponseDTO
 import com.tencent.bk.sdk.iam.service.TokenService
 import com.tencent.bkrepo.auth.condition.MultipleAuthCondition
-import com.tencent.bkrepo.auth.constant.BASIC_AUTH_HEADER_PREFIX
+import com.tencent.bkrepo.auth.constant.AuthConstants
 import com.tencent.bkrepo.auth.exception.AuthFailedException
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.constant.StringPool
@@ -89,7 +89,7 @@ class BkiamCallbackService @Autowired constructor(
 
     private fun parseCredentials(token: String): Pair<String, String> {
         return try {
-            val encodedCredentials = token.removePrefix(BASIC_AUTH_HEADER_PREFIX)
+            val encodedCredentials = token.removePrefix(AuthConstants.BASIC_AUTH_HEADER_PREFIX)
             val decodedToken = String(Base64.getDecoder().decode(encodedCredentials))
             val parts = decodedToken.split(StringPool.COLON)
             Pair(parts[0], parts[1])

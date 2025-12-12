@@ -31,14 +31,7 @@
 
 package com.tencent.bkrepo.auth.util
 
-import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
-import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
-import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
-import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_NAME
-import com.tencent.bkrepo.auth.constant.REPLICATION_MANAGE_ID
-import com.tencent.bkrepo.auth.constant.REPLICATION_MANAGE_NAME
-import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
-import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
+import com.tencent.bkrepo.auth.constant.RoleConstants
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 
@@ -49,8 +42,8 @@ object RequestUtil {
      */
     fun buildProjectAdminRequest(projectId: String): CreateRoleRequest {
         return CreateRoleRequest(
-            roleId = PROJECT_MANAGE_ID,
-            name = PROJECT_MANAGE_NAME,
+            roleId = RoleConstants.PROJECT_MANAGE_ID,
+            name = RoleConstants.PROJECT_MANAGE_NAME,
             type = RoleType.PROJECT,
             projectId = projectId,
             admin = true
@@ -62,8 +55,8 @@ object RequestUtil {
      */
     fun buildProjectViewerRequest(projectId: String): CreateRoleRequest {
         return CreateRoleRequest(
-            roleId = PROJECT_VIEWER_ID,
-            name = PROJECT_VIEWER_NAME,
+            roleId = RoleConstants.PROJECT_VIEWER_ID,
+            name = RoleConstants.PROJECT_VIEWER_NAME,
             type = RoleType.PROJECT,
             projectId = projectId,
             admin = false
@@ -75,8 +68,8 @@ object RequestUtil {
      */
     fun buildRepoAdminRequest(projectId: String, repoName: String): CreateRoleRequest {
         return CreateRoleRequest(
-            roleId = REPO_MANAGE_ID,
-            name = REPO_MANAGE_NAME,
+            roleId = RoleConstants.REPO_MANAGE_ID,
+            name = RoleConstants.REPO_MANAGE_NAME,
             type = RoleType.REPO,
             projectId = projectId,
             repoName = repoName,
@@ -89,8 +82,19 @@ object RequestUtil {
      */
     fun buildReplicationAdminRequest(): CreateRoleRequest {
         return CreateRoleRequest(
-            roleId = REPLICATION_MANAGE_ID,
-            name = REPLICATION_MANAGE_NAME,
+            roleId = RoleConstants.REPLICATION_MANAGE_ID,
+            name = RoleConstants.REPLICATION_MANAGE_NAME,
+            type = RoleType.SERVICE,
+            admin = false
+        )
+    }
+    /**
+     * 构造replication管理员请求
+     */
+    fun buildAllNodeReadOnlyRequest(): CreateRoleRequest {
+        return CreateRoleRequest(
+            roleId = RoleConstants.REPLICATION_MANAGE_ID,
+            name = RoleConstants.REPLICATION_MANAGE_NAME,
             type = RoleType.SERVICE,
             admin = false
         )
