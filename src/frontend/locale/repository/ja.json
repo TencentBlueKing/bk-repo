@@ -948,5 +948,18 @@
   "forbidTitle": "無効化：{0}",
   "cargoCreditGuideSubTitle1": "1. Cargoメインディレクトリの設定ファイル（例：/.cargo/config.toml）を編集します",
   "cargoCreditGuideSubTitle2": "2. 以下の部分をCargoメインディレクトリの認証情報ファイル（例：/.cargo/credentials.toml）に追加します",
-  "cargoPullGuideSubTitle": "プロジェクトディレクトリのコマンドラインで以下のコマンドを実行し、プルします:"
+  "cargoPullGuideSubTitle": "プロジェクトディレクトリのコマンドラインで以下のコマンドを実行し、プルします：",
+  "huggingFaceEmptyRepoWarning": "空のリポジトリはバージョン情報の表示に対応していません",
+  "huggingfaceGuideArtifactNamePlaceholder": "組織/アーティファクト名",
+  "huggingfaceUse1": "方法1：huggingface_hubライブラリを使用",
+  "huggingfaceUse2": "方法2：huggingface-cliを使用",
+  "huggingfacePackageTips": "Hugging Face RepositoryはアーティファクトリポジトリのPackageに対応します。Packageが存在しない場合は、以下の手順で新規作成してください：",
+  "huggingfacePushTips": "Hugging Face Repositoryにアーティファクトをプッシュする際は、対応する規範に従って操作してください：",
+  "huggingfaceDownload": "Hugging Faceダウンロード中です。しばらくお待ちください...",
+  "guideMacLinuxTitle": "Mac/Linuxシステム設定ガイド",
+  "guideMacLinuxDescription": "ターミナルで以下のコマンドを実行してください：",
+  "guideWindowsTitle": "Windowsシステム設定ガイド",
+  "guideWindowsDescription": "ターミナルで以下のコマンドを実行してください：",
+  "targetPath": "ターゲットパス",
+  "targetPathPlaceholder": "ターゲットパスを入力してください"
 }
