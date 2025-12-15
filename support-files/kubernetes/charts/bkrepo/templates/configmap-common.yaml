@@ -28,7 +28,7 @@ data:
               type: noop
             file:
               type: file
-            {{- if ne .Values.kafka.provider "none" }}
+            {{- if .Values.kafka.provider }}
             kafka:
               type: kafka
               environment:
@@ -45,7 +45,7 @@ data:
                             sasl.jaas.config: {{ include "bkrepo.kafka.jaasConfig" . | quote }} 
             {{- end }}
           default-binder: noop
-          {{- $binder := ternary "noop" "kafka" (eq "none" .Values.kafka.provider) }}
+          {{- $binder := ternary "kafka" "noop" .Values.kafka.provider }}
           bindings:
             artifactEvent-out-0:
               destination: artifactEvent

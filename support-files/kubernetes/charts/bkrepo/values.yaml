@@ -114,8 +114,8 @@ redis:
 ## kafka配置
 ## 用于Spring Cloud Stream消息事件处理
 kafka:
-  ## kafka提供者类型，设置为 "none" 禁用kafka
-  provider: "none"
+  ## 是否启用kafka，默认为false，设置为true时开启
+  provider: false
   ## kafka brokers地址，多个地址用逗号分隔
   url: "localhost:9092"
   ## SASL认证用户名

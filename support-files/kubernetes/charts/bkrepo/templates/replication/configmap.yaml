@@ -21,7 +21,7 @@ data:
         function:
           definition: artifactEventReplication;artifactEventFederation
         stream:
-          {{- $binder := ternary "noop" "kafka" (eq "none" .Values.kafka.provider) }}
+          {{- $binder := ternary "kafka" "noop" .Values.kafka.provider }}
           bindings:
             artifactEventReplication-in-0:
               group: replication
