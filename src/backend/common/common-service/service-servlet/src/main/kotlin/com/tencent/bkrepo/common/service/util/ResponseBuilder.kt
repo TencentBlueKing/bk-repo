@@ -33,6 +33,8 @@ package com.tencent.bkrepo.common.service.util
 
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.TIME_ZONE_HEADER
 import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
 import io.micrometer.tracing.Tracer
 import org.springframework.beans.BeansException
@@ -41,6 +43,7 @@ object ResponseBuilder {
 
     fun <T> build(code: Int, message: String?, data: T?): Response<T> {
         TraceHeaderUtils.setResponseHeader()
+        setTimeZoneHeader()
         return Response(code, message, data, getTraceId())
     }
 
@@ -69,5 +72,10 @@ object ResponseBuilder {
         } catch (_: BeansException) {
             null
         }
+    }
+
+    private fun setTimeZoneHeader() {
+        val response = HttpContextHolder.getResponse()
+        response.setHeader(TIME_ZONE_HEADER, ZoneIdContext.getZoneId().toString())
     }
 }

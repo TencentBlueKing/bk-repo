@@ -37,6 +37,8 @@ import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext.TIME_ZONE_HEADER
 import com.tencent.bkrepo.common.service.log.LoggerHolder
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
@@ -53,6 +55,7 @@ open class AbstractExceptionHandler {
         LoggerHolder.logErrorCodeException(exception, "[${exception.messageCode.getCode()}]$errorMessage")
         HttpContextHolder.getResponse().status = exception.status.value
         updateContentType()
+        setTimeZoneHeader()
         return ResponseBuilder.fail(exception.messageCode.getCode(), errorMessage)
     }
 
@@ -67,6 +70,7 @@ open class AbstractExceptionHandler {
         LoggerHolder.logException(exception, "[$code]${exception.message}", true)
         HttpContextHolder.getResponse().status = HttpStatus.INTERNAL_SERVER_ERROR.value
         updateContentType()
+        setTimeZoneHeader()
         return ResponseBuilder.fail(code, errorMessage)
     }
 
@@ -88,5 +92,10 @@ open class AbstractExceptionHandler {
         } else {
             HttpContextHolder.getResponse().contentType = MediaTypes.APPLICATION_JSON_WITHOUT_CHARSET
         }
+    }
+
+    private fun setTimeZoneHeader() {
+        val response = HttpContextHolder.getResponse()
+        response.setHeader(TIME_ZONE_HEADER, ZoneIdContext.getZoneId().toString())
     }
 }
