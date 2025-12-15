@@ -77,7 +77,7 @@ object ZoneIdContext {
      * 支持的格式：
      * - 标准时区ID: "Asia/Shanghai", "America/New_York", "UTC"
      * - UTC偏移量: "+08:00", "-05:00", "Z"
-     * - 小时偏移: "+8", "-5"
+     * - 小时偏移: "+8", "-5", "+8.5", "-5.5"
      */
     fun parseZoneId(zoneStr: String?): ZoneId? {
         if (zoneStr.isNullOrBlank()) {
@@ -129,12 +129,23 @@ object ZoneIdContext {
     }
     
     /**
-     * 解析小时偏移（如 "+8", "-5"）
+     * 解析小时偏移（如 "+8", "-5", "+8.5", "-5.5"）
      */
     private fun parseHourOffset(zoneStr: String): ZoneOffset? {
-        val hours = zoneStr.toIntOrNull() ?: return null
+        // 检查是否以 + 或 - 开头
+        if (!zoneStr.startsWith("+") && !zoneStr.startsWith("-")) {
+            return null
+        }
+        
+        // 提取数字部分（去掉符号）
+        val numberStr = zoneStr.substring(1)
+        val hours = numberStr.toDoubleOrNull() ?: return null
+        
+        // 将小时转换为总秒数（支持小数）
+        val totalSeconds = (hours * 3600).toInt()
+        
         return try {
-            ZoneOffset.ofHours(hours)
+            ZoneOffset.ofTotalSeconds(totalSeconds)
         } catch (_: Exception) {
             null
         }
