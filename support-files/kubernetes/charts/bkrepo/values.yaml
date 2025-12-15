@@ -47,6 +47,9 @@ forceHttps: false
 ## 蓝鲸文档中心地址
 bkDocsCenterUrl:
 
+bkWebSiteAccess:
+  mode: ""
+
 ## 日志采集配置
 bkLogConfig:
   enabled: false

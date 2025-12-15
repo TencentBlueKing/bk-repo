@@ -10,8 +10,10 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    {{- if eq "subpath" .Values.bkWebSiteAccess.mode }}
     nginx.ingress.kubernetes.io/enable-rewrite-log: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$1
+    {{- end }}
     {{- if .Values.commonAnnotations }}
       {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
     {{- end }}
@@ -55,7 +57,11 @@ spec:
     - host: {{ .Values.gateway.host }}
       http:
         paths:
+          {{- if eq "subpath" .Values.bkWebSiteAccess.mode }}
           - path: /bkrepo/(.*)
+          {{- else }}
+          - path: /
+          {{- end }}
             {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
             pathType: Prefix
             {{- end }}
