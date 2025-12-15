@@ -32,7 +32,6 @@ import com.google.common.cache.CacheLoader
 import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.PIPELINE
-import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
 import com.tencent.bkrepo.common.api.constant.HttpHeaders.CONTENT_RANGE
@@ -69,7 +68,6 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.artifact.util.chunked.ChunkedUploadUtils
 import com.tencent.bkrepo.common.artifact.util.http.HttpRangeUtils
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
-import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.metadata.impl.MetadataLabelCacheService
 import com.tencent.bkrepo.common.metadata.service.node.PipelineNodeService
@@ -100,9 +98,6 @@ import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
 import com.tencent.bkrepo.generic.constant.GenericMessageCode
 import com.tencent.bkrepo.generic.constant.HEADER_BLOCK_APPEND
-import com.tencent.bkrepo.generic.constant.HEADER_CP_FULLPATH
-import com.tencent.bkrepo.generic.constant.HEADER_CP_PROJECT
-import com.tencent.bkrepo.generic.constant.HEADER_CP_REPO
 import com.tencent.bkrepo.generic.constant.HEADER_CRC64ECMA
 import com.tencent.bkrepo.generic.constant.HEADER_EXPIRES
 import com.tencent.bkrepo.generic.constant.HEADER_MD5
@@ -134,7 +129,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeDeleteRequest
-import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryInfo
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
@@ -160,7 +154,6 @@ class GenericLocalRepository(
     private val blockNodeService: BlockNodeService,
     private val storageProperties: StorageProperties,
     private val metadataLabelCacheService: MetadataLabelCacheService,
-    private val permissionManager: PermissionManager,
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -198,7 +191,6 @@ class GenericLocalRepository(
         }
         // 二次检查，防止接收文件过程中，有并发上传成功的情况
         checkNodeExist(context)
-        checkCopyHeader(context)
     }
 
     override fun onUpload(context: ArtifactUploadContext) {
@@ -293,48 +285,6 @@ class GenericLocalRepository(
     override fun onUploadSuccess(context: ArtifactUploadContext) {
         super.onUploadSuccess(context)
         replicate(context)
-        copy(context)
-    }
-
-    /**
-     * 检查转存仓库权限
-     * 因为onUpload成功后已经写入response，onUploadSuccess执行复制出错时无法返回异常信息，所以在onUploadBefore中检查权限
-     */
-    private fun checkCopyHeader(context: ArtifactUploadContext) {
-        with(context) {
-            val dstProjectId = request.getHeader(HEADER_CP_PROJECT) ?: projectId
-            val dstRepoName = request.getHeader(HEADER_CP_REPO) ?: repoName
-            val dstFullPath = request.getHeader(HEADER_CP_FULLPATH) ?: artifactInfo.getArtifactFullPath()
-            if (dstProjectId == projectId && dstRepoName == repoName &&
-                dstFullPath == artifactInfo.getArtifactFullPath()) {
-                return
-            }
-            permissionManager.checkNodePermission(PermissionAction.WRITE, dstProjectId, dstRepoName, dstFullPath)
-        }
-    }
-
-    private fun copy(context: ArtifactUploadContext) {
-        val request = HttpContextHolder.getRequestOrNull() ?: return
-        with(context.artifactInfo) {
-            val dstProjectId = request.getHeader(HEADER_CP_PROJECT) ?: projectId
-            val dstRepoName = request.getHeader(HEADER_CP_REPO) ?: repoName
-            val dstFullPath = request.getHeader(HEADER_CP_FULLPATH) ?: getArtifactFullPath()
-            if (dstProjectId == projectId && dstRepoName == repoName && dstFullPath == getArtifactFullPath()) {
-                return
-            }
-            val copyRequest = NodeMoveCopyRequest(
-                srcProjectId = projectId,
-                srcRepoName = repoName,
-                srcFullPath = getArtifactFullPath(),
-                destProjectId = dstProjectId,
-                destRepoName = dstRepoName,
-                destFullPath = dstFullPath,
-                overwrite = request.getHeader(HEADER_OVERWRITE).toBoolean(),
-                operator = context.userId,
-            )
-            nodeService.copyNode(copyRequest)
-        }
-
     }
 
     private fun replicate(context: ArtifactUploadContext) {
