@@ -58,7 +58,7 @@ spec:
       http:
         paths:
           {{- if eq "subpath" .Values.bkWebSiteAccess.mode }}
-          - path: /bkrepo/(.*)
+          - path: {{ include "bkrepo.subPath" . }}
           {{- else }}
           - path: /
           {{- end }}

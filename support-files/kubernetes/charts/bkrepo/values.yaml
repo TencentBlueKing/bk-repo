@@ -49,6 +49,7 @@ bkDocsCenterUrl:
 
 bkWebSiteAccess:
   mode: ""
+  subPath: "/"
 
 ## 日志采集配置
 bkLogConfig:
