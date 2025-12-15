@@ -47,7 +47,7 @@ spec:
     - host: {{ .Values.gateway.staticHost }}
       http:
         paths:
-          - path: /bkrepo/(.*)
+          - path: /
             {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
             pathType: Prefix
             {{- end }}
@@ -55,7 +55,7 @@ spec:
     - host: {{ .Values.gateway.host }}
       http:
         paths:
-          - path: /
+          - path: /bkrepo/(.*)
             {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
             pathType: Prefix
             {{- end }}
