@@ -949,5 +949,18 @@
     "daysOverLimit": "保存时间不能超过10年",
     "cargoCreditGuideSubTitle1":"1、编辑 Cargo 主目录下的配置文件（例如/.cargo/config.toml）",
     "cargoCreditGuideSubTitle2":"2、请将以下部分添加到 Cargo 主目录下的凭据文件（例如/.cargo/credentials.toml）",
-    "cargoPullGuideSubTitle": "请在项目目录的命令行执行以下命令进行拉取:"
+    "cargoPullGuideSubTitle": "请在项目目录的命令行执行以下命令进行拉取:",
+    "huggingFaceEmptyRepoWarning":"空仓库不支持查看版本信息",
+    "huggingfaceGuideArtifactNamePlaceholder":"组织/制品名称",
+    "huggingfaceUse1":"方式一：使用huggingface_hub库",
+    "huggingfaceUse2":"方式二：使用huggingface-cli",
+    "huggingfacePackageTips":"Hugging Face Repository对应制品库的Package，当Package不存在时，需要根据以下步骤新建：",
+    "huggingfacePushTips": "Hugging Face Repository推送制品时，请按照相应的规范进行操作：",
+    "huggingfaceDownload": "Hugging Face下载中，请稍后...",
+    "guideMacLinuxTitle": "Mac/Linux 系统设置指引",
+    "guideMacLinuxDescription": "在终端中执行以下命令：",
+    "guideWindowsTitle": "Windows 系统设置指引",
+    "guideWindowsDescription": "在终端中执行以下命令：",
+    "targetPath": "目标路径",
+    "targetPathPlaceholder": "请输入目标路径"
 }
