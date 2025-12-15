@@ -77,7 +77,7 @@ object ZoneIdContext {
      * 支持的格式：
      * - 标准时区ID: "Asia/Shanghai", "America/New_York", "UTC"
      * - UTC偏移量: "+08:00", "-05:00", "Z"
-     * - 小时偏移: "+8", "-5", "+8.5", "-5.5"
+     * - 小时偏移: "+8", "-5", "+8.5", "-5.5", "8", "8.5"（无符号时默认当作 + 号处理）
      */
     fun parseZoneId(zoneStr: String?): ZoneId? {
         if (zoneStr.isNullOrBlank()) {
@@ -129,20 +129,18 @@ object ZoneIdContext {
     }
     
     /**
-     * 解析小时偏移（如 "+8", "-5", "+8.5", "-5.5"）
+     * 解析小时偏移（如 "+8", "-5", "+8.5", "-5.5", "8", "8.5"）
+     * 如果没有 + 或 - 号，默认当作 + 号处理
      */
     private fun parseHourOffset(zoneStr: String): ZoneOffset? {
-        // 检查是否以 + 或 - 开头
-        if (!zoneStr.startsWith("+") && !zoneStr.startsWith("-")) {
-            return null
+        val (sign, numberStr) = when {
+            zoneStr.startsWith("+") -> 1 to zoneStr.substring(1)
+            zoneStr.startsWith("-") -> -1 to zoneStr.substring(1)
+            else -> 1 to zoneStr  // 没有符号时，默认当作 + 号处理
         }
         
-        // 提取数字部分（去掉符号）
-        val numberStr = zoneStr.substring(1)
         val hours = numberStr.toDoubleOrNull() ?: return null
-        
-        // 将小时转换为总秒数（支持小数）
-        val totalSeconds = (hours * 3600).toInt()
+        val totalSeconds = (sign * hours * 3600).toInt()
         
         return try {
             ZoneOffset.ofTotalSeconds(totalSeconds)
@@ -175,8 +173,9 @@ object ZoneIdContext {
     }
 
     /**
-     * 将 ZoneId 格式化为 +0800 格式的字符串
+     * 将 ZoneId 格式化为 +HHMM 格式的字符串
      * 例如：Asia/Shanghai -> +0800, UTC -> +0000, America/New_York -> -0500
+     * 支持任意分钟数，如 +0850（8小时50分钟）、+0530（5小时30分钟）
      *
      * @param zoneId 时区ID
      * @return 格式化的时区字符串，格式为 +HHMM 或 -HHMM
@@ -190,7 +189,8 @@ object ZoneIdContext {
     }
 
     /**
-     * 获取当前时区并格式化为 +0800 格式的字符串
+     * 获取当前时区并格式化为 +HHMM 格式的字符串
+     * 支持任意分钟数，如 +0850（8小时50分钟）、+0530（5小时30分钟）
      *
      * @return 格式化的时区字符串，格式为 +HHMM 或 -HHMM
      */
