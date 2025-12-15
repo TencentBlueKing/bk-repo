@@ -43,6 +43,7 @@ data:
                             security.protocol: SASL_PLAINTEXT
                             sasl.mechanism: SCRAM-SHA-512
                             sasl.jaas.config: {{ include "bkrepo.kafka.jaasConfig" . | quote }} 
+                management.health.binders.enabled: false
             {{- end }}
           default-binder: noop
           {{- $binder := ternary "kafka" "noop" .Values.kafka.provider }}
