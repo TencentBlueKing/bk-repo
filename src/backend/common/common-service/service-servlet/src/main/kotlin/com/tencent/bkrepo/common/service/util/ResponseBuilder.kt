@@ -76,6 +76,6 @@ object ResponseBuilder {
 
     private fun setTimeZoneHeader() {
         val response = HttpContextHolder.getResponse()
-        response.setHeader(TIME_ZONE_HEADER, ZoneIdContext.getZoneId().toString())
+        response.setHeader(TIME_ZONE_HEADER, ZoneIdContext.getZoneIdAsOffsetString())
     }
 }

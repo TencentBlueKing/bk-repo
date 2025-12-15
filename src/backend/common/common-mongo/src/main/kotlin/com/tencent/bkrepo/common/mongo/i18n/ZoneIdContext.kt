@@ -7,6 +7,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import kotlin.math.abs
 
 /**
  * 时区上下文
@@ -160,6 +161,30 @@ object ZoneIdContext {
         val instant = sourceLocalDateTime.atZone(sourceZoneId).toInstant()
         // 转换为服务端时区的本地时间
         return instant.atZone(targetZoneId).toLocalDateTime()
+    }
+
+    /**
+     * 将 ZoneId 格式化为 +0800 格式的字符串
+     * 例如：Asia/Shanghai -> +0800, UTC -> +0000, America/New_York -> -0500
+     *
+     * @param zoneId 时区ID
+     * @return 格式化的时区字符串，格式为 +HHMM 或 -HHMM
+     */
+    fun formatZoneId(zoneId: ZoneId): String {
+        val offset = zoneId.rules.getOffset(java.time.Instant.now())
+        val totalSeconds = offset.totalSeconds
+        val hours = totalSeconds / 3600
+        val minutes = abs((totalSeconds % 3600) / 60)
+        return String.format("%+03d%02d", hours, minutes)
+    }
+
+    /**
+     * 获取当前时区并格式化为 +0800 格式的字符串
+     *
+     * @return 格式化的时区字符串，格式为 +HHMM 或 -HHMM
+     */
+    fun getZoneIdAsOffsetString(): String {
+        return formatZoneId(getZoneId())
     }
 
 }
