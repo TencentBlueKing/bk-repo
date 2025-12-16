@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
@@ -57,14 +57,14 @@ class HlsService(
      * @param projectId 项目ID
      * @param repoName 仓库名
      * @param resolution 分辨率
-     * @param segmentDuration 每个分片时长（秒，默认1）
+     * @param segmentDuration 每个分片时长（秒，默认2）
      * @return m3u8播放列表内容
      */
     fun getPlaylist(
         projectId: String,
         repoName: String,
         resolution: String,
-        segmentDuration: Double = 1.0,
+        segmentDuration: Double = 2.0,
     ): String {
         // 获取实际存在的分片文件（仅支持 .ts 格式）
         val segments = getSegments(projectId, repoName, resolution)
@@ -269,7 +269,7 @@ class HlsService(
             Runtime.getRuntime().availableProcessors(),
             1,
             TimeUnit.MINUTES,
-            ArrayBlockingQueue(0),
+            SynchronousQueue(),
             ThreadFactoryBuilder().setNameFormat("hls-delete-thread-%d").build(),
             ThreadPoolExecutor.DiscardPolicy()
         ).trace()

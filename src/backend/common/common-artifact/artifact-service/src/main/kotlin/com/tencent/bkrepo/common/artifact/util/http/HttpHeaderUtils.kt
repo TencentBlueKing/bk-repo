@@ -41,7 +41,6 @@ object HttpHeaderUtils {
         add("tgz", MediaTypes.APPLICATION_TGZ)
         add("ico", MediaTypes.APPLICATION_ICO)
         add("apk", MediaTypes.APPLICATION_APK)
-        add("ts", MediaTypes.VIDEO_MP4)
     }
 
     /**

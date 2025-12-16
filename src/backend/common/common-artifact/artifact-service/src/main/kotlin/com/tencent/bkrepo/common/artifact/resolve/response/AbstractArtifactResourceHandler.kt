@@ -178,6 +178,6 @@ abstract class AbstractArtifactResourceHandler(
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractArtifactResourceHandler::class.java)
-        private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK, MediaTypes.APPLICATION_WASM, MediaTypes.VIDEO_MP4)
+        private val binaryMediaTypes = setOf(MediaTypes.APPLICATION_APK, MediaTypes.APPLICATION_WASM)
     }
 }

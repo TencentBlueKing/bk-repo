@@ -42,7 +42,6 @@ class HlsController(
         @PathVariable repoName: String,
         @PathVariable resolution: String,
     ): ResponseEntity<String> {
-        val hlsService = hlsService
         val playlist = hlsService.getPlaylist(
             projectId = projectId,
             repoName = repoName,
