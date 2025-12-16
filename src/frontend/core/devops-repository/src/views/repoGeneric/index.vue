@@ -155,7 +155,7 @@
                             {{ row.clusterNames ? row.clusterNames.join() : row.clusterNames }}
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="150" :render-header="renderHeader">
+                    <bk-table-column :label="$t('lastModifiedDate')" prop="lastModifiedDate" width="200" :render-header="renderHeader">
                         <template #default="{ row }">{{ formatDate(row.lastModifiedDate) }}</template>
                     </bk-table-column>
                     <bk-table-column :label="$t('lastModifiedBy')" width="150" show-overflow-tooltip>
