@@ -420,7 +420,7 @@ class ArtifactReplicaController(
         compareDate: LocalDateTime,
         versionName: String? = null,
     ): Boolean {
-        val existPackage = packageService.findPackageByKey(projectId, repoName, packageKey) ?: return false
+        val existPackage = packageService.findPackageByKey(projectId, repoName, packageKey) ?: return true
 
         // 检查包的创建日期是否晚于比较日期
         if (existPackage.createdDate.isAfter(compareDate)) {
@@ -432,7 +432,7 @@ class ArtifactReplicaController(
 
         // 检查指定版本是否存在
         val existVersion = packageService.findVersionByName(projectId, repoName, packageKey, versionName)
-            ?: return false
+            ?: return true
 
         // 检查版本的修改日期是否晚于比较日期
         return existVersion.lastModifiedDate.isAfter(compareDate)
