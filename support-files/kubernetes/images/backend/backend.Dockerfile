@@ -1,4 +1,4 @@
-FROM bkci/jdk17:0.0.1-bkrepo-ts3
+FROM bkrepo/jdk17:0.0.1-bkrepo-ts3
 
 LABEL maintainer="Tencent BlueKing Devops"
 
