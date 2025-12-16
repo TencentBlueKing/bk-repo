@@ -126,7 +126,7 @@ Return the value of auth url
     {{- printf "%s:%s/v2/auth" .Values.gateway.service.nodeIP (.Values.gateway.service.dockerNodePort | toString) -}}
 {{- else -}}
     {{- if eq "subpath" .Values.bkWebSiteAccess.mode -}}
-    {{- printf "%s/%s/docker/v2/auth" .Values.bkWebSiteAccess.subPath .Values.gateway.host -}}
+    {{- printf "%s%s/docker/v2/auth" .Values.gateway.host .Values.bkWebSiteAccess.subPath -}}
     {{- else -}}
     {{- printf "%s/docker/v2/auth" .Values.gateway.host -}}
     {{- end -}}
