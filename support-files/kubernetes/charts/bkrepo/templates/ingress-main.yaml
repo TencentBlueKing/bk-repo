@@ -2,7 +2,7 @@
 apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
 kind: Ingress
 metadata:
-  name: {{ include "common.names.fullname" . }}-ingress
+  name: {{ include "common.names.fullname" . }}-ingress-main
   labels: {{- include "common.labels.standard" . | nindent 4 }}
     {{- if .Values.commonLabels }}
       {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
@@ -10,6 +10,10 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    {{- if eq "subpath" .Values.bkWebSiteAccess.mode }}
+    nginx.ingress.kubernetes.io/enable-rewrite-log: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    {{- end }}
     {{- if .Values.commonAnnotations }}
       {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
     {{- end }}
@@ -20,31 +24,18 @@ spec:
   {{- if .Values.ingress.tls }}
   tls:
     - hosts:
-        - {{ .Values.gateway.dockerHost }}
-        - {{ .Values.gateway.helmHost }}
+        - {{ .Values.gateway.host }}
       secretName: {{ .Values.ingress.tlsName }}
   {{- end }}
   rules:
-    - host: {{ .Values.gateway.dockerHost }}
+    - host: {{ .Values.gateway.host }}
       http:
         paths:
+          {{- if eq "subpath" .Values.bkWebSiteAccess.mode }}
+          - path: {{ include "bkrepo.subPath" . }}
+          {{- else }}
           - path: /
-            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
-            pathType: Prefix
-            {{- end }}
-            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
-    - host: {{ .Values.gateway.helmHost }}
-      http:
-        paths:
-          - path: /
-            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
-            pathType: Prefix
-            {{- end }}
-            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
-    - host: {{ .Values.gateway.staticHost }}
-      http:
-        paths:
-          - path: /
+          {{- end }}
             {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
             pathType: Prefix
             {{- end }}
