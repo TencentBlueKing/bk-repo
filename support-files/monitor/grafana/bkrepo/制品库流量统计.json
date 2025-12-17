@@ -122,7 +122,7 @@
               ],
               "refId": "A",
               "showLastPoint": false,
-              "source": "sum(sum_over_time(clamp_min(idelta(bkmonitor:artifact_uploaded_size_bytes_sum[1m]),0)[24h:]))",
+              "source": "sum(sum_over_time(clamp_min(idelta(bkmonitor:artifact_uploaded_size_bytes_sum{service=~\"$service\"}[1m]),0)[24h:]))",
               "step": "",
               "type": "range"
             }
@@ -216,7 +216,7 @@
               ],
               "refId": "A",
               "showLastPoint": false,
-              "source": "sum (sum_over_time(clamp_min(idelta(bkmonitor:artifact_uploaded_size_bytes_count[1m]),0)[24h  : ]  ))",
+              "source": "sum (sum_over_time(clamp_min(idelta(bkmonitor:artifact_uploaded_size_bytes_count{service=~\"$service\"}[1m]),0)[24h  : ]  ))",
               "step": "",
               "type": "range"
             }
@@ -309,7 +309,7 @@
               ],
               "refId": "A",
               "showLastPoint": false,
-              "source": "sum(sum_over_time(clamp_min(idelta(bkmonitor:artifact_downloaded_size_bytes_sum[1m]),0)[24h:] ))",
+              "source": "sum(sum_over_time(clamp_min(idelta(bkmonitor:artifact_downloaded_size_bytes_sum{service=~\"$service\"}[1m]),0)[24h:] ))",
               "step": "",
               "type": "range"
             }
@@ -402,7 +402,7 @@
               ],
               "refId": "A",
               "showLastPoint": false,
-              "source": "sum(sum_over_time(clamp_min(idelta(bkmonitor:artifact_downloaded_size_bytes_count[1m]),0)[24h:] ))",
+              "source": "sum(sum_over_time(clamp_min(idelta(bkmonitor:artifact_downloaded_size_bytes_count{service=~\"$service\"}[1m]),0)[24h:] ))",
               "step": "",
               "type": "range"
             }
@@ -540,7 +540,7 @@
               ],
               "refId": "A",
               "showLastPoint": false,
-              "source": "sum(rate(bkmonitor:artifact_uploading_size_bytes_total[2m]))",
+              "source": "sum(rate(bkmonitor:artifact_uploading_size_bytes_total{service=~\"$service\"}[2m]))",
               "step": "",
               "type": "range"
             }
@@ -664,7 +664,7 @@
               ],
               "refId": "A",
               "showLastPoint": false,
-              "source": "sum(bkmonitor:artifact_uploading_count)",
+              "source": "sum(bkmonitor:artifact_uploading_count{service=~\"$service\"})",
               "step": "",
               "type": "range"
             }
@@ -838,7 +838,7 @@
               ],
               "refId": "A",
               "showLastPoint": false,
-              "source": "sum(rate(bkmonitor:artifact_downloading_size_bytes_total[2m])) ",
+              "source": "sum(rate(bkmonitor:artifact_downloading_size_bytes_total{service=~\"$service\"}[2m])) ",
               "step": "",
               "type": "range"
             }
@@ -962,7 +962,7 @@
               ],
               "refId": "A",
               "showLastPoint": false,
-              "source": "sum(bkmonitor:artifact_downloading_count)",
+              "source": "sum(bkmonitor:artifact_downloading_count{service=~\"$service\"})",
               "step": "",
               "type": "range"
             }
@@ -8742,8 +8742,12 @@
   "templating": {
     "list": [
       {
-        "allValue": "*",
-        "current": {},
+        "allValue": ".*",
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "bkmonitor-timeseries-datasource",
           "uid": "${DS_蓝鲸监控_-_指标数据}"
@@ -8769,8 +8773,12 @@
         "useTags": false
       },
       {
-        "allValue": "All",
-        "current": {},
+        "allValue": ".*",
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "bkmonitor-timeseries-datasource",
           "uid": "${DS_蓝鲸监控_-_指标数据}"
