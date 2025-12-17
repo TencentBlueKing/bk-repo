@@ -56,7 +56,7 @@ export default {
             return this.dependAccessTokenValue || '<PERSONAL_ACCESS_TOKEN>'
         },
         base64AccessToken () {
-            return this.dependAccessTokenValue ? Base64.encode(this.userName + ":" + this.dependAccessTokenValue): '<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>'
+            return this.dependAccessTokenValue ? Base64.encode(this.userName + ':' + this.dependAccessTokenValue) : '<BASE64_ENCODE_PERSONAL_ACCESS_TOKEN>'
         },
         packageFullPath () {
             return this.$route.query.packageFullPath || '/<RPM_FILE_NAME>'
@@ -1446,6 +1446,183 @@ export default {
                             codeList: [
                                 `cargo add ${this.packageName}@${this.versionLabel}`,
                                 'cargo fetch'
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        huggingfaceGuide () {
+            return [
+                {
+                    title: this.$t('setCredentials'),
+                    optionType: 'setCredentials',
+                    main: [
+                        {
+                            title: this.$t('guideMacLinuxTitle'),
+                            description: this.$t('guideMacLinuxDescription'),
+                            codeList: [
+                                'export HF_HUB_ETAG_TIMEOUT=86400',
+                                'export HF_HUB_DOWNLOAD_TIMEOUT=86400',
+                                `export HF_ENDPOINT=${this.repoUrl}`,
+                                `export HF_TOKEN=${this.accessToken}`
+                            ]
+                        },
+                        {
+                            title: this.$t('guideWindowsTitle'),
+                            description: this.$t('guideWindowsDescription'),
+                            codeList: [
+                                'set HF_HUB_ETAG_TIMEOUT=86400',
+                                'set HF_HUB_DOWNLOAD_TIMEOUT=86400',
+                                `set HF_ENDPOINT=${this.repoUrl}`,
+                                `set HF_TOKEN=${this.accessToken}`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('push'),
+                    optionType: 'push',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1',
+                            label: this.$t('artifactName'),
+                            placeholder: this.$t('huggingfaceGuideArtifactNamePlaceholder'),
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1'
+                        },
+                        {
+                            key: 'dependInputValue2',
+                            label: this.$t('targetPath'),
+                            placeholder: this.$t('targetPathPlaceholder'),
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2'
+                        },
+                        {
+                            key: 'dependInputValue3',
+                            label: this.$t('type'),
+                            placeholder: this.$t('pleaseSelect'),
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE3',
+                            list: [
+                                {
+                                    name: 'model',
+                                    id: 'model'
+                                },
+                                {
+                                    name: 'dataset',
+                                    id: 'dataset'
+                                }
+                            ]
+                        }
+                    ],
+                    main: [
+                        {
+                            subTitle: this.$t('huggingfacePackageTips')
+                        },
+                        {
+                            subTitle: this.$t('huggingfaceUse1'),
+                            codeList: [
+                                'from huggingface_hub import create_repo',
+                                `create_repo("${this.dependInputValue1 || this.packageName}", repo_type="${this.dependInputValue3 || '<TYPE>'}")`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('huggingfaceUse2'),
+                            codeList: [
+                                `huggingface-cli repo create --organization ${(this.dependInputValue1 || this.packageName) === '<PACKAGE_NAME>' ? '<FIRST_PART_OF_PACKAGE_NAME>' : (this.dependInputValue1 || this.packageName).split('/')[0] || '<FIRST_PART_OF_PACKAGE_NAME>'} ${(this.dependInputValue1 || this.packageName) === '<PACKAGE_NAME>' ? '<SECOND_PART_OF_PACKAGE_NAME>' : (this.dependInputValue1 || this.packageName).split('/')[1] || '<SECOND_PART_OF_PACKAGE_NAME>'} --type ${this.dependInputValue3 || '<TYPE>'}`
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('huggingfacePushTips')
+                        },
+                        {
+                            subTitle: this.$t('huggingfaceUse1'),
+                            codeList: [
+                                'from huggingface_hub import HfApi',
+                                'api = HfApi()',
+                                'api.upload_folder(',
+                                `    folder_path="${this.dependInputValue2 || '<LOCAL_PATH>'}",`,
+                                `    repo_id="${this.dependInputValue1 || this.packageName}",`,
+                                `    repo_type="${this.dependInputValue3 || '<TYPE>'}"`,
+                                ')'
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('huggingfaceUse2'),
+                            codeList: [
+                                `huggingface-cli upload ${this.dependInputValue1 || this.packageName} ${this.dependInputValue2 || '<LOCAL_PATH>'} --repo-type=${this.dependInputValue3 || '<TYPE>'}`
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: this.$t('pull'),
+                    optionType: 'pull',
+                    inputBoxList: [
+                        {
+                            key: 'dependInputValue1',
+                            label: this.$t('artifactName'),
+                            placeholder: this.$t('artifactNamePlaceholder'),
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE1'
+                        },
+                        {
+                            key: 'dependInputValue2',
+                            label: this.$t('artifactVersion'),
+                            placeholder: this.$t('packageVersionPlaceholder'),
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE2'
+                        },
+                        {
+                            key: 'dependInputValue3',
+                            label: this.$t('type'),
+                            placeholder: this.$t('pleaseSelect'),
+                            methodFunctionName: 'SET_DEPEND_INPUT_VALUE3',
+                            list: [
+                                {
+                                    name: 'model',
+                                    id: 'model'
+                                },
+                                {
+                                    name: 'dataset',
+                                    id: 'dataset'
+                                }
+                            ]
+                        }
+                    ],
+                    main: [
+                        {
+                            subTitle: this.$t('huggingfaceUse1'),
+                            codeList: [
+                                'from huggingface_hub import snapshot_download',
+                                'snapshot_download(',
+                                `    repo_id="${this.dependInputValue1 || this.packageName}", revision="${this.dependInputValue2 || this.versionLabel}", etag_timeout=86400`,
+                                ')'
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('huggingfaceUse2'),
+                            codeList: [
+                                `huggingface-cli download ${this.dependInputValue1 || this.packageName} --repo-type ${this.dependInputValue3 || '<TYPE>'} --revision ${this.dependInputValue2 || this.versionLabel}`
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        huggingfaceInstall () {
+            return [
+                {
+                    main: [
+                        {
+                            subTitle: this.$t('huggingfaceUse1'),
+                            codeList: [
+                                'from huggingface_hub import snapshot_download',
+                                'snapshot_download(',
+                                `    repo_id="${this.packageName.split('/').slice(1).join('/') || ''}", revision="${this.versionLabel}", etag_timeout=86400`,
+                                ')'
+                            ]
+                        },
+                        {
+                            subTitle: this.$t('huggingfaceUse2'),
+                            codeList: [
+                                `huggingface-cli download ${this.packageName.split('/').slice(1).join('/') || ''} --repo-type ${this.packageKey.match(/:\/\/([^\/]+)/)?.[1] || ''} --revision ${this.versionLabel}`
                             ]
                         }
                     ]
