@@ -1,13 +1,3 @@
-@font-face {
-  font-family: 'bk-icons-linear';
-  src:  url('/ui/fonts/bk_icons_linear.eot');
-  src:  url('/ui/fonts/bk_icons_linear.eot?#iefix') format('embedded-opentype'),
-    url('/ui/fonts/bk_icons_linear.ttf') format('truetype'),
-    url('/ui/fonts/bk_icons_linear.woff') format('woff');
-  font-weight: normal;
-  font-style: normal;
-}
-
 .fa{
   font-family: FontAwesome !important;
 }

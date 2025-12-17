@@ -1,6 +1,6 @@
 <template>
     <div class="bkrepo-main flex-column">
-        <notice-component v-if="!ciMode && !isSubSaas" api-url="/web/repository/api/notice" />
+        <notice-component v-if="!ciMode && !isSubSaas" :api-url="noticeUrl" />
         <Header ref="head" v-if="!ciMode && !isSubSaas" />
         <router-view class="bkrepo-main-container"></router-view>
         <ConfirmDialog />
@@ -23,7 +23,8 @@
         mixins: [mixin],
         data () {
             return {
-                ciMode: MODE_CONFIG === 'ci'
+                ciMode: MODE_CONFIG === 'ci',
+                noticeUrl: window.BK_SUBPATH + 'web/repository/api/notice'
             }
         },
         computed: {
@@ -45,14 +46,19 @@
                 }
             }
             if (!this.isSubSaas && this.ciMode) {
-                this.loadDevopsUtils('/ui/devops-utils.js')
+                this.loadDevopsUtils(window.BK_STATIC_URL + '/devops-utils.js')
                 // 请求管理员信息
                 this.ajaxUserInfo().then((userInfo) => {
                     this.$store.commit('SET_CREATING', false)
                     userInfo.admin && this.getClusterList()
                 })
             } else {
-                const urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
+                let urlProjectId = ''
+                if (window.BK_SUBPATH === '/') {
+                    urlProjectId = (location.pathname.match(/^\/[a-zA-Z0-9]+\/([^/]+)/) || [])[1]
+                } else {
+                    urlProjectId = location.pathname.split(window.BK_REPO_SUBPATH)[1].match(/^[a-zA-Z0-9]+\/([^/]+)/)[1]
+                }
                 const localProjectId = localStorage.getItem('projectId')
                 // 查询路由,取项目名称后半截。
                 const target = location.pathname.split(urlProjectId)[1] || ''
