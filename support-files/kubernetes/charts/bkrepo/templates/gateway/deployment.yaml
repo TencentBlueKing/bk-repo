@@ -130,7 +130,7 @@ spec:
             - name: BK_REPO_EXT_IP
               value: {{ default "[::]" .Values.gateway.extIp | quote }}
             - name: BK_REPO_SUBPATH
-              value: {{ default "/" .Values.bkWebSiteAccess.subPath | quote }}
+              value: {{ default "" .Values.bkWebSiteAccess.subPath | quote }}
           ports:
             - name: http
               containerPort: 80

@@ -126,7 +126,7 @@ Return the value of auth url
     {{- printf "%s:%s/v2/auth" .Values.gateway.service.nodeIP (.Values.gateway.service.dockerNodePort | toString) -}}
 {{- else -}}
     {{- if eq "subpath" .Values.bkWebSiteAccess.mode -}}
-    {{- printf "%s%s/docker/v2/auth" .Values.gateway.host .Values.bkWebSiteAccess.subPath -}}
+    {{- printf "%s%sdocker/v2/auth" .Values.gateway.host .Values.bkWebSiteAccess.subPath -}}
     {{- else -}}
     {{- printf "%s/docker/v2/auth" .Values.gateway.host -}}
     {{- end -}}
@@ -148,8 +148,8 @@ Return the value of authorization
 
 {{- define "bkrepo.subPath" -}}
 {{- if eq "subpath" .Values.bkWebSiteAccess.mode -}}
-{{ printf "%s/(.*)" .Values.bkWebSiteAccess.subPath }}
+{{ printf "%s(.*)" .Values.bkWebSiteAccess.subPath }}
 {{- else -}}
-{{ printf "/" }}
+{{ printf "" }}
 {{- end -}}
 {{- end -}}
