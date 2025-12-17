@@ -197,9 +197,7 @@ abstract class NodeBaseService(
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
             val fullPath = PathUtils.normalizeFullPath(fullPath)
-            Preconditions.checkArgument(!PathUtils.isRoot(fullPath), this::fullPath.name)
-            Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
-            Preconditions.checkArgument(folder || !md5.isNullOrBlank(), this::md5.name)
+            validateCreateRequest(this, fullPath)
             // 仓库是否存在
             val repo = checkRepo(projectId, repoName)
             // 路径唯一性校验
@@ -261,6 +259,17 @@ abstract class NodeBaseService(
             doCreate(node, separate = separate)
             logger.info("replica deleted node[/$projectId/$repoName$fullPath], sha256[$sha256] success.")
             return convertToDetail(node)!!
+        }
+    }
+
+    /**
+     * 验证节点创建请求参数
+     */
+    fun validateCreateRequest(request: NodeCreateRequest, fullPath: String) {
+        with(request) {
+            Preconditions.checkArgument(!PathUtils.isRoot(fullPath), this::fullPath.name)
+            Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
+            Preconditions.checkArgument(folder || !md5.isNullOrBlank(), this::md5.name)
         }
     }
 
@@ -452,9 +461,15 @@ abstract class NodeBaseService(
     }
 
     open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
-        with(createRequest) {
-            val existNode = nodeDao.findNode(projectId, repoName, fullPath)
+        val existNode = nodeDao.findNode(createRequest.projectId, createRequest.repoName, fullPath)
+        checkConflictAndQuota(createRequest, fullPath, existNode)
+    }
 
+    /**
+     * 检查节点冲突和配额，支持传入已查询的 existNode 避免重复查询
+     */
+    open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String, existNode: TNode? = null) {
+        with(createRequest) {
             // 如果节点不存在，进行配额检查后直接返回
             if (existNode == null) {
                 quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
