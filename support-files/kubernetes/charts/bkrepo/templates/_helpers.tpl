@@ -158,6 +158,6 @@ Return the value of authorization
 {{- if eq "subpath" .Values.bkWebSiteAccess.mode -}}
 {{ printf "%s/" .Values.bkWebSiteAccess.subPath }}
 {{- else -}}
-{{ printf "" }}
+{{ printf "/" }}
 {{- end -}}
 {{- end -}}
