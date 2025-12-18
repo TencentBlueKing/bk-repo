@@ -18,7 +18,7 @@
     <script>
         // 子路径
         var BK_SUBPATH = '__BK_REPO_SUBPATH__' || '/'
-        window.BK_SUBPATH = BK_SUBPATH === '/' ? '' : BK_SUBPATH
+        window.BK_SUBPATH = BK_SUBPATH === '/' ? '/' : BK_SUBPATH
         window.BK_STATIC_URL = BK_SUBPATH === '/' ? '/ui/' : BK_SUBPATH + 'ui/'
 
         // 请求svg图标
