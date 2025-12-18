@@ -13,6 +13,8 @@ metadata:
     {{- if eq "subpath" .Values.bkWebSiteAccess.mode }}
     nginx.ingress.kubernetes.io/enable-rewrite-log: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target-use-prefix: "true"
     {{- end }}
     {{- if .Values.commonAnnotations }}
       {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
