@@ -406,7 +406,7 @@ class ArtifactReplicaController(
         val existNode = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath))
         if (existNode != null) {
             val existCreatedDate = LocalDateTime.parse(existNode.createdDate, DateTimeFormatter.ISO_DATE_TIME)
-            if (existCreatedDate.isAfter(compareDate)) {
+            if (!existCreatedDate.isBefore(compareDate)) {
                 return existNode
             }
         }
@@ -423,7 +423,7 @@ class ArtifactReplicaController(
         val existPackage = packageService.findPackageByKey(projectId, repoName, packageKey) ?: return true
 
         // 检查包的创建日期是否晚于比较日期
-        if (existPackage.createdDate.isAfter(compareDate)) {
+        if (!existPackage.createdDate.isBefore(compareDate)) {
             return true
         }
 
@@ -435,7 +435,7 @@ class ArtifactReplicaController(
             ?: return true
 
         // 检查版本的修改日期是否晚于比较日期
-        return existVersion.lastModifiedDate.isAfter(compareDate)
+        return !existVersion.lastModifiedDate.isBefore(compareDate)
     }
 
     private fun checkAndHandleExistingNodes(request: DeletedNodeReplicationRequest): NodeDetail? {
