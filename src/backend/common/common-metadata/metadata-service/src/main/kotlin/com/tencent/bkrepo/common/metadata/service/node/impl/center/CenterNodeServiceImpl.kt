@@ -124,13 +124,14 @@ class CenterNodeServiceImpl(
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
-        projectId: String, repoName: String, fullPath: String, operator: String
+        projectId: String, repoName: String, fullPath: String, operator: String, source: String?
     ) {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteByFullPathWithoutDecreaseVolume(
             projectId,
             repoName,
             fullPath,
-            operator
+            operator,
+            source
         )
     }
 
@@ -236,7 +237,8 @@ class CenterNodeServiceImpl(
         date: LocalDateTime,
         operator: String,
         path: String,
-        decreaseVolume: Boolean
+        decreaseVolume: Boolean,
+        source: String?
     ): NodeDeleteResult {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteBeforeDate(
             projectId,
@@ -244,7 +246,8 @@ class CenterNodeServiceImpl(
             date,
             operator,
             path,
-            decreaseVolume
+            decreaseVolume,
+            source
         )
     }
 
@@ -254,7 +257,8 @@ class CenterNodeServiceImpl(
         fullPath: String,
         operator: String,
         nodeId: String,
-        deleteTime: LocalDateTime
+        deleteTime: LocalDateTime,
+        source: String?
     ): NodeDeleteResult {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteNodeById(
             projectId,
@@ -262,7 +266,8 @@ class CenterNodeServiceImpl(
             fullPath,
             operator,
             nodeId,
-            deleteTime
+            deleteTime,
+            source
         )
     }
 

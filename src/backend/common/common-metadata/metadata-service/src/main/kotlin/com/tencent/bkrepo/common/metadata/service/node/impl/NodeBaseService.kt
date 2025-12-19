@@ -487,7 +487,7 @@ abstract class NodeBaseService(
                     return
                 }
 
-                val deleteRes = deleteNodeById(projectId, repoName, fullPath, operator, oldNodeId)
+                val deleteRes = deleteNodeById(projectId, repoName, fullPath, operator, oldNodeId, source = source)
                 if (deleteRes.deletedNumber == 0L) {
                     logger.warn("Delete block base node[$fullPath] by [$operator] error: node was deleted")
                     throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
@@ -495,7 +495,7 @@ abstract class NodeBaseService(
                 logger.info("Delete block base node[$fullPath] by [$operator] success: $oldNodeId.")
 
             } else {
-                deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
+                deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator, source)
             }
 
             // 更新配额使用量
