@@ -27,10 +27,10 @@
                             <span class="repo-tag" :class="row.status">{{$t(`asyncPlanStatusEnum.${row.status}`) || $t('notExecuted')}}</span>
                         </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('startExecutionTime')" width="150">
+                    <bk-table-column :label="$t('startExecutionTime')" width="200">
                         <template #default="{ row }">{{formatDate(row.startTime)}}</template>
                     </bk-table-column>
-                    <bk-table-column v-if="planData.replicaType !== 'REAL_TIME'" :label="$t('endExecutionTime')" width="150">
+                    <bk-table-column v-if="planData.replicaType !== 'REAL_TIME'" :label="$t('endExecutionTime')" width="200">
                         <template #default="{ row }">{{formatDate(row.endTime)}}</template>
                     </bk-table-column>
                     <bk-table-column :label="$t('note')" show-overflow-tooltip>

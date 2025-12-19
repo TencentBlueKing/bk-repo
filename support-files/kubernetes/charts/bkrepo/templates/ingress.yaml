@@ -22,6 +22,9 @@ spec:
     - hosts:
         - {{ .Values.gateway.dockerHost }}
         - {{ .Values.gateway.helmHost }}
+        {{- if ne "subpath" .Values.bkWebSiteAccess.mode }}
+        - {{ .Values.gateway.host }}
+        {{- end }}
       secretName: {{ .Values.ingress.tlsName }}
   {{- end }}
   rules:
@@ -49,4 +52,14 @@ spec:
             pathType: Prefix
             {{- end }}
             backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
+    {{- if ne "subpath" .Values.bkWebSiteAccess.mode }}
+    - host: {{ .Values.gateway.host }}
+      http:
+        paths:
+          - path: /
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: Prefix
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
+     {{- end }}
 {{- end }}
