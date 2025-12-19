@@ -65,7 +65,7 @@
                     </bk-popover>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdDate')" width="150">
+            <bk-table-column :label="$t('createdDate')" width="200">
                 <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('createdBy')" width="150">
