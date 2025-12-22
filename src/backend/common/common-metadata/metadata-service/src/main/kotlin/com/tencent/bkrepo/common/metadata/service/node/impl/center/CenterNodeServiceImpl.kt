@@ -170,7 +170,9 @@ class CenterNodeServiceImpl(
             val existNode = nodeDao.findNode(projectId, repoName, normalizeFullPath)
                 ?: return super.createNode(createRequest)
             if (sha256 == existNode.sha256 && sha256 != FAKE_SHA256) {
-                checkConflictAndQuota(createRequest, normalizeFullPath, existNode)
+                if (!ClusterUtils.isEdgeRequest()) {
+                    checkConflictAndQuota(createRequest, normalizeFullPath, existNode)
+                }
                 val clusterNames = existNode.clusterNames.orEmpty().toMutableSet()
                 clusterNames.add(srcCluster)
                 val query = NodeQueryHelper.nodeQuery(projectId, repoName, normalizeFullPath)
