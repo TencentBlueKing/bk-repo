@@ -206,7 +206,9 @@ class EdgeNodeServiceImpl(
         ) {
             centerNodeClient.deleteNodeLastModifiedBeforeDate(projectId, repoName, path, date, operator, source)
         }
-        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path, decreaseVolume, source)
+        return NodeDeleteSupport(this).deleteBeforeDate(
+            projectId, repoName, date, operator, path, decreaseVolume, source
+        )
     }
 
     override fun deleteNodeById(
@@ -218,7 +220,9 @@ class EdgeNodeServiceImpl(
         deleteTime: LocalDateTime,
         source: String?
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNodeById(projectId, repoName, fullPath, operator, nodeId, deleteTime, source)
+        return NodeDeleteSupport(this).deleteNodeById(
+            projectId, repoName, fullPath, operator, nodeId, deleteTime, source
+        )
     }
 
     @Transactional(rollbackFor = [Throwable::class])
