@@ -42,6 +42,7 @@ import com.tencent.bkrepo.common.storage.innercos.request.GetObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.ListObjectsRequest
 import com.tencent.bkrepo.common.storage.innercos.request.MigrateObjectRequest
 import com.tencent.bkrepo.common.storage.innercos.request.RestoreObjectRequest
+import com.tencent.bkrepo.common.storage.innercos.stream.LazyCosInputStream
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
@@ -70,7 +71,11 @@ open class InnerCosFileStorage : AbstractEncryptorFileStorage<InnerCosCredential
             // 确定范围可以使用并发下载
             GetObjectRequest(name, range.start, range.end)
         }
-        return client.getObjectByChunked(request).inputStream
+        return if (storageProperties.innercos.download.lazyLoad) {
+            if (exist(path, name, client)) {
+                LazyCosInputStream(client, request)
+            } else null
+        } else client.getObjectByChunked(request).inputStream
     }
 
     override fun delete(path: String, name: String, client: CosClient) {
