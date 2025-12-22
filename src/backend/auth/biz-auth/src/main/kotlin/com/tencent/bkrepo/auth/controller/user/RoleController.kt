@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.controller.user
 
-import com.tencent.bkrepo.auth.constant.AUTH_API_ROLE_PREFIX
+import com.tencent.bkrepo.auth.constant.PathConstants
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
@@ -59,7 +59,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping(AUTH_API_ROLE_PREFIX)
+@RequestMapping(PathConstants.AUTH_API_ROLE_PREFIX)
 class RoleController @Autowired constructor(
     private val roleService: RoleService,
     permissionService: PermissionService

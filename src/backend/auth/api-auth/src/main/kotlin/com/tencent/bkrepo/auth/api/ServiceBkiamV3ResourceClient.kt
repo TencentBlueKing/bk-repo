@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_BKIAMV3_PREFIX
+import com.tencent.bkrepo.auth.constant.PathConstants
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.v3.oas.annotations.Operation
@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Tag(name = "SERVICE_BKIAMV3", description = "蓝鲸权限v3接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceBkiamV3Resource")
-@RequestMapping(AUTH_SERVICE_BKIAMV3_PREFIX)
+@RequestMapping(PathConstants.AUTH_SERVICE_BKIAMV3_PREFIX)
 interface ServiceBkiamV3ResourceClient {
     @Operation(summary = "创建项目管理员")
     @PostMapping("/create/project/manage/{projectId}")

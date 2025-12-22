@@ -32,10 +32,7 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceRoleClient
-import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
-import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
-import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
-import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
+import com.tencent.bkrepo.auth.constant.RoleConstants
 import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.service.RoleService
@@ -51,8 +48,8 @@ class ServiceRoleController @Autowired constructor(
 
     override fun createProjectManage(projectId: String): Response<String?> {
         val request = CreateRoleRequest(
-            roleId = PROJECT_MANAGE_ID,
-            name = PROJECT_MANAGE_NAME,
+            roleId = RoleConstants.PROJECT_MANAGE_ID,
+            name = RoleConstants.PROJECT_MANAGE_NAME,
             type = RoleType.PROJECT,
             projectId = projectId,
             admin = true
@@ -63,8 +60,8 @@ class ServiceRoleController @Autowired constructor(
 
     override fun createRepoManage(projectId: String, repoName: String): Response<String?> {
         val request = CreateRoleRequest(
-            roleId = REPO_MANAGE_ID,
-            name = REPO_MANAGE_NAME,
+            roleId = RoleConstants.REPO_MANAGE_ID,
+            name = RoleConstants.REPO_MANAGE_NAME,
             type = RoleType.REPO,
             projectId = projectId,
             repoName = repoName,

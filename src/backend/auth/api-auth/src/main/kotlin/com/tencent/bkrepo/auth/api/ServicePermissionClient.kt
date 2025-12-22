@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_PERMISSION_PREFIX
+import com.tencent.bkrepo.auth.constant.PathConstants
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
@@ -50,7 +50,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Tag(name = "SERVICE_PERMISSION", description = "服务-权限接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServicePermissionResource")
-@RequestMapping(AUTH_SERVICE_PERMISSION_PREFIX)
+@RequestMapping(PathConstants.AUTH_SERVICE_PERMISSION_PREFIX)
 interface ServicePermissionClient {
 
     @Operation(summary = "list有权限仓库仓库")

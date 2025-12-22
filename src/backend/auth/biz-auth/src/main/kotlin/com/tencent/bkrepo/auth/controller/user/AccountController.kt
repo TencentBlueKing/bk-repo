@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.controller.user
 
-import com.tencent.bkrepo.auth.constant.AUTH_API_ACCOUNT_PREFIX
+import com.tencent.bkrepo.auth.constant.PathConstants
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.pojo.account.Account
 import com.tencent.bkrepo.auth.pojo.account.CreateAccountRequest
@@ -58,7 +58,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping(AUTH_API_ACCOUNT_PREFIX)
+@RequestMapping(PathConstants.AUTH_API_ACCOUNT_PREFIX)
 class AccountController @Autowired constructor(
     private val accountService: AccountService,
     permissionService: PermissionService

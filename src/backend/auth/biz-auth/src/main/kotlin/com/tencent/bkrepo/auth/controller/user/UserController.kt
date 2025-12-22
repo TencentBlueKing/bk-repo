@@ -31,8 +31,8 @@
 
 package com.tencent.bkrepo.auth.controller.user
 
-import com.tencent.bkrepo.auth.constant.AUTH_API_USER_PREFIX
-import com.tencent.bkrepo.auth.constant.BKREPO_TICKET
+import com.tencent.bkrepo.auth.constant.AuthConstants
+import com.tencent.bkrepo.auth.constant.PathConstants
 import com.tencent.bkrepo.auth.controller.OpenResource
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.pojo.token.Token
@@ -68,7 +68,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -80,7 +79,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.Base64
 
 @RestController
-@RequestMapping(AUTH_API_USER_PREFIX)
+@RequestMapping(PathConstants.AUTH_API_USER_PREFIX)
 class UserController @Autowired constructor(
     private val userService: UserService,
     private val roleService: RoleService,
@@ -178,38 +177,6 @@ class UserController @Autowired constructor(
         return ResponseBuilder.success(true)
     }
 
-    @Operation(summary = "新增用户所属角色")
-    @PostMapping("/role/{uid}/{rid}")
-    fun addUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
-        preCheckContextUser(uid)
-        val result = userService.addUserToRole(uid, rid)
-        return ResponseBuilder.success(result)
-    }
-
-    @Operation(summary = "删除用户所属角色")
-    @DeleteMapping("/role/{uid}/{rid}")
-    fun removeUserRole(@PathVariable uid: String, @PathVariable rid: String): Response<User?> {
-        preCheckContextUser(uid)
-        val result = userService.removeUserFromRole(uid, rid)
-        return ResponseBuilder.success(result)
-    }
-
-    @Operation(summary = "批量新增用户所属角色")
-    @PatchMapping("/role/add/{rid}")
-    fun addUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
-        preCheckUserAdmin()
-        userService.addUserToRoleBatch(request, rid)
-        return ResponseBuilder.success(true)
-    }
-
-    @Operation(summary = "批量删除用户所属角色")
-    @PatchMapping("/role/delete/{rid}")
-    fun deleteUserRoleBatch(@PathVariable rid: String, @RequestBody request: List<String>): Response<Boolean> {
-        preCheckUserAdmin()
-        userService.removeUserFromRoleBatch(request, rid)
-        return ResponseBuilder.success(true)
-    }
-
     @Operation(summary = "新加用户token")
     @PostMapping("/token/{uid}/{name}")
     fun addUserToken(
@@ -271,7 +238,7 @@ class UserController @Autowired constructor(
             return ResponseBuilder.success(false)
         }
         val ticket = JwtUtils.generateToken(signingKey, jwtProperties.expiration, uid)
-        val cookie = Cookie(BKREPO_TICKET, ticket)
+        val cookie = Cookie(AuthConstants.BKREPO_TICKET, ticket)
         cookie.path = "/"
         cookie.maxAge = 60 * 60 * 24
         HttpContextHolder.getResponse().addCookie(cookie)

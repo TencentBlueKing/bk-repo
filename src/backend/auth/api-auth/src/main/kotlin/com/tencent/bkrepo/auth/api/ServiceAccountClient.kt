@@ -31,7 +31,7 @@
 
 package com.tencent.bkrepo.auth.api
 
-import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_ACCOUNT_PREFIX
+import com.tencent.bkrepo.auth.constant.PathConstants
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizationGrantType
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -49,7 +49,7 @@ import org.springframework.web.bind.annotation.RequestParam
 @Tag(name = "SERVICE_ACCOUNT", description = "服务-账号接口")
 @Primary
 @FeignClient(AUTH_SERVICE_NAME, contextId = "ServiceAccountResource")
-@RequestMapping(AUTH_SERVICE_ACCOUNT_PREFIX)
+@RequestMapping(PathConstants.AUTH_SERVICE_ACCOUNT_PREFIX)
 interface ServiceAccountClient {
 
     @Operation(summary = "校验ak/sk")
