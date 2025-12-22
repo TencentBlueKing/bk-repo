@@ -272,6 +272,8 @@
     "downloadStats": "下载统计",
     "scanArtifact": "扫描制品",
     "versionPlaceHolder": "请输入版本, 按Enter键搜索",
+    "tagPlaceHolder": "请输入标签或版本, 按Enter键搜索",
+    "searchResultCount": "搜索到{0}个结果",
     "liftBan": "解除禁止",
     "forbiddenUse": "禁止使用",
     "associatedUser": "关联用户",

@@ -266,6 +266,8 @@
     "downloadStats": "Download stats",
     "scanArtifact": "Scan artifact",
     "versionPlaceHolder": "Please enter the version, press Enter to search",
+    "tagPlaceHolder": "Please enter tag or version, press Enter to search",
+    "searchResultCount": "Found {0} results",
     "liftBan": "Enable",
     "forbiddenUse": "Disable",
     "associatedUser": "Entity user",

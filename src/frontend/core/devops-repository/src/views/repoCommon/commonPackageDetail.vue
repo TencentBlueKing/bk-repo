@@ -16,28 +16,37 @@
             <aside class="common-version" v-bkloading="{ isLoading }">
                 <header class="pl30 version-header flex-align-center">
                     <span>{{ $t('artifactVersion')}}</span>
-                    <div class="ml10 view-switch">
-                        <bk-button
-                            :text="true"
-                            :class="{ 'is-selected': viewType === 'version' }"
-                            @click="viewType = 'version'">
-                            {{ $t('versionList') }}
-                        </bk-button>
-                        <bk-button
-                            :text="true"
-                            :class="{ 'is-selected': viewType === 'tag' }"
-                            @click="viewType = 'tag'">
-                            {{ $t('tagList') }}
-                        </bk-button>
-                    </div>
                 </header>
+                <div class="version-tabs">
+                    <div
+                        class="version-tab-item"
+                        :class="{ 'active': viewType === 'version' }"
+                        @click="viewType = 'version'">
+                        {{ $t('versionList') }}
+                    </div>
+                    <div
+                        class="version-tab-item"
+                        :class="{ 'active': viewType === 'tag' }"
+                        @click="viewType = 'tag'">
+                        {{ $t('tagList') }}
+                    </div>
+                </div>
                 <div class="version-search">
                     <bk-input
+                        v-if="viewType === 'version'"
                         v-model.trim="versionInput"
                         :placeholder="$t('versionPlaceHolder')"
                         clearable
                         @enter="handlerPaginationChange()"
                         @clear="handlerPaginationChange()"
+                        right-icon="bk-icon icon-search">
+                    </bk-input>
+                    <bk-input
+                        v-else
+                        v-model.trim="tagInput"
+                        :placeholder="$t('tagPlaceHolder')"
+                        clearable
+                        @clear="tagInput = ''"
                         right-icon="bk-icon icon-search">
                     </bk-input>
                 </div>
@@ -76,7 +85,9 @@
                     </template>
                     <!-- Tag 列表视图 -->
                     <template v-else>
-                        <div class="mb10 list-count">{{ $t('totalTagCount', [tagList.length])}}</div>
+                        <div class="mb10 list-count">
+                            {{ tagInput ? $t('searchResultCount', [tagList.length]) : $t('totalTagCount', [tagList.length]) }}
+                        </div>
                         <div class="tag-list-container">
                             <div
                                 class="mb10 tag-item"
@@ -157,6 +168,7 @@
                     lastModifiedDate: new Date()
                 },
                 versionInput: '',
+                tagInput: '',
                 versionList: [],
                 pagination: {
                     count: 0,
@@ -193,7 +205,7 @@
                 const show = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
                 return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
             },
-            // Tag 列表，每个 tag 唯一对应一个 version
+            // Tag 列表，每个 tag 唯一对应一个 version，支持搜索过滤
             tagList () {
                 const tagMap = new Map()
                 // 遍历所有版本，收集 tags（tag 是唯一的，不会重复）
@@ -207,7 +219,7 @@
                     })
                 })
                 // 转换为数组并按 tag 字母顺序排序
-                return Array.from(tagMap.entries())
+                let result = Array.from(tagMap.entries())
                     .map(([tag, version]) => ({
                         tag,
                         version
@@ -218,6 +230,16 @@
                         const tagB = (b.tag || '').toLowerCase()
                         return tagA.localeCompare(tagB)
                     })
+                // 如果有关键词，进行搜索过滤
+                if (this.tagInput && this.tagInput.trim()) {
+                    const keyword = this.tagInput.trim().toLowerCase()
+                    result = result.filter(item => {
+                        const tag = (item.tag || '').toLowerCase()
+                        const versionName = (item.version.name || '').toLowerCase()
+                        return tag.includes(keyword) || versionName.includes(keyword)
+                    })
+                }
+                return result
             }
         },
         created () {
@@ -522,20 +544,31 @@
                 font-size: 14px;
                 color: var(--fontPrimaryColor);
                 border-bottom: 1px solid var(--borderWeightColor);
-                .view-switch {
+            }
+            .version-tabs {
+                display: flex;
+                height: 40px;
+                border-bottom: 1px solid var(--borderWeightColor);
+                background-color: var(--bgColor);
+                .version-tab-item {
+                    flex: 1;
                     display: flex;
-                    margin-left: auto;
-                    margin-right: 20px;
-                    ::v-deep .bk-button {
-                        padding: 0 8px;
-                        height: 28px;
-                        line-height: 28px;
-                        font-size: 12px;
-                        color: var(--fontSubsidiaryColor);
-                        &.is-selected {
-                            color: var(--primaryColor);
-                            background-color: var(--bgHoverLighterColor);
-                        }
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 13px;
+                    color: var(--fontSubsidiaryColor);
+                    cursor: pointer;
+                    border-bottom: 2px solid transparent;
+                    transition: all 0.2s;
+                    &:hover {
+                        color: var(--fontPrimaryColor);
+                        background-color: var(--bgHoverLighterColor);
+                    }
+                    &.active {
+                        color: var(--primaryColor);
+                        border-bottom-color: var(--primaryColor);
+                        background-color: white;
+                        font-weight: 500;
                     }
                 }
             }
@@ -543,7 +576,7 @@
                 padding: 20px 20px 10px;
             }
             .version-list {
-                height: calc(100% - 120px);
+                height: calc(100% - 160px);
                 padding: 0 20px 10px;
                 background-color: white;
                 .list-count {
