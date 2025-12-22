@@ -97,8 +97,7 @@
                                     class="tag-version-item flex-center"
                                     :class="{ 'selected': tagItem.version.name === version }"
                                     @click="changeVersion(tagItem.version)">
-                                    <span class="tag-name text-overflow" style="max-width:120px;" :title="tagItem.tag">{{ tagItem.tag }}</span>
-                                    <span class="tag-version-name text-overflow" style="max-width:100px;" :title="tagItem.version.name">{{ tagItem.version.name }}</span>
+                                    <span class="tag-name text-overflow" style="max-width:100%;" :title="tagItem.tag">{{ tagItem.tag }}</span>
                                 </div>
                             </div>
                             <div v-if="tagList.length === 0" class="empty-tag-list">
@@ -684,11 +683,8 @@
                         .tag-name {
                             font-weight: 500;
                             color: var(--fontPrimaryColor);
-                            margin-right: 8px;
-                        }
-                        .tag-version-name {
-                            color: var(--fontSubsidiaryColor);
-                            font-size: 12px;
+                            width: 100%;
+                            text-align: left;
                         }
                         &:hover {
                             background-color: var(--bgHoverLighterColor);
@@ -696,8 +692,7 @@
                         &.selected {
                             color: white;
                             background-color: var(--primaryColor);
-                            .tag-name,
-                            .tag-version-name {
+                            .tag-name {
                                 color: white;
                             }
                         }
