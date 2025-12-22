@@ -14,7 +14,23 @@
         </header>
         <div class="common-version-main flex-align-center">
             <aside class="common-version" v-bkloading="{ isLoading }">
-                <header class="pl30 version-header flex-align-center">{{ $t('artifactVersion')}}</header>
+                <header class="pl30 version-header flex-align-center">
+                    <span>{{ $t('artifactVersion')}}</span>
+                    <div class="ml10 view-switch">
+                        <bk-button
+                            :text="true"
+                            :class="{ 'is-selected': viewType === 'version' }"
+                            @click="viewType = 'version'">
+                            {{ $t('versionList') }}
+                        </bk-button>
+                        <bk-button
+                            :text="true"
+                            :class="{ 'is-selected': viewType === 'tag' }"
+                            @click="viewType = 'tag'">
+                            {{ $t('tagList') }}
+                        </bk-button>
+                    </div>
+                </header>
                 <div class="version-search">
                     <bk-input
                         v-model.trim="versionInput"
@@ -26,35 +42,59 @@
                     </bk-input>
                 </div>
                 <div class="version-list">
-                    <infinite-scroll
-                        ref="infiniteScroll"
-                        :is-loading="isLoading"
-                        :has-next="versionList.length < pagination.count"
-                        @load="handlerPaginationChange({ current: pagination.current + 1 }, true)">
-                        <div class="mb10 list-count">{{ $t('totalVersionCount', [pagination.count])}}</div>
-                        <div
-                            class="mb10 version-item flex-center"
-                            :class="{ 'selected': $version.name === version }"
-                            v-for="$version in versionList"
-                            :key="$version.name"
-                            @click="changeVersion($version)">
-                            <span class="text-overflow" style="max-width:150px;" :title="$version.name">{{ $version.name }}</span>
-                            <operation-list
-                                class="version-operation"
-                                :list="[
-                                    ...(!$version.metadata.forbidStatus ? [
-                                        permission.edit && {
-                                            label: $t('upgrade'), clickEvent: () => changeStageTagHandler($version),
-                                            disabled: ($version.stageTag || '').includes('@release')
-                                        },
-                                        repoType !== 'docker' && { label: $t('download'), clickEvent: () => downloadPackageHandler($version) },
-                                        showRepoScan && { label: $t('scanArtifact'), clickEvent: () => scanPackageHandler($version) }
-                                    ] : []),
-                                    { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
-                                    permission.delete && { label: $t('delete'), clickEvent: () => deleteVersionHandler($version) }
-                                ]"></operation-list>
+                    <!-- 版本列表视图 -->
+                    <template v-if="viewType === 'version'">
+                        <infinite-scroll
+                            ref="infiniteScroll"
+                            :is-loading="isLoading"
+                            :has-next="versionList.length < pagination.count"
+                            @load="handlerPaginationChange({ current: pagination.current + 1 }, true)">
+                            <div class="mb10 list-count">{{ $t('totalVersionCount', [pagination.count])}}</div>
+                            <div
+                                class="mb10 version-item flex-center"
+                                :class="{ 'selected': $version.name === version }"
+                                v-for="$version in versionList"
+                                :key="$version.name"
+                                @click="changeVersion($version)">
+                                <span class="text-overflow" style="max-width:150px;" :title="$version.name">{{ $version.name }}</span>
+                                <operation-list
+                                    class="version-operation"
+                                    :list="[
+                                        ...(!$version.metadata.forbidStatus ? [
+                                            permission.edit && {
+                                                label: $t('upgrade'), clickEvent: () => changeStageTagHandler($version),
+                                                disabled: ($version.stageTag || '').includes('@release')
+                                            },
+                                            repoType !== 'docker' && { label: $t('download'), clickEvent: () => downloadPackageHandler($version) },
+                                            showRepoScan && { label: $t('scanArtifact'), clickEvent: () => scanPackageHandler($version) }
+                                        ] : []),
+                                        { clickEvent: () => changeForbidStatusHandler($version), label: $version.metadata.forbidStatus ? $t('liftBan') : $t('forbiddenUse') },
+                                        permission.delete && { label: $t('delete'), clickEvent: () => deleteVersionHandler($version) }
+                                    ]"></operation-list>
+                            </div>
+                        </infinite-scroll>
+                    </template>
+                    <!-- Tag 列表视图 -->
+                    <template v-else>
+                        <div class="mb10 list-count">{{ $t('totalTagCount', [tagList.length])}}</div>
+                        <div class="tag-list-container">
+                            <div
+                                class="mb10 tag-item"
+                                v-for="tagItem in tagList"
+                                :key="tagItem.tag">
+                                <div
+                                    class="tag-version-item flex-center"
+                                    :class="{ 'selected': tagItem.version.name === version }"
+                                    @click="changeVersion(tagItem.version)">
+                                    <span class="tag-name text-overflow" style="max-width:120px;" :title="tagItem.tag">{{ tagItem.tag }}</span>
+                                    <span class="tag-version-name text-overflow" style="max-width:100px;" :title="tagItem.version.name">{{ tagItem.version.name }}</span>
+                                </div>
+                            </div>
+                            <div v-if="tagList.length === 0" class="empty-tag-list">
+                                <div class="empty-text">{{ $t('noTags') }}</div>
+                            </div>
                         </div>
-                    </infinite-scroll>
+                    </template>
                 </div>
             </aside>
             <div class="common-version-detail flex-1">
@@ -88,6 +128,7 @@
         data () {
             return {
                 tabName: 'commonVersion',
+                viewType: 'version', // 'version' 或 'tag'
                 isLoading: false,
                 infoLoading: false,
                 formDialog: {
@@ -151,6 +192,32 @@
             showRepoScan () {
                 const show = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
                 return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
+            },
+            // Tag 列表，每个 tag 唯一对应一个 version
+            tagList () {
+                const tagMap = new Map()
+                // 遍历所有版本，收集 tags（tag 是唯一的，不会重复）
+                this.versionList.forEach(version => {
+                    const tags = version.tags || []
+                    tags.forEach(tag => {
+                        // tag 是唯一的，如果已存在则跳过
+                        if (!tagMap.has(tag)) {
+                            tagMap.set(tag, version)
+                        }
+                    })
+                })
+                // 转换为数组并按 tag 字母顺序排序
+                return Array.from(tagMap.entries())
+                    .map(([tag, version]) => ({
+                        tag,
+                        version
+                    }))
+                    .sort((a, b) => {
+                        // Tag 按字母顺序排序（大小写不敏感）
+                        const tagA = (a.tag || '').toLowerCase()
+                        const tagB = (b.tag || '').toLowerCase()
+                        return tagA.localeCompare(tagB)
+                    })
             }
         },
         created () {
@@ -455,6 +522,22 @@
                 font-size: 14px;
                 color: var(--fontPrimaryColor);
                 border-bottom: 1px solid var(--borderWeightColor);
+                .view-switch {
+                    display: flex;
+                    margin-left: auto;
+                    margin-right: 20px;
+                    ::v-deep .bk-button {
+                        padding: 0 8px;
+                        height: 28px;
+                        line-height: 28px;
+                        font-size: 12px;
+                        color: var(--fontSubsidiaryColor);
+                        &.is-selected {
+                            color: var(--primaryColor);
+                            background-color: var(--bgHoverLighterColor);
+                        }
+                    }
+                }
             }
             .version-search {
                 padding: 20px 20px 10px;
@@ -494,6 +577,52 @@
                                 background-color: var(--primaryColor);
                             }
                         }
+                    }
+                }
+            }
+            .tag-list-container {
+                height: 100%;
+                overflow-y: auto;
+                .tag-item {
+                    margin-bottom: 8px;
+                    .tag-version-item {
+                        position: relative;
+                        height: 42px;
+                        padding: 0 12px;
+                        border-radius: 2px;
+                        background-color: var(--bgLightColor);
+                        cursor: pointer;
+                        font-size: 13px;
+                        .tag-name {
+                            font-weight: 500;
+                            color: var(--fontPrimaryColor);
+                            margin-right: 8px;
+                        }
+                        .tag-version-name {
+                            color: var(--fontSubsidiaryColor);
+                            font-size: 12px;
+                        }
+                        &:hover {
+                            background-color: var(--bgHoverLighterColor);
+                        }
+                        &.selected {
+                            color: white;
+                            background-color: var(--primaryColor);
+                            .tag-name,
+                            .tag-version-name {
+                                color: white;
+                            }
+                        }
+                    }
+                }
+                .empty-tag-list {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 200px;
+                    .empty-text {
+                        color: var(--fontSubsidiaryColor);
+                        font-size: 14px;
                     }
                 }
             }
