@@ -13,7 +13,11 @@
         <draggable v-if="permissionListPages.length" v-model="permissionListPages" :options="{ animation: 200 }">
             <div class="proxy-item" v-for="(row,index) in permissionListPages" :key="index">
                 <div class="permission-name">{{row.permName}}</div>
-                <div class="permission-path"><bk-tag v-for="(name,pathIndex) in row.includePattern" :key="pathIndex">{{ changePath(name) }}</bk-tag></div>
+                <div class="permission-path">
+                    <bk-popover v-for="(name,pathIndex) in row.includePattern" :content="name" placement="top" :key="pathIndex">
+                        <bk-tag>{{ changePath(name) }}</bk-tag>
+                    </bk-popover>
+                </div>
                 <div class="permission-users"><bk-tag v-for="(name,userIndex) in row.users" :key="userIndex">{{ name }}</bk-tag></div>
                 <div class="permission-roles"><bk-tag v-for="(name,roleIndex) in row.roles" :key="roleIndex">{{ changeRole(name) }}</bk-tag></div>
                 <div class="flex-align-center permission-operation">
@@ -195,5 +199,26 @@
     .proxy-item {
         cursor: move;
     }
+}
+.bk-tag {
+    /* 保持您原有的所有样式 */
+    background-color: rgba(151, 155, 165, .1);
+    border-color: rgba(220, 222, 229, .6);
+    color: #63656e;
+    display: inline-block;
+    font-size: 12px;
+    padding: 0 10px;
+    height: 22px;
+    line-height: 22px;
+    margin: 2px 0 2px 6px;
+    cursor: default;
+    box-sizing: border-box;
+
+    /* 强制取消省略号效果 */
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+    max-width: none !important;
+    width: auto !important;
 }
 </style>
