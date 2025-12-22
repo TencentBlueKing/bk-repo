@@ -200,25 +200,4 @@
         cursor: move;
     }
 }
-.bk-tag {
-    /* 保持您原有的所有样式 */
-    background-color: rgba(151, 155, 165, .1);
-    border-color: rgba(220, 222, 229, .6);
-    color: #63656e;
-    display: inline-block;
-    font-size: 12px;
-    padding: 0 10px;
-    height: 22px;
-    line-height: 22px;
-    margin: 2px 0 2px 6px;
-    cursor: default;
-    box-sizing: border-box;
-
-    /* 强制取消省略号效果 */
-    overflow: visible !important;
-    text-overflow: clip !important;
-    white-space: normal !important;
-    max-width: none !important;
-    width: auto !important;
-}
 </style>
