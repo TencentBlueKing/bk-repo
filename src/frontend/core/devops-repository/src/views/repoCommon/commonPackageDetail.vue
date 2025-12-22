@@ -684,7 +684,7 @@
                             font-weight: 500;
                             color: var(--fontPrimaryColor);
                             width: 100%;
-                            text-align: left;
+                            text-align: center;
                         }
                         &:hover {
                             background-color: var(--bgHoverLighterColor);
