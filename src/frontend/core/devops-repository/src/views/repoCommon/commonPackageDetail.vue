@@ -17,7 +17,7 @@
                 <header class="pl30 version-header flex-align-center">
                     <span>{{ $t('artifactVersion')}}</span>
                 </header>
-                <div class="version-tabs">
+                <div v-if="showTagList" class="version-tabs">
                     <div
                         class="version-tab-item"
                         :class="{ 'active': viewType === 'version' }"
@@ -50,7 +50,7 @@
                         right-icon="bk-icon icon-search">
                     </bk-input>
                 </div>
-                <div class="version-list">
+                <div class="version-list" :class="{ 'with-tabs': showTagList }">
                     <!-- 版本列表视图 -->
                     <template v-if="viewType === 'version'">
                         <infinite-scroll
@@ -205,6 +205,10 @@
                 const show = RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU
                 return show && this.scannerSupportPackageType.join(',').toLowerCase().includes(this.repoType)
             },
+            // 只有 huggingface 仓库显示 tag 列表
+            showTagList () {
+                return this.repoType === 'huggingface'
+            },
             // Tag 列表，每个 tag 唯一对应一个 version，支持搜索过滤
             tagList () {
                 const tagMap = new Map()
@@ -225,10 +229,10 @@
                         version
                     }))
                     .sort((a, b) => {
-                        // Tag 按字母顺序排序（大小写不敏感）
+                        // Tag 按字母顺序降序排序（大小写不敏感）
                         const tagA = (a.tag || '').toLowerCase()
                         const tagB = (b.tag || '').toLowerCase()
-                        return tagA.localeCompare(tagB)
+                        return tagB.localeCompare(tagA)
                     })
                 // 如果有关键词，进行搜索过滤
                 if (this.tagInput && this.tagInput.trim()) {
@@ -242,7 +246,54 @@
                 return result
             }
         },
+        watch: {
+            // 监听仓库类型变化，非 huggingface 仓库强制使用版本列表
+            showTagList (show) {
+                if (!show && this.viewType === 'tag') {
+                    this.viewType = 'version'
+                }
+            },
+            // 监听视图类型切换
+            viewType (newType) {
+                // 非 huggingface 仓库不允许切换到 tag 视图
+                if (newType === 'tag' && !this.showTagList) {
+                    this.viewType = 'version'
+                    return
+                }
+                if (newType === 'tag' && this.tagList.length > 0) {
+                    // 切换到标签列表时，检查当前版本是否在 tagList 中
+                    const currentVersionInTagList = this.tagList.find(item => item.version.name === this.version)
+                    if (!currentVersionInTagList) {
+                        // 如果当前版本不在 tagList 中，选中第一个 tag 对应的版本
+                        const firstTag = this.tagList[0]
+                        if (firstTag && firstTag.version) {
+                            this.changeVersion(firstTag.version)
+                        }
+                    }
+                }
+            },
+            // 监听 tagList 变化，当 tagList 有数据且当前在 tag 视图时，检查是否需要选中第一个
+            tagList: {
+                handler (newList) {
+                    if (this.viewType === 'tag' && newList.length > 0) {
+                        const currentVersionInTagList = newList.find(item => item.version.name === this.version)
+                        if (!currentVersionInTagList) {
+                            // 如果当前版本不在 tagList 中，选中第一个 tag 对应的版本
+                            const firstTag = newList[0]
+                            if (firstTag && firstTag.version) {
+                                this.changeVersion(firstTag.version)
+                            }
+                        }
+                    }
+                },
+                immediate: false
+            }
+        },
         created () {
+            // 非 huggingface 仓库默认使用版本列表
+            if (!this.showTagList) {
+                this.viewType = 'version'
+            }
             this.getPackageInfoHandler()
             this.handlerPaginationChange()
             if (RELEASE_MODE !== 'community' || SHOW_ANALYST_MENU) {
@@ -576,9 +627,13 @@
                 padding: 20px 20px 10px;
             }
             .version-list {
-                height: calc(100% - 160px);
+                height: calc(100% - 120px);
                 padding: 0 20px 10px;
                 background-color: white;
+                // 当显示 tab 时，需要减去 tab 的高度
+                &.with-tabs {
+                    height: calc(100% - 160px);
+                }
                 .list-count {
                     font-size: 12px;
                     color: var(--fontSubsidiaryColor);
