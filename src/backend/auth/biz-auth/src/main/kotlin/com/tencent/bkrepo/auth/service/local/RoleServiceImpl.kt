@@ -86,9 +86,10 @@ class RoleServiceImpl constructor(
         logger.info("update role info: [$id, $request]")
         val role = roleRepository.findFirstById(id) ?: return false
         with(request) {
-            if (name != null || description != null) {
+            if (name != null || description != null || deptInfoList != null) {
                 name?.let { role.name = name }
                 description?.let { role.description = description }
+                deptInfoList?.let { role.deptInfoList = deptInfoList }
                 roleRepository.save(role)
             }
             request.userIds?.map { it }?.let { idList ->
