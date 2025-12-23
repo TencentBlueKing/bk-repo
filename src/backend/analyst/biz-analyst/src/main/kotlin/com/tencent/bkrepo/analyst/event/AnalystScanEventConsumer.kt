@@ -129,7 +129,7 @@ class AnalystScanEventConsumer(
         var hasScanTask = false
         with(event) {
             scanPlanDao
-                .findByProjectIdAndRepoName(projectId, repoName, RepositoryType.GENERIC.name)
+                .findByProjectIdAndRepoName(projectId, repoName, RepositoryType.GENERIC.name, true)
                 .filter { match(event, it.rule.readJsonString()) }
                 .forEach {
                     val request = ScanRequest(
@@ -168,7 +168,7 @@ class AnalystScanEventConsumer(
             logger.info("receive event resourceKey[${event.resourceKey}]")
 
             scanPlanDao
-                .findByProjectIdAndRepoName(projectId, repoName, packageType)
+                .findByProjectIdAndRepoName(projectId, repoName, packageType, true)
                 .filter { match(event, it.rule.readJsonString()) }
                 .forEach {
                     val packageKey = data[VersionCreatedEvent::packageKey.name] as String
