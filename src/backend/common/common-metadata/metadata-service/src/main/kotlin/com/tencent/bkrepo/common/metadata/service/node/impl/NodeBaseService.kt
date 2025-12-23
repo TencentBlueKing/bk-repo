@@ -62,9 +62,11 @@ import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.TOPIC
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.checkNodeListOption
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.checkOverwriteAndConflict
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convert
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.parseExpireDate
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.validateCreateRequest
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.validateParameter
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
@@ -262,17 +264,6 @@ abstract class NodeBaseService(
         }
     }
 
-    /**
-     * 验证节点创建请求参数
-     */
-    fun validateCreateRequest(request: NodeCreateRequest, fullPath: String) {
-        with(request) {
-            Preconditions.checkArgument(!PathUtils.isRoot(fullPath), this::fullPath.name)
-            Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
-            Preconditions.checkArgument(folder || !md5.isNullOrBlank(), this::md5.name)
-        }
-    }
-
     open fun buildTNode(request: NodeCreateRequest): TNode {
         val metadata = NodeBaseServiceHelper.resolveMetadata(
             request, metadataCustomizer, repositoryProperties.allowUserAddSystemMetadata
@@ -461,30 +452,17 @@ abstract class NodeBaseService(
     }
 
     open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String) {
-        val existNode = nodeDao.findNode(createRequest.projectId, createRequest.repoName, fullPath)
-        checkConflictAndQuota(createRequest, fullPath, existNode)
-    }
-
-    /**
-     * 检查节点冲突和配额，支持传入已查询的 existNode 避免重复查询
-     */
-    open fun checkConflictAndQuota(createRequest: NodeCreateRequest, fullPath: String, existNode: TNode? = null) {
         with(createRequest) {
+            val existNode = nodeDao.findNode(projectId, repoName, fullPath)
+
             // 如果节点不存在，进行配额检查后直接返回
             if (existNode == null) {
                 quotaService.checkRepoQuota(projectId, repoName, this.size ?: 0)
                 return
             }
 
-            // 如果不允许覆盖，抛出节点已存在异常
-            if (!overwrite) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
-            }
-
-            // 如果存在文件夹冲突，抛出节点冲突异常
-            if (existNode.folder || this.folder) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
-            }
+            // 检查覆盖和文件夹冲突
+            checkOverwriteAndConflict(overwrite, fullPath, existNode.folder, this.folder)
 
             // 子类的附加检查方法
             additionalCheck(existNode)
