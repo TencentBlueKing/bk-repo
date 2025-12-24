@@ -3,12 +3,15 @@ import ConfirmDialog from '@repository/components/ConfirmDialog'
 import GlobalUploadViewport from '@repository/components/GlobalUploadViewport'
 import { routeBase } from '@repository/utils'
 import Vue from 'vue'
-import { mapMutations, mapState } from 'vuex'
+import { mapActions, mapMutations, mapState } from 'vuex'
 export default {
     name: 'App',
     components: { ConfirmDialog, GlobalUploadViewport },
     computed: {
         ...mapState(['userInfo', 'projectList']),
+        ...mapActions([
+            'checkPM'
+        ]),
         projectId () {
             return this.$route.params.projectId
         }
@@ -58,6 +61,7 @@ export default {
                 window.globalVue.$on('change::$currentProjectId', data => { // 蓝鲸Devops选择项目时切换
                     localStorage.setItem('projectId', data.currentProjectId)
                     if (this.projectId !== data.currentProjectId) {
+                        this.checkPM({ projectId: data.currentProjectId })
                         this.goHome(data.currentProjectId)
                     }
                 })
