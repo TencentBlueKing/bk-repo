@@ -7,7 +7,7 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_PRE_GC
 import com.tencent.bkrepo.opdata.constant.OPDATA_RATIO
 import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.GcInfoModel
+import com.tencent.bkrepo.opdata.service.model.GcInfoModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
