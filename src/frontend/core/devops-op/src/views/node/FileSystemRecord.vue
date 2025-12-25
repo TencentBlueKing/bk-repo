@@ -114,7 +114,7 @@ export default {
     const query = {
       startTime: moment(new Date()).format('yyyy-MM-DD')
     }
-    this.$router.push({ path: '/nodes/FileSystemRecord', query: query })
+    this.$router.push({ path: '/ops/nodes/FileSystemRecord', query: query })
   },
   mounted() {
     this.onRouteUpdate(this.$route)
@@ -164,7 +164,7 @@ export default {
       query.ip = this.clientQuery.ip
       query.version = this.clientQuery.version
       query.startTime = this.clientQuery.startTime
-      this.$router.push({ path: '/nodes/FileSystemRecord', query: query })
+      this.$router.push({ path: '/ops/nodes/FileSystemRecord', query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

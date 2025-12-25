@@ -125,7 +125,7 @@ export default {
       this.$refs['form'].clearValidate()
     },
     changeRouteQueryParams() {
-      this.$router.push({ path: '/ext-permission', query: this.permissionQuery })
+      this.$router.push({ path: '/system/ext-permission', query: this.permissionQuery })
     },
     onRouteUpdate(route) {
       this.$nextTick(() => {
