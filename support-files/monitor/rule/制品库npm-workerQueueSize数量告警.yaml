@@ -1,0 +1,22 @@
+detect:
+  algorithm:
+    warning:
+    - config: '>=1'
+      type: Threshold
+  trigger: 1/5/5
+name: 制品库npm-workerQueueSize数量告警
+notice:
+  assign_mode:
+  - by_rule
+  - only_notice
+  signal:
+  - abnormal
+  user_groups:
+  - bkrepo告警
+query:
+  data_source: prometheus
+  data_type: time_series
+  query_configs:
+  - interval: 60
+    metric: max by (instance) (max_over_time(bkmonitor:undertow_worker_queue_size{service="bkrepo-npm"}[1m]))
+version: '1.0'
