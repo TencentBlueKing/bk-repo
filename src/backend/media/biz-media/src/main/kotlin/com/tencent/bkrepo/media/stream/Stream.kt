@@ -17,10 +17,10 @@ interface Stream {
     /**
      * 停止流
      * */
-    fun stop()
+    fun stop(endTime: Long)
 
     /**
      * 关闭流
      * */
-    fun close()
+    fun close(endTime: Long)
 }
