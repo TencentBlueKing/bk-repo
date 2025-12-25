@@ -23,6 +23,11 @@ data class FederationMemberStatusInfo(
     val clusterUrl: String,
 
     /**
+     * 任务key
+     */
+    val taskKey: String,
+
+    /**
      * 项目ID
      */
     val projectId: String,

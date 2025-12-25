@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.replication.service.impl
 
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.replication.dao.EventRecordDao
 import com.tencent.bkrepo.replication.dao.FederatedRepositoryDao
@@ -169,7 +170,8 @@ class FederationStatusServiceImpl(
                             enabled = federatedCluster.enabled,
                             connected = connected,
                             lastSyncTime = null,
-                            lastConnectTime = if (connected) LocalDateTime.now() else null
+                            lastConnectTime = if (connected) LocalDateTime.now() else null,
+                            taskKey = StringPool.EMPTY
                         )
                     )
                 } else {
@@ -191,7 +193,7 @@ class FederationStatusServiceImpl(
                     val memberStats = getMemberSyncStatistics(record)
 
                     // 获取最后同步时间
-                    val lastSyncTime = record?.startTime
+                    val lastSyncTime = record?.endTime ?: record?.startTime
 
                     // 记录成员状态指标
                     metricsCollector?.recordMemberState(federationId, federatedCluster.clusterId, status.name)
@@ -215,7 +217,8 @@ class FederationStatusServiceImpl(
                             failedSyncFiles = memberStats.failedFiles,
                             failedSyncArtifacts = memberStats.failedArtifacts,
                             totalSyncFiles = memberStats.totalFiles,
-                            totalSyncArtifacts = memberStats.totalArtifacts
+                            totalSyncArtifacts = memberStats.totalArtifacts,
+                            taskKey = taskInfo.key
                         )
                     )
                 }
