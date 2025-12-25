@@ -13,7 +13,7 @@ module.exports = (env, argv) => {
         entry: {
             repository: './src/main.js'
         },
-        publicPath: '/ui/',
+        publicPath: '',
         dist: '/ui',
         port: 8086
     })
@@ -34,6 +34,11 @@ module.exports = (env, argv) => {
             ]
         })
     ]
+
+    console.log('\n=== 启动信息 ===')
+    console.log('📡 访问地址: http://localhost:8086/bkrepo/ui/')
+    console.log('📁 输出目录:', dist)
+    console.log('🔗 资源路径:', config.output.publicPath)
 
     config.devServer.historyApiFallback = {
         rewrites: [
