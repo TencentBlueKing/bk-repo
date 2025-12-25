@@ -68,15 +68,35 @@ function prezero (num) {
     return num
 }
 
+// 存储时区信息
+let timeZone = null
+
+// 设置时区信息（从响应头获取）
+export function setTimeZone (tz) {
+    timeZone = tz
+}
+
+// 获取时区信息
+export function getTimeZone () {
+    return timeZone
+}
+
 export function formatDate (ms) {
     if (!ms) return ms || '/'
     const time = new Date(ms)
-    return `${time.getFullYear()}-${
+    const dateStr = `${time.getFullYear()}-${
         prezero(time.getMonth() + 1)}-${
         prezero(time.getDate())} ${
         prezero(time.getHours())}:${
         prezero(time.getMinutes())}:${
         prezero(time.getSeconds())}`
+    
+    // 如果有时区信息，拼接到时间后面
+    if (timeZone !== null && timeZone !== undefined) {
+        return `${dateStr}${timeZone}`
+    }
+    
+    return dateStr
 }
 
 // 加载先于main.js,初次渲染Vue.prototype.$ajax.defaults为空，二次渲染于main.js，此时Vue.prototype.$ajax.defaults不为空，此时添加报文头

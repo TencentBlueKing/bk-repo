@@ -73,7 +73,7 @@ open class ArtifactEvent(
     open val eventId: String? = null,
 ) {
     override fun toString(): String {
-        return "ArtifactEvent(type=$type, projectId='$projectId', repoName='$repoName', " +
+        return "ArtifactEvent(type=$type, projectId='$projectId', repoName='$repoName', source='$source' " +
             "resourceKey='$resourceKey', userId='$userId', data=$data)"
     }
 
