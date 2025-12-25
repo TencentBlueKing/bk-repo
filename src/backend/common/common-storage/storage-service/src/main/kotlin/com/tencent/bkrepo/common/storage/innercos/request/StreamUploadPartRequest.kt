@@ -46,7 +46,8 @@ data class StreamUploadPartRequest(
     val uploadId: String,
     val partNumber: Int,
     val partSize: Long,
-    val inputStream: InputStream
+    val inputStream: InputStream,
+    val closeStream: Boolean = true,
 ) : CosRequest(HttpMethod.PUT, key) {
 
     init {
@@ -57,6 +58,6 @@ data class StreamUploadPartRequest(
 
     override fun buildRequestBody(): RequestBody {
         val inputStream = CosUploadRecordAbleInputStream(BoundedInputStream(inputStream, partSize))
-        return InputStreamRequestBody(inputStream, partSize)
+        return InputStreamRequestBody(inputStream, partSize, closeStream)
     }
 }

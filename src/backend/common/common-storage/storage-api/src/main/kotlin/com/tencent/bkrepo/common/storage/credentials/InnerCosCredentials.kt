@@ -54,6 +54,11 @@ data class InnerCosCredentials(
     var inner: Boolean = false,
     var slowLogSpeed: Int = MB,
     var slowLogTimeInMillis: Long = 30_000,
+    /**
+     * 是否启用 COS 直传
+     * 默认 false，需要同时开启 ReceiveProperties.enableCosDirectUpload 才生效
+     */
+    var directUploadToCos: Boolean = false,
     var download: DownloadProperties = DownloadProperties(),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),

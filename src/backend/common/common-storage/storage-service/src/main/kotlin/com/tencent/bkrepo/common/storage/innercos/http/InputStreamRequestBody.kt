@@ -39,7 +39,8 @@ import java.io.InputStream
 
 class InputStreamRequestBody(
     private val inputStream: InputStream,
-    private val size: Long
+    private val size: Long,
+    private val closeStream: Boolean = true
 ) : RequestBody() {
 
     override fun contentType(): MediaType? = null
@@ -49,6 +50,10 @@ class InputStreamRequestBody(
     }
 
     override fun writeTo(sink: BufferedSink) {
-        inputStream.source().use { source -> sink.writeAll(source) }
+        if (closeStream) {
+            inputStream.source().use { source -> sink.writeAll(source) }
+        } else {
+            sink.writeAll(inputStream.source())
+        }
     }
 }

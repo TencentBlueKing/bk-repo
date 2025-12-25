@@ -33,7 +33,8 @@ import okhttp3.RequestBody
 
 data class MigrateObjectRequest(
     val fromClient: CosClient,
-    val key: String
-) : CosRequest(HttpMethod.POST, key) {
+    val sourceKey: String,
+    val destinationKey: String
+) : CosRequest(HttpMethod.POST, destinationKey) {
     override fun buildRequestBody(): RequestBody? = null
 }
