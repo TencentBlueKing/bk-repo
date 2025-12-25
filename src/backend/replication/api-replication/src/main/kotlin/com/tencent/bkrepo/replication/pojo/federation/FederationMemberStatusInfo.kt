@@ -65,12 +65,17 @@ data class FederationMemberStatusInfo(
     /**
      * 延迟事件数
      */
-    val lagCount: Long = 0,
+    val eventLag: Long = 0,
 
     /**
-     * 错误数
+     * 文件延迟数
      */
-    val errorCount: Long = 0,
+    val fileLag: Long = 0,
+
+    /**
+     * 失败记录数
+     */
+    val failureCount: Long = 0,
 
     /**
      * 错误信息
@@ -118,6 +123,6 @@ data class FederationMemberStatusInfo(
      */
     val avgSyncRate: Double = 0.0,
 
-)
+    )
 
 

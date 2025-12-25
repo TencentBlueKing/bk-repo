@@ -8,11 +8,11 @@ package com.tencent.bkrepo.common.metrics.constant
 // ==================== Lag Metrics（延迟指标） ====================
 
 /**
- * 元数据跟踪延迟数
+ * 文件跟踪延迟数
  * 记录元数据已同步但文件尚未传输的数量
  */
-const val FEDERATION_METADATA_LAG = "federation.metadata.lag"
-const val FEDERATION_METADATA_LAG_DESC = "联邦元数据跟踪延迟数量（元数据已同步但文件未传输）"
+const val FEDERATION_FILE_LAG = "federation.file.lag"
+const val FEDERATION_FILE_LAG_DESC = "联邦文件同步延迟数量（元数据已同步但文件未传输）"
 
 /**
  * 增量同步事件延迟数
@@ -63,44 +63,6 @@ const val FEDERATION_FULL_SYNC_RUNNING = "federation.fullsync.running"
 const val FEDERATION_FULL_SYNC_RUNNING_DESC = "联邦全量同步执行中的仓库数量"
 
 /**
- * 全量同步总次数
- */
-const val FEDERATION_FULL_SYNC_TOTAL = "federation.fullsync.total"
-const val FEDERATION_FULL_SYNC_TOTAL_DESC = "联邦全量同步执行总次数"
-
-/**
- * 全量同步成功次数
- */
-const val FEDERATION_FULL_SYNC_SUCCESS = "federation.fullsync.success"
-const val FEDERATION_FULL_SYNC_SUCCESS_DESC = "联邦全量同步成功次数"
-
-/**
- * 全量同步失败次数
- */
-const val FEDERATION_FULL_SYNC_FAILED = "federation.fullsync.failed"
-const val FEDERATION_FULL_SYNC_FAILED_DESC = "联邦全量同步失败次数"
-
-/**
- * 全量同步耗时（秒）
- */
-const val FEDERATION_FULL_SYNC_DURATION = "federation.fullsync.duration.seconds"
-const val FEDERATION_FULL_SYNC_DURATION_DESC = "联邦全量同步耗时（秒）"
-
-/**
- * 全量同步传输字节数
- */
-const val FEDERATION_FULL_SYNC_BYTES_TRANSFERRED = "federation.fullsync.bytes.transferred"
-const val FEDERATION_FULL_SYNC_BYTES_TRANSFERRED_DESC = "联邦全量同步传输字节数"
-
-/**
- * 全量同步传输文件数
- */
-const val FEDERATION_FULL_SYNC_FILES_TRANSFERRED = "federation.fullsync.files.transferred"
-const val FEDERATION_FULL_SYNC_FILES_TRANSFERRED_DESC = "联邦全量同步传输文件数量"
-
-// ==================== Member State Metrics（成员状态指标） ====================
-
-/**
  * 联邦成员总数
  * 包含当前仓库在联邦中的成员总数
  */
@@ -142,12 +104,6 @@ const val FEDERATION_MEMBER_DISABLED_DESC = "禁用的联邦成员数"
 const val FEDERATION_MEMBER_UNSUPPORTED = "federation.member.unsupported"
 const val FEDERATION_MEMBER_UNSUPPORTED_DESC = "不支持的联邦成员数（版本不支持）"
 
-/**
- * 联邦成员状态
- * 记录成员在联邦中的状态
- */
-const val FEDERATION_MEMBER_STATE = "federation.member.state"
-const val FEDERATION_MEMBER_STATE_DESC = "联邦成员状态计数"
 
 // ==================== Miscellaneous Metrics（其他指标） ====================
 
@@ -164,28 +120,28 @@ const val FEDERATION_FILE_TRANSFER_RATE = "federation.file.transfer.rate"
 const val FEDERATION_FILE_TRANSFER_RATE_DESC = "联邦文件传输速率（bytes/s）"
 
 /**
- * 元数据同步速率（events/s）
+ * 制品同步速率（events/s）
  */
-const val FEDERATION_METADATA_SYNC_RATE = "federation.metadata.sync.rate"
-const val FEDERATION_METADATA_SYNC_RATE_DESC = "联邦元数据同步速率（events/s）"
+const val FEDERATION_ARTIFACT_SYNC_RATE = "federation.artifact.sync.rate"
+const val FEDERATION_ARTIFACT_SYNC_RATE_DESC = "联邦制品同步速率（events/s）"
 
 /**
- * 元数据同步耗时
+ * 制品同步耗时
  */
-const val FEDERATION_METADATA_SYNC_DURATION = "federation.metadata.sync.duration"
-const val FEDERATION_METADATA_SYNC_DURATION_DESC = "联邦元数据同步耗时"
+const val FEDERATION_ARTIFACT_SYNC_DURATION = "federation.artifact.sync.duration"
+const val FEDERATION_ARTIFACT_SYNC_DURATION_DESC = "联邦制品同步耗时"
 
 /**
- * 元数据同步成功数
+ * 制品同步成功数
  */
-const val FEDERATION_METADATA_SYNC_SUCCESS = "federation.metadata.sync.success"
-const val FEDERATION_METADATA_SYNC_SUCCESS_DESC = "联邦元数据同步成功数"
+const val FEDERATION_ARTIFACT_SYNC_SUCCESS = "federation.artifact.sync.success"
+const val FEDERATION_ARTIFACT_SYNC_SUCCESS_DESC = "联邦制品同步成功数"
 
 /**
- * 元数据同步失败数
+ *  制品同步失败数
  */
-const val FEDERATION_METADATA_SYNC_FAILED = "federation.metadata.sync.failed"
-const val FEDERATION_METADATA_SYNC_FAILED_DESC = "联邦元数据同步失败数"
+const val FEDERATION_ARTIFACT_SYNC_FAILED = "federation.artifact.sync.failed"
+const val FEDERATION_ARTIFACT_SYNC_FAILED_DESC = "联邦制品同步失败数"
 
 /**
  * 文件传输字节数
@@ -235,9 +191,4 @@ const val FEDERATION_FULL_SYNC_ACTIVE_DESC = "联邦全量同步线程池活跃�
 const val FEDERATION_FULL_SYNC_QUEUE_SIZE = "federation.fullsync.queue.size"
 const val FEDERATION_FULL_SYNC_QUEUE_SIZE_DESC = "联邦全量同步线程池队列大小"
 
-/**
- * 最后一次全量同步完成时间戳（Unix timestamp）
- */
-const val FEDERATION_LAST_FULL_SYNC_TIME = "federation.last.fullsync.timestamp"
-const val FEDERATION_LAST_FULL_SYNC_TIME_DESC = "最后一次全量同步完成时间戳"
 

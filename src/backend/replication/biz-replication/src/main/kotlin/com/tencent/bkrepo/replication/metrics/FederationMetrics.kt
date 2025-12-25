@@ -26,18 +26,22 @@ import com.tencent.bkrepo.common.metrics.constant.FEDERATION_MEMBER_TOTAL
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_MEMBER_TOTAL_DESC
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_MEMBER_UNSUPPORTED
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_MEMBER_UNSUPPORTED_DESC
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_METADATA_LAG
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_METADATA_LAG_DESC
+import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FILE_LAG
+import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FILE_LAG_DESC
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_REPOSITORY_TOTAL
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_REPOSITORY_TOTAL_DESC
+import com.tencent.bkrepo.replication.dao.ClusterNodeDao
 import com.tencent.bkrepo.replication.dao.EventRecordDao
 import com.tencent.bkrepo.replication.dao.FederatedRepositoryDao
 import com.tencent.bkrepo.replication.dao.FederationMetadataTrackingDao
 import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
+import com.tencent.bkrepo.replication.dao.ReplicaTaskDao
+import com.tencent.bkrepo.replication.model.TReplicaTask
+import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeStatus
+import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
 import com.tencent.bkrepo.replication.pojo.federation.FederationMemberStatus
 import com.tencent.bkrepo.replication.replica.executor.FederationFileThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.executor.FederationFullSyncThreadPoolExecutor
-import com.tencent.bkrepo.replication.service.ClusterNodeService
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.binder.MeterBinder
@@ -49,7 +53,7 @@ import org.springframework.stereotype.Component
 /**
  * 联邦仓库监控指标
  *
- * - Lag Metrics：延迟指标（元数据、事件、失败记录）
+ * - Lag Metrics：延迟指标（文件、事件、失败记录）
  * - Full Sync Metrics：全量同步指标
  * - Member Status Metrics：成员状态指标（健康、延迟、错误等）
  * - Miscellaneous Metrics：其他指标（线程池、仓库数量等）
@@ -61,16 +65,17 @@ class FederationMetrics(
     private val federationMetadataTrackingDao: FederationMetadataTrackingDao,
     private val eventRecordDao: EventRecordDao,
     private val replicaFailureRecordDao: ReplicaFailureRecordDao,
-    private val clusterNodeService: ClusterNodeService
+    private val clusterNodeDao: ClusterNodeDao,
+    private val replicaTaskDao: ReplicaTaskDao,
 ) : MeterBinder {
 
     override fun bindTo(registry: MeterRegistry) {
         try {
             // ==================== Lag Metrics（延迟指标） ====================
 
-            // 元数据跟踪延迟数
-            Gauge.builder(FEDERATION_METADATA_LAG, this) { getMetadataLagCount().toDouble() }
-                .description(FEDERATION_METADATA_LAG_DESC)
+            // 文件延迟数
+            Gauge.builder(FEDERATION_FILE_LAG, this) { getFileLagCount().toDouble() }
+                .description(FEDERATION_FILE_LAG_DESC)
                 .register(registry)
 
             // 增量同步事件延迟数
@@ -161,19 +166,19 @@ class FederationMetrics(
 
             logger.info("Federation metrics successfully registered")
         } catch (e: Exception) {
-            logger.error("Failed to bind federation metrics", e)
+            logger.warn("Failed to bind federation metrics", e)
         }
     }
 
     /**
-     * 获取元数据跟踪延迟数量
+     * 获取文件延迟数量
      * 记录元数据已同步但文件尚未传输的数量
      */
-    private fun getMetadataLagCount(): Long {
+    private fun getFileLagCount(): Long {
         return try {
             federationMetadataTrackingDao.count(Query())
         } catch (e: Exception) {
-            logger.error("Failed to get metadata lag count", e)
+            logger.warn("Failed to get file lag count", e)
             0L
         }
     }
@@ -186,7 +191,7 @@ class FederationMetrics(
         return try {
             eventRecordDao.count(Query())
         } catch (e: Exception) {
-            logger.error("Failed to get event lag count", e)
+            logger.warn("Failed to get event lag count", e)
             0L
         }
     }
@@ -199,7 +204,7 @@ class FederationMetrics(
         return try {
             replicaFailureRecordDao.count(Query())
         } catch (e: Exception) {
-            logger.error("Failed to get failure lag count", e)
+            logger.warn("Failed to get failure lag count", e)
             0L
         }
     }
@@ -212,7 +217,7 @@ class FederationMetrics(
             val criteria = Criteria.where("isFullSyncing").`is`(true)
             federatedRepositoryDao.count(Query(criteria))
         } catch (e: Exception) {
-            logger.error("Failed to get full sync running count", e)
+            logger.warn("Failed to get full sync running count", e)
             0L
         }
     }
@@ -224,7 +229,7 @@ class FederationMetrics(
         return try {
             federatedRepositoryDao.count(Query())
         } catch (e: Exception) {
-            logger.error("Failed to get federation repository count", e)
+            logger.warn("Failed to get federation repository count", e)
             0L
         }
     }
@@ -237,7 +242,7 @@ class FederationMetrics(
             val repos = federatedRepositoryDao.find(Query())
             repos.sumOf { it.federatedClusters.size.toLong() }
         } catch (e: Exception) {
-            logger.error("Failed to get member total count", e)
+            logger.warn("Failed to get member total count", e)
             0L
         }
     }
@@ -273,7 +278,7 @@ class FederationMetrics(
                 repo.federatedClusters.count { !it.enabled }.toLong()
             }
         } catch (e: Exception) {
-            logger.error("Failed to get member disabled count", e)
+            logger.warn("Failed to get member disabled count", e)
             0L
         }
     }
@@ -290,45 +295,62 @@ class FederationMetrics(
      */
     private fun getMemberCountByStatus(status: FederationMemberStatus): Long {
         return try {
-            val repos = federatedRepositoryDao.find(Query())
-            var count = 0L
-            for (repo in repos) {
-                for (cluster in repo.federatedClusters) {
-                    // 检查集群连接状态
-                    val connected = try {
-                        clusterNodeService.getByClusterId(cluster.clusterId)?.url?.isNotEmpty() ?: false
-                    } catch (e: Exception) {
-                        false
-                    }
-
-                    // 获取延迟和错误统计
-                    val taskId = cluster.taskId.orEmpty()
-                    val lagCount = if (taskId.isNotEmpty()) {
-                        eventRecordDao.count(Query(Criteria.where("taskKey").`is`(taskId)))
-                    } else 0L
-                    
-                    val errorCount = if (taskId.isNotEmpty()) {
-                        replicaFailureRecordDao.count(Query(Criteria.where("taskKey").`is`(taskId)))
-                    } else 0L
-
-                    // 计算成员状态
-                    val memberStatus = FederationMemberStatus.calculateStatus(
-                        enabled = cluster.enabled,
-                        connected = connected,
-                        lagCount = lagCount,
-                        errorCount = errorCount
-                    )
-
-                    if (memberStatus == status) {
-                        count++
-                    }
-                }
-            }
-            count
+            federatedRepositoryDao.find(Query())
+                .flatMap { it.federatedClusters }
+                .count { getClusterMemberStatus(it) == status }
+                .toLong()
         } catch (e: Exception) {
-            logger.error("Failed to get member count by status [$status]", e)
+            logger.warn("Failed to get member count by status [$status]", e)
             0L
         }
+    }
+
+    /**
+     * 获取单个集群的成员状态
+     */
+    private fun getClusterMemberStatus(cluster: FederatedCluster): FederationMemberStatus {
+        val connected = isClusterConnected(cluster.clusterId)
+        val taskKey = getTaskKey(cluster.taskId.orEmpty())
+        val eventLag = countByTaskKey(taskKey) { eventRecordDao.count(it) }
+        val errorCount = countByTaskKey(taskKey) { replicaFailureRecordDao.count(it) }
+        val fileLag = countByTaskKey(taskKey) { federationMetadataTrackingDao.count(it) }
+
+        return FederationMemberStatus.calculateStatus(
+            enabled = cluster.enabled,
+            connected = connected,
+            eventLag = eventLag,
+            failureCount = errorCount,
+            fileLag = fileLag
+        )
+    }
+
+    /**
+     * 检查集群是否连接健康
+     */
+    private fun isClusterConnected(clusterId: String): Boolean {
+        return try {
+            clusterNodeDao.findById(clusterId)?.status == ClusterNodeStatus.HEALTHY
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * 获取任务 key
+     */
+    private fun getTaskKey(taskId: String): String {
+        return if (taskId.isNotEmpty()) {
+            replicaTaskDao.findById(taskId)?.key.orEmpty()
+        } else ""
+    }
+
+    /**
+     * 根据任务 key 统计数量
+     */
+    private fun countByTaskKey(taskKey: String, counter: (Query) -> Long): Long {
+        return if (taskKey.isNotEmpty()) {
+            counter(Query(Criteria.where(TReplicaTask::key.name).`is`(taskKey)))
+        } else 0L
     }
 
     companion object {

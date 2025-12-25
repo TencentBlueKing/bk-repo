@@ -338,7 +338,8 @@ class FederationReplicator(
                         repoName = context.localRepoName,
                         success = true,
                         bytes = node.size,
-                        durationMillis = duration
+                        durationMillis = duration,
+                        taskKey = context.task.key
                     )
                 } catch (throwable: Throwable) {
                     handleFileTransferError(context, node, throwable)
@@ -351,7 +352,8 @@ class FederationReplicator(
                         repoName = context.localRepoName,
                         success = false,
                         bytes = node.size,
-                        durationMillis = duration
+                        durationMillis = duration,
+                        taskKey = context.task.key
                     )
                 } finally {
                     latch.countDown()
@@ -380,7 +382,8 @@ class FederationReplicator(
                 repoName = context.localRepoName,
                 success = true,
                 bytes = node.size,
-                durationMillis = duration
+                durationMillis = duration,
+                taskKey = context.task.key
             )
             true
         } catch (throwable: Throwable) {
@@ -393,7 +396,8 @@ class FederationReplicator(
                 repoName = context.localRepoName,
                 success = false,
                 bytes = node.size,
-                durationMillis = duration
+                durationMillis = duration,
+                taskKey = context.task.key
             )
             false
         }

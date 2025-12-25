@@ -88,9 +88,9 @@ data class FederationRepositoryStatusInfo(
     val fullSyncDuration: Long? = null,
 
     /**
-     * 元数据延迟数
+     * 文件延迟数
      */
-    val metadataLag: Long = 0,
+    val fileLag: Long = 0,
 
     /**
      * 事件延迟数

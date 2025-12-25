@@ -47,21 +47,23 @@ enum class FederationMemberStatus(val displayName: String, val description: Stri
          *
          * @param enabled 是否启用
          * @param connected 是否可连接
-         * @param lagCount 延迟事件数
-         * @param errorCount 错误数
+         * @param eventLag 延迟事件数
+         * @param failureCount 错误数
+         * @param fileLag 文件待传输数
          * @return 成员状态
          */
         fun calculateStatus(
             enabled: Boolean,
             connected: Boolean,
-            lagCount: Long = 0,
-            errorCount: Long = 0
+            eventLag: Long = 0,
+            failureCount: Long = 0,
+            fileLag: Long = 0,
         ): FederationMemberStatus {
             return when {
                 !enabled -> DISABLED
                 !connected -> ERROR
-                errorCount > 0 -> ERROR
-                lagCount > 100 -> DELAYED  // 延迟超过100个事件认为是延迟状态
+                failureCount > 0 -> ERROR
+                eventLag > 0 || fileLag > 0 -> DELAYED  // 延迟超过1个事件或者还有1个以上文件没传输认为是延迟状态
                 else -> HEALTHY
             }
         }

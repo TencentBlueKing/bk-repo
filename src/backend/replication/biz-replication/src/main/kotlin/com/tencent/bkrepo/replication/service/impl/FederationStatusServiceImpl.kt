@@ -22,7 +22,6 @@ import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.FederationStatusService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.search.Search
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -80,7 +79,7 @@ class FederationStatusServiceImpl(
                 val disabledMembers = members.count { it.status == FederationMemberStatus.DISABLED }
 
                 // 计算延迟统计
-                val metadataLag = countMetadataLag(projectId, repoName)
+                val fileLag = countFileLag(projectId, repoName)
                 val eventLag = countEventLag(projectId, repoName)
                 val failureCount = countFailureRecords(projectId, repoName)
 
@@ -120,7 +119,7 @@ class FederationStatusServiceImpl(
                         lastFullSyncStartTime = federatedRepo.lastFullSyncStartTime,
                         lastFullSyncEndTime = federatedRepo.lastFullSyncEndTime,
                         fullSyncDuration = fullSyncDuration,
-                        metadataLag = metadataLag,
+                        fileLag = fileLag,
                         eventLag = eventLag,
                         failureCount = failureCount,
                         totalSyncArtifacts = totalSyncArtifacts,
@@ -176,15 +175,17 @@ class FederationStatusServiceImpl(
                     )
                 } else {
                     // 获取该成员的延迟和错误统计
-                    val lagCount = countMemberLag(taskInfo.key)
-                    val errorCount = countMemberErrors(taskInfo.key)
+                    val eventLag = countEventLag(taskInfo.key)
+                    val failureCount = countFailureRecords(taskInfo.key)
+                    val fileLag = countFileLag(taskInfo.key)
 
                     // 计算成员状态
                     val status = FederationMemberStatus.calculateStatus(
                         enabled = federatedCluster.enabled,
                         connected = connected,
-                        lagCount = lagCount,
-                        errorCount = errorCount
+                        eventLag = eventLag,
+                        failureCount = failureCount,
+                        fileLag = fileLag
                     )
 
                     val record = replicaRecordDao.findLatestByTaskKey(taskInfo.key)
@@ -195,8 +196,6 @@ class FederationStatusServiceImpl(
                     // 获取最后同步时间
                     val lastSyncTime = record?.endTime ?: record?.startTime
 
-                    // 记录成员状态指标
-                    metricsCollector?.recordMemberState(federationId, federatedCluster.clusterId, status.name)
                     result.add(
                         FederationMemberStatusInfo(
                             clusterId = federatedCluster.clusterId,
@@ -209,8 +208,9 @@ class FederationStatusServiceImpl(
                             connected = connected,
                             lastSyncTime = lastSyncTime,
                             lastConnectTime = if (connected) LocalDateTime.now() else null,
-                            lagCount = lagCount,
-                            errorCount = errorCount,
+                            eventLag = eventLag,
+                            failureCount = failureCount,
+                            fileLag = fileLag,
                             errorMessage = record?.errorReason,
                             successSyncFiles = memberStats.successFiles,
                             successSyncArtifacts = memberStats.successArtifacts,
@@ -247,9 +247,9 @@ class FederationStatusServiceImpl(
 
 
     /**
-     * 统计元数据延迟数
+     * 统计文件延迟数
      */
-    private fun countMetadataLag(projectId: String, repoName: String): Long {
+    private fun countFileLag(projectId: String, repoName: String): Long {
         return try {
             val criteria = Criteria.where(TFederationMetadataTracking::projectId.name).`is`(projectId)
                 .and(TFederationMetadataTracking::localRepoName.name).`is`(repoName)
@@ -294,7 +294,7 @@ class FederationStatusServiceImpl(
     /**
      * 统计成员延迟数
      */
-    private fun countMemberLag(taskKey: String): Long {
+    private fun countEventLag(taskKey: String): Long {
         return try {
             val criteria = Criteria.where(TEventRecord::taskKey.name).isEqualTo(taskKey)
                 .and(TEventRecord::eventType.name).isEqualTo("FEDERATION")
@@ -306,12 +306,26 @@ class FederationStatusServiceImpl(
     }
 
     /**
-     * 统计成员错误数
+     * 统计失败数
      */
-    private fun countMemberErrors(taskKey: String): Long {
+    private fun countFailureRecords(taskKey: String): Long {
         return try {
             val criteria = Criteria.where("taskKey").`is`(taskKey)
             replicaFailureRecordDao.count(Query(criteria))
+        } catch (e: Exception) {
+            logger.warn("Failed to count member errors for task [$taskKey]", e)
+            0L
+        }
+    }
+
+
+    /**
+     * 统计元数据同步，但文件还在传输数量
+     */
+    private fun countFileLag(taskKey: String): Long {
+        return try {
+            val criteria = Criteria.where("taskKey").`is`(taskKey)
+            federationMetadataTrackingDao.count(Query(criteria))
         } catch (e: Exception) {
             logger.warn("Failed to count member errors for task [$taskKey]", e)
             0L
@@ -364,63 +378,6 @@ class FederationStatusServiceImpl(
         }
     }
 
-    /**
-     * 获取指标计数值
-     */
-    private fun getMetricCount(metricName: String, projectId: String, repoName: String): Double {
-        return try {
-            Search.`in`(meterRegistry)
-                .name(metricName)
-                .tag("projectId", projectId)
-                .tag("repoName", repoName)
-                .counters()
-                .map { it.count() }
-                .sum()
-        } catch (e: Exception) {
-            logger.debug("Failed to get metric count [$metricName] for [$projectId/$repoName]", e)
-            0.0
-        }
-    }
-
-    /**
-     * 获取指标总和
-     */
-    private fun getMetricSum(metricName: String, projectId: String, repoName: String): Double {
-        return try {
-            Search.`in`(meterRegistry)
-                .name(metricName)
-                .tag("projectId", projectId)
-                .tag("repoName", repoName)
-                .summaries()
-                .map { it.totalAmount() }
-                .sum()
-        } catch (e: Exception) {
-            logger.debug("Failed to get metric sum [$metricName] for [$projectId/$repoName]", e)
-            0.0
-        }
-    }
-
-    /**
-     * 获取指标平均值
-     */
-    private fun getMetricMean(metricName: String, projectId: String, repoName: String): Double {
-        return try {
-            val summaries = Search.`in`(meterRegistry)
-                .name(metricName)
-                .tag("projectId", projectId)
-                .tag("repoName", repoName)
-                .summaries()
-                .toList()
-
-            if (summaries.isEmpty()) {
-                0.0
-            } else {
-                summaries.map { it.mean() }.average()
-            }
-        } catch (e: Exception) {
-            0.0
-        }
-    }
 
     /**
      * 同步统计信息

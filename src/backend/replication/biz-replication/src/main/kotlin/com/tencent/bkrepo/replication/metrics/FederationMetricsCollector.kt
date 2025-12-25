@@ -1,5 +1,31 @@
 package com.tencent.bkrepo.replication.metrics
 
+import com.tencent.bkrepo.replication.constant.RESULT_FAILED
+import com.tencent.bkrepo.replication.constant.RESULT_SUCCESS
+import com.tencent.bkrepo.replication.constant.TAG_EVENT_TYPE
+import com.tencent.bkrepo.replication.constant.TAG_PROJECT_ID
+import com.tencent.bkrepo.replication.constant.TAG_REPO_NAME
+import com.tencent.bkrepo.replication.constant.TAG_SYNC_RESULT
+import com.tencent.bkrepo.replication.constant.TAG_TASK_KEY
+import com.tencent.bkrepo.replication.constant.UNIT_BYTES
+import com.tencent.bkrepo.replication.constant.UNIT_BYTES_PER_SECOND
+import com.tencent.bkrepo.replication.constant.UNIT_EVENTS_PER_SECOND
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.DistributionSummary
+import io.micrometer.core.instrument.Meter
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Timer
+import org.springframework.stereotype.Component
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import com.tencent.bkrepo.common.metrics.constant.FEDERATION_ARTIFACT_SYNC_DURATION as METRIC_ARTIFACT_SYNC_DURATION
+import com.tencent.bkrepo.common.metrics.constant.FEDERATION_ARTIFACT_SYNC_DURATION_DESC as DESC_ARTIFACT_SYNC_DURATION
+import com.tencent.bkrepo.common.metrics.constant.FEDERATION_ARTIFACT_SYNC_FAILED as METRIC_ARTIFACT_SYNC_FAILED
+import com.tencent.bkrepo.common.metrics.constant.FEDERATION_ARTIFACT_SYNC_FAILED_DESC as DESC_ARTIFACT_SYNC_FAILED
+import com.tencent.bkrepo.common.metrics.constant.FEDERATION_ARTIFACT_SYNC_RATE as METRIC_ARTIFACT_SYNC_RATE
+import com.tencent.bkrepo.common.metrics.constant.FEDERATION_ARTIFACT_SYNC_RATE_DESC as DESC_ARTIFACT_SYNC_RATE
+import com.tencent.bkrepo.common.metrics.constant.FEDERATION_ARTIFACT_SYNC_SUCCESS as METRIC_ARTIFACT_SYNC_SUCCESS
+import com.tencent.bkrepo.common.metrics.constant.FEDERATION_ARTIFACT_SYNC_SUCCESS_DESC as DESC_ARTIFACT_SYNC_SUCCESS
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_EVENT_FAILED as METRIC_EVENT_FAILED
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_EVENT_FAILED_DESC as DESC_EVENT_FAILED
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_EVENT_RETRY_COUNT as METRIC_EVENT_RETRY
@@ -18,57 +44,12 @@ import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FILE_TRANSFER_RATE 
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FILE_TRANSFER_RATE_DESC as DESC_FILE_TRANSFER_RATE
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FILE_TRANSFER_SUCCESS as METRIC_FILE_TRANSFER_SUCCESS
 import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FILE_TRANSFER_SUCCESS_DESC as DESC_FILE_TRANSFER_SUCCESS
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_BYTES_TRANSFERRED as METRIC_FULLSYNC_BYTES
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_BYTES_TRANSFERRED_DESC as DESC_FULLSYNC_BYTES
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_DURATION as METRIC_FULLSYNC_DURATION
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_DURATION_DESC as DESC_FULLSYNC_DURATION
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_FAILED as METRIC_FULLSYNC_FAILED
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_FAILED_DESC as DESC_FULLSYNC_FAILED
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_FILES_TRANSFERRED as METRIC_FULLSYNC_FILES
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_FILES_TRANSFERRED_DESC as DESC_FULLSYNC_FILES
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_SUCCESS as METRIC_FULLSYNC_SUCCESS
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_SUCCESS_DESC as DESC_FULLSYNC_SUCCESS
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_TOTAL as METRIC_FULLSYNC_TOTAL
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_FULL_SYNC_TOTAL_DESC as DESC_FULLSYNC_TOTAL
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_MEMBER_STATE as METRIC_MEMBER_STATE
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_MEMBER_STATE_DESC as DESC_MEMBER_STATE
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_METADATA_SYNC_DURATION as METRIC_METADATA_SYNC_DURATION
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_METADATA_SYNC_DURATION_DESC as DESC_METADATA_SYNC_DURATION
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_METADATA_SYNC_FAILED as METRIC_METADATA_SYNC_FAILED
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_METADATA_SYNC_FAILED_DESC as DESC_METADATA_SYNC_FAILED
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_METADATA_SYNC_RATE as METRIC_METADATA_SYNC_RATE
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_METADATA_SYNC_RATE_DESC as DESC_METADATA_SYNC_RATE
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_METADATA_SYNC_SUCCESS as METRIC_METADATA_SYNC_SUCCESS
-import com.tencent.bkrepo.common.metrics.constant.FEDERATION_METADATA_SYNC_SUCCESS_DESC as DESC_METADATA_SYNC_SUCCESS
-import com.tencent.bkrepo.replication.constant.RESULT_FAILED
-import com.tencent.bkrepo.replication.constant.RESULT_SUCCESS
-import com.tencent.bkrepo.replication.constant.TAG_CLUSTER_ID
-import com.tencent.bkrepo.replication.constant.TAG_EVENT_TYPE
-import com.tencent.bkrepo.replication.constant.TAG_FEDERATION_ID
-import com.tencent.bkrepo.replication.constant.TAG_PROJECT_ID
-import com.tencent.bkrepo.replication.constant.TAG_REPO_NAME
-import com.tencent.bkrepo.replication.constant.TAG_STATUS
-import com.tencent.bkrepo.replication.constant.TAG_SYNC_RESULT
-import com.tencent.bkrepo.replication.constant.UNIT_BYTES
-import com.tencent.bkrepo.replication.constant.UNIT_BYTES_PER_SECOND
-import com.tencent.bkrepo.replication.constant.UNIT_EVENTS_PER_SECOND
-import com.tencent.bkrepo.replication.constant.UNIT_FILES
-import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.DistributionSummary
-import io.micrometer.core.instrument.Meter
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.Timer
-import org.springframework.stereotype.Component
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
 
 /**
  * 联邦仓库指标收集器
  *
  * 提供动态指标收集功能，包括：
  * - Event Metrics：事件处理指标（总数、成功、失败、重试）
- * - Full Sync Metrics：全量同步指标（总数、成功、失败、耗时、传输数据）
- * - Member State Metrics：成员状态指标（健康、延迟、错误等）
  * - File Transfer Metrics：文件传输指标（字节数、耗时、速率）
  * - Metadata Sync Metrics：元数据同步指标（耗时、速率）
  */
@@ -91,7 +72,7 @@ class FederationMetricsCollector(
      */
     fun recordEvent(eventType: String, success: Boolean) {
         val baseTags = mapOf(TAG_EVENT_TYPE to eventType)
-        
+
         // 记录事件总数
         getOrCreateCounter(METRIC_EVENT_TOTAL, DESC_EVENT_TOTAL, baseTags).increment()
 
@@ -111,20 +92,6 @@ class FederationMetricsCollector(
     }
 
 
-    // ==================== Member State Metrics（成员状态指标） ====================
-
-    /**
-     * 记录联邦成员状态变化
-     *
-     * @param federationId 联邦ID
-     * @param clusterId 集群ID
-     * @param status 状态（healthy、delayed、error、disabled、unsupported）
-     */
-    fun recordMemberState(federationId: String, clusterId: String, status: String) {
-        val tags = mapOf(TAG_FEDERATION_ID to federationId, TAG_CLUSTER_ID to clusterId, TAG_STATUS to status)
-        getOrCreateCounter(METRIC_MEMBER_STATE, DESC_MEMBER_STATE, tags).increment()
-    }
-
     // ==================== File Transfer Metrics（文件传输指标） ====================
 
     /**
@@ -132,6 +99,7 @@ class FederationMetricsCollector(
      *
      * @param projectId 项目ID
      * @param repoName 仓库名称
+     * @param taskKey taskKey
      * @param success 是否成功
      * @param bytes 传输字节数
      * @param durationMillis 耗时（毫秒）
@@ -139,11 +107,12 @@ class FederationMetricsCollector(
     fun recordFileTransfer(
         projectId: String,
         repoName: String,
+        taskKey: String,
         success: Boolean,
         bytes: Long,
         durationMillis: Long
     ) {
-        val tags = mapOf(TAG_PROJECT_ID to projectId, TAG_REPO_NAME to repoName)
+        val tags = mapOf(TAG_PROJECT_ID to projectId, TAG_REPO_NAME to repoName, TAG_TASK_KEY to taskKey)
 
         // 记录成功或失败
         val resultTags = tags + (TAG_SYNC_RESULT to if (success) RESULT_SUCCESS else RESULT_FAILED)
@@ -175,16 +144,18 @@ class FederationMetricsCollector(
     // ==================== Metadata Sync Metrics（元数据同步指标） ====================
 
     /**
-     * 记录元数据同步
+     * 记录制品同步
      *
      * @param projectId 项目ID
      * @param repoName 仓库名称
+     * @param taskKey taskKey
      * @param success 是否成功
      * @param durationMillis 耗时（毫秒）
      */
-    fun recordMetadataSync(
+    fun recordArtifactSync(
         projectId: String,
         repoName: String,
+        taskKey: String,
         success: Boolean,
         durationMillis: Long
     ) {
@@ -193,23 +164,23 @@ class FederationMetricsCollector(
         // 记录成功或失败
         val resultTags = tags + (TAG_SYNC_RESULT to if (success) RESULT_SUCCESS else RESULT_FAILED)
         if (success) {
-            // 记录元数据同步计时
-            getOrCreateTimer(METRIC_METADATA_SYNC_DURATION, DESC_METADATA_SYNC_DURATION, tags)
+            // 记录制品同步计时
+            getOrCreateTimer(METRIC_ARTIFACT_SYNC_DURATION, DESC_ARTIFACT_SYNC_DURATION, tags)
                 .record(durationMillis, TimeUnit.MILLISECONDS)
 
-            // 记录元数据同步速率（events/s）
+            // 记录制品同步速率（events/s）
             if (durationMillis > 0) {
                 val rate = 1000.0 / durationMillis
                 getOrCreateDistributionSummary(
-                    METRIC_METADATA_SYNC_RATE,
-                    DESC_METADATA_SYNC_RATE,
+                    METRIC_ARTIFACT_SYNC_RATE,
+                    DESC_ARTIFACT_SYNC_RATE,
                     UNIT_EVENTS_PER_SECOND,
                     tags
                 ).record(rate)
             }
-            getOrCreateCounter(METRIC_METADATA_SYNC_SUCCESS, DESC_METADATA_SYNC_SUCCESS, resultTags).increment()
+            getOrCreateCounter(METRIC_ARTIFACT_SYNC_SUCCESS, DESC_ARTIFACT_SYNC_SUCCESS, resultTags).increment()
         } else {
-            getOrCreateCounter(METRIC_METADATA_SYNC_FAILED, DESC_METADATA_SYNC_FAILED, resultTags).increment()
+            getOrCreateCounter(METRIC_ARTIFACT_SYNC_FAILED, DESC_ARTIFACT_SYNC_FAILED, resultTags).increment()
         }
     }
 

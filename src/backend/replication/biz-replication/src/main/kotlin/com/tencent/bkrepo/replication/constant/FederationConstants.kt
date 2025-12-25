@@ -17,6 +17,11 @@ const val TAG_PROJECT_ID = "projectId"
 const val TAG_REPO_NAME = "repoName"
 
 /**
+ * 任务key
+ */
+const val TAG_TASK_KEY = "taskKey"
+
+/**
  * 联邦 ID 标签
  */
 const val TAG_FEDERATION_ID = "federationId"

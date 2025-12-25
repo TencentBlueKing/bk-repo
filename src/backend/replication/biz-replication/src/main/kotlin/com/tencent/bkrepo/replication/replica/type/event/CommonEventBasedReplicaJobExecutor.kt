@@ -104,11 +104,12 @@ open class CommonEventBasedReplicaJobExecutor(
 
                 // 记录元数据同步指标
                 val duration = System.currentTimeMillis() - startTime
-                metricsCollector?.recordMetadataSync(
+                metricsCollector?.recordArtifactSync(
                     projectId = event.projectId,
                     repoName = event.repoName,
                     success = taskSucceeded,
-                    durationMillis = duration
+                    durationMillis = duration,
+                    taskKey = taskKey
                 )
             }
             eventId?.let {
