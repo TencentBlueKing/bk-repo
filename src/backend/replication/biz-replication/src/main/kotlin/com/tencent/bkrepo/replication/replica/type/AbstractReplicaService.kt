@@ -729,6 +729,7 @@ abstract class AbstractReplicaService(
         return if (shouldExecute) {
             executeActionAndUpdateProgress(action, context)
         } else {
+            context.replicaContext.replicaProgress.success++
             ExecutionStatus.SUCCESS
         }
     }
