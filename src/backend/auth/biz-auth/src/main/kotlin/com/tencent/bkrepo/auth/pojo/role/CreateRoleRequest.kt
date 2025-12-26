@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.auth.pojo.role
 
+import com.tencent.bkrepo.auth.pojo.DeptInfo
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import io.swagger.v3.oas.annotations.media.Schema
 
@@ -48,5 +49,7 @@ data class CreateRoleRequest(
     @get:Schema(title = "描述信息")
     val description: String? = null,
     @get:Schema(title = "角色来源")
-    val source: RoleSource? = null
+    val source: RoleSource? = null,
+    @get:Schema(title = "角色绑定组织架构")
+    val deptInfoList: List<DeptInfo>? = null
 )
