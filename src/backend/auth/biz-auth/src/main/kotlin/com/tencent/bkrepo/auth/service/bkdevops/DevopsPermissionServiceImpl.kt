@@ -168,6 +168,7 @@ class DevopsPermissionServiceImpl constructor(
                 return checkReplicationPermission(uid, user.roles, resourceType, action)
             }
             val roles = getDevopsUserRole(user, projectId!!)
+            logger.debug("getDevopsUserRole [$uid, $roles]")
             // 开启仓库内请求拦截
             if (checkRepoAccessDenyGroup(uid, projectId!!, repoName, roles.toSet(), requestSource)) return false
             // 用户为系统管理员
