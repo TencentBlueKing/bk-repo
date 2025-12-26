@@ -39,6 +39,7 @@ import com.tencent.bkrepo.s3.artifact.S3LocalRepository
 import com.tencent.bkrepo.s3.artifact.S3RemoteRepository
 import com.tencent.bkrepo.s3.artifact.S3VirtualRepository
 import com.tencent.bkrepo.s3.artifact.auth.AWS4AuthHandler
+import com.tencent.bkrepo.s3.artifact.response.S3ArtifactResourceWriter
 import org.springframework.context.annotation.Configuration
 
 @Configuration
@@ -59,4 +60,5 @@ class S3RegistryArtifactConfigurer : ArtifactConfigurerSupport() {
             httpAuthSecurity.withPrefix("/s3").addHttpAuthHandler(s3LoginAuthHandler)
         }
 
+    override fun getArtifactResourceWriter() = SpringContextUtils.getBean<S3ArtifactResourceWriter>()
 }
