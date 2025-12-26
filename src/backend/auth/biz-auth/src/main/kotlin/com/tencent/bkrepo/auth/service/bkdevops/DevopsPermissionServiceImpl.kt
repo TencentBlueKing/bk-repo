@@ -206,6 +206,7 @@ class DevopsPermissionServiceImpl constructor(
 
     fun getDevopsUserRole(user: TUser, projectId: String): List<String> {
         val projectExternalRole = getUserRole(projectId, RoleSource.DEVOPS)
+        logger.debug("projectExternalRole [$projectExternalRole]")
         if (projectExternalRole.isEmpty()) return user.roles
         
         // 构建 roleId -> id 的映射

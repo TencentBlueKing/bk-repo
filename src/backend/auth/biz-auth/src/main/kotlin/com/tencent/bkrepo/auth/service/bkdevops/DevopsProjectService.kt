@@ -74,9 +74,6 @@ class DevopsProjectService @Autowired constructor(private val ciAuthService: CIA
     }
 
     fun listMemberGroupsInProject(uid: String, projectId: String): List<String> {
-        return ciAuthService.getMemberGroupsInProject(
-            user = uid,
-            projectCode = projectId
-        )
+        return ciAuthService.getMemberGroupsInProject(user = uid, projectCode = projectId)
     }
 }
