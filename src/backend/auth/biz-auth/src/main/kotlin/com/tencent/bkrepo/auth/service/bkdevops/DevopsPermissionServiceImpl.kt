@@ -157,18 +157,15 @@ class DevopsPermissionServiceImpl constructor(
     private fun checkDevopsPermission(request: CheckPermissionRequest): Boolean {
         with(request) {
             logger.debug("check devops permission request [$request]")
-
             // 用户不存在
             val user = getUserInfo(uid) ?: return false
             // 系统管理员用户
             if (user.admin) return true
-
             // 当projectId为null时，需要针对service类型的resourceType进行特定判断
             if (projectId == null) {
                 return checkReplicationPermission(uid, user.roles, resourceType, action)
             }
             val roles = getDevopsUserRole(user, projectId!!)
-            logger.debug("getDevopsUserRole [$uid, $roles]")
             // 开启仓库内请求拦截
             if (checkRepoAccessDenyGroup(uid, projectId!!, repoName, roles.toSet(), requestSource)) return false
             // 用户为系统管理员
@@ -179,7 +176,7 @@ class DevopsPermissionServiceImpl constructor(
 
             val context = CheckPermissionContext(
                 userId = uid,
-                roles = user.roles,
+                roles = roles,
                 resourceType = resourceType,
                 action = action,
                 projectId = projectId!!,
