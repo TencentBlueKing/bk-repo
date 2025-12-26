@@ -206,18 +206,18 @@ class DevopsPermissionServiceImpl constructor(
 
     fun getDevopsUserRole(user: TUser, projectId: String): List<String> {
         val projectExternalRole = getUserRole(projectId, RoleSource.DEVOPS)
-        logger.debug("projectExternalRole [$projectExternalRole]")
+        logger.debug("projectExternalRole [${user.userId}, $projectId, $projectExternalRole]")
         if (projectExternalRole.isEmpty()) return user.roles
-        
+
         // 构建 roleId -> id 的映射
         val roleIdToIdMap = projectExternalRole.associate { it.roleId to it.id!! }
-        
+
         // 获取用户在 Devops 项目中的角色组
         val devopsRoles = devopsProjectService.listMemberGroupsInProject(user.userId, projectId)
-        
+
         // 将匹配的角色 ID 添加到用户角色列表中
         val matchedRoleIds = devopsRoles.mapNotNull { roleIdToIdMap[it] }
-        
+
         return (user.roles + matchedRoleIds).distinct()
     }
 
