@@ -92,7 +92,8 @@
             }
         },
         mounted () {
-            this.checkPM({ projectId: this.$route.params.projectId })
+            const projectId = this.$route.params.projectId ? this.$route.params.projectId : localStorage.getItem('projectId')
+            this.checkPM({ projectId: projectId })
         },
         methods: {
             ...mapActions([
