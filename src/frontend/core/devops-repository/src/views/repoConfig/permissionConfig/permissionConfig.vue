@@ -13,7 +13,11 @@
         <draggable v-if="permissionListPages.length" v-model="permissionListPages" :options="{ animation: 200 }">
             <div class="proxy-item" v-for="(row,index) in permissionListPages" :key="index">
                 <div class="permission-name">{{row.permName}}</div>
-                <div class="permission-path"><bk-tag v-for="(name,pathIndex) in row.includePattern" :key="pathIndex">{{ changePath(name) }}</bk-tag></div>
+                <div class="permission-path">
+                    <bk-popover v-for="(name,pathIndex) in row.includePattern" :content="name" placement="top" :key="pathIndex">
+                        <bk-tag>{{ changePath(name) }}</bk-tag>
+                    </bk-popover>
+                </div>
                 <div class="permission-users"><bk-tag v-for="(name,userIndex) in row.users" :key="userIndex">{{ name }}</bk-tag></div>
                 <div class="permission-roles"><bk-tag v-for="(name,roleIndex) in row.roles" :key="roleIndex">{{ changeRole(name) }}</bk-tag></div>
                 <div class="flex-align-center permission-operation">
