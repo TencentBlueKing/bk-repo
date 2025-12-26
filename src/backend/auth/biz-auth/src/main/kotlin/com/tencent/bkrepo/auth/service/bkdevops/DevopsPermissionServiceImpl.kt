@@ -42,6 +42,7 @@ import com.tencent.bkrepo.auth.dao.PersonalPathDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
 import com.tencent.bkrepo.auth.dao.UserDao
 import com.tencent.bkrepo.auth.dao.repository.RoleRepository
+import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.DOWNLOAD
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.MANAGE
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.READ
@@ -166,8 +167,9 @@ class DevopsPermissionServiceImpl constructor(
             if (projectId == null) {
                 return checkReplicationPermission(uid, user.roles, resourceType, action)
             }
+            val roles = getDevopsUserRole(user, projectId!!)
             // 开启仓库内请求拦截
-            if (checkRepoAccessDenyGroup(uid, projectId!!, repoName, user.roles.toSet(), requestSource)) return false
+            if (checkRepoAccessDenyGroup(uid, projectId!!, repoName, roles.toSet(), requestSource)) return false
             // 用户为系统管理员
             if (isDevopsProjectAdmin(uid, projectId!!) || isUserLocalProjectAdmin(uid, projectId!!)) {
                 logger.debug("user is devops/local project admin [$uid, $projectId]")
@@ -189,6 +191,7 @@ class DevopsPermissionServiceImpl constructor(
                 REPO.name, NODE.name -> {
                     checkRepoOrNodePermission(context)
                 }
+
                 else -> throw RuntimeException("resource type not supported: $resourceType")
             }
 
@@ -200,6 +203,23 @@ class DevopsPermissionServiceImpl constructor(
             return pass
         }
     }
+
+    fun getDevopsUserRole(user: TUser, projectId: String): List<String> {
+        val projectExternalRole = getUserRole(projectId, RoleSource.DEVOPS)
+        if (projectExternalRole.isEmpty()) return user.roles
+        
+        // 构建 roleId -> id 的映射
+        val roleIdToIdMap = projectExternalRole.associate { it.roleId to it.id!! }
+        
+        // 获取用户在 Devops 项目中的角色组
+        val devopsRoles = devopsProjectService.listMemberGroupsInProject(user.userId, projectId)
+        
+        // 将匹配的角色 ID 添加到用户角色列表中
+        val matchedRoleIds = devopsRoles.mapNotNull { roleIdToIdMap[it] }
+        
+        return (user.roles + matchedRoleIds).distinct()
+    }
+
 
     private fun checkProjectPermission(context: CheckPermissionContext): Boolean {
         with(context) {
@@ -223,12 +243,15 @@ class DevopsPermissionServiceImpl constructor(
                 CUSTOM, LOG -> {
                     return checkDevopsCustomPermission(context)
                 }
+
                 PIPELINE -> {
                     return checkDevopsPipelinePermission(context)
                 }
+
                 REPORT -> {
                     return checkDevopsReportPermission(context.action)
                 }
+
                 else -> {
                     return checkRepoNotInDevops(context)
                 }
@@ -280,6 +303,7 @@ class DevopsPermissionServiceImpl constructor(
                     logger.warn("devops pipeline permission widen to project permission [$context]")
                     return isDevopsProjectMember(userId, projectId, action)
                 }
+
                 else -> throw RuntimeException("resource type not supported: $resourceType")
             }
         }

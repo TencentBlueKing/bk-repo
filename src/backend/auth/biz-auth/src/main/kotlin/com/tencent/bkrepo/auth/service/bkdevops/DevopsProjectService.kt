@@ -72,4 +72,11 @@ class DevopsProjectService @Autowired constructor(private val ciAuthService: CIA
         }
         return externalRoleList
     }
+
+    fun listMemberGroupsInProject(uid: String, projectId: String): List<String> {
+        return ciAuthService.getMemberGroupsInProject(
+            user = uid,
+            projectCode = projectId
+        )
+    }
 }
