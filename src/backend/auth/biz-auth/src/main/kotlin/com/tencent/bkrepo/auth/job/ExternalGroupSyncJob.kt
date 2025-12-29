@@ -62,6 +62,7 @@ class ExternalGroupSyncJob(
             val roleDeptMap =  mutableMapOf<String, List<DeptInfo>>()
             permissionService.listExternalRoleByProject(project, RoleSource.DEVOPS).forEach { externalRole ->
                 roleUserMap[externalRole.roleId] = externalRole.userList
+                roleDeptMap[externalRole.roleId] = externalRole.deptInfoList
             }
             roleList.forEach { role ->
                 if (projectIdMap[role.roleId] == project) {
