@@ -47,10 +47,12 @@ import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.metrics.InfluxMetricsExporter
 import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactMetricsExporter
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.artifact.util.TransferUserAgentUtil
 import com.tencent.bkrepo.common.metadata.service.project.ProjectUsageStatisticsService
+import com.tencent.bkrepo.common.security.manager.ci.CIPermissionManager.Companion.METADATA_PIPELINE_ID
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.actuator.CommonTagProvider
 import com.tencent.bkrepo.common.service.otel.util.TraceHeaderUtils
@@ -91,6 +93,7 @@ class ArtifactTransferListener(
             val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
             val clientIp: String = HttpContextHolder.getClientAddress()
             val projectId = repositoryDetail?.projectId ?: UNKNOWN
+            val (fullPath, pipelineId) = getNodePropertyFromUpload()
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RECEIVE,
@@ -102,7 +105,7 @@ class ArtifactTransferListener(
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp,
-                fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN,
+                fullPath = fullPath,
                 agent = TransferUserAgentUtil.getUserAgent(
                     webPlatformId = artifactMetricsProperties.webPlatformId,
                     host = artifactMetricsProperties.host,
@@ -111,7 +114,8 @@ class ArtifactTransferListener(
                 ).name,
                 userId = SecurityUtils.getUserId().md5(),
                 serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
-                traceId = TraceHeaderUtils.buildB3Header()
+                traceId = TraceHeaderUtils.buildB3Header(),
+                pipelineId = pipelineId,
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, receivedBytes = throughput.bytes)
@@ -139,6 +143,7 @@ class ArtifactTransferListener(
             val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
             val clientIp: String = HttpContextHolder.getClientAddress()
             val projectId = repositoryDetail?.projectId ?: UNKNOWN
+            val (fullPath, pipelineId) = getNodePropertyFromDownload()
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RESPONSE,
@@ -150,7 +155,7 @@ class ArtifactTransferListener(
                 project = projectId,
                 repoName = repositoryDetail?.name ?: UNKNOWN,
                 clientIp = clientIp,
-                fullPath = getFullPath(),
+                fullPath = fullPath,
                 agent = TransferUserAgentUtil.getUserAgent(
                     webPlatformId = artifactMetricsProperties.webPlatformId,
                     host = artifactMetricsProperties.host,
@@ -159,7 +164,8 @@ class ArtifactTransferListener(
                 ).name,
                 userId = SecurityUtils.getUserId().md5(),
                 serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
-                traceId = TraceHeaderUtils.buildB3Header()
+                traceId = TraceHeaderUtils.buildB3Header(),
+                pipelineId = pipelineId,
             )
             if (SecurityUtils.getUserId() != SYSTEM_USER) {
                 projectUsageStatisticsService.inc(projectId = projectId, responseBytes = throughput.bytes)
@@ -181,14 +187,24 @@ class ArtifactTransferListener(
         }
     }
 
-    private fun getFullPath(): String {
-        val artifactInfo = ArtifactContextHolder.getArtifactInfo()
-        return if (artifactInfo != null) {
-            ArtifactContextHolder.getNodeDetail(artifactInfo)?.fullPath ?: UNKNOWN
-        } else {
+    private fun getNodePropertyFromUpload(): Pair<String, String> {
+        val fullPath = ArtifactContextHolder.getArtifactInfo()?.getArtifactFullPath() ?: UNKNOWN
+        val pipelineId = try {
+            (ArtifactContextHolder as ArtifactUploadContext).pipelineMetadata[METADATA_PIPELINE_ID] ?: UNKNOWN
+        } catch (e: Exception) {
             UNKNOWN
         }
+        return Pair(fullPath, pipelineId)
     }
+
+    private fun getNodePropertyFromDownload(): Pair<String, String> {
+        val artifactInfo = ArtifactContextHolder.getArtifactInfo() ?: return Pair(UNKNOWN, UNKNOWN)
+        val nodeDetail = ArtifactContextHolder.getNodeDetail(artifactInfo) ?: return Pair(UNKNOWN, UNKNOWN)
+        val fullPath = nodeDetail.fullPath
+        val pipelineId = nodeDetail.metadata["pipelineId"]?.toString() ?: UNKNOWN
+        return Pair(fullPath, pipelineId)
+    }
+
 
     @EventListener(ChunkArtifactTransferEvent::class)
     fun listen(event: ChunkArtifactTransferEvent) {
@@ -218,7 +234,12 @@ class ArtifactTransferListener(
                 ).name,
                 userId = SecurityUtils.getUserId().md5(),
                 serverIp = commonTagProvider.ifAvailable?.provide().orEmpty()["host"] ?: UNKNOWN,
-                traceId = TraceHeaderUtils.buildB3Header()
+                traceId = TraceHeaderUtils.buildB3Header(),
+                pipelineId = if (pipelineId.isNotEmpty()) {
+                    pipelineId
+                } else {
+                    UNKNOWN
+                }
             )
             if (artifactMetricsProperties.collectByLog) {
                 logger.info(

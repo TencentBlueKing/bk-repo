@@ -39,6 +39,7 @@ import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.MediaTypes
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.StringPool.ROOT
+import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
@@ -362,7 +363,9 @@ class GenericLocalRepository(
             val metadata = resolveMetadata(context.request)
             val mPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true) }?.value?.toString()
                 ?: metadata.find { it.key.equals(METADATA_PIPELINE_ID, true) }?.value?.toString()
+
             if (mPipelineId != null) {
+                context.pipelineMetadata[METADATA_PIPELINE_ID] = mPipelineId
                 val status = checkPipelineArtifactUploadPermission(
                     artifactInfo = this,
                     existNode = existNode,
@@ -370,6 +373,7 @@ class GenericLocalRepository(
                 )
                 addPipelineMetadata(existNode, context, status)
             } else {
+                context.pipelineMetadata[METADATA_PIPELINE_ID] = UNKNOWN
                 checkNormalArtifactUploadPermission(existNode, projectId, repoName)
             }
         }
