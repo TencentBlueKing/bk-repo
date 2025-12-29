@@ -97,6 +97,7 @@ class ArtifactTransferListener(
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RECEIVE,
+                transferMode = determineTransferMode(),
                 elapsed = throughput.time,
                 bytes = throughput.bytes,
                 average = throughput.average(),
@@ -147,6 +148,7 @@ class ArtifactTransferListener(
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = ArtifactTransferRecord.RESPONSE,
+                transferMode = determineResponseTransferMode(artifactResource),
                 elapsed = throughput.time,
                 bytes = throughput.bytes,
                 average = throughput.average(),
@@ -197,6 +199,68 @@ class ArtifactTransferListener(
         return Pair(fullPath, pipelineId)
     }
 
+    /**
+     * 根据请求头判断传输模式
+     * 参考 GenericLocalRepository#onUpload 的判断逻辑
+     */
+    private fun determineTransferMode(): String {
+        val request = HttpContextHolder.getRequestOrNull() ?: return ArtifactTransferRecord.MODE_NORMAL
+        val uploadType = request.getHeader(HEADER_UPLOAD_TYPE)
+        val uploadId = request.getHeader(HEADER_UPLOAD_ID)
+        val sequence = request.getHeader(HEADER_SEQUENCE)
+
+        return when {
+            isSeparateUpload(uploadType) -> ArtifactTransferRecord.MODE_CHUNK
+            isBlockUpload(uploadId, sequence) -> ArtifactTransferRecord.MODE_CHUNK
+            isChunkedUpload(uploadType) -> ArtifactTransferRecord.MODE_CHUNK
+            else -> ArtifactTransferRecord.MODE_NORMAL
+        }
+    }
+
+    /**
+     * 判断是否为分块上传（需要 uploadId 和 sequence 同时存在）
+     */
+    private fun isBlockUpload(uploadId: String?, sequence: String?): Boolean {
+        return !uploadId.isNullOrBlank() && !sequence.isNullOrBlank()
+    }
+
+    /**
+     * 是否使用分块追加上传
+     */
+    private fun isChunkedUpload(uploadType: String?): Boolean {
+        return !uploadType.isNullOrEmpty() && uploadType == CHUNKED_UPLOAD
+    }
+
+    /**
+     * 是否为分离上传
+     */
+    private fun isSeparateUpload(uploadType: String?): Boolean {
+        return !uploadType.isNullOrEmpty() && uploadType == SEPARATE_UPLOAD
+    }
+
+    /**
+     * 根据 ArtifactResource 判断响应传输模式
+     * 如果是 range 请求（部分内容），则为 CHUNK 模式
+     */
+    private fun determineResponseTransferMode(artifactResource: ArtifactResource): String {
+        return if (isRangeRequest(artifactResource)) {
+            ArtifactTransferRecord.MODE_CHUNK
+        } else {
+            ArtifactTransferRecord.MODE_NORMAL
+        }
+    }
+
+    /**
+     * 判断是否为 range 请求
+     * 单个构件且为部分内容时认为是 range 请求
+     */
+    private fun isRangeRequest(artifactResource: ArtifactResource): Boolean {
+        if (artifactResource.containsMultiArtifact()) {
+            return false
+        }
+        return artifactResource.getSingleStream().range.isPartialContent()
+    }
+
     private fun getNodePropertyFromDownload(): Pair<String, String> {
         val artifactInfo = ArtifactContextHolder.getArtifactInfo() ?: return Pair(UNKNOWN, UNKNOWN)
         val nodeDetail = ArtifactContextHolder.getNodeDetail(artifactInfo) ?: return Pair(UNKNOWN, UNKNOWN)
@@ -217,6 +281,7 @@ class ArtifactTransferListener(
             val record = ArtifactTransferRecord(
                 time = Instant.now(),
                 type = recordType,
+                transferMode = ArtifactTransferRecord.MODE_NORMAL,
                 elapsed = costTime,
                 bytes = fileSize,
                 average = average,
@@ -310,5 +375,22 @@ class ArtifactTransferListener(
         private const val FIXED_DELAY = 30 * 1000L
 
         private const val MILLIS_OF_DAY = 24 * 3600 * 1000L
+
+        /**
+         * 上传类型请求头
+         */
+        private const val HEADER_UPLOAD_TYPE = "UPLOAD-TYPE"
+        private const val HEADER_UPLOAD_ID = "X-BKREPO-UPLOAD-ID"
+        private const val HEADER_SEQUENCE = "X-BKREPO-SEQUENCE"
+
+        /**
+         * 分块上传标识
+         */
+        private const val CHUNKED_UPLOAD = "CHUNKED-UPLOAD"
+
+        /**
+         * 分离上传标识
+         */
+        private const val SEPARATE_UPLOAD = "SEPARATE-UPLOAD"
     }
 }

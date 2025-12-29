@@ -43,6 +43,8 @@ data class ArtifactTransferRecord(
     val time: Instant,
     @Column(name = "type", tag = true)
     val type: String,
+    @Column(name = "transferMode", tag = true)
+    val transferMode: String,
     @Column(name = "storage", tag = true)
     val storage: String,
     @Column(name = "elapsed")
@@ -73,7 +75,12 @@ data class ArtifactTransferRecord(
     val pipelineId: String,
 ) {
     companion object {
+        // 传输方向
         const val RECEIVE = "RECEIVE"
         const val RESPONSE = "RESPONSE"
+
+        // 传输模式
+        const val MODE_NORMAL = "NORMAL"
+        const val MODE_CHUNK = "CHUNK"
     }
 }
