@@ -30,12 +30,12 @@ package com.tencent.bkrepo.conan.listener.operation
 import com.tencent.bkrepo.conan.pojo.ConanPackageDeleteRequest
 import com.tencent.bkrepo.conan.pojo.IndexInfo
 import com.tencent.bkrepo.conan.pojo.RevisionOperationRequest
-import com.tencent.bkrepo.conan.service.impl.CommonService
+import com.tencent.bkrepo.conan.service.impl.ConanCommonService
 
 class ConanPackageDeleteOperation(
     private val request: RevisionOperationRequest,
-    commonService: CommonService
-) : AbstractRevisionOperation(request, commonService) {
+    conanCommonService: ConanCommonService
+) : AbstractRevisionOperation(request, conanCommonService) {
 
     override fun handleEvent(indexInfo: IndexInfo) {
         with(request as ConanPackageDeleteRequest) {

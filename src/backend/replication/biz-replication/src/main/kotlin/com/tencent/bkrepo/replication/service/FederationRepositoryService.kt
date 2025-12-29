@@ -99,5 +99,9 @@ interface FederationRepositoryService {
      */
     fun updateFederationRepository(request: FederatedRepositoryUpdateRequest): Boolean
 
+    /**
+     * 更新全量同步结束状态
+     */
+    fun updateFullSyncEnd(projectId: String, repoName: String, federationId: String)
 
 }

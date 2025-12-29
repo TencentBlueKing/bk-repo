@@ -63,7 +63,7 @@ import org.springframework.stereotype.Service
 @Service
 class CargoExtServiceImpl(
     private val cargoProperties: CargoProperties,
-    private val commonService: CommonService,
+    private val cargoCommonService: CargoCommonService,
 ) : CargoExtService {
 
     override fun detailVersion(
@@ -75,13 +75,13 @@ class CargoExtServiceImpl(
         with(artifactInfo) {
             val name = PackageKeys.resolveCargo(packageKey)
             val fullPath = CargoUtils.getCargoFileFullPath(name, version)
-            val nodeDetail = commonService.getNodeDetail(projectId, repoName, fullPath) ?: run {
+            val nodeDetail = cargoCommonService.getNodeDetail(projectId, repoName, fullPath) ?: run {
                 logger.warn("Cloud not find cargo node [$fullPath].")
                 throw CargoFileNotFoundException(
                     CargoMessageCode.CARGO_FILE_NOT_FOUND, fullPath, "$projectId|$repoName"
                 )
             }
-            val packageVersion = commonService.findVersionByName(projectId, repoName, packageKey, version) ?: run {
+            val packageVersion = cargoCommonService.findVersionByName(projectId, repoName, packageKey, version) ?: run {
                 logger.warn("Cloud not find cargo package [$packageKey] with version $version.")
                 throw PackageNotFoundException(packageKey)
             }
@@ -94,7 +94,7 @@ class CargoExtServiceImpl(
     override fun deletePackage(userId: String, artifactInfo: CargoDeleteArtifactInfo) {
         logger.info("handling delete cargo request: [$artifactInfo]")
         with(artifactInfo) {
-            if (!commonService.packageExist(projectId, repoName, packageName)) {
+            if (!cargoCommonService.packageExist(projectId, repoName, packageName)) {
                 throw VersionNotFoundException(version)
             }
             val context = ArtifactRemoveContext()
@@ -106,7 +106,7 @@ class CargoExtServiceImpl(
     override fun deleteVersion(userId: String, artifactInfo: CargoDeleteArtifactInfo) {
         logger.info("handling delete cargo version request: [$artifactInfo]")
         with(artifactInfo) {
-            if (!commonService.packageVersionExist(projectId, repoName, packageName, version)) {
+            if (!cargoCommonService.packageVersionExist(projectId, repoName, packageName, version)) {
                 throw PackageNotFoundException(packageName)
             }
             val context = ArtifactRemoveContext()
@@ -125,7 +125,7 @@ class CargoExtServiceImpl(
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, listOf("crateName"))
             }
             val indexFullPath = getCargoIndexFullPath(crateName)
-            commonService.lockAction(projectId, repoName, indexFullPath) {
+            cargoCommonService.lockAction(projectId, repoName, indexFullPath) {
                 regenerateCrateIndex(artifactInfo)
             }
         }
@@ -135,11 +135,11 @@ class CargoExtServiceImpl(
     private fun regenerateCrateIndex(artifactInfo: CargoArtifactInfo) {
         with(artifactInfo) {
             var pageNum = 1
-            val crateIndexMap = commonService.getIndexOfCrate(projectId, repoName, crateName!!)
+            val crateIndexMap = cargoCommonService.getIndexOfCrate(projectId, repoName, crateName!!)
                 .associateBy { it.vers }.toMutableMap()
             val existsVersions = mutableListOf<String>()
             while (true) {
-                val result = commonService.queryCrateNodesByCrateName(projectId, repoName, crateName, pageNum)
+                val result = cargoCommonService.queryCrateNodesByCrateName(projectId, repoName, crateName, pageNum)
                 if (result.records.isEmpty()) break
                 for (record in result.records) {
                     fixVersionIndex(artifactInfo, record, crateIndexMap, existsVersions)
@@ -201,8 +201,8 @@ class CargoExtServiceImpl(
         with(artifactInfo) {
             val indexFullPath = getCargoIndexFullPath(crateName!!)
             val versions = crateIndexList.sortedBy { it.vers }.toMutableList()
-            val artifactFile = commonService.buildIndexArtifactFile(
-                versions, commonService.getStorageCredentials(projectId, repoName)
+            val artifactFile = cargoCommonService.buildIndexArtifactFile(
+                versions, cargoCommonService.getStorageCredentials(projectId, repoName)
             )
             val nodeCreateRequest = buildNodeCreateRequest(
                 projectId = projectId,
@@ -211,7 +211,7 @@ class CargoExtServiceImpl(
                 operator = SecurityUtils.getUserId(),
                 artifactFile = artifactFile
             )
-            commonService.uploadIndexOfCrate(artifactFile, nodeCreateRequest)
+            cargoCommonService.uploadIndexOfCrate(artifactFile, nodeCreateRequest)
             logger.info("upload index of crate $crateName in repo $projectId|$repoName success")
         }
     }
@@ -224,7 +224,7 @@ class CargoExtServiceImpl(
         yanked: Boolean?,
         cksha256: String
     ): CrateIndex {
-        val jsonData = commonService.getJsonOfCrate(projectId, repoName, crateName, version)
+        val jsonData = cargoCommonService.getJsonOfCrate(projectId, repoName, crateName, version)
         return CrateIndex(
             name = crateName,
             vers = version,

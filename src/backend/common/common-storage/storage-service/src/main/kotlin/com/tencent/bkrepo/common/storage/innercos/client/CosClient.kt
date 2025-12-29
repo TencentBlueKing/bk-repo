@@ -188,6 +188,12 @@ class CosClient(val credentials: InnerCosCredentials) {
                 return getObject(cosRequest)
             }
             val len = rangeEnd - rangeStart + 1
+            if (len == 0L) {
+                return CosObject(
+                    eTag = null, inputStream = StringPool.EMPTY.byteInputStream(),
+                    length = 0, crc64ecma = null
+                )
+            }
             if (!shouldUseMultipart(len)) {
                 return getObject(cosRequest)
             }
@@ -350,6 +356,10 @@ class CosClient(val credentials: InnerCosCredentials) {
         return Callable {
             retry(RETRY_COUNT) {
                 CosHttpClient.request(downloadRequest).use {
+                    if (!it.isSuccessful) {
+                        throw InnerCosException("download object failed, " +
+                                "url:${it.request.url}, code:${it.code}")
+                    }
                     val putObjectRequest = buildHttpRequest(
                         StreamUploadPartRequest(
                             key = key,

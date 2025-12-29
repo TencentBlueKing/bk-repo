@@ -84,6 +84,7 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.sign.SignConfigService
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.security.permission.PrincipalType
@@ -109,7 +110,8 @@ class ScanTaskServiceImpl(
     private val repositoryService: RepositoryService,
     private val resultManagers: Map<String, ScanExecutorResultManager>,
     private val scannerConverters: Map<String, ScannerConverter>,
-    private val filterRuleService: FilterRuleService
+    private val filterRuleService: FilterRuleService,
+    private val signConfigService: SignConfigService
 ) : ScanTaskService {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -352,7 +354,7 @@ class ScanTaskServiceImpl(
         val task = scanTaskDao.findById(taskId) ?: throw ScanTaskNotFoundException(taskId)
         val taskScanner = scannerService.get(task.scanner)
         val dispatcher = task.metadata.find { it.key == TASK_METADATA_DISPATCHER }?.value.orEmpty()
-        val expireDay = getNodeExpireDay(taskScanner)
+        val expireDay = getNodeExpireDay(taskScanner, task.projectId.orEmpty())
         val currentTaskExecuteTime = getCurrentTaskExecuteTime(taskId, taskScanner)
         val unfinishSubTasks = subScanTaskDao.tasksCreatedBefore(task.createdDate, dispatcher)
 
@@ -410,13 +412,13 @@ class ScanTaskServiceImpl(
         return currentTaskExecuteTime
     }
 
-    private fun getNodeExpireDay(taskScanner: Scanner): Int {
+    private fun getNodeExpireDay(taskScanner: Scanner, projectId: String): Int {
         val expireDay = if (taskScanner is StandardScanner) {
-            taskScanner.args.find { it.key == "expire" }?.value?.toInt() ?: -1
+            taskScanner.args.find { it.key == "expire" }?.value?.toInt()
         } else {
-            -1
+            null
         }
-        return expireDay
+        return expireDay ?: signConfigService.find(projectId)?.expireDays ?: -1
     }
 
     private fun <Req, Res> resultDetail(

@@ -82,7 +82,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
     lateinit var packageService: PackageService
 
     @Autowired
-    lateinit var commonService: CommonService
+    lateinit var conanCommonService: ConanCommonService
 
     override fun removeConanFile(conanArtifactInfo: ConanArtifactInfo) {
         with(conanArtifactInfo) {
@@ -122,7 +122,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
                 return
             }
             val revPath = PathUtils.normalizeFullPath(getPackageRevisionsFile(conanFileReference))
-            val storedPackageIds = commonService.getPackageIdList(projectId, repoName, revPath)
+            val storedPackageIds = conanCommonService.getPackageIdList(projectId, repoName, revPath)
             for (packageId in packageIds) {
                 if (!storedPackageIds.contains(packageId)) {
                     continue
@@ -199,7 +199,7 @@ class ConanDeleteServiceImpl : ConanDeleteService {
 
     override fun getDomain(): ConanDomainInfo {
         return ConanDomainInfo(
-            domain = commonService.getDomain()
+            domain = conanCommonService.getDomain()
         )
     }
 

@@ -31,6 +31,8 @@
 
 package com.tencent.bkrepo.repository.pojo.share
 
+import com.tencent.bkrepo.common.metadata.annotation.Sensitive
+import com.tencent.bkrepo.common.metadata.handler.MaskPartString
 import io.swagger.v3.oas.annotations.media.Schema
 
 
@@ -43,6 +45,7 @@ data class ShareRecordInfo(
     @get:Schema(title = "完整路径")
     val fullPath: String,
     @get:Schema(title = "分享url")
+    @Sensitive(handler = MaskPartString::class)
     val shareUrl: String,
     @get:Schema(title = "授权用户")
     val authorizedUserList: List<String>,

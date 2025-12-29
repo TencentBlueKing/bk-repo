@@ -5,6 +5,7 @@ import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 
 
@@ -56,6 +57,14 @@ class PermissionDao : SimpleMongoDao<TPermission>() {
             )
         )
         return this.findOne(query)
+    }
+
+    fun listByRoleAndResource(roles: List<String>, resourceType: String): List<TPermission> {
+        val query = Query(
+            Criteria(TPermission::roles.name).`in`(roles)
+                .and(TPermission::resourceType.name).isEqualTo(resourceType)
+        )
+        return this.find(query)
     }
 
     fun listByRole(roles: List<String>): List<TPermission> {

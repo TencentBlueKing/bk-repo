@@ -79,6 +79,9 @@ class ArtifactPermissionCheckHandler(
                     )
                 }
             }
+            ResourceType.REPLICATION -> {
+                permissionManager.checkReplicationPermission(permission.action)
+            }
             else -> throw PermissionException("unsupported resource type")
         }
     }

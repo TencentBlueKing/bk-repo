@@ -32,7 +32,7 @@ package com.tencent.bkrepo.websocket.pojo.fs
  */
 data class CopyPDU(
     val projectId: String,
-    var userId: String,
+    var userId: String = "",
     val workspaceName: String,
     val files: Map<String, Long>,
     val timestamp: Long,

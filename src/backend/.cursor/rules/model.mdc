@@ -1,0 +1,58 @@
+---
+description: 数据模型定义规范（Entity、DTO、POJO）
+globs: **/model/**/*.kt,**/pojo/**/*.kt
+alwaysApply: false
+---
+
+## MongoDB 实体类
+
+1. 类命名：`T{Entity}` (如 `TProject`, `TNode`)
+2. 集合名：`@Document("project")` 使用小写
+3. 使用 `data class` 定义
+4. 主键：`var id: String? = null`
+5. 定义索引：
+   ```kotlin
+   @CompoundIndex(def = "{'name': 1}", name = "name_idx", unique = true, background = true)
+   ```
+6. 必须包含下面这些字段：
+```kotlin
+data class TExample(
+    var id: String? = null,
+    var createdBy: String,
+    var createdDate: LocalDateTime,
+    var lastModifiedBy: String,
+    var lastModifiedDate: LocalDateTime,
+)
+```
+
+## 索引设计原则
+
+1. 为常用查询条件建立索引
+2. 业务主键使用唯一索引：`unique = true`
+3. 复合索引顺序：相等条件在前，范围查询在后，排序字段最后
+4. 复合索引不超过 3-4 个字段
+5. 使用后台创建：`background = true`
+
+## Request DTO
+
+1. 使用 `data class` 定义
+2. 命名：`{Resource}{Action}Request` (如 `ProjectCreateRequest`)
+
+## Response DTO
+
+1. 命名：`{Resource}`
+2. 使用 `data class`，所有字段为 `val`（不可变）
+
+
+## 实体转换扩展函数
+
+1. Entity to DTO：`fun TProject.to(): ProjectInfo = ProjectInfo(...)`
+2. Request to Entity：`fun ProjectCreateRequest.toEntity(): TProject = TProject(...)`
+3. 定义在实体类或 DTO 类的伴生对象或文件末尾
+
+## 禁止事项
+
+1. 不要使用普通 class（使用 data class）
+2. 不要所有字段都用 `var`（优先使用 `val`）
+3. 不要在 Model 类中包含业务逻辑
+4. 不要忘记为查询字段建立索引

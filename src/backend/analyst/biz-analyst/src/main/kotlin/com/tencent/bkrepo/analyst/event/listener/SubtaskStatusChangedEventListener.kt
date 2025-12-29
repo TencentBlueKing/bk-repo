@@ -37,10 +37,7 @@ import com.tencent.bkrepo.analyst.service.ScanQualityService
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
 import com.tencent.bkrepo.common.api.util.toJsonString
-import com.tencent.bkrepo.common.artifact.constant.FORBID_REASON
-import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
-import com.tencent.bkrepo.common.artifact.constant.FORBID_USER
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.lock.service.LockOperation
@@ -171,7 +168,13 @@ class SubtaskStatusChangedEventListener(
         subtask.qualityRedLine?.let {
             metadata.add(MetadataModel(key = SubScanTaskDefinition::qualityRedLine.name, value = it, system = true))
         }
-        val currentForbidType = metadataService.listMetadata(projectId, repoName, fullPath)[FORBID_TYPE]
+        val currentForbidType = with(subtask) {
+            if (repoType == RepositoryType.GENERIC.name) {
+                metadataService.listMetadata(projectId, repoName, fullPath)[FORBID_TYPE]
+            } else if (!packageKey.isNullOrEmpty() && !version.isNullOrEmpty()) {
+                packageMetadataService.listMetadata(projectId, repoName, packageKey, version)[FORBID_TYPE]
+            }
+        }
         if (currentForbidType == ForbidType.MANUAL.name) {
             // 手动禁用的情况不处理
             return
@@ -186,7 +189,7 @@ class SubtaskStatusChangedEventListener(
             return
         } else {
             // 全部方案均通过时移除禁用元数据
-            deleteMetadata(subtask, setOf(FORBID_STATUS, FORBID_REASON, FORBID_USER, FORBID_TYPE))
+            deleteMetadata(subtask, MetadataUtils.FORBID_KEYS)
         }
     }
 

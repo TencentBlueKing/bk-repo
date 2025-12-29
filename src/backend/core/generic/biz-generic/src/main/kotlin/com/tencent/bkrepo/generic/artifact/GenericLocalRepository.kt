@@ -45,6 +45,7 @@ import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
+import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_CRC64ECMA
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
@@ -153,7 +154,7 @@ class GenericLocalRepository(
     private val ciPermissionManager: CIPermissionManager,
     private val blockNodeService: BlockNodeService,
     private val storageProperties: StorageProperties,
-    private val metadataLabelCacheService: MetadataLabelCacheService
+    private val metadataLabelCacheService: MetadataLabelCacheService,
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -184,7 +185,7 @@ class GenericLocalRepository(
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "md5")
         }
         // 校验crc64ecma
-        val calculatedCrc64ecma = context.getArtifactSha256()
+        val calculatedCrc64ecma = context.getArtifactCrc64ecma()
         val uploadCrc64ecma = HeaderUtils.getHeader(HEADER_CRC64ECMA)
         if (uploadCrc64ecma != null && !calculatedCrc64ecma.equals(uploadCrc64ecma, true)) {
             throw ErrorCodeException(ArtifactMessageCode.DIGEST_CHECK_FAILED, "crc64ecma")
@@ -225,6 +226,7 @@ class GenericLocalRepository(
                 context.response.contentType = MediaTypes.APPLICATION_JSON
                 context.response.addHeader(X_CHECKSUM_MD5, context.getArtifactMd5())
                 context.response.addHeader(X_CHECKSUM_SHA256, context.getArtifactSha256())
+                context.response.addHeader(X_CHECKSUM_CRC64ECMA, context.getArtifactCrc64ecma())
                 context.response.writer.println(ResponseBuilder.success(nodeDetail).toJsonString())
             }
         }
@@ -283,6 +285,10 @@ class GenericLocalRepository(
 
     override fun onUploadSuccess(context: ArtifactUploadContext) {
         super.onUploadSuccess(context)
+        replicate(context)
+    }
+
+    private fun replicate(context: ArtifactUploadContext) {
         if (HttpContextHolder.getRequestOrNull()?.getParameter(PARAM_REPLICATE).toBoolean()) {
             val remoteClusterIds = edgeClusterNodeCache.get("").map { it.id!! }.toSet()
             if (remoteClusterIds.isEmpty()) {
@@ -292,7 +298,7 @@ class GenericLocalRepository(
             replicaTaskClient.create(
                 ReplicaTaskCreateRequest(
                     name = context.artifactInfo.getArtifactFullPath() +
-                        "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
+                            "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
                     localProjectId = context.projectId,
                     replicaObjectType = ReplicaObjectType.PATH,
                     replicaTaskObjects = listOf(

@@ -85,3 +85,8 @@ const val AUTH_ADMIN = "admin"
 const val AUTH_BUILTIN_ADMIN = "repo_admin"
 const val AUTH_BUILTIN_USER = "repo_user"
 const val AUTH_BUILTIN_VIEWER = "repo_viewer"
+
+
+const val REPLICATION_MANAGE_ID = "replication_manage"
+
+const val REPLICATION_MANAGE_NAME = "同步管理员"

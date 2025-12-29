@@ -157,6 +157,32 @@ class RBlockNodeServiceImpl(
         }
     }
 
+    override suspend fun checkBlockExist(blockNode: TBlockNode): Boolean {
+        with(blockNode) {
+            val criteria = BlockNodeQueryHelper.findBlockCriteria(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = nodeFullPath,
+                startPos = startPos,
+                sha256 = sha256,
+                deleted = deleted
+            )
+            return rBlockNodeDao.exists(Query(criteria))
+        }
+    }
+
+    override suspend fun listDeletedBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeCreateDate: LocalDateTime,
+        nodeDeleteDate: LocalDateTime
+    ): List<TBlockNode> {
+        val criteria =
+            BlockNodeQueryHelper.deletedCriteria(projectId, repoName, fullPath, nodeCreateDate, nodeDeleteDate)
+        return rBlockNodeDao.find(Query(criteria))
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(RBlockNodeService::class.java)
     }

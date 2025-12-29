@@ -233,6 +233,14 @@ class FederationRepositoryServiceImpl(
         }
     }
 
+    override fun updateFullSyncEnd(projectId: String, repoName: String, federationId: String) {
+        localFederationManager.updateFullSyncEnd(projectId, repoName, federationId)
+        logger.info(
+            "Successfully updated full sync end status" +
+                " for repo: $projectId|$repoName, federationId: $federationId"
+        )
+    }
+
     /**
      * 检测集群配置是否有变化
      * 不仅检查集群ID，还检查集群的其他配置属性

@@ -1,0 +1,72 @@
+---
+description: Repository/DAO 层 MongoDB 数据访问规范
+globs: **/dao/**/*Dao.kt,**/repository/**/*Repository.kt
+alwaysApply: false
+---
+
+## 基本结构
+
+1. 添加 `@Repository` 注解
+2. 只负责数据访问，不包含业务逻辑
+
+## 方法命名规范
+
+1. 查询单个：`findByName(name: String): TProject?`
+2. 查询列表：`findByProjectId(projectId: String): List<TNode>`
+3. 批量查询：`findByNameIn(names: List<String>): List<TProject>`
+4. 存在检查：`existsByName(name: String): Boolean`
+5. 计数：`countByCreator(creator: String): Long`
+6. 删除：`deleteById(id: String): DeleteResult`
+7. 更新：`updateFirst(id: String, update: Update): UpdateResult`
+
+## 查询操作
+
+1. 基本查询：`Query(where(TProject::name).isEqualTo(name))`
+2. 多条件：使用 `Criteria().andOperator()` 或链式调用 `.and()`
+3. 只查需要的字段：`query.fields().include(...).exclude("_id")`
+4. 分页查询：
+   ```kotlin
+   val pageRequest = PageRequest.of(pageNumber, pageSize, Sort.by(...))
+   query.with(pageRequest)
+   val total = mongoTemplate.count(query, TProject::class.java)
+   val records = mongoTemplate.find(query, TProject::class.java)
+   ```
+
+## 更新操作
+
+1. 单个字段：`Update().set(TProject::displayName.name, displayName)`
+2. 增加数值：`Update().inc(TProject::size.name, delta)`
+3. 删除字段：`Update().unset(TProject::description.name)`
+4. 数组操作：`Update().addToSet(...)` 或 `Update().pull(...)`
+5. Map 操作：`Update().set("metadata.$key", value)`
+
+## 批量操作
+
+1. 批量插入：
+   ```kotlin
+   val bulkOps = mongoTemplate.bulkOps(BulkOperations.BulkMode.UNORDERED, TProject::class.java)
+   projects.forEach { bulkOps.insert(it) }
+   bulkOps.execute()
+   ```
+2. 批量更新：`bulkOps.updateOne(query, update)`
+3. 批量删除：直接使用 `where(...).in(ids)`
+
+## 性能优化
+
+1. 查询条件使用已建立索引的字段
+2. 避免全表扫描（非索引字段查询）
+3. 批量操作使用 `BulkOps`
+4. 大数据量分批处理，不要一次性加载到内存
+5. 空集合检查：批量查询前检查 `if (ids.isEmpty()) return emptyList()`
+
+## 软删除
+
+1. 软删除：`where(TProject::deleted).isEqualTo(null)` 排除已删除记录
+
+## 禁止事项
+
+1. 不要在 DAO 层编写业务逻辑
+2. 不要使用字符串查询（使用类型安全的 where()）
+3. 避免 N+1 查询（在循环中查询数据库）
+4. 不要在 DAO 层使用 `@Transactional`
+5. 批量查询参数列表为空时直接返回，不要执行查询

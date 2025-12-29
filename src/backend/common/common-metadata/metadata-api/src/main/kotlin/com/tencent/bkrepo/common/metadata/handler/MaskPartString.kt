@@ -27,22 +27,14 @@
 
 package com.tencent.bkrepo.common.metadata.handler
 
+import com.tencent.bkrepo.common.api.util.MaskPartStringUtil
+
 /**
  * 转换对象为字符串后进行部分打码
  */
-class MaskPartString: AbsSensitiveHandler() {
+class MaskPartString : AbsSensitiveHandler() {
     override fun doDesensitize(sensitiveObj: Any): Any {
         val str = sensitiveObj.toString()
-        return if (str.length < SHOW_LENGTH * 4) {
-            "******"
-        } else {
-            val prefix = str.substring(0, SHOW_LENGTH)
-            val suffix = str.substring(str.length - SHOW_LENGTH, str.length)
-            "$prefix***$suffix"
-        }
-    }
-
-    companion object {
-        private const val SHOW_LENGTH = 3
+        return MaskPartStringUtil.maskPartString(str)
     }
 }

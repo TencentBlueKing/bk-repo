@@ -128,6 +128,25 @@ enum class DefaultGroupTypeAndActions(val value: String, val actions: Map<String
                               ActionTypeMapping.NODE_DOWNLOAD.id()
                           ),
                       )
+    ),
+    REPLICATION_MANAGER(
+        DefaultGroupType.REPLICATION_MANAGER.value,
+        mapOf(
+            ResourceType.REPLICATION.id() to listOf(
+                ActionTypeMapping.REPLICATION_MANAGE.id(),
+                ActionTypeMapping.REPLICATION_EXECUTE.id(),
+                ActionTypeMapping.REPLICATION_VIEW.id()
+            )
+        )
+    ),
+    REPLICATION_OPERATOR(
+        DefaultGroupType.REPLICATION_OPERATOR.value,
+        mapOf(
+            ResourceType.REPLICATION.id() to listOf(
+                ActionTypeMapping.REPLICATION_EXECUTE.id(),
+                ActionTypeMapping.REPLICATION_VIEW.id()
+            )
+        )
     );
 
     companion object {

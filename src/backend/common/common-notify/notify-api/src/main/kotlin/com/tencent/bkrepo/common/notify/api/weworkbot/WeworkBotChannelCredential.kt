@@ -38,10 +38,10 @@ data class WeworkBotChannelCredential(
     override var name: String = "",
     override var default: Boolean = false,
     @get:Schema(title = "企业微信机器人Key，可以从企业微信机器人的Webhook中获取")
-    @Sensitive(handler = MaskPartString::class)
+    @field:Sensitive(handler = MaskPartString::class)
     var key: String
-) : NotifyChannelCredential(name, type, default) {
+) : NotifyChannelCredential(name, TYPE, default) {
     companion object {
-        const val type = "wework-bot"
+        const val TYPE = "wework-bot"
     }
 }

@@ -30,12 +30,12 @@ package com.tencent.bkrepo.cargo.listener.operation
 import com.tencent.bkrepo.cargo.pojo.event.CargoOperationRequest
 import com.tencent.bkrepo.cargo.pojo.event.CargoPackageUploadRequest
 import com.tencent.bkrepo.cargo.pojo.index.CrateIndex
-import com.tencent.bkrepo.cargo.service.impl.CommonService
+import com.tencent.bkrepo.cargo.service.impl.CargoCommonService
 
 class CargoPackageUploadOperation(
     private val request: CargoOperationRequest,
-    private val commonService: CommonService
-) : AbstractCargoOperation(request, commonService) {
+    private val cargoCommonService: CargoCommonService
+) : AbstractCargoOperation(request, cargoCommonService) {
 
     override fun handleEvent(versions: MutableList<CrateIndex>): MutableList<CrateIndex> {
         with(request as CargoPackageUploadRequest) {

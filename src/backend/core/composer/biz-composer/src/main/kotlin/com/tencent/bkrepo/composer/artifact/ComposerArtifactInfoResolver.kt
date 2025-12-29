@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.composer.artifact
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.Resolver
 import jakarta.servlet.http.HttpServletRequest
@@ -47,7 +48,7 @@ class ComposerArtifactInfoResolver : ArtifactInfoResolver {
         request: HttpServletRequest
     ): ArtifactInfo {
         // 包名
-        val uri = request.servletPath.removePrefix("/$projectId/$repoName")
+        val uri = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!.removePrefix("/$projectId/$repoName")
         return ComposerArtifactInfo(projectId, repoName, uri)
     }
 }

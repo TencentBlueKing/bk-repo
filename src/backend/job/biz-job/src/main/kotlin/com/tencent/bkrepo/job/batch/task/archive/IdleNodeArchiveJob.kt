@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.job.batch.task.archive
 
+import com.tencent.bkrepo.archive.ArchiveStatus.WAIT_TO_RESTORE
+import com.tencent.bkrepo.archive.ArchiveStatus.RESTORING
+import com.tencent.bkrepo.archive.ArchiveStatus.RESTORED
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
@@ -138,7 +141,7 @@ class IdleNodeArchiveJob(
         val storageClass = properties.storageClass
         val days = properties.days
         logger.info("Start to archive $row, storageClass: $storageClass, collectionName: $collectionName, days: $days")
-        archiveNode(row, context, storageClass, archiveCredentialsKey, days)
+        archiveNode(row, context, storageClass, archiveCredentialsKey)
     }
 
     fun archiveNode(
@@ -146,7 +149,6 @@ class IdleNodeArchiveJob(
         context: NodeContext,
         storageClass: ArchiveStorageClass,
         archiveCredentialsKey: String?,
-        days: Int,
     ) {
         val sha256 = row.sha256
         val projectId = row.projectId
@@ -169,19 +171,18 @@ class IdleNodeArchiveJob(
             return
         }
         val af = archiveClient.get(sha256, credentialsKey).data
-        if (af == null) {
-            val count = fileReferenceService.count(sha256, credentialsKey)
-            // 归档任务不存在
-            if (count == 1L) {
-                // 快速归档
-                createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
-            } else {
-                synchronized(sha256.intern()) {
-                    slowArchive(row, credentialsKey, context, storageClass, archiveCredentialsKey, days)
-                }
-            }
+        if (af?.status in ARCHIVE_STATUS_RESTORING) {
+            logger.info("Archive[$row] job is restoring [${af?.status}].")
+            return
+        }
+        val count = fileReferenceService.count(sha256, credentialsKey)
+        if (count == 1L) {
+            // 快速归档
+            createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
         } else {
-            logger.info("Archive[$row] job already exist[${af.status}].")
+            synchronized(sha256.intern()) {
+                slowArchive(row, credentialsKey, context, storageClass, archiveCredentialsKey)
+            }
         }
     }
 
@@ -191,20 +192,14 @@ class IdleNodeArchiveJob(
         context: NodeContext,
         storageClass: ArchiveStorageClass,
         archiveCredentialsKey: String?,
-        days: Int,
     ) {
         with(row) {
-            val af = archiveClient.get(sha256, credentialsKey).data
-            if (af == null) {
-                val inUse = nodeUseInfoCache[sha256] ?: checkUse(sha256, days, row.projectId)
-                if (inUse) {
-                    // 只需要缓存被使用的情况，这可以避免sha256被重复搜索。当sha256未被使用时，它会创建一条归档记录，所以无需缓存。
-                    nodeUseInfoCache[sha256] = true
-                } else {
-                    createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
-                }
+            val inUse = nodeUseInfoCache[sha256] ?: checkUse(sha256, row.projectId)
+            if (inUse) {
+                // 只需要缓存被使用的情况，这可以避免sha256被重复搜索。当sha256未被使用时，它会创建一条归档记录，所以无需缓存。
+                nodeUseInfoCache[sha256] = true
             } else {
-                logger.info("Archive[$row] job already exist[${af.status}].")
+                createArchiveFile(credentialsKey, context, row, storageClass, archiveCredentialsKey)
             }
         }
     }
@@ -266,22 +261,17 @@ class IdleNodeArchiveJob(
         }
     }
 
-    private fun checkUse(sha256: String, days: Int, projectId: String): Boolean {
-        val cutoffTime = LocalDateTime.now().minus(Duration.ofDays(days.toLong()))
+    private fun checkUse(sha256: String, projectId: String): Boolean {
         /*
         * 满足以下条件之一，则不进行归档
         * 1. 其他项目存在相同sha256的节点。（跨项目的文件会无法归档）
-        * 2. 当前项目存在更新（晚于归档截止时间）的节点。
         * */
-        (0 until SHARDING_COUNT).forEach {
-            val collectionName = COLLECTION_NAME_PREFIX.plus(it)
+        for (i in 0 until SHARDING_COUNT) {
+            val collectionName = COLLECTION_NAME_PREFIX.plus(i)
             val query = Query.query(
                 Criteria.where("sha256").isEqualTo(sha256)
                     .and("deleted").isEqualTo(null)
-                    .orOperator(
-                        Criteria.where("projectId").ne(projectId),
-                        Criteria.where("lastAccessDate").gt(cutoffTime),
-                    ),
+                    .and("projectId").ne(projectId)
             )
             val existNode = mongoTemplate.findOne(query, Node::class.java, collectionName)
             if (existNode != null) {
@@ -294,6 +284,7 @@ class IdleNodeArchiveJob(
 
     companion object {
         const val COLLECTION_NAME_PREFIX = "node_"
+        private val ARCHIVE_STATUS_RESTORING = listOf(WAIT_TO_RESTORE, RESTORING, RESTORED)
         private const val INITIAL_REFRESH_COUNT = 3
         private val logger = LoggerFactory.getLogger(IdleNodeArchiveJob::class.java)
     }

@@ -35,7 +35,6 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.PackageNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.VersionNotFoundException
-import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
@@ -153,10 +152,6 @@ class EdgeReplicaTaskJob(
             try {
                 val nodeInfo = nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath!!))?.nodeInfo
                     ?: throw NodeNotFoundException(fullPath!!)
-                if (nodeInfo.sha256 == FAKE_SHA256) {
-                    logger.warn("Node $fullPath in repo ${nodeInfo.projectId}|${nodeInfo.repoName} is link node.")
-                    return
-                }
                 replicaContext.replicator.replicaFile(replicaContext, nodeInfo)
                 status = ExecutionStatus.SUCCESS
             } catch (e: Exception) {

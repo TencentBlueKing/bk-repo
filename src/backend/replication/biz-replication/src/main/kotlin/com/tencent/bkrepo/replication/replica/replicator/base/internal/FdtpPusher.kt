@@ -65,7 +65,12 @@ class FdtpPusher(
         with(filePushContext) {
             logger.info("File $sha256 will be pushed using the fdtp way.")
             val client = FdtpAFTClientFactory.createAFTClient(context.cluster, fdtpServerProperties.port)
-            val artifactInputStream = localDataManager.getBlobData(sha256!!, size!!, context.localRepo)
+            val artifactInputStream = localDataManager.getBlobData(
+                sha256 = sha256!!,
+                length = size!!,
+                repoInfo = context.localRepo,
+                federatedSource = federatedSource
+            )
             val rateLimitInputStream = artifactInputStream.rateLimit(
                 replicationProperties.rateLimit.toBytes()
             )
@@ -107,7 +112,7 @@ class FdtpPusher(
                     return true
                 } else {
                     val logMessage = "Error occurred while pushing file $sha256 " +
-                            "with the fdtp way, error is ${response.status.reasonPhrase}"
+                        "with the fdtp way, error is ${response.status.reasonPhrase}"
                     logger.warn(logMessage)
                     throw ArtifactPushException(logMessage)
                 }
@@ -123,6 +128,7 @@ class FdtpPusher(
 
     companion object {
         private val logger = LoggerFactory.getLogger(FdtpPusher::class.java)
+
         // 读取结果返回超时时间 15分钟
         private const val READ_TIME_OUT = 60L * 15
     }

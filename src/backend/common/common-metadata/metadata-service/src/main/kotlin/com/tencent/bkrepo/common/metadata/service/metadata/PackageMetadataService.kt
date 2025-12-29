@@ -40,6 +40,11 @@ import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveR
 interface PackageMetadataService {
 
     /**
+     * 查询包版本元数据
+     */
+    fun listMetadata(projectId: String, repoName: String, packageKey: String, version: String): Map<String, Any>
+
+    /**
      * 根据请求[request]保存或者更新元数据
      *
      * 如果元数据`key`已经存在则更新，否则创建新的

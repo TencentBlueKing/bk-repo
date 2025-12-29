@@ -36,6 +36,7 @@ import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_USER
 import com.tencent.bkrepo.auth.constant.AUTH_BUILTIN_VIEWER
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_VIEWER_ID
+import com.tencent.bkrepo.auth.constant.REPLICATION_MANAGE_ID
 import com.tencent.bkrepo.auth.dao.AccountDao
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.PersonalPathDao
@@ -58,6 +59,7 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction.WRITE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.NODE
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType.PROJECT
+import com.tencent.bkrepo.auth.pojo.enums.ResourceType.REPLICATION
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionContext
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
@@ -182,6 +184,19 @@ open class PermissionServiceImpl constructor(
                     permHelper.removeUserFromRoleBatchCommon(addRoleUserList, adminRoleId!!)
                     return true
                 }
+                REPLICATION_MANAGE_ID -> {
+                    if (!projectId.isNullOrEmpty()) {
+                        throw ErrorCodeException(AuthMessageCode.AUTH_CREATE_ROLE_INVALID_WITHOUT_PROJECT)
+                    }
+                    val replicationAdminRequest = RequestUtil.buildReplicationAdminRequest()
+                    val replicationRoleId = userHelper.createRoleCommon(replicationAdminRequest)
+                    val serviceUsers = permHelper.getServiceUser(REPLICATION_MANAGE_ID)
+                    val addRoleUserList = userId.filter { !serviceUsers.contains(it) }
+                    val removeRoleUserList = serviceUsers.filter { !userId.contains(it) }
+                    userHelper.addUserToRoleBatchCommon(addRoleUserList, replicationRoleId!!)
+                    permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, replicationRoleId)
+                    return true
+                }
                 else -> {
                     permHelper.checkPermissionExist(permissionId)
                     return permHelper.updatePermissionById(permissionId, TPermission::users.name, userId)
@@ -201,8 +216,9 @@ open class PermissionServiceImpl constructor(
             if (user.locked) return false
             // check user admin permission
             if (user.admin) return true
-            // user is not system admin and projectId is null
-            if (projectId == null) return false
+            if (projectId == null) {
+                return checkReplicationPermission(uid, user.roles, resourceType, action)
+            }
 
             if (isUserLocalProjectAdmin(uid, projectId!!)) return true
             val context = CheckPermissionContext(
@@ -266,7 +282,9 @@ open class PermissionServiceImpl constructor(
         val roleList = roleRepository.findByIdIn(user.roles)
         roleList.forEach {
             if (it.admin) {
-                projectList.add(it.projectId)
+                if (it.projectId != null) {
+                    projectList.add(it.projectId)
+                }
             } else {
                 noAdminRole.add(it.id!!)
             }
@@ -483,6 +501,31 @@ open class PermissionServiceImpl constructor(
             if (result.officeDenyGroupSet!!.intersect(roles).isNotEmpty()) return true
         }
         return false
+    }
+
+    /**
+     * 校验用户是否有同步权限
+     * 当projectId为null时，针对REPLICATION类型的资源进行权限校验
+     */
+    fun checkReplicationPermission(
+        userId: String,
+        roles: List<String>,
+        resourceType: String,
+        action: String
+    ): Boolean {
+        if (REPLICATION.name != resourceType) {
+            return false
+        }
+
+        val replicationRole = roleRepository.findFirstByTypeAndRoleId(RoleType.SERVICE, REPLICATION_MANAGE_ID)
+            ?: return false
+
+        val hasPermission = roles.contains(replicationRole.id)
+        if (!hasPermission) {
+            return false
+        }
+        logger.debug("user has service role permission for resourceType [$userId, $resourceType, $action]")
+        return true
     }
 
     companion object {

@@ -24,7 +24,7 @@
             </bk-table-column>
             <bk-table-column :label="$t('user')" width="800px" show-overflow-tooltip>
                 <template #default="{ row }">
-                    <span class="hover-btn">{{row.users.length ? row.users : '/'}}</span></template>
+                    <span class="hover-btn">{{row.users.length ? row.users.join(',') : '/'}}</span></template>
             </bk-table-column>
             <bk-table-column :label="$t('userSource')" show-overflow-tooltip>
                 <template #default="{ row }">

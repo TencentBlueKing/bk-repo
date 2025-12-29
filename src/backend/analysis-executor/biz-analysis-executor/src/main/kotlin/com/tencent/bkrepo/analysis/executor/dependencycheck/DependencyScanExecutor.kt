@@ -55,7 +55,6 @@ class DependencyScanExecutor @Autowired constructor(
             val sha256 = task.sha256
             val first = sha256.substring(0, 2)
             val second = sha256.substring(2, 4)
-            logger.info("storageProperties:${storageProperties.toJsonString()}")
             val path = storageProperties.filesystem.path
             val storePath = if (!path.startsWith("/")) {
                 "${System.getProperties()["user.dir"]}/$path".removeSuffix("/")

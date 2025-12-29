@@ -83,6 +83,7 @@ class NpmDependentHandler {
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun doDependentWithPublish(
         userId: String,
         artifactInfo: ArtifactInfo,
@@ -95,13 +96,15 @@ class NpmDependentHandler {
                 projectId = projectId,
                 repoName = repoName,
                 packageKey = name,
-                dependencies = versionMetaData.dependencies?.keys.orEmpty().map { packageKey(it, ohpm) }.toSet()
+                dependencies = (versionMetaData.dependencies as Map<String, Any>?)
+                    ?.keys.orEmpty().map { packageKey(it, ohpm) }.toSet(),
             )
             packageDependentsService.addDependents(relation)
             logger.info("user [$userId] publish dependent for package: [$name] success.")
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun doDependentWithUnPublish(
         userId: String,
         artifactInfo: ArtifactInfo,
@@ -115,7 +118,8 @@ class NpmDependentHandler {
                 projectId = projectId,
                 repoName = repoName,
                 packageKey = name,
-                dependencies = versionMetaData.dependencies?.keys.orEmpty().map { packageKey(it, ohpm) }.toSet()
+                dependencies = (versionMetaData.dependencies as Map<String, Any>?)
+                    ?.keys.orEmpty().map { packageKey(it, ohpm) }.toSet(),
             )
             packageDependentsService.reduceDependents(relation)
             logger.info("user [$userId] delete dependent for package: [$name] success.")

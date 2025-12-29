@@ -29,6 +29,8 @@ package com.tencent.bkrepo.replication.replica.type.federation
 
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.replication.config.ReplicationProperties
+import com.tencent.bkrepo.replication.dao.EventRecordDao
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.ReplicaObjectType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
@@ -49,8 +51,11 @@ class FederationEventBasedReplicaJobExecutor(
     replicaService: FederationBasedReplicaService,
     replicationProperties: ReplicationProperties,
     replicaRecordService: ReplicaRecordService,
+    replicaFailureRecordDao: ReplicaFailureRecordDao,
+    eventRecordDao: EventRecordDao
 ) : CommonEventBasedReplicaJobExecutor(
-    clusterNodeService, localDataManager, replicaService, replicationProperties, replicaRecordService
+    clusterNodeService, localDataManager, replicaService,
+    replicationProperties, replicaRecordService, replicaFailureRecordDao, eventRecordDao
 ) {
 
     /**

@@ -35,17 +35,21 @@ import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils.FORBID_KEYS
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.packages.UserPackageMetadataSaveRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -77,6 +81,26 @@ class UserPackageMetadataController(
             )
         }
         packageMetadataService.addForbidMetadata(request)
+        return ResponseBuilder.success()
+    }
+
+    @Operation(summary = "删除包版本禁用相关元数据")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.UPDATE)
+    @DeleteMapping("/forbid/{projectId}/{repoName}")
+    fun deleteForbidMetadata(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam(required = true) packageKey: String,
+        @RequestParam(required = true) version: String,
+    ): Response<Void> {
+        val request = PackageMetadataDeleteRequest(
+            projectId = projectId,
+            repoName = repoName,
+            packageKey = packageKey,
+            version = version,
+            keysToDelete = FORBID_KEYS,
+        )
+        packageMetadataService.deleteMetadata(request)
         return ResponseBuilder.success()
     }
 

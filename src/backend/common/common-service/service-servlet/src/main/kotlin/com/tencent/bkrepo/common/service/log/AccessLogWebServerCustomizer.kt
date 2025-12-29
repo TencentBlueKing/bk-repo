@@ -71,7 +71,32 @@ class AccessLogWebServerCustomizer : WebServerFactoryCustomizer<UndertowServletW
 
     class Slf4jAccessLogReceiver : AccessLogReceiver {
         override fun logMessage(message: String) {
-            LoggerHolder.accessLogger.info(message)
+            // 对access日志消息进行脱敏处理
+            val maskedMessage = maskAccessLogMessage(message)
+            LoggerHolder.accessLogger.info(maskedMessage)
+        }
+
+        /**
+         * 对access日志消息进行脱敏处理
+         */
+        private fun maskAccessLogMessage(message: String): String {
+            return try {
+                // 查找请求行部分（被双引号包围的部分）
+                val requestLinePattern = "\"([^\"]+)\""
+                val regex = Regex(requestLinePattern)
+                val matchResult = regex.find(message)
+                
+                if (matchResult != null) {
+                    val requestLine = matchResult.groupValues[1]
+                    val maskedRequestLine = UrlSensitiveDataMasker.maskRequestLine(requestLine)
+                    message.replace("\"$requestLine\"", "\"$maskedRequestLine\"")
+                } else {
+                    message
+                }
+            } catch (e: Exception) {
+                // 如果脱敏过程出现异常，返回原始消息以确保日志记录不会失败
+                message
+            }
         }
     }
 }

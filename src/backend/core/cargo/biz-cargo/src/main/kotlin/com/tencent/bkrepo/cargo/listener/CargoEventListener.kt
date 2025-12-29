@@ -34,7 +34,7 @@ import com.tencent.bkrepo.cargo.listener.operation.CargoPackageDeleteOperation
 import com.tencent.bkrepo.cargo.listener.operation.CargoPackageUploadOperation
 import com.tencent.bkrepo.cargo.listener.operation.CargoPackageYankOperation
 import com.tencent.bkrepo.cargo.pool.CargoThreadPoolExecutor
-import com.tencent.bkrepo.cargo.service.impl.CommonService
+import com.tencent.bkrepo.cargo.service.impl.CargoCommonService
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
@@ -42,7 +42,7 @@ import java.util.concurrent.ThreadPoolExecutor
 
 @Component
 class CargoEventListener(
-    val commonService: CommonService
+    val cargoCommonService: CargoCommonService
 ) {
 
     val threadPoolExecutor: ThreadPoolExecutor = CargoThreadPoolExecutor.instance
@@ -52,7 +52,7 @@ class CargoEventListener(
      */
     @EventListener(CargoPackageDeleteEvent::class)
     fun handle(event: CargoPackageDeleteEvent) {
-        val task = CargoPackageDeleteOperation(event.request, commonService).trace()
+        val task = CargoPackageDeleteOperation(event.request, cargoCommonService).trace()
         threadPoolExecutor.submit(task)
     }
 
@@ -62,7 +62,7 @@ class CargoEventListener(
      */
     @EventListener(CargoPackageUploadEvent::class)
     fun handle(event: CargoPackageUploadEvent) {
-        val task = CargoPackageUploadOperation(event.request, commonService).trace()
+        val task = CargoPackageUploadOperation(event.request, cargoCommonService).trace()
         threadPoolExecutor.submit(task)
     }
 
@@ -71,7 +71,7 @@ class CargoEventListener(
      */
     @EventListener(CargoPackageYankEvent::class)
     fun handle(event: CargoPackageYankEvent) {
-        val task = CargoPackageYankOperation(event.request, commonService).trace()
+        val task = CargoPackageYankOperation(event.request, cargoCommonService).trace()
         threadPoolExecutor.submit(task)
     }
 }

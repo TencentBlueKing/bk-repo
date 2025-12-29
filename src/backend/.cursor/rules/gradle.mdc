@@ -1,0 +1,79 @@
+---
+description: Gradle 构建配置规范
+globs: **/*.gradle.kts,**/gradle.properties
+alwaysApply: false
+---
+
+## 版本管理
+
+1. 在 `buildSrc/src/main/kotlin/Versions.kt` 统一管理所有依赖版本
+2. 定义：`object Versions { const val SpringBoot = "3.2.0" }`
+3. 使用：`implementation("org.springframework.boot:spring-boot-starter-web:${Versions.SpringBoot}")`
+
+## 模块结构
+
+1. API 模块：接口定义、DTO、公共注解
+2. Biz 模块：业务逻辑实现、Controller、Service、DAO
+3. Boot 模块：启动类、配置文件、打包配置
+
+## 依赖类型
+
+1. `api`：依赖会传递给使用方（接口定义、公共 DTO、工具类）
+2. `implementation`：依赖不会传递（内部实现、具体的库）
+3. `testImplementation`：测试依赖
+4. `compileOnly`：仅编译时需要（如配置处理器）
+5. `runtimeOnly`：仅运行时需要（如数据库驱动）
+
+## API 模块依赖
+
+1. 仅包含必须依赖
+2. 不能依赖biz和boot模块
+
+```kotlin
+dependencies {
+    api(project(":common:common-api"))
+}
+```
+
+## Biz 模块依赖
+
+```kotlin
+dependencies {
+    api(project(":{module}:api-{module}"))
+    implementation(project(":common:common-service"))
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.mockk:mockk")
+}
+```
+
+## Boot 模块配置
+
+```kotlin
+dependencies {
+    implementation(project(":{module}:biz-{module}"))
+}
+```
+
+## 常用命令
+
+1. 清理构建：`./gradlew clean`
+2. 编译：`./gradlew build`
+3. 跳过测试：`./gradlew build -x test`
+4. 运行测试：`./gradlew test`
+5. 打包：`./gradlew bootJar`
+
+## 禁止事项
+
+1. 不要在各个 build.gradle.kts 中硬编码版本号
+2. 不要所有依赖都用 `api`（优先用 `implementation`）
+3. 避免模块间循环依赖
+4. 不要忽略编译警告
+5. 避免单个模块过大
+6. 不要使用本地绝对路径
+
+## 最佳实践
+
+1. 版本统一在 `Versions.kt` 管理
+2. 正确区分 `api` 和 `implementation`
+3. 合理划分 api/biz/boot 模块
+4. 及时排除冲突的传递依赖

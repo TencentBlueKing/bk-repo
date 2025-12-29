@@ -97,7 +97,8 @@
                     headers: {
                         'Content-Type': file.type || 'application/octet-stream',
                         'X-BKREPO-OVERWRITE': file.overwrite,
-                        'X-BKREPO-EXPIRES': file.expires
+                        'X-BKREPO-EXPIRES': file.expires,
+                        'X-BKREPO-TIME-ZONE': new Date().getTimezoneOffset() / -60
                     }
                 }).then(() => {
                     this.$emit('update')

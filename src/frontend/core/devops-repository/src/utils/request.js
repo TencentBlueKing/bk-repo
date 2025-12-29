@@ -1,4 +1,4 @@
-import { routeBase } from '@repository/utils'
+import { routeBase, setTimeZone } from '@repository/utils'
 import axios from 'axios'
 import Vue from 'vue'
 
@@ -20,6 +20,7 @@ request.interceptors.request.use(config => {
     if (param) {
         config.headers['X-BKREPO-PROJECT-ID'] = param
     }
+    config.headers['X-BKREPO-TIME-ZONE'] = new Date().getTimezoneOffset() / -60 // 小时偏移，如+8，-5
     return config
 })
 
@@ -29,6 +30,12 @@ function errorHandler (error) {
 }
 
 request.interceptors.response.use(response => {
+    // 从响应头获取时区信息
+    const timeZoneHeader = response.headers['x-bkrepo-time-zone'] || response.headers['X-BKREPO-TIME-ZONE']
+    if (timeZoneHeader !== undefined && timeZoneHeader !== null) {
+        setTimeZone(timeZoneHeader)
+    }
+    
     const { data: { data, message }, status } = response
     if (status === 200 || status === 206) {
         return data === undefined ? response.data : data

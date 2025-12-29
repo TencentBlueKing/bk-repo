@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
+import com.tencent.bkrepo.common.service.cluster.ClusterInfo
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
@@ -48,6 +49,8 @@ class FsNodeResource(
     private val storageService: StorageService,
     private val storageCredentials: StorageCredentials?,
     private val storageCredentialService: StorageCredentialService,
+    private val isFederating: Boolean = false,
+    private val clusterInfo: ClusterInfo? = null
 ) : AbstractNodeResource() {
     override fun getArtifactInputStream(): ArtifactInputStream? {
         with(node) {
@@ -59,8 +62,17 @@ class FsNodeResource(
              * */
             val copyFromCredentialsKey = node.copyFromCredentialsKey
             return storageService.load(blocks, range) { regionResource ->
-                val input = storageService.loadResource(regionResource, storageCredentials)
+                var input = storageService.loadResource(regionResource, storageCredentials)
                     ?: loadFromCopyIfNecessary(regionResource, copyFromCredentialsKey)
+                if (isFederating && clusterInfo != null) {
+                    val blockRange = Range(
+                        regionResource.off, regionResource.off + regionResource.len - 1, regionResource.size
+                    )
+                    val remoteNodeResource = RemoteNodeResource(
+                        regionResource.digest, blockRange, storageCredentials, clusterInfo, storageService
+                    )
+                    input = remoteNodeResource.getArtifactInputStream()
+                }
                 check(input != null) { "Block[${regionResource.digest}] miss." }
                 input
             }

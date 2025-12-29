@@ -53,7 +53,7 @@ data class TRole(
     val roleId: String,
     val type: RoleType,
     var name: String,
-    val projectId: String,
+    val projectId: String? = null,
     val repoName: String? = null,
     val admin: Boolean = false,
     var description: String? = null,

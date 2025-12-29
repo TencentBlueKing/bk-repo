@@ -49,7 +49,7 @@ import org.springframework.stereotype.Service
 class ConanServiceImpl : ConanService {
 
     @Autowired
-    lateinit var commonService: CommonService
+    lateinit var conanCommonService: ConanCommonService
 
     override fun getConanFileDownloadUrls(
         conanArtifactInfo: ConanArtifactInfo,
@@ -58,7 +58,7 @@ class ConanServiceImpl : ConanService {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
             val urls = try {
-                commonService.getDownloadConanFileUrls(
+                conanCommonService.getDownloadConanFileUrls(
                     projectId, repoName, conanFileReference, subFileset
                 )
             } catch (ignore: NodeNotFoundException) {
@@ -78,7 +78,7 @@ class ConanServiceImpl : ConanService {
     ): Map<String, String> {
         with(conanArtifactInfo) {
             val packageReference = convertToPackageReference(conanArtifactInfo)
-            val urls = commonService.getPackageDownloadUrls(
+            val urls = conanCommonService.getPackageDownloadUrls(
                 projectId, repoName, packageReference, subFileset
             )
             if (urls.isEmpty())
@@ -92,14 +92,14 @@ class ConanServiceImpl : ConanService {
     override fun getRecipeSnapshot(conanArtifactInfo: ConanArtifactInfo): Map<String, String> {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            return commonService.getRecipeSnapshot(projectId, repoName, conanFileReference)
+            return conanCommonService.getRecipeSnapshot(projectId, repoName, conanFileReference)
         }
     }
 
     override fun getPackageSnapshot(conanArtifactInfo: ConanArtifactInfo): Map<String, String> {
         with(conanArtifactInfo) {
             val packageReference = convertToPackageReference(conanArtifactInfo)
-            return commonService.getPackageSnapshot(projectId, repoName, packageReference)
+            return conanCommonService.getPackageSnapshot(projectId, repoName, packageReference)
         }
     }
 
@@ -109,7 +109,7 @@ class ConanServiceImpl : ConanService {
     ): Map<String, String> {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo, DEFAULT_REVISION_V1)
-            return commonService.getConanFileUploadUrls(projectId, repoName, conanFileReference, fileSizes)
+            return conanCommonService.getConanFileUploadUrls(projectId, repoName, conanFileReference, fileSizes)
         }
     }
 
@@ -120,7 +120,7 @@ class ConanServiceImpl : ConanService {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo, DEFAULT_REVISION_V1)
             val packageReference = PackageReference(conanFileReference, packageId!!, DEFAULT_REVISION_V1)
-            return commonService.getPackageUploadUrls(projectId, repoName, packageReference, fileSizes)
+            return conanCommonService.getPackageUploadUrls(projectId, repoName, packageReference, fileSizes)
         }
     }
 
@@ -128,30 +128,30 @@ class ConanServiceImpl : ConanService {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo, revision)
             val packageReference = PackageReference(conanFileReference, packageId!!, pRevision)
-            return commonService.getPackageFiles(projectId, repoName, packageReference)
+            return conanCommonService.getPackageFiles(projectId, repoName, packageReference)
         }
     }
 
     override fun getRecipeRevisionFiles(conanArtifactInfo: ConanArtifactInfo): Map<String, Map<String, String>> {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo, revision)
-            return commonService.getRecipeFiles(projectId, repoName, conanFileReference)
+            return conanCommonService.getRecipeFiles(projectId, repoName, conanFileReference)
         }
     }
 
     override fun getRecipeRevisions(conanArtifactInfo: ConanArtifactInfo): IndexInfo {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            commonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
-            return commonService.getRecipeRevisions(projectId, repoName, conanFileReference)
+            conanCommonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
+            return conanCommonService.getRecipeRevisions(projectId, repoName, conanFileReference)
         }
     }
 
     override fun getRecipeLatestRevision(conanArtifactInfo: ConanArtifactInfo): RevisionInfo {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo)
-            commonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
-            return commonService.getLastRevision(projectId, repoName, conanFileReference)
+            conanCommonService.getNodeDetail(projectId, repoName, buildPackagePath(conanFileReference))
+            return conanCommonService.getLastRevision(projectId, repoName, conanFileReference)
                 ?: throw ConanFileNotFoundException(
                     ConanMessageCode.CONAN_FILE_NOT_FOUND, buildConanFileName(conanFileReference), getRepoIdentify()
                 )
@@ -162,7 +162,7 @@ class ConanServiceImpl : ConanService {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo, revision)
             val packageReference = PackageReference(conanFileReference, packageId!!, pRevision)
-            return commonService.getPackageRevisions(projectId, repoName, packageReference)
+            return conanCommonService.getPackageRevisions(projectId, repoName, packageReference)
         }
     }
 
@@ -170,7 +170,7 @@ class ConanServiceImpl : ConanService {
         with(conanArtifactInfo) {
             val conanFileReference = convertToConanFileReference(conanArtifactInfo, revision)
             val packageReference = PackageReference(conanFileReference, packageId!!, pRevision)
-            return commonService.getLastPackageRevision(projectId, repoName, packageReference)
+            return conanCommonService.getLastPackageRevision(projectId, repoName, packageReference)
                 ?: throw ConanFileNotFoundException(
                     ConanMessageCode.CONAN_FILE_NOT_FOUND, buildPackageReference(packageReference), getRepoIdentify()
                 )

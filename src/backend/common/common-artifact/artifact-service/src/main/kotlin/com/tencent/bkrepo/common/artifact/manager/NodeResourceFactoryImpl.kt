@@ -72,8 +72,18 @@ class NodeResourceFactoryImpl(
     ): NodeResource {
         val digest = nodeInfo.sha256.orEmpty()
         if (isFsFile(nodeInfo)) {
+            val (isFederating, clusterInfo) = if (isFederating(nodeInfo)) {
+                val clusterInfo = getClusterInfo(nodeInfo.federatedSource!!)
+                    ?: throw ErrorCodeException(
+                        ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, nodeInfo.federatedSource!!
+                    )
+                Pair(true, clusterInfo)
+            } else {
+                Pair(false, null)
+            }
             return FsNodeResource(
-                nodeInfo, blockNodeService, range, storageService, storageCredentials, storageCredentialService
+                nodeInfo, blockNodeService, range, storageService, storageCredentials,
+                storageCredentialService, isFederating, clusterInfo
             )
         }
         if (isFederating(nodeInfo)) {

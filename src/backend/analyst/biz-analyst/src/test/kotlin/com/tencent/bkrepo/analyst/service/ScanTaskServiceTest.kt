@@ -26,6 +26,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.sign.SignConfigService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -82,6 +83,8 @@ class ScanTaskServiceTest @Autowired constructor(
     lateinit var planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao
     @MockitoBean
     lateinit var fileScanResultDao: FileScanResultDao
+    @MockitoBean
+    lateinit var signConfigService: SignConfigService
 
     private val scanner : Scanner = buildScanner()
 

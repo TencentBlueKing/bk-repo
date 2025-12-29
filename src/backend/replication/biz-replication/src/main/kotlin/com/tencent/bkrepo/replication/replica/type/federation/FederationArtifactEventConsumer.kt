@@ -27,12 +27,13 @@
 
 package com.tencent.bkrepo.replication.replica.type.federation
 
-import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.replication.dao.EventRecordDao
 import com.tencent.bkrepo.replication.replica.executor.FederationThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.type.event.EventConsumer
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
 
 /**
@@ -43,6 +44,7 @@ import org.springframework.stereotype.Component
 class FederationArtifactEventConsumer(
     private val replicaTaskService: ReplicaTaskService,
     private val federationBasedReplicaJobExecutor: FederationEventBasedReplicaJobExecutor,
+    private val eventRecordDao: EventRecordDao,
 ) : EventConsumer() {
 
     private val federationExecutors = FederationThreadPoolExecutor.instance
@@ -69,13 +71,14 @@ class FederationArtifactEventConsumer(
         return !message.source.isNullOrEmpty()
     }
 
-    override fun action(event: ArtifactEvent) {
-        federationExecutors.execute(
-            Runnable {
-                replicaTaskService.listFederationTasks(event.projectId, event.repoName).forEach {
-                    federationBasedReplicaJobExecutor.execute(it, event)
-                }
-            }.trace()
+    override fun action(message: Message<ArtifactEvent>) {
+        processAction(
+            message = message,
+            eventRecordDao = eventRecordDao,
+            getTasks = { projectId, repoName -> replicaTaskService.listFederationTasks(projectId, repoName) },
+            eventType = "FEDERATION",
+            executor = federationExecutors,
+            executeTask = { task, event, recordId -> federationBasedReplicaJobExecutor.execute(task, event, recordId) }
         )
     }
 }

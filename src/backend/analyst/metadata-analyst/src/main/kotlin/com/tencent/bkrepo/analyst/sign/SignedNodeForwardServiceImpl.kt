@@ -39,16 +39,17 @@ import com.tencent.bkrepo.common.api.util.HumanReadable
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.NodeForwardService
-import com.tencent.bkrepo.common.artifact.manager.sign.SignConfig
-import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
 import com.tencent.bkrepo.common.artifact.manager.sign.SignedNodeForwardMessageCode
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.artifact.sign.SignProperties
+import com.tencent.bkrepo.common.metadata.pojo.sign.SignConfig
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.metadata.service.sign.SignConfigService
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -70,12 +71,13 @@ class SignedNodeForwardServiceImpl(
     private val metadataService: MetadataService,
     private val scanClient: ScanClient,
     private val repositoryService: RepositoryService,
+    private val signConfigService: SignConfigService
 ) : NodeForwardService {
     override fun forward(
         node: NodeDetail,
         userId: String
     ): NodeDetail? {
-        val config = signProperties.config[node.projectId] ?: return null
+        val config = signConfigService.find(node.projectId) ?: return null
         with(config) {
             if (notOnCondition(node, config) || fromScanService()) {
                 return null
@@ -88,7 +90,7 @@ class SignedNodeForwardServiceImpl(
             createRepoIfNotExist(projectId)
             val forwardNode = nodeService.getNodeDetail(
                 ArtifactInfo(node.projectId, signProperties.signedRepoName, traceableApkPath)
-            ) ?: getOldForwardNode(traceableApkPath, config) ?: throw throwException(node, config, userId)
+            ) ?: throw throwException(node, config, userId)
             logger.info("forward node: ${forwardNode.fullPath}, ${forwardNode.createdDate}")
             clearTask(node, userId)
             return forwardNode
@@ -126,20 +128,6 @@ class SignedNodeForwardServiceImpl(
                 waitingTime.expireDay,
                 status = HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS,
             )
-        }
-    }
-
-    private fun getOldForwardNode(traceableApkPath: String, config: SignConfig): NodeDetail?{
-        return if (config.oldSignedProjectId.isNotEmpty()) {
-            nodeService.getNodeDetail(
-                ArtifactInfo(
-                    config.oldSignedProjectId,
-                    config.oldSignedRepoName,
-                    traceableApkPath
-                )
-            )
-        } else {
-            null
         }
     }
 
@@ -230,6 +218,10 @@ class SignedNodeForwardServiceImpl(
                 metadata = listOf(
                     TaskMetadata("users", userId),
                     TaskMetadata("sha256", node.sha256!!),
+                    TaskMetadata("host", signProperties.host),
+                    TaskMetadata("projectId", projectId),
+                    TaskMetadata("uploadRepoName", signProperties.signedRepoName),
+                    TaskMetadata("expire", config.expireDays.toString()),
                     TaskMetadata(
                         "repoUrl",
                         "${signProperties.host}/generic/${node.projectId}/${signProperties.signedRepoName}"

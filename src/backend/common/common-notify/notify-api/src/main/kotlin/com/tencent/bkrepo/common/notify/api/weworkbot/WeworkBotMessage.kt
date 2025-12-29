@@ -41,4 +41,4 @@ class WeworkBotMessage(
      * 消息接收者
      */
     val chatIds: Set<String>? = null
-) : NotifyMessage(WeworkBotChannelCredential.type)
+) : NotifyMessage(WeworkBotChannelCredential.TYPE)

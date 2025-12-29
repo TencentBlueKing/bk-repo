@@ -43,6 +43,7 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.service.PermissionService
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
+import com.tencent.bkrepo.auth.util.RequestUtil
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
@@ -287,6 +288,77 @@ class PermissionServiceTest {
             val updateStatus = permissionService.updatePermissionUser(request)
             Assertions.assertTrue(updateStatus)
         }
+    }
+
+    @DisplayName("校验同步权限测试 - 用户有同步权限角色")
+    fun checkReplicationPermissionWithRoleTest() {
+        // 创建非管理员用户
+        userService.createUser(createUserRequest())
+        
+        // 创建同步管理员角色（SERVICE类型）
+        val replicationRoleId = roleService.createRole(RequestUtil.buildReplicationAdminRequest())
+        Assertions.assertNotNull(replicationRoleId)
+        
+        // 将用户添加到同步管理员角色
+        userService.addUserToRole(userId, replicationRoleId!!)
+        
+        // 校验权限：projectId为null，resourceType为REPLICATION，用户有同步权限角色
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.REPLICATION.toString(),
+            action = PermissionAction.WRITE.toString(),
+            projectId = null,
+            repoName = null
+        )
+        val hasPermission = permissionService.checkPermission(checkRequest)
+        Assertions.assertTrue(hasPermission, "用户应该有同步权限")
+        
+        // 清理：删除角色
+        roleService.deleteRoleById(replicationRoleId)
+    }
+
+    @DisplayName("校验同步权限测试 - 用户没有同步权限角色")
+    fun checkReplicationPermissionWithoutRoleTest() {
+        // 创建非管理员用户（没有同步权限角色）
+        userService.createUser(createUserRequest())
+        
+        // 校验权限：projectId为null，resourceType为REPLICATION，用户没有同步权限角色
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.REPLICATION.toString(),
+            action = PermissionAction.WRITE.toString(),
+            projectId = null,
+            repoName = null
+        )
+        val hasPermission = permissionService.checkPermission(checkRequest)
+        Assertions.assertFalse(hasPermission, "用户不应该有同步权限")
+    }
+
+    @DisplayName("校验同步权限测试 - resourceType不是REPLICATION")
+    fun checkReplicationPermissionWithWrongResourceTypeTest() {
+        // 创建非管理员用户
+        userService.createUser(createUserRequest())
+        
+        // 创建同步管理员角色
+        val replicationRoleId = roleService.createRole(RequestUtil.buildReplicationAdminRequest())
+        Assertions.assertNotNull(replicationRoleId)
+        
+        // 将用户添加到同步管理员角色
+        userService.addUserToRole(userId, replicationRoleId!!)
+        
+        // 校验权限：projectId为null，但resourceType不是REPLICATION
+        val checkRequest = CheckPermissionRequest(
+            uid = userId,
+            resourceType = ResourceType.PROJECT.toString(),
+            action = PermissionAction.READ.toString(),
+            projectId = null,
+            repoName = null
+        )
+        val hasPermission = permissionService.checkPermission(checkRequest)
+        Assertions.assertFalse(hasPermission, "resourceType不是REPLICATION时应该返回false")
+        
+        // 清理：删除角色
+        roleService.deleteRoleById(replicationRoleId)
     }
 
     private fun createUserRequest(

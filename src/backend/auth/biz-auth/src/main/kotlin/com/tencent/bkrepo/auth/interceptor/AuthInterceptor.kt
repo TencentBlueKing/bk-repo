@@ -86,7 +86,7 @@ class AuthInterceptor(
 
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val authHeader = request.getHeader(AUTHORIZATION).orEmpty()
-        var authFailStr = String.format(AUTH_FAILED_RESPONSE, authHeader)
+        var authFailStr = String.format(AUTH_FAILED_RESPONSE, "empty auth header")
         try {
             // basic认证
             if (authHeader.startsWith(BASIC_AUTH_HEADER_PREFIX)) {
@@ -95,7 +95,7 @@ class AuthInterceptor(
 
             // platform认证
             if (authHeader.startsWith(PLATFORM_AUTH_HEADER_PREFIX)) {
-                authFailStr = String.format(AUTH_FAILED_RESPONSE, "illegal AUTHORIZATION")
+                authFailStr = String.format(AUTH_FAILED_RESPONSE, "illegal platform token")
                 return checkUserFromPlatform(request, authHeader)
             }
 
@@ -126,10 +126,10 @@ class AuthInterceptor(
         val encodedCredentials = authHeader.removePrefix(BASIC_AUTH_HEADER_PREFIX)
         val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
         val parts = decodedHeader.split(COLON)
-        require(parts.size == 2)
+        require(parts.size == CREDENTIAL_PARTS_SIZE)
         val user = userService.findUserByUserToken(parts[0], parts[1]) ?: run {
             logger.warn("find no user [${parts[0]}]")
-            throw IllegalArgumentException("check credential fail")
+            throw IllegalArgumentException("user name token mismatch")
         }
 
         request.setAttribute(USER_KEY, parts[0])
@@ -137,7 +137,7 @@ class AuthInterceptor(
         // 非管理员访问非授权endpoint
         if (!user.admin && !userAccess) {
             logger.warn("user [${parts[0]}] can not access this endpoint [${request.requestURI}]")
-            throw IllegalArgumentException("check credential fail")
+            throw IllegalArgumentException("user has no permission")
         }
         return true
     }
@@ -147,15 +147,15 @@ class AuthInterceptor(
         val encodedCredentials = authHeader.removePrefix(PLATFORM_AUTH_HEADER_PREFIX)
         val decodedHeader = String(Base64.getDecoder().decode(encodedCredentials))
         val parts = decodedHeader.split(COLON)
-        require(parts.size == 2)
+        require(parts.size == CREDENTIAL_PARTS_SIZE)
         val appId = accountService.checkCredential(parts[0], parts[1], AuthorizationGrantType.PLATFORM) ?: run {
             logger.warn("find no account [$parts[0]]")
-            throw IllegalArgumentException("check auth credential fail")
+            throw IllegalArgumentException("check platform credential failed")
         }
         val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
         if (userId.isEmpty()) {
             logger.warn("platform auth with empty userId")
-            throw IllegalArgumentException("userId is empty")
+            throw IllegalArgumentException("platform auth with empty userId")
         }
         setAuthAttribute(userId, appId, request)
         return true
@@ -233,8 +233,8 @@ class AuthInterceptor(
     }
 
     companion object {
-
         private val logger = LoggerFactory.getLogger(AuthInterceptor::class.java)
+        private const val CREDENTIAL_PARTS_SIZE = 2
 
         // 项目内权限校验api, 开放给项目内有权限用户使用，具体校验权限在方法内
         private val userAccessApiSet = setOf(

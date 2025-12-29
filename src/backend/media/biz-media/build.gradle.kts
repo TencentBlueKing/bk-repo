@@ -1,6 +1,7 @@
 dependencies {
     api(project(":common:common-artifact:artifact-service"))
     api(project(":job:api-schedule"))
+    api(project(":media:common-media"))
     implementation("org.bytedeco:javacpp:${Versions.JavaCpp}")
     implementation("org.bytedeco:ffmpeg:${Versions.FFmpegPlatform}")
     implementation("org.bytedeco:javacpp:${Versions.JavaCpp}:windows-x86_64")

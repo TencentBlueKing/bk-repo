@@ -168,7 +168,7 @@ class ProjectServiceImpl(
         if (enableMultiTenant.enabled) {
             validateTenantId()
         }
-        val project = request.buildProject(ProjectServiceHelper.getTenantId())
+        val project = request.buildProject(ProjectServiceHelper.getTenantId(), enableMultiTenant.enabled)
         return try {
             projectDao.insert(project)
             request.name = project.name

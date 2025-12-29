@@ -25,13 +25,12 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.artifact.manager.sign
+package com.tencent.bkrepo.common.artifact.sign
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "sign")
 class SignProperties {
     var host: String = "http://localhost"
-    var config: MutableMap<String, SignConfig> = mutableMapOf()
     var signedRepoName: String = "bkrepo-signed-repo"
 }

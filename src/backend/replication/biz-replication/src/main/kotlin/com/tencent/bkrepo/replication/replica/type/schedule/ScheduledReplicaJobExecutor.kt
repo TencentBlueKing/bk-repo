@@ -33,6 +33,7 @@ import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaOverview
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskInfo
 import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
@@ -50,10 +51,13 @@ class ScheduledReplicaJobExecutor(
     localDataManager: LocalDataManager,
     replicaService: ScheduledReplicaService,
     replicationProperties: ReplicationProperties,
+    replicaFailureRecordDao: ReplicaFailureRecordDao,
     private val replicaTaskService: ReplicaTaskService,
     private val replicaRecordService: ReplicaRecordService,
     private val replicaTaskScheduler: ReplicaTaskScheduler
-) : AbstractReplicaJobExecutor(clusterNodeService, localDataManager, replicaService, replicationProperties) {
+) : AbstractReplicaJobExecutor(
+    clusterNodeService, localDataManager, replicaService, replicationProperties, replicaFailureRecordDao
+) {
 
     /**
      * 执行同步任务

@@ -2,7 +2,25 @@
 Return the proper Docker Image Registry Secret Names
 */}}
 {{- define "bkrepo.imagePullSecrets" -}}
-{{- include "common.images.pullSecrets" (dict "images" (list .Values.gateway.image .Values.repository.image .Values.auth.image .Values.init.mongodb.image .Values.generic.image .Values.docker.image .Values.npm.image .Values.pypi.image .Values.helm.image) "global" .Values.global) -}}
+{{- include "common.images.pullSecrets" (dict "images" (list
+    .Values.gateway.image
+    .Values.repository.image
+    .Values.auth.image
+    .Values.init.curl.image
+    .Values.init.mongodb.image
+    .Values.init.iam.image
+    .Values.generic.image
+    .Values.docker.image
+    .Values.npm.image
+    .Values.pypi.image
+    .Values.helm.image
+    .Values.job.image
+    .Values.maven.image
+    .Values.opdata.image
+    .Values.preview.image
+    .Values.replication.image
+    .Values.s3.image
+) "global" .Values.global) -}}
 {{- end -}}
 
 {{/*
@@ -121,4 +139,21 @@ Return the value of authorization
 {{- else -}}
     {{- .Values.gateway.authorization -}}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Escape special characters for Kafka JAAS configuration
+Escapes backslash and double quote characters
+*/}}
+{{- define "bkrepo.jaasEscape" -}}
+{{- . | replace "\\" "\\\\" | replace "\"" "\\\"" -}}
+{{- end -}}
+
+{{/*
+Generate Kafka SASL JAAS configuration string
+*/}}
+{{- define "bkrepo.kafka.jaasConfig" -}}
+{{- $username := include "bkrepo.jaasEscape" .Values.kafka.username -}}
+{{- $password := include "bkrepo.jaasEscape" .Values.kafka.password -}}
+{{- printf "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"%s\" password=\"%s\";" $username $password -}}
 {{- end -}}

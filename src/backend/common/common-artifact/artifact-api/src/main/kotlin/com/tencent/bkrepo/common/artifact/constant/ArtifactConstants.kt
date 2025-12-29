@@ -106,6 +106,7 @@ const val DEFAULT_STORAGE_KEY = "default"
  */
 const val X_CHECKSUM_MD5 = "X-Checksum-Md5"
 const val X_CHECKSUM_SHA256 = "X-Checksum-Sha256"
+const val X_CHECKSUM_CRC64ECMA = "X-Checksum-Crc64ecma"
 
 /**
  * 流水线仓库
@@ -191,3 +192,8 @@ const val SHA256_STR_LENGTH = 64
  * 下载请求参数，用于指示从远程仓库下载时是否读取缓存
  */
 const val FLAG_QUERY_CACHE = "queryCacheFlag"
+
+/**
+ * 制品加解密key请求头
+ */
+const val HEADER_CRYPT_KEY = "X-BKREPO-CRYPT-KEY"

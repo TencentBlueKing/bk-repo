@@ -110,6 +110,8 @@ class ReplicaContext(
 
     var recordDetailId: String? = null
 
+    var failedRecordId: String? = null
+
     init {
         cluster = ClusterInfo(
             name = remoteCluster.name,
@@ -196,14 +198,6 @@ class ReplicaContext(
         if (taskObject.packageConstraints!!.first().versions.isNullOrEmpty()) return null
         if (taskObject.packageConstraints!!.first().versions!!.size != 1) return null
         return taskObject.packageConstraints!!.first().targetVersions
-    }
-
-    fun updateProgress(executed: Boolean) {
-        if (executed) {
-            replicaProgress.success++
-        } else {
-            replicaProgress.skip++
-        }
     }
 
     companion object {

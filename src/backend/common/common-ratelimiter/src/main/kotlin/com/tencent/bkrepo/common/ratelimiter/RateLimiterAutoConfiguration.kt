@@ -28,7 +28,8 @@
 package com.tencent.bkrepo.common.ratelimiter
 
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
-import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimitHandlerInterceptor
+import com.tencent.bkrepo.common.ratelimiter.interceptor.NonUserRateLimitHandlerInterceptor
+import com.tencent.bkrepo.common.ratelimiter.interceptor.UserRateLimitHandlerInterceptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.repository.RateLimitRepository
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
@@ -45,7 +46,6 @@ import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUploadUsageR
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
-import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
@@ -56,9 +56,11 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
-@EnableConfigurationProperties(RateLimiterProperties::class)
 @ConditionalOnWebApplication
-@Import(RateLimitRepository::class)
+@Import(
+    RateLimitRepository::class,
+    RateLimiterProperties::class
+)
 class RateLimiterAutoConfiguration {
 
     @Bean
@@ -235,13 +237,25 @@ class RateLimiterAutoConfiguration {
     ): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addInterceptors(registry: InterceptorRegistry) {
+                // 不需要用户校验的限流拦截器，应在HttpAuthInterceptor之前执行
                 registry.addInterceptor(
-                    RateLimitHandlerInterceptor(
+                    NonUserRateLimitHandlerInterceptor(
                         requestLimitCheckService = requestLimitCheckService
                     )
                 )
                     .excludePathPatterns("/service/**", "/replica/**")
-                    .order(Ordered.LOWEST_PRECEDENCE)
+                    .order(Ordered.HIGHEST_PRECEDENCE)
+                
+                // 需要用户校验的限流拦截器，应在HttpAuthInterceptor之后执行
+                // HttpAuthInterceptor默认order为0，所以用户态拦截器使用1
+                registry.addInterceptor(
+                    UserRateLimitHandlerInterceptor(
+                        requestLimitCheckService = requestLimitCheckService
+                    )
+                )
+                    .excludePathPatterns("/service/**", "/replica/**")
+                    .order(1)
+                
                 super.addInterceptors(registry)
             }
         }

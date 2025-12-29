@@ -34,16 +34,17 @@ package com.tencent.bkrepo.common.artifact
 import com.tencent.bkrepo.common.artifact.audit.BkAuditConfiguration
 import com.tencent.bkrepo.common.artifact.cluster.ArtifactClusterConfiguration
 import com.tencent.bkrepo.common.artifact.cns.CnsConfiguration
+import com.tencent.bkrepo.common.artifact.crypt.ArtifactCryptConfiguration
 import com.tencent.bkrepo.common.artifact.event.ArtifactEventConfiguration
 import com.tencent.bkrepo.common.artifact.exception.ArtifactExceptionConfiguration
 import com.tencent.bkrepo.common.artifact.health.ArtifactHealthConfiguration
 import com.tencent.bkrepo.common.artifact.manager.ArtifactManagerConfiguration
-import com.tencent.bkrepo.common.artifact.manager.sign.SignProperties
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactMetricsConfiguration
 import com.tencent.bkrepo.common.artifact.permission.ArtifactPermissionConfiguration
 import com.tencent.bkrepo.common.artifact.repository.ArtifactContextConfiguration
 import com.tencent.bkrepo.common.artifact.resolve.ArtifactResolverConfiguration
 import com.tencent.bkrepo.common.artifact.router.ArtifactRouterControllerConfiguration
+import com.tencent.bkrepo.common.artifact.sign.SignProperties
 import com.tencent.bkrepo.common.artifact.view.ArtifactViewModelConfiguration
 import com.tencent.bkrepo.common.artifact.view.ViewModelProperties
 import org.springframework.boot.actuate.autoconfigure.metrics.export.influx.InfluxMetricsExportAutoConfiguration
@@ -76,5 +77,6 @@ import org.springframework.context.annotation.PropertySource
     CnsConfiguration::class,
     ArtifactRouterControllerConfiguration::class,
     BkAuditConfiguration::class,
+    ArtifactCryptConfiguration::class,
 )
 class ArtifactAutoConfiguration

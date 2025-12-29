@@ -40,15 +40,17 @@ import java.time.format.DateTimeFormatter
 class NettyWebServerAccessLogCustomizer : NettyServerCustomizer {
 
     override fun apply(t: HttpServer): HttpServer {
-        return t.accessLog(true) {
-                args ->
+        return t.accessLog(true) { args ->
+            // 对URI进行脱敏处理
+            val maskedUri = UrlSensitiveDataMasker.maskSensitiveData(args.uri()?.toString())
+
             AccessLog.create(
                 ACCESS_LOG_FORMAT,
                 applyHeaderValue(args.responseHeader(BKREPO_TRACE)),
                 applyAddress(args.remoteAddress()),
                 applyDateTime(args.accessDateTime()),
                 args.method(),
-                args.uri(),
+                maskedUri,
                 args.protocol(),
                 args.status(),
                 if (args.contentLength() > -1) args.contentLength() else MISSING,

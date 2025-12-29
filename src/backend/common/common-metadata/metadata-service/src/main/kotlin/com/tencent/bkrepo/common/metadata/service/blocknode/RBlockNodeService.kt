@@ -105,4 +105,21 @@ interface RBlockNodeService {
         nodeDetail: NodeDetail,
         range: Range
     ): List<RegionResource>
+
+
+    /**
+     * 检查分块是否存在
+     * */
+    suspend fun checkBlockExist(blockNode: TBlockNode): Boolean
+
+    /**
+     *  查询已删除的分块
+     * */
+    suspend fun listDeletedBlocks(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        nodeCreateDate: LocalDateTime,
+        nodeDeleteDate: LocalDateTime
+    ): List<TBlockNode>
 }

@@ -28,16 +28,16 @@
 package com.tencent.bkrepo.common.metadata.search.common
 
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.query.interceptor.QueryContext
 import com.tencent.bkrepo.common.query.interceptor.QueryRuleInterceptor
 import com.tencent.bkrepo.common.query.model.Rule
-import com.tencent.bkrepo.common.metadata.model.TNode
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Component
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
@@ -58,9 +58,9 @@ class LocalDatetimeRuleInterceptor : QueryRuleInterceptor {
         // 已经检查过类型，强转是安全的
         val newValue = try {
             if (rule.operation == OperationType.IN || rule.operation == OperationType.NIN) {
-                (rule.value as List<CharSequence>).map { LocalDateTime.parse(it, DateTimeFormatter.ISO_DATE_TIME) }
+                (rule.value as List<CharSequence>).map { ZoneIdContext.zoneParse(it, DateTimeFormatter.ISO_DATE_TIME) }
             } else {
-                LocalDateTime.parse(rule.value as CharSequence, DateTimeFormatter.ISO_DATE_TIME)
+                ZoneIdContext.zoneParse(rule.value as CharSequence, DateTimeFormatter.ISO_DATE_TIME)
             }
         } catch (e: DateTimeParseException) {
             logger.error("localDatetime parse failed, rule[$rule]", e)

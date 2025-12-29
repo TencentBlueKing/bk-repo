@@ -46,6 +46,38 @@
           <svg-icon icon-class="arrow-up" />{{ scope.row.detail.asyncTaskActiveCount }}
         </template>
       </el-table-column>
+      <el-table-column
+        label="上传带宽"
+        prop="serviceUploadBandwidth"
+      >
+        <template slot-scope="scope">
+          {{ convertBpsToMbps(scope.row.serviceUploadBandwidth) }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="下载带宽"
+        prop="serviceDownloadBandwidth"
+      >
+        <template slot-scope="scope">
+          {{ convertBpsToMbps(scope.row.serviceDownloadBandwidth) }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="异步上传带宽"
+        prop="serviceCosAsyncUploadBandwidth"
+      >
+        <template slot-scope="scope">
+          {{ convertBpsToMbps(scope.row.serviceCosAsyncUploadBandwidth) }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        label="实例总带宽"
+        prop="hostBandwidth"
+      >
+        <template slot-scope="scope">
+          {{ convertBpsToMbps(scope.row.hostBandwidth) }}
+        </template>
+      </el-table-column>
       <el-table-column label="已加载插件">
         <template slot-scope="scope">
           <el-tag v-for="plugin in scope.row.detail.loadedPlugins" :key="plugin" style="margin-right:5px;">{{ plugin }}</el-tag>
@@ -60,6 +92,7 @@
         </template>
         <template slot-scope="scope">
           <el-button
+            v-if="isConsul"
             :disabled="disableChangeInstanceStatusBtn(scope.row.status)"
             type="primary"
             size="mini"
@@ -74,7 +107,15 @@
   </div>
 </template>
 <script>
-import { down, INSTANCE_STATUS_DEREGISTER, INSTANCE_STATUS_RUNNING, instances, up } from '@/api/service'
+import {
+  bandwidths,
+  checkConsulPattern,
+  down,
+  INSTANCE_STATUS_DEREGISTER,
+  INSTANCE_STATUS_RUNNING,
+  instances,
+  up
+} from '@/api/service'
 
 export default {
   name: 'Instance',
@@ -88,15 +129,27 @@ export default {
     return {
       loading: true,
       instances: [],
-      search: ''
+      search: '',
+      isConsul: true
     }
   },
   created() {
     instances(this.serviceName).then(res => {
       this.instances = res.data
       this.loading = false
+      bandwidths(this.serviceName).then(bandwidths => {
+        if (this.instances.length > 0 && bandwidths.data.length > 0) {
+          this.instances = this.instances.map(instance => {
+            const match = bandwidths.data.find(bandwidth => bandwidth.host === instance.host)
+            return match ? { ...instance, ...match } : instance
+          })
+        }
+      })
     }).catch(() => {
       this.loading = false
+    })
+    checkConsulPattern().then(res => {
+      this.isConsul = res.data
     })
   },
   methods: {
@@ -121,6 +174,13 @@ export default {
           message: '已取消'
         })
       })
+    },
+    convertBpsToMbps(data) {
+      if (data) {
+        return (data / (1024 * 1024)) + 'MiB/s'
+      } else {
+        return '0MiB/s'
+      }
     },
     changeInstanceStatusBtnName(instanceStatus) {
       switch (instanceStatus) {

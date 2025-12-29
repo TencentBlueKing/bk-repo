@@ -30,11 +30,14 @@ package com.tencent.bkrepo.replication.api
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
+import com.tencent.bkrepo.repository.pojo.blocknode.BlockNodeDetail
+import com.tencent.bkrepo.repository.pojo.blocknode.service.BlockNodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
@@ -175,5 +178,15 @@ interface ArtifactReplicaClient {
     @PostMapping("/package/version/delete")
     fun replicaPackageVersionDeleteRequest(
         @RequestBody request: PackageVersionDeleteRequest,
+    ): Response<Void>
+
+    @PostMapping("/block/node/create")
+    fun replicaBlockNodeCreateRequest(
+        @RequestBody request: BlockNodeCreateRequest,
+    ): Response<BlockNodeDetail>
+
+    @PostMapping("/block/node/finish")
+    fun replicaBlockNodeCreateFinishRequest(
+        @RequestBody request: BlockNodeCreateFinishRequest,
     ): Response<Void>
 }

@@ -27,11 +27,12 @@
 
 package com.tencent.bkrepo.replication.replica.type.event
 
-import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.replication.dao.EventRecordDao
 import com.tencent.bkrepo.replication.replica.executor.EventConsumerThreadPoolExecutor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
+import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
 
 /**
@@ -41,10 +42,12 @@ import org.springframework.stereotype.Component
 @Component
 class ArtifactEventConsumer(
     private val replicaTaskService: ReplicaTaskService,
-    private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor
+    private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor,
+    private val eventRecordDao: EventRecordDao,
 ) : EventConsumer() {
 
     private val executors = EventConsumerThreadPoolExecutor.instance
+
     /**
      * 允许接收的事件类型
      */
@@ -56,12 +59,14 @@ class ArtifactEventConsumer(
         )
     }
 
-    override fun action(event: ArtifactEvent) {
-        executors.execute( Runnable {
-            replicaTaskService.listRealTimeTasks(event.projectId, event.repoName).forEach {
-                eventBasedReplicaJobExecutor.execute(it, event)
-            }
-        }.trace()
+    override fun action(message: Message<ArtifactEvent>) {
+        processAction(
+            message = message,
+            eventRecordDao = eventRecordDao,
+            getTasks = { projectId, repoName -> replicaTaskService.listRealTimeTasks(projectId, repoName) },
+            eventType = "NORMAL",
+            executor = executors,
+            executeTask = { task, event, recordId -> eventBasedReplicaJobExecutor.execute(task, event, recordId) }
         )
     }
 }

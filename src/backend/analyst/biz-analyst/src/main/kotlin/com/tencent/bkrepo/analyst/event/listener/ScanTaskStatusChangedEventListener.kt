@@ -54,6 +54,7 @@ import com.tencent.bkrepo.common.api.message.MessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.notify.api.NotifyService
+import com.tencent.bkrepo.common.notify.api.bkci.BkciMessage
 import com.tencent.bkrepo.common.notify.api.weworkbot.TextMessage
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotChannelCredential
 import com.tencent.bkrepo.common.notify.api.weworkbot.WeworkBotMessage
@@ -144,7 +145,7 @@ class ScanTaskStatusChangedEventListener(
             if (chatIds.isNullOrEmpty()) {
                 chatIds = setOf(scanTask.createdBy)
             }
-            notifyService.send(WeworkBotMessage(TextMessage(message), chatIds))
+            notifyService.send(BkciMessage(TextMessage(message), chatIds))
         }
         logger.info("notify by wework bot taskId[{${scanTask.taskId}}]")
     }

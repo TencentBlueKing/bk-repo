@@ -36,7 +36,9 @@ enum class DefaultGroupType(val value: String, val displayName: String) {
     PROJECT_DOWNLOAD("project_download", "项目访问组"), // 下载权限
     REPO_MANAGER("repo_manager", "仓库管理组"), // 管理员
     REPO_UPLOAD_DELETE("repo_upload_delete", "仓库操作组"),
-    REPO_DOWNLOAD("repo_download", "仓库访问组"); // 下载权限
+    REPO_DOWNLOAD("repo_download", "仓库访问组"), // 下载权限
+    REPLICATION_MANAGER("replication_admin", "同步管理组"), // 同步管理权限
+    REPLICATION_OPERATOR("replication_operator", "同步操作组"); // 同步操作权限
     companion object {
         fun get(value: String): DefaultGroupType {
             values().forEach {

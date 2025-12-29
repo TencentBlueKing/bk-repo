@@ -1,11 +1,14 @@
 package com.tencent.bkrepo.common.metadata.util
 
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
+import com.tencent.bkrepo.common.mongo.i18n.ZoneIdContext
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.fs.server.constant.FS_ATTR_KEY
 import com.tencent.bkrepo.repository.pojo.metadata.label.MetadataLabelDetail
@@ -78,9 +81,9 @@ object NodeBaseServiceHelper {
                 nodeNum = null,
                 metadata = metadata,
                 createdBy = createdBy ?: operator,
-                createdDate = createdDate ?: LocalDateTime.now(),
+                createdDate = createdDate ?: LocalDateTime.now(ZoneIdContext.getZoneId()),
                 lastModifiedBy = createdBy ?: operator,
-                lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(),
+                lastModifiedDate = lastModifiedDate ?: LocalDateTime.now(ZoneIdContext.getZoneId()),
                 lastAccessDate = LocalDateTime.now(),
                 federatedSource = source
             )
@@ -135,4 +138,41 @@ object NodeBaseServiceHelper {
     }
 
     fun fsNode(node: TNode) = node.sha256 == FAKE_SHA256 && node.metadata?.any { it.key == FS_ATTR_KEY } == true
+
+
+    /**
+     * 验证节点创建请求参数
+     */
+    fun validateCreateRequest(request: NodeCreateRequest, fullPath: String) {
+        with(request) {
+            Preconditions.checkArgument(!PathUtils.isRoot(fullPath), this::fullPath.name)
+            Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
+            Preconditions.checkArgument(folder || !md5.isNullOrBlank(), this::md5.name)
+        }
+    }
+
+    /**
+     * 检查节点覆盖和文件夹冲突
+     * @param overwrite 是否允许覆盖
+     * @param fullPath 节点完整路径
+     * @param existNodeFolder 现有节点是否为文件夹
+     * @param newNodeFolder 新节点是否为文件夹
+     * @throws ErrorCodeException 如果不允许覆盖或存在文件夹冲突
+     */
+    fun checkOverwriteAndConflict(
+        overwrite: Boolean,
+        fullPath: String,
+        existNodeFolder: Boolean,
+        newNodeFolder: Boolean
+    ) {
+        // 如果不允许覆盖，抛出节点已存在异常
+        if (!overwrite) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
+        }
+
+        // 如果存在文件夹冲突，抛出节点冲突异常
+        if (existNodeFolder || newNodeFolder) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
+        }
+    }
 }

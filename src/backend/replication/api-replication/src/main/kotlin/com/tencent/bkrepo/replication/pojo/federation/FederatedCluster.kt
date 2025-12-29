@@ -34,4 +34,5 @@ class FederatedCluster(
     // 是否启用
     var enabled: Boolean = true,
     var taskId: String? = null,
+    var recordId: String? = null,
 )

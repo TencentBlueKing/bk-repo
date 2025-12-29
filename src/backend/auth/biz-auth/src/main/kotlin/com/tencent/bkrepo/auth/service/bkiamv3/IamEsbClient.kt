@@ -54,11 +54,9 @@ class IamEsbClient {
     private val iamUrl: String = ""
 
     fun createRelationResource(iamCreateApiReq: IamCreateApiReq) {
-        logger.info("createRelationResource, iamCreateApiReq: $iamCreateApiReq")
         val url = buildUrl("api/c/compapi/v2/iam/authorization/resource_creator_action/")
         logger.debug("createRelationResource, url[$url]")
         val content = objectMapper.writeValueAsString(setCredentials(iamCreateApiReq, appCode, appSecret))
-        logger.debug("v3 createRelationResource body[$content]")
         val requestBody = RequestBody.create("application/json; charset=utf-8".toMediaTypeOrNull(), content)
         val request = Request.Builder().url(url).post(requestBody).build()
         val apiResponse = HttpUtils.doRequest(okHttpClient, request, 1)
@@ -73,7 +71,6 @@ class IamEsbClient {
         val url = buildUrl("/api/c/compapi/v2/iam/application/")
         logger.info("getPermissionUrl, url:$url")
         val content = objectMapper.writeValueAsString(setCredentials(iamPermissionUrl, appCode, appSecret))
-        logger.info("getPermissionUrl, content:$content")
         val requestBody = RequestBody.create("application/json; charset=utf-8".toMediaTypeOrNull(), content)
         val request = Request.Builder().url(url).post(requestBody).build()
         val apiResponse = HttpUtils.doRequest(okHttpClient, request, 1)

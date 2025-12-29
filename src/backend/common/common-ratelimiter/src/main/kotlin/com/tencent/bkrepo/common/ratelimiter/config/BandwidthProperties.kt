@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.ratelimiter.config
 
-data class BandwidthProperties(
+class BandwidthProperties(
     // 等待时间，单位毫秒
     var latency: Long = 70,
     // 重试次数

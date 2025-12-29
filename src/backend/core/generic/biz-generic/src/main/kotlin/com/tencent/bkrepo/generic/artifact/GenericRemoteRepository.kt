@@ -44,6 +44,7 @@ import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.constant.PARAM_DOWNLOAD
 import com.tencent.bkrepo.common.artifact.constant.PARAM_PREVIEW
+import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_CRC64ECMA
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.path.PathUtils
@@ -149,6 +150,7 @@ class GenericRemoteRepository(
         val response = HttpContextHolder.getResponse()
         headers[X_CHECKSUM_MD5]?.let { response.setHeader(X_CHECKSUM_MD5, it) }
         headers[X_CHECKSUM_SHA256]?.let { response.setHeader(X_CHECKSUM_SHA256, it) }
+        headers[X_CHECKSUM_CRC64ECMA]?.let { response.setHeader(X_CHECKSUM_CRC64ECMA, it) }
     }
 
     override fun createRemoteDownloadUrl(context: ArtifactContext): String {

@@ -6,9 +6,8 @@ import com.tencent.bkrepo.git.context.DfsDataReaders
 import com.tencent.bkrepo.git.context.DfsDataReadersHolder
 import com.tencent.bkrepo.git.context.UserHolder
 import com.tencent.bkrepo.git.exception.LockFailedException
-import java.util.concurrent.ArrayBlockingQueue
-import kotlin.system.measureNanoTime
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.errors.TransportException
 import org.eclipse.jgit.transport.CredentialsProvider
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.TagOpt
@@ -17,6 +16,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.util.concurrent.ArrayBlockingQueue
+import kotlin.system.measureNanoTime
 
 @Component
 class SyncRepositoryListener {
@@ -60,6 +61,13 @@ class SyncRepositoryListener {
                 taskQueue.put(event)
             }
             logger.warn("Not obtain lock: ${e.message}.")
+        } catch (e: TransportException) {
+            val errorMessage = e.message.orEmpty()
+            if (errorMessage.contains("Authentication is required", ignoreCase = true)) {
+                logger.warn("Authentication failed for repository ${db.identifier}, ${e.message}")
+            } else {
+                logger.error("Failed to fetch ${db.identifier}", e)
+            }
         } catch (e: Exception) {
             logger.error("Failed to fetch ${db.identifier}", e)
         } finally {

@@ -162,8 +162,10 @@ class DevopsPermissionServiceImpl constructor(
             // 系统管理员用户
             if (user.admin) return true
 
-            // 用户不为系统管理员，必须为项目下权限
-            if (projectId == null) return false
+            // 当projectId为null时，需要针对service类型的resourceType进行特定判断
+            if (projectId == null) {
+                return checkReplicationPermission(uid, user.roles, resourceType, action)
+            }
             // 开启仓库内请求拦截
             if (checkRepoAccessDenyGroup(uid, projectId!!, repoName, user.roles.toSet(), requestSource)) return false
             // 用户为系统管理员

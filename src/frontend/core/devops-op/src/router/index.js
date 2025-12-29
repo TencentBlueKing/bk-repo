@@ -3,6 +3,7 @@ import Router from 'vue-router'
 export const TITLE_HOME = sidebarTitle
 export const ROUTER_NAME_ACCOUNT = 'Account'
 export const ROUTER_NAME_SERVICE = 'Service'
+export const ROUTER_NAME_SERVICE_CONFIG = 'ServiceConfig'
 export const ROUTER_NAME_NODE = 'Node'
 export const ROUTER_NAME_EMPTY_FOLDER = 'EmptyFolder'
 export const ROUTER_NAME_FIRST_LEVEL_FOLDER = 'FirstLevelFolder'
@@ -32,6 +33,7 @@ export const ROUTER_NAME_SEPARATION_RECORD = 'SeparationRecord'
 export const ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG = 'MigrationConfig'
 export const ROUTER_NAME_MIGRATE_PROJECT_GRAYSCALE_CONFIG = 'ProjectGrayscaleConfig'
 export const ROUTER_NAME_SERVER_LOG = 'ServerLog'
+export const ROUTER_NAME_SIGN_CONFIG = 'SignConfig'
 
 Vue.use(Router)
 
@@ -127,13 +129,21 @@ export const asyncRoutes = [
   {
     path: '/services',
     component: Layout,
+    meta: { title: '服务管理', icon: 'service' },
+    redirect: '/services/services',
     hidden: process.env.VUE_APP_RELEASE_MODE === 'community',
     children: [
       {
-        path: '/',
+        path: 'services',
         name: ROUTER_NAME_SERVICE,
         meta: { title: '服务管理', icon: 'service' },
         component: () => import('@/views/service/index')
+      },
+      {
+        path: 'configs',
+        name: ROUTER_NAME_SERVICE_CONFIG,
+        meta: { title: '配置管理', icon: 'service' },
+        component: () => import('@/views/serviceConfig/index')
       },
       {
         path: ':serviceName/instances',
@@ -394,6 +404,18 @@ export const asyncRoutes = [
         name: ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG,
         meta: { title: '迁移任务管理', icon: 'separate' },
         component: () => import('@/views/migration/index')
+      }
+    ]
+  },
+  {
+    path: '/sign-config',
+    component: Layout,
+    children: [
+      {
+        path: '/',
+        name: ROUTER_NAME_SIGN_CONFIG,
+        meta: { title: '水印加固配置管理', icon: 'lock' },
+        component: () => import('@/views/sign-config/SignConfig')
       }
     ]
   },
