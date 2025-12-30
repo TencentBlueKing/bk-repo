@@ -202,14 +202,16 @@ object NodeEventFactory {
         repoName: String,
         path: String,
         userId: String,
-        deletedDate: String
+        deletedDate: String,
+        source: String? = null
     ): NodeCleanEvent {
         return NodeCleanEvent(
             projectId = projectId,
             repoName = repoName,
             resourceKey = path,
             userId = userId,
-            deletedDate = deletedDate
+            deletedDate = deletedDate,
+            source = source
         )
     }
 }

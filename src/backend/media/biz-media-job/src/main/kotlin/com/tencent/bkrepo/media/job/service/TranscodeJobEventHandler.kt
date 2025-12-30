@@ -146,10 +146,10 @@ class TranscodeJobEventHandler @Autowired constructor(
         try {
             val projectId = labels[TranscodeJobService.TRANSCODE_JOB_PROJECT_ID] ?: return false
             val repoName = labels[TranscodeJobService.TRANSCODE_JOB_REPO_NAME] ?: return false
-            var fileName = labels[TranscodeJobService.TRANSCODE_JOB_FILE_NAME] ?: return false
-            fileName = "/streams/${fileName.replace(".mp4", "_1280x720.mp4")}"
-            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fileName)) ?: run {
-                logger.warn("checkTranscodeFileDone not found: $projectId|$repoName|$fileName")
+            val fileName = labels[TranscodeJobService.TRANSCODE_JOB_FILE_NAME] ?: return false
+            val fullPath = "/streams/${fileName.replace(".mp4", "_1280x720.mp4")}"
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, fullPath)) ?: run {
+                logger.warn("checkTranscodeFileDone not found: $projectId|$repoName|$fullPath")
                 return false
             }
             mediaTranscodeJobDao.updateStatus(projectId, repoName, fileName, MediaTranscodeJobStatus.DONE)
