@@ -140,3 +140,20 @@ Return the value of authorization
     {{- .Values.gateway.authorization -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Escape special characters for Kafka JAAS configuration
+Escapes backslash and double quote characters
+*/}}
+{{- define "bkrepo.jaasEscape" -}}
+{{- . | replace "\\" "\\\\" | replace "\"" "\\\"" -}}
+{{- end -}}
+
+{{/*
+Generate Kafka SASL JAAS configuration string
+*/}}
+{{- define "bkrepo.kafka.jaasConfig" -}}
+{{- $username := include "bkrepo.jaasEscape" .Values.kafka.username -}}
+{{- $password := include "bkrepo.jaasEscape" .Values.kafka.password -}}
+{{- printf "org.apache.kafka.common.security.scram.ScramLoginModule required username=\"%s\" password=\"%s\";" $username $password -}}
+{{- end -}}
