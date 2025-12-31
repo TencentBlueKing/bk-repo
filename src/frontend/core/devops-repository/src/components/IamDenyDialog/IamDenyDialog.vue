@@ -1,6 +1,6 @@
 <template>
     <bk-dialog v-model="showIamDenyDialog" :visible.sync="showIamDenyDialog" :before-close="close" style="text-align: center">
-        <img src="/ui/no-permission.svg" />
+        <img :src="imgUrl" />
         <p>{{ $t('iamTip') }}</p>
         <bk-table
             class="mt10"
@@ -50,7 +50,8 @@
         data () {
             return {
                 showIamDenyDialog: this.visible,
-                formData: []
+                formData: [],
+                imgUrl: window.BK_STATIC_URL + 'no-permission.svg'
             }
         },
         watch: {

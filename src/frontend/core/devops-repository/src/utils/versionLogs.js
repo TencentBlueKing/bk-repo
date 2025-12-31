@@ -46,7 +46,7 @@ export function getTrueVersions () {
 export async function getVersionContext (version) {
     const language = cookies.get('blueking_language') || 'zh-cn'
     const languagePath = language === 'zh-cn' ? 'cn/' : 'en/'
-    const markdownFilePath = '/ui/versionLogs/' + languagePath + version + '.md'
+    const markdownFilePath = window.BK_STATIC_URL + '/versionLogs/' + languagePath + version + '.md'
     const response = await fetch(markdownFilePath)
     const markdown = await response.text()
     return markdown

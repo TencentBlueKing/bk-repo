@@ -182,7 +182,7 @@
                 if (repoType === 'docker') {
                     return `${location.protocol}//${this.domain.docker}/${this.projectId}/${name}/`
                 }
-                return `${location.origin}/${repoType}/${this.projectId}/${name}/`
+                return `${location.origin}${window.BK_SUBPATH}/${repoType}/${this.projectId}/${name}/`
             },
             isCommunity () {
                 return RELEASE_MODE === 'community'

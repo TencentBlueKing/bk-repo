@@ -152,4 +152,6 @@ export function copyToClipboard (text) {
     // }
 }
 
-export const routeBase = rootPath === '/' ? '/ui' : rootPath
+const publicPath = window.BK_SUBPATH
+
+export const routeBase = rootPath === '/' ? publicPath + 'ui' : publicPath + rootPath

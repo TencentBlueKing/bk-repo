@@ -3,23 +3,28 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="/ui/favicon.ico" />
-    <link rel="manifest" href="/ui/CPack.webmanifest" />
-    <script src="/ui/libs/vue.min.js"></script>
-    <script src="/ui/libs/vuex.min.js"></script>
-    <script src="/ui/libs/vue-router.min.js"></script>
-    <script src="/ui/libs/jsencrypt.min.js"></script>
-    <script src="/ui/watermark.js"></script>
-    <link rel='preload' as='script' href="/ui/libs/bk-magic-vue/bk-magic-vue.min.js" />
-    <link href="/ui/libs/bk-magic-vue/bk-magic-vue.min.css" rel="stylesheet">
-    <link href="/ui/iconfont.css" rel="stylesheet">
+    <link rel="manifest" href="__BK_REPO_SUBPATH__ui/CPack.webmanifest" />
+    <script src="__BK_REPO_SUBPATH__ui/libs/vue.min.js"></script>
+    <script src="__BK_REPO_SUBPATH__ui/libs/vuex.min.js"></script>
+    <script src="__BK_REPO_SUBPATH__ui/libs/vue-router.min.js"></script>
+    <script src="__BK_REPO_SUBPATH__ui/libs/jsencrypt.min.js"></script>
+    <script src="__BK_REPO_SUBPATH__ui/watermark.js"></script>
+    <link rel='preload' as='script' href="__BK_REPO_SUBPATH__ui/libs/bk-magic-vue/bk-magic-vue.min.js" />
+    <link href="__BK_REPO_SUBPATH__ui/libs/bk-magic-vue/bk-magic-vue.min.css" rel="stylesheet">
+    <link href="__BK_REPO_SUBPATH__ui/iconfont.css" rel="stylesheet">
     <title><%= htmlWebpackPlugin.options.title %></title>
 </head>
 <body>
     <script>
+        // 子路径
+        var BK_SUBPATH = '__BK_REPO_SUBPATH__' || '/'
+        window.BK_SUBPATH = BK_SUBPATH === '/' ? '/' : BK_SUBPATH
+        window.BK_STATIC_URL = BK_SUBPATH === '/' ? '/ui/' : BK_SUBPATH + 'ui/'
+
         // 请求svg图标
         const ajax = new XMLHttpRequest()
-        ajax.open('GET', '/ui/sprite.svg', true)
+        const url = window.BK_STATIC_URL + 'sprite.svg'
+        ajax.open('GET', url, true)
         ajax.onload = function (e) {
             const div = document.createElement('div')
             div.setAttribute('style', 'position: absolute; width: 0; height: 0; overflow: hidden;')
@@ -27,10 +32,67 @@
             document.body.prepend(div)
         }
         ajax.send()
+
+        // 创建 style 元素
+        const style = document.createElement('style')
+        style.type = 'text/css';
+
+        // 设置 CSS 内容
+        style.textContent = `
+                @font-face {
+        font-family: 'bk-icons-linear';
+        src: url('__BK_REPO_SUBPATH__ui/fonts/bk_icons_linear.eot');
+        src: url('__BK_REPO_SUBPATH__ui/fonts/bk_icons_linear.eot?#iefix') format('embedded-opentype'),
+        url('__BK_REPO_SUBPATH__ui/fonts/bk_icons_linear.ttf') format('truetype'),
+        url('__BK_REPO_SUBPATH__ui/fonts/bk_icons_linear.woff') format('woff');
+        font-weight: normal;
+        font-style: normal;
+        }`
+        // 添加到 head
+        document.head.appendChild(style);
+
     </script>
     <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/ui/sw.js');
+        async function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const swUrl = window.BK_STATIC_URL + 'sw.js'
+                    const registration = await navigator.serviceWorker.register(swUrl);
+                    console.log('Service Worker 注册成功:', registration);
+
+                    // 2. 重要：立即检查是否已激活，然后发送配置
+                    // 如果还在 installing 状态，可以直接发送，worker 中的 message 监听器已就绪
+                    if (registration.active) {
+                        // 如果已经激活，直接发送
+                        registration.active.postMessage({
+                            type: 'SET_CONFIG',
+                            config: {
+                                // 这里替换为你的实际配置获取方式
+                                BK_STATIC_URL: window.BK_STATIC_URL || '/ui/'
+                            }
+                        });
+                    } else if (registration.installing) {
+                        // 如果还在安装，发给 installing 状态的worker
+                        registration.installing.postMessage({
+                            type: 'SET_CONFIG',
+                            config: {
+                                BK_STATIC_URL: window.BK_STATIC_URL || '/ui/'
+                            }
+                        });
+                    } else if (registration.waiting) {
+                        // 如果存在等待激活的worker
+                        registration.waiting.postMessage({
+                            type: 'SET_CONFIG',
+                            config: {
+                                BK_STATIC_URL: window.BK_STATIC_URL || '/ui/'
+                            }
+                        });
+                    }
+
+                } catch (error) {
+                    console.error('Service Worker 注册失败:', error);
+                }
+            }
         }
         function isPWA() {
             return ["fullscreen", "standalone", "minimal-ui"].some(
@@ -49,6 +111,7 @@
         }
     </script>
     <script>
+        window.addEventListener('DOMContentLoaded', registerServiceWorker)
         var PAAS_SERVICE_URL = '__BK_HTTP_SCHEMA__://__BK_REPO_PAAS_FQDN__'
         var DEVOPS_SITE_URL = '__BK_HTTP_SCHEMA__://__BK_CI_FQDN__'
         var LOGIN_SERVICE_URL = /^https?/.test(PAAS_SERVICE_URL)
@@ -73,7 +136,6 @@
                             + ('__BK_REPO_PAAS_FQDN__').split("://")[1] + '/api/bk-user-web/prod'
         // 是否开启多租户模式
         var BK_REPO_ENABLE_MULTI_TENANT_MODE = '__BK_REPO_ENABLE_MULTI_TENANT_MODE__' || 'false'
-
     </script>
     <script>
         const inIframe = self !== top
@@ -198,7 +260,62 @@
                 watermark_txt: '  '
             })
         }
+
+        window.__loadAssetsUrl__ = function(src){
+            function joinPath(...paths) {
+                // 过滤 null/undefined
+                const validPaths = paths.filter(p => p != null).map(String);
+
+                if (validPaths.length === 0) return '';
+
+                // 检查是否以根路径开头
+                const startsWithRoot = validPaths[0].startsWith('/');
+
+                // 标准化每个路径片段：移除首尾多余斜杠
+                const normalized = validPaths.map((p, i) => {
+                    if (i === 0) {
+                        // 第一个路径：只移除尾部斜杠（保留开头的 /）
+                        return p.replace(/[\/]+$/, '');
+                    } else {
+                        // 其他路径：移除首尾斜杠
+                        return p.replace(/^[\/]+|[\/]+$/g, '');
+                    }
+                }).filter(p => p !== '');
+
+                // 拼接
+                let result = normalized.join('/');
+
+                // 如果原始第一个路径是根路径，确保结果以 / 开头
+                if (startsWithRoot && result !== '') {
+                    result = '/' + result.replace(/^\/+/, '');
+                }
+
+                return result || (startsWithRoot ? '/' : '');
+            }
+            return joinPath(window.BK_STATIC_URL, src);
+        }
+        function loadScript (src) {
+            const script = document.createElement('script');
+            script.src = window.__loadAssetsUrl__(src);
+            document.body.appendChild(script);
+        }
+        function loadStyle (href) {
+            const link = document.createElement('link');
+            link.type = "text/css";
+            link.rel = "stylesheet";
+            link.href = window.__loadAssetsUrl__(href);
+            document.head.appendChild(link);
+        }
+
     </script>
-    <script src="/ui/libs/bk-magic-vue/bk-magic-vue.min.js"></script>
+    <script src="__BK_REPO_SUBPATH__ui/libs/bk-magic-vue/bk-magic-vue.min.js"></script>
+    <script>
+        <% for (var chunk of htmlWebpackPlugin.files.js) { %>
+            loadScript("<%= chunk %>");
+            <% } %>
+        <% for (var chunk of htmlWebpackPlugin.files.css) { %>
+            loadStyle("<%= chunk %>");
+            <% } %>
+    </script>
 </body>
 </html>
