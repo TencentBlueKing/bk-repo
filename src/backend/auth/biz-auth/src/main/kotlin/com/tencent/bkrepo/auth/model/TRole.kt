@@ -31,6 +31,7 @@
 
 package com.tencent.bkrepo.auth.model
 
+import com.tencent.bkrepo.auth.pojo.DeptInfo
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
 import com.tencent.bkrepo.auth.pojo.role.RoleSource
 import org.springframework.data.mongodb.core.index.CompoundIndex
@@ -57,5 +58,6 @@ data class TRole(
     val repoName: String? = null,
     val admin: Boolean = false,
     var description: String? = null,
-    var source: RoleSource? = null
+    var source: RoleSource? = null,
+    var deptInfoList: List<DeptInfo>? = null
 )
