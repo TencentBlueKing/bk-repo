@@ -45,6 +45,7 @@ data class S3Credentials(
     var endpoint: String = "",
     var region: String = "",
     var bucket: String = "",
+    var download: S3DownloadProperties = S3DownloadProperties(),
     override var key: String? = null,
     override var cache: CacheProperties = CacheProperties(),
     override var upload: UploadProperties = UploadProperties(),
@@ -54,4 +55,8 @@ data class S3Credentials(
     companion object {
         const val type = "s3"
     }
+
+    data class S3DownloadProperties(
+        var lazyLoad: Boolean = false,
+    )
 }
