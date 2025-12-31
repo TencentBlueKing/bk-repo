@@ -38,10 +38,12 @@ import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.huggingface.constants.COMMIT_ID_HEADER
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.stereotype.Component
 
 /**
  * Huggingface协议的响应输出
  */
+@Component
 class HuggingfaceArtifactResourceWriter(
     storageProperties: StorageProperties,
     requestLimitCheckService: RequestLimitCheckService
