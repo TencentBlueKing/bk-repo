@@ -48,7 +48,11 @@ fun String.toPath(): Path = Paths.get(this)
 fun Path.createFile(): File {
     if (!Files.isRegularFile(this)) {
         if (this.parent != null) {
-            Files.createDirectories(this.parent)
+            try {
+                Files.createDirectories(this.parent)
+            } catch (ignored: java.nio.file.FileAlreadyExistsException) {
+                // ignore
+            }
         }
         try {
             Files.createFile(this)
