@@ -18,7 +18,7 @@ data:
     {{- end}}
     generic:
       {{- if eq "subpath" .Values.bkWebSiteAccess.mode -}}
-      domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}{{ .Values.bkWebSiteAccess.subPath }}generic
+      domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}{{ .Values.bkWebSiteAccess.subPath }}/generic
       {{- else -}}
       domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}/generic
       {{- end -}}
