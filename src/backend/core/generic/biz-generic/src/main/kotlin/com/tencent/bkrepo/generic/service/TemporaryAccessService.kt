@@ -356,7 +356,13 @@ class TemporaryAccessService(
      */
     private fun generateAccessUrl(tokenInfo: TemporaryTokenInfo, tokenType: TokenType, host: String?): String {
         val urlHost = if (!host.isNullOrBlank()) host else genericProperties.domain
+        // 提取子路径前缀（如果存在）
+        val subPathPrefix = extractSubPathPrefix(urlHost)
         val builder = StringBuilder(UrlFormatter.formatHost(urlHost))
+        // 如果开启了子路径模式，需要在路径中添加子路径前缀
+        if (subPathPrefix.isNotEmpty()) {
+            builder.append(subPathPrefix)
+        }
         when (tokenType) {
             TokenType.DOWNLOAD -> builder.append(TEMPORARY_DOWNLOAD_ENDPOINT)
             TokenType.UPLOAD -> builder.append(TEMPORARY_UPLOAD_ENDPOINT)
@@ -370,6 +376,28 @@ class TemporaryAccessService(
             .append("?token=")
             .append(tokenInfo.token)
             .toString()
+    }
+
+    /**
+     * 从URL中提取子路径前缀
+     * 例如：http://example.com/bkrepo/generic -> /bkrepo
+     */
+    private fun extractSubPathPrefix(url: String): String {
+        // 移除协议和域名部分，只保留路径
+        val pathStart = url.indexOf("://")
+        if (pathStart == -1) return ""
+        
+        val afterProtocol = url.substring(pathStart + 3)
+        val pathIndex = afterProtocol.indexOf("/")
+        if (pathIndex == -1) return ""
+        
+        val fullPath = afterProtocol.substring(pathIndex)
+        // 移除 /generic 后缀，剩下的就是子路径前缀
+        return if (fullPath.endsWith("/generic")) {
+            fullPath.removeSuffix("/generic")
+        } else {
+            ""
+        }
     }
 
     /**
