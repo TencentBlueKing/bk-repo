@@ -44,71 +44,70 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
  * 存储属性配置
  */
 @ConfigurationProperties("storage")
-data class StorageProperties(
+class StorageProperties {
     /**
      * 数据接收配置
      */
     @NestedConfigurationProperty
-    var receive: ReceiveProperties = ReceiveProperties(),
+    var receive: ReceiveProperties = ReceiveProperties()
 
     /**
      * 数据响应配置
      */
     @NestedConfigurationProperty
-    var response: ResponseProperties = ResponseProperties(),
+    var response: ResponseProperties = ResponseProperties()
 
     /**
      * 重定向配置
      */
     @NestedConfigurationProperty
-    var redirect: RedirectProperties = RedirectProperties(),
+    var redirect: RedirectProperties = RedirectProperties()
 
     /**
      * 存储类型
      */
-    var type: StorageType = StorageType.FILESYSTEM,
+    var type: StorageType = StorageType.FILESYSTEM
 
     /**
      * 磁盘监控配置
      */
     @NestedConfigurationProperty
-    var monitor: MonitorProperties = MonitorProperties(),
+    var monitor: MonitorProperties = MonitorProperties()
 
     /**
      * 文件系统存储配置
      */
     @NestedConfigurationProperty
-    var filesystem: FileSystemCredentials = FileSystemCredentials(),
+    var filesystem: FileSystemCredentials = FileSystemCredentials()
 
     /**
      * 内部cos存储配置
      */
     @NestedConfigurationProperty
-    var innercos: InnerCosCredentials = InnerCosCredentials(),
+    var innercos: InnerCosCredentials = InnerCosCredentials()
 
     /**
      * hdfs存储配置
      */
     @NestedConfigurationProperty
-    var hdfs: HDFSCredentials = HDFSCredentials(),
+    var hdfs: HDFSCredentials = HDFSCredentials()
 
     /**
      * s3存储配置
      */
     @NestedConfigurationProperty
-    var s3: S3Credentials = S3Credentials(),
+    var s3: S3Credentials = S3Credentials()
 
     /**
      * polaris服务地址列表
      */
-    var polarisAddresses: List<String> = emptyList(),
+    var polarisAddresses: List<String> = emptyList()
 
     /**
      * fileStorageClient缓存大小
      */
-    var clientCacheSize: Long = 32,
+    var clientCacheSize: Long = 32
 
-) {
     fun defaultStorageCredentials(): StorageCredentials {
         return when (type) {
             StorageType.FILESYSTEM -> filesystem
