@@ -17,9 +17,9 @@ data:
       {{- if keys $.Values.generic.config }}
         {{- toYaml .Values.generic.config | nindent 6 }}
       {{- end}}
-      {{- if eq "subpath" .Values.bkWebSiteAccess.mode -}}
+      {{- if eq "subpath" .Values.bkWebSiteAccess.mode }}
       domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}{{ .Values.bkWebSiteAccess.subPath }}/generic
-      {{- else -}}
+      {{- else }}
       domain: {{ .Values.bkDomainScheme }}://{{ .Values.gateway.host }}/generic
-      {{- end -}}
+      {{- end }}
 {{- end }}
