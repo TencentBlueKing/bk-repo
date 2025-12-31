@@ -14,7 +14,7 @@ interface FileConsumer : Consumer<File> {
      * @param file 待消费文件
      * @param name 文件名
      * */
-    fun accept(file: File, name: String)
+    fun accept(file: File, name: String, endTime: Long)
 
-    fun accept(name: String, file: ArtifactFile, extraFiles: Map<String, ArtifactFile>?)
+    fun accept(name: String, file: ArtifactFile, extraFiles: Map<String, ArtifactFile>?, endTime: Long)
 }
