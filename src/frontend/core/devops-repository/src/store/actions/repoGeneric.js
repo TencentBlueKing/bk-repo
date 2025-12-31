@@ -221,7 +221,7 @@ export default {
                 }
             }
             xhr.upload.addEventListener('progress', progressHandler)
-            xhr.open('PUT', `/web/generic/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`, true)
+            xhr.open('PUT', window.BK_SUBPATH + `web/generic/${projectId}/${repoName}/${encodeURIComponent(fullPath)}`, true)
             xhr.responseType = 'json'
             xhr.setRequestHeader('Content-Type', headers['Content-Type'])
             xhr.setRequestHeader('X-BKREPO-OVERWRITE', headers['X-BKREPO-OVERWRITE'])

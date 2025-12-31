@@ -30,7 +30,7 @@ export default {
             return this.$route.path.endsWith('/list') ? '<PACKAGE_VERSION>' : this.version || '<PACKAGE_VERSION>'
         },
         repoUrl () {
-            return `${location.origin}/${this.repoType}/${this.projectId}/${this.repoName}`
+            return `${location.origin}${window.BK_SUBPATH}${this.repoType}/${this.projectId}/${this.repoName}`
         },
         userName () {
             return this.userInfo.username || '<USERNAME>'
@@ -1072,7 +1072,7 @@ export default {
                     main: [
                         {
                             subTitle: this.$t('nugetCreditGuideSubTitle'),
-                            codeList: [`nuget sources Add -Username "${this.userName}" -Password "${this.accessToken}" -Name "${this.repoName}" -Source "${location.origin}/${this.repoType}/${this.projectId}/${this.repoName}/v3/index.json"`]
+                            codeList: [`nuget sources Add -Username "${this.userName}" -Password "${this.accessToken}" -Name "${this.repoName}" -Source "${location.origin}${window.BK_SUBPATH}${this.repoType}/${this.projectId}/${this.repoName}/v3/index.json"`]
                         }
                     ]
                 },

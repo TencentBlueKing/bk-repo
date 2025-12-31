@@ -237,7 +237,7 @@
                     position: 'bottom-right',
                     theme: 'success'
                 })
-                const url = `/web/analyst/api/scan/plan/export?${params.toString()}&x-bkrepo-project-id=${this.scanPlan.projectId}`
+                const url = window.BK_SUBPATH + `web/analyst/api/scan/plan/export?${params.toString()}&x-bkrepo-project-id=${this.scanPlan.projectId}`
                 window.open(url, '_self')
             }
         }

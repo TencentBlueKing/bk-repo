@@ -24,7 +24,7 @@
         <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
-                <img width="480" height="240" style="float: left;margin-right: 3px" src="/ui/440.svg" />
+                <img width="480" height="240" style="float: left;margin-right: 3px" :src="window.BK_SUBPATH + 'ui/440.svg'" />
                 <span class="mt5 error-data-title">{{ $t('previewErrorTip') }}</span>
             </div>
         </div>
@@ -51,7 +51,7 @@
 
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.isEvalSupported = false
-    PDFJS.GlobalWorkerOptions.workerSrc = location.origin + '/ui/pdf.worker.js'
+    PDFJS.GlobalWorkerOptions.workerSrc = location.origin + window.BK_SUBPATH + 'ui/pdf.worker.js'
 
     export default {
         name: 'OutsideFilePreview',
