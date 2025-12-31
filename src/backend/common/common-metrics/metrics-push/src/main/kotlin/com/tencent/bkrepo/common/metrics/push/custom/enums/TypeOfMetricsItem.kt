@@ -40,4 +40,14 @@ enum class TypeOfMetricsItem(
         DataModel.DATAMODEL_GAUGE,
         false,
     ),
+
+    /**
+     * 制品传输大小（上传/下载）
+     */
+    ARTIFACT_TRANSFER_SIZE(
+        "artifact_transfer_size_bytes",
+        "artifact transfer size in bytes",
+        DataModel.DATAMODEL_HISTOGRAM,
+        false,
+    ),
 }
