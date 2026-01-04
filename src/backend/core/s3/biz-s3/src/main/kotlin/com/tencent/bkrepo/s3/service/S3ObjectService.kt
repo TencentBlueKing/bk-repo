@@ -56,6 +56,7 @@ import com.tencent.bkrepo.common.metadata.pojo.node.AutoIndexRepositorySettings
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.query.enums.OperationType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
@@ -200,6 +201,7 @@ class S3ObjectService(
             emptyList()
         }
         val queryBuilder = nodeQueryBuilder.newBuilder().page(marker, maxKeys)
+            .sortByAsc(ID)
             .apply {
                 if (delimiter.isNotEmpty()) {
                     excludeFolder()
