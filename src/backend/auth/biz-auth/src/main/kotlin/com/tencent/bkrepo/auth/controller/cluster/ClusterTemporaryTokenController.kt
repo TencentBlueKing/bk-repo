@@ -44,7 +44,10 @@ class ClusterTemporaryTokenController(
 ) : ClusterTemporaryTokenClient, OpenResource(permissionService) {
     override fun createToken(request: TemporaryTokenCreateRequest): Response<List<TemporaryTokenInfo>> {
         preCheckPlatformPermission()
-        return ResponseBuilder.success(temporaryTokenService.createToken(request))
+        // 强制将bypassProjectDisable设置为false，防止客户端绕过项目禁用检查
+        // 只有通过TemporaryAccessController的白名单平台才能设置为true
+        val safeRequest = request.copy(bypassProjectDisable = false)
+        return ResponseBuilder.success(temporaryTokenService.createToken(safeRequest))
     }
 
     override fun getTokenInfo(token: String): Response<TemporaryTokenInfo?> {
