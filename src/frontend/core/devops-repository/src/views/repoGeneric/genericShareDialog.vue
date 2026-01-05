@@ -145,7 +145,7 @@
                     repoName,
                     fullPathSet: [path],
                     type: 'DOWNLOAD',
-                    host: `${location.origin}/web/generic`,
+                    host: `${location.origin}` + window.BK_SUBPATH + 'web/generic',
                     needsNotify: Boolean(user.length),
                     ...(ip.length ? { authorizedIpSet: ip } : {}),
                     ...(user.length ? { authorizedUserSet: user } : {}),

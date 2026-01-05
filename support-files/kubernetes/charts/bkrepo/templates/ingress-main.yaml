@@ -1,0 +1,45 @@
+{{- if and .Values.ingress.enabled (eq "subpath" .Values.bkWebSiteAccess.mode) }}
+apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ include "common.names.fullname" . }}-ingress-main
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    {{- if eq "subpath" .Values.bkWebSiteAccess.mode }}
+    nginx.ingress.kubernetes.io/enable-rewrite-log: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target-use-prefix: "true"
+    {{- end }}
+    {{- if .Values.commonAnnotations }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
+    {{- end }}
+    {{- range $key, $value := .Values.ingress.annotations }}
+    {{ $key }}: {{ include "common.tplvalues.render" (dict "value" $value "context" $) | quote }}
+    {{- end }}
+spec:
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.gateway.host }}
+      secretName: {{ .Values.ingress.tlsName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.gateway.host }}
+      http:
+        paths:
+          {{- if eq "subpath" .Values.bkWebSiteAccess.mode }}
+          - path: {{ include "bkrepo.subPath" . }}
+          {{- else }}
+          - path: /
+          {{- end }}
+            {{- if eq "true" (include "common.ingress.supportsPathType" .) }}
+            pathType: Prefix
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" (printf "%s-gateway"  (include "common.names.fullname" .)) "servicePort" 80 "context" $) | nindent 14 }}
+{{- end }}
