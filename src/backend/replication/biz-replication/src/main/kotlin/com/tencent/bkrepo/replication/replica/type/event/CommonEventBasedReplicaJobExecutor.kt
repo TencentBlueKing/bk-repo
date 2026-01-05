@@ -30,12 +30,14 @@ package com.tencent.bkrepo.replication.replica.type.event
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.dao.EventRecordDao
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.metrics.FederationMetricsCollector
+import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.pojo.record.ReplicaRecordInfo
+import com.tencent.bkrepo.replication.pojo.request.ReplicaType
 import com.tencent.bkrepo.replication.pojo.task.ReplicaTaskDetail
 import com.tencent.bkrepo.replication.replica.executor.AbstractReplicaJobExecutor
-import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
-import com.tencent.bkrepo.replication.pojo.record.ExecutionStatus
 import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
@@ -51,7 +53,8 @@ open class CommonEventBasedReplicaJobExecutor(
     replicationProperties: ReplicationProperties,
     val replicaRecordService: ReplicaRecordService,
     replicaFailureRecordDao: ReplicaFailureRecordDao,
-    protected val eventRecordDao: EventRecordDao?
+    protected val eventRecordDao: EventRecordDao?,
+    protected val metricsCollector: FederationMetricsCollector?
 ) : AbstractReplicaJobExecutor(
     clusterNodeService, localDataManager, replicaService, replicationProperties, replicaFailureRecordDao
 ) {
@@ -62,6 +65,8 @@ open class CommonEventBasedReplicaJobExecutor(
     fun execute(taskDetail: ReplicaTaskDetail, event: ArtifactEvent, eventId: String? = null) {
         val task = taskDetail.task
         val taskKey = task.key
+        val startTime = System.currentTimeMillis()
+
         if (!replicaObjectCheck(taskDetail, event)) {
             eventId?.let {
                 // 如果任务不匹配，认为任务已完成（跳过），但不算失败
@@ -85,13 +90,28 @@ open class CommonEventBasedReplicaJobExecutor(
             replicaRecordService.updateRecordReplicaOverview(taskRecord.id, replicaOverview)
             taskSucceeded = !results.any { result ->
                 result?.progress?.failed != 0L || result.progress?.fileFailed != 0L ||
-                result.status == ExecutionStatus.FAILED
+                    result.status == ExecutionStatus.FAILED
             }
             logger.info("Replica ${event.getFullResourceKey()} completed.")
         } catch (exception: Exception) {
             logger.error("Replica ${event.getFullResourceKey()}} failed: $exception", exception)
             taskSucceeded = false
         } finally {
+            if (task.replicaType == ReplicaType.FEDERATION) {
+                // 记录事件处理指标
+                val eventType = event.type.name
+                metricsCollector?.recordEvent(eventType, taskSucceeded)
+
+                // 记录元数据同步指标
+                val duration = System.currentTimeMillis() - startTime
+                metricsCollector?.recordArtifactSync(
+                    projectId = event.projectId,
+                    repoName = event.repoName,
+                    success = taskSucceeded,
+                    durationMillis = duration,
+                    taskKey = taskKey
+                )
+            }
             eventId?.let {
                 // 更新事件记录状态
                 updateEventRecordAfterTaskCompletion(eventId, taskKey, taskSucceeded)
@@ -117,7 +137,7 @@ open class CommonEventBasedReplicaJobExecutor(
     private fun updateEventRecordAfterTaskCompletion(
         eventId: String,
         taskKey: String,
-        taskSucceeded: Boolean
+        taskSucceeded: Boolean,
     ) {
         if (eventRecordDao == null) {
             return

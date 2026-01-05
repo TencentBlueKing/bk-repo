@@ -45,7 +45,6 @@ import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.constant.USER_KEY
-import com.tencent.bkrepo.common.api.constant.urlEncode
 import com.tencent.bkrepo.common.api.exception.BadRequestException
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
@@ -356,7 +355,7 @@ class TemporaryAccessService(
      */
     private fun generateAccessUrl(tokenInfo: TemporaryTokenInfo, tokenType: TokenType, host: String?): String {
         val urlHost = if (!host.isNullOrBlank()) host else genericProperties.domain
-        logger.info("generateAccessUrl: tokenInfo=$tokenInfo, tokenType=$tokenType, host=$urlHost, ${genericProperties.domain}")
+        logger.info("generateAccessUrl: tokenInfo=$tokenInfo, tokenType=$tokenType, host=$urlHost")
         val builder = StringBuilder(UrlFormatter.formatHost(urlHost))
         when (tokenType) {
             TokenType.DOWNLOAD -> builder.append(TEMPORARY_DOWNLOAD_ENDPOINT)
@@ -367,7 +366,7 @@ class TemporaryAccessService(
             .append(tokenInfo.projectId)
             .append(StringPool.SLASH)
             .append(tokenInfo.repoName)
-            .append(tokenInfo.fullPath.urlEncode())
+            .append(tokenInfo.fullPath)
             .append("?token=")
             .append(tokenInfo.token)
             .toString()
