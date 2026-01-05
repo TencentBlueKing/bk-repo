@@ -97,7 +97,7 @@ class BkciProjectMetadataSyncJob(
 
     private fun updateProjectInfo(project: Project, bkciProject: BkciProject) {
         val query = Query(Project::name.isEqualTo(project.name))
-        val newMetadata = ArrayList<ProjectMetadata>(8)
+        val newMetadata = ArrayList<ProjectMetadata>(12)
         bkciProject.bgId?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_BG_ID, it)) }
         bkciProject.bgName?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_BG_NAME, it)) }
         bkciProject.deptId?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_DEPT_ID, it)) }
@@ -106,6 +106,7 @@ class BkciProjectMetadataSyncJob(
         bkciProject.centerName?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_CENTER_NAME, it)) }
         bkciProject.productId?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_PRODUCT_ID, it)) }
         bkciProject.enabled?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_ENABLED, it)) }
+        bkciProject.shareEnabled?.let { newMetadata.add(ProjectMetadata(ProjectMetadata.KEY_SHARE_ENABLED, it)) }
 
         val metadataMap = project.metadata.associateByTo(HashMap()) { it.key }
         newMetadata.forEach { metadataMap[it.key] = it }
@@ -216,5 +217,9 @@ class BkciProjectMetadataSyncJob(
          * 运营产品ID
          */
         val productId: Int?,
+        /**
+         * 是否允许制品分享
+         */
+        val shareEnabled: Boolean? = null,
     )
 }
