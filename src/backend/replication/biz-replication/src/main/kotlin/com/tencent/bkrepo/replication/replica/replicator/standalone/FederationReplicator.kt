@@ -41,6 +41,7 @@ import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.constant.FEDERATED
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.metrics.FederationMetricsCollector
 import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
@@ -90,6 +91,7 @@ class FederationReplicator(
     private val federationRepositoryService: FederationRepositoryService,
     private val federationMetadataTrackingService: FederationMetadataTrackingService,
     private val replicaRecordService: ReplicaRecordService,
+    private val metricsCollector: FederationMetricsCollector?
 ) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties, localDataManager) {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
@@ -320,6 +322,7 @@ class FederationReplicator(
     private fun executeFileTransferAsync(context: ReplicaContext, node: NodeInfo): Boolean {
         val latch = CountDownLatch(1)
         val result = AtomicBoolean(true)
+        val startTime = System.currentTimeMillis()
 
         executor.execute(
             Runnable {
@@ -327,9 +330,31 @@ class FederationReplicator(
                     pushFileToFederatedCluster(context, node)
                     // 记录文件传输完成标识
                     recordFileTransferComplete(context, node)
+                    
+                    // 记录文件传输指标
+                    val duration = System.currentTimeMillis() - startTime
+                    metricsCollector?.recordFileTransfer(
+                        projectId = context.localProjectId,
+                        repoName = context.localRepoName,
+                        success = true,
+                        bytes = node.size,
+                        durationMillis = duration,
+                        taskKey = context.task.key
+                    )
                 } catch (throwable: Throwable) {
                     handleFileTransferError(context, node, throwable)
                     result.set(false)
+                    
+                    // 记录文件传输失败指标
+                    val duration = System.currentTimeMillis() - startTime
+                    metricsCollector?.recordFileTransfer(
+                        projectId = context.localProjectId,
+                        repoName = context.localRepoName,
+                        success = false,
+                        bytes = node.size,
+                        durationMillis = duration,
+                        taskKey = context.task.key
+                    )
                 } finally {
                     latch.countDown()
                 }
@@ -344,13 +369,36 @@ class FederationReplicator(
      * 同步执行文件传输
      */
     private fun executeFileTransferSync(context: ReplicaContext, node: NodeInfo): Boolean {
+        val startTime = System.currentTimeMillis()
         return try {
             pushFileToFederatedCluster(context, node)
             // 记录文件传输完成标识
             recordFileTransferComplete(context, node)
+            
+            // 记录文件传输指标
+            val duration = System.currentTimeMillis() - startTime
+            metricsCollector?.recordFileTransfer(
+                projectId = context.localProjectId,
+                repoName = context.localRepoName,
+                success = true,
+                bytes = node.size,
+                durationMillis = duration,
+                taskKey = context.task.key
+            )
             true
         } catch (throwable: Throwable) {
             handleFileTransferError(context, node, throwable)
+            
+            // 记录文件传输失败指标
+            val duration = System.currentTimeMillis() - startTime
+            metricsCollector?.recordFileTransfer(
+                projectId = context.localProjectId,
+                repoName = context.localRepoName,
+                success = false,
+                bytes = node.size,
+                durationMillis = duration,
+                taskKey = context.task.key
+            )
             false
         }
     }
