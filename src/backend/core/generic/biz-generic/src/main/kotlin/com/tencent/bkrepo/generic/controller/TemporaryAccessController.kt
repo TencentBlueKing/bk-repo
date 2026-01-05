@@ -101,8 +101,18 @@ class TemporaryAccessController(
     @PostMapping("/token/create")
     @Principal(PrincipalType.GENERAL)
     fun createToken(@RequestBody request: TemporaryTokenCreateRequest): Response<List<TemporaryAccessToken>> {
+        // 检查是否为白名单中的平台账户
+        val platformId = SecurityUtils.getPlatformId()
+        val bypassProjectDisable = platformId != null && 
+            genericProperties.tokenBypassPlatforms.contains(platformId)
+        
         return ResponseBuilder.success(
-            temporaryAccessService.createToken(request.copy(createdBy = SecurityUtils.getUserId()))
+            temporaryAccessService.createToken(
+                request.copy(
+                    createdBy = SecurityUtils.getUserId(),
+                    bypassProjectDisable = bypassProjectDisable
+                )
+            )
         )
     }
 

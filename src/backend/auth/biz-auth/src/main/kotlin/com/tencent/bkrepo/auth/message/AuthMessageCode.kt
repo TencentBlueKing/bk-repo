@@ -79,6 +79,7 @@ enum class AuthMessageCode(private val businessCode: Int, private val key: Strin
     AUTH_CREATE_SERVICE_ROLE_WITH_PROJECT(41, "auth.create.service-role.with-project"),
     AUTH_PLATFORM_ONLY(42, "auth.platform.only"),
     AUTH_IAM_TOKEN_CHECK_FAILED(43, "auth.iam.token.check.failed"),
+    TOKEN_DISABLED(44, "auth.token.disabled"),
     ;
 
     override fun getBusinessCode() = businessCode
