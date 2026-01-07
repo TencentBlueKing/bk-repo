@@ -19,7 +19,7 @@ interface RecordingListener : StreamListener {
     /**
      * 停止录制
      * */
-    fun stop()
+    fun stop(endTime: Long)
 
     /**
      * 是否正在录制

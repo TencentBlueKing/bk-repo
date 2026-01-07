@@ -83,15 +83,15 @@ class RemuxRecordingListener(
         }
     }
 
-    override fun stop() {
+    override fun stop(endTime: Long) {
         try {
             if (initialized.get()) {
-                super.stop()
+                super.stop(endTime)
                 pipeOut.close()
                 mux!!.stop()
                 pipeIn.close()
                 if (mux!!.packetCount > 0) {
-                    fileConsumer.accept(tempFilePath!!.toFile(), fileName!!)
+                    fileConsumer.accept(tempFilePath!!.toFile(), fileName!!, endTime)
                 } else {
                     logger.warn("empty stream $fileName")
                 }
