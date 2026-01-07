@@ -421,6 +421,7 @@ class DdcLocalRepository(
             val blobInputStream = try {
                 blobService.loadBlob(blob)
             } catch (e: BlobNotFoundException) {
+                logger.warn("blob not found", e)
                 null
             }
             return blobInputStream?.let {
