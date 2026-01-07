@@ -418,10 +418,16 @@ class DdcLocalRepository(
                 )
             }
 
-            val blobInputStream = blobService.loadBlob(blob)
-            val resource = ArtifactResource(blobInputStream, artifactInfo.getResponseName())
-            resource.contentType = responseType
-            return resource
+            val blobInputStream = try {
+                blobService.loadBlob(blob)
+            } catch (e: BlobNotFoundException) {
+                null
+            }
+            return blobInputStream?.let {
+                val resource = ArtifactResource(it, artifactInfo.getResponseName())
+                resource.contentType = responseType
+                resource
+            }
         }
     }
 
