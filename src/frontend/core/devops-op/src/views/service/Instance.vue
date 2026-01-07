@@ -28,7 +28,6 @@
       </el-table-column>
       <el-table-column
         label="正在传输"
-        width="180"
       >
         <template
           v-if="scope.row.detail.uploadingCount >= 0 && scope.row.detail.downloadingCount >= 0"
@@ -40,7 +39,6 @@
       </el-table-column>
       <el-table-column
         label="正在异步上传"
-        width="180"
       >
         <template v-if="scope.row.detail.asyncTaskActiveCount >= 0" slot-scope="scope">
           <svg-icon icon-class="arrow-up" />{{ scope.row.detail.asyncTaskActiveCount }}
@@ -64,6 +62,7 @@
       </el-table-column>
       <el-table-column
         label="异步上传带宽"
+        minWidth="120"
         prop="serviceCosAsyncUploadBandwidth"
       >
         <template slot-scope="scope">
@@ -83,7 +82,7 @@
           <el-tag v-for="plugin in scope.row.detail.loadedPlugins" :key="plugin" style="margin-right:5px;">{{ plugin }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作">
+      <el-table-column label="操作" minWidth="150">
         <template slot="header" slot-scope="{}">
           <el-input
             v-model="search"
