@@ -81,21 +81,29 @@ export function getTimeZone () {
     return timeZone
 }
 
+export function formatNow () {
+    return formatDateWithTimezone(new Date())
+}
+
 export function formatDate (ms) {
     if (!ms) return ms || '/'
     const time = new Date(ms)
+    return formatDateWithTimezone(time)
+}
+
+function formatDateWithTimezone (time) {
     const dateStr = `${time.getFullYear()}-${
         prezero(time.getMonth() + 1)}-${
         prezero(time.getDate())} ${
         prezero(time.getHours())}:${
         prezero(time.getMinutes())}:${
         prezero(time.getSeconds())}`
-    
+
     // 如果有时区信息，拼接到时间后面
     if (timeZone !== null && timeZone !== undefined) {
         return `${dateStr}${timeZone}`
     }
-    
+
     return dateStr
 }
 
