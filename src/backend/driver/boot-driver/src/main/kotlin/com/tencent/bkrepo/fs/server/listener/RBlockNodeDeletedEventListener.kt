@@ -1,12 +1,12 @@
-package com.tencent.bkrepo.generic.listener
+package com.tencent.bkrepo.fs.server.listener
 
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
-import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
-import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
-import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.blocknode.RBlockNodeService
+import com.tencent.bkrepo.fs.server.service.node.RNodeService
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.context.event.EventListener
@@ -16,29 +16,30 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Component
-@Conditional(SyncCondition::class)
-class BuildDeletedEventListener(
-    private val nodeService: NodeService,
-    private val blockNodeService: BlockNodeService
+@Conditional(ReactiveCondition::class)
+class RBlockNodeDeletedEventListener(
+    private val blockNodeService: RBlockNodeService,
+    private val nodeService: RNodeService
 ) {
+
 
     @Async
     @EventListener(ArtifactEvent::class)
-    fun handle(event: ArtifactEvent) {
+    suspend fun handle(event: ArtifactEvent) {
         if (event.type == EventType.NODE_DELETED) {
             logger.info("accept artifact delete event: $event")
             consumer(event)
         }
     }
 
-    private fun consumer(event: ArtifactEvent) {
+    private suspend fun consumer(event: ArtifactEvent) {
         with(event) {
             val artifactInfo = ArtifactInfo(projectId, repoName, resourceKey)
             val deletedNode = nodeService.getDeletedNodeDetail(artifactInfo).firstOrNull()
             if (deletedNode?.sha256 == FAKE_SHA256 && !deletedNode.folder) {
                 // 获取当前存在的node（如果有新版本上传）
                 val currentNode = nodeService.getNodeDetail(artifactInfo)
-                
+
                 if (currentNode != null) {
                     // 如果当前存在新node，只删除创建时间早于新node的blocks
                     // 因为updateBlockUploadId会更新blocknode.createdDate，所以：
@@ -60,7 +61,7 @@ class BuildDeletedEventListener(
                     )
                     logger.info(
                         "Deleted old blocks for node[$projectId/$repoName$resourceKey] " +
-                                "created before ${currentNode.createdDate}"
+                            "created before ${currentNode.createdDate}"
                     )
                 } else {
                     // 如果当前不存在node，说明是真正的删除操作，删除所有已完成的blocks
@@ -78,6 +79,6 @@ class BuildDeletedEventListener(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(BuildDeletedEventListener::class.java)
+        private val logger = LoggerFactory.getLogger(RBlockNodeDeletedEventListener::class.java)
     }
 }
