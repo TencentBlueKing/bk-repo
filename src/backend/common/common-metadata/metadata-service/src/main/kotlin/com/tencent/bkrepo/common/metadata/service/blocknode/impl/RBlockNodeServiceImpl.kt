@@ -90,12 +90,22 @@ class RBlockNodeServiceImpl(
     override suspend fun deleteBlocks(
         projectId: String,
         repoName: String,
-        fullPath: String
+        fullPath: String,
+        uploadId: String?,
+        createdBeforeOrAt: LocalDateTime?
     ) {
         val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
+            .apply {
+                and(TBlockNode::uploadId.name).isEqualTo(uploadId)
+                // 如果指定了createdBeforeOrAt，只删除创建时间不晚于该时间的blocks（<=）
+                createdBeforeOrAt?.let {
+                    and(TBlockNode::createdDate.name).lte(it)
+                }
+            }
         val update = BlockNodeQueryHelper.deleteUpdate()
         rBlockNodeDao.updateMulti(Query(criteria), update)
-        logger.info("Delete node blocks[$projectId/$repoName$fullPath] success.")
+        val timeCondition = createdBeforeOrAt?.let { " created before or at $it" } ?: ""
+        logger.info("Delete node blocks[$projectId/$repoName$fullPath] success. UPLOADID: $uploadId$timeCondition")
     }
 
     override suspend fun moveBlocks(projectId: String, repoName: String, fullPath: String, dstFullPath: String) {
