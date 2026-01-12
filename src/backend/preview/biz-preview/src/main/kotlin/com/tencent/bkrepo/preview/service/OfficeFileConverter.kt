@@ -35,12 +35,25 @@ import com.tencent.bkrepo.common.api.exception.SystemErrorException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.preview.config.configuration.PreviewConfig
 import com.tencent.bkrepo.preview.pojo.FileAttribute
+import com.tencent.bkrepo.preview.utils.EncodingDetects
+import org.apache.commons.csv.CSVFormat
+import org.apache.commons.csv.CSVParser
+import org.apache.commons.io.FilenameUtils
+import org.apache.poi.ss.usermodel.Workbook
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.jodconverter.core.office.OfficeException
 import org.jodconverter.local.LocalConverter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.OutputStream
+import java.io.Reader
+import java.nio.charset.Charset
 
 /**
  * office文件转换器，支持docx -> pdf、ppt -> pdf、xls -> xlsx等多种类型转换
@@ -60,16 +73,26 @@ class OfficeFileConverter(
                     outputFilePath: String,
                     fileAttribute: FileAttribute) {
         officePluginManager.startOfficeManagerIfNeeded()
-
-        val inputFile = checkInputFile(inputFilePath)
-        val outputFile = prepareOutputFile(outputFilePath)
-        executeConversion(inputFile, outputFile, fileAttribute)
+        checkInputFile(inputFilePath)
+        prepareOutputFile(outputFilePath)
+        executeConversion(inputFilePath, outputFilePath, fileAttribute)
     }
 
     @Throws(OfficeException::class)
-    fun executeConversion(inputFile: File,
-                          outputFile: File,
-                          fileAttribute: FileAttribute) {
+    private fun executeConversion(inputFilePath: String,
+                                  outputFilePath: String,
+                                  fileAttribute: FileAttribute) {
+        if (isCsv(fileAttribute)) {
+            convertCsvToXlsx(inputFilePath, outputFilePath, fileAttribute)
+        } else {
+            convertByOffice(inputFilePath, outputFilePath, fileAttribute)
+        }
+    }
+
+    @Throws(OfficeException::class)
+    private fun convertByOffice(inputFilePath: String,
+                                outputFilePath: String,
+                                fileAttribute: FileAttribute) {
         val filterData = mutableMapOf<String, Any>(
             "EncryptFile" to true,  // 加密文件
             "PageRange" to config.isOfficePageRange, // 限制页面范围
@@ -89,25 +112,109 @@ class OfficeFileConverter(
         val builder = LocalConverter.builder().storeProperties(customProperties)
 
         // 执行文件转换
-        builder.build().convert(inputFile).to(outputFile).execute()
+        builder.build()
+            .convert(File(inputFilePath))
+            .to(File(outputFilePath))
+            .execute()
     }
 
-    private fun prepareOutputFile(path: String): File {
+    private fun convertCsvToXlsx(inputFilePath: String,
+                                 outputFilePath: String,
+                                 fileAttribute: FileAttribute) {
+        val inputFile = File(inputFilePath)
+        val charset = resolveCharset(inputFile)
+
+        val format = CSVFormat.Builder.create(CSVFormat.DEFAULT)
+            .setHeader()
+            .setSkipHeaderRecord(true)
+            .setTrim(true)
+            .build()
+
+        var inputStream: InputStream? = null
+        var reader: Reader? = null
+        var csvParser: CSVParser? = null
+        var workbook: Workbook? = null
+        var outputStream: OutputStream? = null
+
+        try {
+            inputStream = FileInputStream(inputFile)
+            reader = InputStreamReader(inputStream, charset)
+            csvParser = CSVParser(reader, format)
+
+            workbook = XSSFWorkbook()
+            outputStream = FileOutputStream(outputFilePath)
+
+            val sheetName = FilenameUtils.getBaseName(inputFile.name)
+            val sheet = workbook.createSheet(sheetName)
+
+            var rowIndex = 0
+
+            // 表头
+            val headerRow = sheet.createRow(rowIndex++)
+            val headers = csvParser.headerNames
+            headers.forEachIndexed { index, header ->
+                headerRow.createCell(index).setCellValue(header)
+            }
+
+            // 内容
+            for (record in csvParser) {
+                val row = sheet.createRow(rowIndex++)
+                for (i in 0 until record.size()) {
+                    row.createCell(i).setCellValue(record[i])
+                }
+            }
+            workbook.write(outputStream)
+            outputStream.flush()
+        } catch (e: Exception) {
+            var errorMsg = "Converting csv to xlsx failed"
+            logger.error(errorMsg, e)
+            throw OfficeException(errorMsg, e)
+        } finally {
+            closeQuietly(outputStream)
+            closeQuietly(workbook)
+            closeQuietly(csvParser)
+            closeQuietly(reader)
+            closeQuietly(inputStream)
+        }
+    }
+
+    private fun closeQuietly(closeable: AutoCloseable?) {
+        try {
+            closeable?.close()
+        } catch (ex: Exception) {
+            logger.warn("close resource failed", ex)
+        }
+    }
+
+    private fun prepareOutputFile(path: String) {
         val file = File(path)
         // 如果目标目录不存在，则尝试创建
         if (!file.parentFile.exists() && !file.parentFile.mkdirs()) {
             logger.error("Failed to create directory for output file [$path]")
             throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, "Failed to create output directory")
         }
-        return file
     }
 
-    private fun checkInputFile(path: String): File {
+    private fun checkInputFile(path: String) {
         val file = File(path)
         if (!file.exists()) {
             logger.error("Input file [$path] does not exist!")
             throw SystemErrorException(CommonMessageCode.SYSTEM_ERROR, "Input file does not exist")
         }
-        return file
+    }
+
+    private fun isCsv(fileAttribute: FileAttribute): Boolean =
+        fileAttribute.suffix.equals("csv", ignoreCase = true)
+
+    private fun resolveCharset(inputFile: File): Charset {
+        val encoding = EncodingDetects.getJavaEncode(inputFile)
+        return if (
+            encoding.equals("UTF-8", ignoreCase = true) ||
+            encoding.equals("UTF-8-BOM", ignoreCase = true)
+        ) {
+            Charsets.UTF_8
+        } else {
+            Charset.forName("GBK")
+        }
     }
 }

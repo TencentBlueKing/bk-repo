@@ -67,6 +67,8 @@ object Versions {
     const val Notice = "1.0.0"
     const val Audit = "2.0.1"
     const val JodConverter = "4.4.6"
+    const val ApacheCSV = "1.10.0"
+    const val ApachePoi = "5.4.1"
     const val Galimatias = "0.2.1"
     const val CommonsNet = "3.9.0"
     const val JuniversalCharDet = "1.0.3"
