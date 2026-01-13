@@ -34,7 +34,7 @@ dependencies {
     // office转换
     api("org.jodconverter:jodconverter-local:${Versions.JodConverter}")
     api("org.apache.poi:poi-ooxml:${Versions.ApachePoi}")
-    api("org.apache.commons:commons-csv:${Versions.ApacheCSV}")
+    api("org.apache.commons:commons-csv:${Versions.ApacheCsv}")
     // url规范化
     api("io.mola.galimatias:galimatias:${Versions.Galimatias}")
     api("commons-net:commons-net:${Versions.CommonsNet}")
