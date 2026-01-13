@@ -72,10 +72,13 @@ class OfficeFileConverter(
     fun convertFile(inputFilePath: String,
                     outputFilePath: String,
                     fileAttribute: FileAttribute) {
-        officePluginManager.startOfficeManagerIfNeeded()
+        logger.info("Start converting file, input={}", inputFilePath)
+        val startTime = System.currentTimeMillis()
         checkInputFile(inputFilePath)
         prepareOutputFile(outputFilePath)
         executeConversion(inputFilePath, outputFilePath, fileAttribute)
+        logger.info("File conversion finished successfully, cost={} ms, output={}",
+            System.currentTimeMillis() - startTime, outputFilePath)
     }
 
     @Throws(OfficeException::class)
@@ -83,8 +86,10 @@ class OfficeFileConverter(
                                   outputFilePath: String,
                                   fileAttribute: FileAttribute) {
         if (isCsv(fileAttribute)) {
+            logger.debug("Use CSV conversion strategy for file: {}", inputFilePath)
             convertCsvToXlsx(inputFilePath, outputFilePath, fileAttribute)
         } else {
+            logger.debug("Use Office conversion strategy for file: {}", inputFilePath)
             convertByOffice(inputFilePath, outputFilePath, fileAttribute)
         }
     }
@@ -93,6 +98,7 @@ class OfficeFileConverter(
     private fun convertByOffice(inputFilePath: String,
                                 outputFilePath: String,
                                 fileAttribute: FileAttribute) {
+        officePluginManager.startOfficeManagerIfNeeded()
         val filterData = mutableMapOf<String, Any>(
             "EncryptFile" to true,  // 加密文件
             "PageRange" to config.isOfficePageRange, // 限制页面范围
@@ -123,6 +129,7 @@ class OfficeFileConverter(
                                  fileAttribute: FileAttribute) {
         val inputFile = File(inputFilePath)
         val charset = resolveCharset(inputFile)
+        logger.debug("Start CSV conversion, input={}, charset={}", inputFilePath, charset.name())
 
         val format = CSVFormat.Builder.create(CSVFormat.DEFAULT)
             .setHeader()
@@ -166,7 +173,7 @@ class OfficeFileConverter(
             workbook.write(outputStream)
             outputStream.flush()
         } catch (e: Exception) {
-            var errorMsg = "Converting csv to xlsx failed"
+            val errorMsg = "Converting csv to xlsx failed."
             logger.error(errorMsg, e)
             throw OfficeException(errorMsg, e)
         } finally {
