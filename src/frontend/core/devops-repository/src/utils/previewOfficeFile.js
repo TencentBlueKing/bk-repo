@@ -26,7 +26,7 @@ export function getPreviewLocalOfficeFileInfo (projectId, repoName, fullPath) {
     })
 }
 
-export function getPreviewRemoteOfficeFileInfo(extraParam) {
+export function getPreviewRemoteOfficeFileInfo (extraParam) {
     return axios({
         url: BASE_URL + 'web/preview/api/file/getPreviewInfo/',
         method: 'get',

@@ -23,7 +23,7 @@
         getPreviewLocalOfficeFileInfo,
         getPreviewRemoteOfficeFileInfo
     } from '@repository/utils/previewOfficeFile'
-    import Viewer from "viewerjs";
+    import Viewer from 'viewerjs'
 
     export default {
         name: 'PreviewBasicFileDialog',
