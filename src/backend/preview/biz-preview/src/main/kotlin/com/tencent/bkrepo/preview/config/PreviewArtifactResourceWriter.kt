@@ -54,6 +54,7 @@ import com.tencent.bkrepo.common.storage.monitor.measureThroughput
 import com.tencent.bkrepo.preview.constant.PREVIEW_ARTIFACT_TO_FILE
 import com.tencent.bkrepo.preview.constant.PREVIEW_TMP_FILE_SAVE_PATH
 import org.slf4j.LoggerFactory
+import org.springframework.stereotype.Component
 import java.io.File
 import java.io.IOException
 import java.time.LocalDateTime
@@ -64,6 +65,7 @@ import java.util.Locale
 /**
  * preview制品响应输出，下载到临时目录
  */
+@Component
 class PreviewArtifactResourceWriter(
     storageProperties: StorageProperties,
     requestLimitCheckService: RequestLimitCheckService
