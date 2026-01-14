@@ -78,8 +78,8 @@ class CIAuthService @Autowired constructor(
         .build<String, Boolean>()
 
     private val memberGroupsCache = CacheBuilder.newBuilder()
-        .maximumSize(CACHE_MAX_SIZE)
-        .expireAfterWrite(CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS)
+        .maximumSize(MEMBER_CACHE_MAX_SIZE)
+        .expireAfterWrite(MEMBER_CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS)
         .build<String, List<String>>()
 
     fun Request.addTenantHeaderIfNeeded(userId: String): Request {
@@ -358,6 +358,9 @@ class CIAuthService @Autowired constructor(
         // 缓存相关常量
         private const val CACHE_MAX_SIZE = 20000L
         private const val CACHE_EXPIRE_SECONDS = 60L
+
+        private const val MEMBER_CACHE_MAX_SIZE = 40000L
+        private const val MEMBER_CACHE_EXPIRE_SECONDS = 120L
 
         // HTTP头常量
         const val DEVOPS_BK_TOKEN = "X-DEVOPS-BK-TOKEN"
