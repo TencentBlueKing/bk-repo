@@ -218,7 +218,6 @@ class DevopsPermissionServiceImpl constructor(
 
     fun getDevopsUserRole(user: TUser, projectId: String): List<String> {
         val projectExternalRole = getUserRole(projectId, RoleSource.DEVOPS)
-        logger.debug("projectExternalRole [${user.userId}, $projectId, $projectExternalRole]")
         if (projectExternalRole.isEmpty()) return user.roles
 
         // 构建 roleId -> id 的映射
@@ -229,7 +228,7 @@ class DevopsPermissionServiceImpl constructor(
 
         // 将匹配的角色 ID 添加到用户角色列表中
         val matchedRoleIds = devopsRoles.mapNotNull { roleIdToIdMap[it] }
-
+        logger.debug("projectExternalRole [${user.userId}, $projectId, $projectExternalRole, $matchedRoleIds]")
         return (user.roles + matchedRoleIds).distinct()
     }
 
