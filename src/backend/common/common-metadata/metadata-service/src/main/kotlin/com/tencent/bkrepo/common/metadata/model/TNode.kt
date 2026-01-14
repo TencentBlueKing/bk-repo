@@ -71,7 +71,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = ARCHIVED_IDX, def = ARCHIVED_IDX_DEF, background = true),
     CompoundIndex(name = COMPRESSED_IDX, def = COMPRESSED_IDX_DEF, background = true),
 )
-data class TNode(
+open class TNode(
     var id: String? = null,
     var createdBy: String,
     var createdDate: LocalDateTime,
@@ -102,6 +102,67 @@ data class TNode(
     var projectId: String,
     var repoName: String,
 ) {
+
+    /**
+     * 复制方法，用于替代data class的copy方法
+     */
+    fun copy(
+        id: String? = this.id,
+        createdBy: String = this.createdBy,
+        createdDate: LocalDateTime = this.createdDate,
+        lastModifiedBy: String = this.lastModifiedBy,
+        lastModifiedDate: LocalDateTime = this.lastModifiedDate,
+        lastAccessDate: LocalDateTime? = this.lastAccessDate,
+        folder: Boolean = this.folder,
+        path: String = this.path,
+        name: String = this.name,
+        fullPath: String = this.fullPath,
+        size: Long = this.size,
+        expireDate: LocalDateTime? = this.expireDate,
+        sha256: String? = this.sha256,
+        md5: String? = this.md5,
+        crc64ecma: String? = this.crc64ecma,
+        deleted: LocalDateTime? = this.deleted,
+        copyFromCredentialsKey: String? = this.copyFromCredentialsKey,
+        copyIntoCredentialsKey: String? = this.copyIntoCredentialsKey,
+        metadata: MutableList<TMetadata>? = this.metadata,
+        clusterNames: Set<String>? = this.clusterNames,
+        nodeNum: Long? = this.nodeNum,
+        archived: Boolean? = this.archived,
+        compressed: Boolean? = this.compressed,
+        federatedSource: String? = this.federatedSource,
+        projectId: String = this.projectId,
+        repoName: String = this.repoName,
+    ): TNode {
+        return TNode(
+            id = id,
+            createdBy = createdBy,
+            createdDate = createdDate,
+            lastModifiedBy = lastModifiedBy,
+            lastModifiedDate = lastModifiedDate,
+            lastAccessDate = lastAccessDate,
+            folder = folder,
+            path = path,
+            name = name,
+            fullPath = fullPath,
+            size = size,
+            expireDate = expireDate,
+            sha256 = sha256,
+            md5 = md5,
+            crc64ecma = crc64ecma,
+            deleted = deleted,
+            copyFromCredentialsKey = copyFromCredentialsKey,
+            copyIntoCredentialsKey = copyIntoCredentialsKey,
+            metadata = metadata,
+            clusterNames = clusterNames,
+            nodeNum = nodeNum,
+            archived = archived,
+            compressed = compressed,
+            federatedSource = federatedSource,
+            projectId = projectId,
+            repoName = repoName
+        )
+    }
 
     companion object {
         const val FULL_PATH_IDX = "projectId_repoName_fullPath_idx"

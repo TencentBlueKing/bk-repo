@@ -158,7 +158,7 @@ class SeparationRecoveryEventConsumer(
             projectId = recoveryVersionInfo.projectId,
             repoName = recoveryVersionInfo.repoName,
             type = RESTORE,
-            separateAt = separationPackageVersion.separationDate.format(DateTimeFormatter.ISO_DATE_TIME),
+            separateAt = separationPackageVersion.separationDate?.format(DateTimeFormatter.ISO_DATE_TIME) ?: "",
             content = buildSeparationContent(recoveryVersionInfo.packageKey, separationPackageVersion.name)!!
         )
     }
@@ -171,7 +171,7 @@ class SeparationRecoveryEventConsumer(
             projectId = recoveryNodeInfo.projectId,
             repoName = recoveryNodeInfo.repoName,
             type = RESTORE,
-            separateAt = separationNode.separationDate.format(DateTimeFormatter.ISO_DATE_TIME),
+            separateAt = separationNode.separationDate?.format(DateTimeFormatter.ISO_DATE_TIME) ?: "",
             content = buildSeparationContent(fullPath = separationNode.fullPath)!!
         )
     }

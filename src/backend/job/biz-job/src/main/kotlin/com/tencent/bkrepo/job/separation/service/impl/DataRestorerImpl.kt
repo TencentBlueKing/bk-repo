@@ -54,6 +54,7 @@ import com.tencent.bkrepo.job.separation.service.impl.repo.RepoSpecialSeparation
 import com.tencent.bkrepo.job.separation.util.SeparationQueryHelper
 import com.tencent.bkrepo.job.separation.util.SeparationUtils
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.domain.PageRequest
@@ -401,7 +402,7 @@ class DataRestorerImpl(
         packageVersionInfo: TSeparationPackageVersion,
     ) {
         val storedColdVersion = separationPackageVersionDao.findById(
-            packageVersionInfo.id!!, packageVersionInfo.separationDate
+            packageVersionInfo.id!!, packageVersionInfo.separationDate!!
         )
         if (storedColdVersion == null) {
             logger.error(
@@ -567,10 +568,10 @@ class DataRestorerImpl(
         context: SeparationContext, packageInfo: TSeparationPackage,
         packageVersionInfo: TSeparationPackageVersion
     ) {
-        val deletedResult = separationPackageVersionDao.removeById(
-            packageVersionInfo.id!!, packageVersionInfo.separationDate
+        val deleteResult = separationPackageVersionDao.removeById(
+            packageVersionInfo.id!!, packageVersionInfo.separationDate!!
         )
-        if (deletedResult.deletedCount != 1L) {
+        if (deleteResult.deletedCount != 1L) {
             logger.error(
                 "delete restored version $packageVersionInfo failed " +
                     "for $packageInfo in ${context.projectId}|${context.repoName}"
@@ -666,7 +667,13 @@ class DataRestorerImpl(
             md5 = node.md5,
             crc64ecma = node.crc64ecma,
             nodeNum = node.nodeNum,
-            metadata = node.metadata,
+            metadata = node.metadata?.map {
+                MetadataModel(
+                    key = it.key, value = it.value,
+                    system = it.system, description = it.description,
+                    link = it.link
+                )
+            },
             createdBy = node.createdBy,
             createdDate = node.createdDate,
             lastModifiedBy = node.lastModifiedBy,
@@ -697,7 +704,13 @@ class DataRestorerImpl(
             manifestPath = versionDetail.manifestPath,
             artifactPath = versionDetail.artifactPath,
             stageTag = versionDetail.stageTag,
-            metadata = versionDetail.metadata,
+            metadata = versionDetail.metadata.map {
+                MetadataModel(
+                    key = it.key, value = it.value,
+                    system = it.system, description = it.description,
+                    link = it.link
+                )
+            },
             tags = versionDetail.tags,
             extension = versionDetail.extension,
             clusterNames = versionDetail.clusterNames,
