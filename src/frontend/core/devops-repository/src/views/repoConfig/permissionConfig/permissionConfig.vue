@@ -175,8 +175,8 @@
                 }
             },
             changePath (path) {
-                if (path.length > 18) {
-                    return path.substr(0, 15) + '...'
+                if (path.length > 80) {
+                    return path.substr(0, 77) + '...'
                 } else {
                     return path
                 }
@@ -214,6 +214,7 @@
         .permission-path {
             flex: 4;
             .path-item {
+                margin-top: 3px;
                 width: 100%;
                 line-height: 1.5;
             }
@@ -230,6 +231,7 @@
                 background: #f0f1f5;
                 border: 1px solid #dcdee5;
                 font-size: 12px;
+                line-height: 12px;
             }
 
             .hidden-path {
