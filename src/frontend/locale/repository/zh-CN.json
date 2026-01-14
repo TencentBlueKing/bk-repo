@@ -116,6 +116,8 @@
     "dependencies": "依赖",
     "tag": "tag",
     "user": "用户",
+    "loadMore": "展开全部（共{0}个）",
+    "collapse": "收起",
     "org": "组织架构",
     "loadMore": "加载更多",
     "createFolderLabel": "文件夹路径",
