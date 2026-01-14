@@ -30,6 +30,10 @@
                 <template #default="{ row }">
                     <span class="hover-btn">{{ transformSource(row.source) }}</span></template>
             </bk-table-column>
+            <bk-table-column :label="$t('org')" show-overflow-tooltip>
+                <template #default="{ row }">
+                    <span class="hover-btn">{{ changeDept(row.deptInfoList) }}</span></template>
+            </bk-table-column>
             <bk-table-column :label="$t('operation')" width="100">
                 <template #default="{ row }">
                     <operation-list
@@ -273,6 +277,13 @@
                     return '/'
                 } else if (sourceId === 'DEVOPS') {
                     return this.$t('bkci')
+                } else {
+                    return '/'
+                }
+            },
+            changeDept (depts) {
+                if (depts && depts.length > 0) {
+                    return depts.map(dept => dept.name).join(';')
                 } else {
                     return '/'
                 }

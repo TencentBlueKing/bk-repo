@@ -1,3 +1,4 @@
+import './webpack_public_path'
 import App from '@/App'
 import createRouter from '@/router'
 import store from '@/store'
@@ -29,7 +30,7 @@ document.title = i18n.t('webTitle')
 async function setDisplayNamePlugin () {
     if (BK_REPO_ENABLE_MULTI_TENANT_MODE !== 'true') return
     try {
-        const { data } = await axios.get('/web/auth/api/user/info')
+        const { data } = await axios.get(window.BK_SUBPATH + 'web/auth/api/user/info')
         BkUserDisplayName.configure({
             tenantId: data.data.tenantId,
             apiBaseUrl: API_BASE_URL,

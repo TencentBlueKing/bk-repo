@@ -48,6 +48,7 @@ import com.tencent.bkrepo.auth.helper.UserHelper
 import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TPermission
 import com.tencent.bkrepo.auth.model.TPersonalPath
+import com.tencent.bkrepo.auth.model.TRole
 import com.tencent.bkrepo.auth.model.TUser
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.DEFAULT
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.STRICT
@@ -170,6 +171,7 @@ open class PermissionServiceImpl constructor(
                     permHelper.removeUserFromRoleBatchCommon(addRoleUserList, commonRoleId!!)
                     return true
                 }
+
                 PROJECT_VIEWER_ID -> {
                     val createUserRequest = RequestUtil.buildProjectViewerRequest(projectId!!)
                     val createAdminRequest = RequestUtil.buildProjectAdminRequest(projectId)
@@ -184,6 +186,7 @@ open class PermissionServiceImpl constructor(
                     permHelper.removeUserFromRoleBatchCommon(addRoleUserList, adminRoleId!!)
                     return true
                 }
+
                 REPLICATION_MANAGE_ID -> {
                     if (!projectId.isNullOrEmpty()) {
                         throw ErrorCodeException(AuthMessageCode.AUTH_CREATE_ROLE_INVALID_WITHOUT_PROJECT)
@@ -197,6 +200,7 @@ open class PermissionServiceImpl constructor(
                     permHelper.removeUserFromRoleBatchCommon(removeRoleUserList, replicationRoleId)
                     return true
                 }
+
                 else -> {
                     permHelper.checkPermissionExist(permissionId)
                     return permHelper.updatePermissionById(permissionId, TPermission::users.name, userId)
@@ -209,9 +213,7 @@ open class PermissionServiceImpl constructor(
         logger.debug("check permission request : [$request] ")
         with(request) {
             if (uid == ANONYMOUS_USER) return false
-            val user = userDao.findFirstByUserId(uid) ?: run {
-                throw ErrorCodeException(AuthMessageCode.AUTH_USER_NOT_EXIST)
-            }
+            val user = getUserInfo(uid) ?: return false
             // check user locked
             if (user.locked) return false
             // check user admin permission
@@ -385,6 +387,7 @@ open class PermissionServiceImpl constructor(
                 PROJECT.name -> {
                     return permHelper.checkPlatformProject(projectId, platform.scopeDesc)
                 }
+
                 else -> return true
             }
         }
@@ -459,6 +462,12 @@ open class PermissionServiceImpl constructor(
 
     fun getUserInfo(userId: String): TUser? {
         return userDao.findFirstByUserId(userId)
+    }
+
+    fun getUserRole(projectId: String, source: RoleSource): List<TRole> {
+        return roleRepository.findByProjectIdAndSource(projectId, source).filter {
+            !it.deptInfoList.isNullOrEmpty()
+        }
     }
 
     fun checkNodeAction(request: CheckPermissionContext, isProjectUser: Boolean): Boolean {
