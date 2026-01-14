@@ -123,14 +123,28 @@ class DevopsPermissionServiceImpl constructor(
         return allProjectList.distinct()
     }
 
-    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
+    override fun listPermissionPath(
+        userId: String,
+        roles: List<String>?,
+        projectId: String,
+        repoName: String
+    ): List<String>? {
         if (isDevopsProjectAdmin(userId, projectId)) return null
-        return super.listPermissionPath(userId, projectId, repoName)
+        val user = getUserInfo(userId) ?: return emptyList()
+        val roles = getDevopsUserRole(user, projectId)
+        return super.listPermissionPath(userId, roles, projectId, repoName)
     }
 
-    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
+    override fun listNoPermissionPath(
+        userId: String,
+        roles: List<String>?,
+        projectId: String,
+        repoName: String
+    ): List<String>? {
         if (isDevopsProjectAdmin(userId, projectId)) return emptyList()
-        return super.listNoPermissionPath(userId, projectId, repoName)
+        val user = getUserInfo(userId) ?: return null
+        val roles = getDevopsUserRole(user, projectId)
+        return super.listNoPermissionPath(userId, roles, projectId, repoName)
     }
 
     override fun getPathCheckConfig(): Boolean {
@@ -204,7 +218,6 @@ class DevopsPermissionServiceImpl constructor(
 
     fun getDevopsUserRole(user: TUser, projectId: String): List<String> {
         val projectExternalRole = getUserRole(projectId, RoleSource.DEVOPS)
-        logger.debug("projectExternalRole [${user.userId}, $projectId, $projectExternalRole]")
         if (projectExternalRole.isEmpty()) return user.roles
 
         // 构建 roleId -> id 的映射
@@ -215,7 +228,7 @@ class DevopsPermissionServiceImpl constructor(
 
         // 将匹配的角色 ID 添加到用户角色列表中
         val matchedRoleIds = devopsRoles.mapNotNull { roleIdToIdMap[it] }
-
+        logger.debug("projectExternalRole [${user.userId}, $projectId, $projectExternalRole, $matchedRoleIds]")
         return (user.roles + matchedRoleIds).distinct()
     }
 
