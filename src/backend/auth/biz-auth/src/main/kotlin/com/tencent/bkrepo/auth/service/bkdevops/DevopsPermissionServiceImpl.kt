@@ -123,14 +123,28 @@ class DevopsPermissionServiceImpl constructor(
         return allProjectList.distinct()
     }
 
-    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
+    override fun listPermissionPath(
+        userId: String,
+        roles: List<String>?,
+        projectId: String,
+        repoName: String
+    ): List<String>? {
         if (isDevopsProjectAdmin(userId, projectId)) return null
-        return super.listPermissionPath(userId, projectId, repoName)
+        val user = getUserInfo(userId) ?: return emptyList()
+        val roles = getDevopsUserRole(user, projectId)
+        return super.listPermissionPath(userId, roles, projectId, repoName)
     }
 
-    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
+    override fun listNoPermissionPath(
+        userId: String,
+        roles: List<String>?,
+        projectId: String,
+        repoName: String
+    ): List<String>? {
         if (isDevopsProjectAdmin(userId, projectId)) return emptyList()
-        return super.listNoPermissionPath(userId, projectId, repoName)
+        val user = getUserInfo(userId) ?: return null
+        val roles = getDevopsUserRole(user, projectId)
+        return super.listNoPermissionPath(userId, roles, projectId, repoName)
     }
 
     override fun getPathCheckConfig(): Boolean {

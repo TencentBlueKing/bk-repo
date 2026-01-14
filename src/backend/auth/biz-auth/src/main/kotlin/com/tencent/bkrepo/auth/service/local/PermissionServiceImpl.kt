@@ -343,25 +343,37 @@ open class PermissionServiceImpl constructor(
         return repoList.distinct()
     }
 
-    override fun listNoPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
+    override fun listNoPermissionPath(
+        userId: String,
+        roles: List<String>?,
+        projectId: String,
+        repoName: String
+    ): List<String>? {
         val user = userDao.findFirstByUserId(userId) ?: return null
-        if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
-            return emptyList()
-        }
+        if (user.admin || isUserLocalProjectAdmin(userId, projectId)) return emptyList()
+        var userRoles = roles
+        if (roles == null) userRoles = user.roles
         val projectPermission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
-        val configPath = permHelper.getPermissionPathFromConfig(userId, user.roles, projectPermission, false)
+        val configPath = permHelper.getPermissionPathFromConfig(userId, userRoles, projectPermission, false)
         val personalPath = personalPathDao.listByProjectAndRepoAndExcludeUser(userId, projectId, repoName)
             .map { it.fullPath }
         return (configPath + personalPath).distinct()
     }
 
-    override fun listPermissionPath(userId: String, projectId: String, repoName: String): List<String>? {
+    override fun listPermissionPath(
+        userId: String,
+        roles: List<String>?,
+        projectId: String,
+        repoName: String
+    ): List<String>? {
         val user = userDao.findFirstByUserId(userId) ?: return emptyList()
         if (user.admin || isUserLocalProjectAdmin(userId, projectId)) {
             return null
         }
+        var userRoles = roles
+        if (roles == null) userRoles = user.roles
         val permission = permissionDao.listByResourceAndRepo(NODE.name, projectId, repoName)
-        val configPath = permHelper.getPermissionPathFromConfig(userId, user.roles, permission, true).toMutableList()
+        val configPath = permHelper.getPermissionPathFromConfig(userId, userRoles, permission, true).toMutableList()
         val personalPath = personalPathDao.findOneByProjectAndRepo(userId, projectId, repoName)
         if (personalPath != null) {
             configPath.add(personalPath.fullPath)
