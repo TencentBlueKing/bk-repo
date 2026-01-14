@@ -33,7 +33,7 @@ package com.tencent.bkrepo.common.artifact.metrics
 
 import com.tencent.bkrepo.common.artifact.metrics.filter.LruMeterFilter
 import com.tencent.bkrepo.common.artifact.metrics.filter.RepositoryPinnedChecker
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
+import com.tencent.bkrepo.common.artifact.resolve.file.receiver.AbsArtifactDataReceiver
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_ACCESS_TIME
 import com.tencent.bkrepo.common.metrics.constant.ARTIFACT_ACCESS_TIME_DESC
@@ -177,7 +177,7 @@ class ArtifactMetrics(
          * 获取实时上传计数器
          * 用于计算上传实时流量
          * */
-        fun getUploadingCounters(receiver: ArtifactDataReceiver): List<Counter> {
+        fun getUploadingCounters(receiver: AbsArtifactDataReceiver): List<Counter> {
             val limitUploadingCounter = Counter.builder(ARTIFACT_LIMIT_UPLOADING_SIZE)
                 .description(ARTIFACT_LIMIT_UPLOADING_SIZE_DESC)
                 .tags(tagProvider.getTags(receiver, true))
@@ -196,7 +196,7 @@ class ArtifactMetrics(
          * 获取实时上传计时器
          * 用于计算上传IOPS和IO平均延迟
          * */
-        fun getUploadingTimer(receiver: ArtifactDataReceiver): Timer {
+        fun getUploadingTimer(receiver: AbsArtifactDataReceiver): Timer {
             return Timer.builder(ARTIFACT_UPLOADING_TIME)
                 .description(ARTIFACT_UPLOADING_TIME_DESC)
                 .tags(tagProvider.getTags(receiver))

@@ -31,7 +31,8 @@ import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_IN_MEMORY
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_IN_REMOTE
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
+import com.tencent.bkrepo.common.artifact.resolve.file.receiver.AbsArtifactDataReceiver
+import com.tencent.bkrepo.common.artifact.resolve.file.receiver.ArtifactDataReceiver
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.FileArtifactInputStream
 import com.tencent.bkrepo.common.storage.config.StorageProperties
@@ -66,7 +67,7 @@ class DefaultArtifactTagProvider(
         return getTags(repositoryDetail, includeRepoInfo, path)
     }
 
-    override fun getTags(receiver: ArtifactDataReceiver, includeRepoInfo: Boolean): Iterable<Tag> {
+    override fun getTags(receiver: AbsArtifactDataReceiver, includeRepoInfo: Boolean): Iterable<Tag> {
         val repositoryDetail = ArtifactContextHolder.getRepoDetailOrNull()
         val path = getPath(receiver)
         return getTags(repositoryDetail, includeRepoInfo, path)
@@ -91,11 +92,14 @@ class DefaultArtifactTagProvider(
         )
     }
 
-    private fun getPath(receiver: ArtifactDataReceiver): String {
+    private fun getPath(receiver: AbsArtifactDataReceiver): String {
         if (receiver.inMemory) {
             return SOURCE_IN_MEMORY
         }
-        return receiver.filePath.toString()
+        if (receiver is ArtifactDataReceiver) {
+            return receiver.filePath.toString()
+        }
+        return SOURCE_IN_REMOTE
     }
 
     private fun getTagPath(credentials: StorageCredentials?, path: String): String {
