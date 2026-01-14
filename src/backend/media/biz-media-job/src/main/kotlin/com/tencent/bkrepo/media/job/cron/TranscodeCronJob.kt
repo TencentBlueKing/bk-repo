@@ -76,6 +76,42 @@ class TranscodeCronJob @Autowired constructor(
     }
 
     /**
+     * 定时重试失败的转码任务，每两小时执行一次
+     */
+    @Scheduled(cron = "0 0 */2 * * ?")
+    fun retryFailedJobs() {
+        var wasExecuted = false
+        lockProvider.lock(getRetryLockConfiguration()).ifPresent {
+            lock = it
+            it.use { doRetryFailedJobs() }
+            lock = null
+            wasExecuted = true
+        }
+        if (!wasExecuted) {
+            logger.warn("Job retryFailedJobs already execution")
+        }
+    }
+
+    private fun doRetryFailedJobs() {
+        try {
+            val failedJobs = mediaTranscodeJobDao.findFailedJobs(
+                limit = mediaJobProperties.retryFailedJobBatchSize,
+            )
+            if (failedJobs.isEmpty()) {
+                logger.info("retryFailedJobs no failed jobs to retry")
+                return
+            }
+            val jobIds = failedJobs.mapNotNull { it.id }.toSet()
+            if (jobIds.isNotEmpty()) {
+                logger.info("retryFailedJobs retrying ${jobIds.size} failed jobs: $jobIds")
+                transcodeJobService.restartJob(jobIds)
+            }
+        } catch (e: Exception) {
+            logger.error("Job retryFailedJobs error", e)
+        }
+    }
+
+    /**
      * 获取分布式锁需要的锁配置
      * */
     private fun getLockConfiguration(): LockConfiguration {
@@ -83,6 +119,17 @@ class TranscodeCronJob @Autowired constructor(
             /* name = */ "mediaTranscodeCronJob",
             /* lockAtMostFor = */ Duration.ofMillis(999),
             /* lockAtLeastFor = */ Duration.ofMillis(500)
+        )
+    }
+
+    /**
+     * 获取重试失败任务分布式锁需要的锁配置
+     * */
+    private fun getRetryLockConfiguration(): LockConfiguration {
+        return LockConfiguration(
+            /* name = */ "retryFailedTranscodeJob",
+            /* lockAtMostFor = */ Duration.ofSeconds(60),
+            /* lockAtLeastFor = */ Duration.ofSeconds(5)
         )
     }
 

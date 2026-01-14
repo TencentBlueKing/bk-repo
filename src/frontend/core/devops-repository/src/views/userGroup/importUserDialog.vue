@@ -40,11 +40,13 @@
             <div class="import_table" v-if="selectedUserGroup.length > 0 && selectedType">
                 <div class="permission-name">{{$t('roleName')}}</div>
                 <div class="permission-users">{{$t('user')}}</div>
+                <div class="permission-users">{{$t('org')}}</div>
             </div>
             <draggable v-if="selectedUserGroup.length > 0 && selectedType" :options="{ animation: 200 }">
                 <div class="proxy-item" v-for="(row,index) in selectedUserGroup" :key="index">
                     <div class="permission-name">{{row.name}}</div>
                     <div class="permission-users"><bk-tag v-for="(name,userIndex) in row.userList" :key="userIndex">{{ name }}</bk-tag></div>
+                    <div class="permission-users"><bk-tag v-if="row.deptInfoList && row.deptInfoList.length > 0">{{ changeDept(row.deptInfoList) }}</bk-tag></div>
                 </div>
             </draggable>
         </div>
@@ -116,7 +118,8 @@
                     projectId: this.projectId,
                     admin: false,
                     description: '',
-                    source: this.selectedType
+                    source: this.selectedType,
+                    deptInfoList: this.selectedUserGroup[0].deptInfoList
                 }
                 this.createRole({ body: body }).then(res => {
                     this.editRole({
@@ -153,6 +156,9 @@
                         this.selectedUserGroup.push(this.importUserGroups[i])
                     }
                 }
+            },
+            changeDept (depts) {
+                return depts.map(dept => dept.name).join(';')
             }
         }
     }
@@ -171,10 +177,10 @@
             flex-basis: 50px;
         }
         .permission-name {
-            flex:4;
+            flex:2;
         }
         .permission-users {
-            flex: 6;
+            flex: 4;
         }
     }
     .import_table {

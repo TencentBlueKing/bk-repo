@@ -42,9 +42,9 @@ class ZeroInputStream(
 ) : InputStream() {
 
     /**
-     * 表示已经读取的自己数量
+     * 表示已经读取的字节数量
      */
-    private var read = 0
+    private var read = 0L
 
     override fun read(): Int {
         if (size in 0..read) return -1
@@ -53,6 +53,8 @@ class ZeroInputStream(
     }
 
     override fun available(): Int {
-        return if (size >= 0) size.toInt() - read else Int.MAX_VALUE
+        if (size < 0) return Int.MAX_VALUE
+        val remaining = size - read
+        return if (remaining > Int.MAX_VALUE) Int.MAX_VALUE else remaining.toInt()
     }
 }

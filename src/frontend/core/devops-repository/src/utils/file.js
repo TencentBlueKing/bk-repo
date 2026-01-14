@@ -10,7 +10,8 @@ const textType = [
     'ini',
     'log',
     'properties',
-    'toml'
+    'toml',
+    'sql'
 ]
 
 const formatType = [

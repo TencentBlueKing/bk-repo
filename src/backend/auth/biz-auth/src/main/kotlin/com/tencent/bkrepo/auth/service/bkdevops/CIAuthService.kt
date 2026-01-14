@@ -77,6 +77,11 @@ class CIAuthService @Autowired constructor(
         .expireAfterWrite(CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS)
         .build<String, Boolean>()
 
+    private val memberGroupsCache = CacheBuilder.newBuilder()
+        .maximumSize(CACHE_MAX_SIZE)
+        .expireAfterWrite(CACHE_EXPIRE_SECONDS, TimeUnit.SECONDS)
+        .build<String, List<String>>()
+
     fun Request.addTenantHeaderIfNeeded(userId: String): Request {
         val userInfo = userDao.findFirstByUserId(userId)
         if (!enableMultiTenant.enabled || userInfo == null) {
@@ -167,6 +172,19 @@ class CIAuthService @Autowired constructor(
         }
     }
 
+    fun getMemberGroupsInProject(user: String, projectCode: String): List<String> {
+        val cacheKey = CacheKeyBuilder.userProjectRole(user, projectCode)
+        return getCachedOrComputeList(cacheKey) {
+            val url = AuthApiUrls.getMemberGroupsInProject(devopsAuthConfig.getBkciAuthServer(), projectCode, user)
+            executeAuthRequest<BkciAuthListResponse>(
+                url = url,
+                user = user,
+                projectCode = projectCode,
+                logPrefix = "getMemberGroupsInProject"
+            )?.data ?: emptyList()
+        }
+    }
+
     fun getUserResourceByPermission(
         user: String, projectCode: String, action: BkAuthPermission, resourceType: BkAuthResourceType
     ): List<String> {
@@ -215,17 +233,17 @@ class CIAuthService @Autowired constructor(
                 .url(url)
                 .header(DEVOPS_BK_TOKEN, devopsAuthConfig.getBkciAuthToken())
                 .get()
-            
+
             user?.let { requestBuilder.header(DEVOPS_UID, it) }
             projectCode?.let { requestBuilder.header(DEVOPS_PROJECT_ID, it) }
-            
-            val request = requestBuilder.build().let { 
-                if (user != null) it.addTenantHeaderIfNeeded(user) else it 
+
+            val request = requestBuilder.build().let {
+                if (user != null) it.addTenantHeaderIfNeeded(user) else it
             }
-            
+
             val apiResponse = HttpUtils.doRequest(okHttpClient, request, HTTP_RETRY_COUNT, allowHttpStatusSet)
             logger.debug("$logPrefix, requestUrl: [$url], result: [${apiResponse.content}]")
-            
+
             objectMapper.readValue<T>(apiResponse.content)
         } catch (exception: InvalidFormatException) {
             logger.info("$logPrefix url is $url, error: ", exception)
@@ -244,9 +262,23 @@ class CIAuthService @Autowired constructor(
             logger.debug("match in cache: $cacheKey|$it")
             return it
         }
-        
+
         val result = compute()
         resourcePermissionCache.put(cacheKey, result)
+        return result
+    }
+
+    /**
+     * 从缓存获取或计算结果（List<String>类型）
+     */
+    private fun getCachedOrComputeList(cacheKey: String, compute: () -> List<String>): List<String> {
+        memberGroupsCache.getIfPresent(cacheKey)?.let {
+            logger.debug("match in cache: $cacheKey|$it")
+            return it
+        }
+
+        val result = compute()
+        memberGroupsCache.put(cacheKey, result)
         return result
     }
 
@@ -257,6 +289,7 @@ class CIAuthService @Autowired constructor(
         fun projectMember(user: String, projectCode: String) = "$user::$projectCode"
         fun projectManager(user: String, projectCode: String) = "manager::$user::$projectCode"
         fun superAdmin(user: String, projectCode: String) = "superAdmin::$user::$projectCode"
+        fun userProjectRole(user: String, projectCode: String) = "userProjectRole::$user::$projectCode"
         fun resourcePermission(
             user: String,
             projectCode: String,
@@ -271,16 +304,16 @@ class CIAuthService @Autowired constructor(
      */
     private object AuthApiUrls {
         private const val AUTH_BASE_PATH = "/auth/api/open/service/auth"
-        
+
         fun isProjectUser(baseUrl: String, projectCode: String, user: String) =
             "$baseUrl$AUTH_BASE_PATH/projects/$projectCode/users/$user/isProjectUsers"
-        
+
         fun checkProjectManager(baseUrl: String, projectCode: String, user: String) =
             "$baseUrl$AUTH_BASE_PATH/projects/$projectCode/users/$user/checkProjectManager"
-        
+
         fun checkSuperAdmin(baseUrl: String, projectCode: String, resourceType: String, action: String) =
             "$baseUrl$AUTH_BASE_PATH/local/manager/projects/$projectCode?resourceType=$resourceType&action=$action"
-        
+
         fun validateResourcePermission(
             baseUrl: String,
             projectCode: String,
@@ -288,26 +321,29 @@ class CIAuthService @Autowired constructor(
             resourceCode: String,
             resourceType: String
         ) = "$baseUrl$AUTH_BASE_PATH/permission/projects/$projectCode/relation/validate?" +
-            "action=$action&resourceCode=$resourceCode&resourceType=$resourceType"
-        
+                "action=$action&resourceCode=$resourceCode&resourceType=$resourceType"
+
         fun getUserResourceByPermission(
             baseUrl: String,
             projectCode: String,
             action: String,
             resourceType: String
         ) = "$baseUrl$AUTH_BASE_PATH/permission/projects/$projectCode/action/instance?" +
-            "action=$action&resourceType=$resourceType"
-        
+                "action=$action&resourceType=$resourceType"
+
         fun getProjectListByUser(baseUrl: String, user: String) =
             "$baseUrl$AUTH_BASE_PATH/projects/users/$user"
-        
+
         fun getRoleAndUserByProject(baseUrl: String, projectCode: String) =
             "$baseUrl$AUTH_BASE_PATH/projects/$projectCode/users"
+
+        fun getMemberGroupsInProject(baseUrl: String, projectCode: String, user: String) =
+            "$baseUrl$AUTH_BASE_PATH/projects/$projectCode/getMemberGroupsInProject?memberId=$user"
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(CIAuthService::class.java)
-        
+
         // HTTP请求相关常量
         private val allowHttpStatusSet = setOf(
             HttpStatus.FORBIDDEN.value,
@@ -318,11 +354,11 @@ class CIAuthService @Autowired constructor(
         private const val HTTP_READ_TIMEOUT_SECONDS = 5L
         private const val HTTP_WRITE_TIMEOUT_SECONDS = 5L
         private const val HTTP_RETRY_COUNT = 2
-        
+
         // 缓存相关常量
         private const val CACHE_MAX_SIZE = 20000L
         private const val CACHE_EXPIRE_SECONDS = 60L
-        
+
         // HTTP头常量
         const val DEVOPS_BK_TOKEN = "X-DEVOPS-BK-TOKEN"
         const val DEVOPS_UID = "X-DEVOPS-UID"

@@ -87,4 +87,14 @@ class MediaTranscodeJobDao : SimpleMongoDao<TMediaTranscodeJob>() {
         val deleteResult = remove(query)
         return deleteResult
     }
+
+    /**
+     * 查询失败的任务
+     */
+    fun findFailedJobs(limit: Int = 100): List<TMediaTranscodeJob> {
+        val query = Query(
+            where(TMediaTranscodeJob::status).isEqualTo(MediaTranscodeJobStatus.FAIL)
+        ).limit(limit)
+        return find(query)
+    }
 }
