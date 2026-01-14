@@ -1,7 +1,7 @@
 <template>
     <div class="empty-data-container flex-center" :class="{ 'hidden': isLoading }" style="background-color: white">
         <div class="flex-column flex-center">
-            <img width="480" height="240" style="float: left;margin-right: 3px" src="/ui/440.svg" />
+            <img width="480" height="240" style="float: left;margin-right: 3px" :src="window.BK_STATIC_URL + '440.svg'" />
             <span class="mt5 empty-data-title">{{ $t('noBusinessSubTip') }}</span>
             <span class="mt5 empty-data-subtitle">{{ $route.params.msg }}</span>
         </div>

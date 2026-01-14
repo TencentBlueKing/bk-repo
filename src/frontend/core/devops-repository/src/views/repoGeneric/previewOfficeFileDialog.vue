@@ -46,7 +46,7 @@
 
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.isEvalSupported = false
-    PDFJS.GlobalWorkerOptions.workerSrc = location.origin + '/ui/pdf.worker.js'
+    PDFJS.GlobalWorkerOptions.workerSrc = location.origin + window.BK_SUBPATH + 'ui/pdf.worker.js'
 
     export default {
         name: 'PreviewOfficeFileDialog',
