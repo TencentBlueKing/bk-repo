@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.job.separation.service.impl
 
+import com.tencent.bkrepo.archive.api.ArchiveClient
+import com.tencent.bkrepo.archive.request.ArchiveFileRequest
+import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.PACKAGE_COLLECTION_NAME
 import com.tencent.bkrepo.job.PACKAGE_VERSION_COLLECTION_NAME
@@ -75,6 +78,7 @@ class DataRestorerImpl(
     private val separationNodeDao: SeparationNodeDao,
     private val dataSeparationConfig: DataSeparationConfig,
     separationTaskDao: SeparationTaskDao,
+    private val archiveClient: ArchiveClient,
 ) : AbstractHandler(mongoTemplate, separationFailedRecordDao, separationTaskDao), DataRestorer {
     override fun repoRestorer(context: SeparationContext) {
         logger.info("start to do restore for repo ${context.projectId}|${context.repoName}")
@@ -106,6 +110,12 @@ class DataRestorerImpl(
         logger.info("start to do restore for node $node in repo ${context.projectId}|${context.repoName}")
         handleNodeRestore(context, node)
         logger.info("restore for node $node in repo ${context.projectId}|${context.repoName} finished")
+    }
+
+    override fun archivedNodeRestorer(context: SeparationContext, node: NodeFilterInfo?) {
+        logger.info("start to do archived node restore for node $node in repo ${context.projectId}|${context.repoName}")
+        handleArchivedNodeRestore(context, node)
+        logger.info("archived node restore for node $node in repo ${context.projectId}|${context.repoName} finished")
     }
 
 
@@ -609,29 +619,73 @@ class DataRestorerImpl(
         }
     }
 
-    private fun handleNodeRestore(context: SeparationContext, node: NodeFilterInfo? = null) {
-        with(context) {
-            validateNodeParams(node)
-            var pageNumber = 0
-            val pageSize = dataSeparationConfig.batchSize
-            var querySize: Int
-            val query = SeparationQueryHelper.pathQuery(
-                projectId, repoName, separationDate, node?.path, node?.pathRegex, node?.excludePath
+    private fun handleNodeRestore(
+        context: SeparationContext,
+        node: NodeFilterInfo? = null,
+        archivedOnly: Boolean = false
+    ) {
+        validateNodeParams(node)
+        val query = buildNodeRestoreQuery(context, node, archivedOnly)
+        processNodeRestoreBatch(context, query, node, archivedOnly)
+    }
+
+    private fun buildNodeRestoreQuery(
+        context: SeparationContext,
+        node: NodeFilterInfo?,
+        archivedOnly: Boolean
+    ): Query {
+        return if (archivedOnly) {
+            SeparationQueryHelper.archivedPathQuery(
+                context.projectId, context.repoName, context.separationDate,
+                node?.path, node?.pathRegex, node?.excludePath
             )
-            do {
-                val nodeQuery = query.with(PageRequest.of(pageNumber, pageSize))
-                val data = separationNodeDao.find(nodeQuery)
-                if (data.isEmpty()) {
-                    logger.warn("Could not find cold node $node before $separationDate in $projectId|$repoName !")
-                    break
-                }
-                data.forEach { cNode ->
-                    restoreNode(context, cNode)
-                }
-                querySize = data.size
-                pageNumber++
-            } while (querySize == pageSize)
+        } else {
+            SeparationQueryHelper.pathQuery(
+                context.projectId, context.repoName, context.separationDate,
+                node?.path, node?.pathRegex, node?.excludePath
+            )
         }
+    }
+
+    private fun processNodeRestoreBatch(
+        context: SeparationContext,
+        query: Query,
+        node: NodeFilterInfo?,
+        archivedOnly: Boolean
+    ) {
+        var pageNumber = 0
+        val pageSize = dataSeparationConfig.batchSize
+        var hasMore = true
+        
+        while (hasMore) {
+            val nodeQuery = query.with(PageRequest.of(pageNumber, pageSize))
+            val data = separationNodeDao.find(nodeQuery)
+            
+            if (data.isEmpty()) {
+                logNodeNotFound(context, node, archivedOnly)
+                return
+            }
+            
+            restoreNodeBatch(context, data)
+            hasMore = data.size == pageSize
+            pageNumber++
+        }
+    }
+
+    private fun restoreNodeBatch(context: SeparationContext, nodes: List<TSeparationNode>) {
+        nodes.forEach { cNode -> restoreNode(context, cNode) }
+    }
+
+    private fun logNodeNotFound(context: SeparationContext, node: NodeFilterInfo?, archivedOnly: Boolean) {
+        val nodeType = if (archivedOnly) "archived cold node" else "cold node"
+        logger.warn(
+            "Could not find $nodeType $node before ${context.separationDate} " +
+                "in ${context.projectId}|${context.repoName} !"
+        )
+    }
+
+    private fun handleArchivedNodeRestore(context: SeparationContext, node: NodeFilterInfo? = null) {
+        handleNodeRestore(context, node, archivedOnly = true)
     }
 
     private fun restoreNode(context: SeparationContext, cNode: TSeparationNode) {
@@ -639,6 +693,10 @@ class DataRestorerImpl(
             val (id, sha256) = restoreColdNode(context, cNode.fullPath, cNode.id!!)
             // 逻辑删除node,
             removeCodeDataInSeparation(context, mutableMapOf(id to sha256))
+            // 冷表恢复完成后，如果节点是归档节点，触发归档恢复
+            if (cNode.archived == true || cNode.compressed == true) {
+                restoreArchivedFile(context, cNode, sha256)
+            }
             setSuccessProgress(context.taskId, context.separationProgress, nodeId = cNode.id)
             removeFailedRecord(
                 context, nodeId = cNode.id,
@@ -650,6 +708,29 @@ class DataRestorerImpl(
             )
             saveFailedRecord(context, nodeId = cNode.id)
             setFailedProgress(context.taskId, context.separationProgress, nodeId = cNode.id)
+        }
+    }
+    
+    private fun restoreArchivedFile(context: SeparationContext, cNode: TSeparationNode, sha256: String) {
+        try {
+            if (cNode.archived == true) {
+                val req = ArchiveFileRequest(sha256, context.credentialsKey, SYSTEM_USER)
+                archiveClient.restore(req)
+                logger.info(
+                    "Triggered archive restore for node ${cNode.projectId}/${cNode.repoName}${cNode.fullPath}"
+                )
+            } else if (cNode.compressed == true) {
+                val req = UncompressFileRequest(sha256, context.credentialsKey, SYSTEM_USER)
+                archiveClient.uncompress(req)
+                logger.info(
+                    "Triggered uncompress for node ${cNode.projectId}/${cNode.repoName}${cNode.fullPath}"
+                )
+            }
+        } catch (e: Exception) {
+            logger.error(
+                "Failed to restore archived file for node ${cNode.projectId}/${cNode.repoName}${cNode.fullPath}",
+                e
+            )
         }
     }
 

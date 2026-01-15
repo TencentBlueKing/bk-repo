@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.separation.executor
 
 import com.tencent.bkrepo.job.RESTORE
+import com.tencent.bkrepo.job.RESTORE_ARCHIVED
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
@@ -37,6 +38,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.util.concurrent.ThreadPoolExecutor
 
+/**
+ * 冷数据恢复任务执行器
+ * 支持RESTORE和RESTORE_ARCHIVED两种类型
+ */
 @Component
 class ColdDataRestoreTaskExecutor(
     separationTaskDao: SeparationTaskDao,
@@ -50,7 +55,7 @@ class ColdDataRestoreTaskExecutor(
     }
 
     override fun filterTask(context: SeparationContext): Boolean {
-        return context.type != RESTORE
+        return context.type != RESTORE && context.type != RESTORE_ARCHIVED
     }
 
     override fun concurrencyCheck(): Boolean {
@@ -63,8 +68,16 @@ class ColdDataRestoreTaskExecutor(
     }
 
     override fun threadPoolExecutor(): ThreadPoolExecutor? = restoreExecutor
+    
     override fun doAction(context: SeparationContext) {
         with(context) {
+            // RESTORE_ARCHIVED类型只处理节点恢复，不处理包恢复
+            if (type == RESTORE_ARCHIVED) {
+                handleArchivedNodeRestore(context)
+                return
+            }
+            
+            // RESTORE类型处理完整的恢复逻辑
             if (task.content.packages.isNullOrEmpty() && task.content.paths.isNullOrEmpty()) {
                 dataRestorer.repoRestorer(context)
                 return
@@ -78,6 +91,22 @@ class ColdDataRestoreTaskExecutor(
             if (!task.content.paths.isNullOrEmpty()) {
                 task.content.paths!!.forEach {
                     dataRestorer.nodeRestorer(context, it)
+                }
+            }
+        }
+    }
+    
+    private fun handleArchivedNodeRestore(context: SeparationContext) {
+        with(context) {
+            if (task.content.packages.isNullOrEmpty() && task.content.paths.isNullOrEmpty()) {
+                // 恢复整个仓库的archived节点
+                dataRestorer.archivedNodeRestorer(context)
+                return
+            }
+            if (!task.content.paths.isNullOrEmpty()) {
+                // 恢复指定路径下的archived节点
+                task.content.paths!!.forEach {
+                    dataRestorer.archivedNodeRestorer(context, it)
                 }
             }
         }

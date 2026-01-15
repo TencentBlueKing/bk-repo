@@ -55,7 +55,7 @@
 package com.tencent.bkrepo.job.separation.model
 
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
-import com.tencent.bkrepo.common.api.mongo.ShardingKey
+import com.tencent.bkrepo.common.api.mongo.ShardingKeys
 import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TNode
 import com.tencent.bkrepo.job.separation.model.TSeparationNode.Companion.SEPARATION_FOLDER_IDX
@@ -75,6 +75,7 @@ import java.time.LocalDateTime
  * 继承自TNode，只增加separationDate字段
  */
 @ShardingDocument("separation_node")
+@ShardingKeys(columns = ["separationDate"])
 @CompoundIndexes(
     CompoundIndex(name = SEPARATION_FULL_PATH_IDX, def = SEPARATION_FULL_PATH_IDX_DEF, background = true),
     CompoundIndex(name = SEPARATION_PATH_IDX, def = SEPARATION_PATH_IDX_DEF, background = true),
@@ -108,6 +109,7 @@ class TSeparationNode(
     federatedSource: String? = null,
     projectId: String,
     repoName: String,
+    var separationDate: LocalDateTime? = null,
 ) : TNode(
     id = id,
     createdBy = createdBy,
@@ -134,10 +136,8 @@ class TSeparationNode(
     compressed = compressed,
     federatedSource = federatedSource,
     projectId = projectId,
-    repoName = repoName
+    repoName = repoName,
 ) {
-    @ShardingKey
-    var separationDate: LocalDateTime? = null
 
     companion object {
         const val SEPARATION_FULL_PATH_IDX = "separation_projectId_repoName_fullPath_idx"

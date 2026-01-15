@@ -42,4 +42,6 @@ interface DataSeparator {
 
     fun nodeSeparator(context: SeparationContext, node: NodeFilterInfo)
 
+    fun archivedNodeSeparator(context: SeparationContext, node: NodeFilterInfo? = null)
+
 }

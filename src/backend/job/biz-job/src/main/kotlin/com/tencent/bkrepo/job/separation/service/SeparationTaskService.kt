@@ -38,7 +38,7 @@ interface SeparationTaskService {
     fun createSeparationTask(request: SeparationTaskRequest)
 
     fun findDistinctSeparationDate(
-        projectId: String? = null, repoName: String? = null
+        projectId: String? = null, repoName: String? = null, taskType: String? = null
     ): Set<LocalDateTime>
 
     fun findTasks(
@@ -55,11 +55,13 @@ interface SeparationTaskService {
 
     /**
      * 查询出存在降冷任务的项目列表
+     * @param taskType 任务类型，为空时查询SEPARATE和SEPARATE_ARCHIVED类型
      */
-    fun findProjectList(): List<String>
+    fun findProjectList(taskType: String? = null): List<String>
 
     /**
      * 根据项目查询出对应降冷表列表
+     * @param taskType 任务类型，为空时查询SEPARATE和SEPARATE_ARCHIVED类型
      */
-    fun findSeparationCollectionList(projectId: String): List<String>
+    fun findSeparationCollectionList(projectId: String, taskType: String? = null): List<String>
 }

@@ -32,7 +32,7 @@
 package com.tencent.bkrepo.common.metadata.model
 
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
-import com.tencent.bkrepo.common.api.mongo.ShardingKey
+import com.tencent.bkrepo.common.api.mongo.ShardingKeys
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.ARCHIVED_IDX
 import com.tencent.bkrepo.common.metadata.model.TNode.Companion.ARCHIVED_IDX_DEF
@@ -60,6 +60,7 @@ import java.time.LocalDateTime
  * 资源模型
  */
 @ShardingDocument("node")
+@ShardingKeys(count = SHARDING_COUNT, columns = ["projectId"])
 @CompoundIndexes(
     CompoundIndex(name = FULL_PATH_IDX, def = FULL_PATH_IDX_DEF, unique = true, background = true),
     CompoundIndex(name = PATH_IDX, def = PATH_IDX_DEF, background = true),
@@ -97,8 +98,6 @@ open class TNode(
     var archived: Boolean? = null,
     var compressed: Boolean? = null,
     var federatedSource: String? = null,
-
-    @ShardingKey(count = SHARDING_COUNT)
     var projectId: String,
     var repoName: String,
 ) {

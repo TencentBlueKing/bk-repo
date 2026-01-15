@@ -123,6 +123,18 @@ class DataSeparatorImpl(
         logger.info("separation for node $node in repo ${context.projectId}|${context.repoName} finished")
     }
 
+    override fun archivedNodeSeparator(context: SeparationContext, node: NodeFilterInfo?) {
+        logger.info(
+            "start to do archived node separation for node $node " +
+                "in repo ${context.projectId}|${context.repoName}"
+        )
+        handleArchivedNodeSeparation(context, node)
+        logger.info(
+            "archived node separation for node $node " +
+                "in repo ${context.projectId}|${context.repoName} finished"
+        )
+    }
+
     private fun handlePackageSeparation(
         context: SeparationContext, pkg: PackageFilterInfo? = null,
     ) {
@@ -526,10 +538,14 @@ class DataSeparatorImpl(
         }
     }
 
-    private fun handleNodeSeparation(context: SeparationContext, node: NodeFilterInfo? = null) {
+    private fun handleNodeSeparation(
+        context: SeparationContext,
+        node: NodeFilterInfo? = null,
+        archivedOnly: Boolean = false
+    ) {
         with(context) {
             validateNodeParams(node)
-            val criteria = buildNodeCriteria(context, node)
+            val criteria = buildNodeCriteria(context, node, archivedOnly)
             val collectionName = getNodeCollectionName(projectId)
             val pageSize = dataSeparationConfig.batchSize
             var querySize: Int
@@ -552,6 +568,10 @@ class DataSeparatorImpl(
         }
     }
 
+    private fun handleArchivedNodeSeparation(context: SeparationContext, node: NodeFilterInfo? = null) {
+        handleNodeSeparation(context, node, archivedOnly = true)
+    }
+
     private fun separateColdNode(context: SeparationContext, node: NodeBaseInfo) {
         try {
             val (id, sha256) = separateColdNode(context, node.fullPath, node.id)
@@ -571,7 +591,11 @@ class DataSeparatorImpl(
         }
     }
 
-    private fun buildNodeCriteria(context: SeparationContext, node: NodeFilterInfo? = null): Criteria {
+    private fun buildNodeCriteria(
+        context: SeparationContext,
+        node: NodeFilterInfo? = null,
+        archivedOnly: Boolean = false
+    ): Criteria {
         with(context) {
             val criteria = where(NodeDetailInfo::projectId).isEqualTo(projectId)
                 .and(NodeDetailInfo::repoName).isEqualTo(repoName)
@@ -583,6 +607,12 @@ class DataSeparatorImpl(
                     Criteria().and(NodeDetailInfo::lastAccessDate).`is`(null)
                         .and(NodeDetailInfo::lastModifiedDate).lt(separationDate),
                 )
+                .apply {
+                    if (archivedOnly) {
+                        // 归档节点降冷：只降冷archived=true的节点，不考虑时间条件
+                        and(NodeDetailInfo::archived).isEqualTo(true)
+                    }
+                }
             if (node == null) return criteria
             node.pathRegex?.let {
                 criteria.and(NodeDetailInfo::fullPath).regex(".*${node.pathRegex}.*")

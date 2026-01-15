@@ -41,4 +41,6 @@ interface DataRestorer {
     fun versionRestorer(context: SeparationContext, version: VersionFilterInfo)
 
     fun nodeRestorer(context: SeparationContext, node: NodeFilterInfo)
+
+    fun archivedNodeRestorer(context: SeparationContext, node: NodeFilterInfo? = null)
 }
