@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.generic.config
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
@@ -44,7 +45,12 @@ class IOExceptionHandler : AbstractExceptionHandler() {
     @ExceptionHandler(IOException::class)
     fun handler(ex: IOException) {
         if (IOExceptionUtils.isClientBroken(ex)) {
-            response(ErrorCodeException(CommonMessageCode.CLIENT_BROKEN))
+            val exception = ErrorCodeException(
+                messageCode = CommonMessageCode.CLIENT_BROKEN,
+                status = HttpStatus.BAD_REQUEST,
+                params = arrayOf(ex.message.orEmpty())
+            )
+            response(exception)
         } else {
             response(ex)
         }
