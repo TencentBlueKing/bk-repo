@@ -30,6 +30,7 @@ package com.tencent.bkrepo.generic.config
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.util.http.IOExceptionUtils
 import com.tencent.bkrepo.common.service.exception.AbstractExceptionHandler
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -43,8 +44,8 @@ class IOExceptionHandler : AbstractExceptionHandler() {
      * 处理IOException
      * */
     @ExceptionHandler(IOException::class)
-    fun handler(ex: IOException) {
-        if (IOExceptionUtils.isClientBroken(ex)) {
+    fun handler(ex: IOException): Response<Void> {
+        return if (IOExceptionUtils.isClientBroken(ex)) {
             val exception = ErrorCodeException(
                 messageCode = CommonMessageCode.CLIENT_BROKEN,
                 status = HttpStatus.BAD_REQUEST,
