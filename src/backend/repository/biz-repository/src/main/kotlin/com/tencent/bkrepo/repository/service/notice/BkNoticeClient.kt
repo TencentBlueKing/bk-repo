@@ -46,9 +46,13 @@ import java.util.concurrent.TimeUnit
  * 蓝鲸通知中心 API 响应结构
  */
 data class BkNoticeResponse(
+    @JsonProperty("result")
     val result: Boolean = false,
+    @JsonProperty("code")
     val code: Int = 0,
+    @JsonProperty("data")
     val data: List<BkAnnouncement>? = null,
+    @JsonProperty("message")
     val message: String? = null
 )
 
@@ -56,8 +60,11 @@ data class BkNoticeResponse(
  * 公告数据结构
  */
 data class BkAnnouncement(
+    @JsonProperty("id")
     val id: Long? = null,
+    @JsonProperty("title")
     val title: String? = null,
+    @JsonProperty("content")
     val content: String? = null,
     @JsonProperty("content_list")
     val contentList: List<ContentItem>? = null,
@@ -73,7 +80,9 @@ data class BkAnnouncement(
  * 多语言内容项
  */
 data class ContentItem(
+    @JsonProperty("content")
     val content: String? = null,
+    @JsonProperty("language")
     val language: String? = null
 )
 
