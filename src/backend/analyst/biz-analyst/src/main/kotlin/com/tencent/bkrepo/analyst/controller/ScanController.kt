@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.RestController
 
@@ -92,11 +93,32 @@ class ScanController @Autowired constructor(
         return ResponseBuilder.success(ret)
     }
 
+    override fun verifySsid(ssid: String): Response<Boolean> {
+        return try {
+            // 解码ssid，格式为 subtaskId:token
+            val decoded = String(java.util.Base64.getDecoder().decode(ssid))
+            val parts = decoded.split(":")
+            if (parts.size != 2) {
+                return ResponseBuilder.success(false)
+            }
+
+            val (subtaskId, token) = parts
+            verifyToken(subtaskId, token)
+        } catch (e: Exception) {
+            logger.error("verify ssid failed", e)
+            ResponseBuilder.success(false)
+        }
+    }
+
     override fun getTask(taskId: String): Response<ScanTask> {
         return ResponseBuilder.success(scanTaskService.task(taskId))
     }
 
     override fun getTaskWaitingTime(taskId: String): Response<ScanTaskWaitingTime> {
         return ResponseBuilder.success(scanTaskService.taskWaitTime(taskId))
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ScanController::class.java)
     }
 }

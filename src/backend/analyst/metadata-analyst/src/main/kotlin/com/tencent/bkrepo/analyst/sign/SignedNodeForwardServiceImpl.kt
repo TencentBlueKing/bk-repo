@@ -31,7 +31,6 @@ import com.tencent.bkrepo.analyst.api.ScanClient
 import com.tencent.bkrepo.analyst.pojo.ScanTaskWaitingTime
 import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.request.ScanRequest
-import com.tencent.bkrepo.common.api.constant.CharPool
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
@@ -62,7 +61,6 @@ import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import org.slf4j.LoggerFactory
-import java.util.Base64
 import java.util.concurrent.TimeUnit
 
 class SignedNodeForwardServiceImpl(
@@ -185,11 +183,9 @@ class SignedNodeForwardServiceImpl(
     }
 
     private fun fromScanService(): Boolean {
-        val ssid = HttpContextHolder.getRequestOrNull()?.getParameter("ssid") ?: return false
-        val ssidStr = String(Base64.getDecoder().decode(ssid.toByteArray()))
-        val parts = ssidStr.split(CharPool.COLON)
-        require(parts.size == 2)
-        return scanClient.verifyToken(subtaskId = parts[0], token = parts[1]).data ?: false
+        return HttpContextHolder.getRequestOrNull()?.getParameter("ssid")
+            ?.let { scanClient.verifySsid(it).data }
+            ?: false
     }
 
     /**
