@@ -162,7 +162,7 @@ class BkNoticeClient(
             
             // 检查返回结果
             if (!response.result) {
-                logger.warn("Failed to get announcements from API, code: ${response.code}, message: ${response.message}")
+                logger.warn("Failed to get announcements from API, code: ${response.code}, msg: ${response.message}")
                 return emptyList()
             }
             
