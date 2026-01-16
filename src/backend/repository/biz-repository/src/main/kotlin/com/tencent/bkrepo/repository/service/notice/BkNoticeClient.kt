@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.repository.service.notice
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.tencent.bk.sdk.notice.model.resp.AnnouncementDTO
 import com.tencent.bkrepo.common.api.constant.TENANT_ID
@@ -45,10 +46,35 @@ import java.util.concurrent.TimeUnit
  * 蓝鲸通知中心 API 响应结构
  */
 data class BkNoticeResponse(
-    val result: Boolean,
-    val code: Int,
-    val data: List<AnnouncementDTO>?,
-    val message: String?
+    val result: Boolean = false,
+    val code: Int = 0,
+    val data: List<BkAnnouncement>? = null,
+    val message: String? = null
+)
+
+/**
+ * 公告数据结构
+ */
+data class BkAnnouncement(
+    val id: Long? = null,
+    val title: String? = null,
+    val content: String? = null,
+    @JsonProperty("content_list")
+    val contentList: List<ContentItem>? = null,
+    @JsonProperty("announce_type")
+    val announceType: String? = null,
+    @JsonProperty("start_time")
+    val startTime: String? = null,
+    @JsonProperty("end_time")
+    val endTime: String? = null
+)
+
+/**
+ * 多语言内容项
+ */
+data class ContentItem(
+    val content: String? = null,
+    val language: String? = null
 )
 
 
@@ -60,7 +86,9 @@ class BkNoticeClient(
     private val properties: BkNoticeProperties,
     private val tenantId: String? = null
 ) {
-    private val objectMapper = ObjectMapper()
+    private val objectMapper = ObjectMapper().apply {
+        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+    }
     
     private val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -128,7 +156,15 @@ class BkNoticeClient(
                 logger.warn("Failed to get announcements from API, code: ${response.code}, message: ${response.message}")
                 return emptyList()
             }
-            return response.data!!
+            
+            // 将 BkAnnouncement 转换为 AnnouncementDTO
+            response.data?.map { item ->
+                val dto = AnnouncementDTO()
+                dto.id = item.id
+                dto.title = item.title
+                dto.content = item.content
+                dto
+            } ?: emptyList()
         } catch (e: Exception) {
             logger.error("Failed to parse response body: $body", e)
             emptyList()
