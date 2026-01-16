@@ -145,7 +145,7 @@ class BkNoticeClient(
         offset?.let { params.add("offset=$it") }
         limit?.let { params.add("limit=$it") }
 
-        return "$baseUrl/api/v1/announcement/get_current_announcements/?" + params.joinToString("&")
+        return "$baseUrl/apigw/v1/announcement/get_current_announcements/?" + params.joinToString("&")
     }
 
     private fun buildAuthHeader(): String {
