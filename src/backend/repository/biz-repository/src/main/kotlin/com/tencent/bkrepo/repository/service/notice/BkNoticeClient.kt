@@ -172,6 +172,21 @@ class BkNoticeClient(
                 dto.id = item.id
                 dto.title = item.title
                 dto.content = item.content
+                dto.startTime = item.startTime
+                dto.endTime = item.endTime
+                dto.announceType = item.announceType
+                
+                // 转换 contentList
+                item.contentList?.let { contentList ->
+                    val dtoContentList = contentList.map { contentItem ->
+                        val contentWithLanguage = AnnouncementDTO.ContentWithLanguage()
+                        contentWithLanguage.content = contentItem.content
+                        contentWithLanguage.language = contentItem.language
+                        contentWithLanguage
+                    }
+                    dto.contentList = dtoContentList
+                }
+                
                 dto
             } ?: emptyList()
         } catch (e: Exception) {
