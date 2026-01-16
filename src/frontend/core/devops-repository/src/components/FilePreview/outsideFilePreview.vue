@@ -7,7 +7,7 @@
             style="max-height: 100vh; overflow-y: auto"
         />
         <iframe v-if="showFrame" :src="pageUrl" frameborder="0" style="width: 100%; height: 100%"></iframe>
-        <div v-if="pdfShow" class="pdf-container-wrapper"">
+        <div v-if="pdfShow" class="pdf-container-wrapper">
             <canvas
                 v-for="page in pdfPages"
                 :key="page"
@@ -21,7 +21,6 @@
         <div v-if="imgShow" style="width: 100%; height: 100%">
             <img id="image" :src="imgUrl" alt="Picture" style="max-width: 100%; max-height: 100%;">
         </div>
-        <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
                 <img width="480" height="240" style="float: left;margin-right: 3px" :src="window.BK_SUBPATH + 'ui/440.svg'" />
@@ -45,8 +44,6 @@
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
     import { isExcel, isHtmlType, isOutDisplayType, isPic, isText } from '@repository/utils/file'
-    import Papa from 'papaparse'
-    import Table from '@wolf-table/table'
     import Viewer from 'viewerjs'
 
     const PDFJS = require('pdfjs-dist')
@@ -90,7 +87,6 @@
                 loading: false,
                 imgShow: false,
                 imgUrl: '',
-                csvShow: false,
                 pdfShow: false,
                 pdfPages: [], // 页数
                 pdfWidth: '', // 宽度
@@ -165,9 +161,6 @@
                                         }
                                     })
                                 })
-                            } else if (res.data.data.suffix.endsWith('csv')) {
-                                this.csvShow = true
-                                this.dealCsv(fileDate)
                             } else {
                                 this.pdfShow = true
                                 this.loadFile(URL.createObjectURL(fileDate.data))
@@ -208,43 +201,6 @@
             },
             initWaterMark (param) {
                 window.initWaterMark(param)
-            },
-            dealCsv (res) {
-                const csvData = []
-                let count = 0
-                const url = URL.createObjectURL(res.data)
-                Papa.parse(url, {
-                    download: true,
-                    step: function (row) {
-                        for (let i = 0; i < row.data.length; i++) {
-                            const ele = []
-                            ele.push(count)
-                            ele.push(i)
-                            ele.push(row.data[i])
-                            csvData.push(ele)
-                        }
-                        count = count + 1
-                    },
-                    complete: function () {
-                        Table.create(
-                            '#csvTable',
-                            () => window.innerWidth,
-                            () => 900,
-                            {
-                                scrollable: true,
-                                resizable: true,
-                                selectable: true,
-                                editable: false,
-                                copyable: true
-                            }
-                        )
-                            .formulaParser((v) => `${v}-formula`)
-                            .data({
-                                cells: csvData
-                            })
-                            .render()
-                    }
-                })
             },
             loadFile (url) {
                 const loadingTask = PDFJS.getDocument(url)
