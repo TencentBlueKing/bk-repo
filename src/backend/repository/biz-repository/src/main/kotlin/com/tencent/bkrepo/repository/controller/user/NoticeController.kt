@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.repository.controller.user
 
 import com.tencent.bk.sdk.notice.model.resp.AnnouncementDTO
-import com.tencent.bkrepo.common.api.constant.TENANT_ID
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.service.util.HttpContextHolder

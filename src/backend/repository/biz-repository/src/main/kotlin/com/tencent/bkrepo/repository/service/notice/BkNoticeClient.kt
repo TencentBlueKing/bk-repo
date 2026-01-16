@@ -134,7 +134,7 @@ class BkNoticeClient(
         return try {
             okHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
-                    logger.warn("Failed to get announcements, code: ${response.code}, message: ${response.message}")
+                    logger.warn("Failed to get announcements, code: ${response.code}, msg: ${response.message}")
                     return emptyList()
                 }
                 
