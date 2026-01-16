@@ -12,5 +12,5 @@ interface StreamAwareHandler {
     /**
      * 流停止
      * */
-    fun streamStop(stream: ClientStream)
+    fun streamStop(stream: ClientStream, endTime: Long)
 }
