@@ -109,6 +109,15 @@ interface ScanClient {
     fun verifyToken(@RequestParam subtaskId: String, @RequestParam token: String): Response<Boolean>
 
     /**
+     * 校验ssid（Base64编码的 subtaskId:token）
+     *
+     * @param ssid Base64编码的字符串，格式为 subtaskId:token
+     * @return 通过返回true,否则返回false
+     * */
+    @GetMapping("/ssid/verify")
+    fun verifySsid(@RequestParam ssid: String): Response<Boolean>
+
+    /**
      * 查询task状态
      * */
     @GetMapping("/task/{taskId}")
