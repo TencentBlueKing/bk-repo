@@ -27,6 +27,7 @@
                 :type="'datetime'"
                 @change="changeRetentionDate"
                 :open="open"
+                transfer="true"
                 @pick-success="handleOk"
                 :disabled="!cleanupStrategy.enable"
                 style="margin-top: 10px;"
