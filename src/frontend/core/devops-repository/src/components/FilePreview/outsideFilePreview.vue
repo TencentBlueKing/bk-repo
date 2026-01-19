@@ -7,7 +7,7 @@
             style="max-height: 100vh; overflow-y: auto"
         />
         <iframe v-if="showFrame" :src="pageUrl" frameborder="0" style="width: 100%; height: 100%"></iframe>
-        <div v-if="pdfShow" class="pdf-container-wrapper"">
+        <div v-if="pdfShow" class="pdf-container-wrapper">
             <canvas
                 v-for="page in pdfPages"
                 :key="page"
@@ -16,7 +16,9 @@
         </div>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
-            <textarea id="basicFileText" v-model="basicFileText" class="textarea" readonly></textarea>
+            <div style="height: 700px; width: 100%">
+                <textarea id="basicFileText" v-model="basicFileText" class="textarea" readonly></textarea>
+            </div>
         </div>
         <div v-if="imgShow" style="width: 100%; height: 100%">
             <img id="image" :src="imgUrl" alt="Picture" style="max-width: 100%; max-height: 100%;">
@@ -52,6 +54,27 @@
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.isEvalSupported = false
     PDFJS.GlobalWorkerOptions.workerSrc = location.origin + window.BK_SUBPATH + 'ui/pdf.worker.js'
+
+    function setTextareaHeight () {
+        const textarea = document.querySelector('.textarea')
+        if (textarea) {
+            const devicePixelRatio = window.devicePixelRatio || 1
+            textarea.style.height = (700 / devicePixelRatio) + 'px'
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', setTextareaHeight)
+    } else {
+        setTextareaHeight()
+    }
+
+    let resizeTimer
+
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer)
+        resizeTimer = setTimeout(setTextareaHeight, 250)
+    })
 
     export default {
         name: 'OutsideFilePreview',
@@ -148,6 +171,9 @@
                                 this.pageUrl = url
                             } else if (isText(res.data.data.suffix)) {
                                 this.previewBasic = true
+                                this.$nextTick(() => {
+                                    setTextareaHeight()
+                                })
                                 const reader = new FileReader()
                                 reader.onload = function (event) {
                                     // 读取的文本内容,强行赋值渲染
@@ -321,8 +347,7 @@ canvas {
 .textarea {
     resize: none;
     width: 100%;
-    height: 700px;
-    max-height: 700px;
+    height: 100%;
     overflow-y: auto;
     border: 1px solid #ccc;
     padding: 0 5px;
