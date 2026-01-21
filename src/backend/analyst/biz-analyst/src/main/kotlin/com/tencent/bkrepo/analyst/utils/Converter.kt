@@ -39,6 +39,7 @@ import com.tencent.bkrepo.analyst.pojo.LeakType
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
+import com.tencent.bkrepo.analyst.pojo.SubtaskEventPayload
 import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskResultOverview
@@ -181,6 +182,31 @@ object Converter {
                 scanQuality = scanQuality,
                 duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),
                 scanStatus = ScanPlanConverter.convertToScanStatus(status, qualityRedLine).name
+            )
+        }
+    }
+
+    fun convert(subtask: SubScanTaskDefinition): SubtaskEventPayload {
+        with(subtask) {
+            return SubtaskEventPayload(
+                taskId = id!!,
+                parentTaskId = parentScanTaskId,
+                status = status,
+                scanner = scanner,
+                triggerType = triggerType ?: ScanTriggerType.MANUAL.name,
+                projectId = projectId,
+                repoName = repoName,
+                repoType = repoType,
+                fullPath = fullPath,
+                packageKey = packageKey,
+                version = version,
+                size = size,
+                packageSize = packageSize,
+                sha256 = sha256,
+                createdBy = createdBy,
+                createdDateTime = createdDate,
+                startDateTime = startDateTime,
+                finishedDateTime = finishedDateTime,
             )
         }
     }
