@@ -29,6 +29,7 @@ package com.tencent.bkrepo.helm.listener.consumer
 
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionUpdatedEvent
+import com.tencent.bkrepo.common.service.condition.ConditionalOnAssembly
 import com.tencent.bkrepo.helm.listener.base.RemoteEventJobExecutor
 import com.tencent.bkrepo.repository.pojo.packages.PackageType
 import org.springframework.context.event.EventListener
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Component
 /**
  * 消费基于Spring进程内传递的事件
  */
+@ConditionalOnAssembly
 @Component("HelmReplicationEventListener")
 class ReplicationEventListener(
     private val remoteEventJobExecutor: RemoteEventJobExecutor,
