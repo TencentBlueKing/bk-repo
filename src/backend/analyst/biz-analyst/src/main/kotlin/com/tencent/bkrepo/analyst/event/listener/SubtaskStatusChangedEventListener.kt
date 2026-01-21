@@ -27,8 +27,7 @@
 
 package com.tencent.bkrepo.analyst.event.listener
 
-import com.tencent.bkrepo.analyst.event.ScanFinishedEvent
-import com.tencent.bkrepo.analyst.event.ScanTriggeredEvent
+import com.tencent.bkrepo.analyst.event.ScanEvent
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
@@ -42,9 +41,9 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExec
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.lock.service.LockOperation
-import com.tencent.bkrepo.common.metadata.listener.EventStreamListener
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
@@ -216,11 +215,11 @@ class SubtaskStatusChangedEventListener(
         val payload = Converter.convert(subtask)
         // 旧状态为null时表示刚创建的任务
         if (oldStatus == null) {
-            publishEvent(ScanTriggeredEvent(payload))
+            publishEvent(ScanEvent(EventType.SCAN_TRIGGERED, payload))
         }
 
         if (SubScanTaskStatus.finishedStatus(subtask.status)) {
-            publishEvent(ScanFinishedEvent(payload))
+            publishEvent(ScanEvent(EventType.SCAN_FINISHED, payload))
         }
     }
 
