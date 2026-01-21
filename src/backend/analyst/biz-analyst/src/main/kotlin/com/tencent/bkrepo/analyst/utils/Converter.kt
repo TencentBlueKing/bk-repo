@@ -39,7 +39,6 @@ import com.tencent.bkrepo.analyst.pojo.LeakType
 import com.tencent.bkrepo.analyst.pojo.ProjectScanConfiguration
 import com.tencent.bkrepo.analyst.pojo.ScanTask
 import com.tencent.bkrepo.analyst.pojo.ScanTriggerType
-import com.tencent.bkrepo.analyst.pojo.SubtaskEventPayload
 import com.tencent.bkrepo.analyst.pojo.response.ArtifactVulnerabilityInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskInfo
 import com.tencent.bkrepo.analyst.pojo.response.SubtaskResultOverview
@@ -48,6 +47,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
+import com.tencent.bkrepo.webhook.payload.SubtaskEventPayload
 import java.time.format.DateTimeFormatter
 
 object Converter {

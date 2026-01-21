@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.analyst.pojo
+package com.tencent.bkrepo.webhook.payload
 
 import java.time.LocalDateTime
 

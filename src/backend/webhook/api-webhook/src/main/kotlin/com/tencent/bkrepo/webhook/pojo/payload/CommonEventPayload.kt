@@ -43,6 +43,7 @@ import com.tencent.bkrepo.webhook.pojo.payload.project.ProjectCreatedEventPayloa
 import com.tencent.bkrepo.webhook.pojo.payload.repo.RepoCreatedEventPayload
 import com.tencent.bkrepo.webhook.pojo.payload.repo.RepoDeletedEventPayload
 import com.tencent.bkrepo.webhook.pojo.payload.repo.RepoUpdatedEventPayload
+import com.tencent.bkrepo.webhook.pojo.payload.scan.ScanEventPayload
 import com.tencent.bkrepo.webhook.pojo.payload.test.WebHookTestEventPayload
 
 @JsonTypeInfo(
@@ -63,7 +64,9 @@ import com.tencent.bkrepo.webhook.pojo.payload.test.WebHookTestEventPayload
     JsonSubTypes.Type(value = MetedataDeletedEventPayload::class, name = "METADATA_DELETED"),
     JsonSubTypes.Type(value = MetedataSavedEventPayload::class, name = "METADATA_SAVED"),
     JsonSubTypes.Type(value = VersionCreatedEvent::class, name = "VERSION_CREATED"),
-    JsonSubTypes.Type(value = WebHookTestEventPayload::class, name = "WEBHOOK_TEST")
+    JsonSubTypes.Type(value = WebHookTestEventPayload::class, name = "WEBHOOK_TEST"),
+    JsonSubTypes.Type(value = ScanEventPayload::class, name = "SCAN_TRIGGERED"),
+    JsonSubTypes.Type(value = ScanEventPayload::class, name = "SCAN_FINISHED"),
 )
 open class CommonEventPayload(
     open val eventType: EventType,
