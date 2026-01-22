@@ -32,19 +32,19 @@ class ArtifactFileRecordingListener(
         }
     }
 
-    override fun stop() {
-        super.stop()
-        storeFile()
+    override fun stop(endTime: Long) {
+        super.stop(endTime)
+        storeFile(endTime)
     }
 
-    private fun storeFile() {
+    private fun storeFile(endTime: Long) {
         try {
             artifactFile.finish()
             clientMouseArtifactFile.finish()
             if (clientMouseArtifactFile.getSize() == 0L) {
-                fileConsumer.accept(name, artifactFile, null)
+                fileConsumer.accept(name, artifactFile, null, endTime)
             } else {
-                fileConsumer.accept(name, artifactFile, mapOf(clientMouseName to clientMouseArtifactFile))
+                fileConsumer.accept(name, artifactFile, mapOf(clientMouseName to clientMouseArtifactFile), endTime)
             }
         } finally {
             artifactFile.delete()

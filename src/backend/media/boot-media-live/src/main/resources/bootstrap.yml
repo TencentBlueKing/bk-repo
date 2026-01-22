@@ -1,0 +1,2 @@
+spring.application.name: media-live
+server.port: 25827

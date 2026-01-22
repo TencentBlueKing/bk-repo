@@ -967,5 +967,7 @@
     "guideWindowsTitle": "Windows Setup Guide",
     "guideWindowsDescription": "Execute the following commands in terminal:",
     "targetPath": "Target Path",
-    "targetPathPlaceholder": "Please enter target path"
+    "targetPathPlaceholder": "Please enter target path",
+    "model": "Model",
+    "dataset": "Dataset"
 }

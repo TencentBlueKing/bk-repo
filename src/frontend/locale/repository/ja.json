@@ -969,5 +969,7 @@
   "guideWindowsTitle": "Windowsシステム設定ガイド",
   "guideWindowsDescription": "ターミナルで以下のコマンドを実行してください：",
   "targetPath": "ターゲットパス",
-  "targetPathPlaceholder": "ターゲットパスを入力してください"
+  "targetPathPlaceholder": "ターゲットパスを入力してください",
+  "model": "モデル",
+  "dataset": "データセット"
 }

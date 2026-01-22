@@ -40,6 +40,7 @@ import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
 import com.tencent.bkrepo.common.artifact.event.base.EventType
@@ -175,14 +176,8 @@ class SubtaskStatusChangedEventListener(
         subtask.qualityRedLine?.let {
             metadata.add(MetadataModel(key = SubScanTaskDefinition::qualityRedLine.name, value = it, system = true))
         }
-        val currentForbidType = with(subtask) {
-            if (repoType == RepositoryType.GENERIC.name) {
-                metadataService.listMetadata(projectId, repoName, fullPath)[FORBID_TYPE]
-            } else if (!packageKey.isNullOrEmpty() && !version.isNullOrEmpty()) {
-                packageMetadataService.listMetadata(projectId, repoName, packageKey, version)[FORBID_TYPE]
-            }
-        }
-        if (currentForbidType == ForbidType.MANUAL.name) {
+
+        if (manualForbidden(subtask)) {
             // 手动禁用的情况不处理
             return
         }
@@ -194,7 +189,7 @@ class SubtaskStatusChangedEventListener(
             val user = result.plan?.lastModifiedBy ?: SYSTEM_USER
             metadata.addAll(MetadataUtils.generateForbidMetadata(true, type.reason, type, user))
             return
-        } else {
+        } else if (result.shouldUnforbid) {
             // 全部方案均通过时移除禁用元数据
             deleteMetadata(subtask, MetadataUtils.FORBID_KEYS)
         }
@@ -230,6 +225,23 @@ class SubtaskStatusChangedEventListener(
         } ?: return
         val payload = Converter.convert(realSubtask)
         publishEvent(ScanEvent(eventType, payload))
+    }
+
+    private fun manualForbidden(subtask: TPlanArtifactLatestSubScanTask): Boolean {
+        with(subtask) {
+            val metadata = if (repoType == RepositoryType.GENERIC.name) {
+                metadataService.listMetadata(projectId, repoName, fullPath)
+            } else if (!packageKey.isNullOrEmpty() && !version.isNullOrEmpty()) {
+                packageMetadataService.listMetadata(projectId, repoName, packageKey, version)
+            } else {
+                emptyMap()
+            }
+
+            val forbidType = metadata[FORBID_TYPE]
+            val forbidStatus = metadata[FORBID_STATUS]
+
+            return forbidStatus == true && forbidType == ForbidType.MANUAL.name
+        }
     }
 
     private data class SubtaskRecord(
