@@ -214,6 +214,13 @@ class SubtaskStatusChangedEventListener(
      * 转换消息格式发送到消息队列
      */
     private fun publishSubtaskArtifactEvent(oldStatus: String?, subtask: TPlanArtifactLatestSubScanTask) {
+        // 旧状态为null时表示刚创建的任务
+        val eventType = when {
+            oldStatus == null -> EventType.SCAN_TRIGGERED
+            SubScanTaskStatus.finishedStatus(subtask.status) -> EventType.SCAN_FINISHED
+            else -> return
+        }
+
         val realSubtask = if (subtask.id != null) {
             subtask
         } else {
@@ -222,14 +229,7 @@ class SubtaskStatusChangedEventListener(
             )
         } ?: return
         val payload = Converter.convert(realSubtask)
-        // 旧状态为null时表示刚创建的任务
-        if (oldStatus == null) {
-            publishEvent(ScanEvent(EventType.SCAN_TRIGGERED, payload))
-        }
-
-        if (SubScanTaskStatus.finishedStatus(realSubtask.status)) {
-            publishEvent(ScanEvent(EventType.SCAN_FINISHED, payload))
-        }
+        publishEvent(ScanEvent(eventType, payload))
     }
 
     private data class SubtaskRecord(
