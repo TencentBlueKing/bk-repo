@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.analyst.event.listener
 
+import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
+import com.tencent.bkrepo.analyst.event.ScanEvent
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
 import com.tencent.bkrepo.analyst.model.TPlanArtifactLatestSubScanTask
@@ -34,17 +36,20 @@ import com.tencent.bkrepo.analyst.pojo.TaskMetadata
 import com.tencent.bkrepo.analyst.pojo.request.ArtifactPlanRelationRequest
 import com.tencent.bkrepo.analyst.service.ScanPlanService
 import com.tencent.bkrepo.analyst.service.ScanQualityService
+import com.tencent.bkrepo.analyst.utils.Converter
 import com.tencent.bkrepo.common.analysis.pojo.scanner.SubScanTaskStatus
 import com.tencent.bkrepo.common.analysis.pojo.scanner.standard.StandardScanExecutorResult
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.artifact.constant.FORBID_STATUS
 import com.tencent.bkrepo.common.artifact.constant.FORBID_TYPE
 import com.tencent.bkrepo.common.artifact.constant.SCAN_STATUS
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.lock.service.LockOperation
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
 import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -64,10 +69,12 @@ class SubtaskStatusChangedEventListener(
     private val scanPlanService: ScanPlanService,
     private val scanQualityService: ScanQualityService,
     private val lockOperation: LockOperation,
+    private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
 ) {
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
     fun listen(event: SubtaskStatusChangedEvent) {
+        publishSubtaskArtifactEvent(event.oldStatus?.name, event.subtask)
         with(event.subtask) {
             recordSubtask(event)
             // 未指定扫描方案表示为系统级别触发的扫描，不更新元数据
@@ -196,6 +203,28 @@ class SubtaskStatusChangedEventListener(
             null
         }
         return SubtaskRecord(subtask = event.subtask, metadata = event.taskMetadata, metrics = metrics)
+    }
+
+    /**
+     * 转换消息格式发送到消息队列
+     */
+    private fun publishSubtaskArtifactEvent(oldStatus: String?, subtask: TPlanArtifactLatestSubScanTask) {
+        // 旧状态为null时表示刚创建的任务
+        val eventType = when {
+            oldStatus == null -> EventType.SCAN_TRIGGERED
+            SubScanTaskStatus.finishedStatus(subtask.status) -> EventType.SCAN_FINISHED
+            else -> return
+        }
+
+        val realSubtask = if (subtask.id != null) {
+            subtask
+        } else {
+            planArtifactLatestSubScanTaskDao.findTask(
+                subtask.projectId, subtask.repoName, subtask.fullPath, subtask.planId, subtask.scanner
+            )
+        } ?: return
+        val payload = Converter.convert(realSubtask)
+        publishEvent(ScanEvent(eventType, payload))
     }
 
     private fun manualForbidden(subtask: TPlanArtifactLatestSubScanTask): Boolean {
