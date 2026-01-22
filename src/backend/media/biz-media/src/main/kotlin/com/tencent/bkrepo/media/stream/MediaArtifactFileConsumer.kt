@@ -25,15 +25,14 @@ class MediaArtifactFileConsumer(
 
     private val startTime = System.currentTimeMillis()
     override fun accept(t: File) {
-        accept(t.name, t.toArtifactFile(), null)
+        accept(t.name, t.toArtifactFile(), null, System.currentTimeMillis())
     }
 
-    override fun accept(file: File, name: String) {
-        accept(name, file.toArtifactFile(), null)
+    override fun accept(file: File, name: String, endTime: Long) {
+        accept(name, file.toArtifactFile(), null, endTime)
     }
 
-    override fun accept(name: String, file: ArtifactFile, extraFiles: Map<String, ArtifactFile>?) {
-        val endTime = System.currentTimeMillis()
+    override fun accept(name: String, file: ArtifactFile, extraFiles: Map<String, ArtifactFile>?, endTime: Long) {
         val artifactInfo = genAndStoreArtifactInfos(name, file, endTime)
         val extraArtifactFiles = extraFiles?.map { (name, file) ->
             genAndStoreArtifactInfos(name, file, endTime)
