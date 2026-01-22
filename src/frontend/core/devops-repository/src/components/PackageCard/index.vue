@@ -5,6 +5,7 @@
             <div class="flex-align-center">
                 <span class="card-name text-overflow" :title="cardData.name">{{ cardData.name }}</span>
                 <span class="ml10 repo-tag" v-if="['MAVEN'].includes(cardData.type)">{{ cardData.key.replace(/^.*\/\/(.+):.*$/, '$1') }}</span>
+                <span class="ml10 repo-tag" v-if="huggingfacePackageType">{{ huggingfacePackageType }}</span>
                 <scan-tag class="ml10"
                     v-if="showRepoScan"
                     :status="(cardData.metadata || {}).scanStatus"
@@ -74,6 +75,15 @@
             showRepoScan () {
                 const show = this.isEnterprise && !this.community && !this.cardData.type && /\.(ipa)|(apk)|(jar)$/.test(this.cardData.name)
                 return show || SHOW_ANALYST_MENU
+            },
+            huggingfacePackageType () {
+                if (this.cardData.type === 'HUGGINGFACE' && this.cardData.key) {
+                    const match = this.cardData.key.match(/^huggingface:\/\/(model|dataset)\//)
+                    if (match) {
+                        return match[1] === 'model' ? this.$t('model') : this.$t('dataset')
+                    }
+                }
+                return null
             }
         },
         methods: {

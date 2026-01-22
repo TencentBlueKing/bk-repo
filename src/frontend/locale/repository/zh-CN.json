@@ -971,5 +971,7 @@
     "guideWindowsTitle": "Windows 系统设置指引",
     "guideWindowsDescription": "在终端中执行以下命令：",
     "targetPath": "目标路径",
-    "targetPathPlaceholder": "请输入目标路径"
+    "targetPathPlaceholder": "请输入目标路径",
+    "model": "模型",
+    "dataset": "数据集"
 }
