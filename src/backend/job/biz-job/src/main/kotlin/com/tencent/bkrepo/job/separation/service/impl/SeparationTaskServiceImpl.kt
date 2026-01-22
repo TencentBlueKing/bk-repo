@@ -37,7 +37,9 @@ import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.job.RESTORE
+import com.tencent.bkrepo.job.RESTORE_ARCHIVED
 import com.tencent.bkrepo.job.SEPARATE
+import com.tencent.bkrepo.job.SEPARATE_ARCHIVED
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils.Companion.SEPARATION_COLLECTION_NAME_PREFIX
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
@@ -74,14 +76,20 @@ class SeparationTaskServiceImpl(
         with(request) {
             val repo = getRepoInfo(projectId, repoName)
             contentCheck(request, repo)
+            
+            // 归档类型任务只支持generic仓库
+            if (type == SEPARATE_ARCHIVED || type == RESTORE_ARCHIVED) {
+                validateArchivedTaskRepoType(repo)
+            }
+            
             when (type) {
-                SEPARATE -> {
+                SEPARATE, SEPARATE_ARCHIVED -> {
                     validateSeparateTaskParams(request)
                     val task = buildSeparationTask(request)
                     createTask(task)
                 }
 
-                RESTORE -> {
+                RESTORE, RESTORE_ARCHIVED -> {
                     restoreTaskCheck(request.projectId, request.repoName)
                     createRestoreTask(request)
                 }
@@ -97,9 +105,17 @@ class SeparationTaskServiceImpl(
         }
     }
 
-    override fun findDistinctSeparationDate(projectId: String?, repoName: String?): Set<LocalDateTime> {
+    override fun findDistinctSeparationDate(
+        projectId: String?,
+        repoName: String?,
+        taskType: String?
+    ): Set<LocalDateTime> {
         val result = mutableSetOf<LocalDateTime>()
-        val criteria = Criteria.where(TSeparationTask::type.name).isEqualTo(SEPARATE)
+        val criteria = if (taskType != null) {
+            Criteria.where(TSeparationTask::type.name).isEqualTo(taskType)
+        } else {
+            Criteria.where(TSeparationTask::type.name).`in`(SEPARATE, SEPARATE_ARCHIVED)
+        }
         projectId?.apply { criteria.and(TSeparationTask::projectId.name).isEqualTo(projectId) }
         repoName?.apply { criteria.and(TSeparationTask::repoName.name).isEqualTo(repoName) }
         val query = Query(criteria)
@@ -134,22 +150,26 @@ class SeparationTaskServiceImpl(
         return exist || failedExist
     }
 
-    override fun findProjectList(): List<String> {
+    override fun findProjectList(taskType: String?): List<String> {
         val criteria = Criteria.where(TSeparationTask::projectId.name).exists(true)
-            .and(TSeparationTask::type.name).isEqualTo(SEPARATE)
+        if (taskType != null) {
+            criteria.and(TSeparationTask::type.name).isEqualTo(taskType)
+        } else {
+            criteria.and(TSeparationTask::type.name).`in`(SEPARATE, SEPARATE_ARCHIVED)
+        }
         val query = Query(criteria)
         return mongoTemplate.findDistinct(
             query, TSeparationTask::projectId.name, TSeparationTask::class.java, String::class.java
         )
     }
 
-    override fun findSeparationCollectionList(projectId: String): List<String> {
+    override fun findSeparationCollectionList(projectId: String, taskType: String?): List<String> {
         if (!isProjectAllowedForSeparation(projectId)) {
             return emptyList()
         }
 
         val result = mutableListOf<String>()
-        findDistinctSeparationDate(projectId).forEach { date ->
+        findDistinctSeparationDate(projectId, null, taskType).forEach { date ->
             val separationNodeCollection = SEPARATION_COLLECTION_NAME_PREFIX.plus(
                 MonthRangeShardingUtils.shardingSequenceFor(date, 1)
             )
@@ -209,7 +229,7 @@ class SeparationTaskServiceImpl(
     private fun createRestoreTask(request: SeparationTaskRequest) {
         with(request) {
             if (separateAt.isNullOrEmpty()) {
-                val separatedDates = findDistinctSeparationDate(projectId, repoName)
+                val separatedDates = findDistinctSeparationDate(projectId, repoName, null)
                 if (separatedDates.isEmpty()) {
                     logger.warn("no cold data has been stored in $projectId|$repoName")
                     throw BadRequestException(
@@ -331,6 +351,20 @@ class SeparationTaskServiceImpl(
                 content = content,
                 type = type,
                 overwrite = overwrite
+            )
+        }
+    }
+
+    /**
+     * 校验归档任务的仓库类型
+     * 归档降冷/恢复只支持generic类型仓库
+     */
+    private fun validateArchivedTaskRepoType(repo: RepositoryDetail) {
+        if (repo.type != RepositoryType.GENERIC) {
+            logger.warn("Archived task only supports generic repository, but got ${repo.type}")
+            throw BadRequestException(
+                CommonMessageCode.PARAMETER_INVALID,
+                "Archived task only supports generic repository"
             )
         }
     }

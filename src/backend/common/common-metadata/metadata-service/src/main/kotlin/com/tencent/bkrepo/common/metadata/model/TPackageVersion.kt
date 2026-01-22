@@ -48,7 +48,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = VERSION_METADATA_IDX, def = VERSION_METADATA_IDX_DEF, background = true),
     CompoundIndex(name = VERSION_TAGS_IDX, def = VERSION_TAGS_IDX_DEF, background = true)
 )
-data class TPackageVersion(
+open class TPackageVersion(
     var id: String? = null,
     var createdBy: String,
     var createdDate: LocalDateTime,

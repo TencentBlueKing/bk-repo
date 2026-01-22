@@ -30,6 +30,7 @@ package com.tencent.bkrepo.job.separation.service.impl
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.constant.REPO_NAME
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.common.mongo.constant.MIN_OBJECT_ID
 import com.tencent.bkrepo.job.KEY
@@ -120,6 +121,18 @@ class DataSeparatorImpl(
         logger.info("start to do separation for node $node in repo ${context.projectId}|${context.repoName}")
         handleNodeSeparation(context, node)
         logger.info("separation for node $node in repo ${context.projectId}|${context.repoName} finished")
+    }
+
+    override fun archivedNodeSeparator(context: SeparationContext, node: NodeFilterInfo?) {
+        logger.info(
+            "start to do archived node separation for node $node " +
+                "in repo ${context.projectId}|${context.repoName}"
+        )
+        handleArchivedNodeSeparation(context, node)
+        logger.info(
+            "archived node separation for node $node " +
+                "in repo ${context.projectId}|${context.repoName} finished"
+        )
     }
 
     private fun handlePackageSeparation(
@@ -363,7 +376,13 @@ class DataSeparatorImpl(
                 manifestPath = coldVersionRecord.manifestPath
                 artifactPath = coldVersionRecord.artifactPath
                 stageTag = coldVersionRecord.stageTag
-                metadata = coldVersionRecord.metadata
+                metadata = coldVersionRecord.metadata.map {
+                    TMetadata(
+                        key = it.key, value = it.value,
+                        system = it.system, description = it.description,
+                        link = it.link
+                    )
+                }
                 tags = coldVersionRecord.tags
                 extension = coldVersionRecord.extension
                 clusterNames = coldVersionRecord.clusterNames
@@ -487,7 +506,13 @@ class DataSeparatorImpl(
                     sha256 = nodeRecord.sha256
                     md5 = nodeRecord.md5
                     nodeNum = nodeRecord.nodeNum
-                    metadata = nodeRecord.metadata
+                    metadata = nodeRecord.metadata?.map {
+                        TMetadata(
+                            key = it.key, value = it.value,
+                            system = it.system, description = it.description,
+                            link = it.link
+                        )
+                    }?.toMutableList()
                     lastModifiedBy = nodeRecord.lastModifiedBy
                     lastModifiedDate = nodeRecord.lastModifiedDate
                     lastAccessDate = nodeRecord.lastAccessDate
@@ -513,10 +538,14 @@ class DataSeparatorImpl(
         }
     }
 
-    private fun handleNodeSeparation(context: SeparationContext, node: NodeFilterInfo? = null) {
+    private fun handleNodeSeparation(
+        context: SeparationContext,
+        node: NodeFilterInfo? = null,
+        archivedOnly: Boolean = false
+    ) {
         with(context) {
             validateNodeParams(node)
-            val criteria = buildNodeCriteria(context, node)
+            val criteria = buildNodeCriteria(context, node, archivedOnly)
             val collectionName = getNodeCollectionName(projectId)
             val pageSize = dataSeparationConfig.batchSize
             var querySize: Int
@@ -539,6 +568,10 @@ class DataSeparatorImpl(
         }
     }
 
+    private fun handleArchivedNodeSeparation(context: SeparationContext, node: NodeFilterInfo? = null) {
+        handleNodeSeparation(context, node, archivedOnly = true)
+    }
+
     private fun separateColdNode(context: SeparationContext, node: NodeBaseInfo) {
         try {
             val (id, sha256) = separateColdNode(context, node.fullPath, node.id)
@@ -558,7 +591,11 @@ class DataSeparatorImpl(
         }
     }
 
-    private fun buildNodeCriteria(context: SeparationContext, node: NodeFilterInfo? = null): Criteria {
+    private fun buildNodeCriteria(
+        context: SeparationContext,
+        node: NodeFilterInfo? = null,
+        archivedOnly: Boolean = false
+    ): Criteria {
         with(context) {
             val criteria = where(NodeDetailInfo::projectId).isEqualTo(projectId)
                 .and(NodeDetailInfo::repoName).isEqualTo(repoName)
@@ -570,6 +607,12 @@ class DataSeparatorImpl(
                     Criteria().and(NodeDetailInfo::lastAccessDate).`is`(null)
                         .and(NodeDetailInfo::lastModifiedDate).lt(separationDate),
                 )
+                .apply {
+                    if (archivedOnly) {
+                        // 归档节点降冷：只降冷archived=true的节点，不考虑时间条件
+                        and(NodeDetailInfo::archived).isEqualTo(true)
+                    }
+                }
             if (node == null) return criteria
             node.pathRegex?.let {
                 criteria.and(NodeDetailInfo::fullPath).regex(".*${node.pathRegex}.*")
@@ -587,32 +630,41 @@ class DataSeparatorImpl(
 
     private fun buildTSeparationNode(node: NodeDetailInfo, separationDate: LocalDateTime): TSeparationNode {
         return TSeparationNode(
-            projectId = node.projectId,
-            repoName = node.repoName,
-            path = node.path,
-            name = node.name,
-            fullPath = node.fullPath,
-            folder = node.folder,
-            expireDate = node.expireDate,
-            size = node.size,
-            sha256 = node.sha256,
-            md5 = node.md5,
-            crc64ecma = node.crc64ecma,
-            nodeNum = node.nodeNum,
-            metadata = node.metadata,
+            id = node.id,
             createdBy = node.createdBy,
             createdDate = node.createdDate,
             lastModifiedBy = node.lastModifiedBy,
             lastModifiedDate = node.lastModifiedDate,
             lastAccessDate = node.lastAccessDate,
+            folder = node.folder,
+            path = node.path,
+            name = node.name,
+            fullPath = node.fullPath,
+            size = node.size,
+            expireDate = node.expireDate,
+            sha256 = node.sha256,
+            md5 = node.md5,
+            crc64ecma = node.crc64ecma,
+            deleted = node.deleted,
             copyFromCredentialsKey = node.copyFromCredentialsKey,
             copyIntoCredentialsKey = node.copyIntoCredentialsKey,
+            metadata = node.metadata?.map {
+                TMetadata(
+                    key = it.key, value = it.value,
+                    system = it.system, description = it.description,
+                    link = it.link
+                )
+            }?.toMutableList(),
             clusterNames = node.clusterNames,
+            nodeNum = node.nodeNum,
             archived = node.archived,
             compressed = node.compressed,
-            separationDate = separationDate,
-            federatedSource = node.federatedSource
-        )
+            federatedSource = node.federatedSource,
+            projectId = node.projectId,
+            repoName = node.repoName
+        ).apply {
+            this.separationDate = separationDate
+        }
     }
 
 
@@ -630,20 +682,24 @@ class DataSeparatorImpl(
             name = packageDetail.name,
             key = packageDetail.key,
             type = packageDetail.type,
+            latest = packageDetail.latest,
             downloads = packageDetail.downloads,
             versions = packageDetail.versions,
+            description = packageDetail.description,
             versionTag = packageDetail.versionTag,
             extension = packageDetail.extension,
-            description = packageDetail.description,
             historyVersion = packageDetail.historyVersion,
-            separationDate = separationDate
-        )
+            clusterNames = packageDetail.clusterNames
+        ).apply {
+            this.separationDate = separationDate
+        }
     }
 
     private fun buildTSeparationPackageVersion(
         versionDetail: VersionDetailInfo, separationDate: LocalDateTime
     ): TSeparationPackageVersion {
         return TSeparationPackageVersion(
+            id = versionDetail.id,
             createdBy = versionDetail.createdBy,
             createdDate = versionDetail.createdDate,
             lastModifiedBy = versionDetail.lastModifiedBy,
@@ -655,13 +711,21 @@ class DataSeparatorImpl(
             downloads = versionDetail.downloads,
             manifestPath = versionDetail.manifestPath,
             artifactPath = versionDetail.artifactPath,
+            artifactPaths = versionDetail.artifactPath?.let { mutableSetOf(it) },
             stageTag = versionDetail.stageTag,
-            metadata = versionDetail.metadata,
+            metadata = versionDetail.metadata.map {
+                TMetadata(
+                    key = it.key, value = it.value,
+                    system = it.system, description = it.description,
+                    link = it.link
+                )
+            },
             tags = versionDetail.tags,
             extension = versionDetail.extension,
-            clusterNames = versionDetail.clusterNames,
-            separationDate = separationDate
-        )
+            clusterNames = versionDetail.clusterNames
+        ).apply {
+            this.separationDate = separationDate
+        }
     }
 
     companion object {

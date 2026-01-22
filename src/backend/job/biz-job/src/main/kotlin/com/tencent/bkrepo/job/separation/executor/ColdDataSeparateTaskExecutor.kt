@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.job.separation.executor
 
 import com.tencent.bkrepo.job.SEPARATE
+import com.tencent.bkrepo.job.SEPARATE_ARCHIVED
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
 import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
@@ -49,7 +50,7 @@ class ColdDataSeparateTaskExecutor(
     }
 
     override fun filterTask(context: SeparationContext): Boolean {
-        return context.type != SEPARATE
+        return context.type != SEPARATE && context.type != SEPARATE_ARCHIVED
     }
 
     override fun concurrencyCheck(): Boolean {
@@ -65,6 +66,13 @@ class ColdDataSeparateTaskExecutor(
 
     override fun doAction(context: SeparationContext) {
         with(context) {
+            // SEPARATE_ARCHIVED类型只处理节点降冷，不处理包降冷
+            if (type == SEPARATE_ARCHIVED) {
+                handleArchivedNodeSeparation(context)
+                return
+            }
+            
+            // SEPARATE类型处理完整的降冷逻辑
             if (task.content.packages.isNullOrEmpty() && task.content.paths.isNullOrEmpty()) {
                 dataSeparator.repoSeparator(context)
                 return
@@ -78,6 +86,22 @@ class ColdDataSeparateTaskExecutor(
             if (!task.content.paths.isNullOrEmpty()) {
                 task.content.paths!!.forEach {
                     dataSeparator.nodeSeparator(context, it)
+                }
+            }
+        }
+    }
+    
+    private fun handleArchivedNodeSeparation(context: SeparationContext) {
+        with(context) {
+            if (task.content.packages.isNullOrEmpty() && task.content.paths.isNullOrEmpty()) {
+                // 降冷整个仓库的archived节点
+                dataSeparator.archivedNodeSeparator(context)
+                return
+            }
+            if (!task.content.paths.isNullOrEmpty()) {
+                // 降冷指定路径下的archived节点
+                task.content.paths!!.forEach {
+                    dataSeparator.archivedNodeSeparator(context, it)
                 }
             }
         }

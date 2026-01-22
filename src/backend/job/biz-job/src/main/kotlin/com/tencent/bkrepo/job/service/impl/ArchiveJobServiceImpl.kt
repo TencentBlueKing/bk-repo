@@ -8,6 +8,8 @@ import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.job.BATCH_SIZE
+import com.tencent.bkrepo.job.RESTORE
+import com.tencent.bkrepo.job.RESTORE_ARCHIVED
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.task.archive.IdleNodeArchiveJob
@@ -16,6 +18,11 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
+import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
+import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo
+import com.tencent.bkrepo.job.separation.pojo.SeparationContent
+import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import com.tencent.bkrepo.job.service.ArchiveJobService
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -27,6 +34,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Service
 import java.time.Duration
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.function.Consumer
 
 @Service
@@ -35,6 +43,8 @@ class ArchiveJobServiceImpl(
     private val archiveClient: ArchiveClient,
     private val migrateRepoStorageService: MigrateRepoStorageService,
     private val migrateArchivedFileService: MigrateArchivedFileService,
+    private val separationTaskService: SeparationTaskService,
+    private val separationNodeDao: SeparationNodeDao,
 ) : ArchiveJobService {
     override fun archive(projectId: String, key: String, days: Int, storageClass: ArchiveStorageClass) {
         val now = LocalDateTime.now()
@@ -64,6 +74,12 @@ class ArchiveJobServiceImpl(
 
     override fun restore(request: ArchiveRestoreRequest) {
         val projectId = request.projectId
+        val repoName = request.repoName
+        val prefix = request.prefix
+        
+        // 先查询冷表中是否存在需要恢复的节点
+        checkAndRestoreSeparationNodes(projectId, repoName, prefix)
+        
         val query = Query(buildCriteria(request))
         val index = HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
         val collectionName = COLLECTION_NAME_PREFIX.plus(index)
@@ -101,6 +117,74 @@ class ArchiveJobServiceImpl(
         }
     }
 
+    /**
+     * 检查并恢复冷表中的节点
+     */
+    private fun checkAndRestoreSeparationNodes(projectId: String, repoName: String?, prefix: String?) {
+        try {
+            val separateDates = separationTaskService.findDistinctSeparationDate(projectId, repoName)
+            if (separateDates.isEmpty()) {
+                logger.info("No separation dates found for project[$projectId], repo[$repoName]")
+                return
+            }
+            
+            separateDates.forEach { separationDate ->
+                val separationNodes = querySeparationNodes(projectId, repoName, prefix)
+                if (separationNodes.isNotEmpty()) {
+                    createRestoreTasksForSeparationNodes(projectId, separationNodes, separationDate)
+                }
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to check and restore separation nodes for project[$projectId], repo[$repoName]", e)
+        }
+    }
+    
+    private fun querySeparationNodes(projectId: String, repoName: String?, prefix: String?) = if (prefix != null) {
+        separationNodeDao.find(
+            Query(
+                Criteria.where("projectId").isEqualTo(projectId)
+                    .apply { repoName?.let { and("repoName").isEqualTo(it) } }
+                    .and("fullPath").regex("^${EscapeUtils.escapeRegex(prefix)}")
+                    .and("folder").isEqualTo(false)
+                    .and("deleted").isEqualTo(null)
+            )
+        )
+    } else {
+        separationNodeDao.find(
+            Query(
+                Criteria.where("projectId").isEqualTo(projectId)
+                    .apply { repoName?.let { and("repoName").isEqualTo(it) } }
+                    .and("folder").isEqualTo(false)
+                    .and("deleted").isEqualTo(null)
+            )
+        )
+    }
+    
+    private fun createRestoreTasksForSeparationNodes(
+        projectId: String,
+        separationNodes: List<*>,
+        separationDate: LocalDateTime
+    ) {
+        logger.info("Found ${separationNodes.size} separation nodes for project[$projectId], creating restore task")
+        separationNodes.forEach { node ->
+            val n = node as com.tencent.bkrepo.job.separation.model.TSeparationNode
+            val taskType = if (n.archived == true) RESTORE_ARCHIVED else RESTORE
+            val task = SeparationTaskRequest(
+                projectId = projectId,
+                repoName = n.repoName,
+                type = taskType,
+                separateAt = separationDate.format(DateTimeFormatter.ISO_DATE_TIME),
+                content = SeparationContent(
+                    paths = mutableListOf(NodeFilterInfo(path = n.fullPath))
+                )
+            )
+            separationTaskService.createSeparationTask(task)
+            val msg = "Created restore task for separation node: ${n.projectId}/${n.repoName}${n.fullPath}, " +
+                "will trigger archive restore after separation recovery"
+            logger.info(msg)
+        }
+    }
+    
     private inner class RestoreConsumer(private val context: NodeContext) : Consumer<Map<String, Any?>> {
         override fun accept(nodeMap: Map<String, Any?>) {
             val node = archiveJob.mapToEntity(nodeMap)

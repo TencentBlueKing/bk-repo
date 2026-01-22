@@ -54,6 +54,7 @@
 
 package com.tencent.bkrepo.job.separation.model
 
+import com.tencent.bkrepo.common.metadata.model.TPackage
 import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPARATION_PACKAGE_KEY_IDX
 import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPARATION_PACKAGE_KEY_IDX_DEF
 import com.tencent.bkrepo.job.separation.model.TSeparationPackage.Companion.SEPARATION_PACKAGE_NAME_IDX
@@ -66,6 +67,7 @@ import java.time.LocalDateTime
 
 /**
  * 冷数据package表
+ * 继承自TPackage，只增加separationDate字段
  */
 @Document("separation_package")
 @CompoundIndexes(
@@ -76,28 +78,47 @@ import java.time.LocalDateTime
         background = true
     )
 )
-data class TSeparationPackage(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-
-    var projectId: String,
-    var repoName: String,
-    var name: String,
-    var key: String,
-    var type: PackageType,
-    var latest: String? = null,
-    var downloads: Long,
-    var versions: Long,
-    var description: String? = null,
-    var versionTag: Map<String, String>? = null,
-    var extension: Map<String, Any>? = null,
-    var historyVersion: Set<String> = emptySet(),
-    var clusterNames: Set<String>? = null,
-    var separationDate: LocalDateTime
+class TSeparationPackage(
+    id: String? = null,
+    createdBy: String,
+    createdDate: LocalDateTime,
+    lastModifiedBy: String,
+    lastModifiedDate: LocalDateTime,
+    projectId: String,
+    repoName: String,
+    name: String,
+    key: String,
+    type: PackageType,
+    latest: String? = null,
+    downloads: Long,
+    versions: Long,
+    description: String? = null,
+    versionTag: Map<String, String>? = null,
+    extension: Map<String, Any>? = null,
+    historyVersion: Set<String> = emptySet(),
+    clusterNames: Set<String>? = null
+) : TPackage(
+    id = id,
+    createdBy = createdBy,
+    createdDate = createdDate,
+    lastModifiedBy = lastModifiedBy,
+    lastModifiedDate = lastModifiedDate,
+    projectId = projectId,
+    repoName = repoName,
+    name = name,
+    key = key,
+    type = type,
+    latest = latest,
+    downloads = downloads,
+    versions = versions,
+    description = description,
+    versionTag = versionTag,
+    extension = extension,
+    historyVersion = historyVersion,
+    clusterNames = clusterNames
 ) {
+    var separationDate: LocalDateTime? = null
+
     companion object {
         const val SEPARATION_PACKAGE_NAME_IDX = "separation_package_name_idx"
         const val SEPARATION_PACKAGE_KEY_IDX = "separation_package_key_idx"

@@ -187,13 +187,19 @@ object SeparationQueryHelper {
 
     fun pathQuery(
         projectId: String, repoName: String, separationDate: LocalDateTime,
-        path: String? = null, pathRegex: String? = null, excludePath: List<String>? = null
+        path: String? = null, pathRegex: String? = null, excludePath: List<String>? = null,
+        archivedOnly: Boolean = false
     ): Query {
         val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
             .and(TSeparationNode::repoName.name).isEqualTo(repoName)
             .and(TSeparationNode::folder.name).isEqualTo(false)
             .and(TSeparationNode::separationDate.name).gte(startOfDay).lt(endOfDay)
+            .apply {
+                if (archivedOnly) {
+                    and(TSeparationNode::archived.name).isEqualTo(true)
+                }
+            }
             .apply {
                 path?.let { and(TSeparationNode::fullPath.name).regex("^${PathUtils.escapeRegex(path)}") }
             }
@@ -203,6 +209,13 @@ object SeparationQueryHelper {
                 excludePath?.let { and(TSeparationNode::fullPath.name).nin(excludePath) }
             }
         return Query(criteria).withHint(FULL_PATH_IDX)
+    }
+
+    fun archivedPathQuery(
+        projectId: String, repoName: String, separationDate: LocalDateTime,
+        path: String? = null, pathRegex: String? = null, excludePath: List<String>? = null
+    ): Query {
+        return pathQuery(projectId, repoName, separationDate, path, pathRegex, excludePath, archivedOnly = true)
     }
 
     fun nodeListQuery(

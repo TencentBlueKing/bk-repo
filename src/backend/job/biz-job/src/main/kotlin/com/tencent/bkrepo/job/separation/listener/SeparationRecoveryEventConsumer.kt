@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.job.RESTORE
+import com.tencent.bkrepo.job.RESTORE_ARCHIVED
 import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
@@ -101,7 +102,9 @@ class SeparationRecoveryEventConsumer(
             }
             RepositoryType.GENERIC.name -> {
                 val node = recoveryNodeCheck(recoveryNodeInfo) ?: return
-                buildNodeSeparationTaskRequest(recoveryNodeInfo, node)
+                // 根据节点是否为归档节点选择任务类型
+                val taskType = if (node.archived == true) RESTORE_ARCHIVED else RESTORE
+                buildNodeSeparationTaskRequest(recoveryNodeInfo, node, taskType)
             }
             else -> {
                 null
@@ -158,20 +161,21 @@ class SeparationRecoveryEventConsumer(
             projectId = recoveryVersionInfo.projectId,
             repoName = recoveryVersionInfo.repoName,
             type = RESTORE,
-            separateAt = separationPackageVersion.separationDate.format(DateTimeFormatter.ISO_DATE_TIME),
+            separateAt = separationPackageVersion.separationDate?.format(DateTimeFormatter.ISO_DATE_TIME) ?: "",
             content = buildSeparationContent(recoveryVersionInfo.packageKey, separationPackageVersion.name)!!
         )
     }
 
     private fun buildNodeSeparationTaskRequest(
         recoveryNodeInfo: RecoveryNodeInfo,
-        separationNode: TSeparationNode
+        separationNode: TSeparationNode,
+        taskType: String = RESTORE
     ): SeparationTaskRequest {
         return SeparationTaskRequest(
             projectId = recoveryNodeInfo.projectId,
             repoName = recoveryNodeInfo.repoName,
-            type = RESTORE,
-            separateAt = separationNode.separationDate.format(DateTimeFormatter.ISO_DATE_TIME),
+            type = taskType,
+            separateAt = separationNode.separationDate?.format(DateTimeFormatter.ISO_DATE_TIME) ?: "",
             content = buildSeparationContent(fullPath = separationNode.fullPath)!!
         )
     }
