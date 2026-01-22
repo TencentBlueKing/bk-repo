@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.analyst.event.listener
 
+import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.event.ScanEvent
 import com.tencent.bkrepo.analyst.event.SubtaskStatusChangedEvent
 import com.tencent.bkrepo.analyst.model.SubScanTaskDefinition
@@ -67,6 +68,7 @@ class SubtaskStatusChangedEventListener(
     private val scanPlanService: ScanPlanService,
     private val scanQualityService: ScanQualityService,
     private val lockOperation: LockOperation,
+    private val planArtifactLatestSubScanTaskDao: PlanArtifactLatestSubScanTaskDao,
 ) {
     @Async
     @EventListener(SubtaskStatusChangedEvent::class)
@@ -212,13 +214,20 @@ class SubtaskStatusChangedEventListener(
      * 转换消息格式发送到消息队列
      */
     private fun publishSubtaskArtifactEvent(oldStatus: String?, subtask: TPlanArtifactLatestSubScanTask) {
-        val payload = Converter.convert(subtask)
+        val realSubtask = if (subtask.id != null) {
+            subtask
+        } else {
+            planArtifactLatestSubScanTaskDao.findTask(
+                subtask.projectId, subtask.repoName, subtask.fullPath, subtask.planId, subtask.scanner
+            )
+        } ?: return
+        val payload = Converter.convert(realSubtask)
         // 旧状态为null时表示刚创建的任务
         if (oldStatus == null) {
             publishEvent(ScanEvent(EventType.SCAN_TRIGGERED, payload))
         }
 
-        if (SubScanTaskStatus.finishedStatus(subtask.status)) {
+        if (SubScanTaskStatus.finishedStatus(realSubtask.status)) {
             publishEvent(ScanEvent(EventType.SCAN_FINISHED, payload))
         }
     }
