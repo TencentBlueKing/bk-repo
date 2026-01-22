@@ -248,6 +248,7 @@ class ProjectServiceImpl(
     private fun normalizeProjectName(name: String): String {
         if (!enableMultiTenant.enabled) return name
         val tenantId = ProjectServiceHelper.getTenantId()
+        if (tenantId.isNullOrEmpty()) return name
         return if (name.startsWith("$tenantId.")) name else "$tenantId.$name"
     }
 
