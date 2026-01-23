@@ -1,4 +1,4 @@
-FROM bkrepo/openresty:1.19.9.1-ts4
+FROM bkrepo/openresty:0.0.1
 
 LABEL maintainer="Tencent BlueKing Devops"
 
