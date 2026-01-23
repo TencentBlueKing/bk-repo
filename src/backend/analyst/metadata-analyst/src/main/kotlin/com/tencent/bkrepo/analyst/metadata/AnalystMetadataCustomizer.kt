@@ -37,7 +37,7 @@ import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils.generateForbidMetadata
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import com.tencent.bkrepo.repository.pojo.metadata.FORBID_REASON_NOT_SCANNED
+import com.tencent.bkrepo.repository.pojo.metadata.FORBID_REASON_INITIAL
 import com.tencent.bkrepo.repository.pojo.metadata.ForbidType
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -112,7 +112,7 @@ class AnalystMetadataCustomizer(
                 projectId, repoName, repoType, fullPath, packageName, packageVersion
             ).data == true
             if (shouldForbid) {
-                return generateForbidMetadata(true, FORBID_REASON_NOT_SCANNED, ForbidType.NOT_SCANNED, SYSTEM_USER)
+                return generateForbidMetadata(true, FORBID_REASON_INITIAL, ForbidType.INITIAL, SYSTEM_USER)
             }
         } catch (e: Exception) {
             logger.error("Pre-check forbid status for [$projectId/$repoName$fullPath] failed", e)
