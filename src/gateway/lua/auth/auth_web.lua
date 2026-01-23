@@ -19,7 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 --- 蓝鲸平台登录对接
 --- 获取Cookie中bk_token 和 bk_ticket
-local token, username, display_name, tenant_id
+local token, username, display_name, tenant_id, bk_time_zone
 
 --- standalone模式下校验bkrepo_ticket
 if config.mode == "standalone" or config.mode == "" or config.mode == nil then
@@ -43,11 +43,11 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
         return
     end
     if config.enable_multi_tenant_mode ~= nil and config.enable_multi_tenant_mode == "true" then
-        username, display_name, tenant_id, time_zone = oauthUtil:verify_bk_token_muti_tenant(config.oauth.apigw_url, bk_token)
+        username, display_name, tenant_id, bk_time_zone = oauthUtil:verify_bk_token_muti_tenant(config.oauth.apigw_url, bk_token)
         -- 设置多租户相关信息 --
         ngx.header["x-bkrepo-display-name"] = ngx.encode_base64(display_name)
         ngx.header["x-bkrepo-tenant-id"] = tenant_id
-        ngx.header["x-bkrepo-time-zone"] = time_zone
+        ngx.header["x-bkrepo-time-zone"] = bk_ime_zone
     else
         username = oauthUtil:verify_bk_token(config.oauth.apigw_url, bk_token)
     end
