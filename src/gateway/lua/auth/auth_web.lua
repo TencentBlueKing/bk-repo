@@ -47,7 +47,7 @@ elseif config.auth_mode == "" or config.auth_mode == "token" then
         -- 设置多租户相关信息 --
         ngx.header["x-bkrepo-display-name"] = ngx.encode_base64(display_name)
         ngx.header["x-bkrepo-tenant-id"] = tenant_id
-        ngx.header["x-bkrepo-time-zone"] = bk_ime_zone
+        ngx.header["x-bkrepo-time-zone"] = bk_time_zone
     else
         username = oauthUtil:verify_bk_token(config.oauth.apigw_url, bk_token)
     end
