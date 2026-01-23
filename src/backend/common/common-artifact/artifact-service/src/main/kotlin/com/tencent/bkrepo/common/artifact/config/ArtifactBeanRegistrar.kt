@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.config.BeanDefinitionHolder
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
@@ -62,6 +63,7 @@ class ArtifactBeanRegistrar : BeanDefinitionRegistryPostProcessor {
         registerBean(VirtualRepository::class.java, registry)
         registerBean(ArtifactRepository::class.java, registry)
         registerBean(ExceptionResponseTranslator::class.java, registry)
+        registerBean(ArtifactResourceWriter::class.java, registry)
     }
 
     /**
