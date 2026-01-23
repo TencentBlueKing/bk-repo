@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.pypi.artifact.PypiSimpleArtifactInfo
 import com.tencent.bkrepo.pypi.artifact.xml.XmlConvertUtil
+import com.tencent.bkrepo.pypi.constants.DISABLE_REPO_INDEX
 import com.tencent.bkrepo.pypi.constants.FLUSH_CACHE_EXPIRE
 import com.tencent.bkrepo.pypi.constants.REMOTE_HTML_CACHE_FULL_PATH
 import com.tencent.bkrepo.pypi.constants.XML_RPC_URI
@@ -87,6 +88,11 @@ class PypiRemoteRepository : RemoteRepository() {
     override fun query(context: ArtifactQueryContext): Any? {
         return when (val artifactInfo = context.artifactInfo) {
             is PypiSimpleArtifactInfo -> {
+                // 可设置查询仓库级别索引返回空，此索引在常规pypi制品拉取流程中不起作用但可能仍会被访问，虚拟仓库聚合索引时可能有性能问题
+                if (
+                    artifactInfo.packageName == null &&
+                    context.repositoryDetail.configuration.settings[DISABLE_REPO_INDEX] == true
+                ) return null
                 if (artifactInfo.packageName == null) getCacheHtml(context) ?: "Can not cache remote html"
                 else remoteRequest(context) ?: ""
             }
