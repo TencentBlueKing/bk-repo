@@ -61,6 +61,11 @@ import com.tencent.bkrepo.replication.constant.FEDERATED
 import com.tencent.bkrepo.replication.constant.MD5
 import com.tencent.bkrepo.replication.constant.NODE_FULL_PATH
 import com.tencent.bkrepo.replication.constant.SIZE
+import com.tencent.bkrepo.replication.pojo.request.DirectChildInfo
+import com.tencent.bkrepo.replication.pojo.request.DirectChildrenPage
+import com.tencent.bkrepo.replication.pojo.request.DirectChildrenRequest
+import com.tencent.bkrepo.replication.pojo.request.PathStatsResult
+import org.springframework.data.domain.Sort
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.repository.constant.NAME
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
@@ -400,6 +405,331 @@ class LocalDataManager(
     }
 
     /**
+     * 统计文件节点数量（不包含文件夹）
+     */
+    fun countFileNode(projectId: String, repoName: String, rootPath: String = "/"): Long {
+        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val nodePath = PathUtils.toPath(rootPath)
+        val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
+            .and(REPO_NAME).isEqualTo(repoName)
+            .and(NODE_PATH).regex("^${EscapeUtils.escapeRegex(nodePath)}")
+            .and(FOLDER).isEqualTo(false)
+            .and(DELETED).isEqualTo(null)
+        val query = Query(criteria)
+        return mongoTemplate.count(query, collectionName)
+    }
+
+    /**
+     * 统计包总数（用于非 generic 仓库）
+     */
+    fun countPackages(projectId: String, repoName: String): Long {
+        val option = PackageListOption(pageNumber = 0, pageSize = 1)
+        return packageService.listPackagePage(projectId, repoName, option).totalRecords
+    }
+
+    /**
+     * 分页列出 package（用于非 generic 仓库的差异对比）
+     */
+    fun listPackagesForDiff(
+        projectId: String,
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int
+    ): List<PackageSummary> {
+        val option = PackageListOption(pageNumber = pageNumber, pageSize = pageSize)
+        return packageService.listPackagePage(projectId, repoName, option).records
+    }
+
+    /**
+     * 列出指定路径下的直接子节点（支持分页，用于分层对比）
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名称
+     * @param parentPath 父路径（如 "/" 或 "/a/b"）
+     * @param pageNumber 页码（从1开始）
+     * @param pageSize 每页数量
+     * @return 直接子节点分页结果
+     */
+    fun listDirectChildren(
+        projectId: String,
+        repoName: String,
+        parentPath: String = "/",
+        pageNumber: Int = 1,
+        pageSize: Int = DirectChildrenRequest.DEFAULT_PAGE_SIZE
+    ): DirectChildrenPage {
+        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val normalizedPath = PathUtils.toPath(parentPath)
+
+        val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
+            .and(REPO_NAME).isEqualTo(repoName)
+            .and(NODE_PATH).isEqualTo(normalizedPath)
+            .and(DELETED).isEqualTo(null)
+
+        // 计算总数
+        val totalRecords = mongoTemplate.count(Query(criteria), collectionName)
+
+        // 限制每页大小
+        val actualPageSize = pageSize.coerceIn(1, DirectChildrenRequest.MAX_PAGE_SIZE)
+        val actualPageNumber = pageNumber.coerceAtLeast(1)
+
+        // 分页查询，按名称排序保证顺序稳定
+        val query = Query(criteria)
+            .with(Sort.by(Sort.Direction.ASC, NAME))
+            .skip(((actualPageNumber - 1) * actualPageSize).toLong())
+            .limit(actualPageSize)
+
+        val records = mongoTemplate.find(query, Node::class.java, collectionName).map { node ->
+            DirectChildInfo(
+                fullPath = node.fullPath,
+                folder = node.folder,
+                size = node.size,
+                sha256 = node.sha256
+            )
+        }
+
+        val hasMore = (actualPageNumber.toLong() * actualPageSize) < totalRecords
+
+        return DirectChildrenPage(
+            records = records,
+            pageNumber = actualPageNumber,
+            pageSize = actualPageSize,
+            totalRecords = totalRecords,
+            hasMore = hasMore
+        )
+    }
+
+    /**
+     * 统计指定路径下的文件数量（递归统计所有子目录）
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名称
+     * @param path 路径
+     * @return 该路径下的文件总数
+     */
+    fun countFilesUnderPath(
+        projectId: String,
+        repoName: String,
+        path: String
+    ): Long {
+        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val normalizedPath = PathUtils.toPath(path)
+
+        val criteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
+            .and(REPO_NAME).isEqualTo(repoName)
+            .and(NODE_PATH).regex("^${EscapeUtils.escapeRegex(normalizedPath)}")
+            .and(FOLDER).isEqualTo(false)
+            .and(DELETED).isEqualTo(null)
+
+        val query = Query(criteria)
+        return mongoTemplate.count(query, collectionName)
+    }
+
+    /**
+     * 获取所有直接子节点（循环分页获取，用于内部统计，限制最大数量防止OOM）
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名称
+     * @param parentPath 父路径
+     * @param maxCount 最大获取数量
+     * @return 直接子节点列表
+     */
+    private fun listAllDirectChildren(
+        projectId: String,
+        repoName: String,
+        parentPath: String,
+        maxCount: Int = MAX_CHILDREN_FOR_STATS
+    ): List<DirectChildInfo> {
+        val allChildren = mutableListOf<DirectChildInfo>()
+        var pageNumber = 1
+        val pageSize = DirectChildrenRequest.DEFAULT_PAGE_SIZE
+
+        while (allChildren.size < maxCount) {
+            val page = listDirectChildren(projectId, repoName, parentPath, pageNumber, pageSize)
+            allChildren.addAll(page.records)
+
+            if (!page.hasMore || allChildren.size >= maxCount) {
+                break
+            }
+            pageNumber++
+        }
+
+        return if (allChildren.size > maxCount) {
+            allChildren.take(maxCount)
+        } else {
+            allChildren
+        }
+    }
+
+    /**
+     * 获取指定路径的多层目录统计（用于差异对比）
+     *
+     * @param projectId 项目ID
+     * @param repoName 仓库名称
+     * @param rootPath 起始路径
+     * @param depth 查询深度（1-3）
+     * @return 路径统计树
+     */
+    fun getPathStats(
+        projectId: String,
+        repoName: String,
+        rootPath: String,
+        depth: Int
+    ): PathStatsResult {
+        val normalizedPath = if (rootPath == "/") "/" else rootPath.trimEnd('/')
+        val rootName = if (normalizedPath == "/") "/" else normalizedPath.substringAfterLast('/')
+
+        // 获取根路径的统计
+        val rootStats = calculatePathStatistics(projectId, repoName, normalizedPath)
+
+        // 如果深度为0或根路径是文件，直接返回
+        if (depth <= 0) {
+            return PathStatsResult(
+                path = normalizedPath,
+                folder = true,
+                fileCount = rootStats.fileCount,
+                totalSize = rootStats.totalSize,
+                aggregateHash = rootStats.aggregateHash,
+                children = null
+            )
+        }
+
+        // 获取子节点
+        val children = getChildrenStats(projectId, repoName, normalizedPath, depth)
+
+        return PathStatsResult(
+            path = normalizedPath,
+            folder = true,
+            fileCount = rootStats.fileCount,
+            totalSize = rootStats.totalSize,
+            aggregateHash = rootStats.aggregateHash,
+            children = children
+        )
+    }
+
+    /**
+     * 递归获取子节点统计
+     */
+    private fun getChildrenStats(
+        projectId: String,
+        repoName: String,
+        parentPath: String,
+        remainingDepth: Int
+    ): List<PathStatsResult> {
+        if (remainingDepth <= 0) return emptyList()
+
+        // 获取所有直接子节点（循环分页，限制最大数量防止OOM）
+        val directChildren = listAllDirectChildren(projectId, repoName, parentPath, MAX_CHILDREN_FOR_STATS)
+
+        return directChildren.map { child ->
+            if (child.folder) {
+                // 目录：计算统计并递归
+                val stats = calculatePathStatistics(projectId, repoName, child.fullPath)
+                val subChildren = if (remainingDepth > 1) {
+                    getChildrenStats(projectId, repoName, child.fullPath, remainingDepth - 1)
+                } else {
+                    null
+                }
+                PathStatsResult(
+                    path = child.fullPath,
+                    folder = true,
+                    fileCount = stats.fileCount,
+                    totalSize = stats.totalSize,
+                    aggregateHash = stats.aggregateHash,
+                    children = subChildren
+                )
+            } else {
+                // 文件：直接返回
+                PathStatsResult(
+                    path = child.fullPath,
+                    folder = false,
+                    fileCount = 1,
+                    totalSize = child.size,
+                    aggregateHash = child.sha256 ?: "",
+                    sha256 = child.sha256
+                )
+            }
+        }
+    }
+
+    /**
+     * 计算指定路径下的统计信息（文件数、总大小、聚合哈希）
+     */
+    private fun calculatePathStatistics(
+        projectId: String,
+        repoName: String,
+        path: String
+    ): PathStatisticsData {
+        val collectionName = "node_" + HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
+        val normalizedPath = PathUtils.toPath(path)
+
+        // 使用 MongoDB Aggregation 计算统计
+        val matchCriteria = Criteria.where(PROJECT_ID).isEqualTo(projectId)
+            .and(REPO_NAME).isEqualTo(repoName)
+            .and(NODE_PATH).regex("^${EscapeUtils.escapeRegex(normalizedPath)}")
+            .and(FOLDER).isEqualTo(false)
+            .and(DELETED).isEqualTo(null)
+
+        val aggregation = org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation(
+            org.springframework.data.mongodb.core.aggregation.Aggregation.match(matchCriteria),
+            org.springframework.data.mongodb.core.aggregation.Aggregation.sort(
+                org.springframework.data.domain.Sort.Direction.ASC, "sha256"
+            ),
+            org.springframework.data.mongodb.core.aggregation.Aggregation.group()
+                .count().`as`("fileCount")
+                .sum("size").`as`("totalSize")
+                .push("sha256").`as`("sha256List")
+        )
+
+        val result = mongoTemplate.aggregate(aggregation, collectionName, AggregateResult::class.java)
+        val aggregateResult = result.uniqueMappedResult
+
+        if (aggregateResult == null || aggregateResult.fileCount == 0L) {
+            return PathStatisticsData(0, 0, "")
+        }
+
+        // 计算聚合哈希：对所有 sha256 排序后计算 MD5
+        val sortedSha256List = aggregateResult.sha256List?.sorted() ?: emptyList()
+        val aggregateHash = if (sortedSha256List.isEmpty()) {
+            ""
+        } else {
+            calculateMD5(sortedSha256List.joinToString(","))
+        }
+
+        return PathStatisticsData(
+            fileCount = aggregateResult.fileCount,
+            totalSize = aggregateResult.totalSize,
+            aggregateHash = aggregateHash
+        )
+    }
+
+    /**
+     * 计算字符串的 MD5 哈希
+     */
+    private fun calculateMD5(input: String): String {
+        val md = java.security.MessageDigest.getInstance("MD5")
+        val digest = md.digest(input.toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }
+    }
+
+    /**
+     * 聚合查询结果
+     */
+    private data class AggregateResult(
+        val fileCount: Long = 0,
+        val totalSize: Long = 0,
+        val sha256List: List<String>? = null
+    )
+
+    /**
+     * 路径统计数据
+     */
+    data class PathStatisticsData(
+        val fileCount: Long,
+        val totalSize: Long,
+        val aggregateHash: String
+    )
+
+    /**
      * 根据节点信息获取所有block node
      */
     fun listBlockNode(nodeInfo: NodeInfo): List<TBlockNode> {
@@ -602,6 +932,8 @@ class LocalDataManager(
         private const val DELETED = "deleted"
         private const val NODE_PATH = "path"
         private const val FOLDER = "folder"
+        /** 统计时获取子节点的最大数量，防止OOM */
+        private const val MAX_CHILDREN_FOR_STATS = 10000
 
         fun federatedSource(node: NodeInfo): String? {
             val federatedMetadata = node.nodeMetadata?.firstOrNull { it.key == FEDERATED }

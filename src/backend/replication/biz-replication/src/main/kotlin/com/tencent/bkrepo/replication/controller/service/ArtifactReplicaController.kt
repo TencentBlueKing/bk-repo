@@ -52,8 +52,15 @@ import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.enums.FederatedNodeAction
 import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
+import com.tencent.bkrepo.replication.pojo.request.DirectChildrenPage
+import com.tencent.bkrepo.replication.pojo.request.DirectChildrenRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
+import com.tencent.bkrepo.replication.pojo.request.NodeCountRequest
+import com.tencent.bkrepo.replication.pojo.request.NodeCountResult
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
+import com.tencent.bkrepo.replication.pojo.request.PathCountRequest
+import com.tencent.bkrepo.replication.pojo.request.PathStatsRequest
+import com.tencent.bkrepo.replication.pojo.request.PathStatsResult
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.repository.pojo.blocknode.BlockNodeDetail
@@ -81,6 +88,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.tencent.bkrepo.replication.manager.LocalDataManager
 
 /**
  * 集群间数据同步接口
@@ -95,6 +103,7 @@ class ArtifactReplicaController(
     private val userResource: ServiceUserClient,
     private val permissionManager: PermissionManager,
     private val blockNodeService: BlockNodeService,
+    private val localDataManager: LocalDataManager,
 ) : ArtifactReplicaClient {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
@@ -389,6 +398,62 @@ class ArtifactReplicaController(
             )
             return ResponseBuilder.success()
         }
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun countNodes(request: NodeCountRequest): Response<NodeCountResult> {
+        val count = nodeService.countFileNode(
+            ArtifactInfo(request.projectId, request.repoName, request.rootPath)
+        )
+        return ResponseBuilder.success(NodeCountResult(fileCount = count))
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun countPackages(projectId: String, repoName: String): Response<Long> {
+        val count = localDataManager.countPackages(projectId, repoName)
+        return ResponseBuilder.success(count)
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun listPackages(
+        projectId: String, repoName: String,
+        pageNumber: Int, pageSize: Int
+    ): Response<List<Any>> {
+        val packages = localDataManager.listPackagesForDiff(projectId, repoName, pageNumber, pageSize)
+        return ResponseBuilder.success(packages)
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun listDirectChildren(request: DirectChildrenRequest): Response<DirectChildrenPage> {
+        val page = localDataManager.listDirectChildren(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            parentPath = request.parentPath,
+            pageNumber = request.pageNumber,
+            pageSize = request.pageSize
+        )
+        return ResponseBuilder.success(page)
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun countFilesUnderPath(request: PathCountRequest): Response<Long> {
+        val count = localDataManager.countFilesUnderPath(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            path = request.path
+        )
+        return ResponseBuilder.success(count)
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
+    override fun getPathStats(request: PathStatsRequest): Response<PathStatsResult> {
+        val stats = localDataManager.getPathStats(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            rootPath = request.path,
+            depth = request.depth
+        )
+        return ResponseBuilder.success(stats)
     }
 
     private fun buildTBlockNode(request: BlockNodeCreateRequest): TBlockNode {
