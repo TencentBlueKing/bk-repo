@@ -36,6 +36,7 @@ dependencies {
     api(project(":common:common-api"))
     api(project(":common:common-security"))
     api(project(":common:common-mongo"))
+    api(project(":common:common-metrics:metrics-api"))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo.spring30x")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo")

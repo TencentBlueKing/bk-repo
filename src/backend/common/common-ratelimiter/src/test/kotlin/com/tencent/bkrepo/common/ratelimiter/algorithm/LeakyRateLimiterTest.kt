@@ -63,9 +63,9 @@ class LeakyRateLimiterTest {
     @Test
     fun testTryAcquireOnMultiThreads() {
         val ratelimiter = LeakyRateLimiter(5.0, 5)
-        var successNum = 0
-        var failedNum = 0
-        var errorNun = 0
+        val successNum = java.util.concurrent.atomic.AtomicInteger(0)
+        val failedNum = java.util.concurrent.atomic.AtomicInteger(0)
+        val errorNun = java.util.concurrent.atomic.AtomicInteger(0)
         val readers = Runtime.getRuntime().availableProcessors()
         val countDownLatch = CountDownLatch(readers)
         val elapsedTime = measureTimeMillis {
@@ -74,12 +74,12 @@ class LeakyRateLimiterTest {
                     try {
                         val passed = ratelimiter.tryAcquire(1)
                         if (passed) {
-                            successNum++
+                            successNum.incrementAndGet()
                         } else {
-                            failedNum++
+                            failedNum.incrementAndGet()
                         }
                     } catch (e: Exception) {
-                        errorNun++
+                        errorNun.incrementAndGet()
                     }
                     countDownLatch.countDown()
                 }
@@ -87,5 +87,8 @@ class LeakyRateLimiterTest {
         }
         countDownLatch.await()
         println("elapse: ${HumanReadable.time(elapsedTime, TimeUnit.MILLISECONDS)}")
+        Assertions.assertEquals(0, errorNun.get())
+        Assertions.assertEquals(readers, successNum.get() + failedNum.get())
+        Assertions.assertTrue(successNum.get() <= 5)
     }
 }

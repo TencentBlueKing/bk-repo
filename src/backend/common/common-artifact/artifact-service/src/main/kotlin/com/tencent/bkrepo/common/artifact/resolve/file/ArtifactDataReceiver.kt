@@ -200,6 +200,7 @@ class ArtifactDataReceiver(
                 length.toLong(),
                 receiveProperties.circuitBreakerThreshold
             )
+            requestLimitCheckService?.uploadEvictCheck(startTime)
             writeData(chunk, offset, length)
         } catch (exception: IOException) {
             handleIOException(exception)
@@ -221,6 +222,7 @@ class ArtifactDataReceiver(
             requestLimitCheckService?.uploadBandwidthCheck(
                 1, receiveProperties.circuitBreakerThreshold
             )
+            requestLimitCheckService?.uploadEvictCheck(startTime)
             checkFallback()
             outputStream.write(b)
             listener.data(b)
@@ -254,6 +256,7 @@ class ArtifactDataReceiver(
                 input.use {
                     var bytes = input.read(buffer)
                     while (bytes >= 0) {
+                        requestLimitCheckService?.uploadEvictCheck(startTime)
                         writeData(buffer, 0, bytes)
                         bytes = input.read(buffer)
                     }
