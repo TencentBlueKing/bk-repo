@@ -120,16 +120,20 @@ abstract class AbstractEncryptorFileStorage<Credentials : StorageCredentials, Cl
     }
 
     override fun copy(
-        path: String,
-        name: String,
+        fromPath: String,
+        fromName: String,
+        toPath: String,
+        toName: String,
         fromCredentials: StorageCredentials,
         toCredentials: StorageCredentials
     ) {
         if (!fromCredentials.encrypt.enabled) {
-            return super.copy(path, name, fromCredentials, toCredentials)
+            return super.copy(fromPath, fromName, toPath, toName, fromCredentials, toCredentials)
         }
-        val newName = getEncryptName(name, fromCredentials)
-        super.copy(path, newName, fromCredentials, toCredentials)
+        val newFromName = getEncryptName(fromName, fromCredentials)
+        // 复制前后都是使用源存储的加密算法，因此使用原存储获取加密后文件名
+        val newToName = getEncryptName(toName, fromCredentials)
+        super.copy(fromPath, newFromName, toPath, newToName, fromCredentials, toCredentials)
     }
 
     /**

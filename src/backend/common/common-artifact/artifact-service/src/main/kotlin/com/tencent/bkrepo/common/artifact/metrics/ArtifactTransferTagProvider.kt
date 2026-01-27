@@ -27,7 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
-import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactDataReceiver
+import com.tencent.bkrepo.common.artifact.resolve.file.receiver.AbsArtifactDataReceiver
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import io.micrometer.core.instrument.Tag
 
@@ -37,5 +37,5 @@ import io.micrometer.core.instrument.Tag
 interface ArtifactTransferTagProvider {
     fun getTags(): Iterable<Tag>
     fun getTags(inputStream: ArtifactInputStream, includeRepoInfo: Boolean = false): Iterable<Tag>
-    fun getTags(receiver: ArtifactDataReceiver, includeRepoInfo: Boolean = false): Iterable<Tag>
+    fun getTags(receiver: AbsArtifactDataReceiver, includeRepoInfo: Boolean = false): Iterable<Tag>
 }

@@ -40,6 +40,7 @@ const val PARAMETER_PART_NUMBER = "partnumber"
 const val PARAMETER_UPLOADS = "uploads"
 const val PARAMETER_RESTORE = "restore"
 const val COS_COPY_SOURCE = "x-cos-copy-source"
+const val COS_FORBID_OVERWRITE = "x-cos-forbid-overwrite"
 
 const val RESPONSE_UPLOAD_ID = "UploadId"
 const val RESPONSE_LAST_MODIFIED = "LastModified"
