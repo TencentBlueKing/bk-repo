@@ -155,7 +155,11 @@ abstract class NodeBaseService(
             Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
             Preconditions.checkArgument(pageSize >= 0 && pageSize <= repositoryProperties.listCountLimit, "pageSize")
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
-            val totalRecords = getTotalNodeNum(artifact, query)
+            val totalRecords = if (option.includeTotalRecords) {
+                getTotalNodeNum(artifact, query)
+            } else {
+                0L
+            }
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val records = nodeDao.find(query.with(pageRequest)).map { convert(it)!! }
             return Pages.ofResponse(pageRequest, totalRecords, records)
