@@ -31,6 +31,7 @@ import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.readJsonString
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
@@ -77,6 +78,7 @@ class CenterRepositoryServiceImpl(
     servicePermissionClient: ServicePermissionClient,
     private val resourceClearService: ObjectProvider<ResourceClearService>,
     private val clusterProperties: ClusterProperties,
+    permissionManager: PermissionManager
 ) : RepositoryServiceImpl(
     repositoryDao,
     projectService,
@@ -84,7 +86,8 @@ class CenterRepositoryServiceImpl(
     proxyChannelService,
     messageSupplier,
     servicePermissionClient,
-    resourceClearService
+    resourceClearService,
+    permissionManager
 ) {
     override fun buildTRepository(
         request: RepoCreateRequest,

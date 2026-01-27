@@ -30,6 +30,7 @@ package com.tencent.bkrepo.common.metadata.service.repo.impl
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.readJsonString
@@ -118,7 +119,8 @@ class RepositoryServiceImpl(
     private val proxyChannelService: ProxyChannelService,
     private val messageSupplier: MessageSupplier,
     private val servicePermissionClient: ServicePermissionClient,
-    private val resourceClearService: ObjectProvider<ResourceClearService>
+    private val resourceClearService: ObjectProvider<ResourceClearService>,
+    private val permissionManager: PermissionManager
 ) : RepositoryService {
 
     override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
@@ -169,6 +171,9 @@ class RepositoryServiceImpl(
         projectId: String,
         option: RepoListOption,
     ): List<RepositoryInfo> {
+        // 判断用户是否为管理员
+        val isAdmin = permissionManager.isAdminUser(userId)
+        
         var names = servicePermissionClient.listPermissionRepo(
             projectId = projectId,
             userId = userId,
@@ -177,7 +182,7 @@ class RepositoryServiceImpl(
         if (!option.name.isNullOrBlank()) {
             names = names.filter { it.startsWith(option.name.orEmpty(), true) }
         }
-        val query = buildListPermissionRepoQuery(projectId, names, option)
+        val query = buildListPermissionRepoQuery(projectId, names, option, isAdmin)
         val originResults = repositoryDao.find(query).map { convertToInfo(it)!! }
         val originNames = originResults.map { it.name }.toSet()
         var includeResults = emptyList<RepositoryInfo>()
