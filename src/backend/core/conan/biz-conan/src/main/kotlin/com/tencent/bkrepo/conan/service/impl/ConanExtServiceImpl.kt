@@ -268,7 +268,8 @@ class ConanExtServiceImpl(
                 pageSize = properties.pageSize,
                 includeFolder = true,
                 includeMetadata = false,
-                deep = false
+                deep = false,
+                includeTotalRecords = false
             )
             val records =
                 nodeService.listNodePage(

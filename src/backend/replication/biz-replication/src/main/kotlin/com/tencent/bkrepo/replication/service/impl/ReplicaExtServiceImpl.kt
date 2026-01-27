@@ -301,7 +301,8 @@ class ReplicaExtServiceImpl(
                 includeFolder = false,
                 deep = true,
                 pageNumber = pageNumber,
-                pageSize = pageSize
+                pageSize = pageSize,
+                includeTotalRecords = false
             )
             nodeService.listNodePage(
                 ArtifactInfo(projectId, repoName, PathUtils.UNIX_SEPARATOR.toString()),

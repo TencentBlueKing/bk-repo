@@ -184,7 +184,8 @@ class TrivyScanExecutor @Autowired constructor(
             includeFolder = false,
             includeMetadata = true,
             sortProperty = listOf("lastModifiedDate", "createdDate"),
-            direction = listOf(Sort.Direction.DESC.name, Sort.Direction.DESC.name)
+            direction = listOf(Sort.Direction.DESC.name, Sort.Direction.DESC.name),
+            includeTotalRecords = false
         )
         val nodeRes = nodeService.listNodePage(ArtifactInfo(projectId, repo, "/trivy"), option)
         // 获取最新的trivy.db
