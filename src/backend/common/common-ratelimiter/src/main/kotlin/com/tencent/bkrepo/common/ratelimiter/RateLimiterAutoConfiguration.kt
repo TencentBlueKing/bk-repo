@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.ratelimiter
 
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
+import com.tencent.bkrepo.common.ratelimiter.interceptor.ConnectionLimitInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.NonUserRateLimitHandlerInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.UserRateLimitHandlerInterceptor
 import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
@@ -35,6 +36,10 @@ import com.tencent.bkrepo.common.ratelimiter.repository.RateLimitRepository
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UploadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserDownloadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserUploadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.connection.ServiceInstanceConnectionLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.ip.IpRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRepoRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRateLimiterService
@@ -45,6 +50,7 @@ import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserDownloadUsag
 import com.tencent.bkrepo.common.ratelimiter.service.usage.user.UserUploadUsageRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.user.RateLimiterConfigService
 import io.micrometer.core.instrument.MeterRegistry
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -69,8 +75,28 @@ class RateLimiterAutoConfiguration {
     }
 
     @Bean
-    fun rateLimiterMetrics(registry: MeterRegistry): RateLimiterMetrics {
-        return RateLimiterMetrics(registry)
+    fun rateLimiterMetrics(
+        registry: MeterRegistry,
+        connectionLimiterServiceProvider: ObjectProvider<ServiceInstanceConnectionLimiterService>
+    ): RateLimiterMetrics {
+        return RateLimiterMetrics(registry, connectionLimiterServiceProvider)
+    }
+
+    @Bean(IP_RATELIMITER_SERVICE)
+    fun ipRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>,
+        rateLimiterConfigService: RateLimiterConfigService
+    ): IpRateLimiterService {
+        return IpRateLimiterService(
+            taskScheduler,
+            rateLimiterProperties,
+            rateLimiterMetrics,
+            redisTemplate,
+            rateLimiterConfigService
+        )
     }
 
     @Bean(URL_REPO_RATELIMITER_SERVICE)
@@ -223,6 +249,32 @@ class RateLimiterAutoConfiguration {
         )
     }
 
+    @Bean(USER_UPLOAD_BANDWIDTH_RATELIMITER_SERVICE)
+    fun userUploadBandwidthRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>,
+        rateLimiterConfigService: RateLimiterConfigService
+    ): UserUploadBandwidthRateLimiterService {
+        return UserUploadBandwidthRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService
+        )
+    }
+
+    @Bean(USER_DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE)
+    fun userDownloadBandwidthRateLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>,
+        rateLimiterConfigService: RateLimiterConfigService
+    ): UserDownloadBandwidthRateLimiterService {
+        return UserDownloadBandwidthRateLimiterService(
+            taskScheduler, rateLimiterProperties, rateLimiterMetrics, redisTemplate, rateLimiterConfigService
+        )
+    }
+
     @Bean
     fun requestLimitCheckService(
         rateLimiterProperties: RateLimiterProperties,
@@ -230,13 +282,36 @@ class RateLimiterAutoConfiguration {
         return RequestLimitCheckService(rateLimiterProperties)
     }
 
+    @Bean(SERVICE_INSTANCE_CONNECTION_RATELIMITER_SERVICE)
+    fun serviceInstanceConnectionLimiterService(
+        taskScheduler: ThreadPoolTaskScheduler,
+        rateLimiterProperties: RateLimiterProperties,
+        rateLimiterMetrics: RateLimiterMetrics,
+        redisTemplate: RedisTemplate<String, String>,
+        rateLimiterConfigService: RateLimiterConfigService
+    ): ServiceInstanceConnectionLimiterService {
+        return ServiceInstanceConnectionLimiterService(
+            taskScheduler,
+            rateLimiterProperties,
+            rateLimiterMetrics,
+            redisTemplate,
+            rateLimiterConfigService
+        )
+    }
+
     @Bean
     @ConditionalOnWebApplication
     fun rateLimitHandlerInterceptorRegister(
-        requestLimitCheckService: RequestLimitCheckService
+        requestLimitCheckService: RequestLimitCheckService,
+        connectionLimiterService: ServiceInstanceConnectionLimiterService
     ): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addInterceptors(registry: InterceptorRegistry) {
+                // 服务实例连接数限流拦截器，优先级最高
+                registry.addInterceptor(ConnectionLimitInterceptor(connectionLimiterService))
+                    .excludePathPatterns("/service/**", "/replica/**", "/actuator/**")
+                    .order(Ordered.HIGHEST_PRECEDENCE - 1)
+
                 // 不需要用户校验的限流拦截器，应在HttpAuthInterceptor之前执行
                 registry.addInterceptor(
                     NonUserRateLimitHandlerInterceptor(
@@ -245,7 +320,7 @@ class RateLimiterAutoConfiguration {
                 )
                     .excludePathPatterns("/service/**", "/replica/**")
                     .order(Ordered.HIGHEST_PRECEDENCE)
-                
+
                 // 需要用户校验的限流拦截器，应在HttpAuthInterceptor之后执行
                 // HttpAuthInterceptor默认order为0，所以用户态拦截器使用1
                 registry.addInterceptor(
@@ -255,7 +330,7 @@ class RateLimiterAutoConfiguration {
                 )
                     .excludePathPatterns("/service/**", "/replica/**")
                     .order(1)
-                
+
                 super.addInterceptors(registry)
             }
         }
@@ -263,8 +338,11 @@ class RateLimiterAutoConfiguration {
 
 
     companion object {
+        const val IP_RATELIMITER_SERVICE = "ipRateLimiterService"
         const val DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE = "downloadBandwidthRateLimiterService"
         const val UPLOAD_BANDWIDTH_RATELIMITER_ERVICE = "uploadBandwidthRateLimiterService"
+        const val USER_UPLOAD_BANDWIDTH_RATELIMITER_SERVICE = "userUploadBandwidthRateLimiterService"
+        const val USER_DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE = "userDownloadBandwidthRateLimiterService"
         const val USER_URL_RATELIMITER_SERVICE = "userUrlRateLimiterService"
         const val USER_UPLOAD_USAGE_RATELIMITER_SERVICE = "userUploadUsageRateLimiterService"
         const val USER_DOWNLOAD_USAGE_RATELIMITER_SERVICE = "userDownloadUsageRateLimiterService"
@@ -273,7 +351,7 @@ class RateLimiterAutoConfiguration {
         const val URL_RATELIMITER_SERVICE = "urlRateLimiterService"
         const val URL_REPO_RATELIMITER_SERVICE = "urlRepoRateLimiterService"
         const val USER_URL_REPO_RATELIMITER_SERVICE = "userUrlRepoRateLimiterService"
-
+        const val SERVICE_INSTANCE_CONNECTION_RATELIMITER_SERVICE = "serviceInstanceConnectionLimiterService"
     }
 
 }

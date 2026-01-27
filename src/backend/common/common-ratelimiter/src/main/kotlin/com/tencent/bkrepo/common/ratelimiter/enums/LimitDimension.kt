@@ -41,4 +41,8 @@ enum class LimitDimension {
     USER_DOWNLOAD_USAGE,  // 针对指定用户下载总大小进行限流
     UPLOAD_BANDWIDTH, // 针对项目维度上传带宽进行限流
     DOWNLOAD_BANDWIDTH, // 针对项目维度下载带宽进行限流
+    USER_UPLOAD_BANDWIDTH, // 针对指定用户上传带宽进行限流
+    USER_DOWNLOAD_BANDWIDTH, // 针对指定用户下载带宽进行限流
+    SERVICE_INSTANCE_CONNECTION, // 针对服务实例的并发连接数进行限流
+    IP, // 针对IP地址进行限流（防止单个IP恶意请求）
 }
