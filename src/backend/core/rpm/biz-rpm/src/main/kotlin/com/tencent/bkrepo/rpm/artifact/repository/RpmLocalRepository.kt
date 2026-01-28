@@ -762,14 +762,14 @@ class RpmLocalRepository(
                 includeFolder = false,
                 includeMetadata = true,
                 deep = false,
-                sort = false
+                sort = false,
+                includeTotalRecords = false
             )
             val nodeInfoPage =
                 nodeService.listNodePage(ArtifactInfo(repo.projectId, repo.name, rpmNodePath), nodeListOption)
             if (nodeInfoPage.records.isEmpty()) break@loop
             logger.info(
-                "populatePackage: found ${nodeInfoPage.records.size}," +
-                    " totalRecords: ${nodeInfoPage.totalRecords}"
+                "populatePackage: found ${nodeInfoPage.records.size}"
             )
             val rpmNodeList = nodeInfoPage.records.filter { it.name.endsWith(".rpm") }
             for (nodeInfo in rpmNodeList) {

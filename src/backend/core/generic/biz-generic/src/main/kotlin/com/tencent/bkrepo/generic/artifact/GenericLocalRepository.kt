@@ -540,13 +540,11 @@ class GenericLocalRepository(
                     projectId = projectId,
                     repoName = repoName,
                     paths = fullPathList,
-                    prefix = commonParent
                 )
             val notExistNodes = fullPathList.subtract(nodes.map { it.fullPath })
             if (notExistNodes.isNotEmpty()) {
                 throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
             }
-            nodes.filter { !it.folder }.forEach { downloadIntercept(this, it) }
             val (folderNodes, fileNodes) = nodes.partition { it.folder }
             // 添加所有目录节点的子节点, 检查文件数量和大小总和, 下载拦截
             val allNodes = getSubNodes(
@@ -556,6 +554,7 @@ class GenericLocalRepository(
                 initialCount = fileNodes.size.toLong(),
                 initialSize = fileNodes.sumOf { it.size }
             ) + nodes
+            allNodes.filter { !it.folder }.forEach { downloadIntercept(this, it) }
             // 通过给每个ZipEntry.name添加或移除公共前缀, 改变zip包内的目录结构
             // 如果多个节点没有公共目录，例如下载/file1和/file2时, 根据repoName添加公共前缀, 给zip包添加一个以repoName命名的顶层目录
             // 目的是保证zip包解压缩出来只有1个目录, 没有顶层目录时, 有些解压缩工具有可能会直接在当前目录解压出多个文件或目录
@@ -588,7 +587,21 @@ class GenericLocalRepository(
         initialCount: Long = 0,
         initialSize: Long = 0
     ): List<NodeDetail> {
+        // 先计算所有目录的总大小和文件数,提前校验避免无效的分页查询
+        var totalCount = initialCount
         var totalSize = initialSize
+        folders.forEach { folder ->
+            val sizeInfo = nodeService.computeSize(
+                ArtifactInfo(folder.projectId, folder.repoName, folder.fullPath)
+            )
+            val fileCount = if (includeFolder) sizeInfo.subNodeCount else sizeInfo.subNodeWithoutFolderCount
+            totalCount += fileCount
+            totalSize += sizeInfo.size
+            checkFileCount(totalCount)
+            checkFileTotalSize(totalSize)
+        }
+
+        // 校验通过后再执行实际分页查询
         val nodes = mutableListOf<NodeDetail>()
         folders.forEach { folder ->
             var pageNumber = 1
@@ -598,16 +611,14 @@ class GenericLocalRepository(
                     pageSize = PAGE_SIZE,
                     includeFolder = includeFolder,
                     includeMetadata = true,
-                    deep = true
+                    deep = true,
+                    includeTotalRecords = false
                 )
                 val records =
                     nodeService.listNodePage(ArtifactInfo(folder.projectId, folder.repoName, folder.fullPath), option)
                         .records.takeUnless { it.isEmpty() }?.map { NodeDetail(it) } ?: break
                 records.filterNot { it.folder }.forEach { downloadIntercept(context, it) }
-                totalSize += records.sumOf { it.size }
-                checkFileTotalSize(totalSize)
                 nodes.addAll(records)
-                checkFileCount(initialCount + nodes.size)
                 pageNumber++
             } while (records.size == PAGE_SIZE)
         }
@@ -618,28 +629,10 @@ class GenericLocalRepository(
         projectId: String,
         repoName: String,
         paths: List<String>,
-        prefix: String
     ): List<NodeDetail> {
-        var pageNumber = 1
-        val nodeDetailList = mutableListOf<NodeDetail>()
-        do {
-            val option = NodeListOption(
-                pageNumber = pageNumber,
-                pageSize = PAGE_SIZE,
-                includeFolder = true,
-                includeMetadata = true,
-                deep = true
-            )
-            val records = nodeService.listNodePage(ArtifactInfo(projectId, repoName, prefix), option).records
-            if (records.isEmpty()) {
-                break
-            }
-            nodeDetailList.addAll(
-                records.filter { paths.contains(it.fullPath) }.map { NodeDetail(it) }
-            )
-            pageNumber++
-        } while (nodeDetailList.size < paths.size)
-        return nodeDetailList
+        return paths.distinct().mapNotNull {
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, it))
+        }
     }
 
     /**
