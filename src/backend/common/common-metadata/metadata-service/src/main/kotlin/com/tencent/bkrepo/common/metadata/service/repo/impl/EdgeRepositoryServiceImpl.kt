@@ -62,7 +62,7 @@ class EdgeRepositoryServiceImpl(
     servicePermissionClient: ServicePermissionClient,
     resourceClearService: ObjectProvider<ResourceClearService>,
     clusterProperties: ClusterProperties,
-    permissionManager: PermissionManager
+    permissionManager: ObjectProvider<PermissionManager>
 ) : RepositoryServiceImpl(
     repositoryDao,
     projectService,

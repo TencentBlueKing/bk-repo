@@ -78,7 +78,7 @@ class CenterRepositoryServiceImpl(
     servicePermissionClient: ServicePermissionClient,
     private val resourceClearService: ObjectProvider<ResourceClearService>,
     private val clusterProperties: ClusterProperties,
-    permissionManager: PermissionManager
+    permissionManager: ObjectProvider<PermissionManager>
 ) : RepositoryServiceImpl(
     repositoryDao,
     projectService,

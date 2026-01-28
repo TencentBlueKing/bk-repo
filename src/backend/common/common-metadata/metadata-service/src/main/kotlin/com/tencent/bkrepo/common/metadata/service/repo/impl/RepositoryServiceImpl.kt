@@ -120,7 +120,7 @@ class RepositoryServiceImpl(
     private val messageSupplier: MessageSupplier,
     private val servicePermissionClient: ServicePermissionClient,
     private val resourceClearService: ObjectProvider<ResourceClearService>,
-    private val permissionManager: PermissionManager
+    private val permissionManager: ObjectProvider<PermissionManager>
 ) : RepositoryService {
 
     override fun getRepoInfo(projectId: String, name: String, type: String?): RepositoryInfo? {
@@ -172,7 +172,7 @@ class RepositoryServiceImpl(
         option: RepoListOption,
     ): List<RepositoryInfo> {
         // 判断用户是否为管理员
-        val isAdmin = permissionManager.isAdminUser(userId)
+        val isAdmin = permissionManager.ifAvailable?.isAdminUser(userId) ?: false
         
         var names = servicePermissionClient.listPermissionRepo(
             projectId = projectId,
