@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.artifact.metrics
 
+import com.tencent.bkrepo.common.artifact.metrics.export.ArtifactBandwidthExporter
 import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.Timer
 import java.time.Duration
@@ -34,13 +35,32 @@ import java.time.Duration
 /**
  * 流量处理器
  * */
-class TrafficHandler(private val counters: List<Counter>, private val timer: Timer) {
+class TrafficHandler(
+    private val counters: List<Counter>,
+    private val timer: Timer,
+    private val transferType: TransferType = TransferType.UPLOAD,
+) {
     /**
      * @param size 数据大小
      * @param elapse 处理耗时
-     * */
+     */
     fun record(size: Int, elapse: Duration) {
+        // 原有的 Micrometer Counter 记录
         counters.forEach { it.increment(size.toDouble()) }
         timer.record(elapse)
+
+        // 新增：流量聚合记录（用于主动上报）
+        when (transferType) {
+            TransferType.UPLOAD -> ArtifactBandwidthExporter.recordUpload(size)
+            TransferType.DOWNLOAD -> ArtifactBandwidthExporter.recordDownload(size)
+        }
+    }
+
+    /**
+     * 传输类型
+     */
+    enum class TransferType {
+        UPLOAD,
+        DOWNLOAD
     }
 }
