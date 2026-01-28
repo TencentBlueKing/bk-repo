@@ -19,7 +19,9 @@
         </div>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
-            <textarea v-model="basicFileText" class="textarea" readonly></textarea>
+            <div style="height: 700px; width: 100%">
+                <textarea v-model="basicFileText" class="textarea" readonly></textarea>
+            </div>
         </div>
         <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
@@ -54,6 +56,27 @@
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.isEvalSupported = false
     PDFJS.GlobalWorkerOptions.workerSrc = location.origin + window.BK_SUBPATH + 'ui/pdf.worker.js'
+
+    function setTextareaHeight () {
+        const textarea = document.querySelector('.textarea')
+        if (textarea) {
+            const devicePixelRatio = window.devicePixelRatio || 1
+            textarea.style.height = (700 / devicePixelRatio) + 'px'
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', setTextareaHeight)
+    } else {
+        setTextareaHeight()
+    }
+
+    let resizeTimer
+
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer)
+        resizeTimer = setTimeout(setTextareaHeight, 250)
+    })
 
     export default {
         name: 'FilePreview',
@@ -131,6 +154,9 @@
                     }).then(res => {
                         this.loading = false
                         this.previewBasic = true
+                        this.$nextTick(() => {
+                            setTextareaHeight()
+                        })
                         this.basicFileText = res
                     }).catch(() => this.showError())
                 } else {
@@ -148,6 +174,9 @@
                 }).then(res => {
                     this.loading = false
                     this.previewBasic = true
+                    this.$nextTick(() => {
+                        setTextareaHeight()
+                    })
                     this.basicFileText = typeof (res) === 'string' ? res : JSON.stringify(res)
                 }).catch(() => this.showError())
             } else if (isExcel(this.filePath)) {
@@ -333,7 +362,8 @@
                         this.renderPage(num + 1)
                     }
                 })
-            }
+            },
+
         }
     }
 </script>
@@ -376,8 +406,7 @@ canvas {
 .textarea {
     resize: none;
     width: 100%;
-    height: 700px;
-    max-height: 700px;
+    height: 100%;
     overflow-y: auto;
     border: 1px solid #ccc;
     padding: 0 5px;
