@@ -167,9 +167,11 @@
                     <bk-table-column :label="$t('createdBy')" width="150" show-overflow-tooltip>
                         <template #default="{ row }">
                             <bk-user-display-name v-if="multiMode" :user-id="userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy"></bk-user-display-name>
-                            <span v-else> {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}</span>                        </template>
+                            <span v-else> {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
+                            </span>
+                        </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('operation')" width="100">
+                    <bk-table-column :label="$t('operation')" width="100" fixed="right">
                         <template #default="{ row }">
                             <operation-list
                                 :list="[

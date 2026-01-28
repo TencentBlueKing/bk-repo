@@ -178,6 +178,10 @@ class RRepositoryServiceImpl(
         projectId: String,
         option: RepoListOption,
     ): List<RepositoryInfo> {
+        // 判断用户是否为管理员
+        val userInfo = rAuthClient.detail(userId).awaitSingle().data
+        val isAdmin = userInfo?.admin ?: false
+        
         var names = rAuthClient.listPermissionRepo(
             projectId = projectId,
             userId = userId,
@@ -186,7 +190,7 @@ class RRepositoryServiceImpl(
         if (!option.name.isNullOrBlank()) {
             names = names.filter { it.startsWith(option.name.orEmpty(), true) }
         }
-        val query = buildListPermissionRepoQuery(projectId, names, option)
+        val query = buildListPermissionRepoQuery(projectId, names, option, isAdmin)
         val originResults = repositoryDao.find(query).map { convertToInfo(it)!! }
         val originNames = originResults.map { it.name }.toSet()
         var includeResults = emptyList<RepositoryInfo>()

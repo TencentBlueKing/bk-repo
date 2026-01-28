@@ -42,6 +42,7 @@ dependencies {
     api(project(":archive:api-archive"))
     api(project(":driver:api-driver"))
 
+    compileOnly(project(":analyst:api-analyst"))
     compileOnly(project(":common:common-mongo-reactive"))
     compileOnly(project(":common:common-mongo"))
     compileOnly(project(":common:common-service:service-servlet"))

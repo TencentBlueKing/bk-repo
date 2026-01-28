@@ -116,6 +116,8 @@
     "dependencies": "依赖",
     "tag": "tag",
     "user": "用户",
+    "loadMore": "展开全部（共{0}个）",
+    "collapse": "收起",
     "org": "组织架构",
     "loadMore": "加载更多",
     "createFolderLabel": "文件夹路径",
@@ -969,5 +971,7 @@
     "guideWindowsTitle": "Windows 系统设置指引",
     "guideWindowsDescription": "在终端中执行以下命令：",
     "targetPath": "目标路径",
-    "targetPathPlaceholder": "请输入目标路径"
+    "targetPathPlaceholder": "请输入目标路径",
+    "model": "模型",
+    "dataset": "数据集"
 }

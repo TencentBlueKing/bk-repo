@@ -116,7 +116,8 @@
     "dependencies": "Dependencies",
     "tag": "Tag",
     "user": "User",
-    "loadMore": "加载更多",
+    "loadMore": "Expand all ({0} total)",
+    "collapse": "collapse",
     "createFolderLabel": "Folder Path",
     "username": "Username",
     "account": "Account",
@@ -966,5 +967,7 @@
     "guideWindowsTitle": "Windows Setup Guide",
     "guideWindowsDescription": "Execute the following commands in terminal:",
     "targetPath": "Target Path",
-    "targetPathPlaceholder": "Please enter target path"
+    "targetPathPlaceholder": "Please enter target path",
+    "model": "Model",
+    "dataset": "Dataset"
 }

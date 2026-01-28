@@ -20,7 +20,9 @@ const VersionLogs = [
     'V1.4.1-beta.3.md',
     'V1.4.1-beta.4.md',
     'V1.5.1-beta.3.md',
-    'V1.5.2-rc.1.md'
+    'V1.5.2-rc.1.md',
+    'V3.1.0-rc.1.md',
+    'V3.2.2-beta.2.md'
 ]
 
 // 返回实际所有排序版本（注：版本号务必正确,不检查文件是否存在）

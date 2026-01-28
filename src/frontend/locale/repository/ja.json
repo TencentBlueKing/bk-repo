@@ -116,7 +116,8 @@
   "dependencies": "依存関係",
   "tag": "タグ",
   "user": "ユーザー",
-  "loadMore": "さらに読み込む",
+  "loadMore": "すべて展開（{0}件）",
+  "collapse": "折りたたむ",
   "createFolderLabel": "フォルダパス",
   "username": "ユーザー名",
   "account": "アカウント",
@@ -968,5 +969,7 @@
   "guideWindowsTitle": "Windowsシステム設定ガイド",
   "guideWindowsDescription": "ターミナルで以下のコマンドを実行してください：",
   "targetPath": "ターゲットパス",
-  "targetPathPlaceholder": "ターゲットパスを入力してください"
+  "targetPathPlaceholder": "ターゲットパスを入力してください",
+  "model": "モデル",
+  "dataset": "データセット"
 }
