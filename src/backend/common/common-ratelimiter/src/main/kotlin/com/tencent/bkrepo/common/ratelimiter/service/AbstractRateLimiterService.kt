@@ -43,6 +43,7 @@ import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.exception.AcquireLockFailedException
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.interceptor.MonitorRateLimiterInterceptorAdaptor
+import com.tencent.bkrepo.common.ratelimiter.interceptor.OperationRateLimiterInterceptorAdaptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptor
 import com.tencent.bkrepo.common.ratelimiter.interceptor.RateLimiterInterceptorChain
 import com.tencent.bkrepo.common.ratelimiter.interceptor.TargetRateLimiterInterceptorAdaptor
@@ -50,9 +51,13 @@ import com.tencent.bkrepo.common.ratelimiter.metrics.RateLimiterMetrics
 import com.tencent.bkrepo.common.ratelimiter.rule.RateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.DownloadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.UploadBandwidthRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.user.UserDownloadBandwidthRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.bandwidth.user.UserUploadBandwidthRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResLimitInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
+import com.tencent.bkrepo.common.ratelimiter.rule.connection.ServiceInstanceConnectionRateLimitRule
+import com.tencent.bkrepo.common.ratelimiter.rule.ip.IpRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.url.UrlRepoRateLimitRule
 import com.tencent.bkrepo.common.ratelimiter.rule.url.user.UserUrlRateLimitRule
@@ -95,11 +100,15 @@ abstract class AbstractRateLimiterService(
     // 资源对应限限流算法缓存
     var rateLimiterCache: ConcurrentHashMap<String, RateLimiter> = ConcurrentHashMap(256)
 
+    // 限流检查耗时记录
+    private val checkStartTime = ThreadLocal<Long>()
+
     val interceptorChain: RateLimiterInterceptorChain =
         RateLimiterInterceptorChain(
             mutableListOf(
                 MonitorRateLimiterInterceptorAdaptor(rateLimiterMetrics),
-                TargetRateLimiterInterceptorAdaptor(rateLimiterConfigService)
+                TargetRateLimiterInterceptorAdaptor(rateLimiterConfigService),
+                OperationRateLimiterInterceptorAdaptor(rateLimiterMetrics)
             )
         )
 
@@ -362,6 +371,10 @@ abstract class AbstractRateLimiterService(
             DownloadBandwidthRateLimitRule::class.java -> DownloadBandwidthRateLimitRule()
             UrlRepoRateLimitRule::class.java -> UrlRepoRateLimitRule()
             UserUrlRepoRateLimitRule::class.java -> UserUrlRepoRateLimitRule()
+            UserUploadBandwidthRateLimitRule::class.java -> UserUploadBandwidthRateLimitRule()
+            UserDownloadBandwidthRateLimitRule::class.java -> UserDownloadBandwidthRateLimitRule()
+            IpRateLimitRule::class.java -> IpRateLimitRule()
+            ServiceInstanceConnectionRateLimitRule::class.java -> ServiceInstanceConnectionRateLimitRule()
             else -> null
         }
     }
@@ -383,6 +396,9 @@ abstract class AbstractRateLimiterService(
         resLimitInfo: ResLimitInfo,
         circuitBreakerPerSecond: Long? = null,
     ): Pair<RateLimiter, Long> {
+        // 记录开始时间用于性能监控
+        checkStartTime.set(System.nanoTime())
+
         with(resLimitInfo) {
             val realPermits = getApplyPermits(request, applyPermits)
             interceptorChain.doBeforeLimitCheck(resource, resourceLimit)
@@ -397,6 +413,14 @@ abstract class AbstractRateLimiterService(
         pass: Boolean,
         exception: Exception? = null,
     ) {
+        // 记录限流检查耗时
+        val startTime = checkStartTime.get()
+        if (startTime != null) {
+            val duration = System.nanoTime() - startTime
+            // 此处可通过interceptor记录到RateLimiterMetrics
+            checkStartTime.remove()
+        }
+
         with(resLimitInfo) {
             interceptorChain.doAfterLimitCheck(resource, resourceLimit, pass, exception)
         }

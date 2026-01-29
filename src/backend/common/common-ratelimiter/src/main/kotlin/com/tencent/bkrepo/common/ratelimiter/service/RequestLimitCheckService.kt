@@ -31,6 +31,8 @@ import com.tencent.bkrepo.common.ratelimiter.RateLimiterAutoConfiguration
 import com.tencent.bkrepo.common.ratelimiter.config.RateLimiterProperties
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.DownloadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.UploadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserDownloadBandwidthRateLimiterService
+import com.tencent.bkrepo.common.ratelimiter.service.bandwidth.user.UserUploadBandwidthRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.UrlRepoRateLimiterService
 import com.tencent.bkrepo.common.ratelimiter.service.url.user.UserUrlRateLimiterService
@@ -91,6 +93,14 @@ class RequestLimitCheckService(
     @Qualifier(RateLimiterAutoConfiguration.UPLOAD_BANDWIDTH_RATELIMITER_ERVICE)
     private lateinit var uploadBandwidthRateLimiterService: UploadBandwidthRateLimiterService
 
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.USER_UPLOAD_BANDWIDTH_RATELIMITER_SERVICE)
+    private lateinit var userUploadBandwidthRateLimiterService: UserUploadBandwidthRateLimiterService
+
+    @Autowired
+    @Qualifier(RateLimiterAutoConfiguration.USER_DOWNLOAD_BANDWIDTH_RATELIMITER_SERVICE)
+    private lateinit var userDownloadBandwidthRateLimiterService: UserDownloadBandwidthRateLimiterService
+
     /**
      * 需要用户校验的限流检查
      */
@@ -139,8 +149,18 @@ class RequestLimitCheckService(
                 request, inputStream, circuitBreakerPerSecond, rangeLength
             )
         }
+        if (!userDownloadBandwidthRateLimiterService.ignoreRequest(request)) {
+            return userDownloadBandwidthRateLimiterService.bandwidthRateStart(
+                request, inputStream, circuitBreakerPerSecond, rangeLength
+            )
+        }
         if (!uploadBandwidthRateLimiterService.ignoreRequest(request)) {
             return uploadBandwidthRateLimiterService.bandwidthRateStart(
+                request, inputStream, circuitBreakerPerSecond, rangeLength
+            )
+        }
+        if (!userUploadBandwidthRateLimiterService.ignoreRequest(request)) {
+            return userUploadBandwidthRateLimiterService.bandwidthRateStart(
                 request, inputStream, circuitBreakerPerSecond, rangeLength
             )
         }
@@ -157,8 +177,18 @@ class RequestLimitCheckService(
                 request, exception
             )
         }
+        if (!userDownloadBandwidthRateLimiterService.ignoreRequest(request)) {
+            return userDownloadBandwidthRateLimiterService.bandwidthRateLimitFinish(
+                request, exception
+            )
+        }
         if (!uploadBandwidthRateLimiterService.ignoreRequest(request)) {
             return uploadBandwidthRateLimiterService.bandwidthRateLimitFinish(
+                request, exception
+            )
+        }
+        if (!userUploadBandwidthRateLimiterService.ignoreRequest(request)) {
+            return userUploadBandwidthRateLimiterService.bandwidthRateLimitFinish(
                 request, exception
             )
         }
@@ -173,6 +203,9 @@ class RequestLimitCheckService(
         }
         val request = getRequest() ?: return
         uploadBandwidthRateLimiterService.bandwidthRateLimit(
+            request, applyPermits, circuitBreakerPerSecond
+        )
+        userUploadBandwidthRateLimiterService.bandwidthRateLimit(
             request, applyPermits, circuitBreakerPerSecond
         )
     }
