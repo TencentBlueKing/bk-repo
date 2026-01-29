@@ -28,7 +28,6 @@
 package com.tencent.bkrepo.common.storage.innercos.endpoint
 
 import com.tencent.bkrepo.common.storage.util.PolarisUtil
-import com.tencent.polaris.api.rpc.GetOneInstanceRequest
 import org.slf4j.LoggerFactory
 
 /**
@@ -39,14 +38,20 @@ class PolarisEndpointResolver(
     private val cmdId: Int
 ): EndpointResolver {
 
+    init {
+        if (!PolarisUtil.isAvailable()) {
+            logger.warn("Polaris SDK is not available, will fallback to original endpoint")
+        }
+    }
+
     override fun resolveEndpoint(endpoint: String): String {
+        if (!PolarisUtil.isAvailable()) {
+            return endpoint
+        }
         return try {
-            val getInstanceRequest = GetOneInstanceRequest()
-            getInstanceRequest.namespace = NAMESPACE
-            getInstanceRequest.service = "$modId:$cmdId"
-            PolarisUtil.getOneInstance(getInstanceRequest)
+            PolarisUtil.getOneInstance(NAMESPACE, "$modId:$cmdId")
         } catch (e: Exception) {
-            logger.warn("polaris resolve endpoint[$endpoint] error: $e")
+            logger.warn("polaris resolve endpoint [$endpoint] error: ${e.message}")
             endpoint
         }
     }
