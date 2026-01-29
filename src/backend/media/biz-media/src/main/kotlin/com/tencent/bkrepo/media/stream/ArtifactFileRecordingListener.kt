@@ -1,6 +1,7 @@
 package com.tencent.bkrepo.media.stream
 
 import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedArtifactFile
+import com.tencent.bkrepo.media.TYPE_CLIENT_MOUSE_DATA
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.util.Locale
 
@@ -9,32 +10,45 @@ import java.util.Locale
  * */
 class ArtifactFileRecordingListener(
     private val artifactFile: ChunkedArtifactFile,
+    private val clientMouseArtifactFile: ChunkedArtifactFile,
     private val fileConsumer: FileConsumer,
     private val type: MediaType,
     scheduler: ThreadPoolTaskScheduler,
 ) : AsyncStreamListener(scheduler) {
 
     private lateinit var name: String
+    private lateinit var clientMouseName: String
 
     override fun init(name: String) {
         this.name = "$name.${type.name.lowercase(Locale.getDefault())}"
+        this.clientMouseName = "CM_${name}.${MediaType.JSON.name.lowercase(Locale.getDefault())}"
     }
 
     override fun handler(packet: StreamPacket) {
-        artifactFile.write(packet.getData())
+        if (packet.getDataType() == TYPE_CLIENT_MOUSE_DATA) {
+            clientMouseArtifactFile.write(packet.getData())
+        } else {
+            artifactFile.write(packet.getData())
+        }
     }
 
-    override fun stop() {
-        super.stop()
-        storeFile()
+    override fun stop(endTime: Long) {
+        super.stop(endTime)
+        storeFile(endTime)
     }
 
-    private fun storeFile() {
+    private fun storeFile(endTime: Long) {
         try {
             artifactFile.finish()
-            fileConsumer.accept(artifactFile, name)
+            clientMouseArtifactFile.finish()
+            if (clientMouseArtifactFile.getSize() == 0L) {
+                fileConsumer.accept(name, artifactFile, null, endTime)
+            } else {
+                fileConsumer.accept(name, artifactFile, mapOf(clientMouseName to clientMouseArtifactFile), endTime)
+            }
         } finally {
             artifactFile.delete()
+            clientMouseArtifactFile.delete()
         }
     }
 }

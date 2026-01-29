@@ -254,13 +254,14 @@ function _M:verify_bk_token_muti_tenant(auth_url, token)
         local cache_data = {
             ["bk_username"] = result.data.bk_username,
             ["display_name"] = result.data.display_name,
-            ["tenant_id"] = result.data.tenant_id
+            ["tenant_id"] = result.data.tenant_id,
+            ["time_zone"] = result.data.time_zone
         }
         user_cache:set(token, json.encode(cache_data), 180)
-        return result.data.bk_username, result.data.display_name, result.data.tenant_id
+        return result.data.bk_username, result.data.display_name, result.data.tenant_id, result.data.time_zone
     else
         local user_data = json.decode(user_cache_value)
-        return user_data.bk_username, user_data.display_name, user_data.tenant_id
+        return user_data.bk_username, user_data.display_name, user_data.tenant_id, user_data.time_zone
     end
 end
 

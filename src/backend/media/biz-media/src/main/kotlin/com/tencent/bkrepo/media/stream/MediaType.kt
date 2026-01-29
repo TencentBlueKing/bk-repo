@@ -6,4 +6,8 @@ package com.tencent.bkrepo.media.stream
 enum class MediaType {
     RAW,
     MP4,
+
+
+    // 文本类型
+    JSON
 }

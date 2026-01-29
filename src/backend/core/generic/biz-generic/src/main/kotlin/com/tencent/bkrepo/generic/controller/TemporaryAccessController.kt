@@ -49,6 +49,7 @@ import com.tencent.bkrepo.common.artifact.router.Router
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.generic.artifact.GenericArtifactInfo
@@ -100,7 +101,19 @@ class TemporaryAccessController(
     @PostMapping("/token/create")
     @Principal(PrincipalType.GENERAL)
     fun createToken(@RequestBody request: TemporaryTokenCreateRequest): Response<List<TemporaryAccessToken>> {
-        return ResponseBuilder.success(temporaryAccessService.createToken(request))
+        // 检查是否为白名单中的平台账户
+        val platformId = SecurityUtils.getPlatformId()
+        val bypassProjectDisable = platformId != null && 
+            genericProperties.tokenBypassPlatforms.contains(platformId)
+        
+        return ResponseBuilder.success(
+            temporaryAccessService.createToken(
+                request.copy(
+                    createdBy = SecurityUtils.getUserId(),
+                    bypassProjectDisable = bypassProjectDisable
+                )
+            )
+        )
     }
 
     @PostMapping("/url/create")

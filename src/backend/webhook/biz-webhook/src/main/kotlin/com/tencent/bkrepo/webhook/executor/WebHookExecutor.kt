@@ -118,7 +118,7 @@ class WebHookExecutor(
             val payload = eventPayloadFactory.build(event)
             payload to buildRequest(webHook, payload)
         } catch (e: Exception) {
-            logger.warn("webhook build payload or request error, event[$event], error: ${e.message}")
+            logger.warn("webhook build payload or request error, event[$event], error: ${e.message}", e)
             webHookLogDao.insert(buildWebHookErrorLog(event, webHook, e))
             return
         }

@@ -25,21 +25,37 @@ class MediaArtifactFileConsumer(
 
     private val startTime = System.currentTimeMillis()
     override fun accept(t: File) {
-        accept(t.toArtifactFile(), t.name)
+        accept(t.name, t.toArtifactFile(), null, System.currentTimeMillis())
     }
 
-    override fun accept(file: File, name: String) {
-        accept(file.toArtifactFile(), name)
+    override fun accept(file: File, name: String, endTime: Long) {
+        accept(name, file.toArtifactFile(), null, endTime)
     }
 
-    override fun accept(file: ArtifactFile, name: String) {
+    override fun accept(name: String, file: ArtifactFile, extraFiles: Map<String, ArtifactFile>?, endTime: Long) {
+        val artifactInfo = genAndStoreArtifactInfos(name, file, endTime)
+        val extraArtifactFiles = extraFiles?.map { (name, file) ->
+            genAndStoreArtifactInfos(name, file, endTime)
+        }
+        if (transcodeConfig != null) {
+            transcodeService.transcode(
+                artifactInfo = artifactInfo,
+                transcodeConfig = transcodeConfig,
+                userId = userId,
+                extraFiles = extraArtifactFiles,
+                author = author,
+                videoStartTime = startTime,
+                videoEndTime = endTime
+            )
+        }
+    }
+
+    fun genAndStoreArtifactInfos(name: String, file: ArtifactFile, endTime: Long): ArtifactInfo {
         val filePath = "$path/$name"
         val artifactInfo = ArtifactInfo(repo.projectId, repo.name, filePath)
-        val nodeCreateRequest = buildNodeCreateRequest(artifactInfo, file, userId, author)
+        val nodeCreateRequest = buildNodeCreateRequest(artifactInfo, file, userId, author, endTime)
         storageManager.storeArtifactFile(nodeCreateRequest, file, repo.storageCredentials)
-        if (transcodeConfig != null) {
-            transcodeService.transcode(artifactInfo, transcodeConfig, userId)
-        }
+        return artifactInfo
     }
 
     private fun buildNodeCreateRequest(
@@ -47,9 +63,9 @@ class MediaArtifactFileConsumer(
         file: ArtifactFile,
         userId: String,
         author: String,
+        endTime: Long,
     ): NodeCreateRequest {
         with(artifactInfo) {
-            val endTime = System.currentTimeMillis()
             return NodeCreateRequest(
                 projectId = projectId,
                 repoName = repoName,

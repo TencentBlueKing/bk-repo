@@ -36,6 +36,9 @@ enum class RepositoryMessageCode(private val key: String, private val businessCo
     METADATA_KEY_RESERVED("repository.metadata.key.reserved", 4),
     PIPELINE_METADATA_UPDATE_NOT_ALLOWED("repository.pipleine.metadata.update.not-allowed", 5),
     APP_EXPERIENCE_CONFIG_ERROR("repository.app.experience.config.error", 6),
+    BKDIRVE_CONFIG_ERROR("repository.bkdirve.config.error", 7),
+    DRIVE_API_NOT_ALLOWED("repository.drive.api.not.allowed", 8),
+    
     ;
 
     override fun getBusinessCode() = businessCode

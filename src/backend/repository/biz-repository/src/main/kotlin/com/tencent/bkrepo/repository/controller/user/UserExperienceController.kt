@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/experience")
 @Principal(PrincipalType.GENERAL)
+@Deprecated("该控制器将被 UserDriveController 替代")
 class UserExperienceController(
     private val ciExperienceService: CIExperienceService
 ) {

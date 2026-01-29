@@ -124,4 +124,9 @@ class RNodeServiceImpl(
     override suspend fun renameNode(renameRequest: NodeRenameRequest) {
         RNodeRenameSupport(this).renameNode(renameRequest)
     }
+
+    @Transactional(rollbackFor = [Throwable::class])
+    override suspend fun getDeletedNodeDetail(artifact: ArtifactInfo): List<NodeDetail> {
+        return RNodeRestoreSupport(this).getDeletedNodeDetail(artifact)
+    }
 }

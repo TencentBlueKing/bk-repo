@@ -42,4 +42,8 @@ data class CheckForbidResult(
      * 由于哪个扫描方案导致的禁用
      */
     val plan: ScanPlan? = null,
+    /**
+     * 是否解除禁用
+     */
+    val shouldUnforbid: Boolean = false,
 )

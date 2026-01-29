@@ -106,8 +106,7 @@ class FileHandlerService(
         when {
             isHtmlView -> FilePreview.EXEL_FILE_PREVIEW_PAGE
             type?.name == FileType.OFFICE.name -> when (suffix!!.lowercase()) {
-                "xlsx", "xls" -> FilePreview.XLSX_FILE_PREVIEW_PAGE
-                "csv"  -> FilePreview.CSV_FILE_PREVIEW_PAGE
+                "xlsx", "xls", "csv" -> FilePreview.XLSX_FILE_PREVIEW_PAGE
                 else   -> FilePreview.PDF_FILE_PREVIEW_PAGE
             }
             type?.name == FileType.PDF.name -> FilePreview.PDF_FILE_PREVIEW_PAGE
@@ -166,9 +165,9 @@ class FileHandlerService(
     ): String {
         var convertFileName = when (type) {
             FileType.OFFICE -> {
-                if (suffix.equals("csv", ignoreCase = true) || suffix.equals("xlsx", ignoreCase = true)) {
+                if (suffix.equals("xlsx", ignoreCase = true)) {
                     originFileName
-                } else if (suffix.equals("xls", ignoreCase = true) ) {
+                } else if (suffix.equals("xls", ignoreCase = true) || suffix.equals("csv", ignoreCase = true)) {
                     convertFilePrefixName + "xlsx"
                 } else {
                     convertFilePrefixName + if (isHtmlView) "html" else "pdf"

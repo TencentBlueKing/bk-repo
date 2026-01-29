@@ -44,6 +44,7 @@ class NodeMovedEvent(
     val dstFullPath: String,
     val overwrite: Boolean,
     val destNodeFolder: Boolean? = null,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.NODE_MOVED,
     projectId = projectId,
@@ -58,5 +59,6 @@ class NodeMovedEvent(
     ).apply {
         destNodeFolder?.let { this["destNodeFolder"] = destNodeFolder }
     },
-    source = source
+    source = source,
+    eventId = eventId
 )

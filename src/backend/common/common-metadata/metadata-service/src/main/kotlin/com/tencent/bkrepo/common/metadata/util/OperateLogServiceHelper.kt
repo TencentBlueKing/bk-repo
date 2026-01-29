@@ -100,13 +100,13 @@ object OperateLogServiceHelper {
             val start = sdf.parse(startTime)
             start.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         } else {
-            LocalDateTime.now()
+            LocalDateTime.now().minusMonths(3L)
         }
         val localEnd = if (endTime != null && endTime.isNotBlank()) {
             val end = sdf.parse(endTime)
             end.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime()
         } else {
-            LocalDateTime.now().minusMonths(3L)
+            LocalDateTime.now()
         }
         criteria.and(TOperateLog::createdDate.name).gte(localStart).lte(localEnd)
         return Query(criteria).with(Sort.by(TOperateLog::createdDate.name).descending())

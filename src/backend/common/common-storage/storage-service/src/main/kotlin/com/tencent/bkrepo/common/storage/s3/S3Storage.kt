@@ -46,6 +46,7 @@ import com.amazonaws.services.s3.transfer.TransferManagerBuilder
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.core.AbstractEncryptorFileStorage
 import com.tencent.bkrepo.common.storage.credentials.S3Credentials
+import com.tencent.bkrepo.common.storage.s3.stream.LazyS3InputStream
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.io.File
 import java.io.InputStream
@@ -74,7 +75,11 @@ class S3Storage(
         if (range.isPartialContent()) {
             getObjectRequest.setRange(range.start, range.end)
         }
-        return client.s3Client.getObject(getObjectRequest).objectContent
+        return if (storageProperties.s3.download.lazyLoad) {
+            if (exist(path, name, client)) {
+                LazyS3InputStream(client, getObjectRequest)
+            } else null
+        } else client.s3Client.getObject(getObjectRequest).objectContent
     }
 
     override fun delete(path: String, name: String, client: S3Client) {
