@@ -37,14 +37,14 @@ enum class ForbidType(val reason: String = FORBID_REASON_NONE) {
     QUALITY_UNPASS(FORBID_REASON_QUALITY_ISSUE),
     // 手动禁用
     MANUAL,
-    // 未扫描时禁用
-    NOT_SCANNED(FORBID_REASON_NOT_SCANNED),
+    // 制品入库时禁用
+    INITIAL(FORBID_REASON_INITIAL),
     // 未禁用
     NONE;
 }
 
 const val FORBID_REASON_NONE = ""
 
-const val FORBID_REASON_NOT_SCANNED = "Not scanned"
+const val FORBID_REASON_INITIAL = "Initially forbidden"
 
 const val FORBID_REASON_QUALITY_ISSUE = "Not pass quality rules"
