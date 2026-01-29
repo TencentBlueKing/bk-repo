@@ -6,7 +6,7 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_NUM
 import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_SIZE
 import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.ArchiveInfoModel
+import com.tencent.bkrepo.opdata.service.model.ArchiveInfoModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target

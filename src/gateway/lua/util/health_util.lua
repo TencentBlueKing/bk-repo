@@ -19,6 +19,71 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 local _M = {}
 
+-- 上报心跳信息到opdata服务
+function _M:report_heartbeat(domain)
+
+    -- 构建心跳数据（timestamp 和 last_update 由服务端生成）
+    local ip = string.gsub(internal_ip, "[\r\n]+", "")
+    local heartbeat_data = {
+        ip = ip,
+        tag = config.ns.tag
+    }
+
+    -- 转换为JSON
+    local request_body = json.encode(heartbeat_data)
+    if not request_body then
+        ngx.log(ngx.ERR, "failed to encode heartbeat data to json")
+        return
+    end
+
+    -- 初始化HTTP连接
+    local httpc = http.new()
+    local addr
+    if not domain then
+        domain = hostUtil:get_addr("opdata", false)
+        addr = "http://" .. domain .. "/api/heartbeat/gateway"
+    else
+        addr = "http://" .. domain .. "/opdata/api/heartbeat/gateway"
+    end
+
+    -- 设置超时时间
+    httpc:set_timeout(3000)
+    httpc:connect(addr)
+
+    -- 构建请求头
+    local request_headers = {
+        ["Content-Type"] = "application/json",
+        ["Accept"] = "application/json",
+        ["X-BKREPO-UID"] = "admin",
+        ["Authorization"] = config.bkrepo.authorization
+    }
+
+    -- 发送HTTP请求
+    local res, err = httpc:request_uri(addr, {
+        path = path,
+        method = "POST",
+        headers = request_headers,
+        body = request_body
+    })
+
+    -- 判断是否出错
+    if not res then
+        ngx.log(ngx.ERR, "failed to report heartbeat to opdata: ", err)
+        return
+    end
+
+    -- 判断返回的状态码
+    if res.status ~= 200 then
+        ngx.log(ngx.ERR, "failed to report heartbeat, status: ", res.status, ", body: ", res.body or "")
+        return
+    end
+
+    -- 设置HTTP保持连接
+    httpc:set_keepalive(60000, 5)
+
+    ngx.log(ngx.INFO, "heartbeat reported successfully for ip: ", ip)
+end
+
 --[[判断字符串是否在数组中]]
 function _M:check_path(service_name)
     local security_paths = config.security_paths
