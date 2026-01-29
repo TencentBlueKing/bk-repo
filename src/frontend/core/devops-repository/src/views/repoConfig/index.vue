@@ -182,7 +182,7 @@
                 if (repoType === 'docker') {
                     return `${location.protocol}//${this.domain.docker}/${this.projectId}/${name}/`
                 }
-                const url = new URL(location.origin)
+                const url = new URL(window.BK_SUBPATH, location.origin)
                 return `${url}${repoType}/${this.projectId}/${name}/`
             },
             isCommunity () {
