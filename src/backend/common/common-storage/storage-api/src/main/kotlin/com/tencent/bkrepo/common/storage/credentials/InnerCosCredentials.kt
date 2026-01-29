@@ -77,5 +77,6 @@ data class InnerCosCredentials(
         var minimumPartSize: Long = 10,
         var maxDownloadParts: Int = 10000,
         var qps: Int = 10,
+        var lazyLoad: Boolean = false,
     )
 }

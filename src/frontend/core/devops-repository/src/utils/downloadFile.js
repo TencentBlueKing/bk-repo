@@ -2,8 +2,9 @@ import axios from 'axios'
 // 后端返回的类型为 application/octet-stream;charset=UTF-8
 export function customizeDownloadFile (projectId, repoName, fullPaths) {
     const vm = window.repositoryVue
+    const downloadUrl = `${location.origin}` + window.BK_SUBPATH + `web/generic/batch/${projectId}/${repoName}`
     axios({
-        url: `${location.origin}/web/generic/batch/${projectId}/${repoName}`,
+        url: downloadUrl,
         method: 'POST',
         data: { paths: fullPaths },
         // 注意，此处需要设置下载的文件的返回类型为二进制，即 blob

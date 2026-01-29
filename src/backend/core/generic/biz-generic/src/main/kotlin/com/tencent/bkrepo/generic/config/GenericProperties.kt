@@ -52,6 +52,10 @@ class GenericProperties {
      * 分块上传来源判断
      */
     var chunkedUploadClients: List<String> = listOf("bk-repo")
+    /**
+     * 允许跳过项目禁用token检查的平台账户白名单
+     */
+    var tokenBypassPlatforms: List<String> = emptyList()
     @NestedConfigurationProperty
     var proxy: ProxyProperties = ProxyProperties()
     @NestedConfigurationProperty

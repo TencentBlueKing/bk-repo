@@ -51,7 +51,7 @@ class ClientStreamTest {
             stream.dispatch(packet)
             pos = end + 1
         }
-        stream.stop()
+        stream.stop(System.currentTimeMillis())
         val recvMd5 = HashCode.fromBytes(md5.digest()).toString()
         Assertions.assertEquals(originMd5, recvMd5)
     }

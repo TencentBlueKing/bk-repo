@@ -61,6 +61,8 @@ import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectListOption
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
+import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata.Companion.KEY_SHARE_ENABLED
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetricsInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectRangeQueryRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectSearchOption
@@ -144,6 +146,65 @@ class ProjectServiceImpl(
         return ProjectServiceHelper.isProjectEnabled(projectInfo)
     }
 
+    override fun setProjectEnabled(name: String, enabled: Boolean): Boolean {
+        return setProjectMetadata(name, ProjectMetadata.KEY_ENABLED, enabled, "enabled")
+    }
+
+    override fun setProjectShareEnabled(name: String, enabled: Boolean): Boolean {
+        return setProjectMetadata(name, KEY_SHARE_ENABLED, enabled, "share enabled")
+    }
+
+    /**
+     * 设置项目元数据
+     * @param name 项目名称
+     * @param metadataKey 元数据键
+     * @param value 元数据值
+     * @param logDescription 日志描述
+     * @return 是否设置成功
+     */
+    private fun setProjectMetadata(
+        name: String,
+        metadataKey: String,
+        value: Any,
+        logDescription: String
+    ): Boolean {
+        val normalizedName = normalizeProjectName(name)
+        val project = projectDao.findByName(normalizedName)
+            ?: throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
+
+        // 查询出项目，修改元数据，然后更新
+        val updatedMetadata = project.metadata.toMutableList()
+        // 移除已存在的元数据
+        updatedMetadata.removeIf { it.key == metadataKey }
+        // 添加新的元数据
+        updatedMetadata.add(ProjectMetadata(
+            key = metadataKey,
+            value = value
+        ))
+
+        val query = Query.query(Criteria.where(TProject::name.name).`is`(normalizedName))
+        val update = org.springframework.data.mongodb.core.query.Update()
+            .set(TProject::metadata.name, updatedMetadata)
+        val updateResult = projectDao.updateFirst(query, update)
+
+        return if (updateResult.modifiedCount == 1L) {
+            logger.info("Set project [$name] $logDescription to [$value] success.")
+            true
+        } else {
+            logger.warn("Set project [$name] $logDescription to [$value] fail.")
+            false
+        }
+    }
+
+    override fun isProjectShareEnabled(name: String): Boolean {
+        val projectInfo = projectDao.findByName(normalizeProjectName(name))
+            ?: throw ErrorCodeException(ArtifactMessageCode.PROJECT_NOT_FOUND, name)
+        val shareEnabled = projectInfo.metadata.firstOrNull {
+            it.key == KEY_SHARE_ENABLED
+        }?.value as? Boolean ?: true
+        return shareEnabled
+    }
+
     override fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?> {
         val limit = request.limit
         val skip = request.offset
@@ -168,7 +229,7 @@ class ProjectServiceImpl(
         if (enableMultiTenant.enabled) {
             validateTenantId()
         }
-        val project = request.buildProject(ProjectServiceHelper.getTenantId())
+        val project = request.buildProject(ProjectServiceHelper.getTenantId(), enableMultiTenant.enabled)
         return try {
             projectDao.insert(project)
             request.name = project.name
@@ -247,8 +308,8 @@ class ProjectServiceImpl(
      */
     private fun normalizeProjectName(name: String): String {
         if (!enableMultiTenant.enabled) return name
-        validateTenantId()
         val tenantId = ProjectServiceHelper.getTenantId()
+        if (tenantId.isNullOrEmpty()) return name
         return if (name.startsWith("$tenantId.")) name else "$tenantId.$name"
     }
 

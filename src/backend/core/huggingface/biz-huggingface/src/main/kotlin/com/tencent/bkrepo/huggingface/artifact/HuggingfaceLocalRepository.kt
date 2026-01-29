@@ -31,6 +31,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactQueryContext
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactSearchContext
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactUploadContext
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
@@ -40,8 +41,11 @@ import com.tencent.bkrepo.huggingface.constants.REPO_TYPE_MODEL
 import com.tencent.bkrepo.huggingface.constants.REVISION_KEY
 import com.tencent.bkrepo.huggingface.constants.REVISION_MAIN
 import com.tencent.bkrepo.huggingface.exception.HfRepoNotFoundException
+import com.tencent.bkrepo.huggingface.exception.RevisionNotFoundException
 import com.tencent.bkrepo.huggingface.pojo.DatasetInfo
 import com.tencent.bkrepo.huggingface.pojo.ModelInfo
+import com.tencent.bkrepo.huggingface.pojo.RepoFile
+import com.tencent.bkrepo.huggingface.pojo.RepoFolder
 import com.tencent.bkrepo.huggingface.pojo.RepoSibling
 import com.tencent.bkrepo.huggingface.service.HfCommonService
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
@@ -74,14 +78,21 @@ class HuggingfaceLocalRepository(
         }
     }
 
+    /**
+     * revision可能为NULL, main, tag, commit hash
+     */
     private fun transferRevision(artifactInfo: HuggingfaceArtifactInfo) {
         with(artifactInfo) {
-            if (artifactInfo.getRevision().isNullOrEmpty() || artifactInfo.getRevision() == REVISION_MAIN) {
-                val packageKey = PackageKeys.ofHuggingface(type ?: REPO_TYPE_MODEL, getRepoId())
-                val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey)
-                    ?: throw HfRepoNotFoundException(getRepoId())
-                HttpContextHolder.getRequest().setAttribute(REVISION_KEY, packageSummary.latest)
+            val packageKey = PackageKeys.ofHuggingface(type ?: REPO_TYPE_MODEL, getRepoId())
+            val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey)
+                ?: throw HfRepoNotFoundException(getRepoId())
+            var revision = artifactInfo.getRevision()
+            revision = if (revision.isNullOrEmpty() || revision == REVISION_MAIN) {
+                packageSummary.latest
+            } else {
+                packageSummary.versionTag[revision] ?: revision
             }
+            HttpContextHolder.getRequest().setAttribute(REVISION_KEY, revision)
         }
     }
 
@@ -96,8 +107,13 @@ class HuggingfaceLocalRepository(
 
             val packageSummary = packageService.findPackageByKey(projectId, repoName, packageKey)
                 ?: throw HfRepoNotFoundException(getRepoId())
+            val mainBranch = getRevision().isNullOrEmpty() || getRevision() == REVISION_MAIN
             transferRevision(artifactInfo)
             val packageVersion = packageService.findVersionByName(projectId, repoName, packageKey, getRevision()!!)
+            // 空仓库也可以查询，只有指定revision，查询不到时返回异常
+            if (!mainBranch && packageVersion == null) {
+                throw RevisionNotFoundException(getRevision()!!)
+            }
             val siblings = if (packageVersion == null) {
                 emptyList()
             } else {
@@ -155,15 +171,39 @@ class HuggingfaceLocalRepository(
     override fun buildDownloadRecord(context: ArtifactDownloadContext, artifactResource: ArtifactResource) =
         hfCommonService.buildDownloadRecord(context)
 
+    override fun search(context: ArtifactSearchContext): List<Any> {
+        require(context is HuggingfaceArtifactSearchContext)
+        with(context.artifactInfo) {
+            require(this is HuggingfaceArtifactInfo)
+            transferRevision(this)
+            packageService.findVersionByName(projectId, repoName, getPackageKey(), getRevision()!!)
+                ?: throw RevisionNotFoundException(getRevision()!!)
+            this.setArtifactMappingUri("/${getRepoId()}/resolve/${getRevision()}")
+            val nodes = nodeService.listNode(this, NodeListOption(deep = context.recursive))
+            return nodes.map { node ->
+                if (node.folder) {
+                    RepoFolder(path = node.fullPath, treeId = node.sha256.orEmpty(), lastCommit = null)
+                } else {
+                    RepoFile(
+                        path = node.fullPath, size = node.size, blobId = node.sha256.orEmpty(),
+                        lastCommit = null, lfs = null, security = null
+                    )
+                }
+            }
+        }
+    }
+
     private fun packageVersion(context: ArtifactContext) =
         hfCommonService.getPackageVersionByArtifactInfo(context.artifactInfo as HuggingfaceArtifactInfo)
 
     private fun convert(nodes: List<NodeInfo>, basePath: String): List<RepoSibling> {
-        return nodes.map { RepoSibling(
-            rfilename = it.fullPath.removePrefix(basePath),
-            size = it.size,
-            blobId = it.sha256,
-            lfs = null
-        ) }
+        return nodes.map {
+            RepoSibling(
+                rfilename = it.fullPath.removePrefix(basePath),
+                size = it.size,
+                blobId = it.sha256,
+                lfs = null
+            )
+        }
     }
 }

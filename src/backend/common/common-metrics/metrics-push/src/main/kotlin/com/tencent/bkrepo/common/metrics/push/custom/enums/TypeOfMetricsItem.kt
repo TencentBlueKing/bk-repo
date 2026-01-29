@@ -40,4 +40,30 @@ enum class TypeOfMetricsItem(
         DataModel.DATAMODEL_GAUGE,
         false,
     ),
+
+    /**
+     * 制品传输大小（上传/下载）
+     */
+    ARTIFACT_TRANSFER_SIZE(
+        "artifact_transfer_size_bytes",
+        "artifact transfer size in bytes",
+        DataModel.DATAMODEL_HISTOGRAM,
+        false,
+    ),
+
+    /**
+     * 制品带宽聚合指标（按项目/仓库/类型维度聚合的流量）
+     * 定期上报后清理内存，避免维度爆炸
+     *
+     * 使用 Gauge 类型：每次上报的是"这个周期内的流量增量"
+     * - 不是单调递增的 Counter
+     * - 每个周期独立上报，上报后清零
+     * - 监控端应使用 sum_over_time() 计算总流量，而非 rate()
+     */
+    ARTIFACT_BANDWIDTH(
+        "artifact_bandwidth_bytes",
+        "aggregated artifact bandwidth in bytes by project/repo/type (per interval)",
+        DataModel.DATAMODEL_GAUGE,
+        false,
+    ),
 }

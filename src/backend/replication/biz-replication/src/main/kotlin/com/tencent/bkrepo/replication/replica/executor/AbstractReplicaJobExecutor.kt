@@ -29,6 +29,7 @@ package com.tencent.bkrepo.replication.replica.executor
 
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.replication.config.ReplicationProperties
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeName
@@ -47,6 +48,7 @@ import com.tencent.bkrepo.replication.replica.type.ReplicaService
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Callable
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.Future
 import java.util.concurrent.ThreadPoolExecutor
 
@@ -112,7 +114,12 @@ open class AbstractReplicaJobExecutor(
                     }
                     ExecutionResult(status = status, errorReason = message, progress = replicaProgress)
                 } catch (exception: Throwable) {
-                    logger.error("${taskDetail.task.name}/$clusterNodeName] replica exception:${exception}")
+                    val msg = "[${taskDetail.task.name}/$clusterNodeName] replica exception: $exception"
+                    when {
+                        exception is NodeNotFoundException -> logger.warn(msg)
+                        exception is ExecutionException && exception.cause is NodeNotFoundException -> logger.warn(msg)
+                        else -> logger.error(msg)
+                    }
                     // 记录分发失败到数据库（针对抛出异常的情况）
                     recordFailureToDatabase(context, exception)
                     ExecutionResult.fail("${clusterNodeName.name}:${exception.message}\n", replicaProgress)

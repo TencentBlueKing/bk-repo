@@ -73,4 +73,12 @@ class ProjectController(
     override fun isProjectEnabled(name: String): Response<Boolean> {
         return ResponseBuilder.success(projectService.isProjectEnabled(name))
     }
+
+    override fun setProjectShareEnabled(name: String, enabled: Boolean): Response<Boolean> {
+        return ResponseBuilder.success(projectService.setProjectShareEnabled(name, enabled))
+    }
+
+    override fun isProjectShareEnabled(name: String): Response<Boolean> {
+        return ResponseBuilder.success(projectService.isProjectShareEnabled(name))
+    }
 }

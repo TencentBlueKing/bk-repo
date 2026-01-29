@@ -37,4 +37,5 @@ enum class HfErrorCode(
     REPO_NOT_FOUND("RepoNotFound", "Repo[%s] not found"),
     REPO_EXIST("RepoExist", "Repo[%s] exist"),
     OPERATION_NOT_SUPPORT("OperationNotSupport", "Operation not support in remote repo"),
+    TAG_EXIST("TagExist", "Tag[%s] exist"),
 }

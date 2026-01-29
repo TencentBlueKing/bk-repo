@@ -32,6 +32,7 @@ import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.node.NodeCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionCreatedEvent
 import com.tencent.bkrepo.common.artifact.event.packages.VersionUpdatedEvent
+import com.tencent.bkrepo.common.service.condition.ConditionalOnAssembly
 import com.tencent.bkrepo.replication.replica.executor.EventConsumerThreadPoolExecutor
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import org.springframework.context.event.EventListener
@@ -41,6 +42,7 @@ import org.springframework.stereotype.Component
  * 消费基于Spring进程内传递的事件
  */
 @Component
+@ConditionalOnAssembly
 class BootAssemblyEventListener(
     private val replicaTaskService: ReplicaTaskService,
     private val eventBasedReplicaJobExecutor: EventBasedReplicaJobExecutor

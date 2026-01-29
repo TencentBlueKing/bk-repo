@@ -18,6 +18,6 @@ class AdminStreamController(
 ) {
     @PutMapping("/shutdown")
     fun shutdown() {
-        streamManger.close()
+        streamManger.close(System.currentTimeMillis())
     }
 }

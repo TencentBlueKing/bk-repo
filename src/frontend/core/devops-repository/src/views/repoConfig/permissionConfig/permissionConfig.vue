@@ -13,7 +13,27 @@
         <draggable v-if="permissionListPages.length" v-model="permissionListPages" :options="{ animation: 200 }">
             <div class="proxy-item" v-for="(row,index) in permissionListPages" :key="index">
                 <div class="permission-name">{{row.permName}}</div>
-                <div class="permission-path"><bk-tag v-for="(name,pathIndex) in row.includePattern" :key="pathIndex">{{ changePath(name) }}</bk-tag></div>
+                <div class="permission-path">
+                    <div
+                        v-for="(name,pathIndex) in getSortedPaths(row.includePattern)"
+                        :key="pathIndex"
+                        class="path-item"
+                        :class="{ 'hidden-path': !isExpanded(row.permName) && pathIndex >= 3 }"
+                    >
+                        <bk-popover :content="name" placement="top">
+                            <bk-tag class="path-tag">{{ changePath(name) }}</bk-tag>
+                        </bk-popover>
+                    </div>
+                    <div v-if="row.includePattern && row.includePattern.length > 3" class="expand-toggle">
+                        <bk-link
+                            theme="primary"
+                            @click="toggleExpand(row.permName)"
+                            class="expand-btn"
+                        >
+                            {{ isExpanded(row.permName) ? $t('collapse') : $t('loadMore', [row.includePattern.length]) }}
+                        </bk-link>
+                    </div>
+                </div>
                 <div class="permission-users"><bk-tag v-for="(name,userIndex) in row.users" :key="userIndex">{{ name }}</bk-tag></div>
                 <div class="permission-roles"><bk-tag v-for="(name,roleIndex) in row.roles" :key="roleIndex">{{ changeRole(name) }}</bk-tag></div>
                 <div class="flex-align-center permission-operation">
@@ -55,7 +75,8 @@
                     includePattern: [],
                     name: ''
                 },
-                rootDirectoryPermission: false
+                rootDirectoryPermission: false,
+                expandedPermissions: []
             }
         },
         computed: {
@@ -138,9 +159,24 @@
                     this.permissionListPages = res
                 })
             },
+            getSortedPaths (paths) {
+                if (!paths || !Array.isArray(paths)) return []
+                return [...paths].sort((a, b) => a.localeCompare(b))
+            },
+            isExpanded (permName) {
+                return this.expandedPermissions.includes(permName)
+            },
+            toggleExpand (permName) {
+                const index = this.expandedPermissions.indexOf(permName)
+                if (index > -1) {
+                    this.expandedPermissions.splice(index, 1)
+                } else {
+                    this.expandedPermissions.push(permName)
+                }
+            },
             changePath (path) {
-                if (path.length > 18) {
-                    return path.substr(0, 15) + '...'
+                if (path.length > 80) {
+                    return path.substr(0, 77) + '...'
                 } else {
                     return path
                 }
@@ -177,6 +213,41 @@
         }
         .permission-path {
             flex: 4;
+            .path-item {
+                margin-top: 3px;
+                width: 100%;
+                line-height: 1.5;
+            }
+
+            .path-tag {
+                display: block;
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                padding: 4px 8px;
+                margin: 0;
+                border-radius: 2px;
+                background: #f0f1f5;
+                border: 1px solid #dcdee5;
+                font-size: 12px;
+                line-height: 12px;
+            }
+
+            .hidden-path {
+                display: none;
+            }
+
+            .expand-toggle {
+                margin-top: 8px;
+                text-align: left;
+            }
+
+            .expand-btn {
+                font-size: 12px;
+                cursor: pointer;
+                user-select: none;
+            }
         }
         .permission-users {
             flex: 2;

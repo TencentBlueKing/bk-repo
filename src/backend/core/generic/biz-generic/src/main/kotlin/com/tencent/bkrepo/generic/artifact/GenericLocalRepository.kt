@@ -153,7 +153,7 @@ class GenericLocalRepository(
     private val ciPermissionManager: CIPermissionManager,
     private val blockNodeService: BlockNodeService,
     private val storageProperties: StorageProperties,
-    private val metadataLabelCacheService: MetadataLabelCacheService
+    private val metadataLabelCacheService: MetadataLabelCacheService,
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -284,6 +284,10 @@ class GenericLocalRepository(
 
     override fun onUploadSuccess(context: ArtifactUploadContext) {
         super.onUploadSuccess(context)
+        replicate(context)
+    }
+
+    private fun replicate(context: ArtifactUploadContext) {
         if (HttpContextHolder.getRequestOrNull()?.getParameter(PARAM_REPLICATE).toBoolean()) {
             val remoteClusterIds = edgeClusterNodeCache.get("").map { it.id!! }.toSet()
             if (remoteClusterIds.isEmpty()) {
@@ -293,7 +297,7 @@ class GenericLocalRepository(
             replicaTaskClient.create(
                 ReplicaTaskCreateRequest(
                     name = context.artifactInfo.getArtifactFullPath() +
-                        "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
+                            "-${context.getArtifactSha256()}-${UUID.randomUUID()}",
                     localProjectId = context.projectId,
                     replicaObjectType = ReplicaObjectType.PATH,
                     replicaTaskObjects = listOf(
@@ -365,6 +369,7 @@ class GenericLocalRepository(
             val mPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true) }?.value?.toString()
                 ?: metadata.find { it.key.equals(METADATA_PIPELINE_ID, true) }?.value?.toString()
             if (mPipelineId != null) {
+                HttpContextHolder.getRequestOrNull()?.setAttribute(METADATA_PIPELINE_ID, mPipelineId)
                 val status = checkPipelineArtifactUploadPermission(
                     artifactInfo = this,
                     existNode = existNode,

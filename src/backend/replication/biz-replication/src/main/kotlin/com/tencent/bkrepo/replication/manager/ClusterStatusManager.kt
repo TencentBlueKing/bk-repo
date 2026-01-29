@@ -62,7 +62,7 @@ class ClusterStatusManager(
         }
     }
 
-    private fun ping(it: ClusterNodeInfo) {
+    fun ping(it: ClusterNodeInfo) {
         try {
             clusterNodeService.tryConnect(it)
             if (it.status == ClusterNodeStatus.UNHEALTHY) {

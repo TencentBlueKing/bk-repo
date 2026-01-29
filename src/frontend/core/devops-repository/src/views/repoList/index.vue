@@ -65,7 +65,7 @@
                     </bk-popover>
                 </template>
             </bk-table-column>
-            <bk-table-column :label="$t('createdDate')" width="150">
+            <bk-table-column :label="$t('createdDate')" width="200">
                 <template #default="{ row }">{{ formatDate(row.createdDate) }}</template>
             </bk-table-column>
             <bk-table-column :label="$t('createdBy')" width="150">
@@ -114,7 +114,8 @@
     import createRepoDialog from '@repository/views/repoList/createRepoDialog'
     import iamDenyDialog from '@repository/components/IamDenyDialog/IamDenyDialog'
     import { mapState, mapActions } from 'vuex'
-    import {ciDisableRepoEnum, repoEnum} from '@repository/store/publicEnum'
+    import { ciDisableRepoEnum, repoEnum } from '@repository/store/publicEnum'
+    import { subEnv } from '@blueking/sub-saas'
     import { formatDate, convertFileSize, debounce } from '@repository/utils'
     import { cloneDeep } from 'lodash'
     import genericCleanDialog from '@repository/views/repoGeneric/genericCleanDialog'
@@ -155,6 +156,9 @@
             ...mapState(['userList', 'userInfo']),
             projectId () {
                 return this.$route.params.projectId
+            },
+            isSubSaas () {
+                return subEnv
             }
         },
         watch: {
@@ -185,7 +189,8 @@
                 'deleteRepoList',
                 'getRepoListWithoutPage',
                 'getPermissionUrl',
-                'getProjectMetrics'
+                'getProjectMetrics',
+                'checkPM'
             ]),
             disCheck (repoName) {
                 if (MODE_CONFIG !== 'ci') {
@@ -206,6 +211,9 @@
             },
             getListData () {
                 this.isLoading = true
+                if (!this.isSubSaas && this.MODE_CONFIG === 'ci') {
+                    this.checkPM({ projectId: this.projectId })
+                }
                 this.getRepoListWithoutPage({
                     projectId: this.projectId,
                     ...this.query

@@ -17,7 +17,7 @@ class DriveProxyHandler(
 
     /**
      * 请求转发前的处理
-     * 保留原始请求的所有请求头，但移除 Host 头（避免路由错误），并添加业务认证头
+     * 使用白名单机制：默认丢弃所有原始请求头，只保留白名单中指定的请求头，然后添加业务认证头
      */
     override fun before(
         proxyRequest: HttpServletRequest,
@@ -26,17 +26,49 @@ class DriveProxyHandler(
     ): Request {
         val userId = SecurityUtils.getUserId()
 
-        return request.newBuilder()
-            .removeHeader(HEADER_HOST)
-            .header(HEADER_BKAPI_AUTH, buildAuthHeader())
-            .header(HEADER_DEVOPS_UID, userId)
-            .apply {
-                // 添加灰度标识（如果配置）
-                if (properties.gray.isNotEmpty()) {
-                    header(HEADER_DEVOPS_GRAY, properties.gray)
+        // 构建新请求
+        val builder = Request.Builder()
+            .url(request.url)
+            .method(request.method, request.body)
+
+        // 添加白名单中的请求头
+        addAllowedHeaders(builder, request.headers)
+
+        // 添加业务认证头
+        addAuthHeaders(builder, userId)
+
+        return builder.build()
+    }
+
+    /**
+     * 添加白名单中的请求头（大小写不敏感）
+     */
+    private fun addAllowedHeaders(builder: Request.Builder, originalHeaders: okhttp3.Headers) {
+        if (properties.allowedHeaders.isEmpty()) {
+            return
+        }
+
+        val allowedHeadersLowerCase = properties.allowedHeaders.map { it.lowercase() }.toSet()
+
+        originalHeaders.names().forEach { headerName ->
+            if (allowedHeadersLowerCase.contains(headerName.lowercase())) {
+                originalHeaders[headerName]?.let { headerValue ->
+                    builder.header(headerName, headerValue)
                 }
             }
-            .build()
+        }
+    }
+
+    /**
+     * 添加业务认证头和灰度标识
+     */
+    private fun addAuthHeaders(builder: Request.Builder, userId: String) {
+        builder.header(HEADER_BKAPI_AUTH, buildAuthHeader())
+            .header(HEADER_DEVOPS_UID, userId)
+
+        if (properties.gray.isNotEmpty()) {
+            builder.header(HEADER_DEVOPS_GRAY, properties.gray)
+        }
     }
 
     /**
@@ -49,7 +81,6 @@ class DriveProxyHandler(
 
     companion object {
         // 请求头常量
-        private const val HEADER_HOST = "Host"
         private const val HEADER_BKAPI_AUTH = "X-Bkapi-Authorization"
         private const val HEADER_DEVOPS_UID = "X-DEVOPS-UID"
         private const val HEADER_DEVOPS_GRAY = "X-GATEWAY-TAG"

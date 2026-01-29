@@ -29,6 +29,49 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.auth.exception
+package com.tencent.bkrepo.common.artifact.metrics
 
-class AuthFailedException(message: String) : RuntimeException(message)
+/**
+ * 流量聚合记录
+ * 用于按维度（项目/仓库/类型）聚合流量数据，定期上报后清理内存
+ *
+ * @param projectId 项目ID
+ * @param repoName 仓库名称
+ * @param type 传输类型（RECEIVE/RESPONSE）
+ * @param bytes 聚合的字节数
+ */
+data class ArtifactBandwidthRecord(
+    val projectId: String,
+    val repoName: String,
+    val type: String,
+    val bytes: Long,
+) {
+    companion object {
+        const val LABEL_PROJECT_ID = "projectId"
+        const val LABEL_REPO_NAME = "repoName"
+        const val LABEL_TYPE = "type"
+
+        // 传输类型常量
+        const val TYPE_RECEIVE = "RECEIVE"
+        const val TYPE_RESPONSE = "RESPONSE"
+
+        /**
+         * 生成聚合键
+         * @return 格式: "projectId:repoName:type"
+         */
+        fun buildKey(projectId: String, repoName: String, type: String): String {
+            return "$projectId:$repoName:$type"
+        }
+
+        /**
+         * 从聚合键解析出各维度值
+         * @return Triple(projectId, repoName, type)
+         */
+        fun parseKey(key: String): Triple<String, String, String> {
+            val parts = key.split(":")
+            require(parts.size == 3) { "Invalid bandwidth record key: $key" }
+            return Triple(parts[0], parts[1], parts[2])
+        }
+    }
+}
+
