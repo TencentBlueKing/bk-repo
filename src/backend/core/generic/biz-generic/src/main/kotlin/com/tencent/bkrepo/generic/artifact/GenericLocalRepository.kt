@@ -369,6 +369,7 @@ class GenericLocalRepository(
             val mPipelineId = metadata.find { it.key.equals(METADATA_SUB_PIPELINE_ID, true) }?.value?.toString()
                 ?: metadata.find { it.key.equals(METADATA_PIPELINE_ID, true) }?.value?.toString()
             if (mPipelineId != null) {
+                HttpContextHolder.getRequestOrNull()?.setAttribute(METADATA_PIPELINE_ID, mPipelineId)
                 val status = checkPipelineArtifactUploadPermission(
                     artifactInfo = this,
                     existNode = existNode,
