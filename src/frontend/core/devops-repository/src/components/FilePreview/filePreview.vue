@@ -23,7 +23,6 @@
                 <textarea v-model="basicFileText" class="textarea" readonly></textarea>
             </div>
         </div>
-        <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
                 <img width="480" height="240" style="float: left;margin-right: 3px" :src="window.BK_SUBPATH + 'ui/440.svg'" />
@@ -42,15 +41,12 @@
     import VueOfficeExcel from '@vue-office/excel'
     import {
         customizePreviewLocalOfficeFile,
-        customizePreviewOfficeFile,
         customizePreviewRemoteOfficeFile,
         getPreviewLocalOfficeFileInfo, getPreviewRemoteOfficeFileInfo
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
     import { isExcel, isFormatType, isHtmlType, isPic, isText } from '@repository/utils/file'
-    import Papa from 'papaparse'
-    import Table from '@wolf-table/table'
     import Viewer from 'viewerjs'
 
     const PDFJS = require('pdfjs-dist')
@@ -180,18 +176,21 @@
                     this.basicFileText = typeof (res) === 'string' ? res : JSON.stringify(res)
                 }).catch(() => this.showError())
             } else if (isExcel(this.filePath)) {
-                customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
-                    this.loading = false
-                    this.previewExcel = true
-                    this.excelOptions.xls = this.filePath.endsWith('.xls')
-                    this.dataSource = res.data
-                }).catch(() => this.showError())
-            } else if (this.filePath.endsWith('.csv')) {
-                customizePreviewOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
-                    this.csvShow = true
-                    this.dealCsv(res)
-                    this.loading = false
-                }).catch(() => this.showError())
+                if (this.repoType === 'local') {
+                    customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
+                        this.loading = false
+                        this.previewExcel = true
+                        this.excelOptions.xls = this.filePath.endsWith('.xls')
+                        this.dataSource = res.data
+                    }).catch(() => this.showError())
+                } else {
+                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(res => {
+                        this.loading = false
+                        this.previewExcel = true
+                        this.excelOptions.xls = this.filePath.endsWith('.xls')
+                        this.dataSource = res.data
+                    }).catch(() => this.showError())
+                }
             } else if (isFormatType(this.filePath) || isPic(this.filePath)) {
                 if (this.repoType === 'local') {
                     customizePreviewLocalOfficeFile(this.projectId, this.repoName, '/' + this.filePath).then(res => {
@@ -292,43 +291,6 @@
                     this.showFrame = true
                     this.pageUrl = url
                 }
-            },
-            dealCsv (res) {
-                const csvData = []
-                let count = 0
-                const url = URL.createObjectURL(res.data)
-                Papa.parse(url, {
-                    download: true,
-                    step: function (row) {
-                        for (let i = 0; i < row.data.length; i++) {
-                            const ele = []
-                            ele.push(count)
-                            ele.push(i)
-                            ele.push(row.data[i])
-                            csvData.push(ele)
-                        }
-                        count = count + 1
-                    },
-                    complete: function () {
-                        Table.create(
-                            '#csvTable',
-                            () => window.innerWidth,
-                            () => 900,
-                            {
-                                scrollable: true,
-                                resizable: true,
-                                selectable: true,
-                                editable: false,
-                                copyable: true
-                            }
-                        )
-                            .formulaParser((v) => `${v}-formula`)
-                            .data({
-                                cells: csvData
-                            })
-                            .render()
-                    }
-                })
             },
             loadFile (url) {
                 const loadingTask = PDFJS.getDocument(url)
