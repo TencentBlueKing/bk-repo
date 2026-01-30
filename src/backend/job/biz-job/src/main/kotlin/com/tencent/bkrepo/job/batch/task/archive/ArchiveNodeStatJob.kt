@@ -28,6 +28,7 @@ package com.tencent.bkrepo.job.batch.task.archive
 
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.job.FOLDER
 import com.tencent.bkrepo.job.NAME
 import com.tencent.bkrepo.job.SHARDING_COUNT
@@ -36,6 +37,7 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.ArchiveNodeStatJobContext
 import com.tencent.bkrepo.job.config.properties.ArchiveNodeStatJobProperties
 import com.tencent.bkrepo.job.pojo.stat.StatNode
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import com.tencent.bkrepo.oci.constant.DELETED
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory
@@ -53,16 +55,32 @@ import kotlin.reflect.KClass
 @Component
 class ArchiveNodeStatJob(
     private val properties: ArchiveNodeStatJobProperties,
+    private val separationTaskService: SeparationTaskService,
 ) : DefaultContextMongoDbJob<ArchiveNodeStatJob.ArchiveNode>(properties) {
 
     override fun collectionNames(): List<String> {
-        return if (properties.archiveProjects.isEmpty()) {
-            (0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" }.toList()
+        val collections = mutableListOf<String>()
+        // 添加热表集合
+        val archiveProjects = properties.archiveProjects
+        if (archiveProjects.isEmpty()) {
+            collections.addAll((0 until SHARDING_COUNT).map { "$COLLECTION_NAME_PREFIX$it" })
         } else {
-            properties.archiveProjects.map {
-                "node_${HashShardingUtils.shardingSequenceFor(it, SHARDING_COUNT)}"
+            archiveProjects.mapTo(collections) {
+                "$COLLECTION_NAME_PREFIX${HashShardingUtils.shardingSequenceFor(it, SHARDING_COUNT)}"
             }
         }
+        // 添加冷表集合
+        val separationDates = if (archiveProjects.isEmpty()) {
+            separationTaskService.findDistinctSeparationDate()
+        } else {
+            archiveProjects.flatMap { separationTaskService.findDistinctSeparationDate(it) }
+        }
+        separationDates
+            .map { SEPARATION_COLLECTION_NAME_PREFIX + MonthRangeShardingUtils.shardingSequenceFor(it, 1) }
+            .distinct()
+            .filterNot { collections.contains(it) }
+            .let { collections.addAll(it) }
+        return collections
     }
 
     override fun buildQuery(): Query {
@@ -131,6 +149,7 @@ class ArchiveNodeStatJob(
     companion object {
         private val logger = LoggerFactory.getLogger(ArchiveNodeStatJob::class.java)
         private const val COLLECTION_NAME_PREFIX = "node_"
+        private const val SEPARATION_COLLECTION_NAME_PREFIX = "separation_node_"
         private const val COLLECTION_PROJECT = "project"
         const val ARCHIVE_STAT_INFO = "archiveStatInfo"
 

@@ -56,42 +56,63 @@ package com.tencent.bkrepo.job.separation.model
 
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.api.mongo.ShardingKey
+import com.tencent.bkrepo.common.metadata.model.TMetadata
+import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.job.separation.model.TSeparationPackageVersion.Companion.SEPARATION_VERSION_NAME_IDX
 import com.tencent.bkrepo.job.separation.model.TSeparationPackageVersion.Companion.SEPARATION_VERSION_NAME_IDX_DEF
-import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import java.time.LocalDateTime
 
 /**
  * 冷数据package version表
+ * 继承自TPackageVersion，只增加separationDate字段
  */
 @ShardingDocument("separation_package_version")
 @CompoundIndexes(
     CompoundIndex(name = SEPARATION_VERSION_NAME_IDX, def = SEPARATION_VERSION_NAME_IDX_DEF, background = true),
 )
-data class TSeparationPackageVersion(
-    var id: String? = null,
-    var createdBy: String,
-    var createdDate: LocalDateTime,
-    var lastModifiedBy: String,
-    var lastModifiedDate: LocalDateTime,
-
-    var packageId: String,
-    var name: String,
-    var size: Long,
-    var ordinal: Long,
-    var downloads: Long,
-    var manifestPath: String? = null,
-    var artifactPath: String? = null,
-    var stageTag: List<String>,
-    var metadata: List<MetadataModel>,
-    var tags: List<String>? = null,
-    var extension: Map<String, Any>? = null,
-    var clusterNames: Set<String>? = null,
-    @ShardingKey
-    var separationDate: LocalDateTime,
+class TSeparationPackageVersion(
+    id: String? = null,
+    createdBy: String,
+    createdDate: LocalDateTime,
+    lastModifiedBy: String,
+    lastModifiedDate: LocalDateTime,
+    packageId: String,
+    name: String,
+    size: Long,
+    ordinal: Long,
+    downloads: Long,
+    manifestPath: String? = null,
+    artifactPath: String? = null,
+    artifactPaths: MutableSet<String>? = null,
+    stageTag: List<String>,
+    metadata: List<TMetadata>,
+    tags: List<String>? = null,
+    extension: Map<String, Any>? = null,
+    clusterNames: Set<String>? = null
+) : TPackageVersion(
+    id = id,
+    createdBy = createdBy,
+    createdDate = createdDate,
+    lastModifiedBy = lastModifiedBy,
+    lastModifiedDate = lastModifiedDate,
+    packageId = packageId,
+    name = name,
+    size = size,
+    ordinal = ordinal,
+    downloads = downloads,
+    manifestPath = manifestPath,
+    artifactPath = artifactPath,
+    artifactPaths = artifactPaths,
+    stageTag = stageTag,
+    metadata = metadata,
+    tags = tags,
+    extension = extension,
+    clusterNames = clusterNames
 ) {
+    @ShardingKey
+    var separationDate: LocalDateTime? = null
     companion object {
         const val SEPARATION_VERSION_NAME_IDX = "separation_version_name_idx"
         const val SEPARATION_VERSION_NAME_IDX_DEF = "{'packageId': 1, 'name': 1}"

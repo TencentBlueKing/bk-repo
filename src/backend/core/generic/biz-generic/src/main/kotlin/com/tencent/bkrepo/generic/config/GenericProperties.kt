@@ -62,4 +62,9 @@ class GenericProperties {
     var userShareInterceptor: UserShareInterceptorProperties = UserShareInterceptorProperties()
     @NestedConfigurationProperty
     var compressedReport: CompressedReportProperties = CompressedReportProperties()
+    /**
+     * 需要进行冷表查询的仓库列表，支持通配符，格式：projectId/repoName
+     * 例如：["project1/repo1", "project2/*", "*/repo3"]
+     */
+    var separatedRepos: List<String> = emptyList()
 }

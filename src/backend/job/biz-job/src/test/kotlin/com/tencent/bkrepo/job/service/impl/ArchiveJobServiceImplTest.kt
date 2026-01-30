@@ -9,6 +9,8 @@ import com.tencent.bkrepo.job.batch.task.archive.IdleNodeArchiveJob
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.model.TNode
 import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
+import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
+import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
@@ -43,6 +45,12 @@ class ArchiveJobServiceImplTest @Autowired constructor(
 
     @MockitoBean
     private lateinit var migrateArchivedFileService: MigrateArchivedFileServiceImpl
+
+    @MockitoBean
+    private lateinit var separationTaskService: SeparationTaskService
+
+    @MockitoBean
+    private lateinit var separationNodeDao: SeparationNodeDao
 
     @Test
     fun test() {

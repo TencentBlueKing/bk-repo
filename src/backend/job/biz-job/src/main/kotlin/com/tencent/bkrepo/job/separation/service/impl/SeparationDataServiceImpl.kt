@@ -29,6 +29,7 @@ package com.tencent.bkrepo.job.separation.service.impl
 
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
 import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
 import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
@@ -174,7 +175,7 @@ class SeparationDataServiceImpl(
         const val PATH_IDX = "projectId_repoName_path_idx"
 
 
-        fun toMap(metadataList: List<MetadataModel>?): Map<String, Any> {
+        fun toMap(metadataList: List<TMetadata>): Map<String, Any> {
             return metadataList?.associate { it.key to it.value }.orEmpty()
         }
 
@@ -190,7 +191,13 @@ class SeparationDataServiceImpl(
                     downloads = it.downloads,
                     stageTag = it.stageTag,
                     metadata = toMap(it.metadata),
-                    packageMetadata = it.metadata,
+                    packageMetadata = it.metadata.map { m ->
+                        MetadataModel(
+                            key = m.key, value = m.value,
+                            system = m.system, description = m.description,
+                            link = m.link
+                        )
+                    },
                     tags = it.tags.orEmpty(),
                     extension = it.extension.orEmpty(),
                     contentPath = it.artifactPath,
@@ -226,7 +233,7 @@ class SeparationDataServiceImpl(
 
         private fun convert(tNode: TSeparationNode?): NodeInfo? {
             return tNode?.let {
-                val metadata = toMap(it.metadata)
+                val metadata = it.metadata?.let { it1 -> toMap(it1) }
                 NodeInfo(
                     id = it.id,
                     createdBy = it.createdBy,
@@ -247,7 +254,13 @@ class SeparationDataServiceImpl(
                     md5 = it.md5,
                     crc64ecma = it.crc64ecma,
                     metadata = metadata,
-                    nodeMetadata = it.metadata,
+                    nodeMetadata = it.metadata?.map { m ->
+                        MetadataModel(
+                            key = m.key, value = m.value,
+                            system = m.system, description = m.description,
+                            link = m.link
+                        )
+                    },
                     copyFromCredentialsKey = it.copyFromCredentialsKey,
                     copyIntoCredentialsKey = it.copyIntoCredentialsKey,
                     deleted = it.deleted?.format(DateTimeFormatter.ISO_DATE_TIME),

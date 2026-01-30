@@ -29,7 +29,9 @@ package com.tencent.bkrepo.job.batch.task.separation
 
 import com.google.common.base.CaseFormat
 import com.tencent.bkrepo.job.RESTORE
+import com.tencent.bkrepo.job.RESTORE_ARCHIVED
 import com.tencent.bkrepo.job.SEPARATE
+import com.tencent.bkrepo.job.SEPARATE_ARCHIVED
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
@@ -98,8 +100,8 @@ class DataSeparationJob(
 
     private fun executeSeparationTask(task: TSeparationTask) {
         val executorName = when (task.type) {
-            RESTORE -> ColdDataRestoreTaskExecutor::class.simpleName!!
-            SEPARATE -> ColdDataSeparateTaskExecutor::class.simpleName!!
+            RESTORE, RESTORE_ARCHIVED -> ColdDataRestoreTaskExecutor::class.simpleName!!
+            SEPARATE, SEPARATE_ARCHIVED -> ColdDataSeparateTaskExecutor::class.simpleName!!
             else -> throw IllegalStateException("unsupported type[${task.type}], task ${task.id}")
         }
         return executors[CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_CAMEL, executorName)]!!
