@@ -164,7 +164,7 @@ export default {
       query.projectId = this.nodeQuery.projectId
       query.repoName = this.nodeQuery.repoName
       query.path = this.nodeQuery.path
-      this.$router.push({ path: '/nodes/emptyFolder', query: query })
+      this.$router.push({ path: '/ops/nodes/emptyFolder', query: query })
     },
     onRouteUpdate(route) {
       const query = route.query
