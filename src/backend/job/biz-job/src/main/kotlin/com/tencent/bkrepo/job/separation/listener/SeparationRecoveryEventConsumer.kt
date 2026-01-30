@@ -30,22 +30,22 @@ package com.tencent.bkrepo.job.separation.listener
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
-import com.tencent.bkrepo.job.RESTORE
-import com.tencent.bkrepo.job.RESTORE_ARCHIVED
-import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
-import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
-import com.tencent.bkrepo.job.separation.dao.SeparationPackageDao
-import com.tencent.bkrepo.job.separation.dao.SeparationPackageVersionDao
-import com.tencent.bkrepo.job.separation.model.TSeparationNode
-import com.tencent.bkrepo.job.separation.model.TSeparationPackageVersion
-import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo
-import com.tencent.bkrepo.job.separation.pojo.PackageFilterInfo
-import com.tencent.bkrepo.job.separation.pojo.RecoveryNodeInfo
-import com.tencent.bkrepo.job.separation.pojo.RecoveryVersionInfo
-import com.tencent.bkrepo.job.separation.pojo.SeparationContent
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
-import com.tencent.bkrepo.job.separation.service.impl.repo.RepoSpecialSeparationMappings
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationNodeDao
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationPackageDao
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationPackageVersionDao
+import com.tencent.bkrepo.common.metadata.model.TSeparationNode
+import com.tencent.bkrepo.common.metadata.model.TSeparationPackageVersion
+import com.tencent.bkrepo.common.metadata.pojo.separation.NodeFilterInfo
+import com.tencent.bkrepo.common.metadata.pojo.separation.PackageFilterInfo
+import com.tencent.bkrepo.common.metadata.pojo.separation.RecoveryNodeInfo
+import com.tencent.bkrepo.common.metadata.pojo.separation.RecoveryVersionInfo
+import com.tencent.bkrepo.common.metadata.pojo.separation.SeparationContent
+import com.tencent.bkrepo.common.metadata.pojo.separation.task.SeparationTaskRequest
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.RESTORE
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.RESTORE_ARCHIVED
+import com.tencent.bkrepo.common.metadata.service.separation.impl.repo.RepoSpecialSeparationMappings
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.Message
 import org.springframework.stereotype.Component
@@ -71,7 +71,14 @@ class SeparationRecoveryEventConsumer(
     )
 
     fun accept(message: Message<ArtifactEvent>) {
-        if (!dataSeparationConfig.enableAutoRecovery) return
+        if (!dataSeparationConfig.enableAutoRecovery) {
+            logger.warn(
+                "Auto recovery is disabled, skipping recovery event " +
+                    "for [${message.payload.projectId}/${message.payload.repoName}/${message.payload.resourceKey}]. " +
+                    "Set 'separation.enableAutoRecovery=true' to enable."
+            )
+            return
+        }
         if (!acceptTypes.contains(message.payload.type)) {
             return
         }

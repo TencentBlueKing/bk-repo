@@ -8,8 +8,6 @@ import com.tencent.bkrepo.common.api.util.EscapeUtils
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.job.BATCH_SIZE
-import com.tencent.bkrepo.job.RESTORE
-import com.tencent.bkrepo.job.RESTORE_ARCHIVED
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.context.NodeContext
 import com.tencent.bkrepo.job.batch.task.archive.IdleNodeArchiveJob
@@ -18,11 +16,13 @@ import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.pojo.ArchiveRestoreRequest
-import com.tencent.bkrepo.job.separation.dao.SeparationNodeDao
-import com.tencent.bkrepo.job.separation.pojo.NodeFilterInfo
-import com.tencent.bkrepo.job.separation.pojo.SeparationContent
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationNodeDao
+import com.tencent.bkrepo.common.metadata.pojo.separation.NodeFilterInfo
+import com.tencent.bkrepo.common.metadata.pojo.separation.SeparationContent
+import com.tencent.bkrepo.common.metadata.pojo.separation.task.SeparationTaskRequest
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.RESTORE
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.RESTORE_ARCHIVED
 import com.tencent.bkrepo.job.service.ArchiveJobService
 import com.tencent.bkrepo.job.service.MigrateArchivedFileService
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
@@ -167,7 +167,7 @@ class ArchiveJobServiceImpl(
     ) {
         logger.info("Found ${separationNodes.size} separation nodes for project[$projectId], creating restore task")
         separationNodes.forEach { node ->
-            val n = node as com.tencent.bkrepo.job.separation.model.TSeparationNode
+            val n = node as com.tencent.bkrepo.common.metadata.model.TSeparationNode
             val taskType = if (n.archived == true) RESTORE_ARCHIVED else RESTORE
             val task = SeparationTaskRequest(
                 projectId = projectId,

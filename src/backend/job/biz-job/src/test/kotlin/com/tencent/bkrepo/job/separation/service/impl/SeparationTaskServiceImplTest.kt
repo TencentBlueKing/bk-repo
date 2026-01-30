@@ -1,9 +1,9 @@
 package com.tencent.bkrepo.job.separation.service.impl
 
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
-import com.tencent.bkrepo.job.separation.config.DataSeparationConfig
-import com.tencent.bkrepo.job.separation.dao.SeparationFailedRecordDao
-import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationFailedRecordDao
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationTaskDao
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertFalse

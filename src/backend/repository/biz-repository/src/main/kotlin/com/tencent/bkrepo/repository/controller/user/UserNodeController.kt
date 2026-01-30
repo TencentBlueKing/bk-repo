@@ -38,6 +38,7 @@ import com.tencent.bk.audit.annotations.AuditInstanceRecord
 import com.tencent.bk.audit.context.ActionAuditContext
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
@@ -52,10 +53,13 @@ import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationDataService
+import com.tencent.bkrepo.common.metadata.util.SeparationUtils
 import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.permission.Principal
@@ -106,6 +110,8 @@ class UserNodeController(
     private val nodeService: NodeService,
     private val nodeSearchService: NodeSearchService,
     private val permissionManager: PermissionManager,
+    private val separationDataService: SeparationDataService,
+    private val dataSeparationConfig: DataSeparationConfig,
 ) {
 
     @AuditEntry(
@@ -133,8 +139,19 @@ class UserNodeController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
     ): Response<NodeDetail> {
         val node = nodeService.getNodeDetail(artifactInfo)
-            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
-        return ResponseBuilder.success(node)
+        if (node != null) return ResponseBuilder.success(node)
+        with(artifactInfo) {
+            if (SeparationUtils.matchesConfigRepos(
+                    "$projectId/$repoName", dataSeparationConfig.specialSeparateRepos
+                )
+            ) {
+                val coldNode = separationDataService.findNodeInfo(projectId, repoName, getArtifactFullPath())
+                if (coldNode != null) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_IN_COLD_STORAGE, getArtifactFullPath())
+                }
+            }
+        }
+        throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
     }
 
     @AuditEntry(
@@ -201,10 +218,13 @@ class UserNodeController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
     ): Response<NodeDeleteResult> {
         with(artifactInfo) {
+            val fullPath = getArtifactFullPath()
+            // 删前预检：文件精确匹配或目录下存在冷节点，均阻止删除
+            checkColdNodeBeforeDelete(projectId, repoName, listOf(fullPath))
             val deleteRequest = NodeDeleteRequest(
                 projectId = projectId,
                 repoName = repoName,
-                fullPath = getArtifactFullPath(),
+                fullPath = fullPath,
                 operator = userId,
             )
             ActionAuditContext.current().setInstance(deleteRequest)
@@ -240,6 +260,8 @@ class UserNodeController(
         @Size(max = 200, message = "{node.batch.delete.count.limit}")
         fullPaths: List<String>,
     ): Response<NodeDeleteResult> {
+        // 删前预检：文件精确匹配或目录下存在冷节点，均阻止删除
+        checkColdNodeBeforeDelete(projectId, repoName, fullPaths)
         val nodesDeleteRequest = NodesDeleteRequest(
             projectId = projectId,
             repoName = repoName,
@@ -406,6 +428,7 @@ class UserNodeController(
     ): Response<Void> {
         with(artifactInfo) {
             permissionManager.checkNodePermission(PermissionAction.UPDATE, projectId, repoName, newFullPath)
+            checkColdNodeBeforeDelete(projectId, repoName, listOf(getArtifactFullPath()))
             val renameRequest = NodeRenameRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -429,6 +452,7 @@ class UserNodeController(
         with(request) {
             permissionManager.checkNodePermission(PermissionAction.UPDATE, projectId, repoName, fullPath)
             permissionManager.checkNodePermission(PermissionAction.UPDATE, projectId, repoName, newFullPath)
+            checkColdNodeBeforeDelete(projectId, repoName, listOf(fullPath))
             val renameRequest = NodeRenameRequest(
                 projectId = projectId,
                 repoName = repoName,
@@ -473,6 +497,7 @@ class UserNodeController(
     ): Response<Void> {
         with(request) {
             checkCrossRepoPermission(request)
+            checkColdNodeBeforeDelete(srcProjectId, srcRepoName, listOf(srcFullPath))
             val moveRequest = NodeMoveCopyRequest(
                 srcProjectId = srcProjectId,
                 srcRepoName = srcRepoName,
@@ -685,6 +710,28 @@ class UserNodeController(
             permissionManager.checkRepoPermission(PermissionAction.MANAGE, projectId, repoName, userId = userId)
             return ResponseBuilder.success (
                 fullPaths.filter { nodeService.checkFolderExists(projectId, repoName, it) }
+            )
+        }
+    }
+
+    /**
+     * 删除前预检冷存储，仅对配置了降冷任务的仓库执行：
+     * - 文件路径：精确查冷表
+     * - 目录路径：检查目录下是否有冷节点（避免目录本身被删但冷子节点成为孤立数据）
+     */
+    private fun checkColdNodeBeforeDelete(projectId: String, repoName: String, fullPaths: List<String>) {
+        if (!SeparationUtils.matchesConfigRepos(
+                "$projectId/$repoName", dataSeparationConfig.specialSeparateRepos
+            )
+        ) return
+        val coldPaths = fullPaths.filter { fullPath ->
+            separationDataService.findNodeInfo(projectId, repoName, fullPath) != null
+                || separationDataService.hasColdNodeUnderPath(projectId, repoName, fullPath)
+        }
+        if (coldPaths.isNotEmpty()) {
+            throw ErrorCodeException(
+                ArtifactMessageCode.NODE_IN_COLD_STORAGE,
+                coldPaths.joinToString(StringPool.COMMA)
             )
         }
     }

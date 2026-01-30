@@ -47,7 +47,9 @@ import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResource
 import com.tencent.bkrepo.common.artifact.util.PackageKeys
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
 import com.tencent.bkrepo.common.metadata.service.packages.StageService
+import com.tencent.bkrepo.common.metadata.util.SeparationUtils
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
@@ -113,6 +115,7 @@ class MavenLocalRepository(
     private val mavenMetadataService: MavenMetadataService,
     private val mavenProperties: MavenProperties,
     private val mavenService: MavenService,
+    private val dataSeparationConfig: DataSeparationConfig,
 ) : LocalRepository() {
 
     @Value("\${maven.domain:http://127.0.0.1:25803}")
@@ -776,8 +779,14 @@ class MavenLocalRepository(
         fullPath: String,
         repoType: String,
     ) {
-        if (!mavenProperties.autoRecovery) return
-        if (mavenProperties.recoveryTopic.isNullOrEmpty()) return
+        // 检查是否启用自动恢复
+        if (!dataSeparationConfig.autoRecovery) return
+        if (dataSeparationConfig.recoveryTopic.isNullOrEmpty()) return
+        
+        // 检查该仓库是否配置了降冷
+        val repoKey = "$projectId/$repoName"
+        if (!SeparationUtils.matchesConfigRepos(repoKey, dataSeparationConfig.specialSeparateRepos)) return
+        
         val event = buildNodeSeparationRecoveryEvent(
             projectId = projectId,
             repoName = repoName,
@@ -786,7 +795,7 @@ class MavenLocalRepository(
         )
         messageSupplier.delegateToSupplier(
             data = event,
-            topic = mavenProperties.recoveryTopic!!,
+            topic = dataSeparationConfig.recoveryTopic!!,
             key = event.getFullResourceKey(),
         )
     }

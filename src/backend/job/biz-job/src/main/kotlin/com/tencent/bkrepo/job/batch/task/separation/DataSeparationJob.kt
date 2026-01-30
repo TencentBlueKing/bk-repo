@@ -28,10 +28,6 @@
 package com.tencent.bkrepo.job.batch.task.separation
 
 import com.google.common.base.CaseFormat
-import com.tencent.bkrepo.job.RESTORE
-import com.tencent.bkrepo.job.RESTORE_ARCHIVED
-import com.tencent.bkrepo.job.SEPARATE
-import com.tencent.bkrepo.job.SEPARATE_ARCHIVED
 import com.tencent.bkrepo.job.batch.base.DefaultContextJob
 import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
@@ -39,9 +35,13 @@ import com.tencent.bkrepo.job.config.properties.DataSeparationJobProperties
 import com.tencent.bkrepo.job.separation.executor.ColdDataRestoreTaskExecutor
 import com.tencent.bkrepo.job.separation.executor.ColdDataSeparateTaskExecutor
 import com.tencent.bkrepo.job.separation.executor.SeparationTaskExecutor
-import com.tencent.bkrepo.job.separation.model.TSeparationTask
-import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
+import com.tencent.bkrepo.common.metadata.model.TSeparationTask
+import com.tencent.bkrepo.common.metadata.pojo.separation.record.SeparationContext
+import com.tencent.bkrepo.common.metadata.pojo.separation.task.SeparationTaskState
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.RESTORE
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.RESTORE_ARCHIVED
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.SEPARATE
+import com.tencent.bkrepo.common.metadata.service.separation.impl.SeparationTaskServiceImpl.Companion.SEPARATE_ARCHIVED
 import org.slf4j.LoggerFactory
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria

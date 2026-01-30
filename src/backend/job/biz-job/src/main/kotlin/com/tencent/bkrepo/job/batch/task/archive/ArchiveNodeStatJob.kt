@@ -27,6 +27,7 @@
 package com.tencent.bkrepo.job.batch.task.archive
 
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
 import com.tencent.bkrepo.common.mongo.api.util.sharding.MonthRangeShardingUtils
 import com.tencent.bkrepo.job.FOLDER
@@ -37,7 +38,6 @@ import com.tencent.bkrepo.job.batch.base.JobContext
 import com.tencent.bkrepo.job.batch.context.ArchiveNodeStatJobContext
 import com.tencent.bkrepo.job.config.properties.ArchiveNodeStatJobProperties
 import com.tencent.bkrepo.job.pojo.stat.StatNode
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import com.tencent.bkrepo.oci.constant.DELETED
 import com.tencent.bkrepo.repository.pojo.project.ProjectMetadata
 import org.slf4j.LoggerFactory

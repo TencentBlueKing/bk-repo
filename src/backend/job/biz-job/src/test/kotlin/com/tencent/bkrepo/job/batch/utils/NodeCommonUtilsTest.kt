@@ -41,7 +41,7 @@ import com.tencent.bkrepo.job.UT_STORAGE_CREDENTIALS_KEY
 import com.tencent.bkrepo.job.batch.JobBaseTest
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
 import com.tencent.bkrepo.job.migrate.utils.MigrateTestUtils.mockRepositoryCommonUtils
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName

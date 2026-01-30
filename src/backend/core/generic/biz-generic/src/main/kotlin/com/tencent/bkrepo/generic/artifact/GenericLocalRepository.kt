@@ -48,6 +48,7 @@ import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_CRC64ECMA
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_MD5
 import com.tencent.bkrepo.common.artifact.constant.X_CHECKSUM_SHA256
 import com.tencent.bkrepo.common.artifact.event.node.NodeSeparationRecoveryEvent
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationDataService
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -157,6 +158,7 @@ class GenericLocalRepository(
     private val storageProperties: StorageProperties,
     private val metadataLabelCacheService: MetadataLabelCacheService,
     private val genericProperties: GenericProperties,
+    private val separationDataService: SeparationDataService,
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -557,6 +559,7 @@ class GenericLocalRepository(
 
     /**
      * 验证节点是否存在，并检查降冷仓库
+     * 对降冷仓库中不存在的节点，触发恢复事件并抛出 NODE_IN_COLD_STORAGE，区别于真正不存在的 NodeNotFoundException
      */
     private fun validateAndCheckSeparation(
         context: ArtifactDownloadContext,
@@ -567,7 +570,16 @@ class GenericLocalRepository(
         if (notExistNodes.isEmpty()) return
 
         if (isSeparatedRepo(context.projectId, context.repoName)) {
-            notExistNodes.forEach { publishSeparationRecoveryEvent(context, null, it) }
+            val coldNodes = notExistNodes.filter {
+                separationDataService.findNodeInfo(context.projectId, context.repoName, it) != null
+            }
+            coldNodes.forEach { publishSeparationRecoveryEvent(context, null, it) }
+            if (coldNodes.isNotEmpty()) {
+                throw ErrorCodeException(
+                    ArtifactMessageCode.NODE_IN_COLD_STORAGE,
+                    coldNodes.joinToString(StringPool.COMMA)
+                )
+            }
         }
         throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
     }
@@ -753,14 +765,23 @@ class GenericLocalRepository(
 
     override fun remove(context: ArtifactRemoveContext) {
         with(context.artifactInfo) {
+            val fullPath = getArtifactFullPath()
+            if (isSeparatedRepo(projectId, repoName)) {
+                // 文件：精确匹配冷表；目录：检查冷子节点（防止目录本身被删但冷子节点成为孤立数据）
+                if (separationDataService.findNodeInfo(projectId, repoName, fullPath) != null
+                    || separationDataService.hasColdNodeUnderPath(projectId, repoName, fullPath)
+                ) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_IN_COLD_STORAGE, fullPath)
+                }
+            }
             val node = nodeService.getNodeDetail(this)
-                ?: throw NodeNotFoundException(this.getArtifactFullPath())
+                ?: throw NodeNotFoundException(fullPath)
             if (node.folder) {
                 if (nodeService.countFileNode(this) > 0) {
                     throw ErrorCodeException(ArtifactMessageCode.FOLDER_CONTAINS_FILE)
                 }
             }
-            val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, getArtifactFullPath(), context.userId)
+            val nodeDeleteRequest = NodeDeleteRequest(projectId, repoName, fullPath, context.userId)
             nodeService.deleteNode(nodeDeleteRequest)
         }
     }
@@ -779,7 +800,13 @@ class GenericLocalRepository(
 
     override fun query(context: ArtifactQueryContext): Any? {
         val artifactInfo = context.artifactInfo
-        return nodeService.getNodeDetail(artifactInfo)
+        val hotNode = nodeService.getNodeDetail(artifactInfo)
+        if (hotNode != null) return hotNode
+        if (!isSeparatedRepo(artifactInfo.projectId, artifactInfo.repoName)) return null
+        val coldNodeInfo = separationDataService.findNodeInfo(
+            artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath()
+        ) ?: return null
+        return NodeDetail(coldNodeInfo)
     }
 
     override fun search(context: ArtifactSearchContext): List<Any> {

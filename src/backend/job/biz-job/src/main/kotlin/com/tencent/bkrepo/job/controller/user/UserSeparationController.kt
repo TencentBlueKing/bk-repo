@@ -37,10 +37,10 @@ import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationTask
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskRequest
-import com.tencent.bkrepo.job.separation.service.SeparationDataService
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.common.metadata.pojo.separation.task.SeparationTask
+import com.tencent.bkrepo.common.metadata.pojo.separation.task.SeparationTaskRequest
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationDataService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.NodeListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
