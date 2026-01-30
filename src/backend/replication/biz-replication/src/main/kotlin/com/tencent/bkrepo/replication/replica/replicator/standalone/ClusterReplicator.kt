@@ -29,9 +29,13 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
 import com.google.common.cache.CacheBuilder
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
@@ -130,7 +134,19 @@ class ClusterReplicator(
                     configuration = localRepo.configuration,
                     operator = localRepo.createdBy
                 )
-                remoteRepoCache.put(key, artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!)
+                val remoteRepo = artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
+                remoteRepoCache.put(key, remoteRepo)
+                if (
+                    remoteRepo.type != remoteRepoType ||
+                    remoteRepo.category != RepositoryCategory.LOCAL &&
+                    remoteRepo.category != RepositoryCategory.COMPOSITE
+                ) {
+                    throw ErrorCodeException(
+                        ArtifactMessageCode.REPOSITORY_EXISTED,
+                        "$remoteProjectId/$remoteRepoName",
+                        status = HttpStatus.CONFLICT
+                    )
+                }
             }
             context.remoteRepo = remoteRepoCache.getIfPresent(key)
         }
