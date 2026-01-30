@@ -12,6 +12,7 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.media.STREAM_PATH
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
@@ -80,7 +81,14 @@ class StreamService(
             type = TokenType.UPLOAD,
         )
         val token = tokenService.createToken(temporaryTokenRequest).firstOrNull()
-        return "${mediaProperties.serverAddress}/$projectId/$repoName$STREAM_PATH?token=$token"
+        val gray = HeaderUtils.getHeader("X-GATEWAY-TAG").toString().equals("gray", true)
+                && mediaProperties.grayServerAddress.isNotEmpty()
+        val serverAddress = if (gray) {
+            mediaProperties.grayServerAddress
+        } else {
+            mediaProperties.serverAddress
+        }
+        return "$serverAddress/$projectId/$repoName$STREAM_PATH?token=$token"
     }
 
     /**
