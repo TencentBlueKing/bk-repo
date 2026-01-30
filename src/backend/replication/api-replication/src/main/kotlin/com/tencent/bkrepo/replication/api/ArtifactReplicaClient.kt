@@ -143,6 +143,7 @@ interface ArtifactReplicaClient {
     @PostMapping("/project/create")
     fun replicaProjectCreateRequest(
         @RequestBody request: ProjectCreateRequest,
+        @RequestHeader("x-bk-tenant-id", required = false) tenantId: String? = null
     ): Response<ProjectInfo>
 
     @PostMapping("/metadata/save")
