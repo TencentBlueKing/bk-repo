@@ -41,6 +41,7 @@ import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.RepoNotFoundException
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.pojo.configuration.composite.CompositeConfiguration
@@ -79,6 +80,7 @@ import com.tencent.bkrepo.helm.constants.NODE_CREATE_DATE
 import com.tencent.bkrepo.helm.constants.NODE_FULL_PATH
 import com.tencent.bkrepo.helm.constants.NODE_METADATA
 import com.tencent.bkrepo.helm.constants.NODE_NAME
+import com.tencent.bkrepo.helm.constants.NODE_PATH
 import com.tencent.bkrepo.helm.constants.NODE_SHA256
 import com.tencent.bkrepo.helm.constants.PROJECT_ID
 import com.tencent.bkrepo.helm.constants.QUERY_INDEX_KEY_PREFIX
@@ -327,23 +329,29 @@ open class AbstractChartService : ArtifactService() {
             val queryModelBuilder = NodeQueryBuilder()
                 .select(PROJECT_ID, REPO_NAME, NODE_NAME, NODE_FULL_PATH,
                         NODE_METADATA, NODE_SHA256, NODE_CREATE_DATE)
-                .sortByAsc(NODE_FULL_PATH)
+                .sortByAsc(PROJECT_ID, REPO_NAME, NODE_PATH)
                 .page(pageNum, V2_PAGE_SIZE)
                 .projectId(artifactInfo.projectId)
                 .repoName(artifactInfo.repoName)
-                .fullPath(TGZ_SUFFIX, OperationType.SUFFIX)
+                .path(PathUtils.ROOT)
+                .excludeFolder()
             val result = nodeSearchService.searchWithoutCount(queryModelBuilder.build())
             if (result.records.isEmpty()) break
-            result.records.forEach {
-                try {
-                    ChartParserUtil.addIndexEntries(indexYamlMetadata, createChartMetadata(it, artifactInfo))
-                } catch (ex: Exception) {
-                    logger.warn(
-                        "generate indexFile for chart [${it[NODE_FULL_PATH]}] in " +
-                            "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
-                    )
+            result.records
+                .filter {
+                    val nodeName = it[NODE_NAME] as? String ?: ""
+                    nodeName.endsWith(TGZ_SUFFIX)
                 }
-            }
+                .forEach {
+                    try {
+                        ChartParserUtil.addIndexEntries(indexYamlMetadata, createChartMetadata(it, artifactInfo))
+                    } catch (ex: Exception) {
+                        logger.warn(
+                            "generate indexFile for chart [${it[NODE_FULL_PATH]}] in " +
+                                "[${artifactInfo.getRepoIdentify()}] failed, ${ex.message}"
+                        )
+                    }
+                }
             pageNum++
         }
         return indexYamlMetadata
