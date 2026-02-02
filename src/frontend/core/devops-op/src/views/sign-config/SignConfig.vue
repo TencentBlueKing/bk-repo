@@ -96,14 +96,11 @@
 <script>
 import { getSignConfigList, deleteSignConfig } from '@/api/signconfig'
 import CreateOrUpdateSignConfigDialog from './components/CreateOrUpdateSignConfigDialog'
+import { ROUTER_NAME_SIGN_CONFIG } from '@/router'
 
 export default {
   name: 'SignConfig',
   components: { CreateOrUpdateSignConfigDialog },
-  beforeRouteUpdate(to, from, next) {
-    this.onRouteUpdate(to)
-    next()
-  },
   filters: {
     parseTime(time, cFormat) {
       if (!time) return ''
@@ -136,6 +133,10 @@ export default {
       })
       return time_str
     }
+  },
+  beforeRouteUpdate(to, from, next) {
+    this.onRouteUpdate(to)
+    next()
   },
   data() {
     return {
@@ -173,11 +174,11 @@ export default {
         pageSize: this.listQuery.pageSize,
         projectId: this.listQuery.projectId
       }
-      console.log("change router query:", query)
-      this.$router.push({ path: '/sign-config', query: query })
+      console.log('change router query:', query)
+      this.$router.push({ name: ROUTER_NAME_SIGN_CONFIG, query: query })
     },
     onRouteUpdate(route) {
-      console.log("router update", route.query)
+      console.log('router update', route.query)
       this.listQuery.pageNumber = route.query.pageNumber || 1
       this.listQuery.pageSize = route.query.pageSize || 20
       this.listQuery.projectId = route.query.projectId
