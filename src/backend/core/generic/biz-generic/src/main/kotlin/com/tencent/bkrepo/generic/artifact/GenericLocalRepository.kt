@@ -541,7 +541,6 @@ class GenericLocalRepository(
                     projectId = projectId,
                     repoName = repoName,
                     paths = fullPathList,
-                    prefix = commonParent
                 )
             val notExistNodes = fullPathList.subtract(nodes.map { it.fullPath })
             if (notExistNodes.isNotEmpty()) {
@@ -589,7 +588,21 @@ class GenericLocalRepository(
         initialCount: Long = 0,
         initialSize: Long = 0
     ): List<NodeDetail> {
+        // 先计算所有目录的总大小和文件数,提前校验避免无效的分页查询
+        var totalCount = initialCount
         var totalSize = initialSize
+        folders.forEach { folder ->
+            val sizeInfo = nodeService.computeSize(
+                ArtifactInfo(folder.projectId, folder.repoName, folder.fullPath)
+            )
+            val fileCount = if (includeFolder) sizeInfo.subNodeCount else sizeInfo.subNodeWithoutFolderCount
+            totalCount += fileCount
+            totalSize += sizeInfo.size
+            checkFileCount(totalCount)
+            checkFileTotalSize(totalSize)
+        }
+
+        // 校验通过后再执行实际分页查询
         val nodes = mutableListOf<NodeDetail>()
         folders.forEach { folder ->
             var pageNumber = 1
@@ -599,16 +612,14 @@ class GenericLocalRepository(
                     pageSize = PAGE_SIZE,
                     includeFolder = includeFolder,
                     includeMetadata = true,
-                    deep = true
+                    deep = true,
+                    includeTotalRecords = false
                 )
                 val records =
                     nodeService.listNodePage(ArtifactInfo(folder.projectId, folder.repoName, folder.fullPath), option)
                         .records.takeUnless { it.isEmpty() }?.map { NodeDetail(it) } ?: break
                 records.filterNot { it.folder }.forEach { downloadIntercept(context, it) }
-                totalSize += records.sumOf { it.size }
-                checkFileTotalSize(totalSize)
                 nodes.addAll(records)
-                checkFileCount(initialCount + nodes.size)
                 pageNumber++
             } while (records.size == PAGE_SIZE)
         }
@@ -619,28 +630,10 @@ class GenericLocalRepository(
         projectId: String,
         repoName: String,
         paths: List<String>,
-        prefix: String
     ): List<NodeDetail> {
-        var pageNumber = 1
-        val nodeDetailList = mutableListOf<NodeDetail>()
-        do {
-            val option = NodeListOption(
-                pageNumber = pageNumber,
-                pageSize = PAGE_SIZE,
-                includeFolder = true,
-                includeMetadata = true,
-                deep = true
-            )
-            val records = nodeService.listNodePage(ArtifactInfo(projectId, repoName, prefix), option).records
-            if (records.isEmpty()) {
-                break
-            }
-            nodeDetailList.addAll(
-                records.filter { paths.contains(it.fullPath) }.map { NodeDetail(it) }
-            )
-            pageNumber++
-        } while (nodeDetailList.size < paths.size)
-        return nodeDetailList
+        return paths.distinct().mapNotNull {
+            nodeService.getNodeDetail(ArtifactInfo(projectId, repoName, it))
+        }
     }
 
     /**
