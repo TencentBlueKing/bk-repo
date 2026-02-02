@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 
 /**
@@ -78,4 +79,9 @@ interface ArtifactConfigurer {
      * 异常消息响应体格式转换器
      */
     fun getExceptionResponseTranslator(): ExceptionResponseTranslator
+
+    /**
+     * 构件数据响应逻辑[ArtifactResourceWriter]
+     */
+    fun getArtifactResourceWriter(): ArtifactResourceWriter
 }

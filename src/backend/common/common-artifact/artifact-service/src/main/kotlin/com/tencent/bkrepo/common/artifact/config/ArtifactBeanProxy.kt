@@ -37,6 +37,7 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactRepository
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
+import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import org.springframework.cglib.proxy.MethodInterceptor
 import org.springframework.cglib.proxy.MethodProxy
 import java.lang.reflect.InvocationTargetException
@@ -55,6 +56,7 @@ class ArtifactBeanProxy<T>(
             RemoteRepository::class.java -> configurer.getRemoteRepository()
             VirtualRepository::class.java -> configurer.getVirtualRepository()
             ExceptionResponseTranslator::class.java -> configurer.getExceptionResponseTranslator()
+            ArtifactResourceWriter::class.java -> configurer.getArtifactResourceWriter()
             else -> throw IllegalArgumentException("Unsupported proxy object[$classType]")
         }
         try {

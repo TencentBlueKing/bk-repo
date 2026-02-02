@@ -37,11 +37,9 @@ import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoMethodArgumen
 import com.tencent.bkrepo.common.artifact.resolve.path.ArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.DefaultArtifactInfoResolver
 import com.tencent.bkrepo.common.artifact.resolve.path.ResolverMap
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResourceWriter
-import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -88,12 +86,14 @@ class ArtifactResolverConfiguration {
         }
     }
 
+    /**
+     * [com.tencent.bkrepo.common.artifact.config.ArtifactConfigurerSupport.getArtifactResourceWriter]依赖bean名称获取[DefaultArtifactResourceWriter]
+     */
     @Bean
-    @ConditionalOnMissingBean(ArtifactResourceWriter::class)
-    fun artifactResourceWriter(
+    fun defaultArtifactResourceWriter(
         storageProperties: StorageProperties,
         requestLimitCheckService: RequestLimitCheckService
-    ): ArtifactResourceWriter {
+    ): DefaultArtifactResourceWriter {
         return DefaultArtifactResourceWriter(
             storageProperties,
             requestLimitCheckService

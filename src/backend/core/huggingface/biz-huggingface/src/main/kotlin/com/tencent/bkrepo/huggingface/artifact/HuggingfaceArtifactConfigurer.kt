@@ -32,15 +32,11 @@ import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.artifact.repository.local.LocalRepository
 import com.tencent.bkrepo.common.artifact.repository.remote.RemoteRepository
 import com.tencent.bkrepo.common.artifact.repository.virtual.VirtualRepository
-import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
-import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurityCustomizer
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
-import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.huggingface.config.HuggingfaceProperties
 import com.tencent.bkrepo.huggingface.security.HfAuthHandler
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
@@ -63,14 +59,5 @@ class HuggingfaceArtifactConfigurer : ArtifactConfigurerSupport() {
         httpAuthSecurity.withPrefix("/huggingface").excludePattern("/lfs/**")
     }
 
-    @Bean
-    fun artifactResourceWriter(
-        storageProperties: StorageProperties,
-        requestLimitCheckService: RequestLimitCheckService
-    ): ArtifactResourceWriter {
-        return HuggingfaceArtifactResourceWriter(
-            storageProperties,
-            requestLimitCheckService
-        )
-    }
+    override fun getArtifactResourceWriter() = SpringContextUtils.getBean<HuggingfaceArtifactResourceWriter>()
 }
