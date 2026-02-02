@@ -167,6 +167,7 @@ import { listRepositories } from '@/api/repository'
 import FileScanDialog from '@/views/node/components/FileScanDialog'
 import ShareDialog from '@/views/node/components/ShareDialog'
 import FileOperationDialog from '@/views/node/components/FileOperationDialog'
+import { ROUTER_NAME_NODE } from '@/router'
 
 export default {
   name: 'Node',
@@ -296,12 +297,12 @@ export default {
       }
       if (this.nodeQuery.useSha256) {
         query.sha256 = this.nodeQuery.sha256
-        this.$router.push({ path: '/nodes', query: query })
+        this.$router.push({ name: ROUTER_NAME_NODE, query: query })
       } else {
         query.projectId = this.nodeQuery.projectId
         query.repoName = this.nodeQuery.repoName
         query.path = this.nodeQuery.path
-        this.$router.push({ path: '/nodes', query: query })
+        this.$router.push({ name: ROUTER_NAME_NODE, query: query })
       }
     },
     onRouteUpdate(route) {
