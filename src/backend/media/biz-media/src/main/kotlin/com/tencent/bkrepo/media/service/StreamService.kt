@@ -109,17 +109,17 @@ class StreamService(
         userId: String,
         author: String,
         remux: Boolean = false,
-        saveType: MediaType = MediaType.RAW,
+        saveType: MediaType = MediaType.MP4,
         transcodeExtraParams: String? = null,
     ): ClientStream {
         val repoId = RepositoryId(projectId, repoName)
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
         val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
         // 只有视频流参与转码
-        val transcodeConfig = if (saveType == MediaType.JSON) {
-            null
-        } else {
+        val transcodeConfig = if (saveType == MediaType.MP4) {
             getTranscodeConfig(projectId)
+        } else {
+            null
         }
         val streamTranscodeConfig = transcodeConfig?.copy(extraParams = transcodeExtraParams)
         transcodeConfig?.let { it.extraParams = transcodeExtraParams }
@@ -137,7 +137,14 @@ class StreamService(
         } else {
             val artifactFile = ArtifactFileFactory.buildChunked(credentials)
             val clientMouseArtifactFile = ArtifactFileFactory.buildChunked(credentials)
-            ArtifactFileRecordingListener(artifactFile, clientMouseArtifactFile, fileConsumer, saveType, scheduler)
+            val hostAudioArtifactFile = ArtifactFileFactory.buildChunked(credentials)
+            ArtifactFileRecordingListener(
+                artifactFile = artifactFile,
+                clientMouseArtifactFile = clientMouseArtifactFile,
+                hostAudioArtifactFile = hostAudioArtifactFile,
+                fileConsumer = fileConsumer,
+                scheduler = scheduler
+            )
         }
         val streamId = "$projectId:$repoName:$name"
         val stream = ClientStream(name, streamId, mediaProperties.maxRecordFileSize.toBytes(), recordingListener)
