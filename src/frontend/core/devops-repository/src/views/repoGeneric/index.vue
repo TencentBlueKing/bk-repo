@@ -391,7 +391,9 @@
         },
         beforeRouteEnter (to, from, next) {
             // 前端隐藏report仓库/log仓库
-            if (MODE_CONFIG === 'ci' && (to.query.repoName === 'report' || to.query.repoName === 'log')) {
+            if ((MODE_CONFIG === 'ci' && (to.query.repoName === 'report' || to.query.repoName === 'log'))
+                || !this.repoListAll.find(repo => repo.name === to.query.repoName)
+            ) {
                 next({
                     name: 'repositories',
                     params: {
