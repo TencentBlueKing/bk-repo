@@ -390,23 +390,23 @@
             }
         },
         beforeRouteEnter (to, from, next) {
-            next(vm => {
-                const repoListAll = vm.repoListAll
-                if ((MODE_CONFIG === 'ci' && (to.query.repoName === 'report' || to.query.repoName === 'log'))
-                    || !repoListAll.find(repo => repo.name === to.query.repoName)
-                ) {
-                    vm.$router.replace({
-                        name: 'repositories',
-                        params: {
-                            projectId: to.params.projectId
-                        }
-                    })
-                }
-            })
+            // 前端隐藏report仓库/log仓库
+            if (MODE_CONFIG === 'ci' && (to.query.repoName === 'report' || to.query.repoName === 'log')) {
+                next({
+                    name: 'repositories',
+                    params: {
+                        projectId: to.params.projectId
+                    }
+                })
+            } else next()
         },
         created () {
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
-                this.pathChange()
+                if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
+                    this.$router.replace({ name: 'repositories', params: { projectId: this.projectId } })
+                } else {
+                    this.pathChange()
+                }
             })
             this.initTree()
             this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)
