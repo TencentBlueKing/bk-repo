@@ -390,17 +390,19 @@
             }
         },
         beforeRouteEnter (to, from, next) {
-            // 前端隐藏report仓库/log仓库
-            if ((MODE_CONFIG === 'ci' && (to.query.repoName === 'report' || to.query.repoName === 'log'))
-                || !this.repoListAll.find(repo => repo.name === to.query.repoName)
-            ) {
-                next({
-                    name: 'repositories',
-                    params: {
-                        projectId: to.params.projectId
-                    }
-                })
-            } else next()
+            next(vm => {
+                const repoListAll = vm.repoListAll
+                if ((MODE_CONFIG === 'ci' && (to.query.repoName === 'report' || to.query.repoName === 'log'))
+                    || !repoListAll.find(repo => repo.name === to.query.repoName)
+                ) {
+                    vm.$router.replace({
+                        name: 'repositories',
+                        params: {
+                            projectId: to.params.projectId
+                        }
+                    })
+                }
+            })
         },
         created () {
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
