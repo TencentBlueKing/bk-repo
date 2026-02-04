@@ -53,5 +53,6 @@ data class TFavorites(
     var repoName: String,
     var path: String,
     var createdDate: LocalDateTime,
-    var type: FavoriteType
+    var type: FavoriteType,
+    var name: String?
 )
