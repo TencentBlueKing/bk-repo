@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.service.bkdevops
 
 import com.tencent.bkrepo.auth.config.DevopsAuthConfig
+import com.tencent.bkrepo.auth.constant.CREATIVE
 import com.tencent.bkrepo.auth.constant.CUSTOM
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
@@ -93,7 +94,7 @@ class DevopsPermissionServiceImpl constructor(
     override fun listPermissionRepo(projectId: String, userId: String, appId: String?): List<String> {
         // 用户为系统管理员，或者当前项目管理员
         if (isUserSystemAdmin(userId) || isUserLocalProjectAdmin(userId, projectId)
-            || isDevopsProjectMember(userId, projectId, READ.name)
+            || isDevopsProjectMember(userId, projectId, READ.name, null)
         ) return getAllRepoByProjectId(projectId)
 
         return super.listPermissionRepo(projectId, userId, appId)
@@ -240,7 +241,7 @@ class DevopsPermissionServiceImpl constructor(
                 logger.debug("project request need manage permission [$context]")
                 return false
             }
-            return isDevopsProjectMember(userId, projectId, action)
+            return isDevopsProjectMember(userId, projectId, action, repoName)
                     || checkBkIamV3ProjectPermission(projectId, userId, action)
         }
     }
@@ -256,7 +257,7 @@ class DevopsPermissionServiceImpl constructor(
                     return checkDevopsCustomPermission(context)
                 }
 
-                PIPELINE -> {
+                PIPELINE, CREATIVE -> {
                     return checkDevopsPipelinePermission(context)
                 }
 
@@ -278,7 +279,7 @@ class DevopsPermissionServiceImpl constructor(
     private fun checkDevopsCustomPermission(context: CheckPermissionContext): Boolean {
         logger.debug("check devops custom permission request [$context]")
         with(context) {
-            val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action)
+            val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action, repoName)
             if (needCheckPathPermission(resourceType, projectId, repoName!!)) {
                 return checkNodeAction(context, isDevopsProjectMember)
             }
@@ -289,7 +290,7 @@ class DevopsPermissionServiceImpl constructor(
     private fun checkRepoNotInDevops(context: CheckPermissionContext): Boolean {
         logger.debug("check repo not in devops request [$context]")
         with(context) {
-            val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action)
+            val isDevopsProjectMember = isDevopsProjectMember(userId, projectId, action, repoName)
             if (needCheckPathPermission(resourceType, projectId, repoName!!)) {
                 logger.debug("need check path control [$context]")
                 return checkNodeAction(context, isDevopsProjectMember)
@@ -307,13 +308,13 @@ class DevopsPermissionServiceImpl constructor(
     private fun checkDevopsPipelinePermission(context: CheckPermissionContext): Boolean {
         with(context) {
             return when (resourceType) {
-                REPO.name -> isDevopsProjectMember(userId, projectId, action)
+                REPO.name -> isDevopsProjectMember(userId, projectId, action, repoName)
                 NODE.name -> {
                     val pipelineId = parsePipelineId(path ?: return false) ?: return false
-                    val pipelinePass = pipelinePermission(userId, projectId, pipelineId, action)
+                    val pipelinePass = pipelinePermission(userId, projectId, pipelineId, action, repoName)
                     if (pipelinePass) return true
                     logger.warn("devops pipeline permission widen to project permission [$context]")
-                    return isDevopsProjectMember(userId, projectId, action)
+                    return isDevopsProjectMember(userId, projectId, action, repoName)
                 }
 
                 else -> throw RuntimeException("resource type not supported: $resourceType")
@@ -322,9 +323,11 @@ class DevopsPermissionServiceImpl constructor(
 
     }
 
-    private fun isDevopsProjectMember(userId: String, projectId: String, action: String): Boolean {
-        logger.debug("isDevopsProjectMember: [$userId,$projectId,$action]")
-        return devopsProjectService.isProjectMember(userId, projectId, action)
+    private fun isDevopsProjectMember(
+        userId: String, projectId: String, action: String, repoName: String? = null
+    ): Boolean {
+        logger.debug("isDevopsProjectMember: [$userId,$projectId,$action,$repoName]")
+        return devopsProjectService.isProjectMember(userId, projectId, action, repoName)
     }
 
     private fun isDevopsProjectAdmin(userId: String, projectId: String): Boolean {
@@ -332,9 +335,11 @@ class DevopsPermissionServiceImpl constructor(
         return devopsProjectService.isProjectManager(userId, projectId)
     }
 
-    private fun pipelinePermission(userId: String, projectId: String, pipelineId: String, action: String): Boolean {
-        logger.debug("pipelinePermission, [$userId,$projectId,$pipelineId,$action]")
-        return devopsPipelineService.hasPermission(userId, projectId, pipelineId, action)
+    private fun pipelinePermission(
+        userId: String, projectId: String, pipelineId: String, action: String, repoName: String? = null
+    ): Boolean {
+        logger.debug("pipelinePermission, [$userId,$projectId,$pipelineId,$action,$repoName]")
+        return devopsPipelineService.hasPermission(userId, projectId, pipelineId, action, repoName)
     }
 
 

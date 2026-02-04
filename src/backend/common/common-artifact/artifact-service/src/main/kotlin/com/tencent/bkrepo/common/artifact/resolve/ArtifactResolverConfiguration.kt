@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.common.artifact.resolve
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.tencent.bkrepo.common.artifact.interceptor.RepoNameConversionInterceptor
+import com.tencent.bkrepo.common.artifact.interceptor.RepoNameConversionRequestBodyAdvice
 import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileCleanInterceptor
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
@@ -39,8 +42,8 @@ import com.tencent.bkrepo.common.artifact.resolve.path.DefaultArtifactInfoResolv
 import com.tencent.bkrepo.common.artifact.resolve.path.ResolverMap
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactResourceWriter
 import com.tencent.bkrepo.common.artifact.resolve.response.DefaultArtifactResourceWriter
-import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.ratelimiter.service.RequestLimitCheckService
+import com.tencent.bkrepo.common.storage.config.StorageProperties
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -73,7 +76,16 @@ class ArtifactResolverConfiguration {
     fun artifactFileMapMethodArgumentResolver() = ArtifactFileMapMethodArgumentResolver()
 
     @Bean
-    fun artifactArgumentResolveConfigurer(resolver: ArtifactInfoMethodArgumentResolver): WebMvcConfigurer {
+    fun repoNameConversionInterceptor() = RepoNameConversionInterceptor()
+
+    @Bean
+    fun repoNameConversionRequestBodyAdvice(objectMapper: ObjectMapper) = 
+        RepoNameConversionRequestBodyAdvice(objectMapper)
+
+    @Bean
+    fun artifactArgumentResolveConfigurer(
+        resolver: ArtifactInfoMethodArgumentResolver,
+    ): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
                 resolvers.add(resolver)
@@ -82,6 +94,7 @@ class ArtifactResolverConfiguration {
             }
 
             override fun addInterceptors(registry: InterceptorRegistry) {
+                registry.addInterceptor(repoNameConversionInterceptor()).order(-100)
                 registry.addInterceptor(ArtifactFileCleanInterceptor())
                 super.addInterceptors(registry)
             }
