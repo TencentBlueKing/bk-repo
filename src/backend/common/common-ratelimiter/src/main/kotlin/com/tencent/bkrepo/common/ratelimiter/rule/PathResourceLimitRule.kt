@@ -29,6 +29,8 @@ package com.tencent.bkrepo.common.ratelimiter.rule
 
 import com.tencent.bkrepo.common.ratelimiter.exception.InvalidResourceException
 import com.tencent.bkrepo.common.ratelimiter.rule.common.PathNode
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResInfo
+import com.tencent.bkrepo.common.ratelimiter.rule.common.ResLimitInfo
 import com.tencent.bkrepo.common.ratelimiter.rule.common.ResourceLimit
 import com.tencent.bkrepo.common.ratelimiter.utils.ResourcePathUtils
 import org.slf4j.Logger
@@ -45,10 +47,35 @@ import java.util.regex.Pattern
 open class PathResourceLimitRule(
     private val root: PathNode = PathNode("/"),
     private val pathLengthCheck: Boolean = false
-) {
+) : RateLimitRule {
 
-    fun isEmpty(): Boolean {
+    override fun isEmpty(): Boolean {
         return root.getEdges().isEmpty() && root.getResourceLimit() == null
+    }
+
+    override fun getRateLimitRule(resInfo: ResInfo): ResLimitInfo? {
+        val resourceLimit = getPathResourceLimit(resInfo.resource) ?: return null
+        return ResLimitInfo(resInfo.resource, resourceLimit)
+    }
+
+    override fun addRateLimitRule(resourceLimit: ResourceLimit) {
+        val resourcePath = resourceLimit.resource
+        if (!resourcePath.startsWith("/")) {
+            throw InvalidResourceException(resourcePath)
+        }
+        addPathNode(resourcePath, resourceLimit)
+    }
+
+    override fun addRateLimitRules(resourceLimit: List<ResourceLimit>) {
+        resourceLimit.forEach { addRateLimitRule(it) }
+    }
+
+    override fun filterResourceLimit(resourceLimit: ResourceLimit) {
+        // 默认不过滤
+    }
+
+    open fun ignore(resInfo: ResInfo): Boolean {
+        return false
     }
 
     /**
@@ -66,7 +93,7 @@ open class PathResourceLimitRule(
         addPathNode(resourcePath, resourceLimit)
     }
 
-    fun addPathResourceLimits(resourceLimits: List<ResourceLimit>, limits: List<String>) {
+    private fun addPathResourceLimits(resourceLimits: List<ResourceLimit>, limits: List<String>) {
         resourceLimits.forEach {
             addPathResourceLimit(it, limits)
         }
