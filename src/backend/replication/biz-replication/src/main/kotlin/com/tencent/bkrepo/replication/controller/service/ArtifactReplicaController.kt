@@ -290,7 +290,7 @@ class ArtifactReplicaController(
     }
 
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
-    override fun replicaProjectCreateRequest(request: ProjectCreateRequest): Response<ProjectInfo> {
+    override fun replicaProjectCreateRequest(request: ProjectCreateRequest, tenantId: String?): Response<ProjectInfo> {
         return projectService.getProjectInfo(request.name)?.let { ResponseBuilder.success(it) }
             ?: ResponseBuilder.success(projectService.createProject(request))
     }
