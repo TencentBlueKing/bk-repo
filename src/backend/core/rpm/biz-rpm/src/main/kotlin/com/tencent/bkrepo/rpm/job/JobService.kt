@@ -297,7 +297,8 @@ class JobService(
                 includeFolder = false,
                 includeMetadata = false,
                 deep = false,
-                sort = false
+                sort = false,
+                includeTotalRecords = false
             )
         ).records
         return indexList.filter { it.name.endsWith(target) }.sortedByDescending { it.lastModifiedDate }

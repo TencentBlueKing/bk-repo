@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 Tencent.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,29 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.fs.server.request
+package com.tencent.bkrepo.replication.util
 
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_NUMBER
-import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
-import com.tencent.bkrepo.fs.server.useRequestParam
-import com.tencent.bkrepo.repository.pojo.node.NodeListOption
-import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.reactive.function.server.queryParamOrNull
+/**
+ * 从projectId中提取租户ID
+ * 格式: tenantId.projectName
+ * 如果没有租户ID，返回null
+ */
+fun String.extractTenantId(): String? {
+    return this.substringBefore(".", "").takeIf { it.isNotEmpty() }
+}
 
-class NodePageRequest(request: ServerRequest) : NodeRequest(request) {
-    val listOption: NodeListOption
-    var pageSize: Int = DEFAULT_PAGE_SIZE
-    var pageNum: Int = DEFAULT_PAGE_NUMBER
-    init {
-        val includeFolder = request.queryParamOrNull("includeFolder").toBoolean()
-        request.useRequestParam("pageSize") { pageSize = it.toInt() }
-        request.useRequestParam("pageNum") { pageNum = it.toInt() }
-        listOption = NodeListOption(
-            includeFolder = includeFolder,
-            pageSize = pageSize,
-            pageNumber = pageNum,
-            includeMetadata = true,
-            includeTotalRecords = false
-        )
-    }
+/**
+ * 从projectId中提取项目名称
+ * 如果包含租户ID(格式: tenantId.projectName)，返回projectName
+ * 否则返回完整的projectId
+ */
+fun String.extractProjectName(): String {
+    val tenantId = this.extractTenantId()
+    return if (tenantId == null) this else this.substringAfter(".")
 }

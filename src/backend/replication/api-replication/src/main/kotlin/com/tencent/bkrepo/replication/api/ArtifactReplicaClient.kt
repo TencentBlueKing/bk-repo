@@ -32,8 +32,15 @@ import com.tencent.bkrepo.common.api.constant.REPLICATION_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
+import com.tencent.bkrepo.replication.pojo.request.DirectChildrenPage
+import com.tencent.bkrepo.replication.pojo.request.DirectChildrenRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
+import com.tencent.bkrepo.replication.pojo.request.NodeCountRequest
+import com.tencent.bkrepo.replication.pojo.request.NodeCountResult
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
+import com.tencent.bkrepo.replication.pojo.request.PathCountRequest
+import com.tencent.bkrepo.replication.pojo.request.PathStatsRequest
+import com.tencent.bkrepo.replication.pojo.request.PathStatsResult
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.repository.pojo.blocknode.BlockNodeDetail
@@ -143,6 +150,7 @@ interface ArtifactReplicaClient {
     @PostMapping("/project/create")
     fun replicaProjectCreateRequest(
         @RequestBody request: ProjectCreateRequest,
+        @RequestHeader("x-bk-tenant-id", required = false) tenantId: String? = null
     ): Response<ProjectInfo>
 
     @PostMapping("/metadata/save")
@@ -189,4 +197,56 @@ interface ArtifactReplicaClient {
     fun replicaBlockNodeCreateFinishRequest(
         @RequestBody request: BlockNodeCreateFinishRequest,
     ): Response<Void>
+
+    /**
+     * 获取节点统计信息（用于快速判断是否需要详细对比）
+     */
+    @PostMapping("/node/count")
+    fun countNodes(
+        @RequestBody request: NodeCountRequest,
+    ): Response<NodeCountResult>
+
+    /**
+     * 统计 package 总数（用于非 generic 仓库）
+     */
+    @GetMapping("/package/count")
+    fun countPackages(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String,
+    ): Response<Long>
+
+    /**
+     * 分页列出 package（用于非 generic 仓库的差异对比）
+     */
+    @GetMapping("/package/list")
+    fun listPackages(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String,
+        @RequestParam pageNumber: Int,
+        @RequestParam pageSize: Int,
+    ): Response<List<Any>>
+
+    /**
+     * 列出指定路径下的直接子节点（支持分页，用于分层对比）
+     */
+    @PostMapping("/node/children")
+    fun listDirectChildren(
+        @RequestBody request: DirectChildrenRequest,
+    ): Response<DirectChildrenPage>
+
+    /**
+     * 统计指定路径下的文件数量（用于分层对比）
+     */
+    @PostMapping("/node/path/count")
+    fun countFilesUnderPath(
+        @RequestBody request: PathCountRequest,
+    ): Response<Long>
+
+    /**
+     * 获取路径统计信息（多层目录聚合，用于高效差异对比）
+     */
+    @PostMapping("/node/path/stats")
+    fun getPathStats(
+        @RequestBody request: PathStatsRequest,
+    ): Response<PathStatsResult>
 }

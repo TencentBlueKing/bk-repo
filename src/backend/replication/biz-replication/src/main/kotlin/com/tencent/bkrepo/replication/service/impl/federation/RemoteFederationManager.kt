@@ -16,6 +16,8 @@ import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.util.FederationDataBuilder.buildClusterInfo
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import com.tencent.bkrepo.replication.util.extractProjectName
+import com.tencent.bkrepo.replication.util.extractTenantId
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -49,14 +51,16 @@ class RemoteFederationManager(
 
         // 创建远程项目
         val localProject = localDataManager.findProjectById(currentProjectId)
+        val tenantId = remoteProjectId.extractTenantId()
+        val projectName = remoteProjectId.extractProjectName()
         val projectRequest = ProjectCreateRequest(
-            name = remoteProjectId,
-            displayName = remoteProjectId,
+            name = projectName,
+            displayName = projectName,
             description = localProject.description,
             operator = localProject.createdBy,
             source = currentCluster.name
         )
-        artifactReplicaClient.replicaProjectCreateRequest(projectRequest).data ?: run {
+        artifactReplicaClient.replicaProjectCreateRequest(projectRequest, tenantId).data ?: run {
             throw ErrorCodeException(
                 ReplicationMessageCode.FEDERATION_REPOSITORY_CREATE_ERROR,
                 "Failed to create remote project $remoteProjectId"
