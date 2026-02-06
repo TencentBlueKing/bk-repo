@@ -35,7 +35,7 @@ import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_NUMBER
 import com.tencent.bkrepo.opdata.constant.OPDATA_GRAFANA_STRING
 import com.tencent.bkrepo.opdata.constant.OPDATA_NODE_NUM
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.NodeCollectionModel
+import com.tencent.bkrepo.opdata.service.model.NodeCollectionModel
 import com.tencent.bkrepo.opdata.pojo.Columns
 import com.tencent.bkrepo.opdata.pojo.QueryResult
 import com.tencent.bkrepo.opdata.pojo.Target
