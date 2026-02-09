@@ -170,7 +170,8 @@ abstract class PackageBaseService(
             stageTag = stageTag.orEmpty(),
             metadata = packageVersionMetadata,
             tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
-            extension = request.extension.orEmpty()
+            extension = request.extension.orEmpty(),
+            federatedSource = source,
         )
     }
 
