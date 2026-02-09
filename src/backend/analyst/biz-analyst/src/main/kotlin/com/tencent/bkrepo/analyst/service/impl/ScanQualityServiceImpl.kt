@@ -219,28 +219,40 @@ class ScanQualityServiceImpl(
             }
         }
 
-        // 扫描过时判断是否通过质量规则
-        val forbidQualityUnPass = plan.scanQuality[ScanQuality::forbidQualityUnPass.name] == true
-        if (!forbidQualityUnPass) {
-            return CheckForbidResult(shouldUnforbid = true)
-        }
-
         if (planSubtask.status != SubScanTaskStatus.SUCCESS.name) {
             // 扫描失败时不禁用也不解禁
             return CheckForbidResult()
         }
 
+        // 未配置质量规则时解禁
+        if (!hasQualityRule(plan.scanQuality)) {
+            return CheckForbidResult(shouldUnforbid = true)
+        }
+
         val scanner = scannerService.get(plan.scanner)
         val scanResultOverview = planSubtask.scanResultOverview ?: emptyMap()
-        val shouldForbid = !checkScanQualityRedLine(plan.scanQuality, scanResultOverview, scanner)
-        var type = ForbidType.NONE
-        if (shouldForbid) {
-            type = ForbidType.QUALITY_UNPASS
-            logger.info("forbid [$projectId/$repoName$fullPath][$sha256][${plan.id}], reason: exceed red line")
+        val qualityPass = checkScanQualityRedLine(plan.scanQuality, scanResultOverview, scanner)
+
+        return if (qualityPass) {
+            // 质量规则通过时解禁
+            CheckForbidResult(shouldUnforbid = true)
+        } else {
+            val forbidQualityUnPass = plan.scanQuality[ScanQuality::forbidQualityUnPass.name] == true
+            if (forbidQualityUnPass) {
+                // 质量规则未通过且开启了自动禁用，则禁用
+                logger.info("forbid [$projectId/$repoName$fullPath][$sha256][${plan.id}], reason: exceed red line")
+                CheckForbidResult(true, ForbidType.QUALITY_UNPASS.name, ScanPlanConverter.convert(plan))
+            } else {
+                // 质量规则未通过但未开启自动禁用，维持现状
+                CheckForbidResult()
+            }
         }
-        return CheckForbidResult(
-            shouldForbid, type.name, ScanPlanConverter.convert(plan), !shouldForbid
-        )
+    }
+
+    private fun hasQualityRule(scanQuality: Map<String, Any>): Boolean {
+        return CveOverviewKey.entries.any { overviewKey ->
+            scanQuality[overviewKey.level.levelName] != null
+        }
     }
 
     companion object {
