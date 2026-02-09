@@ -30,6 +30,7 @@ package com.tencent.bkrepo.replication.service.impl
 import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
+import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.FederationDiffManager
 import com.tencent.bkrepo.replication.model.TFederatedRepository
@@ -84,7 +85,15 @@ class FederationRepositoryServiceImpl(
             return federationId
         } catch (e: Exception) {
             logger.warn("Failed to create federation repository, request: ${e.message}")
-            throw ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_CREATE_ERROR, e.message.orEmpty())
+            throw if (e is ErrorCodeException) {
+                ErrorCodeException(
+                    messageCode = ReplicationMessageCode.FEDERATION_REPOSITORY_CREATE_ERROR,
+                    params = arrayOf(LocaleMessageUtils.getLocalizedMessage(e.messageCode, e.params)),
+                    status = e.status,
+                )
+            } else {
+                ErrorCodeException(ReplicationMessageCode.FEDERATION_REPOSITORY_CREATE_ERROR, e.message.orEmpty())
+            }
         }
     }
 
