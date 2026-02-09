@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.packages.PackageService
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
@@ -68,6 +69,8 @@ import com.tencent.bkrepo.repository.pojo.blocknode.service.BlockNodeCreateReque
 import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeDeleteResult
 import com.tencent.bkrepo.repository.pojo.node.NodeDetail
 import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
@@ -100,6 +103,7 @@ class ArtifactReplicaController(
     private val nodeService: NodeService,
     private val packageService: PackageService,
     private val metadataService: MetadataService,
+    private val packageMetadataService: PackageMetadataService,
     private val userResource: ServiceUserClient,
     private val permissionManager: PermissionManager,
     private val blockNodeService: BlockNodeService,
@@ -310,6 +314,18 @@ class ArtifactReplicaController(
     @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
     override fun replicaMetadataDeleteRequest(request: MetadataDeleteRequest): Response<Void> {
         metadataService.deleteMetadata(request)
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaPackageMetadataSaveRequest(request: PackageMetadataSaveRequest): Response<Void> {
+        packageMetadataService.saveMetadata(request)
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaPackageMetadataDeleteRequest(request: PackageMetadataDeleteRequest): Response<Void> {
+        packageMetadataService.deleteMetadata(request)
         return ResponseBuilder.success()
     }
 
