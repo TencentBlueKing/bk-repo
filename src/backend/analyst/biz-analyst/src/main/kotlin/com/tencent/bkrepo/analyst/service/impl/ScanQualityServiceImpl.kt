@@ -27,6 +27,8 @@
 
 package com.tencent.bkrepo.analyst.service.impl
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
 import com.tencent.bkrepo.analyst.component.ScannerPermissionCheckHandler
 import com.tencent.bkrepo.analyst.dao.PlanArtifactLatestSubScanTaskDao
 import com.tencent.bkrepo.analyst.dao.ScanPlanDao
@@ -52,6 +54,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Service
+import java.util.concurrent.TimeUnit
 
 @Service
 class ScanQualityServiceImpl(
@@ -63,6 +66,12 @@ class ScanQualityServiceImpl(
     @Autowired
     @Lazy
     private lateinit var permissionCheckHandler: ScannerPermissionCheckHandler
+
+    private val scannerCache = CacheBuilder.newBuilder()
+        .maximumSize(1000)
+        .refreshAfterWrite(2L, TimeUnit.MINUTES)
+        .expireAfterWrite(3L, TimeUnit.MINUTES)
+        .build(CacheLoader.from<String, Scanner> { scannerService.get(it) })
 
     override fun getScanQuality(planId: String): ScanQuality {
         val scanPlan = scanPlanDao.get(planId)
@@ -132,13 +141,21 @@ class ScanQualityServiceImpl(
         repoType: String,
         fullPath: String
     ): Boolean {
-        return shouldForbidBeforeScanned(projectId, repoName, repoType) { rule ->
-            val matched = RuleUtil.match(rule, projectId, repoName, fullPath)
-            if (matched) {
-                logger.info("Artifact[$projectId/$repoName$fullPath] should be forbidden before scanned")
+        return shouldForbidBeforeScanned(
+            projectId, repoName, repoType,
+            ruleMatcher = { rule ->
+                val matched = RuleUtil.match(rule, projectId, repoName, fullPath)
+                if (matched) {
+                    logger.info("Artifact[$projectId/$repoName$fullPath] should be forbidden before scanned")
+                }
+                matched
+            },
+            fileNameExtMatcher = { scanner ->
+                val fileNameExtension = fullPath.substringAfterLast('.', "")
+                val supportFileNameExt = scannerCache.get(scanner).supportFileNameExt
+                supportFileNameExt.isEmpty() || fileNameExtension in supportFileNameExt
             }
-            matched
-        }
+        )
     }
 
     override fun shouldForbidBeforeScanned(
@@ -148,7 +165,7 @@ class ScanQualityServiceImpl(
         packageName: String,
         packageVersion: String
     ): Boolean {
-        return shouldForbidBeforeScanned(projectId, repoName, repoType) { rule ->
+        return shouldForbidBeforeScanned(projectId, repoName, repoType, ruleMatcher = { rule ->
             val matched = RuleUtil.match(rule, projectId, repoName, repoType, packageName, packageVersion)
             if (matched) {
                 logger.info(
@@ -156,20 +173,21 @@ class ScanQualityServiceImpl(
                 )
             }
             matched
-        }
+        })
     }
 
     private fun shouldForbidBeforeScanned(
         projectId: String,
         repoName: String,
         repoType: String,
-        ruleMatcher: (rule: Rule) -> Boolean
+        ruleMatcher: (rule: Rule) -> Boolean,
+        fileNameExtMatcher: (scanner: String) -> Boolean = { true },
     ): Boolean {
         return scanPlanDao
             .findByProjectIdAndRepoName(projectId, repoName, repoType, true)
             .any {
                 val forbidNotScanned = it.scanQuality[ScanQuality::forbidNotScanned.name] == true
-                val forbid = forbidNotScanned && ruleMatcher(it.rule.readJsonString())
+                val forbid = forbidNotScanned && ruleMatcher(it.rule.readJsonString()) && fileNameExtMatcher(it.scanner)
                 if (forbid) {
                     logger.info("forbid before scanned by plan[${it.id}]")
                 }
