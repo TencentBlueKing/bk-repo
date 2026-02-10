@@ -88,9 +88,9 @@ data class TDriveNode(
     var flags: Int,
 
     /**
-     * 删除时间戳（Unix 秒）
+     * 删除时间
      */
-    var deletedAt: Long? = null,
+    var deleted: LocalDateTime? = null,
 
     /**
      * 软链接目标路径（仅 S_IFLNK 时有值）
@@ -101,6 +101,6 @@ data class TDriveNode(
         const val INO_IDX = "ino_idx"
         const val INO_IDX_DEF = "{'ino': 1}"
         const val PARENT_NAME_IDX = "parent_name_idx"
-        const val PARENT_NAME_IDX_DEF = "{'parent': 1, 'name': 1, 'deletedAt': 1}"
+        const val PARENT_NAME_IDX_DEF = "{'parentId': 1, 'name': 1, 'deleted': 1}"
     }
 }
