@@ -271,7 +271,8 @@ export default {
         projectId: '',
         repoName: '',
         federationId: ''
-      }
+      },
+      repoCache: {}
     }
   },
   methods: {
