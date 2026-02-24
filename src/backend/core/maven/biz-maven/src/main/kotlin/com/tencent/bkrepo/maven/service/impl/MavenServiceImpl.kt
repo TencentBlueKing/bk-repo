@@ -418,7 +418,13 @@ class MavenServiceImpl(
      */
     private fun folderRemoveHandler(context: ArtifactRemoveContext, node: NodeDetail, remote: Boolean = false) {
         logger.info("Will try to delete folder ${node.fullPath} in repo ${context.artifactInfo.getRepoIdentify()}")
-        val option = NodeListOption(pageNumber = 0, pageSize = 10, includeFolder = true, sort = true)
+        val option = NodeListOption(
+            pageNumber = 0,
+            pageSize = 10,
+            includeFolder = true,
+            sort = true,
+            includeTotalRecords = false
+        )
         val nodes = nodeService.listNodePage(ArtifactInfo(context.projectId, context.repoName, node.fullPath), option)
         if (nodes.records.isEmpty()) {
             // 如果目录下没有任何节点，则删除当前目录并返回

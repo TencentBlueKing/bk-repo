@@ -50,7 +50,6 @@ import com.tencent.bkrepo.common.storage.innercos.metrics.CosUploadMetrics
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitor
 import com.tencent.bkrepo.common.storage.monitor.StorageHealthMonitorHelper
 import com.tencent.bkrepo.common.storage.s3.S3Storage
-import com.tencent.bkrepo.common.storage.util.PolarisUtil
 import com.tencent.bkrepo.common.storage.util.StorageUtils
 import io.micrometer.observation.ObservationRegistry
 import org.slf4j.LoggerFactory
@@ -118,9 +117,6 @@ class StorageAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(FileLocator::class)
     fun fileLocator() = HashFileLocator()
-
-    @Bean
-    fun polarisUtil(storageProperties: StorageProperties) = PolarisUtil(storageProperties)
 
     @Bean
     fun cosHttpClient(registry: ObservationRegistry) = CosHttpClient(registry)

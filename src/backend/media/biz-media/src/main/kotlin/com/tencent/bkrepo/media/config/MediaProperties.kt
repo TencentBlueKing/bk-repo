@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 class MediaProperties {
     var maxRecordFileSize: DataSize = DataSize.ofGigabytes(100)
     var serverAddress: String = ""
+    var grayServerAddress: String = ""
     var transcodeConfig: Map<String, TranscodeConfig> = mutableMapOf()
     var repoHost: String = ""
     var storageCredentialsKey: String? = null

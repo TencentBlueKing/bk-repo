@@ -12,6 +12,7 @@ import com.tencent.bkrepo.common.artifact.repository.core.ArtifactService
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.service.util.HeaderUtils
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.media.STREAM_PATH
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
@@ -80,7 +81,14 @@ class StreamService(
             type = TokenType.UPLOAD,
         )
         val token = tokenService.createToken(temporaryTokenRequest).firstOrNull()
-        return "${mediaProperties.serverAddress}/$projectId/$repoName$STREAM_PATH?token=$token"
+        val gray = HeaderUtils.getHeader("X-GATEWAY-TAG").toString().equals("gray", true)
+                && mediaProperties.grayServerAddress.isNotEmpty()
+        val serverAddress = if (gray) {
+            mediaProperties.grayServerAddress
+        } else {
+            mediaProperties.serverAddress
+        }
+        return "$serverAddress/$projectId/$repoName$STREAM_PATH?token=$token"
     }
 
     /**
@@ -101,17 +109,17 @@ class StreamService(
         userId: String,
         author: String,
         remux: Boolean = false,
-        saveType: MediaType = MediaType.RAW,
+        saveType: MediaType = MediaType.MP4,
         transcodeExtraParams: String? = null,
     ): ClientStream {
         val repoId = RepositoryId(projectId, repoName)
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
         val credentials = repo.storageCredentials ?: storageProperties.defaultStorageCredentials()
         // 只有视频流参与转码
-        val transcodeConfig = if (saveType == MediaType.JSON) {
-            null
-        } else {
+        val transcodeConfig = if (saveType == MediaType.MP4) {
             getTranscodeConfig(projectId)
+        } else {
+            null
         }
         val streamTranscodeConfig = transcodeConfig?.copy(extraParams = transcodeExtraParams)
         transcodeConfig?.let { it.extraParams = transcodeExtraParams }
@@ -129,7 +137,14 @@ class StreamService(
         } else {
             val artifactFile = ArtifactFileFactory.buildChunked(credentials)
             val clientMouseArtifactFile = ArtifactFileFactory.buildChunked(credentials)
-            ArtifactFileRecordingListener(artifactFile, clientMouseArtifactFile, fileConsumer, saveType, scheduler)
+            val hostAudioArtifactFile = ArtifactFileFactory.buildChunked(credentials)
+            ArtifactFileRecordingListener(
+                artifactFile = artifactFile,
+                clientMouseArtifactFile = clientMouseArtifactFile,
+                hostAudioArtifactFile = hostAudioArtifactFile,
+                fileConsumer = fileConsumer,
+                scheduler = scheduler
+            )
         }
         val streamId = "$projectId:$repoName:$name"
         val stream = ClientStream(name, streamId, mediaProperties.maxRecordFileSize.toBytes(), recordingListener)

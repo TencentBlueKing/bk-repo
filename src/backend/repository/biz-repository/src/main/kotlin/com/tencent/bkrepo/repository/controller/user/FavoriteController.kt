@@ -83,7 +83,8 @@ class FavoriteController(
                 path = path,
                 createdDate = LocalDateTime.now(),
                 userId = userIdParams,
-                type = type
+                type = type,
+                name = name
             )
             favoriteService.createFavorite(createRequest)
             return ResponseBuilder.success()

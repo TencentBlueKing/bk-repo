@@ -31,14 +31,21 @@ import com.tencent.bkrepo.common.api.constant.StringPool.uniqueId
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
+import com.tencent.bkrepo.replication.manager.FederationDiffManager
 import com.tencent.bkrepo.replication.model.TFederatedRepository
 import com.tencent.bkrepo.replication.pojo.cluster.ClusterNodeInfo
 import com.tencent.bkrepo.replication.pojo.federation.FederatedCluster
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
+import com.tencent.bkrepo.replication.pojo.federation.FederationDiffStats
+import com.tencent.bkrepo.replication.pojo.federation.FederationNodeCount
+import com.tencent.bkrepo.replication.pojo.federation.FederationPathDiff
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryCreateRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryDeleteRequest
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryUpdateRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederationDiffRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederationDiffStatsRequest
+import com.tencent.bkrepo.replication.pojo.federation.request.FederationPathDiffRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import com.tencent.bkrepo.replication.service.impl.federation.FederationSyncManager
@@ -56,6 +63,7 @@ class FederationRepositoryServiceImpl(
     private val federationTaskManager: FederationTaskManager,
     private val federationSyncManager: FederationSyncManager,
     private val clusterNodeService: ClusterNodeService,
+    private val federationDiffManager: FederationDiffManager,
 ) : FederationRepositoryService {
 
     override fun createFederationRepository(request: FederatedRepositoryCreateRequest): String {
@@ -238,6 +246,58 @@ class FederationRepositoryServiceImpl(
         logger.info(
             "Successfully updated full sync end status" +
                 " for repo: $projectId|$repoName, federationId: $federationId"
+        )
+    }
+
+    override fun compareFederationNodeCount(request: FederationDiffRequest): List<FederationNodeCount> {
+        return federationDiffManager.compareNodeCount(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            federationId = request.federationId,
+            targetClusterId = request.targetClusterId,
+            rootPath = request.rootPath
+        )
+    }
+
+    override fun compareFederationPathDiff(request: FederationPathDiffRequest): FederationPathDiff {
+        return federationDiffManager.comparePathDiff(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            federationId = request.federationId,
+            targetClusterId = request.targetClusterId,
+            path = request.path,
+            pageNumber = request.pageNumber,
+            pageSize = request.pageSize,
+            onlyDiff = request.onlyDiff
+        )
+    }
+
+    override fun compareFederationDiffStats(request: FederationDiffStatsRequest): FederationDiffStats {
+        return federationDiffManager.compareDiffStats(
+            projectId = request.projectId,
+            repoName = request.repoName,
+            federationId = request.federationId,
+            targetClusterId = request.targetClusterId,
+            path = request.path,
+            depth = request.depth
+        )
+    }
+
+    override fun smartCompareFederationDiff(
+        projectId: String,
+        repoName: String,
+        federationId: String,
+        targetClusterId: String,
+        rootPath: String,
+        maxDepth: Int
+    ): List<String> {
+        return federationDiffManager.smartCompare(
+            projectId = projectId,
+            repoName = repoName,
+            federationId = federationId,
+            targetClusterId = targetClusterId,
+            rootPath = rootPath,
+            maxDepth = maxDepth
         )
     }
 

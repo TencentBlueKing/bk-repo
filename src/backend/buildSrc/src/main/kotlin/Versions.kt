@@ -43,7 +43,6 @@ object Versions {
     const val CommonsCompress = "1.21"
     const val CommonsIO = "2.11.0"
     const val OKhttp = "4.12.0"
-    const val Polaris = "1.15.11"
     const val CommonsText = "1.10.0"
     const val EmbeddedRedis = "1.4.3"
     const val JMH = "0.5.3"

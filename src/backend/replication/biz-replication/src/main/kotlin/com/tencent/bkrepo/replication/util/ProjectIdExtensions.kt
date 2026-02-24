@@ -1,7 +1,7 @@
 /*
  * Tencent is pleased to support the open source community by making BK-CI 蓝鲸持续集成平台 available.
  *
- * Copyright (C) 2019 Tencent.  All rights reserved.
+ * Copyright (C) 2022 Tencent.  All rights reserved.
  *
  * BK-CI 蓝鲸持续集成平台 is licensed under the MIT license.
  *
@@ -25,39 +25,23 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.endpoint
-
-import com.tencent.bkrepo.common.storage.util.PolarisUtil
-import org.slf4j.LoggerFactory
+package com.tencent.bkrepo.replication.util
 
 /**
- * 基于北极星的域名解析
+ * 从projectId中提取租户ID
+ * 格式: tenantId.projectName
+ * 如果没有租户ID，返回null
  */
-class PolarisEndpointResolver(
-    private val modId: Int,
-    private val cmdId: Int
-): EndpointResolver {
+fun String.extractTenantId(): String? {
+    return this.substringBefore(".", "").takeIf { it.isNotEmpty() }
+}
 
-    init {
-        if (!PolarisUtil.isAvailable()) {
-            logger.warn("Polaris SDK is not available, will fallback to original endpoint")
-        }
-    }
-
-    override fun resolveEndpoint(endpoint: String): String {
-        if (!PolarisUtil.isAvailable()) {
-            return endpoint
-        }
-        return try {
-            PolarisUtil.getOneInstance(NAMESPACE, "$modId:$cmdId")
-        } catch (e: Exception) {
-            logger.warn("polaris resolve endpoint [$endpoint] error: ${e.message}")
-            endpoint
-        }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(PolarisEndpointResolver::class.java)
-        private const val NAMESPACE = "Production"
-    }
+/**
+ * 从projectId中提取项目名称
+ * 如果包含租户ID(格式: tenantId.projectName)，返回projectName
+ * 否则返回完整的projectId
+ */
+fun String.extractProjectName(): String {
+    val tenantId = this.extractTenantId()
+    return if (tenantId == null) this else this.substringAfter(".")
 }
