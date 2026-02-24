@@ -320,7 +320,7 @@ export default {
       promise = events(clientQuery)
       promise.then(res => {
         this.events = res.data.records ? res.data.records : res.data
-        this.total = res.data.totalRecords ? res.data.totalRecords : res.data.length
+        this.pageOption.total = res.data.totalRecords ? res.data.totalRecords : res.data.length
       })
     },
     doDelete(data, index) {

@@ -138,8 +138,8 @@
       </el-table-column>
       <!-- 基础信息 -->
       <el-table-column v-if="type==='repository'" prop="federationName" label="联邦名称" min-width="120" />
-      <el-table-column prop="repoName" label="仓库名称" min-width="120" />
-      <el-table-column prop="projectId" label="项目ID" min-width="100" />
+      <el-table-column prop="repoName" label="仓库名称" width="120" />
+      <el-table-column prop="projectId" label="项目ID" width="100" />
       <el-table-column v-if="type==='repository'" prop="currentClusterName" label="当前集群" min-width="120" />
 
       <!-- 成员计数（仅数字） -->
@@ -159,27 +159,27 @@
           {{ scope.row.enabled ? '是': '否'}}
         </template>
       </el-table-column>
-      <el-table-column v-if="type==='members'" prop="connected" label="是否可连接" width="80" align="right">
+      <el-table-column v-if="type==='members'" prop="connected" label="是否可连接" width="100" align="right">
         <template slot-scope="scope">
           {{ scope.row.connected ? '是': '否'}}
         </template>
       </el-table-column>
-      <el-table-column v-if="type==='members'" prop="lastSyncTime" label="最后同步时间" width="80" align="right">
+      <el-table-column v-if="type==='members'" prop="lastSyncTime" label="最后同步时间" width="120" align="right">
         <template slot-scope="scope">
           {{ formatNormalDate(scope.row.lastSyncTime) }}
         </template>
       </el-table-column>
-      <el-table-column v-if="type==='members'" prop="lastConnectTime" label="最后连接时间" width="80" align="right">
+      <el-table-column v-if="type==='members'" prop="lastConnectTime" label="最后连接时间" width="120" align="right">
         <template slot-scope="scope">
           {{ formatNormalDate(scope.row.lastConnectTime) }}
         </template>
       </el-table-column>
       <el-table-column v-if="type==='members'" prop="errorMessage" label="错误信息" width="80" align="right" />
-      <el-table-column v-if="type==='members'" prop="syncedBytes" label="已同步字节数" width="80" align="right" />
-      <el-table-column v-if="type==='members'" prop="avgSyncRate" label="同步平均速率" width="80" align="right" />
+      <el-table-column v-if="type==='members'" prop="syncedBytes" label="已同步字节数" width="110" align="right" />
+      <el-table-column v-if="type==='members'" prop="avgSyncRate" label="同步平均速率" width="110" align="right" />
 
       <!-- 全量同步状态 -->
-      <el-table-column v-if="type==='repository'" label="全量同步状态" min-width="100">
+      <el-table-column v-if="type==='repository'" label="全量同步状态" width="120">
         <template slot-scope="scope">
           {{ scope.row.isFullSyncing ? '同步中' : '空闲'}}
         </template>
@@ -194,7 +194,7 @@
           {{ formatNormalDate(scope.row.lastFullSyncEndTime) }}
         </template>
       </el-table-column>
-      <el-table-column v-if="type==='repository'" prop="fullSyncDuration" label="全量耗时(ms)" width="100" align="right">
+      <el-table-column v-if="type==='repository'" prop="fullSyncDuration" label="全量耗时" width="100" align="right">
       </el-table-column>
 
       <!-- 延迟统计 -->
