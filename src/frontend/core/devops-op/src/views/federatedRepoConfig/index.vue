@@ -42,7 +42,7 @@
         <el-button
           size="mini"
           type="primary"
-          :disabled="!clientQuery.projectId"
+          :disabled="!clientQuery.repoName"
           @click="changeRouteQueryParams()"
         >查询</el-button>
       </el-form-item>
