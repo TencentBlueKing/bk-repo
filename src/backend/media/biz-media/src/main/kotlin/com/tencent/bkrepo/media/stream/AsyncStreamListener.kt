@@ -70,6 +70,14 @@ abstract class AsyncStreamListener(private val scheduler: ThreadPoolTaskSchedule
         logger.info("Recording listener stop success.")
     }
 
+    /**
+     * 停止录制
+     * 子类可覆写此方法以获取 isComplete 参数
+     */
+    override fun stop(endTime: Long, isComplete: Boolean) {
+        stop(endTime)
+    }
+
     override fun isRecording(): Boolean {
         return recording.get()
     }

@@ -150,7 +150,8 @@ class StreamService(
                 clientMouseArtifactFile = clientMouseArtifactFile,
                 hostAudioArtifactFile = hostAudioArtifactFile,
                 fileConsumer = fileConsumer,
-                scheduler = scheduler
+                scheduler = scheduler,
+                uploadId = name,
             )
         }
         val streamId = "$projectId:$repoName:$name"
@@ -161,7 +162,7 @@ class StreamService(
             stream.saveAs()
         }
         stream.startPublish()
-        logger.info("User[$author] publish stream $streamId")
+        logger.info("User[$author] publish stream $streamId with uploadId=$name")
         return stream
     }
 

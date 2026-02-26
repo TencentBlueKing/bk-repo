@@ -15,7 +15,20 @@ class ArtifactFileRecordingListener(
     private val hostAudioArtifactFile: ChunkedArtifactFile,
     private val fileConsumer: FileConsumer,
     scheduler: ThreadPoolTaskScheduler,
+    private val uploadId: String? = null,
 ) : AsyncStreamListener(scheduler) {
+
+    /**
+     * 是否为分块模式
+     */
+    private val blockMode: Boolean = uploadId != null
+
+    /**
+     * 标记当前录制是否正常完成
+     * 可由外部设置，用于分块模式下区分异常断开和正常结束
+     */
+    @Volatile
+    var isComplete: Boolean = false
 
     private lateinit var name: String
     private lateinit var clientMouseName: String
@@ -46,24 +59,46 @@ class ArtifactFileRecordingListener(
         storeFile(endTime)
     }
 
+    /**
+     * 停止录制（带 isComplete 标记）
+     * 设置 isComplete 后执行停止和存储逻辑
+     */
+    override fun stop(endTime: Long, isComplete: Boolean) {
+        this.isComplete = isComplete
+        super.stop(endTime)
+        storeFile(endTime)
+    }
+
     private fun storeFile(endTime: Long) {
         try {
             artifactFile.finish()
             clientMouseArtifactFile.finish()
             hostAudioArtifactFile.finish()
-            val extraFiles = mutableMapOf<String, ChunkedArtifactFile>()
-            if (clientMouseArtifactFile.getSize() != 0L) {
-                extraFiles[clientMouseName] = clientMouseArtifactFile
+            if (blockMode) {
+                // 分块模式：调用 acceptBlock 进行分块存储
+                fileConsumer.acceptBlock(
+                    name = name,
+                    file = artifactFile,
+                    uploadId = uploadId!!,
+                    isComplete = isComplete,
+                    endTime = endTime
+                )
+            } else {
+                // 原有模式：存为完整制品
+                val extraFiles = mutableMapOf<String, ChunkedArtifactFile>()
+                if (clientMouseArtifactFile.getSize() != 0L) {
+                    extraFiles[clientMouseName] = clientMouseArtifactFile
+                }
+                if (hostAudioArtifactFile.getSize() != 0L) {
+                    extraFiles[hostAudioName] = hostAudioArtifactFile
+                }
+                fileConsumer.accept(
+                    name = name,
+                    file = artifactFile,
+                    extraFiles = extraFiles.ifEmpty { null },
+                    endTime = endTime
+                )
             }
-            if (hostAudioArtifactFile.getSize() != 0L) {
-                extraFiles[hostAudioName] = hostAudioArtifactFile
-            }
-            fileConsumer.accept(
-                name = name,
-                file = artifactFile,
-                extraFiles = extraFiles.ifEmpty { null },
-                endTime = endTime
-            )
         } finally {
             artifactFile.delete()
             clientMouseArtifactFile.delete()

@@ -78,10 +78,45 @@ class MediaArtifactFileConsumer(
 
 
     /**
+     * 分块存储文件（用于重连场景拼接视频）
+     */
+    override fun acceptBlock(
+        name: String,
+        file: ArtifactFile,
+        uploadId: String,
+        isComplete: Boolean,
+        endTime: Long
+    ) {
+        val filePath = "$path/$name"
+        val artifactInfo = ArtifactInfo(repo.projectId, repo.name, filePath)
+        // 每次都存储当前分块
+        storeBlockNode(artifactInfo, file, uploadId)
+        if (isComplete) {
+            // 正常结束：合并所有分块，创建完整node
+            completeBlockNode(artifactInfo, uploadId)
+            // 转码仅在completeBlockNode后触发
+            if (transcodeConfig != null) {
+                transcodeService.transcode(
+                    artifactInfo = artifactInfo,
+                    transcodeConfig = transcodeConfig,
+                    userId = userId,
+                    extraFiles = null,
+                    author = author,
+                    videoStartTime = startTime,
+                    videoEndTime = endTime
+                )
+            }
+        }
+        logger.info(
+            "AcceptBlock [$filePath], uploadId=$uploadId, isComplete=$isComplete, size=${file.getSize()}"
+        )
+    }
+
+    /**
      * 视频流异常中断时，存储分块节点
      * @param uploadId 上传id，用于关联分块节点
      */
-    private fun storeBlockNode(artifactInfo: ArtifactInfo, file: ArtifactFile, uploadId: String) {
+    fun storeBlockNode(artifactInfo: ArtifactInfo, file: ArtifactFile, uploadId: String) {
         with(artifactInfo) {
             val oldBlockNodes = blockNodeService.listBlocksInUploadId(
                 projectId,
@@ -123,7 +158,7 @@ class MediaArtifactFileConsumer(
      * 视频流正常结束时，完成分块存储，创建对应node
      */
     // TODO 需要一个定时任务，定时检查分块节点是否完成。防止视频流异常退出后再没有重连
-    private fun completeBlockNode(artifactInfo: ArtifactInfo, uploadId: String) {
+    fun completeBlockNode(artifactInfo: ArtifactInfo, uploadId: String) {
         with(artifactInfo) {
             val blockNodes = blockNodeService.listBlocksInUploadId(
                 projectId,
