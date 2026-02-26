@@ -140,6 +140,7 @@ class MediaArtifactFileConsumer(
                 uploadId = uploadId,
                 createdBy = userId,
                 createdDate = LocalDateTime.now(),
+                expireDate = LocalDateTime.now().plusDays(1),
             )
             val digest = file.getFileSha256()
             val stored = storageService.store(digest, file, repo.storageCredentials)
