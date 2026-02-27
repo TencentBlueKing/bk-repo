@@ -193,7 +193,7 @@
       <el-table-column label="操作" width="150" align="center">
         <template slot-scope="scope">
           <el-button type="primary" size="mini" @click="doRetry(scope.row)">重试</el-button>
-          <el-button type="danger" size="mini" @click="doDelete(scope.row, scope.index)">删除</el-button>
+          <el-button type="danger" size="mini" @click="doDelete(scope.row, scope.$index)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

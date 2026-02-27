@@ -127,14 +127,14 @@
           <el-button
             size="mini"
             type="primary"
-            @click="showCreateOrUpdateDialog(false,scope.index,scope.row)"
+            @click="showCreateOrUpdateDialog(false,scope.$index,scope.row)"
           >
             编辑
           </el-button>
           <el-button
             size="mini"
             type="danger"
-            @click="deleteFederation(scope.row, scope.index)"
+            @click="deleteFederation(scope.row, scope.$index)"
           >
             删除
           </el-button>
