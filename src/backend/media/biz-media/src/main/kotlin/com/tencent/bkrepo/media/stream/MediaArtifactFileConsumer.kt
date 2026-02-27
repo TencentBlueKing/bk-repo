@@ -172,6 +172,11 @@ class MediaArtifactFileConsumer(
             }
             val totalSize = blockNodes.sumOf { it.size }
             val crc64ecma = crc64ecma(blockNodes)
+            logger.info(
+                "CompleteBlockNode [$projectId/$repoName${getArtifactFullPath()}], uploadId=$uploadId, " +
+                        "blockCount=${blockNodes.size}, totalSize=$totalSize, " +
+                        "blocks=${blockNodes.map { "sha256=${it.sha256},startPos=${it.startPos},size=${it.size},endPos=${it.endPos}" }}"
+            )
             blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma)
             blockNodeService.updateBlockUploadId(projectId, repoName, getArtifactFullPath(), uploadId)
         }
