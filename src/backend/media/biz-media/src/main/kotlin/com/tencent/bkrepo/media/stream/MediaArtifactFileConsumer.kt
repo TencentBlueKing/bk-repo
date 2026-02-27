@@ -177,8 +177,10 @@ class MediaArtifactFileConsumer(
                         "blockCount=${blockNodes.size}, totalSize=$totalSize, " +
                         "blocks=${blockNodes.map { "sha256=${it.sha256},startPos=${it.startPos},size=${it.size},endPos=${it.endPos}" }}"
             )
-            blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma)
+            // 先更新分块的uploadId和createdDate，再创建node
+            // 确保node.createdDate >= block.createdDate，否则下载时查询条件block.createdDate > node.createdDate会过滤掉分块
             blockNodeService.updateBlockUploadId(projectId, repoName, getArtifactFullPath(), uploadId)
+            blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma)
         }
     }
 
