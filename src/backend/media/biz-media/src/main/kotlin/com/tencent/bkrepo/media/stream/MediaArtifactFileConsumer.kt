@@ -89,11 +89,6 @@ class MediaArtifactFileConsumer(
     ) {
         val filePath = "$path/$name"
         val artifactInfo = ArtifactInfo(repo.projectId, repo.name, filePath)
-        logger.info(
-            "zhaokewangdebug [acceptBlock] 开始处理分块, filePath=$filePath, " +
-                    "uploadId=$uploadId, isComplete=$isComplete, fileSize=${file.getSize()}, " +
-                    "endTime=$endTime"
-        )
         // 每次都存储当前分块
         storeBlockNode(artifactInfo, file, uploadId)
         if (isComplete) {
@@ -123,11 +118,6 @@ class MediaArtifactFileConsumer(
      */
     fun storeBlockNode(artifactInfo: ArtifactInfo, file: ArtifactFile, uploadId: String) {
         with(artifactInfo) {
-            logger.info(
-                "zhaokewangdebug [storeBlockNode] 开始存储分块, " +
-                        "path=${getArtifactFullPath()}, uploadId=$uploadId, " +
-                        "fileSize=${file.getSize()}, fileSha256=${file.getFileSha256()}"
-            )
             val oldBlockNodes = blockNodeService.listBlocksInUploadId(
                 projectId,
                 repoName,
@@ -139,11 +129,6 @@ class MediaArtifactFileConsumer(
             } else {
                 oldBlockNodes.maxBy { it.endPos }.endPos + 1
             }
-            logger.info(
-                "zhaokewangdebug [storeBlockNode] 已有分块数=${oldBlockNodes.size}, " +
-                        "计算startPos=$startPos, " +
-                        "已有分块详情=${oldBlockNodes.map { "id=${it.id},sha256=${it.sha256},startPos=${it.startPos},endPos=${it.endPos},size=${it.size},createdDate=${it.createdDate},uploadId=${it.uploadId}" }}"
-            )
             val blockNode = TBlockNode(
                 projectId = artifactInfo.projectId,
                 repoName = artifactInfo.repoName,
@@ -161,13 +146,6 @@ class MediaArtifactFileConsumer(
             val stored = storageService.store(digest, file, repo.storageCredentials)
             try {
                 val createdBlock = blockNodeService.createBlock(blockNode, repo.storageCredentials)
-                logger.info(
-                    "zhaokewangdebug [storeBlockNode] 分块创建成功, " +
-                            "blockId=${createdBlock.id}, sha256=${createdBlock.sha256}, " +
-                            "startPos=${createdBlock.startPos}, endPos=${createdBlock.endPos}, " +
-                            "size=${createdBlock.size}, createdDate=${createdBlock.createdDate}, " +
-                            "uploadId=${createdBlock.uploadId}"
-                )
             } catch (e: Exception) {
                 if (stored > 1) {
                     storageService.delete(digest, repo.storageCredentials)
@@ -183,54 +161,23 @@ class MediaArtifactFileConsumer(
     // TODO 需要一个定时任务，定时检查分块节点是否完成。防止视频流异常退出后再没有重连
     fun completeBlockNode(artifactInfo: ArtifactInfo, uploadId: String) {
         with(artifactInfo) {
-            logger.info(
-                "zhaokewangdebug [completeBlockNode] 开始合并分块, " +
-                        "path=$projectId/$repoName${getArtifactFullPath()}, uploadId=$uploadId"
-            )
             val blockNodes = blockNodeService.listBlocksInUploadId(
                 projectId,
                 repoName,
                 getArtifactFullPath(),
                 uploadId = uploadId
             )
-            logger.info(
-                "zhaokewangdebug [completeBlockNode] 查询到分块数=${blockNodes.size}, " +
-                        "分块详情=${blockNodes.map { "id=${it.id},sha256=${it.sha256},startPos=${it.startPos},endPos=${it.endPos},size=${it.size},createdDate=${it.createdDate},uploadId=${it.uploadId}" }}"
-            )
             if (blockNodes.isEmpty()) {
-                logger.info("zhaokewangdebug [completeBlockNode] 分块为空，跳过合并")
                 return
             }
             val totalSize = blockNodes.sumOf { it.size }
             val crc64ecma = crc64ecma(blockNodes)
-            logger.info(
-                "CompleteBlockNode [$projectId/$repoName${getArtifactFullPath()}], uploadId=$uploadId, " +
-                        "blockCount=${blockNodes.size}, totalSize=$totalSize, " +
-                        "blocks=${blockNodes.map { "sha256=${it.sha256},startPos=${it.startPos},size=${it.size},endPos=${it.endPos}" }}"
-            )
             val beforeCreateNodeTime = LocalDateTime.now()
-            logger.info(
-                "zhaokewangdebug [completeBlockNode] 准备创建node, beforeCreateNodeTime=$beforeCreateNodeTime"
-            )
             blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma)
             val afterCreateNodeTime = LocalDateTime.now()
-            logger.info(
-                "zhaokewangdebug [completeBlockNode] node创建完成, afterCreateNodeTime=$afterCreateNodeTime, " +
-                        "准备sleep 1秒后更新分块uploadId"
-            )
-            Thread.sleep(1000)
             val beforeUpdateTime = LocalDateTime.now()
-            logger.info(
-                "zhaokewangdebug [completeBlockNode] sleep完成, 准备updateBlockUploadId, " +
-                        "beforeUpdateTime=$beforeUpdateTime"
-            )
             blockNodeService.updateBlockUploadId(projectId, repoName, getArtifactFullPath(), uploadId)
             val afterUpdateTime = LocalDateTime.now()
-            logger.info(
-                "zhaokewangdebug [completeBlockNode] updateBlockUploadId完成, " +
-                        "afterUpdateTime=$afterUpdateTime, " +
-                        "时间差(createNode到updateBlock)=${java.time.Duration.between(afterCreateNodeTime, afterUpdateTime).toMillis()}ms"
-            )
         }
     }
 
@@ -241,11 +188,6 @@ class MediaArtifactFileConsumer(
         fileSize: Long,
         crc64ecma: String
     ) {
-        logger.info(
-            "zhaokewangdebug [blockBaseNodeCreate] 创建node, " +
-                    "path=${artifactInfo.projectId}/${artifactInfo.repoName}${artifactInfo.getArtifactFullPath()}, " +
-                    "uploadId=$uploadId, fileSize=$fileSize, sha256=$FAKE_SHA256, separate=true"
-        )
         val attributes = NodeAttribute(
             uid = NodeAttribute.NOBODY,
             gid = NodeAttribute.NOBODY,
