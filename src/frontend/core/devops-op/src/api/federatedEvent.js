@@ -3,12 +3,11 @@ import request from '@/utils/request'
 const PREFIX_SERVICES = '/replication/api/replica/event'
 
 export function events(params) {
+  console.log(params)
   return request({
     url: `${PREFIX_SERVICES}/page`,
     method: 'get',
-    params: {
-      option: params
-    }
+    params: params
   })
 }
 
