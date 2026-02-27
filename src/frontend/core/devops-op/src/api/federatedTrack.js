@@ -6,9 +6,7 @@ export function trackRecords(params) {
   return request({
     url: `${PREFIX_SERVICES}/page`,
     method: 'get',
-    params: {
-      option: params
-    }
+    params: params
   })
 }
 
@@ -29,7 +27,7 @@ export function retryTrackRecord(params) {
 
 export function deleteTrackRecord(params) {
   return request({
-    url: `${PREFIX_SERVICES}`,
+    url: `${PREFIX_SERVICES}/delete`,
     method: 'delete',
     data: params
   })
