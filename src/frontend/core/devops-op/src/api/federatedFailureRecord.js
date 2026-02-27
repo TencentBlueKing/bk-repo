@@ -6,9 +6,7 @@ export function failureRecords(params) {
   return request({
     url: `${PREFIX_SERVICES}/page`,
     method: 'get',
-    params: {
-      option: params
-    }
+    params: params
   })
 }
 

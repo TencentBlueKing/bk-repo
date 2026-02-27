@@ -141,7 +141,7 @@
         <el-table-column prop="packageConstraint.versionRegex" label="版本正则规则" align="center" />
         <el-table-column prop="packageConstraint.deletedDate" label="删除时间" align="center">
           <template slot-scope="scope">
-            <span>{{ formatNormalDate(scope.row.packageConstraint.deletedDate) }}</span>
+            <span>{{ scope.row.packageConstraint ? formatNormalDate(scope.row.packageConstraint.deletedDate) : '' }}</span>
           </template>
         </el-table-column>
       </el-table-column>
@@ -150,7 +150,7 @@
         <el-table-column prop="pathConstraint.pathRegex" label="路径正则" align="center" />
         <el-table-column prop="pathConstraint.deletedDate" label="删除时间" align="center">
           <template slot-scope="scope">
-            <span>{{ formatNormalDate(scope.row.pathConstraint.deletedDate) }}</span>
+            <span>{{ scope.row.pathConstraint? formatNormalDate(scope.row.pathConstraint.deletedDate) : '' }}</span>
           </template>
         </el-table-column>
       </el-table-column>
@@ -375,7 +375,7 @@ export default {
       promise = failureRecords(clientQuery)
       promise.then(res => {
         this.trackRecords = res.data.records ? res.data.records : res.data
-        this.total = res.data.totalRecords ? res.data.totalRecords : res.data.length
+        this.pageOption.total = res.data.totalRecords ? res.data.totalRecords : res.data.length
       })
     },
     doDelete(data, index) {
@@ -386,7 +386,7 @@ export default {
       }).then(() => {
         deleteFailureRecords(data).then(() => {
           this.$message.success('删除成功')
-          this.trackRecords.splice(index, 1)
+          this.reload()
         })
       }).catch(() => {
         this.$message({
