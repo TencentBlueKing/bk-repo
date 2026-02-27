@@ -208,7 +208,7 @@ class MediaArtifactFileConsumer(
             crc64ecma = crc64ecma,
             operator = userId,
             size = fileSize,
-            overwrite = false,
+            overwrite = true,
             nodeMetadata = metadata,
             separate = true,
         )
