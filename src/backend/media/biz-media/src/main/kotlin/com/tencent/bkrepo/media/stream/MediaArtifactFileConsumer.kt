@@ -169,12 +169,6 @@ class MediaArtifactFileConsumer(
                             "uploadId=${createdBlock.uploadId}"
                 )
             } catch (e: Exception) {
-                logger.error(
-                    "zhaokewangdebug [storeBlockNode] 分块创建失败, " +
-                            "path=${getArtifactFullPath()}, uploadId=$uploadId, " +
-                            "sha256=$digest, startPos=$startPos, size=${file.getSize()}",
-                    e
-                )
                 if (stored > 1) {
                     storageService.delete(digest, repo.storageCredentials)
                 }
@@ -204,10 +198,7 @@ class MediaArtifactFileConsumer(
                         "分块详情=${blockNodes.map { "id=${it.id},sha256=${it.sha256},startPos=${it.startPos},endPos=${it.endPos},size=${it.size},createdDate=${it.createdDate},uploadId=${it.uploadId}" }}"
             )
             if (blockNodes.isEmpty()) {
-                logger.error(
-                    "zhaokewangdebug [completeBlockNode] 分块合并失败: 分块为空, " +
-                            "path=$projectId/$repoName${getArtifactFullPath()}, uploadId=$uploadId"
-                )
+                logger.info("zhaokewangdebug [completeBlockNode] 分块为空，跳过合并")
                 return
             }
             val totalSize = blockNodes.sumOf { it.size }
@@ -221,17 +212,7 @@ class MediaArtifactFileConsumer(
             logger.info(
                 "zhaokewangdebug [completeBlockNode] 准备创建node, beforeCreateNodeTime=$beforeCreateNodeTime"
             )
-            try {
-                blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma)
-            } catch (e: Exception) {
-                logger.error(
-                    "zhaokewangdebug [completeBlockNode] 分块合并失败: 创建node异常, " +
-                            "path=$projectId/$repoName${getArtifactFullPath()}, uploadId=$uploadId, " +
-                            "blockCount=${blockNodes.size}, totalSize=$totalSize",
-                    e
-                )
-                throw e
-            }
+            blockBaseNodeCreate(userId, artifactInfo, uploadId, totalSize, crc64ecma)
             val afterCreateNodeTime = LocalDateTime.now()
             logger.info(
                 "zhaokewangdebug [completeBlockNode] node创建完成, afterCreateNodeTime=$afterCreateNodeTime, " +
@@ -243,17 +224,7 @@ class MediaArtifactFileConsumer(
                 "zhaokewangdebug [completeBlockNode] sleep完成, 准备updateBlockUploadId, " +
                         "beforeUpdateTime=$beforeUpdateTime"
             )
-            try {
-                blockNodeService.updateBlockUploadId(projectId, repoName, getArtifactFullPath(), uploadId)
-            } catch (e: Exception) {
-                logger.error(
-                    "zhaokewangdebug [completeBlockNode] 分块合并失败: 更新分块uploadId异常, " +
-                            "path=$projectId/$repoName${getArtifactFullPath()}, uploadId=$uploadId, " +
-                            "blockCount=${blockNodes.size}, totalSize=$totalSize",
-                    e
-                )
-                throw e
-            }
+            blockNodeService.updateBlockUploadId(projectId, repoName, getArtifactFullPath(), uploadId)
             val afterUpdateTime = LocalDateTime.now()
             logger.info(
                 "zhaokewangdebug [completeBlockNode] updateBlockUploadId完成, " +

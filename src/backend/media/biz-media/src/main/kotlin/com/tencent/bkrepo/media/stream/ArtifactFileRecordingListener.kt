@@ -3,7 +3,6 @@ package com.tencent.bkrepo.media.stream
 import com.tencent.bkrepo.common.artifact.resolve.file.chunk.ChunkedArtifactFile
 import com.tencent.bkrepo.media.TYPE_CLIENT_MOUSE_DATA
 import com.tencent.bkrepo.media.TYPE_HOST_AUDIO_DATA
-import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import java.util.Locale
 
@@ -76,12 +75,6 @@ class ArtifactFileRecordingListener(
             artifactFile.finish()
             clientMouseArtifactFile.finish()
             hostAudioArtifactFile.finish()
-            logger.info(
-                "zhaokewangdebug [ArtifactFileRecordingListener.storeFile] " +
-                        "blockMode=$blockMode, isComplete=$isComplete, " +
-                        "name=$name, uploadId=$uploadId, " +
-                        "artifactFileSize=${artifactFile.getSize()}, endTime=$endTime"
-            )
             if (blockMode) {
                 // 分块模式：调用 acceptBlock 进行分块存储
                 fileConsumer.acceptBlock(
@@ -112,9 +105,5 @@ class ArtifactFileRecordingListener(
             clientMouseArtifactFile.delete()
             hostAudioArtifactFile.delete()
         }
-    }
-
-    companion object {
-        private val logger = LoggerFactory.getLogger(ArtifactFileRecordingListener::class.java)
     }
 }

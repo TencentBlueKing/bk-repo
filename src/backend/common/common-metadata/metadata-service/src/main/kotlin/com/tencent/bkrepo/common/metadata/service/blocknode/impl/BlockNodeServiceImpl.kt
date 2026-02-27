@@ -76,22 +76,10 @@ class BlockNodeServiceImpl(
     ) {
         val criteria = BlockNodeQueryHelper.fullPathCriteria(projectId, repoName, fullPath, false)
         criteria.and(TBlockNode::uploadId).isEqualTo(uploadId)
-        val now = LocalDateTime.now()
-        logger.info(
-            "zhaokewangdebug [updateBlockUploadId] 开始更新分块, " +
-                    "path=$projectId/$repoName/$fullPath, uploadId=$uploadId, " +
-                    "将设置uploadId=null, createdDate=$now, expireDate=null"
-        )
         val update = Update().set(TBlockNode::uploadId.name, null)
-            .set(TBlockNode::createdDate.name, now)
+            .set(TBlockNode::createdDate.name, LocalDateTime.now())
             .set(TBlockNode::expireDate.name, null)
-        val result = blockNodeDao.updateMulti(Query(criteria), update)
-        logger.info(
-            "zhaokewangdebug [updateBlockUploadId] 更新完成, " +
-                    "path=$projectId/$repoName/$fullPath, uploadId=$uploadId, " +
-                    "matchedCount=${result.matchedCount}, modifiedCount=${result.modifiedCount}, " +
-                    "newCreatedDate=$now"
-        )
+        blockNodeDao.updateMulti(Query(criteria), update)
         logger.info("Update block node[$projectId/$repoName/$fullPath--/uploadId: $uploadId] success.")
     }
 
@@ -188,18 +176,7 @@ class BlockNodeServiceImpl(
 
     override fun info(nodeDetail: NodeDetail, range: Range): List<RegionResource> {
         with(nodeDetail) {
-            logger.info(
-                "zhaokewangdebug [BlockNodeServiceImpl.info] 下载查询分块, " +
-                        "path=$projectId/$repoName$fullPath, " +
-                        "node.createdDate=$createdDate, node.sha256=$sha256, node.size=$size, " +
-                        "range=[${range.start}-${range.end}/${range.total}]"
-            )
             val blocks = listBlocks(range, projectId, repoName, fullPath, createdDate)
-            logger.info(
-                "zhaokewangdebug [BlockNodeServiceImpl.info] 查询到分块数=${blocks.size}, " +
-                        "查询条件: createdDate>$createdDate AND uploadId==null, " +
-                        "分块详情=${blocks.map { "id=${it.id},sha256=${it.sha256},startPos=${it.startPos},endPos=${it.endPos},size=${it.size},createdDate=${it.createdDate},uploadId=${it.uploadId}" }}"
-            )
             val blockResources = mutableListOf<RegionResource>()
             if (sha256 != null && sha256 != FAKE_SHA256) {
                 val nodeData = RegionResource(sha256!!, 0, size, 0, size)
@@ -209,10 +186,6 @@ class BlockNodeServiceImpl(
                 val res = RegionResource(it.sha256, it.startPos, it.size, 0, it.size)
                 blockResources.add(res)
             }
-            logger.info(
-                "zhaokewangdebug [BlockNodeServiceImpl.info] 最终返回资源数=${blockResources.size}, " +
-                        "资源详情=${blockResources.map { "digest=${it.digest},pos=${it.pos},size=${it.size}" }}"
-            )
             return blockResources
         }
     }
