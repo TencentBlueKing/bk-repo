@@ -58,6 +58,6 @@ export function startFullSync(params) {
 export function stopFullSync(params) {
   return request({
     url: `${PREFIX_SERVICES}/fullSync/end/${params.projectId}/${params.repoName}/${params.federationId}`,
-    method: 'post'
+    method: 'put'
   })
 }
