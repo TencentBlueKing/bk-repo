@@ -397,7 +397,7 @@ export default {
     },
     doRetry(data) {
       retryFailureRecords(data).then(response => {
-        this.$message.success('重试成功')
+        response.data ? this.$message.success('重试成功') : this.$message.error('重试失败')
         this.reload()
       })
     }
