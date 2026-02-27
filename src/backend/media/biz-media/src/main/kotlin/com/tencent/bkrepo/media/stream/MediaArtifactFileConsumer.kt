@@ -127,7 +127,7 @@ class MediaArtifactFileConsumer(
             val startPos = if (oldBlockNodes.isEmpty()) {
                 0L
             } else {
-                oldBlockNodes.maxBy { it.endPos }.endPos
+                oldBlockNodes.maxBy { it.endPos }.endPos + 1
             }
             val blockNode = TBlockNode(
                 projectId = artifactInfo.projectId,
