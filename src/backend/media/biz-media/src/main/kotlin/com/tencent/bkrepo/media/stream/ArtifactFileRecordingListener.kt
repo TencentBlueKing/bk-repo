@@ -35,9 +35,10 @@ class ArtifactFileRecordingListener(
     private lateinit var hostAudioName: String
 
     override fun init(name: String) {
-        this.name = "$name.${MediaType.MP4.name.lowercase(Locale.getDefault())}"
-        this.clientMouseName = "CM_${name}.${MediaType.JSON.name.lowercase(Locale.getDefault())}"
-        this.hostAudioName = "AU_${name}.${MediaType.AAC.name.lowercase(Locale.getDefault())}"
+        val fileName = if (blockMode) uploadId!! else name
+        this.name = "$fileName.${MediaType.MP4.name.lowercase(Locale.getDefault())}"
+        this.clientMouseName = "CM_${fileName}.${MediaType.JSON.name.lowercase(Locale.getDefault())}"
+        this.hostAudioName = "AU_${fileName}.${MediaType.AAC.name.lowercase(Locale.getDefault())}"
     }
 
     override fun handler(packet: StreamPacket) {
