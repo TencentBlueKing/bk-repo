@@ -115,6 +115,7 @@ class StreamService(
         remux: Boolean = false,
         saveType: MediaType = MediaType.MP4,
         transcodeExtraParams: String? = null,
+        uploadId: String? = null
     ): ClientStream {
         val repoId = RepositoryId(projectId, repoName)
         val repo = ArtifactContextHolder.getRepoDetail(repoId)
@@ -151,7 +152,7 @@ class StreamService(
                 hostAudioArtifactFile = hostAudioArtifactFile,
                 fileConsumer = fileConsumer,
                 scheduler = scheduler,
-                uploadId = name,
+                uploadId = uploadId,
             )
         }
         val streamId = "$projectId:$repoName:$name"
