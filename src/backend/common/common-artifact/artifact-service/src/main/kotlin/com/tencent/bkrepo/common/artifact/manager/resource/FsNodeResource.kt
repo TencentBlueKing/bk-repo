@@ -54,7 +54,17 @@ class FsNodeResource(
 ) : AbstractNodeResource() {
     override fun getArtifactInputStream(): ArtifactInputStream? {
         with(node) {
+            logger.info(
+                "zhaokewangdebug [FsNodeResource.getArtifactInputStream] 开始加载, " +
+                        "path=$projectId/$repoName$fullPath, " +
+                        "node.createdDate=$createdDate, node.sha256=$sha256, node.size=$size, " +
+                        "range=[${range.start}-${range.end}/${range.total}]"
+            )
             val blocks = blockNodeService.info(nodeDetail = NodeDetail(this), range = range)
+            logger.info(
+                "zhaokewangdebug [FsNodeResource.getArtifactInputStream] 获取到blocks数=${blocks.size}, " +
+                        "blocks详情=${blocks.map { "digest=${it.digest},pos=${it.pos},size=${it.size},off=${it.off},len=${it.len}" }}"
+            )
             /*
              * 顺序查找
              * 1.当前仓库存储实例 (正常情况)
