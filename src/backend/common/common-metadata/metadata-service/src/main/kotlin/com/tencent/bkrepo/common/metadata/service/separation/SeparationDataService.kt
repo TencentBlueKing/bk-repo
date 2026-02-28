@@ -34,6 +34,7 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
+import org.springframework.data.mongodb.core.query.Query
 import java.time.LocalDateTime
 
 interface SeparationDataService {
@@ -99,4 +100,15 @@ interface SeparationDataService {
         option: VersionListOption,
         separationDate: LocalDateTime,
     ): Page<PackageVersion>
+
+    /**
+     * 跨所有降冷日期分页查询冷节点，用于搜索场景
+     * 结果按降冷日期倒序，跨分表进行正确分页
+     */
+    fun searchColdNodes(query: Query, skip: Long, limit: Int): List<MutableMap<String, Any?>>
+
+    /**
+     * 统计所有降冷日期中匹配的冷节点总数
+     */
+    fun countColdNodes(query: Query): Long
 }

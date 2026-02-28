@@ -47,7 +47,6 @@ import com.tencent.bkrepo.repository.pojo.packages.PackageListOption
 import com.tencent.bkrepo.repository.pojo.packages.PackageSummary
 import com.tencent.bkrepo.repository.pojo.packages.PackageVersion
 import com.tencent.bkrepo.repository.pojo.packages.VersionListOption
-import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.and
@@ -56,7 +55,8 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.regex.Pattern
+
+@Suppress("UNCHECKED_CAST")
 
 @Service
 class SeparationDataServiceImpl(
@@ -163,6 +163,50 @@ class SeparationDataServiceImpl(
         }
     }
 
+
+    override fun countColdNodes(query: Query): Long {
+        val separationDates = separationDatesFromQuery(query)
+        if (separationDates.isEmpty()) return 0L
+        val countQuery = Query.of(query).limit(0).skip(0)
+        return separationDates.sumOf { date -> separationNodeDao.countByQuery(countQuery, date) }
+    }
+
+    override fun searchColdNodes(query: Query, skip: Long, limit: Int): List<MutableMap<String, Any?>> {
+        if (limit <= 0) return emptyList()
+        val separationDates = separationDatesFromQuery(query)
+        if (separationDates.isEmpty()) return emptyList()
+        val result = mutableListOf<MutableMap<String, Any?>>()
+        var skipRemaining = skip
+        var remaining = limit
+        // 按降冷日期倒序遍历各分表，跨表实现正确偏移
+        for (date in separationDates.sortedDescending()) {
+            if (remaining <= 0) break
+            val countQuery = Query.of(query).limit(0).skip(0)
+            val count = separationNodeDao.countByQuery(countQuery, date)
+            if (skipRemaining >= count) {
+                skipRemaining -= count
+                continue
+            }
+            val pageQuery = Query.of(query).skip(skipRemaining).limit(remaining)
+            val rows = separationNodeDao.findByQuery(pageQuery, date)
+            result.addAll(rows)
+            remaining -= rows.size
+            skipRemaining = 0
+        }
+        return result
+    }
+
+    /**
+     * 从 MongoDB query 的顶层 document 中提取 projectId/repoName（简单等值条件），
+     * 用于过滤出仅针对配置了降冷任务的仓库才查询冷数据。
+     * 若 query 中不含顶层等值条件（如跨仓库复杂嵌套查询），则回退到全局所有降冷日期。
+     */
+    private fun separationDatesFromQuery(query: Query): Set<LocalDateTime> {
+        val doc = query.queryObject
+        val projectId = doc[TSeparationNode::projectId.name] as? String
+        val repoName = doc[TSeparationNode::repoName.name] as? String
+        return separationTaskService.findDistinctSeparationDate(projectId, repoName)
+    }
 
     private fun packageListCriteria(projectId: String, repoName: String, packageName: String?): Query {
         return Query(where(TSeparationPackage::projectId).isEqualTo(projectId)

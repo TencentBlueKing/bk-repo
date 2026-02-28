@@ -82,7 +82,7 @@ class SeparationMavenMetadataDao : MonthRangeShardingMongoDao<TSeparationMavenMe
         version: String, separationDate: LocalDateTime
     ): List<TSeparationMavenMetadataRecord> {
         val pageRequest = Pages.ofRequest(0, 10000)
-        val (startOfDay, endOfDay) = findStartAndEndTimeOfDate(separationDate)
+        val (startOfDay, endOfDay) = SeparationUtils.findStartAndEndTimeOfDate(separationDate)
         val criteria = Criteria.where(TSeparationMavenMetadataRecord::projectId.name).isEqualTo(projectId)
             .and(TSeparationMavenMetadataRecord::repoName.name).isEqualTo(repoName)
             .and(TSeparationMavenMetadataRecord::groupId.name).isEqualTo(groupId)
@@ -99,11 +99,5 @@ class SeparationMavenMetadataDao : MonthRangeShardingMongoDao<TSeparationMavenMe
                 .and(TSeparationMavenMetadataRecord::separationDate.name).isEqualTo(separationDate)
         )
         return this.remove(deleteQuery)
-    }
-
-    private fun findStartAndEndTimeOfDate(date: LocalDateTime): Pair<LocalDateTime, LocalDateTime> {
-        val startOfDay = date.toLocalDate().atStartOfDay()
-        val endOfDay = startOfDay.plusDays(1)
-        return Pair(startOfDay, endOfDay)
     }
 }

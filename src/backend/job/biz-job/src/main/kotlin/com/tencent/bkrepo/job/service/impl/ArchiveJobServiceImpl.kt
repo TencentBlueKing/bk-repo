@@ -5,8 +5,10 @@ import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.archive.request.ArchiveFileRequest
 import com.tencent.bkrepo.archive.request.UncompressFileRequest
 import com.tencent.bkrepo.common.api.util.EscapeUtils
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.mongo.api.util.sharding.HashShardingUtils
+import com.tencent.bkrepo.common.metadata.util.SeparationUtils
 import com.tencent.bkrepo.job.BATCH_SIZE
 import com.tencent.bkrepo.job.SHARDING_COUNT
 import com.tencent.bkrepo.job.batch.context.NodeContext
@@ -45,6 +47,7 @@ class ArchiveJobServiceImpl(
     private val migrateArchivedFileService: MigrateArchivedFileService,
     private val separationTaskService: SeparationTaskService,
     private val separationNodeDao: SeparationNodeDao,
+    private val dataSeparationConfig: DataSeparationConfig,
 ) : ArchiveJobService {
     override fun archive(projectId: String, key: String, days: Int, storageClass: ArchiveStorageClass) {
         val now = LocalDateTime.now()
@@ -77,8 +80,11 @@ class ArchiveJobServiceImpl(
         val repoName = request.repoName
         val prefix = request.prefix
         
-        // 先查询冷表中是否存在需要恢复的节点
-        checkAndRestoreSeparationNodes(projectId, repoName, prefix)
+        // 仅当项目/仓库配置了降冷任务时，才检查冷表中是否存在需要恢复的节点
+        val separationEnabled = isSeparationEnabled(projectId, repoName)
+        if (separationEnabled) {
+            checkAndRestoreSeparationNodes(projectId, repoName, prefix)
+        }
         
         val query = Query(buildCriteria(request))
         val index = HashShardingUtils.shardingSequenceFor(projectId, SHARDING_COUNT)
@@ -87,6 +93,18 @@ class ArchiveJobServiceImpl(
         NodeCommonUtils
             .findByCollectionAsync(query, BATCH_SIZE, collectionName, RestoreConsumer(context))
             .subscribe { logger.info("Success to restore project[$projectId], $context") }
+    }
+
+    private fun isSeparationEnabled(projectId: String, repoName: String?): Boolean {
+        if (dataSeparationConfig.specialSeparateRepos.isEmpty()) return false
+        return if (repoName != null) {
+            SeparationUtils.matchesConfigRepos("$projectId/$repoName", dataSeparationConfig.specialSeparateRepos)
+        } else {
+            dataSeparationConfig.specialSeparateRepos.any { configRepo ->
+                val projectPattern = configRepo.substringBefore("/")
+                Regex(projectPattern.replace("*", ".*")).matches(projectId)
+            }
+        }
     }
 
     fun buildCriteria(request: ArchiveRestoreRequest): Criteria {
@@ -117,9 +135,6 @@ class ArchiveJobServiceImpl(
         }
     }
 
-    /**
-     * 检查并恢复冷表中的节点
-     */
     private fun checkAndRestoreSeparationNodes(projectId: String, repoName: String?, prefix: String?) {
         try {
             val separateDates = separationTaskService.findDistinctSeparationDate(projectId, repoName)
@@ -127,9 +142,14 @@ class ArchiveJobServiceImpl(
                 logger.info("No separation dates found for project[$projectId], repo[$repoName]")
                 return
             }
-            
+            val criteria = Criteria.where("projectId").isEqualTo(projectId)
+                .apply { repoName?.let { and("repoName").isEqualTo(it) } }
+                .and("folder").isEqualTo(false)
+                .and("deleted").isEqualTo(null)
+            prefix?.let { criteria.and("fullPath").regex("^${EscapeUtils.escapeRegex(it)}") }
+            val query = Query(criteria)
             separateDates.forEach { separationDate ->
-                val separationNodes = querySeparationNodes(projectId, repoName, prefix)
+                val separationNodes = separationNodeDao.findByQuery(query, separationDate)
                 if (separationNodes.isNotEmpty()) {
                     createRestoreTasksForSeparationNodes(projectId, separationNodes, separationDate)
                 }
@@ -138,50 +158,26 @@ class ArchiveJobServiceImpl(
             logger.error("Failed to check and restore separation nodes for project[$projectId], repo[$repoName]", e)
         }
     }
-    
-    private fun querySeparationNodes(projectId: String, repoName: String?, prefix: String?) = if (prefix != null) {
-        separationNodeDao.find(
-            Query(
-                Criteria.where("projectId").isEqualTo(projectId)
-                    .apply { repoName?.let { and("repoName").isEqualTo(it) } }
-                    .and("fullPath").regex("^${EscapeUtils.escapeRegex(prefix)}")
-                    .and("folder").isEqualTo(false)
-                    .and("deleted").isEqualTo(null)
-            )
-        )
-    } else {
-        separationNodeDao.find(
-            Query(
-                Criteria.where("projectId").isEqualTo(projectId)
-                    .apply { repoName?.let { and("repoName").isEqualTo(it) } }
-                    .and("folder").isEqualTo(false)
-                    .and("deleted").isEqualTo(null)
-            )
-        )
-    }
-    
+
     private fun createRestoreTasksForSeparationNodes(
         projectId: String,
-        separationNodes: List<*>,
-        separationDate: LocalDateTime
+        separationNodes: List<MutableMap<String, Any?>>,
+        separationDate: LocalDateTime,
     ) {
-        logger.info("Found ${separationNodes.size} separation nodes for project[$projectId], creating restore task")
-        separationNodes.forEach { node ->
-            val n = node as com.tencent.bkrepo.common.metadata.model.TSeparationNode
-            val taskType = if (n.archived == true) RESTORE_ARCHIVED else RESTORE
+        logger.info("Found ${separationNodes.size} separation nodes for project[$projectId], creating restore tasks")
+        separationNodes.forEach { nodeMap ->
+            val repoName = nodeMap["repoName"]?.toString() ?: return@forEach
+            val fullPath = nodeMap["fullPath"]?.toString() ?: return@forEach
+            val taskType = if (nodeMap["archived"]?.toString() == "true") RESTORE_ARCHIVED else RESTORE
             val task = SeparationTaskRequest(
                 projectId = projectId,
-                repoName = n.repoName,
+                repoName = repoName,
                 type = taskType,
                 separateAt = separationDate.format(DateTimeFormatter.ISO_DATE_TIME),
-                content = SeparationContent(
-                    paths = mutableListOf(NodeFilterInfo(path = n.fullPath))
-                )
+                content = SeparationContent(paths = mutableListOf(NodeFilterInfo(path = fullPath)))
             )
             separationTaskService.createSeparationTask(task)
-            val msg = "Created restore task for separation node: ${n.projectId}/${n.repoName}${n.fullPath}, " +
-                "will trigger archive restore after separation recovery"
-            logger.info(msg)
+            logger.info("Created restore task for separation node: $projectId/$repoName$fullPath")
         }
     }
     

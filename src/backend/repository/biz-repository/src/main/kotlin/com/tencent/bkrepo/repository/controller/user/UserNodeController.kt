@@ -139,19 +139,8 @@ class UserNodeController(
         @ArtifactPathVariable artifactInfo: ArtifactInfo,
     ): Response<NodeDetail> {
         val node = nodeService.getNodeDetail(artifactInfo)
-        if (node != null) return ResponseBuilder.success(node)
-        with(artifactInfo) {
-            if (SeparationUtils.matchesConfigRepos(
-                    "$projectId/$repoName", dataSeparationConfig.specialSeparateRepos
-                )
-            ) {
-                val coldNode = separationDataService.findNodeInfo(projectId, repoName, getArtifactFullPath())
-                if (coldNode != null) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_IN_COLD_STORAGE, getArtifactFullPath())
-                }
-            }
-        }
-        throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, artifactInfo.getArtifactFullPath())
+        return ResponseBuilder.success(node)
     }
 
     @AuditEntry(
@@ -708,7 +697,7 @@ class UserNodeController(
     ): Response<List<String>> {
         with(request) {
             permissionManager.checkRepoPermission(PermissionAction.MANAGE, projectId, repoName, userId = userId)
-            return ResponseBuilder.success (
+            return ResponseBuilder.success(
                 fullPaths.filter { nodeService.checkFolderExists(projectId, repoName, it) }
             )
         }

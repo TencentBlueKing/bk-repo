@@ -29,10 +29,8 @@ package com.tencent.bkrepo.common.metadata.dao.separation
 
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.metadata.model.TSeparationPackageVersion
+import com.tencent.bkrepo.common.metadata.util.SeparationQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.sharding.MonthRangeShardingMongoDao
-import org.springframework.data.mongodb.core.query.Criteria
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -40,21 +38,14 @@ import java.time.LocalDateTime
 class SeparationPackageVersionDao : MonthRangeShardingMongoDao<TSeparationPackageVersion>() {
 
     fun findByName(packageId: String, name: String, separationDate: LocalDateTime): TSeparationPackageVersion? {
-        val criteria = Criteria.where(TSeparationPackageVersion::packageId.name).isEqualTo(packageId)
-            .and(TSeparationPackageVersion::name.name).isEqualTo(name)
-            .and(TSeparationPackageVersion::separationDate.name).isEqualTo(separationDate)
-        return this.findOne(Query(criteria))
+        return this.findOne(SeparationQueryHelper.versionQuery(packageId, name, separationDate))
     }
 
     fun findById(versionId: String, separationDate: LocalDateTime): TSeparationPackageVersion? {
-        val criteria = Criteria.where(ID).isEqualTo(versionId)
-            .and(TSeparationPackageVersion::separationDate.name).isEqualTo(separationDate)
-        return this.findOne(Query(criteria))
+        return this.findOne(SeparationQueryHelper.versionIdQuery(versionId, separationDate))
     }
 
     fun removeById(versionId: String, separationDate: LocalDateTime): DeleteResult {
-        val criteria = Criteria.where(ID).isEqualTo(versionId)
-            .and(TSeparationPackageVersion::separationDate.name).isEqualTo(separationDate)
-        return this.remove(Query(criteria))
+        return this.remove(SeparationQueryHelper.versionIdRemoveQuery(versionId, separationDate))
     }
 }
