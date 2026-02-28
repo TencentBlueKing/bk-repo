@@ -80,5 +80,7 @@ data class DataSeparationConfig(
     // 是否从冷表中进行恢复
     var autoRecovery: Boolean = false,
     // 处理节点恢复事件topic
-    var recoveryTopic: String? = null
+    var recoveryTopic: String? = null,
+    // 允许查询冷数据的平台账户ID列表，为空时不限制
+    var separationQueryPlatformIds: MutableList<String> = mutableListOf()
 )

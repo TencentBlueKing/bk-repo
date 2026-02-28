@@ -29,9 +29,12 @@ package com.tencent.bkrepo.common.metadata.dao.separation
 
 import com.mongodb.client.result.DeleteResult
 import com.tencent.bkrepo.common.metadata.model.TSeparationNode
+import com.tencent.bkrepo.common.metadata.util.SeparationQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.sharding.MonthRangeShardingMongoDao
+import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
+import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
@@ -43,33 +46,51 @@ class SeparationNodeDao : MonthRangeShardingMongoDao<TSeparationNode>() {
         projectId: String, repoName: String,
         fullPath: String, separationDate: LocalDateTime
     ): TSeparationNode? {
-        val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
-            .and(TSeparationNode::repoName.name).isEqualTo(repoName)
-            .and(TSeparationNode::fullPath.name).isEqualTo(fullPath)
-            .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
-        return this.findOne(Query(criteria))
+        return this.findOne(SeparationQueryHelper.fullPathQuery(
+            projectId, repoName, fullPath, separationDate
+        ))
     }
 
     fun findOne(
         projectId: String, repoName: String,
         versionPath: String, separationDate: LocalDateTime
     ): TSeparationNode? {
-        val criteria = Criteria.where(TSeparationNode::projectId.name).isEqualTo(projectId)
-            .and(TSeparationNode::repoName.name).isEqualTo(repoName)
-            .and(TSeparationNode::path.name).isEqualTo(versionPath)
-            .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
-        return this.findOne(Query(criteria))
+        return this.findOne(SeparationQueryHelper.pathQuery(projectId, repoName, versionPath, separationDate))
     }
 
     fun findById(id: String, separationDate: LocalDateTime): TSeparationNode? {
-        val criteria = Criteria.where(ID).isEqualTo(id)
-            .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
-        return this.findOne(Query(criteria))
+        return this.findOne(SeparationQueryHelper.nodeIdQuery(id, separationDate))
+
     }
 
     fun removeById(id: String, separationDate: LocalDateTime): DeleteResult {
-        val criteria = Criteria.where(ID).isEqualTo(id)
-            .and(TSeparationNode::separationDate.name).isEqualTo(separationDate)
-        return this.remove(Query(criteria))
+        return this.remove(SeparationQueryHelper.nodeIdRemoveQuery(id, separationDate))
+    }
+
+    /**
+     * 直接按集合名查询，用于不含 separationDate 分片条件的通用查询（如搜索场景）
+     */
+    fun findByQuery(query: Query, separationDate: LocalDateTime): List<MutableMap<String, Any?>> {
+        val sequence = separationDate.year * 100 + separationDate.monthValue
+        val collectionName = parseSequenceToCollectionName(sequence)
+        return determineMongoTemplate().find(query, MutableMap::class.java, collectionName)
+            as List<MutableMap<String, Any?>>
+    }
+
+    fun countByQuery(query: Query, separationDate: LocalDateTime): Long {
+        val sequence = separationDate.year * 100 + separationDate.monthValue
+        val collectionName = parseSequenceToCollectionName(sequence)
+        return determineMongoTemplate().count(query, collectionName)
+    }
+
+    fun aggregateSizeByQuery(criteria: Criteria, separationDate: LocalDateTime): Long {
+        val sequence = separationDate.year * 100 + separationDate.monthValue
+        val collectionName = parseSequenceToCollectionName(sequence)
+        val aggregation = Aggregation.newAggregation(
+            Aggregation.match(criteria),
+            Aggregation.group().sum(TSeparationNode::size.name).`as`("totalSize")
+        )
+        val result = determineMongoTemplate().aggregate(aggregation, collectionName, HashMap::class.java)
+        return result.mappedResults.firstOrNull()?.get("totalSize") as? Long ?: 0L
     }
 }

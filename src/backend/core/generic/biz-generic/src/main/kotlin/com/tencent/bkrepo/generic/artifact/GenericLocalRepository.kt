@@ -95,7 +95,7 @@ import com.tencent.bkrepo.common.storage.message.StorageErrorException
 import com.tencent.bkrepo.common.storage.monitor.Throughput
 import com.tencent.bkrepo.common.storage.pojo.FileInfo
 import com.tencent.bkrepo.generic.artifact.context.GenericArtifactSearchContext
-import com.tencent.bkrepo.generic.config.GenericProperties
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
 import com.tencent.bkrepo.generic.constant.BKREPO_META
 import com.tencent.bkrepo.generic.constant.BKREPO_META_PREFIX
 import com.tencent.bkrepo.generic.constant.CHUNKED_UPLOAD
@@ -157,8 +157,8 @@ class GenericLocalRepository(
     private val blockNodeService: BlockNodeService,
     private val storageProperties: StorageProperties,
     private val metadataLabelCacheService: MetadataLabelCacheService,
-    private val genericProperties: GenericProperties,
     private val separationDataService: SeparationDataService,
+    private val dataSeparationConfig: DataSeparationConfig,
 ) : LocalRepository() {
 
     private val edgeClusterNodeCache = CacheBuilder.newBuilder()
@@ -547,7 +547,7 @@ class GenericLocalRepository(
         val fullPathList = context.artifacts!!.map { it.getArtifactFullPath() }
         val commonParent = PathUtils.getCommonParentPath(fullPathList)
         val nodes = getNodeDetailsFromReq(true)
-            ?: queryNodeDetailList(context.projectId, context.repoName, fullPathList, commonParent)
+            ?: queryNodeDetailList(context.projectId, context.repoName, fullPathList)
 
         validateAndCheckSeparation(context, fullPathList, nodes)
         nodes.filter { !it.folder }.forEach { downloadIntercept(context, it) }
@@ -571,16 +571,7 @@ class GenericLocalRepository(
         if (notExistNodes.isEmpty()) return
 
         if (isSeparatedRepo(context.projectId, context.repoName)) {
-            val coldNodes = notExistNodes.filter {
-                separationDataService.findNodeInfo(context.projectId, context.repoName, it) != null
-            }
-            coldNodes.forEach { publishSeparationRecoveryEvent(context, null, it) }
-            if (coldNodes.isNotEmpty()) {
-                throw ErrorCodeException(
-                    ArtifactMessageCode.NODE_IN_COLD_STORAGE,
-                    coldNodes.joinToString(StringPool.COMMA)
-                )
-            }
+            notExistNodes.forEach { publishSeparationRecoveryEvent(context, null, it) }
         }
         throw NodeNotFoundException(notExistNodes.joinToString(StringPool.COMMA))
     }
@@ -795,13 +786,7 @@ class GenericLocalRepository(
 
     override fun query(context: ArtifactQueryContext): Any? {
         val artifactInfo = context.artifactInfo
-        val hotNode = nodeService.getNodeDetail(artifactInfo)
-        if (hotNode != null) return hotNode
-        if (!isSeparatedRepo(artifactInfo.projectId, artifactInfo.repoName)) return null
-        val coldNodeInfo = separationDataService.findNodeInfo(
-            artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath()
-        ) ?: return null
-        return NodeDetail(coldNodeInfo)
+        return nodeService.getNodeDetail(artifactInfo)
     }
 
     override fun search(context: ArtifactSearchContext): List<Any> {
@@ -1079,7 +1064,7 @@ class GenericLocalRepository(
      */
     private fun isSeparatedRepo(projectId: String, repoName: String): Boolean {
         val projectRepoKey = "$projectId/$repoName"
-        return genericProperties.separatedRepos.any {
+        return dataSeparationConfig.specialSeparateRepos.any {
             val regex = Regex(it.replace("*", ".*"))
             regex.matches(projectRepoKey)
         }

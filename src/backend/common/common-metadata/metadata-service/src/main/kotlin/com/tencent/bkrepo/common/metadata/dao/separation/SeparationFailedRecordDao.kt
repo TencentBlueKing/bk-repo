@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.metadata.dao.separation
 
 import com.tencent.bkrepo.common.metadata.model.TSeparationFailedRecord
+import com.tencent.bkrepo.common.metadata.util.SeparationQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.query.Criteria
@@ -41,8 +42,10 @@ import java.time.LocalDateTime
 class SeparationFailedRecordDao : SimpleMongoDao<TSeparationFailedRecord>() {
 
     fun exist(projectId: String, repoName: String): Boolean {
-        val query = Query(Criteria().and(TSeparationFailedRecord::projectId.name).isEqualTo(projectId)
-            .and(TSeparationFailedRecord::repoName.name).isEqualTo(repoName))
+        val query = Query(
+            Criteria().and(TSeparationFailedRecord::projectId.name).isEqualTo(projectId)
+                .and(TSeparationFailedRecord::repoName.name).isEqualTo(repoName)
+        )
         return exists(query)
     }
 
@@ -56,15 +59,9 @@ class SeparationFailedRecordDao : SimpleMongoDao<TSeparationFailedRecord>() {
         nodeId: String? = null,
         type: String = "SEPARATE",
     ) {
-        val criteria = Criteria.where(TSeparationFailedRecord::projectId.name).isEqualTo(projectId)
-            .and(TSeparationFailedRecord::repoName.name).isEqualTo(repoName)
-            .and(TSeparationFailedRecord::taskId.name).isEqualTo(taskId)
-            .and(TSeparationFailedRecord::type.name).isEqualTo(type)
-        packageId?.let { criteria.and(TSeparationFailedRecord::packageId.name).isEqualTo(it) }
-        versionId?.let { criteria.and(TSeparationFailedRecord::versionId.name).isEqualTo(it) }
-        nodeId?.let { criteria.and(TSeparationFailedRecord::nodeId.name).isEqualTo(it) }
-        
-        val query = Query(criteria)
+        val query = SeparationQueryHelper.failedRecordQuery(
+            projectId, repoName, taskId, packageId, versionId, nodeId, type
+        )
         val update = Update()
             .inc(TSeparationFailedRecord::triedTimes.name, 1)
             .set(TSeparationFailedRecord::actionDate.name, actionDate)
@@ -83,15 +80,9 @@ class SeparationFailedRecordDao : SimpleMongoDao<TSeparationFailedRecord>() {
         nodeId: String? = null,
         type: String = "SEPARATE",
     ) {
-        val criteria = Criteria.where(TSeparationFailedRecord::projectId.name).isEqualTo(projectId)
-            .and(TSeparationFailedRecord::repoName.name).isEqualTo(repoName)
-            .and(TSeparationFailedRecord::taskId.name).isEqualTo(taskId)
-            .and(TSeparationFailedRecord::type.name).isEqualTo(type)
-        packageId?.let { criteria.and(TSeparationFailedRecord::packageId.name).isEqualTo(it) }
-        versionId?.let { criteria.and(TSeparationFailedRecord::versionId.name).isEqualTo(it) }
-        nodeId?.let { criteria.and(TSeparationFailedRecord::nodeId.name).isEqualTo(it) }
-        
-        val query = Query(criteria)
+        val query = SeparationQueryHelper.failedRecordQuery(
+            projectId, repoName, taskId, packageId, versionId, nodeId, type
+        )
         this.remove(query)
     }
 }

@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.common.metadata.dao.separation
 
 import com.tencent.bkrepo.common.metadata.model.TSeparationPackage
+import com.tencent.bkrepo.common.metadata.util.SeparationQueryHelper
 import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -41,19 +42,13 @@ class SeparationPackageDao : SimpleMongoDao<TSeparationPackage>() {
         if (key.isBlank()) {
             return null
         }
-        val criteria = Criteria.where(TSeparationPackage::projectId.name).isEqualTo(projectId)
-            .and(TSeparationPackage::repoName.name).isEqualTo(repoName)
-            .and(TSeparationPackage::key.name).isEqualTo(key)
-        val query = Query(criteria)
+        val query = SeparationQueryHelper.packageQuery(projectId, repoName, key)
         query.fields().exclude(HISTORY_VERSION)
         return this.findOne(query)
     }
 
     fun findByKey(projectId: String, repoName: String, key: String): TSeparationPackage? {
-        val criteria = Criteria.where(TSeparationPackage::projectId.name).isEqualTo(projectId)
-            .and(TSeparationPackage::repoName.name).isEqualTo(repoName)
-            .and(TSeparationPackage::key.name).isEqualTo(key)
-        return this.findOne(Query(criteria))
+        return this.findOne(SeparationQueryHelper.packageQuery(projectId, repoName, key))
     }
 
 
