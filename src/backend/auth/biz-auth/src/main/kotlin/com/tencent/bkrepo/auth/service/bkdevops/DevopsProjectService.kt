@@ -61,8 +61,19 @@ class DevopsProjectService @Autowired constructor(private val ciAuthService: CIA
     fun listRoleAndUserByProject(projectCode: String): List<ExternalRoleResult> {
         val externalRoleList = mutableListOf<ExternalRoleResult>()
         ciAuthService.getRoleAndUserByProject(projectCode).forEach {
-            externalRoleList.add(ExternalRoleResult(it.roleName, it.roleId.toString(), it.userIdList))
+            externalRoleList.add(
+                ExternalRoleResult(
+                    it.roleName,
+                    it.roleId.toString(),
+                    it.userIdList,
+                    deptInfoList = it.deptInfoList
+                )
+            )
         }
         return externalRoleList
+    }
+
+    fun listMemberGroupsInProject(uid: String, projectId: String): List<String> {
+        return ciAuthService.getMemberGroupsInProject(user = uid, projectCode = projectId)
     }
 }

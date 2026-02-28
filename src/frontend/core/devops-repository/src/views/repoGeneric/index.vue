@@ -167,9 +167,11 @@
                     <bk-table-column :label="$t('createdBy')" width="150" show-overflow-tooltip>
                         <template #default="{ row }">
                             <bk-user-display-name v-if="multiMode" :user-id="userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy"></bk-user-display-name>
-                            <span v-else> {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}</span>                        </template>
+                            <span v-else> {{ userList[row.createdBy] ? userList[row.createdBy].name : row.createdBy }}
+                            </span>
+                        </template>
                     </bk-table-column>
-                    <bk-table-column :label="$t('operation')" width="100">
+                    <bk-table-column :label="$t('operation')" width="100" fixed="right">
                         <template #default="{ row }">
                             <operation-list
                                 :list="[
@@ -233,7 +235,6 @@
         <generic-share-dialog ref="genericShareDialog"></generic-share-dialog>
         <generic-tree-dialog ref="genericTreeDialog" @update="updateGenericTreeNode" @refresh="refreshNodeChange"></generic-tree-dialog>
         <preview-basic-file-dialog ref="previewBasicFileDialog"></preview-basic-file-dialog>
-        <preview-office-file-dialog ref="previewOfficeFileDialog"></preview-office-file-dialog>
         <generic-forbid-dialog ref="genericForbidDialog" @refresh="refreshNodeChange"></generic-forbid-dialog>
         <compressed-file-table ref="compressedFileTable" :data="compressedData" @show-preview="handleShowPreview"></compressed-file-table>
         <loading ref="loading" @closeLoading="closeLoading"></loading>
@@ -262,7 +263,6 @@
     import { mapActions, mapMutations, mapState } from 'vuex'
     import compressedFileTable from './compressedFileTable'
     import previewBasicFileDialog from './previewBasicFileDialog'
-    import previewOfficeFileDialog from '@repository/views/repoGeneric/previewOfficeFileDialog'
     import { Base64 } from 'js-base64'
     import { isOutDisplayType, isText } from '@repository/utils/file'
 
@@ -284,7 +284,6 @@
             compressedFileTable,
             iamDenyDialog,
             genericCleanDialog,
-            previewOfficeFileDialog,
             genericForbidDialog
         },
         data () {
@@ -403,7 +402,11 @@
         },
         created () {
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
-                this.pathChange()
+                if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
+                    this.$router.replace({ name: 'repositories', params: { projectId: this.projectId } })
+                } else {
+                    this.pathChange()
+                }
             })
             this.initTree()
             this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)

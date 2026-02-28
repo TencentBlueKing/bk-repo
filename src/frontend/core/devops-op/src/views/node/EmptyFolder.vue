@@ -69,6 +69,7 @@
 import { queryEmptyFolder, deleteEmptyFolder } from '@/api/node'
 import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
+import { ROUTER_NAME_EMPTY_FOLDER } from '@/router'
 
 export default {
   name: 'EmptyFolder',
@@ -164,7 +165,7 @@ export default {
       query.projectId = this.nodeQuery.projectId
       query.repoName = this.nodeQuery.repoName
       query.path = this.nodeQuery.path
-      this.$router.push({ path: '/nodes/emptyFolder', query: query })
+      this.$router.push({ name: ROUTER_NAME_EMPTY_FOLDER, query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

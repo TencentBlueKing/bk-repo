@@ -209,6 +209,7 @@ import { querySeparateTask, updateSeparateTask } from '@/api/separate'
 import CreateOrUpdateSeparationTaskDialog from '@/views/separation/components/CreateOrUpdateSeparationTaskDialog'
 import { searchProjects } from '@/api/project'
 import { listRepositories } from '@/api/repository'
+import { ROUTER_NAME_SEPARATION_CONFIG } from '@/router'
 export default {
   name: 'SeparationTaskConfig',
   components: { CreateOrUpdateSeparationTaskDialog },
@@ -294,7 +295,7 @@ export default {
       query.projectId = this.clientQuery.projectId
       query.repoName = this.clientQuery.repoName
       query.taskType = this.clientQuery.taskType
-      this.$router.push({ path: '/separation-config', query: query })
+      this.$router.push({ name: ROUTER_NAME_SEPARATION_CONFIG, query: query })
     },
     onRouteUpdate(route) {
       const query = route.query

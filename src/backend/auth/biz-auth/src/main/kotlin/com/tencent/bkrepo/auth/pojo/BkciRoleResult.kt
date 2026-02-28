@@ -43,5 +43,7 @@ data class BkciRoleResult(
     @JsonProperty("user_id_list")
     val userIdList: List<String>,
     @JsonProperty("type")
-    val type: String
+    val type: String,
+    @JsonProperty("dept_info_list")
+    val deptInfoList: List<DeptInfo>
 )

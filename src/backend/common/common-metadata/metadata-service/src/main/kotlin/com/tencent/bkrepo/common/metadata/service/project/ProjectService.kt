@@ -105,4 +105,25 @@ interface ProjectService {
      * 项目是否启用
      */
     fun isProjectEnabled(name: String): Boolean
+
+    /**
+     * 设置项目启用/禁用状态
+     * @param name 项目名称
+     * @param enabled 是否启用项目
+     */
+    fun setProjectEnabled(name: String, enabled: Boolean): Boolean
+
+    /**
+     * 设置项目分享制品功能启用/禁用状态
+     * @param name 项目名称
+     * @param enabled 是否启用分享制品功能
+     */
+    fun setProjectShareEnabled(name: String, enabled: Boolean): Boolean
+
+    /**
+     * 获取项目分享制品功能启用/禁用状态
+     * @param name 项目名称
+     * @return 是否启用分享制品功能，默认为true
+     */
+    fun isProjectShareEnabled(name: String): Boolean
 }

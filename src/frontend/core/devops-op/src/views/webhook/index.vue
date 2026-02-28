@@ -60,6 +60,7 @@ import WebhookCreateDialog from '@/views/webhook/components/WebhookCreateDialog'
 import WebhookDetailDialog from '@/views/webhook/components/WebhookDetailDialog'
 import WebhookDeleteDialog from '@/views/webhook/components/WebhookDeleteDialog'
 import moment from 'moment'
+import { ROUTER_NAME_WEBHOOK } from '@/router'
 
 export default {
   name: 'WebHook',
@@ -115,7 +116,7 @@ export default {
     changeRouteQueryParams() {
       this.$refs['form'].validate((valid) => {
         if (valid) {
-          this.$router.push({ path: '/webhook', query: this.webhookQuery })
+          this.$router.push({ name: ROUTER_NAME_WEBHOOK, query: this.webhookQuery })
         }
       })
     },

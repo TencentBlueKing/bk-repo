@@ -79,4 +79,15 @@ interface ProjectClient {
     @Operation(summary = "获取项目启用/禁用状态")
     @PostMapping("/enabled/{name}")
     fun isProjectEnabled(@Parameter(name = "项目名") @PathVariable name: String): Response<Boolean>
+
+    @Operation(summary = "设置项目分享制品功能启用/禁用状态")
+    @PostMapping("/share/enabled/{name}")
+    fun setProjectShareEnabled(
+        @Parameter(name = "项目名") @PathVariable name: String,
+        @Parameter(name = "是否启用分享制品功能") @RequestBody enabled: Boolean
+    ): Response<Boolean>
+
+    @Operation(summary = "获取项目分享制品功能启用/禁用状态")
+    @PostMapping("/share/enabled/get/{name}")
+    fun isProjectShareEnabled(@Parameter(name = "项目名") @PathVariable name: String): Response<Boolean>
 }

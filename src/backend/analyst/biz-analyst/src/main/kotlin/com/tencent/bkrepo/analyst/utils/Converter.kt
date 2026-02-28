@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.analysis.pojo.scanner.Level
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
+import com.tencent.bkrepo.webhook.payload.SubtaskEventPayload
 import java.time.format.DateTimeFormatter
 
 object Converter {
@@ -181,6 +182,31 @@ object Converter {
                 scanQuality = scanQuality,
                 duration = ScanPlanConverter.duration(startDateTime, finishedDateTime),
                 scanStatus = ScanPlanConverter.convertToScanStatus(status, qualityRedLine).name
+            )
+        }
+    }
+
+    fun convert(subtask: SubScanTaskDefinition): SubtaskEventPayload {
+        with(subtask) {
+            return SubtaskEventPayload(
+                taskId = id!!,
+                parentTaskId = parentScanTaskId,
+                status = status,
+                scanner = scanner,
+                triggerType = triggerType ?: ScanTriggerType.MANUAL.name,
+                projectId = projectId,
+                repoName = repoName,
+                repoType = repoType,
+                fullPath = fullPath,
+                packageKey = packageKey,
+                version = version,
+                size = size,
+                packageSize = packageSize,
+                sha256 = sha256,
+                createdBy = createdBy,
+                createdDateTime = createdDate,
+                startDateTime = startDateTime,
+                finishedDateTime = finishedDateTime,
             )
         }
     }

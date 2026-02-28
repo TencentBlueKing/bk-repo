@@ -320,15 +320,19 @@ class RepositoryServiceHelper(
         fun buildListPermissionRepoQuery(
             projectId: String,
             names: List<String>,
-            option: RepoListOption
+            option: RepoListOption,
+            isAdmin: Boolean = false
         ): Query {
             val criteria = where(TRepository::projectId).isEqualTo(projectId)
                 .and(TRepository::name).inValues(names)
                 .and(TRepository::deleted).isEqualTo(null).apply {
-                    if (option.display == true) {
-                        and(TRepository::display).ne(false)
-                    } else if (option.display != null) {
-                        and(TRepository::display).isEqualTo(option.display)
+                    // 管理员可以看到所有仓库，不受 display 限制
+                    if (!isAdmin) {
+                        if (option.display == true) {
+                            and(TRepository::display).ne(false)
+                        } else if (option.display != null) {
+                            and(TRepository::display).isEqualTo(option.display)
+                        }
                     }
                 }
             option.type?.takeIf { it.isNotBlank() }?.apply { criteria.and(TRepository::type).isEqualTo(this.uppercase(

@@ -34,6 +34,7 @@ package com.tencent.bkrepo.common.artifact.metrics.export
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.artifact.constant.PROJECT_ID
 import com.tencent.bkrepo.common.artifact.metrics.ArtifactTransferRecord
+import com.tencent.bkrepo.common.artifact.metrics.TransferUserAgent
 import com.tencent.bkrepo.common.metrics.push.custom.CustomMetricsExporter
 import com.tencent.bkrepo.common.metrics.push.custom.base.MetricsItem
 import com.tencent.bkrepo.common.metrics.push.custom.enums.TypeOfMetricsItem
@@ -57,13 +58,29 @@ class ArtifactMetricsExporter(
             ) {
                 continue
             }
+            // 导出传输速率指标
             val labels = convertRecordToMap(item)
-            val metrics = TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE
-            val metricItem = MetricsItem(
-                metrics.displayName, metrics.help,
-                metrics.dataModel, metrics.keepHistory, item.average.toDouble(), labels
+            val rateMetrics = TypeOfMetricsItem.ARTIFACT_TRANSFER_RATE
+            val rateMetricItem = MetricsItem(
+                rateMetrics.displayName, rateMetrics.help,
+                rateMetrics.dataModel, rateMetrics.keepHistory, item.average.toDouble(), labels
             )
-            customMetricsExporter?.reportMetrics(metricItem)
+            customMetricsExporter?.reportMetrics(rateMetricItem)
+
+            // 导出传输大小指标（Histogram，维度：项目、仓库、类型）
+            // BUILDER 只对 transferMode = NORMAL 的记录导出，分块传输的 bytes 不代表完整传输大小
+            // 其他 agent 类型都上报
+            if (item.agent != TransferUserAgent.BUILDER.name ||
+                item.transferMode == ArtifactTransferRecord.MODE_NORMAL
+            ) {
+                val sizeLabels = convertRecordToSizeLabels(item)
+                val sizeMetrics = TypeOfMetricsItem.ARTIFACT_TRANSFER_SIZE
+                val sizeMetricItem = MetricsItem(
+                    sizeMetrics.displayName, sizeMetrics.help,
+                    sizeMetrics.dataModel, sizeMetrics.keepHistory, item.bytes.toDouble(), sizeLabels
+                )
+                customMetricsExporter?.reportMetrics(sizeMetricItem)
+            }
         }
     }
 
@@ -81,6 +98,19 @@ class ArtifactMetricsExporter(
         labels[ArtifactTransferRecord::agent.name] = record.agent
         labels[ArtifactTransferRecord::userId.name] = record.userId
         labels[ArtifactTransferRecord::serverIp.name] = record.serverIp
+        labels[ArtifactTransferRecord::pipelineId.name] = record.pipelineId
+        return labels
+    }
+
+    /**
+     * 将传输记录转换为大小指标标签
+     * 维度：项目、仓库、类型（上传/下载）
+     */
+    private fun convertRecordToSizeLabels(record: ArtifactTransferRecord): MutableMap<String, String> {
+        val labels = mutableMapOf<String, String>()
+        labels[PROJECT_ID] = record.project
+        labels[ArtifactTransferRecord::repoName.name] = record.repoName
+        labels[ArtifactTransferRecord::type.name] = record.type
         return labels
     }
 

@@ -29,38 +29,49 @@
  * SOFTWARE.
  */
 
-package com.tencent.bkrepo.common.storage.innercos.cl5
+package com.tencent.bkrepo.common.artifact.metrics
 
-import com.qq.l5.L5sys
-import com.qq.l5.L5sys.QosRequest
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+/**
+ * 流量聚合记录
+ * 用于按维度（项目/仓库/类型）聚合流量数据，定期上报后清理内存
+ *
+ * @param projectId 项目ID
+ * @param repoName 仓库名称
+ * @param type 传输类型（RECEIVE/RESPONSE）
+ * @param bytes 聚合的字节数
+ */
+data class ArtifactBandwidthRecord(
+    val projectId: String,
+    val repoName: String,
+    val type: String,
+    val bytes: Long,
+) {
+    companion object {
+        const val LABEL_PROJECT_ID = "projectId"
+        const val LABEL_REPO_NAME = "repoName"
+        const val LABEL_TYPE = "type"
 
-object CL5Utils {
+        // 传输类型常量
+        const val TYPE_RECEIVE = "RECEIVE"
+        const val TYPE_RESPONSE = "RESPONSE"
 
-    private val logger: Logger = LoggerFactory.getLogger(CL5Utils::class.java)
-    private var instance: L5sys? = null
-    private const val CL5_SUCCESS = 0
-
-    fun route(cl5Info: CL5Info): RouteInfo {
-        val request = QosRequest().apply {
-            modId = cl5Info.modId
-            cmdId = cl5Info.cmdId
+        /**
+         * 生成聚合键
+         * @return 格式: "projectId:repoName:type"
+         */
+        fun buildKey(projectId: String, repoName: String, type: String): String {
+            return "$projectId:$repoName:$type"
         }
-        val retCode = cl5Instance.ApiGetRoute(request, cl5Info.timeout)
-        check(retCode == CL5_SUCCESS) { "Failed to get cl5 route info[$cl5Info]，return code: $retCode" }
-        val routeInfo = RouteInfo(request.hostIp, request.hostPort)
-        if (logger.isDebugEnabled) {
-            logger.debug("Success to get cl5 route info[$cl5Info]: $routeInfo")
+
+        /**
+         * 从聚合键解析出各维度值
+         * @return Triple(projectId, repoName, type)
+         */
+        fun parseKey(key: String): Triple<String, String, String> {
+            val parts = key.split(":")
+            require(parts.size == 3) { "Invalid bandwidth record key: $key" }
+            return Triple(parts[0], parts[1], parts[2])
         }
-        return routeInfo
     }
-
-    private val cl5Instance: L5sys
-        get() {
-            if (instance == null) {
-                instance = L5sys()
-            }
-            return instance!!
-        }
 }
+
