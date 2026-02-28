@@ -77,12 +77,20 @@ class ArtifactFileRecordingListener(
             hostAudioArtifactFile.finish()
             if (blockMode) {
                 // 分块模式：调用 acceptBlock 进行分块存储
+                val extraFiles = mutableMapOf<String, ChunkedArtifactFile>()
+                if (clientMouseArtifactFile.getSize() != 0L) {
+                    extraFiles[clientMouseName] = clientMouseArtifactFile
+                }
+                if (hostAudioArtifactFile.getSize() != 0L) {
+                    extraFiles[hostAudioName] = hostAudioArtifactFile
+                }
                 fileConsumer.acceptBlock(
                     name = name,
                     file = artifactFile,
                     uploadId = uploadId!!,
                     isComplete = isComplete,
-                    endTime = endTime
+                    endTime = endTime,
+                    extraFiles = extraFiles.ifEmpty { null }
                 )
             } else {
                 // 原有模式：存为完整制品

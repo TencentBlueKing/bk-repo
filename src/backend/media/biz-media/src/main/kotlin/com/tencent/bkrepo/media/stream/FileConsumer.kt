@@ -26,8 +26,15 @@ interface FileConsumer : Consumer<File> {
      * @param isComplete 是否完成（true=正常结束需合并分块并触发转码，false=异常断开仅存分块）
      * @param endTime 结束时间
      */
-    fun acceptBlock(name: String, file: ArtifactFile, uploadId: String, isComplete: Boolean, endTime: Long) {
+    fun acceptBlock(
+        name: String,
+        file: ArtifactFile,
+        uploadId: String,
+        isComplete: Boolean,
+        endTime: Long,
+        extraFiles: Map<String, ArtifactFile>? = null
+    ) {
         // 默认实现：直接走原有accept逻辑，不感知分块
-        accept(name, file, null, endTime)
+        accept(name, file, extraFiles, endTime)
     }
 }

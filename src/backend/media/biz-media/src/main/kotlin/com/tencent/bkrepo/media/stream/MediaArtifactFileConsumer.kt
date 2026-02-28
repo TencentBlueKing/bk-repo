@@ -85,22 +85,41 @@ class MediaArtifactFileConsumer(
         file: ArtifactFile,
         uploadId: String,
         isComplete: Boolean,
-        endTime: Long
+        endTime: Long,
+        extraFiles: Map<String, ArtifactFile>?
     ) {
         val filePath = "$path/$name"
         val artifactInfo = ArtifactInfo(repo.projectId, repo.name, filePath)
-        // 每次都存储当前分块
+        // 每次都存储当前视频分块
         storeBlockNode(artifactInfo, file, uploadId)
+        // 额外文件（鼠标JSON、音频AAC）也走分块存储，使用同一uploadId前缀关联
+        val extraArtifactInfoMap = mutableMapOf<String, ArtifactInfo>()
+        extraFiles?.forEach { (extraName, extraFile) ->
+            if (extraFile.getSize() > 0) {
+                val extraFilePath = "$path/$extraName"
+                val extraArtifactInfo = ArtifactInfo(repo.projectId, repo.name, extraFilePath)
+                // 使用 uploadId + 文件类型前缀 作为额外文件的分块uploadId，保证与视频分块关联但不冲突
+                val extraUploadId = "${uploadId}_${extraName.substringBefore(".")}"
+                storeBlockNode(extraArtifactInfo, extraFile, extraUploadId)
+                extraArtifactInfoMap[extraName] = extraArtifactInfo
+            }
+        }
         if (isComplete) {
             // 正常结束：合并所有分块，创建完整node
             completeBlockNode(artifactInfo, uploadId)
+            // 额外文件也合并分块
+            val extraArtifactInfos = extraArtifactInfoMap.map { (extraName, extraArtifactInfo) ->
+                val extraUploadId = "${uploadId}_${extraName.substringBefore(".")}"
+                completeBlockNode(extraArtifactInfo, extraUploadId)
+                extraArtifactInfo
+            }.ifEmpty { null }
             // 转码仅在completeBlockNode后触发
             if (transcodeConfig != null) {
                 transcodeService.transcode(
                     artifactInfo = artifactInfo,
                     transcodeConfig = transcodeConfig,
                     userId = userId,
-                    extraFiles = null,
+                    extraFiles = extraArtifactInfos,
                     author = author,
                     videoStartTime = startTime,
                     videoEndTime = endTime
