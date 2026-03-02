@@ -584,7 +584,11 @@ class CosClient(val credentials: InnerCosCredentials) {
         val count = activeCount.get()
         if (count == 0) {
             // 需要所有任务完成后删除临时路径
-            path.toFile().deleteRecursively()
+            try {
+                path.toFile().deleteRecursively()
+            } catch (e: Exception) {
+                logger.error("Delete cos temp downloading file dir $path failed: ", e)
+            }
             logger.info("Delete cos temp downloading file dir $path recursively")
             return
         }
