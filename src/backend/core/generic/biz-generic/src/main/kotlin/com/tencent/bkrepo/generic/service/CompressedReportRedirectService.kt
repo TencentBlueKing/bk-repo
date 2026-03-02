@@ -72,7 +72,8 @@ class CompressedReportRedirectService(
         if (context.request.getHeader(HEADER_ACCESS_FROM) != ACCESS_FROM_API) {
             redirectUrlBuilder.append("/web")
         }
-        redirectUrlBuilder.append("/preview/api/compressed/report/preview${context.request.requestURI}")
+        redirectUrlBuilder.append("/preview/api/compressed/report/preview/" +
+                "${context.projectId}/${context.repoName}${context.artifactInfo.getArtifactFullPath()}")
         context.request.queryString?.let {
             redirectUrlBuilder.append("?${context.request.queryString}")
         }
