@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.fs.server.service
+package com.tencent.bkrepo.fs.server.service.drive
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service
  */
 @Service
 @Conditional(ReactiveCondition::class)
-class RDriveFileReferenceServiceImpl(
+class DriveFileReferenceService(
     private val driveFileReferenceDao: RDriveFileReferenceDao,
 ) {
 
@@ -31,7 +31,7 @@ class RDriveFileReferenceServiceImpl(
             // retry because upsert operation is not atomic
             driveFileReferenceDao.upsert(query, update)
         }
-        logger.info("Increment reference of drive file [$sha256] on credentialsKey [$credentialsKey].")
+        logger.info("Increment $inc reference of drive file [$sha256] on credentialsKey [$credentialsKey].")
         return true
     }
 
@@ -78,6 +78,6 @@ class RDriveFileReferenceServiceImpl(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(RDriveFileReferenceServiceImpl::class.java)
+        private val logger = LoggerFactory.getLogger(DriveFileReferenceService::class.java)
     }
 }

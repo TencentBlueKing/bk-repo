@@ -132,6 +132,5 @@ data class TDriveNode(
         const val PARENT_SNAP_IDX_DEF = "{'parent': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
         const val PROJECT_REPO_IDX = "project_repo_idx"
         const val PROJECT_REPO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
-
     }
 }
