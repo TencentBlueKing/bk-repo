@@ -1,12 +1,12 @@
-package com.tencent.bkrepo.common.metadata.service.file.impl
+package com.tencent.bkrepo.fs.server.service
 
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
-import com.tencent.bkrepo.common.metadata.dao.file.RDriveFileReferenceDao
 import com.tencent.bkrepo.common.metadata.model.TDriveFileReference
 import com.tencent.bkrepo.common.metadata.pojo.file.FileReference
-import com.tencent.bkrepo.common.metadata.util.FileReferenceQueryHelper.buildQuery
+import com.tencent.bkrepo.common.metadata.util.FileReferenceQueryHelper
+import com.tencent.bkrepo.fs.server.repository.RDriveFileReferenceDao
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException
@@ -23,7 +23,7 @@ class RDriveFileReferenceServiceImpl(
 ) {
 
     suspend fun increment(sha256: String, credentialsKey: String?, inc: Long = 1L): Boolean {
-        val query = buildQuery(sha256, credentialsKey)
+        val query = FileReferenceQueryHelper.buildQuery(sha256, credentialsKey)
         val update = Update().inc(TDriveFileReference::count.name, inc)
         try {
             driveFileReferenceDao.upsert(query, update)
@@ -36,7 +36,7 @@ class RDriveFileReferenceServiceImpl(
     }
 
     suspend fun decrement(sha256: String, credentialsKey: String?): Boolean {
-        val query = buildQuery(sha256, credentialsKey, 0)
+        val query = FileReferenceQueryHelper.buildQuery(sha256, credentialsKey, 0)
         val update = Update().apply { inc(TDriveFileReference::count.name, -1) }
         val result = driveFileReferenceDao.updateFirst(query, update)
 
@@ -45,7 +45,7 @@ class RDriveFileReferenceServiceImpl(
             return true
         }
 
-        driveFileReferenceDao.findOne(buildQuery(sha256, credentialsKey)) ?: run {
+        driveFileReferenceDao.findOne(FileReferenceQueryHelper.buildQuery(sha256, credentialsKey)) ?: run {
             logger.error("Failed to decrement reference of drive file [$sha256] on credentialsKey [$credentialsKey]")
             return false
         }
@@ -58,19 +58,19 @@ class RDriveFileReferenceServiceImpl(
     }
 
     suspend fun count(sha256: String, credentialsKey: String?): Long {
-        val query = buildQuery(sha256, credentialsKey)
+        val query = FileReferenceQueryHelper.buildQuery(sha256, credentialsKey)
         return driveFileReferenceDao.findOne(query)?.count ?: 0
     }
 
     suspend fun get(credentialsKey: String?, sha256: String): FileReference {
-        val query = buildQuery(sha256, credentialsKey)
+        val query = FileReferenceQueryHelper.buildQuery(sha256, credentialsKey)
         val tDriveFileReference = driveFileReferenceDao.findOne(query)
             ?: throw NotFoundException(ArtifactMessageCode.NODE_NOT_FOUND)
         return convert(tDriveFileReference)
     }
 
     suspend fun exists(sha256: String, credentialsKey: String?): Boolean {
-        return driveFileReferenceDao.exists(buildQuery(sha256, credentialsKey))
+        return driveFileReferenceDao.exists(FileReferenceQueryHelper.buildQuery(sha256, credentialsKey))
     }
 
     private fun convert(tDriveFileReference: TDriveFileReference): FileReference {

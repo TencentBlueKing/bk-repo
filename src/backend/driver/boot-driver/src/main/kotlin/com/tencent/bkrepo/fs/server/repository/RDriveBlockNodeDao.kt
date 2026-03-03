@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.metadata.dao.blocknode
+package com.tencent.bkrepo.fs.server.repository
 
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.metadata.model.TDriveBlockNode
