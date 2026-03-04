@@ -171,8 +171,14 @@ class StreamService(
     /**
      * 合并超时未完成的分块（供外部定时任务调用）
      * 当视频流异常退出且没有重连时，分块不会被自动合并
+     * @param transcodeExtraParams 转码额外参数（sktoken），为空时转码参数中 extraParams 也为空
      */
-    fun mergeExpiredBlocks(projectId: String, repoName: String, uploadId: String) {
+    fun mergeExpiredBlocks(
+        projectId: String,
+        repoName: String,
+        uploadId: String,
+        transcodeExtraParams: String? = null,
+    ) {
         val repo = repositoryService.getRepoDetail(projectId, repoName)
             ?: run {
                 logger.warn("MergeExpiredBlocks: repo not found for $projectId/$repoName, skip.")
@@ -197,7 +203,8 @@ class StreamService(
         val videoEndTime = sortedBlocks.last().createdDate
             .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-        val transcodeConfig = getTranscodeConfig(projectId)
+        // 获取转码配置，并将 transcodeExtraParams (sktoken) 设置到配置中
+        val transcodeConfig = getTranscodeConfig(projectId)?.copy(extraParams = transcodeExtraParams)
         val fileConsumer = buildFileConsumer(repo, userId, transcodeConfig)
 
         // 合并视频主文件分块
