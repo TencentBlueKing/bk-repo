@@ -29,9 +29,13 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
 import com.google.common.cache.CacheBuilder
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
@@ -59,6 +63,8 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.replication.util.extractProjectName
+import com.tencent.bkrepo.replication.util.extractTenantId
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -99,13 +105,15 @@ class ClusterReplicator(
             // 外部集群仓库没有project/repoName
             if (remoteProjectId.isNullOrBlank()) return
             val localProject = localDataManager.findProjectById(localProjectId)
+            val tenantId = remoteProjectId.extractTenantId()
+            val projectName = remoteProjectId.extractProjectName()
             val request = ProjectCreateRequest(
-                name = remoteProjectId,
-                displayName = remoteProjectId,
+                name = projectName,
+                displayName = projectName,
                 description = localProject.description,
                 operator = localProject.createdBy
             )
-            artifactReplicaClient!!.replicaProjectCreateRequest(request)
+            artifactReplicaClient!!.replicaProjectCreateRequest(request, tenantId)
         }
     }
 
@@ -126,7 +134,19 @@ class ClusterReplicator(
                     configuration = localRepo.configuration,
                     operator = localRepo.createdBy
                 )
-                remoteRepoCache.put(key, artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!)
+                val remoteRepo = artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
+                remoteRepoCache.put(key, remoteRepo)
+                if (
+                    remoteRepo.type != remoteRepoType ||
+                    remoteRepo.category != RepositoryCategory.LOCAL &&
+                    remoteRepo.category != RepositoryCategory.COMPOSITE
+                ) {
+                    throw ErrorCodeException(
+                        ArtifactMessageCode.REPOSITORY_EXISTED,
+                        "$remoteProjectId/$remoteRepoName",
+                        status = HttpStatus.CONFLICT
+                    )
+                }
             }
             context.remoteRepo = remoteRepoCache.getIfPresent(key)
         }

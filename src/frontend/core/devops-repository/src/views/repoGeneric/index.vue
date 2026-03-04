@@ -402,7 +402,11 @@
         },
         created () {
             this.getRepoListAll({ projectId: this.projectId }).then(_ => {
-                this.pathChange()
+                if (!this.repoListAll.find(repo => repo.name === this.repoName)) {
+                    this.$router.replace({ name: 'repositories', params: { projectId: this.projectId } })
+                } else {
+                    this.pathChange()
+                }
             })
             this.initTree()
             this.debounceClickTreeNode = debounce(this.clickTreeNodeHandler, 100)

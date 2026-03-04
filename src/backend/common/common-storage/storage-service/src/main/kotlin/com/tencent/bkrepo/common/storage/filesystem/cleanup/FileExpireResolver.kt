@@ -11,4 +11,10 @@ interface FileExpireResolver {
      * @return true过期，否则为false
      * */
     fun isExpired(file: File): Boolean
+
+    /**
+     * 仅根据mtime判断文件是否过期
+     * @return true过期，否则为false
+     * */
+    fun isExpiredByMTime(file: File): Boolean
 }

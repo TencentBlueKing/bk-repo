@@ -38,6 +38,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.artifact.audit.ActionAuditContent
 import com.tencent.bkrepo.common.artifact.audit.REPO_EDIT_ACTION
 import com.tencent.bkrepo.common.artifact.audit.REPO_RESOURCE
+import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHolder
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.oci.constant.OCI_PACKAGE_NAME
@@ -71,7 +72,6 @@ import org.springframework.web.bind.annotation.RequestAttribute
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.servlet.HandlerMapping
 
 @Suppress("MVCPathVariableInspection")
 @Tag(name = "oci产品接口")
@@ -231,8 +231,8 @@ class UserOciController(
         @Parameter(name = OCI_TAG, required = true)
         tag: String?
     ): Response<OciTagResult> {
-        val requestUrl = request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE).toString()
-        val packageName = requestUrl.removePrefix("$USER_API_PREFIX/tag/$projectId/$repoName/")
+        val path = ArtifactContextHolder.getUrlPath(this.javaClass.name)!!
+        val packageName = path.removePrefix("$USER_API_PREFIX/tag/$projectId/$repoName/")
         return ResponseBuilder.success(
             operationService.getRepoTag(
                 projectId = projectId,

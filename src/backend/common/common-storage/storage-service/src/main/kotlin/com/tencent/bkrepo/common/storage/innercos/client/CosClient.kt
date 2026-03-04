@@ -584,7 +584,11 @@ class CosClient(val credentials: InnerCosCredentials) {
         val count = activeCount.get()
         if (count == 0) {
             // 需要所有任务完成后删除临时路径
-            path.toFile().deleteRecursively()
+            try {
+                path.toFile().deleteRecursively()
+            } catch (e: Exception) {
+                logger.error("Delete cos temp downloading file dir $path failed: ", e)
+            }
             logger.info("Delete cos temp downloading file dir $path recursively")
             return
         }
@@ -618,25 +622,27 @@ class CosClient(val credentials: InnerCosCredentials) {
     ) : PriorityCallable<File, DownloadTask>() {
 
         override fun call(): File {
-            // 任务可以取消，所以可能会产生中断异常，如果调用方获取结果，则可以捕获异常。
-            // 但是通常是由于调用方异常而提前终止相关任务，所以这里产生的中断异常大部分情况下无影响。
-            retry(RETRY_COUNT) {
-                rateLimiter.acquire()
-                session.activeCount.incrementAndGet()
-                // 为防止重试导致文件名重复
-                val fileName = "$DOWNLOADING_CHUNkED_PREFIX${seq}_${priority}_${it}$DOWNLOADING_CHUNkED_SUFFIX"
-                val filePath = rootPath.resolve(fileName)
-                try {
-                    val inputStream = getObject(downloadPartRequest).inputStream
-                        ?: throw IOException("not found object chunk")
-                    return inputStream.use { write2File(filePath, it) }
-                } catch (e: Exception) {
-                    // 记录下错误日志，错误仍要抛出，触发重试
-                    logger.warn("Download chunk file[$filePath] failed", e)
-                    throw e
-                } finally {
-                    session.activeCount.decrementAndGet()
+            session.activeCount.incrementAndGet()
+            try {
+                // 任务可以取消，所以可能会产生中断异常，如果调用方获取结果，则可以捕获异常。
+                // 但是通常是由于调用方异常而提前终止相关任务，所以这里产生的中断异常大部分情况下无影响。
+                retry(RETRY_COUNT) {
+                    rateLimiter.acquire()
+                    // 为防止重试导致文件名重复
+                    val fileName = "$DOWNLOADING_CHUNkED_PREFIX${seq}_${priority}_${it}$DOWNLOADING_CHUNkED_SUFFIX"
+                    val filePath = rootPath.resolve(fileName)
+                    try {
+                        val inputStream = getObject(downloadPartRequest).inputStream
+                            ?: throw IOException("not found object chunk")
+                        return inputStream.use { write2File(filePath, it) }
+                    } catch (e: Exception) {
+                        // 记录下错误日志，错误仍要抛出，触发重试
+                        logger.warn("Download chunk file[$filePath] failed", e)
+                        throw e
+                    }
                 }
+            } finally {
+                session.activeCount.decrementAndGet()
             }
         }
 
