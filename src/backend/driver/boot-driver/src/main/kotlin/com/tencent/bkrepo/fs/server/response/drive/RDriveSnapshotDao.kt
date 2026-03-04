@@ -1,11 +1,11 @@
-package com.tencent.bkrepo.common.metadata.dao.node
+package com.tencent.bkrepo.fs.server.response.drive
 
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
-import com.tencent.bkrepo.common.metadata.model.TDriveSnapSeq
+import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot
 import com.tencent.bkrepo.common.mongo.reactive.dao.SimpleMongoReactiveDao
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Component
 
 @Component
 @Conditional(ReactiveCondition::class)
-class RDriveSnapSeqDao : SimpleMongoReactiveDao<TDriveSnapSeq>()
+class RDriveSnapshotDao : SimpleMongoReactiveDao<TDriveSnapshot>()

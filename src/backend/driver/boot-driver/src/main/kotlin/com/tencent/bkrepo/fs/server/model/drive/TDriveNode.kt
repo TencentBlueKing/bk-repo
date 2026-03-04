@@ -1,16 +1,16 @@
-package com.tencent.bkrepo.common.metadata.model
+package com.tencent.bkrepo.fs.server.model.drive
 
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.api.mongo.ShardingKeys
 import com.tencent.bkrepo.common.metadata.constant.SHARDING_COUNT
-import com.tencent.bkrepo.common.metadata.model.TDriveNode.Companion.INO_IDX
-import com.tencent.bkrepo.common.metadata.model.TDriveNode.Companion.INO_IDX_DEF
-import com.tencent.bkrepo.common.metadata.model.TDriveNode.Companion.PARENT_NAME_IDX
-import com.tencent.bkrepo.common.metadata.model.TDriveNode.Companion.PARENT_NAME_IDX_DEF
-import com.tencent.bkrepo.common.metadata.model.TDriveNode.Companion.PARENT_SNAP_IDX
-import com.tencent.bkrepo.common.metadata.model.TDriveNode.Companion.PARENT_SNAP_IDX_DEF
-import com.tencent.bkrepo.common.metadata.model.TDriveNode.Companion.PROJECT_REPO_IDX
-import com.tencent.bkrepo.common.metadata.model.TDriveNode.Companion.PROJECT_REPO_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.INO_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.INO_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_NAME_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_NAME_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_SNAP_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_SNAP_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX_DEF
 import com.tencent.bkrepo.repository.constant.PROJECT_ID
 import com.tencent.bkrepo.repository.constant.REPO_NAME
 import org.springframework.data.mongodb.core.index.CompoundIndex

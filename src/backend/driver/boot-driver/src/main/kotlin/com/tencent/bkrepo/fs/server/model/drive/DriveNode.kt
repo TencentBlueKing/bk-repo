@@ -1,6 +1,5 @@
-package com.tencent.bkrepo.fs.server.model
+package com.tencent.bkrepo.fs.server.model.drive
 
-import com.tencent.bkrepo.common.metadata.model.TDriveNode
 import java.time.LocalDateTime
 
 data class DriveNode(

@@ -1,11 +1,11 @@
-package com.tencent.bkrepo.common.metadata.model
+package com.tencent.bkrepo.fs.server.model.drive
 
 import com.tencent.bkrepo.common.api.mongo.ShardingDocument
 import com.tencent.bkrepo.common.api.mongo.ShardingKey
-import com.tencent.bkrepo.common.metadata.model.TDriveFileReference.Companion.COUNT_IDX
-import com.tencent.bkrepo.common.metadata.model.TDriveFileReference.Companion.COUNT_IDX_DEF
-import com.tencent.bkrepo.common.metadata.model.TDriveFileReference.Companion.SHA256_IDX
-import com.tencent.bkrepo.common.metadata.model.TDriveFileReference.Companion.SHA256_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveFileReference.Companion.COUNT_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveFileReference.Companion.COUNT_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveFileReference.Companion.SHA256_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveFileReference.Companion.SHA256_IDX_DEF
 import com.tencent.bkrepo.repository.constant.SHARDING_COUNT
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes

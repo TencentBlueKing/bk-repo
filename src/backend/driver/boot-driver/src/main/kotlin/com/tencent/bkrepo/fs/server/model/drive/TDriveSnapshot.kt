@@ -1,7 +1,7 @@
-package com.tencent.bkrepo.common.metadata.model
+package com.tencent.bkrepo.fs.server.model.drive
 
-import com.tencent.bkrepo.common.metadata.model.TDriveSnapshot.Companion.REPO_NAME_IDX
-import com.tencent.bkrepo.common.metadata.model.TDriveSnapshot.Companion.REPO_NAME_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot.Companion.REPO_NAME_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot.Companion.REPO_NAME_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document

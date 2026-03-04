@@ -1,6 +1,6 @@
-package com.tencent.bkrepo.common.metadata.util
+package com.tencent.bkrepo.fs.server.utils
 
-import com.tencent.bkrepo.common.metadata.model.TDriveNode
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
@@ -74,7 +74,7 @@ object DriveNodeQueryHelper {
     ): Criteria {
         return if (snapSeq == null) {
             where(TDriveNode::projectId).isEqualTo(projectId)
-                .and(TDriveNode::repoName).isEqualTo(repoName)
+                .and(TDriveNode::repoName.name).isEqualTo(repoName)
                 .and(TDriveNode::parent).isEqualTo(parent)
                 .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
                 .and(TDriveNode::deleted).isEqualTo(null)

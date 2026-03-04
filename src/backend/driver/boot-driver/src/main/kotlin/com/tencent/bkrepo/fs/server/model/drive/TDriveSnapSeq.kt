@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.common.metadata.model
+package com.tencent.bkrepo.fs.server.model.drive
 
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.mapping.Document
