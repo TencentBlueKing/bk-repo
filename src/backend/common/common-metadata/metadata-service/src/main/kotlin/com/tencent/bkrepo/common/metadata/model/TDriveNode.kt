@@ -41,7 +41,7 @@ data class TDriveNode(
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
-    var lastAccessDate: LocalDateTime? = null,
+    var lastAccessDate: LocalDateTime,
 
     var projectId: String,
     var repoName: String,
@@ -74,7 +74,7 @@ data class TDriveNode(
     var mode: Int,
 
     /**
-     * 文件类型，文件/目录/符号链接
+     * 文件类型，取值见 TYPE_FILE/TYPE_DIRECTORY/TYPE_SYMLINK
      */
     var type: Int,
 
@@ -124,6 +124,9 @@ data class TDriveNode(
     var deleteSnapSeq: Long = Long.MAX_VALUE,
 ) {
     companion object {
+        const val TYPE_FILE = 1
+        const val TYPE_DIRECTORY = 2
+        const val TYPE_SYMLINK = 3
         const val INO_IDX = "ino_idx"
         const val INO_IDX_DEF = "{'ino': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
         const val PARENT_NAME_IDX = "parent_name_idx"
