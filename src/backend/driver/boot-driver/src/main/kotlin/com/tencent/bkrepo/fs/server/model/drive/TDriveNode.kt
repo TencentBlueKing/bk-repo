@@ -69,7 +69,7 @@ data class TDriveNode(
     var size: Long,
 
     /**
-     * 文件模式和类型 (S_IFREG, S_IFDIR, S_IFLNK)
+     * 文件模式（Linux st_mode，包含文件类型位和权限位）
      */
     var mode: Int,
 
@@ -127,6 +127,7 @@ data class TDriveNode(
         const val TYPE_FILE = 1
         const val TYPE_DIRECTORY = 2
         const val TYPE_SYMLINK = 3
+        val ALLOWED_TYPES = setOf(TYPE_FILE, TYPE_DIRECTORY, TYPE_SYMLINK)
         const val INO_IDX = "ino_idx"
         const val INO_IDX_DEF = "{'ino': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
         const val PARENT_NAME_IDX = "parent_name_idx"
