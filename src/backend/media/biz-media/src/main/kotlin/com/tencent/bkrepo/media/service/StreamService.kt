@@ -27,9 +27,12 @@ import com.tencent.bkrepo.media.stream.StreamMode
 import com.tencent.bkrepo.media.stream.TranscodeConfig
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
+import org.apache.commons.codec.digest.HmacAlgorithms
+import org.apache.commons.codec.digest.HmacUtils
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
+import java.util.Base64
 
 @Service
 class StreamService(
@@ -168,8 +171,60 @@ class StreamService(
         return transcodeConfig[projectId] ?: transcodeConfig[DEFAULT]
     }
 
+    fun fetchRtc(
+        projectId: String,
+        repoName: String,
+        resolution: String
+    ): String {
+        val streamPattern = projectId + "-" + repoName
+        // 5 分钟有效
+        val expireAt = System.currentTimeMillis() + 300000
+        val token: String = generateToken(streamPattern, expireAt)
+
+        return "${videoHost}/rtc/v1/whep/?app=live&stream=${projectId}-REMOTEDEV_\${repoName}_\${VIDEO_FRAME_RATE}p&token=$token"
+    }
+
+
+    fun generateToken(streamPattern: String?, expireAt: Long): String {
+        val payload = "$streamPattern|$expireAt"
+        val signature = HmacUtils(HmacAlgorithms.HMAC_SHA_256, RTC_SECRET).hmacHex(payload)
+        return Base64.getUrlEncoder().encodeToString(("$payload.$signature").toByteArray())
+    }
+
+    fun verifyToken(token: String?, requestedStream: String): Boolean {
+        try {
+            val decoded = String(Base64.getUrlDecoder().decode(token))
+            val parts = decoded.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            if (parts.size != 2) {
+                return false
+            }
+            val payload = parts[0]
+            val signature = parts[1]
+
+            val expected: String = HmacUtils(HmacAlgorithms.HMAC_SHA_256, RTC_SECRET).hmacHex(payload)
+            if (expected != signature) {
+                return false
+            }
+
+            val fields = payload.split("\\|".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+            val streamPattern = fields[0]
+            val expireAt = fields[1].toLong()
+            if (System.currentTimeMillis() > expireAt) {
+                return false
+            }
+            // 检查流名是否匹配（token 只允许拉对应项目的流）
+            if (!requestedStream.startsWith(streamPattern)) {
+                return false
+            }
+            return true
+        } catch (e: Exception) {
+            return false
+        }
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(StreamService::class.java)
         private const val DEFAULT = "default"
+        const val RTC_SECRET: String = "rtc-stream-pull-secret-2m98cx37yr21"
     }
 }
