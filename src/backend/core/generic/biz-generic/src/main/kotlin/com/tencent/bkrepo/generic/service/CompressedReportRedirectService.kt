@@ -71,6 +71,9 @@ class CompressedReportRedirectService(
     }
 
     override fun redirect(context: ArtifactDownloadContext) {
+        if (context.request.method.uppercase() == HttpMethod.HEAD.name) {
+            return
+        }
         val redirectUrlBuilder = StringBuilder()
         redirectUrlBuilder.append(genericProperties.domain.removeSuffix("/generic"))
         // 判断请求来源是浏览器还是API调用
