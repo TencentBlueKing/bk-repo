@@ -36,6 +36,7 @@ import com.tencent.bkrepo.common.artifact.repository.context.ArtifactContextHold
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
 import com.tencent.bkrepo.common.artifact.repository.redirect.DownloadRedirectService
 import com.tencent.bkrepo.common.metadata.service.node.NodeService
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 import com.tencent.bkrepo.generic.config.GenericProperties
 import org.springframework.stereotype.Component
 
@@ -44,7 +45,11 @@ class CompressedReportRedirectService(
     private val nodeService: NodeService,
     private val genericProperties: GenericProperties
 ) : DownloadRedirectService {
-    override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+    override fun supportedMethods(): Set<HttpMethod> {
+        return setOf(HttpMethod.GET, HttpMethod.HEAD)
+    }
+
+    override fun doShouldRedirect(context: ArtifactDownloadContext): Boolean {
         if (!genericProperties.compressedReport.enabled) {
             return false
         }
