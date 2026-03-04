@@ -21,4 +21,11 @@ class BasedAtimeAndMTimeFileExpireResolver(
         val expiredTime = System.currentTimeMillis() - expire.toMillis()
         return lastAccessTime < expiredTime && lastModifiedTime < expiredTime
     }
+
+    override fun isExpiredByMTime(file: File): Boolean {
+        val attributes = Files.readAttributes(file.toPath(), BasicFileAttributes::class.java)
+        val lastModifiedTime = attributes.lastModifiedTime().toMillis()
+        val expiredTime = System.currentTimeMillis() - expire.toMillis()
+        return lastModifiedTime < expiredTime
+    }
 }
