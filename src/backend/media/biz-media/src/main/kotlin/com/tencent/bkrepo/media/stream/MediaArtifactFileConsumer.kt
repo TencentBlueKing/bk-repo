@@ -177,7 +177,6 @@ class MediaArtifactFileConsumer(
     /**
      * 视频流正常结束时，完成分块存储，创建对应node
      */
-    // TODO 需要一个定时任务，定时检查分块节点是否完成。防止视频流异常退出后再没有重连
     fun completeBlockNode(artifactInfo: ArtifactInfo, uploadId: String) {
         with(artifactInfo) {
             val blockNodes = blockNodeService.listBlocksInUploadId(
