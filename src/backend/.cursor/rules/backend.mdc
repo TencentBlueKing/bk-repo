@@ -298,6 +298,22 @@ BK-REPO 是基于微服务架构的制品管理平台：
     - 只暴露必要的公共 API
     - 类默认为 `final`，让 Spring 的 all-open 插件处理代理
 
+13. **方法参数换行规则**：
+    - 当方法声明在不超过行长度限制时，参数必须保持单行，禁止为了“对齐”或“风格”主动换行
+    - 仅当方法声明超过行长度限制时，才允许将参数拆分为多行
+    ```kotlin
+    // ✅ 推荐：未超长时保持单行
+    fun saveNode(projectId: String, repoName: String, fullPath: String) { }
+
+    // ✅ 推荐：超长时换行
+    fun saveNode(
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        operator: String
+    ) { }
+    ```
+
 ## 代码质量规范
 
 1. **命名规范**：
