@@ -28,9 +28,8 @@
 package com.tencent.bkrepo.common.storage.monitor
 
 import com.tencent.bkrepo.common.api.constant.StringPool.UNKNOWN
-import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.api.util.HumanReadable.time
-import com.tencent.bkrepo.common.artifact.stream.closeQuietly
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.common.storage.util.toPath
 import org.slf4j.LoggerFactory
@@ -40,10 +39,10 @@ import java.nio.file.Paths
 import java.util.Collections
 import java.util.concurrent.Callable
 import java.util.concurrent.CancellationException
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
@@ -112,20 +111,14 @@ class StorageHealthMonitor(
             while (true) {
                 if (monitorConfig.enabled) {
                     var checker: StorageHealthChecker? = null
+                    var checkFuture: Future<*>? = null
                     try {
                         // checker相关操作在故障时可能会阻塞线程，需要异步执行
-                        CompletableFuture.supplyAsync(
-                            // 创建checker
-                            {
-                                checker = StorageHealthChecker(getPrimaryPath(), monitorConfig.dataSize)
-                                checker!!
-                            },
-                            executorService
-                        ).thenAcceptAsync(
-                            // 执行检查
-                            { it.check() },
-                            executorService
-                        ).get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
+                        checkFuture = executorService.submit(Callable {
+                            checker = StorageHealthChecker(getPrimaryPath(), monitorConfig.dataSize)
+                            checker.check()
+                        }.trace())
+                        checkFuture.get(monitorConfig.timeout.seconds, TimeUnit.SECONDS)
                         onCheckSuccess()
                     } catch (_: TimeoutException) {
                         onCheckFailed(IO_TIMEOUT_MESSAGE)
@@ -138,8 +131,11 @@ class StorageHealthMonitor(
                     } catch (exception: Exception) {
                         onCheckFailed(exception.message ?: UNKNOWN)
                     } finally {
+                        if (checkFuture?.isDone == false) {
+                            checkFuture.cancel(true)
+                        }
                         try {
-                            val future = executorService.submit(Callable { checker?.closeQuietly() }.trace())
+                            val future = executorService.submit(Callable { checker?.close() }.trace())
                             future.get(1, TimeUnit.SECONDS)
                         } catch (e: Exception) {
                             logger.warn("Close checker failed: ", e)
