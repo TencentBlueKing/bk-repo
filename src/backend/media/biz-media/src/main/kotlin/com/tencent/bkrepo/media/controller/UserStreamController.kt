@@ -63,9 +63,8 @@ class UserStreamController(
         @RequestParam workspaceName: String,
         @RequestParam resolution: String,
     ): Response<String> {
-        val tokenInfo = streamService.fetchRtc(projectId, workspaceName)
-
-        return ResponseBuilder.success("true")
+        val url = streamService.fetchRtc(projectId, workspaceName, resolution)
+        return ResponseBuilder.success(url)
     }
 
     @PostMapping("/rtc/verify_token")
