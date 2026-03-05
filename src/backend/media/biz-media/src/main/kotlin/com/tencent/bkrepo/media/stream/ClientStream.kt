@@ -30,9 +30,28 @@ class ClientStream(
         close(endTime)
     }
 
+    /**
+     * 停止流
+     * @param endTime 结束时间
+     * @param isComplete 是否正常完成
+     */
+    fun stop(endTime: Long, isComplete: Boolean) {
+        close(endTime, isComplete)
+    }
+
     override fun close(endTime: Long) {
         if (closed.compareAndSet(false, true)) {
             recordingListener?.stop(endTime)
+            listeners.forEach { it.streamStop(this, endTime) }
+        }
+    }
+
+    /**
+     * 关闭流
+     */
+    fun close(endTime: Long, isComplete: Boolean) {
+        if (closed.compareAndSet(false, true)) {
+            recordingListener?.stop(endTime, isComplete)
             listeners.forEach { it.streamStop(this, endTime) }
         }
     }
