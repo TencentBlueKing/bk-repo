@@ -56,14 +56,14 @@ class UserStreamController(
     /**
      * 生成拉流地址
      */
-    @GetMapping("/{projectId}/{repoName}/rtc")
+    @GetMapping("/{projectId}/rtc")
     @Permission(ResourceType.REPO, PermissionAction.READ)
     fun rtc(
         @PathVariable projectId: String,
-        @PathVariable repoName: String,
+        @RequestParam workspaceName: String,
         @RequestParam resolution: String,
     ): Response<String> {
-        val tokenInfo = streamService.fetchRtc(projectId, repoName)
+        val tokenInfo = streamService.fetchRtc(projectId, workspaceName)
 
         return ResponseBuilder.success("true")
     }

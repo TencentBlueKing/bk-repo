@@ -173,19 +173,19 @@ class StreamService(
 
     fun fetchRtc(
         projectId: String,
-        repoName: String,
+        workspaceName: String,
         resolution: String
     ): String {
-        val streamPattern = projectId + "-" + repoName
+        val streamPattern = "$projectId-REMOTEDEV_$workspaceName"
         // 5 分钟有效
         val expireAt = System.currentTimeMillis() + 300000
         val token: String = generateToken(streamPattern, expireAt)
-
-        return "${videoHost}/rtc/v1/whep/?app=live&stream=${projectId}-REMOTEDEV_\${repoName}_\${VIDEO_FRAME_RATE}p&token=$token"
+        return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=" +
+                "${streamPattern}_${resolution}p&token=$token"
     }
 
 
-    fun generateToken(streamPattern: String?, expireAt: Long): String {
+    private fun generateToken(streamPattern: String?, expireAt: Long): String {
         val payload = "$streamPattern|$expireAt"
         val signature = HmacUtils(HmacAlgorithms.HMAC_SHA_256, RTC_SECRET).hmacHex(payload)
         return Base64.getUrlEncoder().encodeToString(("$payload.$signature").toByteArray())
