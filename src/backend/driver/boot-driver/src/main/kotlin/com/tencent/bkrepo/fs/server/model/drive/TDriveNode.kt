@@ -132,11 +132,11 @@ data class TDriveNode(
         const val TYPE_SYMLINK = 3
         val ALLOWED_TYPES = setOf(TYPE_FILE, TYPE_DIRECTORY, TYPE_SYMLINK)
         const val INO_IDX = "ino_idx"
-        const val INO_IDX_DEF = "{'ino': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
+        const val INO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'ino': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
         const val PARENT_NAME_IDX = "parent_name_idx"
-        const val PARENT_NAME_IDX_DEF = "{'parent': 1, 'name': 1, 'deleted': 1}"
+        const val PARENT_NAME_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'parent': 1, 'name': 1, 'deleted': 1}"
         const val PARENT_SNAP_IDX = "parent_snap_idx"
-        const val PARENT_SNAP_IDX_DEF = "{'parent': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
+        const val PARENT_SNAP_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'parent': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
         const val PROJECT_REPO_IDX = "project_repo_idx"
         const val PROJECT_REPO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
         const val PROJECT_REPO_MODIFIED_IDX = "project_repo_modified_idx"
