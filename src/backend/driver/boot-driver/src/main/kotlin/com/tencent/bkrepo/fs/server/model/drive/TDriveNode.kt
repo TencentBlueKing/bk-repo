@@ -11,6 +11,8 @@ import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_SNAP
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PARENT_SNAP_IDX_DEF
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX_DEF
 import com.tencent.bkrepo.repository.constant.PROJECT_ID
 import com.tencent.bkrepo.repository.constant.REPO_NAME
 import org.springframework.data.mongodb.core.index.CompoundIndex
@@ -33,6 +35,7 @@ import java.time.LocalDateTime
     CompoundIndex(name = PARENT_NAME_IDX, def = PARENT_NAME_IDX_DEF, unique = true, background = true),
     CompoundIndex(name = PARENT_SNAP_IDX, def = PARENT_SNAP_IDX_DEF, background = true),
     CompoundIndex(name = PROJECT_REPO_IDX, def = PROJECT_REPO_IDX_DEF, background = true),
+    CompoundIndex(name = PROJECT_REPO_MODIFIED_IDX, def = PROJECT_REPO_MODIFIED_IDX_DEF, background = true),
 )
 @ShardingKeys(columns = [PROJECT_ID, REPO_NAME], count = SHARDING_COUNT)
 data class TDriveNode(
@@ -136,5 +139,7 @@ data class TDriveNode(
         const val PARENT_SNAP_IDX_DEF = "{'parent': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
         const val PROJECT_REPO_IDX = "project_repo_idx"
         const val PROJECT_REPO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
+        const val PROJECT_REPO_MODIFIED_IDX = "project_repo_modified_idx"
+        const val PROJECT_REPO_MODIFIED_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'lastModifiedDate': 1}"
     }
 }
