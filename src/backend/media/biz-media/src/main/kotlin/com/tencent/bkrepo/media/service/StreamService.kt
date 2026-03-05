@@ -195,8 +195,9 @@ class StreamService(
             return
         }
 
-        // 从分块元信息推算 userId 和视频起止时间
-        val userId = videoBlocks.first().createdBy
+        // 从分块元信息推算 author 和视频起止时间
+        // storeBlockNode 中 createdBy 存的是 author（真实录制者）
+        val author = videoBlocks.first().createdBy
         val sortedBlocks = videoBlocks.sortedBy { it.createdDate }
         val videoStartTime = sortedBlocks.first().createdDate
             .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -205,7 +206,7 @@ class StreamService(
 
         // 获取转码配置，并将 transcodeExtraParams (sktoken) 设置到配置中
         val transcodeConfig = getTranscodeConfig(projectId)?.copy(extraParams = transcodeExtraParams)
-        val fileConsumer = buildFileConsumer(repo, userId, transcodeConfig)
+        val fileConsumer = buildFileConsumer(repo, author, transcodeConfig)
 
         // 合并视频主文件分块
         fileConsumer.completeBlockNode(videoArtifactInfo, uploadId)
@@ -222,9 +223,9 @@ class StreamService(
             transcodeService.transcode(
                 artifactInfo = videoArtifactInfo,
                 transcodeConfig = transcodeConfig,
-                userId = userId,
+                userId = author,
                 extraFiles = extraArtifactInfos.ifEmpty { null },
-                author = userId,
+                author = author,
                 videoStartTime = videoStartTime,
                 videoEndTime = videoEndTime
             )
@@ -233,7 +234,7 @@ class StreamService(
 
         logger.info(
             "MergeExpiredBlocks completed: projectId=$projectId, repoName=$repoName, " +
-                "uploadId=$uploadId, userId=$userId"
+                "uploadId=$uploadId, author=$author"
         )
     }
 
@@ -255,14 +256,15 @@ class StreamService(
 
     /**
      * 构建 MediaArtifactFileConsumer 实例
+     * @param author 真实录制者（从分块 createdBy 获取）
      */
     private fun buildFileConsumer(
         repo: com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail,
-        userId: String,
+        author: String,
         transcodeConfig: TranscodeConfig?
     ): MediaArtifactFileConsumer {
         return MediaArtifactFileConsumer(
-            storageManager, transcodeService, repo, userId, userId,
+            storageManager, transcodeService, repo, author, author,
             STREAM_PATH, transcodeConfig, storageService, blockNodeService, nodeService
         )
     }

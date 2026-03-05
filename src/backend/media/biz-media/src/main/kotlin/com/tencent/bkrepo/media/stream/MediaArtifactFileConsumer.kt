@@ -157,7 +157,7 @@ class MediaArtifactFileConsumer(
                 crc64ecma = file.getFileCrc64ecma(),
                 startPos = startPos,
                 uploadId = uploadId,
-                createdBy = userId,
+                createdBy = author,
                 createdDate = LocalDateTime.now(),
                 expireDate = LocalDateTime.now().plusDays(1), // 1天过期时间
             )
