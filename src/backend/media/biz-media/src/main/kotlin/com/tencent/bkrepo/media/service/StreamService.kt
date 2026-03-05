@@ -173,15 +173,15 @@ class StreamService(
 
     fun fetchRtc(
         projectId: String,
-        workspaceName: String,
+        repoName: String,
         resolution: String
     ): String {
-        val streamPattern = "$projectId-REMOTEDEV_$workspaceName"
+        val streamPattern = "$projectId-$repoName"
         // 5 分钟有效
         val expireAt = System.currentTimeMillis() + 300000
         val token: String = generateToken(streamPattern, expireAt)
         return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=" +
-                "${streamPattern}_${resolution}p&token=$token"
+                "${streamPattern}_${resolution}&token=$token"
     }
 
 
