@@ -1,15 +1,19 @@
 package com.tencent.bkrepo.fs.server.service.drive
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
+import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.mongo.util.Pages
+import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.model.drive.DriveNode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.model.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.repository.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.request.service.DriveNodeCreateRequest
 import com.tencent.bkrepo.fs.server.request.service.toDriveNode
+import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -23,7 +27,40 @@ import org.springframework.stereotype.Service
 class DriveNodeService(
     private val driveNodeDao: RDriveNodeDao,
     private val driveSnapSeqService: DriveSnapSeqService,
+    private val driveProperties: DriveProperties,
 ) {
+    suspend fun getNode(projectId: String, repoName: String, parent: String, name: String): DriveNode? {
+        validateProjectRepoAndParent(projectId, repoName, parent)
+        PathUtils.validateFileName(name)
+        val query = Query(DriveNodeQueryHelper.currentCriteria(projectId, repoName, parent, name))
+        return driveNodeDao.findOne(query)?.toDriveNode()
+    }
+
+    suspend fun listNodes(projectId: String, repoName: String, parent: String): List<DriveNode> {
+        validateProjectRepoAndParent(projectId, repoName, parent)
+        val query = Query(DriveNodeQueryHelper.listChildrenCriteria(projectId, repoName, parent))
+        return driveNodeDao.find(query).map { it.toDriveNode() }
+    }
+
+    suspend fun listNodesPage(
+        projectId: String,
+        repoName: String,
+        parent: String,
+        pageNumber: Int,
+        pageSize: Int,
+        includeTotalRecords: Boolean = false,
+    ): Page<DriveNode> {
+        validateProjectRepoAndParent(projectId, repoName, parent)
+        Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
+        Preconditions.checkArgument(pageSize >= 0 && pageSize <= driveProperties.listCountLimit, "pageSize")
+
+        val criteria = DriveNodeQueryHelper.listChildrenCriteria(projectId, repoName, parent)
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val totalRecords = if (includeTotalRecords) driveNodeDao.count(Query(criteria)) else 0L
+        val records = driveNodeDao.find(Query(criteria).with(pageRequest)).map { it.toDriveNode() }
+        return Pages.ofResponse(pageRequest, totalRecords, records)
+    }
+
     suspend fun createNode(createRequest: DriveNodeCreateRequest): DriveNode {
         with(createRequest) {
             validateCreateRequest(createRequest)
@@ -40,13 +77,18 @@ class DriveNodeService(
 
     private suspend fun validateCreateRequest(createRequest: DriveNodeCreateRequest) {
         with(createRequest) {
-            Preconditions.checkArgument(projectId.isNotBlank(), TDriveNode::projectId.name)
-            Preconditions.checkArgument(repoName.isNotBlank(), TDriveNode::repoName.name)
+            validateProjectRepoAndParent(projectId, repoName, parent)
             Preconditions.checkArgument(size >= 0, TDriveNode::size.name)
             Preconditions.checkArgument(type in TDriveNode.ALLOWED_TYPES, TDriveNode::type.name)
             PathUtils.validateFileName(name)
             checkParent(parent, projectId, repoName)
         }
+    }
+
+    private fun validateProjectRepoAndParent(projectId: String, repoName: String, parent: String) {
+        Preconditions.checkArgument(projectId.isNotBlank(), TDriveNode::projectId.name)
+        Preconditions.checkArgument(repoName.isNotBlank(), TDriveNode::repoName.name)
+        Preconditions.checkArgument(parent.isNotBlank(), TDriveNode::parent.name)
     }
 
     /**
