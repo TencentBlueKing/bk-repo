@@ -176,12 +176,11 @@ class StreamService(
         repoName: String,
         resolution: String
     ): String {
-        val streamPattern = "$projectId-$repoName"
+        val streamPattern = "$projectId-${repoName}_$resolution"
         // 5 分钟有效
         val expireAt = System.currentTimeMillis() + 300000
         val token: String = generateToken(streamPattern, expireAt)
-        return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=" +
-                "${streamPattern}_${resolution}&token=$token"
+        return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=${streamPattern}&token=$token"
     }
 
 
@@ -192,6 +191,9 @@ class StreamService(
     }
 
     fun verifyToken(token: String?, requestedStream: String): Boolean {
+        if (token.isNullOrBlank()) {
+            return false
+        }
         try {
             val decoded = String(Base64.getUrlDecoder().decode(token))
             val parts = decoded.split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
@@ -213,11 +215,12 @@ class StreamService(
                 return false
             }
             // 检查流名是否匹配（token 只允许拉对应项目的流）
-            if (!requestedStream.startsWith(streamPattern)) {
+            if (requestedStream != streamPattern) {
                 return false
             }
             return true
         } catch (e: Exception) {
+            logger.error("verifyToken error $token|$requestedStream", e)
             return false
         }
     }
