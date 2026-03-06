@@ -136,4 +136,13 @@ class MavenWebController(
     override fun searchGroup(request: MavenGroupSearchRequest): Response<Page<String>> {
         return ResponseBuilder.success(mavenExtService.searchGroup(request))
     }
+
+    override fun repairPackageMetadata(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String?
+    ): Response<Boolean> {
+        return ResponseBuilder.success(mavenService.repairPackageMetadata(projectId, repoName, packageKey, version))
+    }
 }
