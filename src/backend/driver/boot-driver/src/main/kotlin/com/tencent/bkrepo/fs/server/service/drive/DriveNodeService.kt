@@ -16,6 +16,7 @@ import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECT
 import com.tencent.bkrepo.fs.server.model.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.repository.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.request.service.DriveNodeCreateRequest
+import com.tencent.bkrepo.fs.server.request.service.DriveNodeDeleteRequest
 import com.tencent.bkrepo.fs.server.request.service.DriveNodeMoveRequest
 import com.tencent.bkrepo.fs.server.request.service.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
@@ -88,7 +89,7 @@ class DriveNodeService(
     suspend fun moveNode(moveRequest: DriveNodeMoveRequest): DriveNode {
         with(moveRequest) {
             validateMoveRequest(moveRequest)
-            val srcNode = getRequiredMoveSource(projectId, repoName, moveRequest)
+            val srcNode = getRequiredSource(projectId, repoName, srcNodeId, srcParent, srcName)
             if (srcNode.parent == destParent && srcNode.name == destName) {
                 throw ErrorCodeException(
                     CommonMessageCode.PARAMETER_INVALID,
@@ -141,6 +142,19 @@ class DriveNodeService(
         }
     }
 
+    suspend fun delete(deleteRequest: DriveNodeDeleteRequest): DriveNode {
+        with(deleteRequest) {
+            validateDeleteRequest(deleteRequest)
+            val srcNode = getRequiredSource(projectId, repoName, nodeId, parent, name)
+            val currentSnapSeq = driveSnapSeqService.getLatestSnapSeq(projectId, repoName)
+            doDelete(srcNode, currentSnapSeq)
+            logger.info(
+                "Delete drive node[$projectId/$repoName/${srcNode.ino}] at[${srcNode.parent}/${srcNode.name}] success."
+            )
+            return srcNode.toDriveNode()
+        }
+    }
+
     private suspend fun doDelete(driveNode: TDriveNode, curSnapSeq: Long) {
         val nodeId = driveNode.id
         requireNotNull(nodeId)
@@ -157,17 +171,19 @@ class DriveNodeService(
         }
     }
 
-    private suspend fun getRequiredMoveSource(
+    private suspend fun getRequiredSource(
         projectId: String,
         repoName: String,
-        moveRequest: DriveNodeMoveRequest,
+        nodeId: String?,
+        parent: String?,
+        name: String?,
     ): TDriveNode {
-        if (!moveRequest.srcNodeId.isNullOrBlank()) {
-            return driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, moveRequest.srcNodeId)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, moveRequest.srcNodeId)
+        if (!nodeId.isNullOrBlank()) {
+            return driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, nodeId)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, nodeId)
         }
-        return driveNodeDao.findCurrentNode(projectId, repoName, moveRequest.srcParent!!, moveRequest.srcName!!)
-            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, moveRequest.srcName)
+        return driveNodeDao.findCurrentNode(projectId, repoName, parent!!, name!!)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, name)
     }
 
     private suspend fun doCreate(driveNode: TDriveNode): TDriveNode {
@@ -211,6 +227,19 @@ class DriveNodeService(
                 validateProjectRepoAndParent(projectId, repoName, srcParent)
                 PathUtils.validateFileName(srcName.orEmpty())
                 checkParent(srcParent.orEmpty(), projectId, repoName)
+            }
+        }
+    }
+
+    private suspend fun validateDeleteRequest(deleteRequest: DriveNodeDeleteRequest) {
+        with(deleteRequest) {
+            if (nodeId.isNullOrBlank()) {
+                validateProjectRepoAndParent(projectId, repoName, parent)
+                PathUtils.validateFileName(name.orEmpty())
+                checkParent(parent!!, projectId, repoName)
+            } else {
+                validateProjectRepo(projectId, repoName)
+                Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeDeleteRequest::nodeId.name)
             }
         }
     }
