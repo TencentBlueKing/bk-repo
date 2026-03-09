@@ -15,10 +15,12 @@ import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
 import com.tencent.bkrepo.fs.server.model.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.repository.RDriveNodeDao
-import com.tencent.bkrepo.fs.server.request.service.DriveNodeCreateRequest
-import com.tencent.bkrepo.fs.server.request.service.DriveNodeDeleteRequest
-import com.tencent.bkrepo.fs.server.request.service.DriveNodeMoveRequest
-import com.tencent.bkrepo.fs.server.request.service.toDriveNode
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeCreateRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeDeleteRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeMoveRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeUpdateRequest
+import com.tencent.bkrepo.fs.server.request.drive.normalizedSymlinkTarget
+import com.tencent.bkrepo.fs.server.request.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.slf4j.LoggerFactory
@@ -72,11 +74,11 @@ class DriveNodeService(
         return Pages.ofResponse(pageRequest, totalRecords, records.map { it.toDriveNode() })
     }
 
-    suspend fun createNode(createRequest: DriveNodeCreateRequest): DriveNode {
+    suspend fun createNode(createRequest: DriveNodeCreateRequest, snapSeq: Long? = null): DriveNode {
         with(createRequest) {
             validateCreateRequest(createRequest)
             val driveNode = createRequest.toDriveNode(
-                snapSeq = driveSnapSeqService.getLatestSnapSeq(projectId, repoName),
+                snapSeq = resolveSnapSeq(projectId, repoName, snapSeq),
                 operator = ReactiveSecurityUtils.getUser(),
             )
             checkConflict(driveNode)
@@ -142,12 +144,49 @@ class DriveNodeService(
         }
     }
 
-    suspend fun delete(deleteRequest: DriveNodeDeleteRequest): DriveNode {
+    suspend fun update(updateRequest: DriveNodeUpdateRequest, snapSeq: Long? = null): DriveNode {
+        with(updateRequest) {
+            validateUpdateRequest(updateRequest)
+            val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, nodeId)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, nodeId)
+            val operator = ReactiveSecurityUtils.getUser()
+            val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
+            val now = LocalDateTime.now()
+            val updatedNode = buildUpdatedNode(srcNode, updateRequest, operator, now)
+            if (updatedNode.parent != srcNode.parent || updatedNode.name != srcNode.name) {
+                checkConflict(updatedNode)
+            }
+            val savedNode = if (srcNode.snapSeq != currentSnapSeq) {
+                val deleteResult =
+                    driveNodeDao.markNodeDeleted(nodeId, currentSnapSeq, if (force) null else lastModifiedDate)
+                if (deleteResult.modifiedCount != 1L) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, srcNode.name)
+                }
+                doCreate(DriveNodeQueryHelper.buildCowNode(updatedNode, currentSnapSeq, operator, now))
+            } else {
+                val result = try {
+                    val realLastModifiedDate = if (force) null else lastModifiedDate
+                    driveNodeDao.updateByNodeId(projectId, repoName, nodeId, realLastModifiedDate, updatedNode)
+                } catch (_: DuplicateKeyException) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, updatedNode.name)
+                }
+                if (result.modifiedCount != 1L) {
+                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, srcNode.name)
+                }
+                updatedNode
+            }
+            logger.info("Update drive node[$projectId/$repoName/${srcNode.ino}] id[$nodeId] success.")
+            return savedNode.toDriveNode()
+        }
+    }
+
+    suspend fun delete(deleteRequest: DriveNodeDeleteRequest, snapSeq: Long? = null): DriveNode {
         with(deleteRequest) {
             validateDeleteRequest(deleteRequest)
-            val srcNode = getRequiredSource(projectId, repoName, nodeId, parent, name)
-            val currentSnapSeq = driveSnapSeqService.getLatestSnapSeq(projectId, repoName)
-            doDelete(srcNode, currentSnapSeq)
+            val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, nodeId)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, nodeId)
+            val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
+            doDelete(srcNode, currentSnapSeq, if (force) null else lastModifiedDate)
             logger.info(
                 "Delete drive node[$projectId/$repoName/${srcNode.ino}] at[${srcNode.parent}/${srcNode.name}] success."
             )
@@ -155,7 +194,7 @@ class DriveNodeService(
         }
     }
 
-    private suspend fun doDelete(driveNode: TDriveNode, curSnapSeq: Long) {
+    private suspend fun doDelete(driveNode: TDriveNode, curSnapSeq: Long, lastModifiedDate: LocalDateTime? = null) {
         val nodeId = driveNode.id
         requireNotNull(nodeId)
         with(driveNode) {
@@ -163,12 +202,21 @@ class DriveNodeService(
             if (driveNode.type == TYPE_DIRECTORY && driveNodeDao.existsChild(projectId, repoName, ino)) {
                 throw ErrorCodeException(DriveMessageCode.DIRECTORY_NOT_EMPTY, name)
             }
-            driveNodeDao.markNodeDeleted(nodeId, curSnapSeq)
-            logger.info("Delete drive node[$name] id[$nodeId] ino[$ino] of parent[$parent] at snap[$curSnapSeq] success.")
+            val result = driveNodeDao.markNodeDeleted(nodeId, curSnapSeq, lastModifiedDate)
+            if (result.modifiedCount != 1L) {
+                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, name)
+            }
+            logger.info(
+                "Delete drive node[$name] id[$nodeId] ino[$ino] of parent[$parent] at snap[$curSnapSeq] success."
+            )
             if (driveNode.type != TYPE_DIRECTORY && driveNodeDao.sameInoCount(projectId, repoName, ino) == 0L) {
                 driveBlockNodeService.deleteBlocks(ino, curSnapSeq)
             }
         }
+    }
+
+    private suspend fun resolveSnapSeq(projectId: String, repoName: String, snapSeq: Long?): Long {
+        return snapSeq ?: driveSnapSeqService.getLatestSnapSeq(projectId, repoName)
     }
 
     private suspend fun getRequiredSource(
@@ -233,15 +281,49 @@ class DriveNodeService(
 
     private suspend fun validateDeleteRequest(deleteRequest: DriveNodeDeleteRequest) {
         with(deleteRequest) {
-            if (nodeId.isNullOrBlank()) {
-                validateProjectRepoAndParent(projectId, repoName, parent)
-                PathUtils.validateFileName(name.orEmpty())
-                checkParent(parent!!, projectId, repoName)
-            } else {
-                validateProjectRepo(projectId, repoName)
-                Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeDeleteRequest::nodeId.name)
+            validateProjectRepo(projectId, repoName)
+            Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeDeleteRequest::nodeId.name)
+            if (!force) {
+                Preconditions.checkArgument(lastModifiedDate != null, DriveNodeDeleteRequest::lastModifiedDate.name)
             }
         }
+    }
+
+    private suspend fun validateUpdateRequest(updateRequest: DriveNodeUpdateRequest) {
+        with(updateRequest) {
+            validateProjectRepo(projectId, repoName)
+            Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeUpdateRequest::nodeId.name)
+            size?.let { Preconditions.checkArgument(it >= 0, TDriveNode::size.name) }
+            nlink?.let { Preconditions.checkArgument(it >= 0, TDriveNode::nlink.name) }
+            parent?.let { checkParent(it, projectId, repoName) }
+            name?.let { PathUtils.validateFileName(it) }
+            if (!force) {
+                Preconditions.checkArgument(lastModifiedDate != null, DriveNodeUpdateRequest::lastModifiedDate.name)
+            }
+        }
+    }
+
+    private fun buildUpdatedNode(
+        srcNode: TDriveNode,
+        updateRequest: DriveNodeUpdateRequest,
+        operator: String,
+        now: LocalDateTime,
+    ): TDriveNode {
+        return srcNode.copy(
+            parent = updateRequest.parent ?: srcNode.parent,
+            name = updateRequest.name ?: srcNode.name,
+            size = updateRequest.size ?: srcNode.size,
+            mode = updateRequest.mode ?: srcNode.mode,
+            nlink = updateRequest.nlink ?: srcNode.nlink,
+            uid = updateRequest.uid ?: srcNode.uid,
+            gid = updateRequest.gid ?: srcNode.gid,
+            rdev = updateRequest.rdev ?: srcNode.rdev,
+            flags = updateRequest.flags ?: srcNode.flags,
+            symlinkTarget = updateRequest.normalizedSymlinkTarget() ?: srcNode.symlinkTarget,
+            lastModifiedBy = operator,
+            lastModifiedDate = now,
+            lastAccessDate = now,
+        )
     }
 
     /**

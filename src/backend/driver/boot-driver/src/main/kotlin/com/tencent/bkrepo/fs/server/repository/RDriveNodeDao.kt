@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.fs.server.repository
 
+import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.common.mongo.reactive.dao.HashShardingMongoReactiveDao
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
@@ -49,35 +50,75 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
     }
 
     suspend fun findCurrentNode(projectId: String, repoName: String, parent: String, name: String): TDriveNode? {
-        val query = Query(currentCriteria(projectId, repoName, parent, name))
+        val query = Query(currentParentNameCriteria(projectId, repoName, parent, name))
         return findOne(query)
     }
 
     suspend fun sameInoCount(projectId: String, repoName: String, ino: String): Long {
-        val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
-            .and(TDriveNode::repoName).isEqualTo(repoName)
-            .and(TDriveNode::ino).isEqualTo(ino)
-            .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
-            .and(TDriveNode::deleted).isNull()
-        return count(Query(criteria))
+        return count(Query(currentInoCriteria(projectId, repoName, ino)))
     }
 
-    suspend fun markNodeDeleted(id: String, snapSeq: Long) {
+    suspend fun markNodeDeleted(id: String, snapSeq: Long, lastModifiedDate: LocalDateTime? = null): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(id)
             .and(TDriveNode::deleted).isNull()
             .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
+        lastModifiedDate?.let { criteria.and(TDriveNode::lastModifiedDate).isEqualTo(it) }
         val query = Query(criteria)
         val update = Update()
             .set(TDriveNode::deleteSnapSeq.name, snapSeq)
             .set(TDriveNode::deleted.name, LocalDateTime.now())
-        updateFirst(query, update)
+        return updateFirst(query, update)
+    }
+
+    suspend fun updateByNodeId(
+        projectId: String,
+        repoName: String,
+        nodeId: String,
+        lastModifiedDate: LocalDateTime? = null,
+        updatedNode: TDriveNode
+    ): UpdateResult {
+        val criteria = currentNodeIdCriteria(projectId, repoName, nodeId)
+        lastModifiedDate?.let { criteria.and(TDriveNode::lastModifiedDate).isEqualTo(it) }
+        val update = Update()
+            .set(TDriveNode::parent.name, updatedNode.parent)
+            .set(TDriveNode::name.name, updatedNode.name)
+            .set(TDriveNode::size.name, updatedNode.size)
+            .set(TDriveNode::mode.name, updatedNode.mode)
+            .set(TDriveNode::nlink.name, updatedNode.nlink)
+            .set(TDriveNode::uid.name, updatedNode.uid)
+            .set(TDriveNode::gid.name, updatedNode.gid)
+            .set(TDriveNode::rdev.name, updatedNode.rdev)
+            .set(TDriveNode::flags.name, updatedNode.flags)
+            .set(TDriveNode::symlinkTarget.name, updatedNode.symlinkTarget)
+            .set(TDriveNode::lastModifiedBy.name, updatedNode.lastModifiedBy)
+            .set(TDriveNode::lastModifiedDate.name, updatedNode.lastModifiedDate)
+        return updateFirst(
+            Query(criteria),
+            update
+        )
+    }
+
+    private fun currentNodeIdCriteria(projectId: String, repoName: String, nodeId: String): Criteria {
+        return where(TDriveNode::projectId).isEqualTo(projectId)
+            .and(TDriveNode::repoName).isEqualTo(repoName)
+            .and(ID).isEqualTo(nodeId)
+            .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
+            .and(TDriveNode::deleted).isNull()
+    }
+
+    private fun currentInoCriteria(projectId: String, repoName: String, ino: String): Criteria {
+        return where(TDriveNode::projectId).isEqualTo(projectId)
+            .and(TDriveNode::repoName).isEqualTo(repoName)
+            .and(TDriveNode::ino).isEqualTo(ino)
+            .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
+            .and(TDriveNode::deleted).isNull()
     }
 
     /**
      * 查当前活跃节点
      */
-    private fun currentCriteria(projectId: String, repoName: String, parent: String, name: String): Criteria {
-        return snapshotCriteria(projectId, repoName, parent, name)
+    private fun currentParentNameCriteria(projectId: String, repoName: String, parent: String, name: String): Criteria {
+        return snapshotParentNameCriteria(projectId, repoName, parent, name)
     }
 
     /**
@@ -85,7 +126,7 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
      *
      * 条件：snapSeq <= targetSnapSeq AND deleteSnapSeq > targetSnapSeq
      */
-    private fun snapshotCriteria(
+    private fun snapshotParentNameCriteria(
         projectId: String, repoName: String, parent: String, name: String, snapSeq: Long? = null
     ): Criteria {
         return listChildrenCriteria(projectId, repoName, parent, snapSeq).and(TDriveNode::name).isEqualTo(name)

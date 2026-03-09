@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.fs.server.request.service
+package com.tencent.bkrepo.fs.server.request.drive
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode

@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.fs.server.request.service
+package com.tencent.bkrepo.fs.server.request.drive
 
 data class DriveNodeMoveRequest(
     val projectId: String,

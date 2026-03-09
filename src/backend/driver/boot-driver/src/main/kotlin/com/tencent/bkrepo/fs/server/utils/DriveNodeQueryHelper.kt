@@ -17,8 +17,6 @@ object DriveNodeQueryHelper {
     ): TDriveNode {
         return origin.copy(
             id = null,
-            createdBy = operator,
-            createdDate = now,
             lastModifiedBy = operator,
             lastModifiedDate = now,
             deleted = null,
