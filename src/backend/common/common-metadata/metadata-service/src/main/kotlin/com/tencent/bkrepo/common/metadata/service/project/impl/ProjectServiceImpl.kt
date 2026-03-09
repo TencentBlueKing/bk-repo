@@ -121,7 +121,7 @@ class ProjectServiceImpl(
     override fun listPermissionProject(userId: String, option: ProjectListOption?): List<ProjectInfo> {
         var names = servicePermissionClient.listPermissionProject(userId).data.orEmpty()
         option?.names?.let { names = names.intersect(option.names!!).toList() }
-        val query = buildListQuery(names, option)
+        val query = buildListQuery(names, option, enableMultiTenant.enabled)
         val projectList = if (option?.pageNumber == null && option?.pageSize == null) {
             projectDao.find(query)
         } else {
