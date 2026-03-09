@@ -135,13 +135,6 @@ function _M:get_addr(service_name)
             table.insert(ips, ip)
         end
     end
-    -- return with local service
-    if internal_ip ~= nil and service_in_local ~= nil and string.find(service_in_local, service_name) ~= nil then
-        local service_ip = string.gsub(internal_ip, "\n", "")
-        if arrayUtil:isInArray(service_ip, ips) then
-            return "127.0.0.1:" .. port
-        end
-    end
 
     -- return ip,port address
     -- 检查当前服务是否在需要带宽判断的服务列表中
