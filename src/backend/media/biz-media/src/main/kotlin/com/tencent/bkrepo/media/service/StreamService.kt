@@ -325,7 +325,7 @@ class StreamService(
 
     private fun generateToken(streamPattern: String?, expireAt: Long): String {
         val payload = "$streamPattern|$expireAt"
-        val signature = HmacUtils(HmacAlgorithms.HMAC_SHA_256, RTC_SECRET).hmacHex(payload)
+        val signature = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
         return Base64.getUrlEncoder().encodeToString(("$payload.$signature").toByteArray())
     }
 
@@ -342,7 +342,7 @@ class StreamService(
             val payload = parts[0]
             val signature = parts[1]
 
-            val expected: String = HmacUtils(HmacAlgorithms.HMAC_SHA_256, RTC_SECRET).hmacHex(payload)
+            val expected: String = HmacUtils(HmacAlgorithms.HMAC_SHA_256, mediaProperties.rtcSecret).hmacHex(payload)
             if (expected != signature) {
                 return false
             }
@@ -367,6 +367,5 @@ class StreamService(
     companion object {
         private val logger = LoggerFactory.getLogger(StreamService::class.java)
         private const val DEFAULT = "default"
-        const val RTC_SECRET: String = "rtc-stream-pull-secret-2m98cx37yr21"
     }
 }
