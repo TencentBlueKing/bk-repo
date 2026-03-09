@@ -67,7 +67,7 @@ class EdgeNodeRedirectService(
         }
     }
 
-    override fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+    override fun doShouldRedirect(context: ArtifactDownloadContext): Boolean {
         val node = ArtifactContextHolder.getNodeDetail(context.artifactInfo)
         val selfClusterName = clusterProperties.self.name
         if (logger.isDebugEnabled) {

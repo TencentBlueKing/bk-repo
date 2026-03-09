@@ -32,5 +32,6 @@
 package com.tencent.bkrepo.auth.pojo.enums
 
 enum class BkAuthResourceType(val value: String) {
-    PIPELINE_DEFAULT("pipeline")
+    PIPELINE_DEFAULT("pipeline"),
+    CREATIVE_STREAM("creative_stream")
 }
