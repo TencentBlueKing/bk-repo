@@ -13,7 +13,7 @@ yarn public
 yarn public -m standalone
 yarn public -m ci
 
-# serve with hot reload at localhost:xxxx
-cd ./devops-repository
+# serve with hot reload at localhost:xxxx 1111
+cd ./core/devops-repository
 yarn dev
 ```
