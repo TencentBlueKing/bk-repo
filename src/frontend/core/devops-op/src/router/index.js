@@ -34,6 +34,7 @@ export const ROUTER_NAME_MIGRATE_REPO_STORAGE_CONFIG = 'MigrationConfig'
 export const ROUTER_NAME_MIGRATE_PROJECT_GRAYSCALE_CONFIG = 'ProjectGrayscaleConfig'
 export const ROUTER_NAME_SERVER_LOG = 'ServerLog'
 export const ROUTER_NAME_SIGN_CONFIG = 'SignConfig'
+export const ROUTER_NAME_NT = 'NT'
 
 Vue.use(Router)
 
@@ -98,6 +99,12 @@ export const asyncRoutes = [
     redirect: '/system/account',
     meta: { title: '系统管理', icon: 'setting' },
     children: [
+      {
+        path: 'nt',
+        name: ROUTER_NAME_NT,
+        meta: { title: '网络拓扑', icon: 'nt' },
+        component: () => import('@/views/net-topology/index')
+      },
       {
         path: 'account',
         name: ROUTER_NAME_ACCOUNT,
