@@ -147,8 +147,7 @@ class DriveNodeService(
     suspend fun update(updateRequest: DriveNodeUpdateRequest, snapSeq: Long? = null): DriveNode {
         with(updateRequest) {
             validateUpdateRequest(updateRequest)
-            val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, nodeId)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, nodeId)
+            val srcNode = findRequiredNode(projectId, repoName, nodeId)
             val operator = ReactiveSecurityUtils.getUser()
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
             val now = LocalDateTime.now()
@@ -156,25 +155,7 @@ class DriveNodeService(
             if (updatedNode.parent != srcNode.parent || updatedNode.name != srcNode.name) {
                 checkConflict(updatedNode)
             }
-            val savedNode = if (srcNode.snapSeq != currentSnapSeq) {
-                val deleteResult =
-                    driveNodeDao.markNodeDeleted(nodeId, currentSnapSeq, if (force) null else lastModifiedDate)
-                if (deleteResult.modifiedCount != 1L) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, srcNode.name)
-                }
-                doCreate(DriveNodeQueryHelper.buildCowNode(updatedNode, currentSnapSeq, operator, now))
-            } else {
-                val result = try {
-                    val realLastModifiedDate = if (force) null else lastModifiedDate
-                    driveNodeDao.updateByNodeId(projectId, repoName, nodeId, realLastModifiedDate, updatedNode)
-                } catch (_: DuplicateKeyException) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, updatedNode.name)
-                }
-                if (result.modifiedCount != 1L) {
-                    throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, srcNode.name)
-                }
-                updatedNode
-            }
+            val savedNode = saveUpdatedNode(srcNode, updatedNode, updateRequest, currentSnapSeq, operator, now)
             logger.info("Update drive node[$projectId/$repoName/${srcNode.ino}] id[$nodeId] success.")
             return savedNode.toDriveNode()
         }
@@ -219,6 +200,11 @@ class DriveNodeService(
         return snapSeq ?: driveSnapSeqService.getLatestSnapSeq(projectId, repoName)
     }
 
+    private suspend fun findRequiredNode(projectId: String, repoName: String, nodeId: String): TDriveNode {
+        return driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, nodeId)
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, nodeId)
+    }
+
     private suspend fun getRequiredSource(
         projectId: String,
         repoName: String,
@@ -239,6 +225,64 @@ class DriveNodeService(
             driveNodeDao.insert(driveNode)
         } catch (_: DuplicateKeyException) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, driveNode.name)
+        }
+    }
+
+    private suspend fun saveUpdatedNode(
+        srcNode: TDriveNode,
+        updatedNode: TDriveNode,
+        updateRequest: DriveNodeUpdateRequest,
+        currentSnapSeq: Long,
+        operator: String,
+        now: LocalDateTime,
+    ): TDriveNode {
+        return if (srcNode.snapSeq != currentSnapSeq) {
+            saveCowUpdatedNode(srcNode, updatedNode, updateRequest, currentSnapSeq, operator, now)
+        } else {
+            updateCurrentSnapNode(srcNode, updatedNode, updateRequest)
+        }
+    }
+
+    private suspend fun saveCowUpdatedNode(
+        srcNode: TDriveNode,
+        updatedNode: TDriveNode,
+        updateRequest: DriveNodeUpdateRequest,
+        currentSnapSeq: Long,
+        operator: String,
+        now: LocalDateTime,
+    ): TDriveNode {
+        val deleteResult = driveNodeDao.markNodeDeleted(
+            updateRequest.nodeId,
+            currentSnapSeq,
+            if (updateRequest.force) null else updateRequest.lastModifiedDate
+        )
+        checkUpdateResult(deleteResult.modifiedCount, srcNode.name)
+        return doCreate(DriveNodeQueryHelper.buildCowNode(updatedNode, currentSnapSeq, operator, now))
+    }
+
+    private suspend fun updateCurrentSnapNode(
+        srcNode: TDriveNode,
+        updatedNode: TDriveNode,
+        updateRequest: DriveNodeUpdateRequest,
+    ): TDriveNode {
+        val result = try {
+            driveNodeDao.updateByNodeId(
+                updateRequest.projectId,
+                updateRequest.repoName,
+                updateRequest.nodeId,
+                if (updateRequest.force) null else updateRequest.lastModifiedDate,
+                updatedNode
+            )
+        } catch (_: DuplicateKeyException) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, updatedNode.name)
+        }
+        checkUpdateResult(result.modifiedCount, srcNode.name)
+        return updatedNode
+    }
+
+    private fun checkUpdateResult(modifiedCount: Long, nodeName: String) {
+        if (modifiedCount != 1L) {
+            throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, nodeName)
         }
     }
 
