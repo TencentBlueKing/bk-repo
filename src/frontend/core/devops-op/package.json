@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vue-cli-service serve",
     "public": "vue-cli-service build",
-    "public:master": "vue-cli-service build",
+    "public:master": "vue-cli-service build && node rename-after-build.js",
     "build:prod": "vue-cli-service build",
     "build:stage": "vue-cli-service build --mode staging",
     "preview": "node build/index.js --preview",

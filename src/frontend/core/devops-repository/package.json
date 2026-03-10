@@ -8,7 +8,7 @@
     "public": "webpack --mode production",
     "public:dev": "cross-env NODE_ENV=dev  yarn public --",
     "public:test": "cross-env NODE_ENV=test  yarn public --",
-    "public:master": "cross-env NODE_ENV=master  yarn public --",
+    "public:master": "cross-env NODE_ENV=master  yarn public -- && node rename-after-build.js",
     "public:external": "cross-env NODE_ENV=external yarn public --"
   },
   "dependencies": {

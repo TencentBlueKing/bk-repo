@@ -32,7 +32,7 @@ $BK_REPO_HOME/scripts/render_tpl -u -p $BK_REPO_HOME -m . -e repo.env $BK_REPO_H
 $BK_REPO_HOME/scripts/render_tpl -u -p $BK_REPO_HOME -m . -e repo.env $BK_REPO_HOME/support-files/templates/gateway#vhosts#bkrepo.docker.server.conf
 $BK_REPO_HOME/scripts/render_tpl -u -p $BK_REPO_HOME -m . -e repo.env $BK_REPO_HOME/support-files/templates/gateway#server.common.conf
 $BK_REPO_HOME/scripts/render_tpl -u -p $BK_REPO_HOME -m . -e repo.env $BK_REPO_HOME/support-files/templates/gateway#lua#init.lua
-$BK_REPO_HOME/scripts/render_tpl -u -p $BK_REPO_HOME -m . -e repo.env -E BK_REPO_SHOW_ANALYST_MENU=true $BK_REPO_HOME/support-files/templates/frontend_ui_index.html
+$BK_REPO_HOME/scripts/render_tpl -u -p $BK_REPO_HOME -m . -e repo.env -E BK_REPO_SHOW_ANALYST_MENU=true $BK_REPO_HOME/support-files/templates/frontend#ui#index.html
 
 ##启动网关程序
 echo "启动网关..."
