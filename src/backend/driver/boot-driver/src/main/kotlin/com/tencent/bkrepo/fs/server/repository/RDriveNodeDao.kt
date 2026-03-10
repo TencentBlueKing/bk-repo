@@ -54,10 +54,6 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
         return findOne(query)
     }
 
-    suspend fun sameInoCount(projectId: String, repoName: String, ino: String): Long {
-        return count(Query(currentInoCriteria(projectId, repoName, ino)))
-    }
-
     suspend fun markNodeDeleted(id: String, snapSeq: Long, lastModifiedDate: LocalDateTime? = null): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(id)
             .and(TDriveNode::deleted).isNull()
@@ -102,14 +98,6 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
         return where(TDriveNode::projectId).isEqualTo(projectId)
             .and(TDriveNode::repoName).isEqualTo(repoName)
             .and(ID).isEqualTo(nodeId)
-            .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
-            .and(TDriveNode::deleted).isNull()
-    }
-
-    private fun currentInoCriteria(projectId: String, repoName: String, ino: String): Criteria {
-        return where(TDriveNode::projectId).isEqualTo(projectId)
-            .and(TDriveNode::repoName).isEqualTo(repoName)
-            .and(TDriveNode::ino).isEqualTo(ino)
             .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
             .and(TDriveNode::deleted).isNull()
     }

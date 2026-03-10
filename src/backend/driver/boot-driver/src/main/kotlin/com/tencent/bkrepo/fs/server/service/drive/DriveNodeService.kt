@@ -190,9 +190,6 @@ class DriveNodeService(
             logger.info(
                 "Delete drive node[$name] id[$nodeId] ino[$ino] of parent[$parent] at snap[$curSnapSeq] success."
             )
-            if (driveNode.type != TYPE_DIRECTORY && driveNodeDao.sameInoCount(projectId, repoName, ino) == 0L) {
-                driveBlockNodeService.deleteBlocks(ino, curSnapSeq)
-            }
         }
     }
 
