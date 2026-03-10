@@ -12,5 +12,6 @@ class MediaProperties {
     var transcodeConfig: Map<String, TranscodeConfig> = mutableMapOf()
     var repoHost: String = ""
     var storageCredentialsKey: String? = null
+    var enabledLiveProjects: List<String> = mutableListOf()
     var rtcSecret: String = "rtc-stream-pull-secret-2m98cx37yr21"
 }
