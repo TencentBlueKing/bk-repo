@@ -97,8 +97,7 @@ module.exports = ({ entry, publicPath, dist, port = 8080, argv, env }) => {
         externals: {
             vue: 'Vue',
             'vue-router': 'VueRouter',
-            vuex: 'Vuex',
-            'bk-magic-vue': 'BkMagicVue'
+            vuex: 'Vuex'
         },
         resolve: {
             extensions: ['.js', '.vue', '.json', '.ts', '.scss', '.css'],
