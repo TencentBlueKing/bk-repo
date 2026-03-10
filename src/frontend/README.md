@@ -14,6 +14,6 @@ yarn public -m standalone
 yarn public -m ci
 
 # serve with hot reload at localhost:xxxx
-cd ./devops-repository
+cd ./core/devops-repository
 yarn dev
 ```
