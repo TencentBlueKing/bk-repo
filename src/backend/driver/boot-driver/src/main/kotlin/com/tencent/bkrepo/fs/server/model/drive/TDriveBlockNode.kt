@@ -52,7 +52,8 @@ data class TDriveBlockNode(
 ) {
     companion object {
         const val BLOCK_IDX = "node_start_pos_idx"
-        const val BLOCK_IDX_DEF = "{'ino': 1, 'startPos': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
+        const val BLOCK_IDX_DEF =
+            "{'projectId': 1, 'repoName': 1, 'ino': 1, 'startPos': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
         const val SHA256_IDX = "sha256_idx"
         const val SHA256_IDX_DEF = "{'sha256': 1}"
     }
