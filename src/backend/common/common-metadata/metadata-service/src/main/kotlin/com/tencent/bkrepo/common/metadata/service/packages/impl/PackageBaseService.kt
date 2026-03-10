@@ -193,7 +193,8 @@ abstract class PackageBaseService(
             artifactPath = artifactPath,
             stageTag = stageTag.orEmpty(),
             metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
-            extension = extension.orEmpty()
+            extension = extension.orEmpty(),
+            federatedSource = federatedSource,
         )
     }
 
