@@ -32,6 +32,7 @@ arrayUtil = require("util.array_util")
 cookieUtil = require("util.cookie_util")
 urlUtil = require("util.url_util")
 oauthUtil = require("util.oauth_util")
+jwtUtil = require("util.jwt_util")
 hostUtil = require("util.host_util")
 healthUtil = require("util.health_util")
 
