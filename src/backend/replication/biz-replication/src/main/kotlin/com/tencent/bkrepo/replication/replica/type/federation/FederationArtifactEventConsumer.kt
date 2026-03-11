@@ -63,7 +63,9 @@ class FederationArtifactEventConsumer(
             EventType.VERSION_DELETED,
             EventType.VERSION_UPDATED,
             EventType.METADATA_SAVED,
-            EventType.METADATA_DELETED
+            EventType.METADATA_DELETED,
+            EventType.PACKAGE_METADATA_SAVED,
+            EventType.PACKAGE_METADATA_DELETED,
         )
     }
 
