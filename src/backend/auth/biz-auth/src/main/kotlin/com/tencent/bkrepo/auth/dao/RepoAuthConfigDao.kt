@@ -69,4 +69,9 @@ class RepoAuthConfigDao : SimpleMongoDao<TRepoAuthConfig>() {
             .set(TRepoAuthConfig::lastModifiedDate.name, LocalDateTime.now())
         return this.findAndModify(query, update, options, TRepoAuthConfig::class.java)!!.id!!
     }
+
+    fun listByProject(projectId: String): List<TRepoAuthConfig> {
+        val query = Query.query(Criteria.where(TRepoAuthConfig::projectId.name).`is`(projectId))
+        return this.find(query)
+    }
 }

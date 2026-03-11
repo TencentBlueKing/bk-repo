@@ -38,6 +38,7 @@ import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToRepoRequest
 import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserFederationInfo
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.api.pojo.Page
 
@@ -52,6 +53,10 @@ interface UserService {
     fun createUserToRepo(request: CreateUserToRepoRequest): Boolean
 
     fun listUser(rids: List<String>, tenantId: String?): List<User>
+
+    fun listUserPage(tenantId: String?, pageNumber: Int, pageSize: Int): List<User>
+
+    fun listUsersForFederationPage(tenantId: String?, pageNumber: Int, pageSize: Int): List<UserFederationInfo>
 
     fun deleteById(userId: String): Boolean
 
@@ -102,4 +107,7 @@ interface UserService {
     fun getRelatedUserById(userId: String): List<UserInfo>
 
     fun listAdminUsers(): List<String>
+
+    /** 联邦同步专用：直接写入已 hash 的密码，跳过二次 hash */
+    fun upsertUserForFederation(request: CreateUserRequest, hashedPwd: String?)
 }

@@ -74,6 +74,12 @@ class UserDao : SimpleMongoDao<TUser>() {
         return this.find(query)
     }
 
+    fun getUserNotLockedPage(tenantId: String?, pageNumber: Int, pageSize: Int): List<TUser> {
+        val query = UserQueryHelper.filterNotLockedUser(tenantId)
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        return this.find(query.with(pageRequest), TUser::class.java)
+    }
+
     fun addUserAccount(userId: String, accountId: String): Boolean {
         val query = Query(Criteria(TUser::userId.name).isEqualTo(userId))
         val update = Update().addToSet(TUser::accounts.name, accountId)

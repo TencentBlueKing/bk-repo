@@ -35,4 +35,5 @@ import org.springframework.stereotype.Repository
 interface KeyRepository : MongoRepository<TKey, String> {
     fun findByUserId(userId: String): List<TKey>
     fun findByFingerprint(fingerprint: String): TKey?
+    fun findByUserIdAndFingerprint(userId: String, fingerprint: String): TKey?
 }

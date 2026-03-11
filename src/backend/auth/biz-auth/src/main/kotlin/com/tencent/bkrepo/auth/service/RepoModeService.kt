@@ -34,6 +34,7 @@ package com.tencent.bkrepo.auth.service
 
 
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
+import com.tencent.bkrepo.auth.pojo.permission.RepoAuthConfigInfo
 import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
 
 interface RepoModeService {
@@ -48,4 +49,6 @@ interface RepoModeService {
 
     fun getAccessControlStatus(projectId: String, repoName: String): RepoModeStatus
 
+    /** 查询项目下所有仓库的鉴权配置（联邦同步用） */
+    fun listByProject(projectId: String): List<RepoAuthConfigInfo>
 }

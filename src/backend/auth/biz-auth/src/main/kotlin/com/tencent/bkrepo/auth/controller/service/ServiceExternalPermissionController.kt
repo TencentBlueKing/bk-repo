@@ -28,7 +28,9 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
+import com.tencent.bkrepo.auth.pojo.externalPermission.CreateExtPermissionRequest
 import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
+import com.tencent.bkrepo.auth.pojo.externalPermission.UpdateExtPermissionRequest
 import com.tencent.bkrepo.auth.service.ExternalPermissionService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -41,5 +43,46 @@ class ServiceExternalPermissionController(
 
     override fun listExternalPermission(): Response<List<ExternalPermission>> {
         return ResponseBuilder.success(externalPermissionService.listExtPermission())
+    }
+
+    override fun createExternalPermission(permission: ExternalPermission): Response<Boolean> {
+        // TODO: 优化为 DAO 层按 projectId+repoName 直接查询，避免全量扫描
+        val existing = externalPermissionService.listExtPermission().find {
+            it.projectId == permission.projectId && it.repoName == permission.repoName
+        }
+        if (existing != null) return ResponseBuilder.success(false)
+        externalPermissionService.createExtPermission(
+            CreateExtPermissionRequest(
+                url = permission.url,
+                headers = permission.headers,
+                projectId = permission.projectId,
+                repoName = permission.repoName,
+                scope = permission.scope,
+                platformWhiteList = permission.platformWhiteList,
+                enabled = permission.enabled
+            )
+        )
+        return ResponseBuilder.success(true)
+    }
+
+    override fun updateExternalPermission(permission: ExternalPermission): Response<Boolean> {
+        externalPermissionService.updateExtPermission(
+            UpdateExtPermissionRequest(
+                id = permission.id,
+                url = permission.url,
+                headers = permission.headers,
+                projectId = permission.projectId,
+                repoName = permission.repoName,
+                scope = permission.scope,
+                platformWhiteList = permission.platformWhiteList,
+                enabled = permission.enabled
+            )
+        )
+        return ResponseBuilder.success(true)
+    }
+
+    override fun deleteExternalPermission(id: String): Response<Boolean> {
+        externalPermissionService.deleteExtPermission(id)
+        return ResponseBuilder.success(true)
     }
 }

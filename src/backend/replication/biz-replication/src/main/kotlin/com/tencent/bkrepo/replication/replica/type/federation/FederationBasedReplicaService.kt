@@ -39,6 +39,7 @@ import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
+import com.tencent.bkrepo.replication.replica.replicator.standalone.FederationReplicator
 import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -46,6 +47,7 @@ import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 /**
@@ -56,10 +58,10 @@ class FederationBasedReplicaService(
     replicaRecordService: ReplicaRecordService,
     localDataManager: LocalDataManager,
     replicaFailureRecordDao: ReplicaFailureRecordDao,
+    private val federationReplicator: FederationReplicator,
 ) : AbstractReplicaService(replicaRecordService, localDataManager, replicaFailureRecordDao) {
 
     override fun replica(context: ReplicaContext) {
-        // 全量同步的场景需要同步已删除节点
         replicaTaskObjects(context)
     }
 
@@ -102,7 +104,8 @@ class FederationBasedReplicaService(
     }
 
     private fun handleEventByType(replicaContext: ReplicaContext) {
-        when (replicaContext.event.type) {
+        val event = replicaContext.event
+        when (event.type) {
             EventType.METADATA_DELETED -> handleMetadataDeleted(replicaContext)
             EventType.METADATA_SAVED -> handleMetadataSaved(replicaContext)
             EventType.NODE_RENAMED -> handleNodeRenamed(replicaContext)
@@ -113,7 +116,7 @@ class FederationBasedReplicaService(
             EventType.VERSION_CREATED -> handleVersionCreated(replicaContext)
             EventType.VERSION_UPDATED -> handleVersionUpdated(replicaContext)
             EventType.VERSION_DELETED -> handleVersionDeleted(replicaContext)
-            else -> throw UnsupportedOperationException("Unsupported event type: ${replicaContext.event.type}")
+            else -> throw UnsupportedOperationException("Unsupported event type: ${event.type}")
         }
     }
 

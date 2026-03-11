@@ -48,4 +48,7 @@ interface KeyService {
      * 删除密钥
      */
     fun deleteKey(id: String)
+
+    /** 查询指定用户的所有密钥（联邦同步用） */
+    fun listKeyByUserId(userId: String): List<Key>
 }

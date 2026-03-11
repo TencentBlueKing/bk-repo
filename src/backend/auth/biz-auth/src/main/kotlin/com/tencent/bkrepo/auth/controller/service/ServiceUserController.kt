@@ -34,7 +34,9 @@ package com.tencent.bkrepo.auth.controller.service
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.CreateUserToProjectRequest
+import com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.User
+import com.tencent.bkrepo.auth.pojo.user.UserFederationInfo
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.auth.service.RoleService
 import com.tencent.bkrepo.auth.service.UserService
@@ -43,7 +45,9 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import io.swagger.v3.oas.annotations.Operation
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -100,5 +104,34 @@ class ServiceUserController @Autowired constructor(
 
     override fun listAdminUsers(): Response<List<String>> {
         return ResponseBuilder.success(userService.listAdminUsers())
+    }
+
+    override fun listUser(rids: List<String>, tenantId: String?): Response<List<User>> {
+        return ResponseBuilder.success(userService.listUser(rids, tenantId))
+    }
+
+    override fun listUserPage(tenantId: String?, pageNumber: Int, pageSize: Int): Response<List<User>> {
+        return ResponseBuilder.success(userService.listUserPage(tenantId, pageNumber, pageSize))
+    }
+
+    override fun listUsersForFederationPage(
+        tenantId: String?,
+        pageNumber: Int,
+        pageSize: Int
+    ): Response<List<UserFederationInfo>> {
+        return ResponseBuilder.success(userService.listUsersForFederationPage(tenantId, pageNumber, pageSize))
+    }
+
+    override fun updateUserById(uid: String, request: UpdateUserRequest): Response<Boolean> {
+        return ResponseBuilder.success(userService.updateUserById(uid, request))
+    }
+
+    override fun deleteUser(uid: String): Response<Boolean> {
+        return ResponseBuilder.success(userService.deleteById(uid))
+    }
+
+    override fun upsertUserForFederation(request: CreateUserRequest, hashedPwd: String?): Response<Void> {
+        userService.upsertUserForFederation(request, hashedPwd)
+        return ResponseBuilder.success()
     }
 }

@@ -29,6 +29,7 @@ package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.pojo.oauth.OauthTokenInfo
 import com.tencent.bkrepo.auth.service.OauthAuthorizationService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -40,12 +41,29 @@ class ServiceOauthAuthorizationController @Autowired constructor(
     private val oauthAuthorizationService: OauthAuthorizationService
 ) : ServiceOauthAuthorizationClient {
 
-
     override fun getToken(accessToken: String): Response<OauthToken?> {
         return ResponseBuilder.success(oauthAuthorizationService.getToken(accessToken))
     }
 
     override fun validateToken(accessToken: String): Response<String?> {
         return ResponseBuilder.success(oauthAuthorizationService.validateToken(accessToken))
+    }
+
+    override fun listActiveTokens(): Response<List<OauthTokenInfo>> {
+        return ResponseBuilder.success(oauthAuthorizationService.listActiveTokens())
+    }
+
+    override fun getTokenInfo(accessToken: String): Response<OauthTokenInfo?> {
+        return ResponseBuilder.success(oauthAuthorizationService.getTokenInfo(accessToken))
+    }
+
+    override fun createOauthTokenForFederation(tokenInfo: OauthTokenInfo): Response<Void> {
+        oauthAuthorizationService.saveFederationToken(tokenInfo)
+        return ResponseBuilder.success()
+    }
+
+    override fun deleteOauthTokenForFederation(accessToken: String): Response<Void> {
+        oauthAuthorizationService.deleteTokenByAccessToken(accessToken)
+        return ResponseBuilder.success()
     }
 }

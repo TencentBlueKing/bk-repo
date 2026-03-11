@@ -65,8 +65,10 @@ import com.tencent.bkrepo.replication.service.ClusterNodeService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.util.CronUtils
+import com.tencent.bkrepo.replication.util.TaskQueryHelper.allFederationTaskQuery
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.buildListQuery
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.taskObjectQuery
+import com.tencent.bkrepo.replication.util.TaskQueryHelper.taskObjectQueryByProject
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.taskQueryByType
 import com.tencent.bkrepo.replication.util.TaskQueryHelper.undoScheduledTaskQuery
 import org.bson.types.ObjectId
@@ -599,6 +601,27 @@ class ReplicaTaskServiceImpl(
 
     override fun listFederationTasks(projectId: String, repoName: String): List<ReplicaTaskDetail> {
         return listTasks(projectId, repoName, ReplicaType.FEDERATION, true)
+    }
+
+    override fun listFederationTasksByProject(projectId: String): List<ReplicaTaskDetail> {
+        val objectQuery = taskObjectQueryByProject(projectId)
+        val replicaObjectList = replicaObjectDao.find(objectQuery)
+        if (replicaObjectList.isEmpty()) return emptyList()
+        val taskKeyList = replicaObjectList.map { it.taskKey }
+        val query = taskQueryByType(taskKeyList, ReplicaType.FEDERATION, true)
+        val replicaTaskInfoList = replicaTaskDao.find(query).map { convert(it)!! }
+        return replicaTaskInfoList.map { info ->
+            val detailList = replicaObjectList.filter { it.taskKey == info.key }.map { convert(it)!! }
+            ReplicaTaskDetail(info, detailList)
+        }
+    }
+
+    override fun listAllFederationTasks(): List<ReplicaTaskDetail> {
+        val taskList = replicaTaskDao.find(allFederationTaskQuery()).map { convert(it)!! }
+        return taskList.map { info ->
+            val detailList = replicaObjectDao.findByTaskKey(info.key).map { convert(it)!! }
+            ReplicaTaskDetail(info, detailList)
+        }
     }
 
     companion object {

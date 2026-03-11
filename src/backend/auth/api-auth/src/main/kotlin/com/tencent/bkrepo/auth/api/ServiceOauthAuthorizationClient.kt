@@ -29,13 +29,17 @@ package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_OAUTH_PREFIX
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.pojo.oauth.OauthTokenInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 
@@ -56,4 +60,26 @@ interface ServiceOauthAuthorizationClient {
     fun validateToken(
         @RequestParam accessToken: String
     ): Response<String?>
+
+    @Operation(summary = "查询所有oauth token（联邦同步）")
+    @GetMapping("/federation/tokens")
+    fun listActiveTokens(): Response<List<OauthTokenInfo>>
+
+    @Operation(summary = "按accessToken查询OauthTokenInfo（联邦同步）")
+    @GetMapping("/federation/token/info")
+    fun getTokenInfo(
+        @RequestParam accessToken: String
+    ): Response<OauthTokenInfo?>
+
+    @Operation(summary = "直接创建oauth token（联邦同步）")
+    @PostMapping("/federation/token")
+    fun createOauthTokenForFederation(
+        @RequestBody tokenInfo: OauthTokenInfo
+    ): Response<Void>
+
+    @Operation(summary = "删除oauth token（联邦同步）")
+    @DeleteMapping("/federation/token")
+    fun deleteOauthTokenForFederation(
+        @RequestParam accessToken: String
+    ): Response<Void>
 }

@@ -150,4 +150,14 @@ interface ReplicaTaskService {
      * 根据项目id和仓库名称查询联邦仓库对应任务
      */
     fun listFederationTasks(projectId: String, repoName: String): List<ReplicaTaskDetail>
+
+    /**
+     * 根据项目id查询该项目下所有联邦任务（用于项目级权限事件增量同步）
+     */
+    fun listFederationTasksByProject(projectId: String): List<ReplicaTaskDetail>
+
+    /**
+     * 查询所有已启用的联邦任务（用于全局权限事件增量同步）
+     */
+    fun listAllFederationTasks(): List<ReplicaTaskDetail>
 }

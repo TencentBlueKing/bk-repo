@@ -28,6 +28,7 @@
 package com.tencent.bkrepo.auth.service.impl.edge
 
 import com.tencent.bkrepo.auth.api.cluster.ClusterTemporaryTokenClient
+import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.dao.AuthTemporaryTokenDao
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
@@ -36,6 +37,7 @@ import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeEdgeCondition
 import com.tencent.bkrepo.common.service.cluster.properties.ClusterProperties
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
 
@@ -44,9 +46,11 @@ import org.springframework.stereotype.Service
 class CommitEdgeTemporaryTokenServiceImpl(
     temporaryTokenRepository: AuthTemporaryTokenDao,
     private val clusterProperties: ClusterProperties,
-    projectService: ProjectService
+    projectService: ProjectService,
+    messageSupplier: MessageSupplier,
+    authProperties: AuthProperties
 ) : TemporaryTokenServiceImpl(
-    temporaryTokenRepository, projectService
+    temporaryTokenRepository, projectService, messageSupplier, authProperties
 ) {
 
     private val centerTemporaryTokenClient: ClusterTemporaryTokenClient by lazy {

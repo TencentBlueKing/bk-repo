@@ -45,15 +45,50 @@ class FederationArtifactEventConsumer(
     private val replicaTaskService: ReplicaTaskService,
     private val federationBasedReplicaJobExecutor: FederationEventBasedReplicaJobExecutor,
     private val eventRecordDao: EventRecordDao,
+    private val federationRepoEventConsumer: FederationRepoEventConsumer,
+    private val federationPermissionEventConsumer: FederationPermissionEventConsumer,
 ) : EventConsumer() {
 
     private val federationExecutors = FederationThreadPoolExecutor.instance
 
-    /**
-     * 允许接收的事件类型
-     */
     override fun getAcceptTypes(): Set<EventType> {
-        return setOf(
+        return ARTIFACT_TYPES + FederationPermissionEventConsumer.GLOBAL_TYPES +
+            FederationPermissionEventConsumer.PROJECT_TYPES
+    }
+
+    // 权限事件不受 source 过滤（无复制循环风险），仅对制品事件过滤
+    override fun sourceCheck(message: ArtifactEvent): Boolean {
+        if (message.type in FederationPermissionEventConsumer.GLOBAL_TYPES ||
+            message.type in FederationPermissionEventConsumer.PROJECT_TYPES) {
+            return false
+        }
+        return !message.source.isNullOrEmpty()
+    }
+
+    override fun action(message: Message<ArtifactEvent>) {
+        val eventType = message.payload.type
+        if (eventType in FederationPermissionEventConsumer.GLOBAL_TYPES ||
+            eventType in FederationPermissionEventConsumer.PROJECT_TYPES) {
+            federationPermissionEventConsumer.action(message)
+            return
+        }
+        if (eventType == EventType.REPO_CREATED) {
+            federationRepoEventConsumer.accept(message)
+            return
+        }
+        processAction(
+            message = message,
+            eventRecordDao = eventRecordDao,
+            getTasks = { projectId, repoName -> replicaTaskService.listFederationTasks(projectId, repoName) },
+            eventType = "FEDERATION",
+            executor = federationExecutors,
+            executeTask = { task, event, recordId -> federationBasedReplicaJobExecutor.execute(task, event, recordId) }
+        )
+    }
+
+    companion object {
+        val ARTIFACT_TYPES: Set<EventType> = setOf(
+            EventType.REPO_CREATED,
             EventType.NODE_MOVED,
             EventType.NODE_COPIED,
             EventType.NODE_CREATED,
@@ -63,22 +98,7 @@ class FederationArtifactEventConsumer(
             EventType.VERSION_DELETED,
             EventType.VERSION_UPDATED,
             EventType.METADATA_SAVED,
-            EventType.METADATA_DELETED
-        )
-    }
-
-    override fun sourceCheck(message: ArtifactEvent): Boolean {
-        return !message.source.isNullOrEmpty()
-    }
-
-    override fun action(message: Message<ArtifactEvent>) {
-        processAction(
-            message = message,
-            eventRecordDao = eventRecordDao,
-            getTasks = { projectId, repoName -> replicaTaskService.listFederationTasks(projectId, repoName) },
-            eventType = "FEDERATION",
-            executor = federationExecutors,
-            executeTask = { task, event, recordId -> federationBasedReplicaJobExecutor.execute(task, event, recordId) }
+            EventType.METADATA_DELETED,
         )
     }
 }

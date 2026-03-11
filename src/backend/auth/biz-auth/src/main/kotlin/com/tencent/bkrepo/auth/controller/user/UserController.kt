@@ -166,7 +166,7 @@ class UserController @Autowired constructor(
     @PutMapping("/update/info/{uid}")
     fun updateUserInfoById(@PathVariable uid: String, @RequestBody request: UpdateUserRequest): Response<Boolean> {
         preCheckContextUser(uid)
-        if (request.admin != null && request.admin) {
+        if (request.admin != null && request.admin == true) {
             preCheckUserAdmin()
             preCheckPlatformPermission()
         }

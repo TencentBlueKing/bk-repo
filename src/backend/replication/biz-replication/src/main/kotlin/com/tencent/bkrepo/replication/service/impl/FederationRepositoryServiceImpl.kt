@@ -605,6 +605,43 @@ class FederationRepositoryServiceImpl(
     }
 
 
+    override fun autoEnableFederation(
+        projectId: String,
+        repoName: String,
+        federationGroupId: String,
+        currentClusterId: String,
+        clusterIds: List<String>
+    ) {
+        val autoTaskName = "$projectId-$repoName-auto-$federationGroupId"
+        // 幂等：按任务名精确检查，避免误跳过其他联邦组的配置
+        val existing = localFederationManager.listFederationRepository(projectId, repoName, null)
+        if (existing.any { it.name == autoTaskName }) {
+            logger.info("Federation already exists for repo [$projectId|$repoName] group [$federationGroupId], skipping")
+            return
+        }
+        val currentCluster = clusterNodeService.getByClusterId(currentClusterId)
+            ?: throw ErrorCodeException(ReplicationMessageCode.CLUSTER_NODE_NOT_FOUND, currentClusterId)
+        val federatedClusters = clusterIds
+            .filter { it != currentClusterId }
+            .mapNotNull { clusterId ->
+                clusterNodeService.getByClusterId(clusterId)?.let {
+                    FederatedCluster(projectId = projectId, repoName = repoName, clusterId = clusterId)
+                }
+            }
+        if (federatedClusters.isEmpty()) {
+            logger.warn("No valid federated clusters found for group [$federationGroupId], skip")
+            return
+        }
+        val request = FederatedRepositoryCreateRequest(
+            name = autoTaskName,
+            projectId = projectId,
+            repoName = repoName,
+            clusterId = currentCluster.id!!,
+            federatedClusters = federatedClusters
+        )
+        createFederationRepository(request)
+    }
+
     companion object {
         private val logger = LoggerFactory.getLogger(FederationRepositoryServiceImpl::class.java)
     }
