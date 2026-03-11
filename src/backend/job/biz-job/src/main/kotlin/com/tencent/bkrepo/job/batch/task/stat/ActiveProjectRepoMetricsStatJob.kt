@@ -27,10 +27,10 @@
 
 package com.tencent.bkrepo.job.batch.task.stat
 
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
 import com.tencent.bkrepo.job.batch.base.ActiveProjectService
 import com.tencent.bkrepo.job.batch.context.ProjectRepoMetricsStatJobContext
 import com.tencent.bkrepo.job.config.properties.ActiveProjectRepoMetricsStatJobProperties
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
 import org.springframework.stereotype.Component
 
 /**

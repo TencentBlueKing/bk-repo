@@ -28,10 +28,10 @@
 package com.tencent.bkrepo.job.separation.executor
 
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
-import com.tencent.bkrepo.job.separation.dao.SeparationTaskDao
-import com.tencent.bkrepo.job.separation.pojo.record.SeparationContext
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationCount
-import com.tencent.bkrepo.job.separation.pojo.task.SeparationTaskState
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationTaskDao
+import com.tencent.bkrepo.common.metadata.pojo.separation.record.SeparationContext
+import com.tencent.bkrepo.common.metadata.pojo.separation.task.SeparationCount
+import com.tencent.bkrepo.common.metadata.pojo.separation.task.SeparationTaskState
 import org.slf4j.LoggerFactory
 import java.time.LocalDateTime
 import java.util.concurrent.ThreadPoolExecutor

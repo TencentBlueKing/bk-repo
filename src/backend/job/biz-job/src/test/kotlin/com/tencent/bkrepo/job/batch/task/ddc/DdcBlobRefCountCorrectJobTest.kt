@@ -8,7 +8,7 @@ import com.tencent.bkrepo.job.batch.task.ddc.DdcTestUtils.insertBlob
 import com.tencent.bkrepo.job.batch.task.ddc.DdcTestUtils.insertBlobRef
 import com.tencent.bkrepo.job.batch.utils.NodeCommonUtils
 import com.tencent.bkrepo.job.migrate.MigrateRepoStorageService
-import com.tencent.bkrepo.job.separation.service.SeparationTaskService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

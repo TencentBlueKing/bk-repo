@@ -32,9 +32,11 @@ import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.properties.RouterControllerProperties
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
+import com.tencent.bkrepo.common.metadata.config.DataSeparationConfig
 import com.tencent.bkrepo.common.metadata.config.RepositoryProperties
 import com.tencent.bkrepo.common.metadata.dao.node.NodeDao
 import com.tencent.bkrepo.common.metadata.dao.repo.RepositoryDao
+import com.tencent.bkrepo.common.metadata.dao.separation.SeparationNodeDao
 import com.tencent.bkrepo.common.metadata.listener.MetadataCustomizer
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreOption
 import com.tencent.bkrepo.common.metadata.pojo.node.NodeRestoreRequest
@@ -53,6 +55,7 @@ import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
+import com.tencent.bkrepo.common.metadata.service.separation.SeparationTaskService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.ignoreException
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.nodeLevelNotFoundError
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils.repoLevelNotFoundError
@@ -96,7 +99,10 @@ class EdgeNodeServiceImpl(
     override val projectService: ProjectService,
     override val metadataCustomizer: MetadataCustomizer?,
     val archiveClient: ArchiveClient,
-    override val metadataLabelCacheService: MetadataLabelCacheService
+    override val metadataLabelCacheService: MetadataLabelCacheService,
+    private val dataSeparationConfig: DataSeparationConfig? = null,
+    private val separationNodeDao: SeparationNodeDao? = null,
+    private val separationTaskService: SeparationTaskService? = null,
 ) : EdgeNodeBaseService(
     nodeDao,
     repositoryDao,
@@ -306,20 +312,24 @@ class EdgeNodeServiceImpl(
     }
 
     override fun archiveNode(nodeArchiveRequest: NodeArchiveRequest) {
-        return NodeArchiveSupport(this, archiveClient).archiveNode(nodeArchiveRequest)
+        return nodeArchiveSupport().archiveNode(nodeArchiveRequest)
     }
 
     override fun restoreNode(nodeArchiveRequest: NodeArchiveRequest) {
-        return NodeArchiveSupport(this, archiveClient).restoreNode(nodeArchiveRequest)
+        return nodeArchiveSupport().restoreNode(nodeArchiveRequest)
     }
 
     override fun restoreNode(nodeRestoreRequest: NodeArchiveRestoreRequest): List<String> {
-        return NodeArchiveSupport(this, archiveClient).restoreNode(nodeRestoreRequest)
+        return nodeArchiveSupport().restoreNode(nodeRestoreRequest)
     }
 
     override fun getArchivableSize(projectId: String, repoName: String?, days: Int, size: Long?): Long {
-        return NodeArchiveSupport(this, archiveClient).getArchivableSize(projectId, repoName, days, size)
+        return nodeArchiveSupport().getArchivableSize(projectId, repoName, days, size)
     }
+
+    private fun nodeArchiveSupport() = NodeArchiveSupport(
+        this, archiveClient, dataSeparationConfig, separationNodeDao, separationTaskService
+    )
 
     override fun compressedNode(nodeCompressedRequest: NodeCompressedRequest) {
         return NodeCompressSupport(this).compressedNode(nodeCompressedRequest)
