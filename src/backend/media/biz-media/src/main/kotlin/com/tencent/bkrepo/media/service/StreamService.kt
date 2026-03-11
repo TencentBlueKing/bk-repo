@@ -377,7 +377,7 @@ class StreamService(
     private var appSecret: String = ""
 
     fun checkUserWorkspaceLivePerm(projectId: String, workspaceName: String, userId: String): Boolean {
-        val requestUrl = "${mediaProperties.remoteDevHost}/project_win_workspace" +
+        val requestUrl = "${mediaProperties.remoteDevHost}/apigw/remotedev/project_win_workspace" +
                 "?userId=$userId&projectId=$projectId&workspace=$workspaceName"
         val getKeyRequest = Request.Builder()
             .url(requestUrl)
