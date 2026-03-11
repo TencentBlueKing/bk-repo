@@ -162,10 +162,10 @@ class EdgeNodeServiceImpl(
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
-        projectId: String, repoName: String, fullPath: String, operator: String,
+        projectId: String, repoName: String, fullPath: String, operator: String, source: String?
     ) {
         return NodeDeleteSupport(this).deleteByFullPathWithoutDecreaseVolume(
-            projectId, repoName, fullPath, operator
+            projectId, repoName, fullPath, operator, source
         )
     }
 
@@ -197,15 +197,18 @@ class EdgeNodeServiceImpl(
         operator: String,
         path: String,
         decreaseVolume: Boolean,
+        source: String?,
     ): NodeDeleteResult {
         ignoreException(
             projectId = projectId,
             repoName = repoName,
             messageCodes = repoLevelNotFoundError,
         ) {
-            centerNodeClient.deleteNodeLastModifiedBeforeDate(projectId, repoName, path, date, operator)
+            centerNodeClient.deleteNodeLastModifiedBeforeDate(projectId, repoName, path, date, operator, source)
         }
-        return NodeDeleteSupport(this).deleteBeforeDate(projectId, repoName, date, operator, path, decreaseVolume)
+        return NodeDeleteSupport(this).deleteBeforeDate(
+            projectId, repoName, date, operator, path, decreaseVolume, source
+        )
     }
 
     override fun deleteNodeById(
@@ -214,9 +217,12 @@ class EdgeNodeServiceImpl(
         fullPath: String,
         operator: String,
         nodeId: String,
-        deleteTime: LocalDateTime
+        deleteTime: LocalDateTime,
+        source: String?
     ): NodeDeleteResult {
-        return NodeDeleteSupport(this).deleteNodeById(projectId, repoName, fullPath, operator, nodeId, deleteTime)
+        return NodeDeleteSupport(this).deleteNodeById(
+            projectId, repoName, fullPath, operator, nodeId, deleteTime, source
+        )
     }
 
     @Transactional(rollbackFor = [Throwable::class])

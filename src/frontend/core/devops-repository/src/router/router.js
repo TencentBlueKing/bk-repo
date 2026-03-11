@@ -30,6 +30,7 @@ const commonPackageDetail = () => import('@repository/views/repoCommon/commonPac
 const repoSearch = () => import('@repository/views/repoSearch')
 
 const WebError440 = () => import('@repository/components/Exception/440')
+const WebError404 = () => import('@repository/components/Exception/404')
 
 const oauth = () => import('@repository/views/oauth')
 const userGroup = () => import('@repository/views/userGroup')
@@ -74,11 +75,11 @@ const routes = [
                 }
             },
             {
-                path: 'outsideFilePreview/:extraParam',
+                path: 'outsideFilePreview/*',
                 name: 'outsideFilePreview',
                 component: outsideFilePreview,
                 props: route => ({
-                    extraParam: route.params.extraParam
+                    extraParam: route.params.pathMatch // 捕获所有后续的路径
                 })
             },
             {
@@ -344,6 +345,11 @@ const routes = [
                         { name: 'commonPackage', label: '{packageKey}', template: 'commonPackage' }
                     ]
                 }
+            },
+            {
+                path: '/:pathMatch(.*)*',
+                name: '404',
+                component: WebError404
             }
         ]
     }

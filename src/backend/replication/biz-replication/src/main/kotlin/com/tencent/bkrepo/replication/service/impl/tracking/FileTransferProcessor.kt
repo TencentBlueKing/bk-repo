@@ -39,7 +39,7 @@ class FileTransferProcessor(
                 return false
             }
         } catch (e: Exception) {
-            logger.error("Error processing file transfer for node ${record.nodePath}", e)
+            logger.warn("Error processing file transfer for node ${record.nodePath}", e)
             throw e
         }
     }

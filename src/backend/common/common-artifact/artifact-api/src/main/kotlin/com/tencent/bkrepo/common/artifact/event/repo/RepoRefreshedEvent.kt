@@ -36,11 +36,13 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 data class RepoRefreshedEvent(
     override val projectId: String,
     override val repoName: String,
-    override val userId: String
+    override val userId: String,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.REPO_REFRESHED,
     projectId = projectId,
     repoName = repoName,
     resourceKey = repoName,
-    userId = userId
+    userId = userId,
+    eventId = eventId
 )

@@ -1,5 +1,7 @@
 package com.tencent.bkrepo.replication.service.impl.federation
 
+import com.google.common.cache.Cache
+import com.google.common.cache.CacheBuilder
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.replication.dao.FederatedRepositoryDao
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
@@ -11,6 +13,8 @@ import com.tencent.bkrepo.replication.pojo.federation.FederatedClusterInfo
 import com.tencent.bkrepo.replication.pojo.federation.FederatedRepositoryInfo
 import com.tencent.bkrepo.replication.pojo.federation.request.FederatedRepositoryConfigRequest
 import com.tencent.bkrepo.replication.service.ClusterNodeService
+import com.tencent.bkrepo.replication.service.ReplicaRecordService
+import com.tencent.bkrepo.replication.service.ReplicaTaskService
 import com.tencent.bkrepo.replication.util.FederationDataBuilder.buildClusterNodeCreateRequest
 import com.tencent.bkrepo.replication.util.FederationDataBuilder.buildTFederatedRepository
 import com.tencent.bkrepo.replication.util.FederationDataBuilder.convertToFederatedRepositoryInfo
@@ -27,7 +31,12 @@ class LocalFederationManager(
     private val federatedRepositoryDao: FederatedRepositoryDao,
     private val clusterNodeService: ClusterNodeService,
     private val federationTaskManager: FederationTaskManager,
+    private val replicaTaskService: ReplicaTaskService,
+    private val replicaRecordService: ReplicaRecordService,
 ) {
+
+    // taskId-recordId
+    private val recordIdCache: Cache<String, String> = CacheBuilder.newBuilder().maximumSize(1000).build()
 
     /**
      * 保存联邦仓库配置
@@ -45,7 +54,21 @@ class LocalFederationManager(
         federationId: String?
     ): List<FederatedRepositoryInfo> {
         return federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).map {
-            convertToFederatedRepositoryInfo(it)
+            convertToFederatedRepositoryInfo(it).apply {
+                // 填充recordId
+                federatedClusters.filter { cluster -> cluster.taskId != null }.forEach { cluster ->
+                    val cachedRecordId = recordIdCache.getIfPresent(cluster.taskId!!)
+                    if (cachedRecordId != null) {
+                        cluster.recordId = cachedRecordId
+                    } else {
+                        val taskKey = replicaTaskService.getByTaskId(cluster.taskId!!)?.key ?: return@forEach
+                        replicaRecordService.findLatestRecord(taskKey)?.id?.let { recordId ->
+                            cluster.recordId = recordId
+                            recordIdCache.put(cluster.taskId!!, recordId)
+                        }
+                    }
+                }
+            }
         }
     }
 

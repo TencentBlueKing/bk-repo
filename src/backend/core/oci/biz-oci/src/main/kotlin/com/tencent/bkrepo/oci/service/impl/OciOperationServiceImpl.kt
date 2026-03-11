@@ -981,8 +981,7 @@ class OciOperationServiceImpl(
             .projectId(projectId)
             .repoName(repoName)
             .sha256(ociDigest.getDigestHex())
-            .page(DEFAULT_PAGE_NUMBER, 1)
-            .sortByAsc(NODE_FULL_PATH).apply {
+            .page(DEFAULT_PAGE_NUMBER, 1).apply {
                 path?.let {
                     this.path(path, OperationType.PREFIX)
                 }

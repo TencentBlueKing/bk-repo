@@ -61,7 +61,7 @@ class ReplicaRetryJob(
             val retrySuccess = replicaRetryService.retryFailureRecord(record)
             handleRetryResult(record, retrySuccess, stats)
         } catch (e: Exception) {
-            logger.error("Error occurred while retrying record[${record.id}]", e)
+            logger.warn("Error occurred while retrying record[${record.id}]", e)
             replicaFailureRecordService.incrementRetryCount(
                 record.id!!, "Exception during retry: ${e.message}"
             )
@@ -110,7 +110,7 @@ class ReplicaRetryJob(
             val cleanedCount = replicaFailureRecordService.cleanExpiredRecords(maxRetryNum, retentionDays)
             logger.info("Clean expired failure records job completed. Cleaned records: $cleanedCount")
         } catch (e: Exception) {
-            logger.error("Error occurred during clean expired failure records job", e)
+            logger.warn("Error occurred during clean expired failure records job", e)
         }
     }
 

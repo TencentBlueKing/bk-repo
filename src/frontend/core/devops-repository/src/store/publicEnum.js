@@ -15,7 +15,8 @@ export const repoEnum = [
     { label: 'S3', value: 's3' },
     { label: 'Conan', value: 'conan' },
     { label: 'Ohpm', value: 'ohpm' },
-    { label: 'Cargo', value: 'cargo' }
+    { label: 'Cargo', value: 'cargo' },
+    { label: 'HuggingFace', value: 'huggingface' }
 ]
 
 export const ciDisableRepoEnum = [
@@ -24,8 +25,7 @@ export const ciDisableRepoEnum = [
     'npm',
     'composer',
     'rpm',
-    'git',
-    'nuget'
+    'git'
 ]
 
 // 文件类型

@@ -30,6 +30,7 @@ package com.tencent.bkrepo.websocket.exception
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.service.util.LocaleMessageUtils
+import org.springframework.messaging.converter.MessageConversionException
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -44,6 +45,18 @@ class WebsocketExceptionHandler {
             accessor = accessor,
             exception = exception,
             message = "[${exception.messageCode.getCode()}]$errorMessage"
+        )
+    }
+
+    @MessageExceptionHandler(MessageConversionException::class)
+    fun handleException(exception: MessageConversionException, accessor: SimpMessageHeaderAccessor) {
+        val errorMessage = exception.localizedMessage
+        val code = CommonMessageCode.REQUEST_CONTENT_INVALID.getCode()
+        WebsocketLoggerHolder.logException(
+            accessor = accessor,
+            exception = exception,
+            message = "[$code]$errorMessage",
+            systemError = false
         )
     }
 

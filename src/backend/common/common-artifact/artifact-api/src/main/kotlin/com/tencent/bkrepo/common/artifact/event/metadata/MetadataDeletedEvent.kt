@@ -39,7 +39,8 @@ class MetadataDeletedEvent(
     override val resourceKey: String,
     override val userId: String,
     override val source: String?,
-    val keys: Set<String>
+    val keys: Set<String>,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.METADATA_DELETED,
     projectId = projectId,
@@ -47,5 +48,6 @@ class MetadataDeletedEvent(
     resourceKey = resourceKey,
     userId = userId,
     data = mapOf("keys" to keys),
-    source = source
+    source = source,
+    eventId = eventId
 )

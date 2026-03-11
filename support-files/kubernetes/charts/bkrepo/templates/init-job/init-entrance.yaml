@@ -21,6 +21,7 @@ spec:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
         app.kubernetes.io/component: init-entrance
     spec:
+      {{- include "bkrepo.imagePullSecrets" . | nindent 6 }}
       containers:
         - name: init-entrance
           image: {{ include "bkrepo.images.image" ( dict "imageRoot" .Values.init.curl.image "global" .Values.global "bkrepo" .Values.common) }}

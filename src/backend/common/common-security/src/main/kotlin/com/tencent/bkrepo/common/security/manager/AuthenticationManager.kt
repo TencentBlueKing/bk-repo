@@ -37,8 +37,13 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.auth.pojo.user.UserInfo
 import com.tencent.bkrepo.common.security.exception.AuthenticationException
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import java.util.Optional
+import java.util.concurrent.TimeUnit
 
 @Component
 class AuthenticationManager {
@@ -53,6 +58,13 @@ class AuthenticationManager {
 
     @Autowired
     private lateinit var serviceTemporaryTokenClient: ServiceTemporaryTokenClient
+
+    private val oauthTokenCache: LoadingCache<String, Optional<OauthToken>> = CacheBuilder.newBuilder()
+        .maximumSize(3000)
+        .expireAfterWrite(1, TimeUnit.MINUTES)
+        .build(CacheLoader.from { accessToken ->
+            Optional.ofNullable(serviceOauthAuthorizationClient.getToken(accessToken).data)
+        })
 
     /**
      * 校验普通用户类型账户
@@ -115,7 +127,7 @@ class AuthenticationManager {
     }
 
     fun findOauthToken(accessToken: String): OauthToken? {
-        return serviceOauthAuthorizationClient.getToken(accessToken).data
+        return oauthTokenCache.get(accessToken).orElse(null)
     }
 
     /**

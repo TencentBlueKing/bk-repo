@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.service.bkdevops
 
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
+import com.tencent.bkrepo.auth.constant.CREATIVE
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
 import com.tencent.bkrepo.auth.pojo.role.ExternalRoleResult
 import org.springframework.beans.factory.annotation.Autowired
@@ -41,11 +42,14 @@ import org.springframework.stereotype.Service
 @Service
 @Conditional(DevopsAuthCondition::class)
 class DevopsProjectService @Autowired constructor(private val ciAuthService: CIAuthService) {
-    fun isProjectMember(user: String, projectCode: String, permissionAction: String): Boolean {
+    fun isProjectMember(
+        user: String, projectCode: String, permissionAction: String, repoName: String? = null
+    ): Boolean {
+        val resourceType = getResourceTypeByRepoName(repoName)
         return ciAuthService.isProjectSuperAdmin(
             user = user,
             projectCode = projectCode,
-            resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
+            resourceType = resourceType,
             action = permissionAction
         ) || ciAuthService.isProjectMember(user, projectCode)
     }
@@ -61,8 +65,28 @@ class DevopsProjectService @Autowired constructor(private val ciAuthService: CIA
     fun listRoleAndUserByProject(projectCode: String): List<ExternalRoleResult> {
         val externalRoleList = mutableListOf<ExternalRoleResult>()
         ciAuthService.getRoleAndUserByProject(projectCode).forEach {
-            externalRoleList.add(ExternalRoleResult(it.roleName, it.roleId.toString(), it.userIdList))
+            externalRoleList.add(
+                ExternalRoleResult(
+                    it.roleName,
+                    it.roleId.toString(),
+                    it.userIdList,
+                    deptInfoList = it.deptInfoList
+                )
+            )
         }
         return externalRoleList
+    }
+
+    fun listMemberGroupsInProject(uid: String, projectId: String): List<String> {
+        return ciAuthService.getMemberGroupsInProject(user = uid, projectCode = projectId)
+    }
+
+    companion object {
+        fun getResourceTypeByRepoName(repoName: String?): BkAuthResourceType {
+            return when (repoName) {
+                CREATIVE -> BkAuthResourceType.CREATIVE_STREAM
+                else -> BkAuthResourceType.PIPELINE_DEFAULT
+            }
+        }
     }
 }

@@ -68,6 +68,16 @@ object MetadataUtils {
     )
 
     /**
+     * 制品禁用相关元数据KEY
+     */
+    val FORBID_KEYS = setOf(
+        FORBID_STATUS,
+        FORBID_USER,
+        FORBID_TYPE,
+        FORBID_REASON,
+    )
+
+    /**
      * 用于兼容旧逻辑，优先从[metadataModels]取数据，[metadataModels]不存在时从[metadataMap]取
      */
     fun compatibleConvertAndCheck(

@@ -44,5 +44,7 @@ data class FavoriteResult(
     @get:Schema(title = "文件夹路径")
     val path: String,
     @get:Schema(title = "文件夹路径")
-    val type: FavoriteType
+    val type: FavoriteType,
+    @get:Schema(title = "收藏名称")
+    val name: String?
 )

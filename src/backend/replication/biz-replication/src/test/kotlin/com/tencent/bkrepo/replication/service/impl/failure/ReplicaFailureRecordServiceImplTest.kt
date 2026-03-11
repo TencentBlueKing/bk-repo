@@ -41,7 +41,6 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
     private lateinit var replicaRetryService: ReplicaRetryService
 
     private lateinit var replicaFailureRecordService: ReplicaFailureRecordServiceImpl
-    private lateinit var failureRecordRepository: FailureRecordRepository
     private lateinit var failureRecordRetryExecutor: FailureRecordRetryExecutor
     private lateinit var retryStateManager: FailureRecordRetryStateManager
 
@@ -59,16 +58,15 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
         replicaFailureRecordDao.remove(Query())
 
         // 初始化依赖
-        failureRecordRepository = FailureRecordRepository(replicaFailureRecordDao)
         failureRecordRetryExecutor = FailureRecordRetryExecutor(
             replicaRetryService = replicaRetryService,
-            failureRecordRepository = failureRecordRepository
+            replicaFailureRecordDao = replicaFailureRecordDao
         )
-        retryStateManager = FailureRecordRetryStateManager(failureRecordRepository)
+        retryStateManager = FailureRecordRetryStateManager(replicaFailureRecordDao)
 
         // 创建服务实例
         replicaFailureRecordService = ReplicaFailureRecordServiceImpl(
-            failureRecordRepository = failureRecordRepository,
+            replicaFailureRecordDao = replicaFailureRecordDao,
             failureRecordRetryExecutor = failureRecordRetryExecutor,
             retryStateManager = retryStateManager
         )
@@ -78,7 +76,7 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
 
     @Test
     fun `test recordFailure - should create new record when not exists`() {
-        failureRecordRepository.recordFailure(
+        replicaFailureRecordDao.recordFailure(
             taskKey = testTaskKey,
             remoteClusterId = testRemoteClusterId,
             projectId = testProjectId,
@@ -89,7 +87,6 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
             packageConstraint = null,
             pathConstraint = null,
             failureReason = testFailureReason,
-            event = null,
             failedRecordId = null
         )
 
@@ -106,7 +103,7 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
         val existingRecord = createTestRecord(failureReason = "Old reason", retryCount = 1)
         replicaFailureRecordDao.save(existingRecord)
 
-        failureRecordRepository.recordFailure(
+        replicaFailureRecordDao.recordFailure(
             taskKey = testTaskKey,
             remoteClusterId = testRemoteClusterId,
             projectId = testProjectId,
@@ -117,7 +114,6 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
             packageConstraint = null,
             pathConstraint = null,
             failureReason = "New reason",
-            event = null,
             failedRecordId = existingRecord.id
         )
 
@@ -130,7 +126,7 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
 
     @Test
     fun `test recordFailure - should create new record when failedRecordId is empty`() {
-        failureRecordRepository.recordFailure(
+        replicaFailureRecordDao.recordFailure(
             taskKey = testTaskKey,
             remoteClusterId = testRemoteClusterId,
             projectId = testProjectId,
@@ -141,7 +137,6 @@ class ReplicaFailureRecordServiceImplTest @Autowired constructor(
             packageConstraint = null,
             pathConstraint = null,
             failureReason = testFailureReason,
-            event = null,
             failedRecordId = ""
         )
 

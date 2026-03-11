@@ -75,10 +75,10 @@ class CenterNodeDeleteSupport(
         val node = nodeDao.findNode(projectId, repoName, normalizedFullPath)
             ?: return NodeDeleteResult(0,0, LocalDateTime.now())
         if (node.folder) {
-            return delete(node, operator)
+            return delete(node, operator, source)
         }
 
-        return if (deleteFileNode(node, operator)) {
+        return if (deleteFileNode(node, operator, source = source)) {
             NodeDeleteResult(1, node.size, LocalDateTime.now())
         } else {
             NodeDeleteResult(0, 0, LocalDateTime.now())
@@ -107,11 +107,12 @@ class CenterNodeDeleteSupport(
         date: LocalDateTime,
         operator: String,
         path: String,
-        decreaseVolume: Boolean
+        decreaseVolume: Boolean,
+        source: String?
     ): NodeDeleteResult {
         val clusterName = SecurityUtils.getClusterName()
         if (clusterName.isNullOrEmpty()) {
-            return super.deleteBeforeDate(projectId, repoName, date, operator, path, decreaseVolume)
+            return super.deleteBeforeDate(projectId, repoName, date, operator, path, decreaseVolume, source)
         }
         var deletedSize = 0L
         var deletedNum = 0L
@@ -131,7 +132,7 @@ class CenterNodeDeleteSupport(
                 .with(Sort.by(Sort.Direction.ASC, TNode::id.name))
             val nodes = nodeDao.find(query)
             nodes.forEach {
-                if (deleteFileNode(it, operator)) {
+                if (deleteFileNode(it, operator, source = source)) {
                     deletedNum ++
                     deletedSize += it.size
                 }
@@ -154,11 +155,12 @@ class CenterNodeDeleteSupport(
         fullPath: String,
         operator: String,
         nodeId: String,
-        deleteTime: LocalDateTime
+        deleteTime: LocalDateTime,
+        source: String?
     ): NodeDeleteResult {
         val clusterName = SecurityUtils.getClusterName()
         if (clusterName.isNullOrEmpty()) {
-            return super.deleteNodeById(projectId, repoName, fullPath, operator, nodeId, deleteTime)
+            return super.deleteNodeById(projectId, repoName, fullPath, operator, nodeId, deleteTime, source)
         }
 
         val criteria = buildCriteria(projectId, repoName, fullPath).apply {
@@ -168,17 +170,17 @@ class CenterNodeDeleteSupport(
             ?: return NodeDeleteResult(0,0, deleteTime)
 
         if (node.folder) {
-            return delete(node, operator)
+            return delete(node, operator, source)
         }
 
-        return if (deleteFileNode(node, operator, nodeId, deleteTime)) {
+        return if (deleteFileNode(node, operator, nodeId, deleteTime, source = source)) {
             NodeDeleteResult(1, node.size, deleteTime)
         } else {
             NodeDeleteResult(0, 0, deleteTime)
         }
     }
 
-    private fun delete(folder: TNode, operator: String): NodeDeleteResult {
+    private fun delete(folder: TNode, operator: String, source: String?): NodeDeleteResult {
         var deletedNumber = 0L
         var deletedSize = 0L
         val criteria = where(TNode::projectId).isEqualTo(folder.projectId)
@@ -189,11 +191,11 @@ class CenterNodeDeleteSupport(
         var subNodes = nodeDao.find(query)
         subNodes.forEach {
             if (it.folder) {
-                val result = delete(it, operator)
+                val result = delete(it, operator, source)
                 deletedNumber += result.deletedNumber
                 deletedSize += result.deletedSize
             } else {
-                deleteFileNode(it, operator)
+                deleteFileNode(it, operator, source = source)
                 deletedNumber ++
                 deletedSize += it.size
             }
@@ -204,7 +206,8 @@ class CenterNodeDeleteSupport(
                 projectId = folder.projectId,
                 repoName = folder.repoName,
                 fullPath = folder.fullPath,
-                operator = operator
+                operator = operator,
+                source = source
             )
         }
         return NodeDeleteResult(deletedNumber, deletedSize, LocalDateTime.now())
@@ -214,7 +217,8 @@ class CenterNodeDeleteSupport(
         node: TNode,
         operator: String,
         nodeId: String? = null,
-        deleteTime: LocalDateTime = LocalDateTime.now()
+        deleteTime: LocalDateTime = LocalDateTime.now(),
+        source: String? = null
     ): Boolean {
         if (!ClusterUtils.containsSrcCluster(node.clusterNames)) {
             return false
@@ -232,9 +236,9 @@ class CenterNodeDeleteSupport(
 
         // 当 clusterNames 为空时，删除节点
         if (nodeId != null) {
-            super.deleteNodeById(node.projectId, node.repoName, node.fullPath, operator, nodeId, deleteTime)
+            super.deleteNodeById(node.projectId, node.repoName, node.fullPath, operator, nodeId, deleteTime, source)
         } else {
-            super.deleteByFullPathWithoutDecreaseVolume(node.projectId, node.repoName, node.fullPath, operator)
+            super.deleteByFullPathWithoutDecreaseVolume(node.projectId, node.repoName, node.fullPath, operator, source)
         }
         quotaService.decreaseUsedVolume(node.projectId, node.repoName, node.size)
         return true

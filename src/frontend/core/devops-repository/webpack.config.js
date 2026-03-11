@@ -13,7 +13,7 @@ module.exports = (env, argv) => {
         entry: {
             repository: './src/main.js'
         },
-        publicPath: '/ui/',
+        publicPath: '',
         dist: '/ui',
         port: 8086
     })
@@ -21,7 +21,7 @@ module.exports = (env, argv) => {
     config.plugins = [
         ...config.plugins,
         new HtmlWebpackPlugin({
-            filename: isProd ? `${dist}/frontend#ui#index.html` : `${dist}/index.html`,
+            filename: isProd ? `${dist}/frontend_ui_index.html` : `${dist}/index.html`,
             template: 'index.html',
             inject: true,
             title: '制品库 | 腾讯蓝鲸智云'

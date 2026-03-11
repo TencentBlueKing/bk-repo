@@ -56,6 +56,8 @@ enum class EventType(val msgKey: String) {
     // METADATA
     METADATA_DELETED("artifact.event.metadata-deleted"),
     METADATA_SAVED("artifact.event.metadata-saved"),
+    PACKAGE_METADATA_DELETED("artifact.event.package-metadata-deleted"),
+    PACKAGE_METADATA_SAVED("artifact.event.package-metadata-saved"),
 
     // VERSION
     VERSION_CREATED("artifact.event.version-created"),
@@ -160,6 +162,10 @@ enum class EventType(val msgKey: String) {
 
     // CONFIG
     CONFIG_UPDATE("artifact.event.config-update"),
+
+    // SCAN
+    SCAN_TRIGGERED("artifact.event.scan.started"),
+    SCAN_FINISHED("artifact.event.scan.finished"),
 
     // 第三方同步
     REPLICATION_THIRD_PARTY("artifact.event.replication-third-party");

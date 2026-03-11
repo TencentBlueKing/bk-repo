@@ -41,16 +41,16 @@ import com.tencent.bkrepo.job.batch.utils.RepositoryCommonUtils
 import com.tencent.bkrepo.job.batch.utils.TimeUtils.parseMongoDateTimeStr
 import com.tencent.bkrepo.job.config.properties.NodeCopyJobProperties
 import com.tencent.bkrepo.job.exception.JobExecuteException
+import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import kotlin.reflect.KClass
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Component
-import java.time.Duration
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import kotlin.reflect.KClass
 
 @Component
 class NodeCopyJob(
@@ -101,7 +101,7 @@ class NodeCopyJob(
         } catch (e: Exception) {
             throw JobExecuteException(
                 "Failed to copy file[${row.projectId}/${row.repoName}/${row.fullPath}] sha256[$digest] " +
-                        "from [$srcCredentials] to [$dstCredentials].", e
+                        "from [${srcCredentials?.key}] to [${dstCredentials?.key}].", e
             )
         }
     }

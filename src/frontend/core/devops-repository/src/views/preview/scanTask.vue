@@ -48,7 +48,7 @@
                     <span class="repo-tag" :class="row.status">{{scanStatusEnum[row.status]}}</span>
                 </template>
             </bk-table-column>
-            <bk-table-column label="扫描完成时间" width="150">
+            <bk-table-column label="扫描完成时间" width="200">
                 <template #default="{ row }">{{formatDate(row.finishTime)}}</template>
             </bk-table-column>
             <bk-table-column label="操作" width="100">

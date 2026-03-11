@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.job.batch.task.archive
 
+import com.tencent.bkrepo.archive.ArchiveStatus.WAIT_TO_RESTORE
+import com.tencent.bkrepo.archive.ArchiveStatus.RESTORING
+import com.tencent.bkrepo.archive.ArchiveStatus.RESTORED
 import com.tencent.bkrepo.archive.api.ArchiveClient
 import com.tencent.bkrepo.archive.constant.ArchiveStorageClass
 import com.tencent.bkrepo.archive.request.CreateArchiveFileRequest
@@ -167,6 +170,11 @@ class IdleNodeArchiveJob(
             logger.info("Find it[$row] in use by cache,skip archive.")
             return
         }
+        val af = archiveClient.get(sha256, credentialsKey).data
+        if (af?.status in ARCHIVE_STATUS_RESTORING) {
+            logger.info("Archive[$row] job is restoring [${af?.status}].")
+            return
+        }
         val count = fileReferenceService.count(sha256, credentialsKey)
         if (count == 1L) {
             // 快速归档
@@ -276,6 +284,7 @@ class IdleNodeArchiveJob(
 
     companion object {
         const val COLLECTION_NAME_PREFIX = "node_"
+        private val ARCHIVE_STATUS_RESTORING = listOf(WAIT_TO_RESTORE, RESTORING, RESTORED)
         private const val INITIAL_REFRESH_COUNT = 3
         private val logger = LoggerFactory.getLogger(IdleNodeArchiveJob::class.java)
     }

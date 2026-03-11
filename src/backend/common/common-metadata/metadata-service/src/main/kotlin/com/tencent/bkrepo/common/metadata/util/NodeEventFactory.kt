@@ -124,7 +124,7 @@ object NodeEventFactory {
     /**
      * 节点移动事件
      */
-    fun buildMovedEvent(request: NodeMoveCopyRequest): NodeMovedEvent {
+    fun buildMovedEvent(request: NodeMoveCopyRequest, dstRootNodeFullPath: String? = null): NodeMovedEvent {
         with(request) {
             return NodeMovedEvent(
                 projectId = projectId,
@@ -136,7 +136,8 @@ object NodeEventFactory {
                 dstFullPath = destFullPath,
                 source = source,
                 destNodeFolder = destNodeFolder,
-                overwrite = overwrite
+                overwrite = overwrite,
+                dstRootNodeFullPath = dstRootNodeFullPath,
             )
         }
     }
@@ -144,7 +145,7 @@ object NodeEventFactory {
     /**
      * 节点拷贝事件
      */
-    fun buildCopiedEvent(request: NodeMoveCopyRequest): NodeCopiedEvent {
+    fun buildCopiedEvent(request: NodeMoveCopyRequest, dstRootNodeFullPath: String? = null): NodeCopiedEvent {
         with(request) {
             return NodeCopiedEvent(
                 projectId = projectId,
@@ -156,7 +157,8 @@ object NodeEventFactory {
                 dstFullPath = destFullPath,
                 source = source,
                 destNodeFolder = destNodeFolder,
-                overwrite = overwrite
+                overwrite = overwrite,
+                dstRootNodeFullPath = dstRootNodeFullPath,
             )
         }
     }
@@ -202,14 +204,16 @@ object NodeEventFactory {
         repoName: String,
         path: String,
         userId: String,
-        deletedDate: String
+        deletedDate: String,
+        source: String? = null
     ): NodeCleanEvent {
         return NodeCleanEvent(
             projectId = projectId,
             repoName = repoName,
             resourceKey = path,
             userId = userId,
-            deletedDate = deletedDate
+            deletedDate = deletedDate,
+            source = source
         )
     }
 }

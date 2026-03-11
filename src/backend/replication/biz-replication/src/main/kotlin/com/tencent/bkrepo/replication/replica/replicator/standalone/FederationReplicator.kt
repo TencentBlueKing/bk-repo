@@ -41,6 +41,7 @@ import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.constant.FEDERATED
 import com.tencent.bkrepo.replication.exception.ReplicationMessageCode
 import com.tencent.bkrepo.replication.manager.LocalDataManager
+import com.tencent.bkrepo.replication.metrics.FederationMetricsCollector
 import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageDeleteRequest
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteRequest
@@ -58,6 +59,8 @@ import com.tencent.bkrepo.repository.pojo.metadata.DeletedNodeMetadataSaveReques
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.DeletedNodeReplicationRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
@@ -70,6 +73,8 @@ import com.tencent.bkrepo.repository.pojo.packages.request.PackageVersionCreateR
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
+import com.tencent.bkrepo.replication.util.extractProjectName
+import com.tencent.bkrepo.replication.util.extractTenantId
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
@@ -78,20 +83,20 @@ import java.time.format.DateTimeFormatter
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 联邦仓库数据同步类
  */
 @Component
 class FederationReplicator(
-    private val localDataManager: LocalDataManager,
+    localDataManager: LocalDataManager,
     artifactReplicationHandler: ClusterArtifactReplicationHandler,
     replicationProperties: ReplicationProperties,
     private val federationRepositoryService: FederationRepositoryService,
     private val federationMetadataTrackingService: FederationMetadataTrackingService,
     private val replicaRecordService: ReplicaRecordService,
-) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties) {
+    private val metricsCollector: FederationMetricsCollector?
+) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties, localDataManager) {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
     private var version: String = DEFAULT_VERSION
@@ -114,14 +119,16 @@ class FederationReplicator(
             // 外部集群仓库没有project/repoName
             if (remoteProjectId.isNullOrBlank()) return
             val localProject = localDataManager.findProjectById(localProjectId)
+            val tenantId = remoteProjectId.extractTenantId()
+            val projectName = remoteProjectId.extractProjectName()
             val request = ProjectCreateRequest(
-                name = remoteProjectId,
-                displayName = remoteProjectId,
+                name = projectName,
+                displayName = projectName,
                 description = localProject.description,
                 operator = localProject.createdBy,
                 source = getCurrentClusterName(localProjectId, localRepoName, task.name)
             )
-            artifactReplicaClient!!.replicaProjectCreateRequest(request)
+            artifactReplicaClient!!.replicaProjectCreateRequest(request, tenantId)
         }
     }
 
@@ -187,7 +194,7 @@ class FederationReplicator(
                 replicaFile(context, node.nodeInfo)
             }
             val packageMetadata = packageVersion.packageMetadata as MutableList<MetadataModel>
-            packageMetadata.add(MetadataModel(FEDERATED, false, true))
+            packageMetadata.add(MetadataModel(FEDERATED, true, true))
             // 包数据
             val request = PackageVersionCreateRequest(
                 projectId = remoteProjectId,
@@ -314,49 +321,6 @@ class FederationReplicator(
         }
     }
 
-    /**
-     * 执行块文件传输
-     */
-    private fun executeBlockFileTransfer(
-        context: ReplicaContext,
-        node: NodeInfo,
-        blockNodeList: List<TBlockNode>
-    ): Boolean {
-        val latch = CountDownLatch(blockNodeList.size)
-        val failureCount = AtomicInteger(0)
-
-        blockNodeList.forEach { blockNode ->
-            if (executor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
-                // 异步执行
-                executor.execute(
-                    Runnable {
-                        try {
-                            pushBlockFileToFederatedCluster(context, blockNode)
-                        } catch (throwable: Throwable) {
-                            handleBlockFileTransferError(context, node, throwable)
-                            failureCount.incrementAndGet()
-                        } finally {
-                            latch.countDown()
-                        }
-                    }.trace()
-                )
-            } else {
-                // 同步执行
-                try {
-                    pushBlockFileToFederatedCluster(context, blockNode)
-                } catch (throwable: Throwable) {
-                    handleBlockFileTransferError(context, node, throwable)
-                    failureCount.incrementAndGet()
-                } finally {
-                    latch.countDown()
-                }
-            }
-        }
-
-        // 等待所有文件传输完成
-        latch.await()
-        return failureCount.get() == 0
-    }
 
     /**
      * 异步执行文件传输
@@ -364,6 +328,7 @@ class FederationReplicator(
     private fun executeFileTransferAsync(context: ReplicaContext, node: NodeInfo): Boolean {
         val latch = CountDownLatch(1)
         val result = AtomicBoolean(true)
+        val startTime = System.currentTimeMillis()
 
         executor.execute(
             Runnable {
@@ -371,9 +336,31 @@ class FederationReplicator(
                     pushFileToFederatedCluster(context, node)
                     // 记录文件传输完成标识
                     recordFileTransferComplete(context, node)
+
+                    // 记录文件传输指标
+                    val duration = System.currentTimeMillis() - startTime
+                    metricsCollector?.recordFileTransfer(
+                        projectId = context.localProjectId,
+                        repoName = context.localRepoName,
+                        success = true,
+                        bytes = node.size,
+                        durationMillis = duration,
+                        taskKey = context.task.key
+                    )
                 } catch (throwable: Throwable) {
                     handleFileTransferError(context, node, throwable)
                     result.set(false)
+
+                    // 记录文件传输失败指标
+                    val duration = System.currentTimeMillis() - startTime
+                    metricsCollector?.recordFileTransfer(
+                        projectId = context.localProjectId,
+                        repoName = context.localRepoName,
+                        success = false,
+                        bytes = node.size,
+                        durationMillis = duration,
+                        taskKey = context.task.key
+                    )
                 } finally {
                     latch.countDown()
                 }
@@ -388,13 +375,36 @@ class FederationReplicator(
      * 同步执行文件传输
      */
     private fun executeFileTransferSync(context: ReplicaContext, node: NodeInfo): Boolean {
+        val startTime = System.currentTimeMillis()
         return try {
             pushFileToFederatedCluster(context, node)
             // 记录文件传输完成标识
             recordFileTransferComplete(context, node)
+
+            // 记录文件传输指标
+            val duration = System.currentTimeMillis() - startTime
+            metricsCollector?.recordFileTransfer(
+                projectId = context.localProjectId,
+                repoName = context.localRepoName,
+                success = true,
+                bytes = node.size,
+                durationMillis = duration,
+                taskKey = context.task.key
+            )
             true
         } catch (throwable: Throwable) {
             handleFileTransferError(context, node, throwable)
+
+            // 记录文件传输失败指标
+            val duration = System.currentTimeMillis() - startTime
+            metricsCollector?.recordFileTransfer(
+                projectId = context.localProjectId,
+                repoName = context.localRepoName,
+                success = false,
+                bytes = node.size,
+                durationMillis = duration,
+                taskKey = context.task.key
+            )
             false
         }
     }
@@ -403,7 +413,7 @@ class FederationReplicator(
      * 处理块文件传输错误
      */
     private fun handleBlockFileTransferError(context: ReplicaContext, node: NodeInfo, throwable: Throwable) {
-        logger.error(
+        logger.warn(
             "replica block file of ${node.fullPath} with sha256 ${node.sha256} in repo " +
                 "${node.projectId}|${node.repoName} failed, error is ${Throwables.getStackTraceAsString(throwable)}"
         )
@@ -414,7 +424,7 @@ class FederationReplicator(
      * 处理文件传输错误
      */
     private fun handleFileTransferError(context: ReplicaContext, node: NodeInfo, throwable: Throwable) {
-        logger.error(
+        logger.warn(
             "replica file ${node.fullPath} with sha256 ${node.sha256} in repo " +
                 "${node.projectId}|${node.repoName} failed, error is ${Throwables.getStackTraceAsString(throwable)}"
         )
@@ -541,21 +551,6 @@ class FederationReplicator(
         return transferBlockNodeFilesAndSaveMetadata(context, node, blockNodeList)
     }
 
-    /**
-     * 验证并获取块节点列表
-     */
-    private fun validateAndGetBlockNodeList(context: ReplicaContext, node: NodeInfo): List<TBlockNode>? {
-        if (!blockNode(node)) {
-            logger.warn("Node ${node.fullPath} in repo ${node.projectId}|${node.repoName} is link node.")
-            return null
-        }
-
-        val blockNodeList = localDataManager.listBlockNode(node)
-        if (blockNodeList.isEmpty()) {
-            logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
-        }
-        return blockNodeList
-    }
 
     /**
      * 传输块节点文件并保存元数据
@@ -566,7 +561,14 @@ class FederationReplicator(
         blockNodeList: List<TBlockNode>
     ): Boolean {
         // 并发传输文件
-        val success = executeBlockFileTransfer(context, node, blockNodeList)
+        val success = executeBlockFileTransfer(
+            blockNodeExecutor = executor,
+            context = context,
+            node = node,
+            blockNodeList = blockNodeList,
+            pushBlockFile = { ctx, blockNode -> pushBlockFileToFederatedCluster(ctx, blockNode) },
+            handleError = { ctx, nodeInfo, throwable -> handleBlockFileTransferError(ctx, nodeInfo, throwable) }
+        )
         if (!success) return false
 
         // 保存元数据标识传输完成
@@ -637,6 +639,26 @@ class FederationReplicator(
         }
     }
 
+    override fun replicaPackageMetadataSave(
+        context: ReplicaContext,
+        packageMetadataSaveRequest: PackageMetadataSaveRequest,
+    ): Boolean {
+        context.artifactReplicaClient!!.replicaPackageMetadataSaveRequest(
+            buildPackageMetadataSaveRequest(context, packageMetadataSaveRequest)
+        )
+        return true
+    }
+
+    override fun replicaPackageMetadataDelete(
+        context: ReplicaContext,
+        packageMetadataDeleteRequest: PackageMetadataDeleteRequest,
+    ): Boolean {
+        context.artifactReplicaClient!!.replicaPackageMetadataDeleteRequest(
+            buildPackageMetadataDeleteRequest(context, packageMetadataDeleteRequest)
+        )
+        return true
+    }
+
     private fun getCurrentClusterName(projectId: String, repoName: String, taskName: String): String {
         val key = parseKeyFromTaskName(taskName)
         return federationRepositoryService.getCurrentClusterName(projectId, repoName, key)
@@ -691,6 +713,24 @@ class FederationReplicator(
                 source = getCurrentClusterName(context.localProjectId, context.localRepoName, context.task.name),
             )
         }
+    }
+
+    private fun buildPackageMetadataSaveRequest(
+        context: ReplicaContext,
+        packageMetadataSaveRequest: PackageMetadataSaveRequest
+    ): PackageMetadataSaveRequest {
+        return packageMetadataSaveRequest.copy(
+            source = getCurrentClusterName(context.localProjectId, context.localRepoName, context.task.name),
+        )
+    }
+
+    private fun buildPackageMetadataDeleteRequest(
+        context: ReplicaContext,
+        packageMetadataDeleteRequest: PackageMetadataDeleteRequest
+    ): PackageMetadataDeleteRequest {
+        return packageMetadataDeleteRequest.copy(
+            source = getCurrentClusterName(context.localProjectId, context.localRepoName, context.task.name),
+        )
     }
 
     private fun buildNodeDeleteRequest(context: ReplicaContext, node: NodeInfo): NodeDeleteRequest? {
@@ -749,7 +789,10 @@ class FederationReplicator(
             } else {
                 emptyList()
             }
-            val updatedMetadata = metadata.plus(MetadataModel(FEDERATED, false, true))
+            val updatedMetadata = mergeMetadata(
+                metadata, mutableListOf(MetadataModel(FEDERATED, false, true))
+            )
+
             return NodeCreateRequest(
                 projectId = remoteProjectId,
                 repoName = remoteRepoName,
@@ -769,6 +812,15 @@ class FederationReplicator(
                 source = getCurrentClusterName(localProjectId, localRepoName, task.name)
             )
         }
+    }
+
+    private fun mergeMetadata(
+        oldMetadata: List<MetadataModel>,
+        addMetadata: List<MetadataModel>
+    ): List<MetadataModel> {
+        val metadataMap = oldMetadata.associateByTo(HashMap(oldMetadata.size + addMetadata.size)) { it.key }
+        addMetadata.forEach { metadataMap[it.key] = it }
+        return metadataMap.values.toMutableList()
     }
 
     private fun buildBlockNodeCreateRequest(

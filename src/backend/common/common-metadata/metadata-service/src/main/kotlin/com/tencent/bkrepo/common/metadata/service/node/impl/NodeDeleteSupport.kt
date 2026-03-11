@@ -120,11 +120,12 @@ open class NodeDeleteSupport(
         projectId: String,
         repoName: String,
         fullPath: String,
-        operator: String
+        operator: String,
+        source: String?
     ) {
         val criteria = buildCriteria(projectId, repoName, fullPath)
         val query = Query(criteria)
-        delete(query, operator, criteria, projectId, repoName, listOf(fullPath), false)
+        delete(query, operator, criteria, projectId, repoName, listOf(fullPath), false, source = source)
     }
 
     override fun deleteByPath(
@@ -168,7 +169,8 @@ open class NodeDeleteSupport(
         date: LocalDateTime,
         operator: String,
         path: String,
-        decreaseVolume: Boolean
+        decreaseVolume: Boolean,
+        source: String?
     ): NodeDeleteResult {
         val option = NodeListOption(includeFolder = false, deep = true)
         val timeCriteria = Criteria().orOperator(
@@ -181,7 +183,7 @@ open class NodeDeleteSupport(
         val nodeDeleteResult = delete(query, operator, criteria, projectId, repoName, decreaseVolume = decreaseVolume)
         publishEvent(
             buildNodeCleanEvent(
-                projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString()
+                projectId, repoName, path, operator, nodeDeleteResult.deletedTime.toString(), source
             )
         )
         return nodeDeleteResult
@@ -193,7 +195,8 @@ open class NodeDeleteSupport(
         fullPath: String,
         operator: String,
         nodeId: String,
-        deleteTime: LocalDateTime
+        deleteTime: LocalDateTime,
+        source: String?
     ): NodeDeleteResult {
         require(!PathUtils.isRoot(fullPath)) { "Cannot delete root node." }
         val criteria = buildCriteria(projectId, repoName, fullPath).apply {
@@ -208,7 +211,7 @@ open class NodeDeleteSupport(
 
         if (deletedNum == 0L) return NodeDeleteResult(0L, 0L, deleteTime)
 
-        publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator, deleteTime.toString(), null))
+        publishEvent(buildDeletedEvent(projectId, repoName, fullPath, operator, deleteTime.toString(), source))
         logger.info(
             "Delete old block base node: $fullPath, operator: $operator, delete num : $deletedNum, " +
                     "delete time: $deleteTime success"

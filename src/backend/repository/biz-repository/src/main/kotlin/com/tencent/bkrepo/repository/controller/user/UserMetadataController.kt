@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.audit.NODE_EDIT_ACTION
 import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.audit.NODE_VIEW_ACTION
 import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
+import com.tencent.bkrepo.common.metadata.util.MetadataUtils.FORBID_KEYS
 import com.tencent.bkrepo.common.security.permission.Permission
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
@@ -177,6 +178,42 @@ class UserMetadataController(
             )
             ActionAuditContext.current().setInstance(request)
             metadataService.addForbidMetadata(request)
+            return ResponseBuilder.success()
+        }
+    }
+
+    @AuditEntry(
+        actionId = NODE_EDIT_ACTION
+    )
+    @ActionAuditRecord(
+        actionId = NODE_EDIT_ACTION,
+        instance = AuditInstanceRecord(
+            resourceType = NODE_RESOURCE,
+            instanceIds = "#artifactInfo?.getArtifactFullPath()",
+            instanceNames = "#artifactInfo?.getArtifactFullPath()"
+        ),
+        attributes = [
+            AuditAttribute(name = ActionAuditContent.PROJECT_CODE_TEMPLATE, value = "#artifactInfo?.projectId"),
+            AuditAttribute(name = ActionAuditContent.REPO_NAME_TEMPLATE, value = "#artifactInfo?.repoName"),
+        ],
+        scopeId = "#artifactInfo?.projectId",
+        content = ActionAuditContent.NODE_METADATA_DELETE_CONTENT
+    )
+    @Operation(summary = "删除节点禁用相关元数据")
+    @Permission(type = ResourceType.REPO, action = PermissionAction.UPDATE)
+    @DeleteMapping("/forbid$DEFAULT_MAPPING_URI")
+    fun deleteForbidMetadata(
+        @ArtifactPathVariable artifactInfo: ArtifactInfo,
+    ): Response<Void> {
+        artifactInfo.run {
+            val request = MetadataDeleteRequest(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = getArtifactFullPath(),
+                keyList = FORBID_KEYS,
+            )
+            ActionAuditContext.current().setInstance(request)
+            metadataService.deleteMetadata(request)
             return ResponseBuilder.success()
         }
     }

@@ -33,7 +33,7 @@ package com.tencent.bkrepo.auth.service.bkdevops
 
 import com.tencent.bkrepo.auth.condition.DevopsAuthCondition
 import com.tencent.bkrepo.auth.pojo.enums.BkAuthPermission
-import com.tencent.bkrepo.auth.pojo.enums.BkAuthResourceType
+import com.tencent.bkrepo.auth.service.bkdevops.DevopsProjectService.Companion.getResourceTypeByRepoName
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
@@ -46,12 +46,13 @@ import org.springframework.stereotype.Service
 class DevopsPipelineService(
     private val ciAuthService: CIAuthService
 ) {
-    fun listPermissionPipelines(uid: String, projectId: String): List<String> {
+    fun listPermissionPipelines(uid: String, projectId: String, repoName: String? = null): List<String> {
+        val resourceType = getResourceTypeByRepoName(repoName)
         return ciAuthService.getUserResourceByPermission(
             user = uid,
             projectCode = projectId,
             action = BkAuthPermission.DOWNLOAD,
-            resourceType = BkAuthResourceType.PIPELINE_DEFAULT
+            resourceType = resourceType
         )
     }
 
@@ -59,23 +60,25 @@ class DevopsPipelineService(
         uid: String,
         projectId: String,
         pipelineId: String,
-        permissionAction: String?
+        permissionAction: String?,
+        repoName: String? = null
     ): Boolean {
         logger.debug(
             "hasPermission: uid: $uid, projectId: $projectId, " +
-                "pipelineId: $pipelineId, permissionAction: $permissionAction"
+                "pipelineId: $pipelineId, permissionAction: $permissionAction, repoName: $repoName"
         )
+        val resourceType = getResourceTypeByRepoName(repoName)
         return ciAuthService.isProjectSuperAdmin(
             user = uid,
             projectCode = projectId,
-            resourceType = BkAuthResourceType.PIPELINE_DEFAULT,
+            resourceType = resourceType,
             action = permissionAction
         ) || ciAuthService.validateUserResourcePermission(
             user = uid,
             projectCode = projectId,
             action = BkAuthPermission.DOWNLOAD,
             resourceCode = pipelineId,
-            resourceType = BkAuthResourceType.PIPELINE_DEFAULT
+            resourceType = resourceType
         )
     }
 

@@ -148,4 +148,9 @@ class OpServiceController @Autowired constructor(
     fun checkConsulPattern(): Response<Boolean> {
         return success(opServiceService.checkConsulAlive())
     }
+
+    @GetMapping("/configs")
+    fun serviceConfig(): Response<String> {
+        return success(opServiceService.getConfigs())
+    }
 }

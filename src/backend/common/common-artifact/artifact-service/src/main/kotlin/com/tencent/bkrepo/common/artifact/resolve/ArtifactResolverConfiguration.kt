@@ -27,6 +27,9 @@
 
 package com.tencent.bkrepo.common.artifact.resolve
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.tencent.bkrepo.common.artifact.interceptor.RepoNameConversionInterceptor
+import com.tencent.bkrepo.common.artifact.interceptor.RepoNameConversionRequestBodyAdvice
 import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileCleanInterceptor
 import com.tencent.bkrepo.common.artifact.resolve.file.ArtifactFileFactory
@@ -71,7 +74,16 @@ class ArtifactResolverConfiguration {
     fun artifactFileMapMethodArgumentResolver() = ArtifactFileMapMethodArgumentResolver()
 
     @Bean
-    fun artifactArgumentResolveConfigurer(resolver: ArtifactInfoMethodArgumentResolver): WebMvcConfigurer {
+    fun repoNameConversionInterceptor() = RepoNameConversionInterceptor()
+
+    @Bean
+    fun repoNameConversionRequestBodyAdvice(objectMapper: ObjectMapper) = 
+        RepoNameConversionRequestBodyAdvice(objectMapper)
+
+    @Bean
+    fun artifactArgumentResolveConfigurer(
+        resolver: ArtifactInfoMethodArgumentResolver,
+    ): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addArgumentResolvers(resolvers: MutableList<HandlerMethodArgumentResolver>) {
                 resolvers.add(resolver)
@@ -80,6 +92,7 @@ class ArtifactResolverConfiguration {
             }
 
             override fun addInterceptors(registry: InterceptorRegistry) {
+                registry.addInterceptor(repoNameConversionInterceptor()).order(-100)
                 registry.addInterceptor(ArtifactFileCleanInterceptor())
                 super.addInterceptors(registry)
             }

@@ -99,8 +99,8 @@ object ProjectServiceHelper {
         }
     }
 
-    fun ProjectCreateRequest.buildProject(tenantId: String?): TProject {
-        if (tenantId != null) {
+    fun ProjectCreateRequest.buildProject(tenantId: String?, enableMultiTenant: Boolean): TProject {
+        if (tenantId != null && enableMultiTenant) {
             return TProject(
                 name = "$tenantId.$name",
                 displayName = displayName,
@@ -170,13 +170,13 @@ object ProjectServiceHelper {
 
     fun buildListQuery(
         names: List<String>,
-        option: ProjectListOption?
+        option: ProjectListOption?,
+        enableMultiTenant: Boolean = false
     ): Query {
-        val tenantId = getTenantId()
         val query = Query.query(
             where(TProject::name).`in`(names)
                 .apply { option?.displayNames?.let { and(TProject::displayName).`in`(option.displayNames!!) } }
-                .apply { tenantId?.let { and(TProject::tenantId).`is`(tenantId) } }
+                .apply { if (enableMultiTenant) getTenantId()?.let { and(TProject::tenantId).`is`(it) } }
         )
         if (option?.sortProperty?.isNotEmpty() == true) {
             checkPropertyAndDirection(option)

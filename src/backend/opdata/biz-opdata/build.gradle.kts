@@ -38,6 +38,7 @@ dependencies {
     api(project(":job:api-job"))
     implementation(project(":common:common-notify:notify-service"))
     implementation("org.influxdb:influxdb-java")
+    implementation("io.fabric8:kubernetes-client:7.4.0")
     compileOnly("org.springframework.cloud:spring-cloud-starter-consul-discovery")
     compileOnly("org.springframework.cloud:spring-cloud-starter-consul-config")
 }

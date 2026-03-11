@@ -53,10 +53,10 @@
                     <template #default="{ row }">{{ (row.versions || ['/']).join('、') }}</template>
                 </bk-table-column>
             </template>
-            <bk-table-column :label="$t('startTime')" width="150">
+            <bk-table-column :label="$t('startTime')" width="200">
                 <template #default="{ row }">{{formatDate(row.startTime)}}</template>
             </bk-table-column>
-            <bk-table-column :label="$t('endTime')" width="150">
+            <bk-table-column :label="$t('endTime')" width="200">
                 <template #default="{ row }">{{formatDate(row.endTime)}}</template>
             </bk-table-column>
             <bk-table-column :label="$t('successNum')" prop="success"></bk-table-column>

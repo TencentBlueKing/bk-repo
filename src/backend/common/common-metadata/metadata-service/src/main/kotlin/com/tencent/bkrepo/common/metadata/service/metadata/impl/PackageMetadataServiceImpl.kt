@@ -42,8 +42,11 @@ import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.service.metadata.PackageMetadataService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
 import com.tencent.bkrepo.common.metadata.util.MetadataUtils
+import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildPackageMetadataDeletedEvent
+import com.tencent.bkrepo.common.metadata.util.PackageEventFactory.buildPackageMetadataSavedEvent
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
 import com.tencent.bkrepo.common.security.exception.PermissionException
+import com.tencent.bkrepo.common.service.util.SpringContextUtils.Companion.publishEvent
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import org.slf4j.LoggerFactory
@@ -65,6 +68,16 @@ class PackageMetadataServiceImpl(
     private val packageVersionDao: PackageVersionDao
 ) : PackageMetadataService {
 
+    override fun listMetadata(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String
+    ): Map<String, Any> {
+        val tPackage = getPackage(projectId, repoName, packageKey)
+        return MetadataUtils.toMap(packageVersionDao.findByName(tPackage.id!!, version)?.metadata)
+    }
+
     @Transactional(rollbackFor = [Throwable::class])
     override fun saveMetadata(request: PackageMetadataSaveRequest) {
         with(request) {
@@ -78,6 +91,7 @@ class PackageMetadataServiceImpl(
             val newMetadata = versionMetadata!!.map { MetadataUtils.convertAndCheck(it) }
             tPackageVersion.metadata = MetadataUtils.merge(oldMetadata, newMetadata)
             packageVersionDao.save(tPackageVersion)
+            publishEvent(buildPackageMetadataSavedEvent(request))
             logger.info("Save package metadata [$this] success.")
         }
     }
@@ -104,6 +118,7 @@ class PackageMetadataServiceImpl(
                 Query.query(where(TMetadata::key).inValues(keysToDelete))
             )
             packageVersionDao.updateFirst(PackageQueryHelper.versionQuery(tPackage.id!!, name = version), update)
+            publishEvent(buildPackageMetadataDeletedEvent(request))
             logger.info("Delete metadata[$keysToDelete] on pkg[/$projectId/$repoName/$packageKey:$version] success.")
         }
     }

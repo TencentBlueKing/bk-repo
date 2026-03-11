@@ -37,6 +37,8 @@ import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterAr
 import com.tencent.bkrepo.replication.replica.repository.internal.PackageNodeMappings
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
@@ -51,10 +53,10 @@ import org.springframework.stereotype.Component
  */
 @Component
 class EdgeNodeReplicator(
-    private val localDataManager: LocalDataManager,
+    localDataManager: LocalDataManager,
     artifactReplicationHandler: ClusterArtifactReplicationHandler,
     replicationProperties: ReplicationProperties
-) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties) {
+) : AbstractFileReplicator(artifactReplicationHandler, replicationProperties, localDataManager) {
 
     override fun checkVersion(context: ReplicaContext) {
         // do nothing
@@ -144,6 +146,20 @@ class EdgeNodeReplicator(
     }
 
     override fun replicaMetadataDelete(context: ReplicaContext, metadataDeleteRequest: MetadataDeleteRequest): Boolean {
+        return true
+    }
+
+    override fun replicaPackageMetadataSave(
+        context: ReplicaContext,
+        packageMetadataSaveRequest: PackageMetadataSaveRequest,
+    ): Boolean {
+        return true
+    }
+
+    override fun replicaPackageMetadataDelete(
+        context: ReplicaContext,
+        packageMetadataDeleteRequest: PackageMetadataDeleteRequest,
+    ): Boolean {
         return true
     }
 

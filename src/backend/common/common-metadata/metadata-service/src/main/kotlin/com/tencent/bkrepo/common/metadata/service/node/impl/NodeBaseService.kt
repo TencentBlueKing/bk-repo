@@ -62,9 +62,11 @@ import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.TOPIC
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.checkNodeListOption
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.checkOverwriteAndConflict
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convert
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.parseExpireDate
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.validateCreateRequest
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.validateParameter
 import com.tencent.bkrepo.common.metadata.util.NodeEventFactory.buildCreatedEvent
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
@@ -153,7 +155,11 @@ abstract class NodeBaseService(
             Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
             Preconditions.checkArgument(pageSize >= 0 && pageSize <= repositoryProperties.listCountLimit, "pageSize")
             val query = NodeQueryHelper.nodeListQuery(projectId, repoName, getArtifactFullPath(), option)
-            val totalRecords = getTotalNodeNum(artifact, query)
+            val totalRecords = if (option.includeTotalRecords) {
+                getTotalNodeNum(artifact, query)
+            } else {
+                0L
+            }
             val pageRequest = Pages.ofRequest(pageNumber, pageSize)
             val records = nodeDao.find(query.with(pageRequest)).map { convert(it)!! }
             return Pages.ofResponse(pageRequest, totalRecords, records)
@@ -197,9 +203,7 @@ abstract class NodeBaseService(
     override fun createNode(createRequest: NodeCreateRequest): NodeDetail {
         with(createRequest) {
             val fullPath = PathUtils.normalizeFullPath(fullPath)
-            Preconditions.checkArgument(!PathUtils.isRoot(fullPath), this::fullPath.name)
-            Preconditions.checkArgument(folder || !sha256.isNullOrBlank(), this::sha256.name)
-            Preconditions.checkArgument(folder || !md5.isNullOrBlank(), this::md5.name)
+            validateCreateRequest(this, fullPath)
             // 仓库是否存在
             val repo = checkRepo(projectId, repoName)
             // 路径唯一性校验
@@ -461,15 +465,8 @@ abstract class NodeBaseService(
                 return
             }
 
-            // 如果不允许覆盖，抛出节点已存在异常
-            if (!overwrite) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, fullPath)
-            }
-
-            // 如果存在文件夹冲突，抛出节点冲突异常
-            if (existNode.folder || this.folder) {
-                throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, fullPath)
-            }
+            // 检查覆盖和文件夹冲突
+            checkOverwriteAndConflict(overwrite, fullPath, existNode.folder, this.folder)
 
             // 子类的附加检查方法
             additionalCheck(existNode)
@@ -487,7 +484,7 @@ abstract class NodeBaseService(
                     return
                 }
 
-                val deleteRes = deleteNodeById(projectId, repoName, fullPath, operator, oldNodeId)
+                val deleteRes = deleteNodeById(projectId, repoName, fullPath, operator, oldNodeId, source = source)
                 if (deleteRes.deletedNumber == 0L) {
                     logger.warn("Delete block base node[$fullPath] by [$operator] error: node was deleted")
                     throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, fullPath)
@@ -495,7 +492,7 @@ abstract class NodeBaseService(
                 logger.info("Delete block base node[$fullPath] by [$operator] success: $oldNodeId.")
 
             } else {
-                deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator)
+                deleteByFullPathWithoutDecreaseVolume(projectId, repoName, fullPath, operator, source)
             }
 
             // 更新配额使用量

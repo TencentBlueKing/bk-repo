@@ -30,8 +30,11 @@ package com.tencent.bkrepo.replication.replica.type.federation
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.PACKAGE_KEY
+import com.tencent.bkrepo.common.artifact.constant.PACKAGE_VERSION
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
+import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
 import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
@@ -40,10 +43,11 @@ import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
-import com.tencent.bkrepo.replication.service.impl.failure.FailureRecordRepository
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import org.springframework.stereotype.Component
@@ -55,8 +59,8 @@ import org.springframework.stereotype.Component
 class FederationBasedReplicaService(
     replicaRecordService: ReplicaRecordService,
     localDataManager: LocalDataManager,
-    failureRecordRepository: FailureRecordRepository,
-) : AbstractReplicaService(replicaRecordService, localDataManager, failureRecordRepository) {
+    replicaFailureRecordDao: ReplicaFailureRecordDao,
+) : AbstractReplicaService(replicaRecordService, localDataManager, replicaFailureRecordDao) {
 
     override fun replica(context: ReplicaContext) {
         // 全量同步的场景需要同步已删除节点
@@ -67,33 +71,55 @@ class FederationBasedReplicaService(
      * 是否包含所有仓库数据
      */
     override fun includeAllData(context: ReplicaContext): Boolean {
-        try {
+        val eventFlag = try {
             context.event != null
-            return false
         } catch (e: Exception) {
-            return true
+            false
         }
+        return !eventFlag && (context.taskObject.packageConstraints.isNullOrEmpty() &&
+            context.taskObject.pathConstraints.isNullOrEmpty())
     }
 
     override fun replicaTaskObjectConstraints(replicaContext: ReplicaContext) {
         with(replicaContext) {
             // 只有非third party集群支持该消息
-            if (remoteCluster.type == ClusterNodeType.REMOTE)
+            if (remoteCluster.type == ClusterNodeType.REMOTE) {
                 throw UnsupportedOperationException()
-            replicaContext.executeType = TaskExecuteType.DELTA
-            when (event.type) {
-                EventType.METADATA_DELETED -> handleMetadataDeleted(replicaContext)
-                EventType.METADATA_SAVED -> handleMetadataSaved(replicaContext)
-                EventType.NODE_RENAMED -> handleNodeRenamed(replicaContext)
-                EventType.NODE_COPIED -> handleNodeCopied(replicaContext)
-                EventType.NODE_MOVED -> handleNodeMoved(replicaContext)
-                EventType.NODE_DELETED -> handleNodeDeleted(replicaContext)
-                EventType.NODE_CREATED -> handleNodeCreated(replicaContext)
-                EventType.VERSION_CREATED -> handleVersionCreated(replicaContext)
-                EventType.VERSION_UPDATED -> handleVersionUpdated(replicaContext)
-                EventType.VERSION_DELETED -> handleVersionDeleted(replicaContext)
-                else -> throw UnsupportedOperationException()
             }
+
+            // 优先处理包约束
+            taskObject.packageConstraints?.takeIf { it.isNotEmpty() }?.let { constraints ->
+                constraints.forEach { replicaByPackageConstraint(this, it) }
+                return
+            }
+
+            // 其次处理路径约束
+            taskObject.pathConstraints?.takeIf { it.isNotEmpty() }?.let { constraints ->
+                constraints.forEach { replicaByPathConstraint(this, it) }
+                return
+            }
+
+            // 无约束时，根据事件类型处理
+            executeType = TaskExecuteType.DELTA
+            handleEventByType(replicaContext)
+        }
+    }
+
+    private fun handleEventByType(replicaContext: ReplicaContext) {
+        when (replicaContext.event.type) {
+            EventType.METADATA_DELETED -> handleMetadataDeleted(replicaContext)
+            EventType.METADATA_SAVED -> handleMetadataSaved(replicaContext)
+            EventType.PACKAGE_METADATA_DELETED -> handlePackageMetadataDeleted(replicaContext)
+            EventType.PACKAGE_METADATA_SAVED -> handlePackageMetadataSaved(replicaContext)
+            EventType.NODE_RENAMED -> handleNodeRenamed(replicaContext)
+            EventType.NODE_COPIED -> handleNodeCopied(replicaContext)
+            EventType.NODE_MOVED -> handleNodeMoved(replicaContext)
+            EventType.NODE_DELETED -> handleNodeDeleted(replicaContext)
+            EventType.NODE_CREATED -> handleNodeCreated(replicaContext)
+            EventType.VERSION_CREATED -> handleVersionCreated(replicaContext)
+            EventType.VERSION_UPDATED -> handleVersionUpdated(replicaContext)
+            EventType.VERSION_DELETED -> handleVersionDeleted(replicaContext)
+            else -> throw UnsupportedOperationException("Unsupported event type: ${replicaContext.event.type}")
         }
     }
 
@@ -131,6 +157,33 @@ class FederationBasedReplicaService(
         }
     }
 
+    private fun handlePackageMetadataDeleted(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            val packageMetadataDeleteRequest = PackageMetadataDeleteRequest(
+                projectId = remoteProjectId!!,
+                repoName = remoteRepoName!!,
+                packageKey = event.data[PACKAGE_KEY].toString(),
+                version = event.data[PACKAGE_VERSION].toString(),
+                keysToDelete = (event.data["keys"] as? List<String>)?.toSet() ?: emptySet(),
+                operator = event.userId
+            )
+            replicaByDeletePackageMetadata(replicaContext, packageMetadataDeleteRequest)
+        }
+    }
+
+    private fun handlePackageMetadataSaved(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            val packageMetadataSaveRequest = PackageMetadataSaveRequest(
+                projectId = remoteProjectId!!,
+                repoName = remoteRepoName!!,
+                packageKey = event.data[PACKAGE_KEY].toString(),
+                version = event.data[PACKAGE_VERSION].toString(),
+                versionMetadata = parseMetadataModel(event),
+                operator = event.userId
+            )
+            replicaBySavePackageMetadata(replicaContext, packageMetadataSaveRequest)
+        }
+    }
 
     private fun parseMetadataModel(event: ArtifactEvent): List<MetadataModel>? {
         return try {

@@ -117,7 +117,7 @@
                 <bk-form-item :label="$t('email')" :required="true" property="email" error-display-type="normal">
                     <bk-input v-model.trim="editUserDialog.email"></bk-input>
                 </bk-form-item>
-                <bk-form-item :label="$t('telephone')">
+                <bk-form-item :label="$t('telephone')" property="telephone">
                     <bk-input v-model.trim="editUserDialog.phone"></bk-input>
                 </bk-form-item>
                 <bk-form-item v-if="editUserDialog.group" :required="true" property="asstUsers" :label="$t('associatedUser')">
@@ -143,7 +143,7 @@
     import createTokenDialog from '@repository/views/repoToken/createTokenDialog'
     import { mapState, mapActions } from 'vuex'
     import { formatDate } from '@repository/utils'
-    import { transformEmail, transformPhone } from '@repository/utils/privacy'
+    import { transformEmail, transformPhone, checkPhone } from '@repository/utils/privacy'
     export default {
         name: 'user',
         components: { OperationList, createTokenDialog },
@@ -179,7 +179,7 @@
                             trigger: 'blur'
                         },
                         {
-                            regex: /^[a-zA-Z][a-zA-Z0-9_-|@]{1,31}$/,
+                            regex: /^[a-zA-Z][a-zA-Z0-9_\-|@]{1,31}$/,
                             message: this.$t('account') + this.$t('space') + this.$t('include') + this.$t('space') + this.$t('userIdPlaceHolder'),
                             trigger: 'blur'
                         },
@@ -205,6 +205,13 @@
                         {
                             regex: /^\w[-_.\w]*@\w[-_\w]*\.\w[-_.\w]*$/,
                             message: this.$t('pleaseInput') + this.$t('space') + this.$t('legit') + this.$t('space') + this.$t('email'),
+                            trigger: 'blur'
+                        }
+                    ],
+                    telephone: [
+                        {
+                            validator: this.asynCheckPhone,
+                            message: this.$t('wrongTelephone'),
                             trigger: 'blur'
                         }
                     ],
@@ -250,6 +257,10 @@
                 // return this.checkUserId({
                 //     userId: this.editUserDialog.userId
                 // }).then(res => !res)
+            },
+            asynCheckPhone () {
+                if (this.editUserDialog.phone.trim() === '') return true
+                return checkPhone(this.editUserDialog.phone)
             },
             handlerPaginationChange ({ current = 1, limit = this.pagination.limit } = {}) {
                 this.pagination.current = current

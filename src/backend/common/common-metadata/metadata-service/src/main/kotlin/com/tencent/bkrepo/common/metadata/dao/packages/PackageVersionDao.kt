@@ -32,12 +32,17 @@
 package com.tencent.bkrepo.common.metadata.dao.packages
 
 import com.tencent.bkrepo.common.metadata.condition.SyncCondition
-import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.common.metadata.model.TMetadata
 import com.tencent.bkrepo.common.metadata.model.TPackageVersion
 import com.tencent.bkrepo.common.metadata.util.PackageQueryHelper
+import com.tencent.bkrepo.common.mongo.dao.simple.SimpleMongoDao
+import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
+import org.springframework.data.mongodb.core.query.isEqualTo
+import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
 
 /**
@@ -99,5 +104,25 @@ class PackageVersionDao : SimpleMongoDao<TPackageVersion>() {
 
     fun countVersion(packageId: String): Long {
         return this.count(PackageQueryHelper.versionQuery(packageId))
+    }
+
+    fun addTag(packageId: String, name: String, tag: String, msg: String? = null) {
+        val query = PackageQueryHelper.versionQuery(packageId, name = name)
+        val update = Update().addToSet(TPackageVersion::tags.name, tag)
+            .apply {
+                msg?.let { addToSet(TPackageVersion::metadata.name, MetadataModel(key = "tag_msg_$tag", value = msg)) }
+            }
+            
+        this.updateFirst(query, update)
+    }
+
+    fun removeTag(packageId: String, name: String, tag: String) {
+        val query = PackageQueryHelper.versionQuery(packageId, name = name)
+        val update = Update().pull(TPackageVersion::tags.name, tag)
+            .pull(
+                TPackageVersion::metadata.name,
+                Query.query(where(TMetadata::key).isEqualTo("tag_msg_$tag"))
+            )
+        this.updateFirst(query, update)
     }
 }

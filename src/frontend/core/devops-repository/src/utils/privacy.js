@@ -37,6 +37,16 @@ const phones = {
     'zh-HK': /^([69]\d{7})$/
 }
 
+export function checkPhone (phoneNum) {
+    for (const key in phones) {
+        const regex = phones[key]
+        if (regex.test(phoneNum)) {
+            return true
+        }
+    }
+    return false
+}
+
 // 隐私转换手机号码(海外暂时没有)
 export function transformPhone (phoneNum) {
     // 判断异常手机号

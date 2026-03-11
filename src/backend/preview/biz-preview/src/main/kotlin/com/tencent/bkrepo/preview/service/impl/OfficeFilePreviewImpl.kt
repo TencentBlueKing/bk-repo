@@ -103,7 +103,7 @@ class OfficeFilePreviewImpl(
 
     private fun isNeedConvert(fileAttribute: FileAttribute): Boolean {
         val suffix = fileAttribute.suffix
-        return suffix!!.lowercase() !in listOf("xlsx", "csv")
+        return suffix!!.lowercase() !in listOf("xlsx")
     }
 
     /**

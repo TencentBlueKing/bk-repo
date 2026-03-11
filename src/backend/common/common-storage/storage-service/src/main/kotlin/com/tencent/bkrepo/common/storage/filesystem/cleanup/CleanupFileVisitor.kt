@@ -136,7 +136,8 @@ class CleanupFileVisitor(
             return FileVisitResult.CONTINUE
         }
         // 由于支持删除上传路径，所以这里即使是空目录，也需要判断过期时间。
-        if (fileExpireResolver.isExpired(dirPath.toFile())) {
+        // 目录被遍历时readdir会更新atime，用mtime判断目录是否过期，mtime不受遍历影响。
+        if (fileExpireResolver.isExpiredByMTime(dirPath.toFile())) {
             deleteEmptyFolder(dirPath)
         }
         result.totalFolder += 1

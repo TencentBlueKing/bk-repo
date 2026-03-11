@@ -34,7 +34,22 @@
                     <div v-for="(box,index) in currentArticle.inputBoxList" :key="box.key || box">
                         <div class="flex-align-center mt20 mb10">
                             <span style="width:120px;">{{box.label}}: </span>
+                            <bk-select
+                                v-if="box.list"
+                                v-model="boxValues[index]"
+                                :placeholder="box.placeholder"
+                                style="width: 250px;"
+                                @change="onChangeBoxValue(box.methodFunctionName,boxValues[index])"
+                            >
+                                <bk-option
+                                    v-for="option in box.list"
+                                    :key="option.id"
+                                    :id="option.id"
+                                    :name="option.name">
+                                </bk-option>
+                            </bk-select>
                             <bk-input
+                                v-else
                                 class="w480"
                                 v-model.trim="boxValues[index]"
                                 :placeholder="box.placeholder"
@@ -65,7 +80,7 @@
     import createTokenDialog from '@repository/views/repoToken/createTokenDialog'
     import { mapState, mapMutations } from 'vuex'
     export default {
-        name: 'repoGuide',
+        name: 'RepoGuide',
         components: { CodeArea, createTokenDialog },
         props: {
             article: {

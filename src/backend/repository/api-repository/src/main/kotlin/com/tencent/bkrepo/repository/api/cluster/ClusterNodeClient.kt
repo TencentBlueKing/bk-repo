@@ -104,7 +104,8 @@ interface ClusterNodeClient {
         @PathVariable repoName: String,
         @RequestParam fullPath: String,
         @RequestParam date: LocalDateTime,
-        @RequestParam operator: String
+        @RequestParam operator: String,
+        @RequestParam source: String? = null
     ): Response<NodeDeleteResult>
 
     @Operation(summary = "恢复节点")

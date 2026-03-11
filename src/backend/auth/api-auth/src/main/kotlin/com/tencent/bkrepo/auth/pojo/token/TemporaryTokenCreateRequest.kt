@@ -54,4 +54,6 @@ data class TemporaryTokenCreateRequest(
     val type: TokenType,
     @get:Schema(title = "创建人")
     val createdBy: String? = null,
+    @get:Schema(title = "是否允许跳过项目禁用token检查，仅特定平台账户可用")
+    val bypassProjectDisable: Boolean = false,
 )

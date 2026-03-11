@@ -179,6 +179,7 @@ abstract class ArtifactReplicationHandler(
         location: String?,
         filePushContext: FilePushContext
     ): DefaultHandlerResult? {
+        var realLocation: String? = location
         var startPosition: Long = 0
         var chunkedHandlerResult: DefaultHandlerResult? = null
         val (params, ignoredFailureCode) = buildChunkUploadRequestInfo(fileInfo.sha256, filePushContext)
@@ -233,7 +234,7 @@ abstract class ArtifactReplicationHandler(
                 authorizationCode = filePushContext.token,
                 requestMethod = RequestMethod.PATCH,
                 headers = patchHeader,
-                requestUrl = location,
+                requestUrl = realLocation,
                 requestTag = buildRequestTag(filePushContext.context, fileInfo.sha256 + range, byteCount),
                 params = params
             )
@@ -246,6 +247,7 @@ abstract class ArtifactReplicationHandler(
             if (!chunkedHandlerResult.isSuccess) {
                 return chunkedHandlerResult
             }
+            realLocation = buildRequestUrl(filePushContext.context.cluster.url, chunkedHandlerResult.location)
             startPosition += byteCount
         }
         return chunkedHandlerResult

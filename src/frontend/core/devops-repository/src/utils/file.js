@@ -10,7 +10,8 @@ const textType = [
     'ini',
     'log',
     'properties',
-    'toml'
+    'toml',
+    'sql'
 ]
 
 const formatType = [
@@ -61,11 +62,7 @@ const isHtmlFormatType = [
 ]
 
 const excelType = [
-    'xls', 'xlsx'
-]
-
-const csvType = [
-    'csv'
+    'xls', 'xlsx', 'csv'
 ]
 
 const picType = [
@@ -98,13 +95,11 @@ export function isExcel (param) {
 // 判断可预览的类型(不包括pic)
 export function isDisplayType (param) {
     const isExcel = excelType.find(type => param.endsWith(type))
-    const isCsv = csvType.find(type => param.endsWith(type))
-    return isText(param) || isFormatType(param) || isExcel || isCsv
+    return isText(param) || isFormatType(param) || isExcel
 }
 
 // 判断可预览的类型(包括pic)
 export function isOutDisplayType (param) {
     const isExcel = excelType.find(type => param.endsWith(type))
-    const isCsv = csvType.find(type => param.endsWith(type))
-    return isText(param) || isFormatType(param) || isExcel || isPic(param) || isCsv
+    return isText(param) || isFormatType(param) || isExcel || isPic(param)
 }

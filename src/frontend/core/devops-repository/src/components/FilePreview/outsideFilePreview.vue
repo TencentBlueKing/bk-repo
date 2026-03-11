@@ -7,7 +7,7 @@
             style="max-height: 100vh; overflow-y: auto"
         />
         <iframe v-if="showFrame" :src="pageUrl" frameborder="0" style="width: 100%; height: 100%"></iframe>
-        <div v-if="pdfShow" :style="`margin:0 auto;width:${pdfWidth};overflow-y:auto;height:100vh`">
+        <div v-if="pdfShow" class="pdf-container-wrapper">
             <canvas
                 v-for="page in pdfPages"
                 :key="page"
@@ -16,15 +16,16 @@
         </div>
         <div v-if="previewBasic" class="flex-column flex-center">
             <div class="preview-file-tips">{{ $t('previewFileTips') }}</div>
-            <textarea id="basicFileText" v-model="basicFileText" class="textarea" readonly></textarea>
+            <div style="height: 700px; width: 100%">
+                <textarea id="basicFileText" v-model="basicFileText" class="textarea" readonly></textarea>
+            </div>
         </div>
         <div v-if="imgShow" style="width: 100%; height: 100%">
-            <img id="image" :src="imgUrl" alt="Picture" style="max-width: 100%; max-height: 100%;">
+            <img id="image" :src="imgUrl" alt="Picture" style="display: none">
         </div>
-        <div v-if="csvShow" id="csvTable"></div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
-                <img width="480" height="240" style="float: left;margin-right: 3px" src="/ui/440.svg" />
+                <img width="480" height="240" style="float: left;margin-right: 3px" :src="window.BK_SUBPATH + 'ui/440.svg'" />
                 <span class="mt5 error-data-title">{{ $t('previewErrorTip') }}</span>
             </div>
         </div>
@@ -44,14 +45,33 @@
     } from '@repository/utils/previewOfficeFile'
     import { mapActions } from 'vuex'
     import { Base64 } from 'js-base64'
-    import {isExcel, isHtmlType, isOutDisplayType, isPic, isText} from '@repository/utils/file'
-    import Papa from 'papaparse'
-    import Table from '@wolf-table/table'
+    import { isExcel, isHtmlType, isOutDisplayType, isPic, isText } from '@repository/utils/file'
     import Viewer from 'viewerjs'
 
     const PDFJS = require('pdfjs-dist')
     PDFJS.GlobalWorkerOptions.isEvalSupported = false
-    PDFJS.GlobalWorkerOptions.workerSrc = location.origin + '/ui/pdf.worker.js'
+    PDFJS.GlobalWorkerOptions.workerSrc = location.origin + window.BK_SUBPATH + 'ui/pdf.worker.js'
+
+    function setTextareaHeight () {
+        const textarea = document.querySelector('.textarea')
+        if (textarea) {
+            const devicePixelRatio = window.devicePixelRatio || 1
+            textarea.style.height = (700 / devicePixelRatio) + 'px'
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', setTextareaHeight)
+    } else {
+        setTextareaHeight()
+    }
+
+    let resizeTimer
+
+    window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer)
+        resizeTimer = setTimeout(setTextareaHeight, 250)
+    })
 
     export default {
         name: 'OutsideFilePreview',
@@ -90,7 +110,6 @@
                 loading: false,
                 imgShow: false,
                 imgUrl: '',
-                csvShow: false,
                 pdfShow: false,
                 pdfPages: [], // 页数
                 pdfWidth: '', // 宽度
@@ -113,69 +132,74 @@
                 this.showError()
                 return
             }
-            const param = Base64.decode(this.extraParam)
-            await getPreviewRemoteOfficeFileInfo(Base64.encode(param)).then(res => {
-                // 需解析传递参数，如果传递参数里面携带，优先渲染传递的水印
-                const obj = JSON.parse(param)
-                if (obj.watermarkTxt) {
-                    const watermark = {
-                        watermarkTxt: obj.watermarkTxt,
-                        watermark_x_space: obj.watermarkXSpace ? Number(obj.watermarkXSpace) : 0,
-                        watermark_y_space: obj.watermarkYSpace ? Number(obj.watermarkYSpace) : 0,
-                        watermark_font: obj.watermarkFont ? obj.watermarkFont : '',
-                        watermark_fontsize: obj.watermarkFontsize ? obj.watermarkFontsize : '',
-                        watermark_color: obj.watermarkColor ? obj.watermarkColor : '',
-                        watermark_alpha: obj.watermarkAlpha ? obj.watermarkAlpha : '',
-                        watermark_width: obj.watermarkWidth ? Number(obj.watermarkWidth) : 0,
-                        watermark_height: obj.watermarkHeight ? Number(obj.watermarkHeight) : 0,
-                        watermark_angle: obj.watermarkHeight ? Number(obj.watermarkAngle) : 0
-                    }
-                    this.initWaterMark(watermark)
-                } else if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
-                    this.initWaterMark(res.data.data.watermark)
-                }
-                if (isOutDisplayType(res.data.data.suffix)) {
-                    customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(fileDate => {
-                        this.loading = false
-                        if (isExcel(res.data.data.suffix)) {
-                            this.previewExcel = true
-                            this.excelOptions.xls = res.data.data.suffix.endsWith('xls')
-                            this.dataSource = fileDate.data
-                        } else if (isHtmlType(res.data.data.suffix)) {
-                            const url = URL.createObjectURL(fileDate.data)
-                            this.showFrame = true
-                            this.pageUrl = url
-                        } else if (isText(res.data.data.suffix)) {
-                            this.previewBasic = true
-                            const reader = new FileReader()
-                            reader.onload = function (event) {
-                                // 读取的文本内容,强行赋值渲染
-                                document.getElementById('basicFileText').value = Base64.decode(event.target.result)
-                            }
-                            reader.readAsText(fileDate.data)
-                        } else if (isPic(res.data.data.suffix)) {
-                            this.imgShow = true
-                            this.imgUrl = URL.createObjectURL(fileDate.data)
-                            this.$nextTick(() => {
-                                const viewer = new Viewer(document.getElementById('image'), {
-                                    inline: true,
-                                    viewed () {
-                                        viewer.zoomTo(1)
-                                    }
-                                })
-                            })
-                        } else if (res.data.data.suffix.endsWith('csv')) {
-                            this.csvShow = true
-                            this.dealCsv(fileDate)
-                        } else {
-                            this.pdfShow = true
-                            this.loadFile(URL.createObjectURL(fileDate.data))
+            try {
+                const param = Base64.decode(decodeURIComponent(this.extraParam))
+                await getPreviewRemoteOfficeFileInfo(Base64.encode(param)).then(res => {
+                    // 需解析传递参数，如果传递参数里面携带，优先渲染传递的水印
+                    const obj = JSON.parse(param)
+                    if (obj.watermarkTxt) {
+                        const watermark = {
+                            watermarkTxt: obj.watermarkTxt,
+                            watermark_x_space: obj.watermarkXSpace ? Number(obj.watermarkXSpace) : 0,
+                            watermark_y_space: obj.watermarkYSpace ? Number(obj.watermarkYSpace) : 0,
+                            watermark_font: obj.watermarkFont ? obj.watermarkFont : '',
+                            watermark_fontsize: obj.watermarkFontsize ? obj.watermarkFontsize : '',
+                            watermark_color: obj.watermarkColor ? obj.watermarkColor : '',
+                            watermark_alpha: obj.watermarkAlpha ? obj.watermarkAlpha : '',
+                            watermark_width: obj.watermarkWidth ? Number(obj.watermarkWidth) : 0,
+                            watermark_height: obj.watermarkHeight ? Number(obj.watermarkHeight) : 0,
+                            watermark_angle: obj.watermarkHeight ? Number(obj.watermarkAngle) : 0
                         }
-                    }).catch(() => this.showError())
-                } else {
-                    this.showError()
-                }
-            }).catch(() => this.showError())
+                        this.initWaterMark(watermark)
+                    } else if (res.data.data.watermark && res.data.data.watermark.watermarkTxt && res.data.data.watermark.watermarkTxt != null) {
+                        this.initWaterMark(res.data.data.watermark)
+                    }
+                    if (isOutDisplayType(res.data.data.suffix)) {
+                        customizePreviewRemoteOfficeFile(Base64.encode(Base64.decode(this.extraParam))).then(fileDate => {
+                            this.loading = false
+                            if (isExcel(res.data.data.suffix)) {
+                                this.previewExcel = true
+                                this.excelOptions.xls = res.data.data.suffix.endsWith('xls')
+                                this.dataSource = fileDate.data
+                            } else if (isHtmlType(res.data.data.suffix)) {
+                                const url = URL.createObjectURL(fileDate.data)
+                                this.showFrame = true
+                                this.pageUrl = url
+                            } else if (isText(res.data.data.suffix)) {
+                                this.previewBasic = true
+                                this.$nextTick(() => {
+                                    setTextareaHeight()
+                                })
+                                const reader = new FileReader()
+                                reader.onload = function (event) {
+                                    // 读取的文本内容,强行赋值渲染
+                                    document.getElementById('basicFileText').value = Base64.decode(event.target.result)
+                                }
+                                reader.readAsText(fileDate.data)
+                            } else if (isPic(res.data.data.suffix)) {
+                                this.imgShow = true
+                                this.imgUrl = URL.createObjectURL(fileDate.data)
+                                this.$nextTick(() => {
+                                    const viewer = new Viewer(document.getElementById('image'), {
+                                        inline: true,
+                                        viewed () {
+                                            viewer.zoomTo(1)
+                                        }
+                                    })
+                                })
+                            } else {
+                                this.pdfShow = true
+                                this.loadFile(URL.createObjectURL(fileDate.data))
+                            }
+                        })
+                    } else {
+                        this.showError()
+                    }
+                })
+            } catch (error) {
+                console.error(error)
+                this.showError()
+            }
         },
         destroyed () {
             this.cancel()
@@ -203,43 +227,6 @@
             },
             initWaterMark (param) {
                 window.initWaterMark(param)
-            },
-            dealCsv (res) {
-                const csvData = []
-                let count = 0
-                const url = URL.createObjectURL(res.data)
-                Papa.parse(url, {
-                    download: true,
-                    step: function (row) {
-                        for (let i = 0; i < row.data.length; i++) {
-                            const ele = []
-                            ele.push(count)
-                            ele.push(i)
-                            ele.push(row.data[i])
-                            csvData.push(ele)
-                        }
-                        count = count + 1
-                    },
-                    complete: function () {
-                        Table.create(
-                            '#csvTable',
-                            () => window.innerWidth,
-                            () => 900,
-                            {
-                                scrollable: true,
-                                resizable: true,
-                                selectable: true,
-                                editable: false,
-                                copyable: true
-                            }
-                        )
-                            .formulaParser((v) => `${v}-formula`)
-                            .data({
-                                cells: csvData
-                            })
-                            .render()
-                    }
-                })
             },
             loadFile (url) {
                 const loadingTask = PDFJS.getDocument(url)
@@ -281,6 +268,34 @@
 @import '@vue-office/docx/lib/index.css';
 @import '@vue-office/excel/lib/index.css';
 @import 'viewerjs/dist/viewer.css';
+/* 添加到现有项目中 */
+.pdf-container-wrapper {
+    position: relative !important;
+    width: 100% !important;
+    height: 100vh !important;
+    overflow: auto !important;
+    background: #f5f5f5 !important;
+}
+
+/* 关键：绝对定位居中 */
+.pdf-container {
+    position: absolute !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: 0 !important;
+    padding: 20px !important;
+    min-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Canvas样式重置 */
+canvas {
+    display: block !important;
+    margin: 0 auto 20px auto !important;
+    max-width: 100% !important;
+    height: auto !important;
+    background: white !important;
+}
 .preview-file-tips {
     margin-bottom: 10px;
     color: #707070;
@@ -288,8 +303,7 @@
 .textarea {
     resize: none;
     width: 100%;
-    height: 700px;
-    max-height: 700px;
+    height: 100%;
     overflow-y: auto;
     border: 1px solid #ccc;
     padding: 0 5px;

@@ -497,7 +497,12 @@ open class PermissionManager(
         val nodeDetailList = mutableListOf<NodeDetail>()
         do {
             val option = NodeListOption(
-                pageNumber = pageNumber, pageSize = 1000, includeFolder = true, includeMetadata = true, deep = true
+                pageNumber = pageNumber,
+                pageSize = 1000,
+                includeFolder = true,
+                includeMetadata = true,
+                deep = true,
+                includeTotalRecords = false
             )
             val records = nodeService.listNodePage(ArtifactInfo(projectId, repoName, prefix), option).records
             if (records.isEmpty()) {

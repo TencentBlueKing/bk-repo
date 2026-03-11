@@ -32,7 +32,6 @@
 package com.tencent.bkrepo.common.security.http.temporary
 
 import com.tencent.bkrepo.common.api.constant.ANONYMOUS_USER
-import com.tencent.bkrepo.common.api.constant.AUTH_HEADER_UID
 import com.tencent.bkrepo.common.api.constant.HttpHeaders
 import com.tencent.bkrepo.common.api.constant.TEMPORARY_TOKEN_AUTH_PREFIX
 import com.tencent.bkrepo.common.api.constant.USER_KEY
@@ -68,11 +67,8 @@ open class TemporaryTokenAuthHandler(
         require(authCredentials is TemporaryTokenAuthCredentials)
         val token = authCredentials.token
         val tokenInfo = authenticationManager.getTokenInfo(token) ?: return ANONYMOUS_USER
-        val userId = request.getHeader(AUTH_HEADER_UID).orEmpty().trim()
-            .takeIf { it.isNotEmpty() }?.apply { checkUserId(this) } ?: ANONYMOUS_USER
-        if (!tokenInfo.authorizedUserList.contains(userId)) {
-            return ANONYMOUS_USER
-        }
+        val userId = tokenInfo.createdBy
+        checkUserId(userId)
         request.setAttribute(USER_KEY, userId)
         return userId
     }

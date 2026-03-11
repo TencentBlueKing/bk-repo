@@ -31,13 +31,13 @@
 
 package com.tencent.bkrepo.repository.controller.user
 
-import com.tencent.bk.sdk.notice.config.BkNoticeConfig
-import com.tencent.bk.sdk.notice.impl.BkNoticeClient
 import com.tencent.bk.sdk.notice.model.resp.AnnouncementDTO
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.common.artifact.properties.EnableMultiTenantProperties
 import com.tencent.bkrepo.common.service.util.HttpContextHolder
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.repository.config.BkNoticeProperties
+import com.tencent.bkrepo.repository.service.notice.BkNoticeClient
 import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -50,6 +50,7 @@ import org.springframework.web.servlet.LocaleResolver
 class NoticeController(
     private val properties: BkNoticeProperties,
     private val localeResolver: LocaleResolver,
+    private val enableMultiTenant: EnableMultiTenantProperties,
 ) {
     @GetMapping
     fun listAnnouncements(
@@ -60,9 +61,17 @@ class NoticeController(
             logger.warn("The config of notice has uncorrected empty")
             return ResponseBuilder.success()
         }
-        val bkNoticeConfig = BkNoticeConfig(properties.apiBaseUrl, properties.appCode, properties.appSecret)
+        
+        // 获取租户ID（如果启用多租户）
+        val tenantId = if (enableMultiTenant.enabled) {
+            HttpContextHolder.getRequestOrNull()?.getHeader("x-bk-tenant-id")
+        } else {
+            null
+        }
+        
         val lang = localeResolver.resolveLocale(HttpContextHolder.getRequest()).toLanguageTag().lowercase()
-        return ResponseBuilder.success(BkNoticeClient(bkNoticeConfig).getCurrentAnnouncements(lang, offset, limit))
+        val client = BkNoticeClient(properties, tenantId)
+        return ResponseBuilder.success(client.getCurrentAnnouncements(lang, offset, limit))
     }
 
     companion object {

@@ -41,7 +41,8 @@ class VersionDownloadEvent(
     val packageVersion: String,
     val packageName: String,
     val packageType: String,
-    val realIpAddress: String?
+    val realIpAddress: String?,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.VERSION_DOWNLOAD,
     projectId = projectId,
@@ -55,5 +56,6 @@ class VersionDownloadEvent(
         "packageVersion" to packageVersion
     ).apply {
         realIpAddress?.let { this["realIpAddress"] = realIpAddress }
-    }
+    },
+    eventId = eventId
 )

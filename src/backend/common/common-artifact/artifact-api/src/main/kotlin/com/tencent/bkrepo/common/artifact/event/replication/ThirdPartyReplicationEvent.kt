@@ -41,7 +41,8 @@ class ThirdPartyReplicationEvent(
     val isFat: Boolean = false,
     override val projectId: String,
     override val repoName: String,
-    override val userId: String
+    override val userId: String,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.REPLICATION_THIRD_PARTY,
     projectId = projectId,
@@ -54,6 +55,7 @@ class ThirdPartyReplicationEvent(
     ).apply {
         version?.let { this["version"] = version }
         sha256?.let { this["sha256"] = sha256 }
-    }
+    },
+    eventId = eventId
 )
 

@@ -3,6 +3,7 @@ package com.tencent.bkrepo.replication.replica.replicator.base
 import com.google.common.base.Throwables
 import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.retry
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
@@ -12,22 +13,27 @@ import com.tencent.bkrepo.replication.constant.DELAY_IN_SECONDS
 import com.tencent.bkrepo.replication.constant.RETRY_COUNT
 import com.tencent.bkrepo.replication.enums.WayOfPushArtifact
 import com.tencent.bkrepo.replication.exception.ArtifactPushException
+import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.manager.LocalDataManager.Companion.federatedSource
+import com.tencent.bkrepo.replication.pojo.request.PackageVersionExistCheckRequest
 import com.tencent.bkrepo.replication.replica.context.FilePushContext
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.replicator.Replicator
 import com.tencent.bkrepo.replication.replica.replicator.base.internal.ClusterArtifactReplicationHandler
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 抽象文件复制器基类
  */
 abstract class AbstractFileReplicator(
     protected val artifactReplicationHandler: ClusterArtifactReplicationHandler,
-    protected val replicationProperties: ReplicationProperties
+    protected val replicationProperties: ReplicationProperties,
+    protected val localDataManager: LocalDataManager
 ) : Replicator {
-
     /**
      * 执行文件推送
      *
@@ -55,27 +61,33 @@ abstract class AbstractFileReplicator(
                 else -> throw IllegalArgumentException("Unsupported node type: ${node!!::class.simpleName}")
             }
 
-            retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
-                if (preCheck(this, sha256!!, storageCredentialsKey, remoteRepoType)) {
-                    logger.info(
-                        "${logPrefix}The file [$fullPath] with sha256 [$sha256] " +
-                            "will be pushed to the remote server ${cluster.name}, try the $retry time!"
-                    )
+            try {
+                retry(times = RETRY_COUNT, delayInSeconds = DELAY_IN_SECONDS) { retry ->
+                    if (preCheck(this, sha256!!, storageCredentialsKey, remoteRepoType)) {
+                        logger.info(
+                            "${logPrefix}The file [$fullPath] with sha256 [$sha256] " +
+                                "will be pushed to the remote server ${cluster.name}, try the $retry time!"
+                        )
 
-                    try {
-                        performFilePush(context, node, type, downGrade)
-                        postPush(context, node)
-                    } catch (throwable: Throwable) {
-                        handlePushException(throwable, logPrefix)
-                        // 处理降级逻辑
-                        if (shouldDowngrade(throwable)) {
-                            type = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
-                            downGrade = true
+                        try {
+                            performFilePush(context, node, type, downGrade)
+                            context.replicaProgress.fileSuccess++
+                            postPush(context, node)
+                        } catch (throwable: Throwable) {
+                            handlePushException(throwable, logPrefix)
+                            // 处理降级逻辑
+                            if (shouldDowngrade(throwable)) {
+                                type = WayOfPushArtifact.PUSH_WITH_DEFAULT.value
+                                downGrade = true
+                            }
+                            throw throwable
                         }
-                        throw throwable
                     }
+                    afterCompletion(context, node)
                 }
-                afterCompletion(context, node)
+            } catch (throwable: Throwable) {
+                context.replicaProgress.fileFailed++
+                throw throwable
             }
         }
     }
@@ -169,6 +181,109 @@ abstract class AbstractFileReplicator(
 
     protected fun blockNode(node: NodeInfo) = unNormalNode(node)
         && node.nodeMetadata?.any { it.key == FS_ATTR_KEY } == true
+
+    /**
+     * 验证并获取块节点列表
+     */
+    protected fun validateAndGetBlockNodeList(context: ReplicaContext, node: NodeInfo): List<TBlockNode>? {
+        if (!blockNode(node)) {
+            logger.warn("Node ${node.fullPath} in repo ${node.projectId}|${node.repoName} is link node.")
+            return null
+        }
+
+        val blockNodeList = localDataManager.listBlockNode(node)
+        if (blockNodeList.isEmpty()) {
+            logger.warn("Block node of ${node.fullPath} in repo ${node.projectId}|${node.repoName} is empty.")
+        }
+        return blockNodeList
+    }
+
+    /**
+     * 执行块文件传输（并发）
+     */
+    protected fun executeBlockFileTransfer(
+        blockNodeExecutor: ThreadPoolExecutor,
+        context: ReplicaContext,
+        node: NodeInfo,
+        blockNodeList: List<TBlockNode>,
+        pushBlockFile: (ReplicaContext, TBlockNode) -> Unit,
+        handleError: (ReplicaContext, NodeInfo, Throwable) -> Unit
+    ): Boolean {
+        val latch = CountDownLatch(blockNodeList.size)
+        val failureCount = AtomicInteger(0)
+
+        blockNodeList.forEach { blockNode ->
+            if (blockNodeExecutor.activeCount < replicationProperties.federatedFileConcurrencyNum) {
+                // 异步执行
+                blockNodeExecutor.execute(
+                    Runnable {
+                        try {
+                            pushBlockFile(context, blockNode)
+                        } catch (throwable: Throwable) {
+                            handleError(context, node, throwable)
+                            failureCount.incrementAndGet()
+                        } finally {
+                            latch.countDown()
+                        }
+                    }.trace()
+                )
+            } else {
+                // 同步执行
+                try {
+                    pushBlockFile(context, blockNode)
+                } catch (throwable: Throwable) {
+                    handleError(context, node, throwable)
+                    failureCount.incrementAndGet()
+                } finally {
+                    latch.countDown()
+                }
+            }
+        }
+
+        // 等待所有文件传输完成
+        latch.await()
+        return failureCount.get() == 0
+    }
+
+    override fun checkNodeExist(
+        context: ReplicaContext,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        deleted: String?
+    ): Boolean {
+        return try {
+            context.artifactReplicaClient?.checkNodeExist(
+                projectId = projectId,
+                repoName = repoName,
+                fullPath = fullPath,
+                deleted = deleted
+            )?.data == true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    override fun checkPackageVersionExist(
+        context: ReplicaContext,
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        versionName: String
+    ): Boolean {
+        return try {
+            context.artifactReplicaClient?.checkPackageVersionExist(
+                PackageVersionExistCheckRequest(
+                    projectId = projectId,
+                    repoName = repoName,
+                    packageKey = packageKey,
+                    versionName = versionName
+                )
+            )?.data == true
+        } catch (e: Exception) {
+            false
+        }
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(AbstractFileReplicator::class.java)

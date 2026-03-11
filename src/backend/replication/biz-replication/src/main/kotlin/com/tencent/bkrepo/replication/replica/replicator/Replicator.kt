@@ -31,6 +31,8 @@ import com.tencent.bkrepo.replication.pojo.request.PackageVersionDeleteSummary
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
@@ -121,4 +123,54 @@ interface Replicator {
      * 同步metadata delete操作
      */
     fun replicaMetadataDelete(context: ReplicaContext, metadataDeleteRequest: MetadataDeleteRequest): Boolean
+
+    /**
+     * 检查node是否存在
+     * @param context 同步上下文
+     * @param projectId 项目ID
+     * @param repoName 仓库名称
+     * @param fullPath 节点完整路径
+     * @param deleted 删除时间（可选，如果提供则检查已删除的节点）
+     * @return 如果节点存在返回true，否则返回false
+     */
+    fun checkNodeExist(
+        context: ReplicaContext,
+        projectId: String,
+        repoName: String,
+        fullPath: String,
+        deleted: String? = null
+    ): Boolean
+
+    /**
+     * 检查packageVersion是否存在
+     * @param context 同步上下文
+     * @param projectId 项目ID
+     * @param repoName 仓库名称
+     * @param packageKey 包键
+     * @param versionName 版本名称
+     * @return 如果包版本存在返回true，否则返回false
+     */
+    fun checkPackageVersionExist(
+        context: ReplicaContext,
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        versionName: String
+    ): Boolean
+
+    /**
+     * 同步package metadata save操作
+     */
+    fun replicaPackageMetadataSave(
+        context: ReplicaContext,
+        packageMetadataSaveRequest: PackageMetadataSaveRequest,
+    ): Boolean
+
+    /**
+     * 同步package metadata delete操作
+     */
+    fun replicaPackageMetadataDelete(
+        context: ReplicaContext,
+        packageMetadataDeleteRequest: PackageMetadataDeleteRequest,
+    ): Boolean
 }

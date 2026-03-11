@@ -74,7 +74,9 @@ interface RBlockNodeService {
     suspend fun deleteBlocks(
         projectId: String,
         repoName: String,
-        fullPath: String
+        fullPath: String,
+        uploadId: String? = null,
+        createdBeforeOrAt: LocalDateTime? = null
     )
 
     /**

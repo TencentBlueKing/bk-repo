@@ -53,7 +53,9 @@ import com.tencent.bkrepo.common.metadata.service.repo.QuotaService
 import com.tencent.bkrepo.common.metadata.service.repo.StorageCredentialService
 import com.tencent.bkrepo.common.metadata.service.router.RouterControllerService
 import com.tencent.bkrepo.common.metadata.util.ClusterUtils
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.checkOverwriteAndConflict
 import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.convertToDetail
+import com.tencent.bkrepo.common.metadata.util.NodeBaseServiceHelper.validateCreateRequest
 import com.tencent.bkrepo.common.metadata.util.NodeQueryHelper
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
@@ -124,13 +126,14 @@ class CenterNodeServiceImpl(
     }
 
     override fun deleteByFullPathWithoutDecreaseVolume(
-        projectId: String, repoName: String, fullPath: String, operator: String
+        projectId: String, repoName: String, fullPath: String, operator: String, source: String?
     ) {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteByFullPathWithoutDecreaseVolume(
             projectId,
             repoName,
             fullPath,
-            operator
+            operator,
+            source
         )
     }
 
@@ -166,9 +169,14 @@ class CenterNodeServiceImpl(
         with(createRequest) {
             val srcCluster = SecurityUtils.getClusterName() ?: clusterProperties.self.name.toString()
             val normalizeFullPath = PathUtils.normalizeFullPath(fullPath)
+            validateCreateRequest(this, normalizeFullPath)
             val existNode = nodeDao.findNode(projectId, repoName, normalizeFullPath)
                 ?: return super.createNode(createRequest)
             if (sha256 == existNode.sha256 && sha256 != FAKE_SHA256) {
+                if (!ClusterUtils.isEdgeRequest()) {
+                    // 检查覆盖和文件夹冲突
+                    checkOverwriteAndConflict(overwrite, fullPath, existNode.folder, this.folder)
+                }
                 val clusterNames = existNode.clusterNames.orEmpty().toMutableSet()
                 clusterNames.add(srcCluster)
                 val query = NodeQueryHelper.nodeQuery(projectId, repoName, normalizeFullPath)
@@ -236,7 +244,8 @@ class CenterNodeServiceImpl(
         date: LocalDateTime,
         operator: String,
         path: String,
-        decreaseVolume: Boolean
+        decreaseVolume: Boolean,
+        source: String?
     ): NodeDeleteResult {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteBeforeDate(
             projectId,
@@ -244,7 +253,8 @@ class CenterNodeServiceImpl(
             date,
             operator,
             path,
-            decreaseVolume
+            decreaseVolume,
+            source
         )
     }
 
@@ -254,7 +264,8 @@ class CenterNodeServiceImpl(
         fullPath: String,
         operator: String,
         nodeId: String,
-        deleteTime: LocalDateTime
+        deleteTime: LocalDateTime,
+        source: String?
     ): NodeDeleteResult {
         return CenterNodeDeleteSupport(this, clusterProperties).deleteNodeById(
             projectId,
@@ -262,7 +273,8 @@ class CenterNodeServiceImpl(
             fullPath,
             operator,
             nodeId,
-            deleteTime
+            deleteTime,
+            source
         )
     }
 

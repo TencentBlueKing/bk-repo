@@ -42,7 +42,8 @@ class VersionUpdatedEvent(
     val packageVersion: String,
     val packageName: String,
     val packageType: String,
-    val realIpAddress: String?
+    val realIpAddress: String?,
+    override val eventId: String? = generateEventId(),
 ) : ArtifactEvent(
     type = EventType.VERSION_UPDATED,
     projectId = projectId,
@@ -57,5 +58,6 @@ class VersionUpdatedEvent(
     ).apply {
         realIpAddress?.let { this["realIpAddress"] = realIpAddress }
     },
-    source = source
+    source = source,
+    eventId = eventId
 )

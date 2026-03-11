@@ -25,7 +25,21 @@
                 </div>
             </bk-form-item>
             <bk-form-item :label="$t('deadline')" :required="true" property="date" error-display-type="normal">
-                <bk-date-picker v-model="date" :clearable="false" :type="'datetime'" @change="resetStatus" :disabled="doing && !isComplete"></bk-date-picker>
+                <bk-date-picker
+                    v-model="date"
+                    :value="value"
+                    :clearable="false"
+                    :type="'datetime'"
+                    @change="resetStatus"
+                    :disabled="doing && !isComplete"
+                    :open="open"
+                    @pick-success="handleOk"
+                    style="margin-top: 10px;"
+                >
+                    <a slot="trigger" href="javascript:void(0)" @click="handleClick">
+                        <template>{{value}}</template>
+                    </a>
+                </bk-date-picker>
                 <div class="form-tip">{{$t('cleanFolderTip')}}</div>
             </bk-form-item>
         </bk-form>
@@ -40,9 +54,9 @@
 
 <script>
     import { mapActions } from 'vuex'
-    import { convertFileSize } from '@repository/utils'
+    import { convertFileSize, formatDate, formatNow } from '@repository/utils'
     export default {
-        name: 'genericCleanDialog',
+        name: 'GenericCleanDialog',
         data () {
             return {
                 show: false,
@@ -52,10 +66,24 @@
                 paths: [],
                 displayPaths: [],
                 date: new Date(),
+                realDate: new Date(),
                 rules: {
                 },
                 isComplete: false,
-                doing: false
+                doing: false,
+                open: false,
+                value: ''
+            }
+        },
+        watch: {
+            show: {
+                handler (val) {
+                    if (val) {
+                        this.date = formatNow()
+                        this.value = this.date
+                    }
+                },
+                immediate: true
             }
         },
         methods: {
@@ -63,6 +91,12 @@
                 'cleanNode',
                 'getFolderSizeBefore'
             ]),
+            handleClick () {
+                this.open = !this.open
+            },
+            handleOk () {
+                this.open = false
+            },
             cancel () {
                 this.$emit('refresh')
                 this.show = false
@@ -126,7 +160,8 @@
                 this.$emit('refresh')
                 this.doing = false
             },
-            resetStatus () {
+            resetStatus (date) {
+                this.value = formatDate(date)
                 if (this.doing === false && this.isComplete === true) {
                     this.isComplete = false
                     for (let i = 0; i < this.paths.length; i++) {
