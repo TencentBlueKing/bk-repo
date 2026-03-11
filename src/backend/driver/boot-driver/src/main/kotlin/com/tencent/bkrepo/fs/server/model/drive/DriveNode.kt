@@ -35,7 +35,7 @@ fun TDriveNode.toDriveNode(): DriveNode {
         lastAccessDate = lastAccessDate,
         projectId = projectId,
         repoName = repoName,
-        ino = ino,
+        ino = targetIno ?: ino,
         parent = parent,
         name = name,
         size = size,

@@ -13,6 +13,8 @@ import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REP
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_IDX_DEF
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.PROJECT_REPO_MODIFIED_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TARGET_INO_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TARGET_INO_IDX_DEF
 import com.tencent.bkrepo.repository.constant.PROJECT_ID
 import com.tencent.bkrepo.repository.constant.REPO_NAME
 import org.springframework.data.mongodb.core.index.CompoundIndex
@@ -24,14 +26,14 @@ import java.time.LocalDateTime
 /**
  * Drive 文件系统 inode 条目
  *
- * 硬链接策略：单表冗余存储。同一 ino 可对应多条记录（不同 parent + name），
  * 修改非当前快照记录时采用 COW（写时复制）：创建同 ino 的新副本后再修改，并标记旧记录删除，这样可支持快照并避免修改子节点和块节点的关联 ino，
  * 属性字段冗余存储在每条记录中。属性变更时通过 updateMany(ino) 批量同步。
  * 硬链接使用场景极少，以常规操作的单次查询性能为优先。
  */
 @ShardingDocument("drive_node")
 @CompoundIndexes(
-    CompoundIndex(name = INO_IDX, def = INO_IDX_DEF, background = true),
+    CompoundIndex(name = INO_IDX, def = INO_IDX_DEF, unique = true, background = true),
+    CompoundIndex(name = TARGET_INO_IDX, def = TARGET_INO_IDX_DEF, background = true),
     CompoundIndex(name = PARENT_NAME_IDX, def = PARENT_NAME_IDX_DEF, unique = true, background = true),
     CompoundIndex(name = PARENT_SNAP_IDX, def = PARENT_SNAP_IDX_DEF, background = true),
     CompoundIndex(name = PROJECT_REPO_IDX, def = PROJECT_REPO_IDX_DEF, background = true),
@@ -50,10 +52,16 @@ data class TDriveNode(
     var repoName: String,
 
     /**
-     * 自身 inode 号
+     * 自身 inode 号，在仓库内需要保证唯一避免drive-block-node数据混淆
      */
     @Field(targetType = FieldType.OBJECT_ID)
     var ino: String,
+
+    /**
+     * 硬链接指向的目标Ino，仅后端使用，该字段存在时替代ino返回给客户端
+     */
+    @Field(targetType = FieldType.OBJECT_ID)
+    var targetIno: String? = null,
 
     /**
      * 父目录 inode 号，根节点该字段值为null
@@ -126,13 +134,22 @@ data class TDriveNode(
      */
     var deleteSnapSeq: Long = Long.MAX_VALUE,
 ) {
+
+    /**
+     * 获取实际Ino，由于ino必须设置唯一索引避免重复导致block数据混乱，但是硬链接与普通node的ino不能重复，因此硬链接的ino为占位无实际作用，
+     * 需要使用targetIno访问
+     */
+    fun realIno() = targetIno ?: ino
+
     companion object {
         const val TYPE_FILE = 1
         const val TYPE_DIRECTORY = 2
         const val TYPE_SYMLINK = 3
         val ALLOWED_TYPES = setOf(TYPE_FILE, TYPE_DIRECTORY, TYPE_SYMLINK)
         const val INO_IDX = "ino_idx"
-        const val INO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'ino': 1, 'deleteSnapSeq': 1, 'snapSeq': 1}"
+        const val INO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'ino': 1, 'deleted': 1}"
+        const val TARGET_INO_IDX = "target_ino_idx"
+        const val TARGET_INO_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'targetIno': 1}"
         const val PARENT_NAME_IDX = "parent_name_idx"
         const val PARENT_NAME_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'parent': 1, 'name': 1, 'deleted': 1}"
         const val PARENT_SNAP_IDX = "parent_snap_idx"

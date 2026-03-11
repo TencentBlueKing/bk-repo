@@ -83,7 +83,7 @@ class DriveNodeService(
             )
             checkConflict(driveNode)
             val createdNode = doCreate(driveNode)
-            logger.info("Create drive node[$projectId/$repoName/${createdNode.ino}/${createdNode.name}] success.")
+            logger.info("Create drive node[$projectId/$repoName/${createdNode.realIno()}/${createdNode.name}] success.")
             return createdNode.toDriveNode()
         }
     }
@@ -108,7 +108,7 @@ class DriveNodeService(
                 if (!overwrite || srcNode.type != targetNode.type) {
                     throw ErrorCodeException(ArtifactMessageCode.NODE_EXISTED, destName)
                 }
-                if (targetNode.ino == srcNode.ino) {
+                if (targetNode.realIno() == srcNode.realIno()) {
                     throw ErrorCodeException(
                         CommonMessageCode.PARAMETER_INVALID,
                         "${srcNode.name} and ${targetNode.name} are the same file"
@@ -137,7 +137,7 @@ class DriveNodeService(
                 srcNode.copy(parent = destParent, name = destName, lastModifiedBy = operator, lastModifiedDate = now)
             }
             logger.info(
-                "Move drive node[$projectId/$repoName/${srcNode.ino}] from[${srcNode.parent}/${srcNode.name}] " +
+                "Move drive node[$projectId/$repoName/${srcNode.realIno()}] from[${srcNode.parent}/${srcNode.name}] " +
                         "to[$destParent/$destName] success."
             )
             return movedNode.toDriveNode()
@@ -156,7 +156,7 @@ class DriveNodeService(
                 checkConflict(updatedNode)
             }
             val savedNode = saveUpdatedNode(srcNode, updatedNode, updateRequest, currentSnapSeq, operator, now)
-            logger.info("Update drive node[$projectId/$repoName/${srcNode.ino}] id[$nodeId] success.")
+            logger.info("Update drive node[$projectId/$repoName/${srcNode.realIno()}] id[$nodeId] success.")
             return savedNode.toDriveNode()
         }
     }
@@ -169,7 +169,8 @@ class DriveNodeService(
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
             doDelete(srcNode, currentSnapSeq, if (force) null else lastModifiedDate)
             logger.info(
-                "Delete drive node[$projectId/$repoName/${srcNode.ino}] at[${srcNode.parent}/${srcNode.name}] success."
+                "Delete drive node[$projectId/$repoName/${srcNode.realIno()}] " +
+                        "at[${srcNode.parent}/${srcNode.name}] success."
             )
             return srcNode.toDriveNode()
         }
