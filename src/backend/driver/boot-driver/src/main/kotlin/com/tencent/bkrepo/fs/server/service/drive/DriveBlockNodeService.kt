@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.fs.server.service.drive
 
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
+import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
 import com.tencent.bkrepo.fs.server.repository.RDriveBlockNodeDao
-import com.tencent.bkrepo.fs.server.response.drive.RDriveSnapSeqDao
+import com.tencent.bkrepo.fs.server.repository.drive.RDriveSnapSeqDao
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -30,21 +30,22 @@ class DriveBlockNodeService(
         }
     }
 
-    suspend fun listBlocks(range: Range, ino: String): List<TDriveBlockNode> {
-        val criteria = curSnapCriteria(ino)
+    suspend fun listBlocks(range: Range, projectId: String, repoName: String, ino: String): List<TDriveBlockNode> {
+        val criteria = curSnapCriteria(projectId, repoName, ino)
             .and(TDriveBlockNode::startPos.name).lte(range.end)
             .and(TDriveBlockNode::endPos.name).gte(range.start)
         val query = Query(criteria).with(Sort.by(TDriveBlockNode::createdDate.name))
         return driveBlockNodeDao.find(query)
     }
 
-    suspend fun listAllBlocks(ino: String): List<TDriveBlockNode> {
-        val query = Query(curSnapCriteria(ino)).with(Sort.by(TDriveBlockNode::createdDate.name))
+    suspend fun listAllBlocks(projectId: String, repoName: String, ino: String): List<TDriveBlockNode> {
+        val criteria = curSnapCriteria(projectId, repoName, ino)
+        val query = Query(criteria).with(Sort.by(TDriveBlockNode::createdDate.name))
         return driveBlockNodeDao.find(query)
     }
 
-    suspend fun deleteBlocks(ino: String, curSnapSeq: Long) {
-        val criteria = curSnapCriteria(ino)
+    suspend fun deleteBlocks(projectId: String, repoName: String, ino: String, curSnapSeq: Long) {
+        val criteria = curSnapCriteria(projectId, repoName, ino)
         val update = Update()
             .set(TDriveBlockNode::deleted.name, LocalDateTime.now())
             .set(TDriveBlockNode::deleteSnapSeq.name, curSnapSeq)
@@ -52,8 +53,14 @@ class DriveBlockNodeService(
         logger.info("Delete ${result.modifiedCount} drive blocks[$ino] at snapSeq[$curSnapSeq] success.")
     }
 
-    suspend fun restoreBlocks(ino: String, curSnapSeq: Long, nodeDeleteDate: LocalDateTime) {
-        val criteria = deletedCriteria(ino, curSnapSeq, nodeDeleteDate)
+    suspend fun restoreBlocks(
+        projectId: String,
+        repoName: String,
+        ino: String,
+        curSnapSeq: Long,
+        nodeDeleteDate: LocalDateTime
+    ) {
+        val criteria = deletedCriteria(projectId, repoName, ino, curSnapSeq, nodeDeleteDate)
         val update = Update()
             .set(TDriveBlockNode::deleted.name, null)
             .set(TDriveBlockNode::deleteSnapSeq.name, Long.MAX_VALUE)
@@ -65,7 +72,7 @@ class DriveBlockNodeService(
 
     suspend fun checkBlockExist(blockNode: TDriveBlockNode): Boolean {
         with(blockNode) {
-            val criteria = curSnapCriteria(ino)
+            val criteria = curSnapCriteria(projectId, repoName, ino)
                 .and(TDriveBlockNode::startPos.name).`is`(startPos)
                 .and(TDriveBlockNode::sha256.name).`is`(sha256)
             return driveBlockNodeDao.exists(Query(criteria))
@@ -73,21 +80,33 @@ class DriveBlockNodeService(
     }
 
     suspend fun listDeletedBlocks(
+        projectId: String,
+        repoName: String,
         ino: String,
         curSnapSeq: Long,
         nodeDeleteDate: LocalDateTime
     ): List<TDriveBlockNode> {
-        val query = Query(deletedCriteria(ino, curSnapSeq, nodeDeleteDate))
+        val query = Query(deletedCriteria(projectId, repoName, ino, curSnapSeq, nodeDeleteDate))
         return driveBlockNodeDao.find(query)
     }
 
-    private fun curSnapCriteria(ino: String): Criteria {
+    private fun curSnapCriteria(projectId: String, repoName: String, ino: String): Criteria {
         return Criteria.where(TDriveBlockNode::ino.name).`is`(ino)
+            .and(TDriveBlockNode::projectId.name).isEqualTo(projectId)
+            .and(TDriveBlockNode::repoName.name).isEqualTo(repoName)
             .and(TDriveBlockNode::deleteSnapSeq.name).`is`(Long.MAX_VALUE)
     }
 
-    private fun deletedCriteria(ino: String, curSnapSeq: Long, nodeDeleteDate: LocalDateTime): Criteria {
+    private fun deletedCriteria(
+        projectId: String,
+        repoName: String,
+        ino: String,
+        curSnapSeq: Long,
+        nodeDeleteDate: LocalDateTime
+    ): Criteria {
         return Criteria.where(TDriveBlockNode::ino.name).`is`(ino)
+            .and(TDriveBlockNode::projectId.name).isEqualTo(projectId)
+            .and(TDriveBlockNode::repoName.name).isEqualTo(repoName)
             .and(TDriveBlockNode::deleteSnapSeq.name).isEqualTo(curSnapSeq)
             .and(TDriveBlockNode::deleted.name).isEqualTo(nodeDeleteDate)
     }

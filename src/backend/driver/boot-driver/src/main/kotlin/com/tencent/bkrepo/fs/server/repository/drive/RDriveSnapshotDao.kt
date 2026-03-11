@@ -1,4 +1,4 @@
-package com.tencent.bkrepo.fs.server.response.drive
+package com.tencent.bkrepo.fs.server.repository.drive
 
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot

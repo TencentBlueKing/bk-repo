@@ -3,14 +3,13 @@ package com.tencent.bkrepo.fs.server.service.drive
 import com.tencent.bkrepo.common.artifact.api.ArtifactFile
 import com.tencent.bkrepo.common.artifact.stream.ArtifactInputStream
 import com.tencent.bkrepo.common.artifact.stream.Range
-import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
 import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.RepositoryCache
+import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
+import com.tencent.bkrepo.fs.server.utils.CoroutineContextUtils.withTraceContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -22,9 +21,9 @@ class CoDriveStorageManager(
 ) {
 
     suspend fun storeBlock(artifactFile: ArtifactFile, blockNode: TDriveBlockNode) {
-        withContext(Dispatchers.IO + currentCoroutineContext()) {
+        withTraceContext(Dispatchers.IO) {
             val digest = artifactFile.getFileSha256()
-            val repo = RepositoryCache.Companion.getRepoDetail(blockNode.projectId, blockNode.repoName)
+            val repo = RepositoryCache.getRepoDetail(blockNode.projectId, blockNode.repoName)
             val storageCredentials = repo.storageCredentials
             val stored = storageService.store(digest, artifactFile, storageCredentials)
             try {
@@ -50,7 +49,7 @@ class CoDriveStorageManager(
         range: Range,
         storageCredentials: StorageCredentials?
     ): ArtifactInputStream? {
-        return withContext(Dispatchers.IO + currentCoroutineContext()) {
+        return withTraceContext(Dispatchers.IO) {
             try {
                 storageService.load(blocks, range, storageCredentials)
             } catch (e: Exception) {

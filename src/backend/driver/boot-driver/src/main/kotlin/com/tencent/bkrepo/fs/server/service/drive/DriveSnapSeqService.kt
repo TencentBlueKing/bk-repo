@@ -4,7 +4,7 @@ import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
-import com.tencent.bkrepo.fs.server.response.drive.RDriveSnapSeqDao
+import com.tencent.bkrepo.fs.server.repository.drive.RDriveSnapSeqDao
 import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapSeq
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional

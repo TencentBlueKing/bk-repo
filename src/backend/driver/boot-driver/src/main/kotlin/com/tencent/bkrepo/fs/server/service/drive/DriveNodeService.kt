@@ -10,10 +10,10 @@ import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.message.DriveMessageCode
-import com.tencent.bkrepo.fs.server.model.drive.DriveNode
+import com.tencent.bkrepo.fs.server.response.drive.DriveNode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
-import com.tencent.bkrepo.fs.server.model.drive.toDriveNode
+import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.repository.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeCreateRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeDeleteRequest
