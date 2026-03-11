@@ -137,6 +137,7 @@ class RouteConfiguration(
                 addMetrics(serverMetrics.downloadingCount)
             }
             "/node".nest {
+                POST("/batch/{projectId}/{repoName}", driveNodeOperationsHandler::batch)
                 GET("/page/{projectId}/{repoName}", driveNodeOperationsHandler::listNodesPage)
                 GET("/modified/page/{projectId}/{repoName}", driveNodeOperationsHandler::listModifiedNodesPage)
             }

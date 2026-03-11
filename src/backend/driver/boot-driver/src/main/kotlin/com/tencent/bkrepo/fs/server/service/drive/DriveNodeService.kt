@@ -13,16 +13,24 @@ import com.tencent.bkrepo.fs.server.message.DriveMessageCode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
 import com.tencent.bkrepo.fs.server.repository.RDriveNodeDao
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOp
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeCreateRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeDeleteRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeMoveRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeUpdateRequest
 import com.tencent.bkrepo.fs.server.request.drive.normalizedSymlinkTarget
+import com.tencent.bkrepo.fs.server.request.drive.toCreateRequest
+import com.tencent.bkrepo.fs.server.request.drive.toDeleteRequest
 import com.tencent.bkrepo.fs.server.request.drive.toDriveNode
+import com.tencent.bkrepo.fs.server.request.drive.toUpdateRequest
 import com.tencent.bkrepo.fs.server.response.drive.DriveNode
+import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResponse
+import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
 import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
@@ -201,6 +209,52 @@ class DriveNodeService(
             )
             return srcNode.toDriveNode()
         }
+    }
+
+    suspend fun batch(batchRequest: DriveNodeBatchRequest): DriveNodeBatchResponse {
+        with(batchRequest) {
+            validateProjectRepo(projectId, repoName)
+            val currentSnapSeq = driveSnapSeqService.getLatestSnapSeq(projectId, repoName)
+            var successCount = 0
+            var failedCount = 0
+            val results = operations.map {
+                try {
+                    val resultNode = when (it.op) {
+                        DriveNodeBatchOp.CREATE -> createNode(
+                            it.node.toCreateRequest(projectId, repoName),
+                            currentSnapSeq
+                        )
+
+                        DriveNodeBatchOp.UPDATE -> update(it.node.toUpdateRequest(projectId, repoName), currentSnapSeq)
+                        DriveNodeBatchOp.DELETE -> delete(it.node.toDeleteRequest(projectId, repoName), currentSnapSeq)
+                        DriveNodeBatchOp.CREATE_HARD_LINK -> createHardLinkNode(
+                            it.node.toCreateRequest(projectId, repoName),
+                            currentSnapSeq
+                        )
+                    }
+                    successCount++
+                    DriveNodeBatchResult(ino = resultNode.ino, code = SUCCESS_CODE, message = null)
+                } catch (e: Exception) {
+                    failedCount++
+                    val code = if (e is ErrorCodeException) {
+                        e.messageCode.getCode()
+                    } else {
+                        CommonMessageCode.SYSTEM_ERROR.getCode()
+                    }
+                    DriveNodeBatchResult(ino = it.node.ino, nodeId = it.node.nodeId, code = code, message = e.message)
+                }
+            }
+            logger.info(
+                "Batch operate drive nodes[$projectId/$repoName], " +
+                        "total[${operations.size}] success[$successCount] failed[$failedCount]."
+            )
+            return results
+        }
+    }
+
+    private suspend fun createHardLinkNode(createRequest: DriveNodeCreateRequest, snapSeq: Long): DriveNode {
+        val hardLinkRequest = createRequest.copy(ino = ObjectId().toHexString(), targetIno = createRequest.ino)
+        return createNode(hardLinkRequest, snapSeq)
     }
 
     private suspend fun doDelete(driveNode: TDriveNode, curSnapSeq: Long, lastModifiedDate: LocalDateTime? = null) {
@@ -426,6 +480,7 @@ class DriveNodeService(
     }
 
     companion object {
+        private const val SUCCESS_CODE = 0
         private val logger = LoggerFactory.getLogger(DriveNodeService::class.java)
     }
 }
