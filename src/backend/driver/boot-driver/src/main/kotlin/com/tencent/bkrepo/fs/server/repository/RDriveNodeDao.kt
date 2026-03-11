@@ -30,11 +30,26 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
     suspend fun nodePage(
         projectId: String,
         repoName: String,
-        parent: String,
+        parent: String?,
         pageRequest: PageRequest,
         includeTotalRecords: Boolean = false,
     ): Pair<List<TDriveNode>, Long> {
         val criteria = listChildrenCriteria(projectId, repoName, parent)
+        val totalRecords = if (includeTotalRecords) count(Query(criteria)) else 0L
+        val records = find(Query(criteria).with(pageRequest))
+        return Pair(records, totalRecords)
+    }
+
+    suspend fun modifiedNodePage(
+        projectId: String,
+        repoName: String,
+        lastModifiedDate: LocalDateTime,
+        pageRequest: PageRequest,
+        includeTotalRecords: Boolean = false,
+    ): Pair<List<TDriveNode>, Long> {
+        val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
+            .and(TDriveNode::repoName).isEqualTo(repoName)
+            .and(TDriveNode::lastModifiedDate).gt(lastModifiedDate)
         val totalRecords = if (includeTotalRecords) count(Query(criteria)) else 0L
         val records = find(Query(criteria).with(pageRequest))
         return Pair(records, totalRecords)
@@ -69,9 +84,11 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
             .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
         lastModifiedDate?.let { criteria.and(TDriveNode::lastModifiedDate).isEqualTo(it) }
         val query = Query(criteria)
+        val now = LocalDateTime.now()
         val update = Update()
+            .set(TDriveNode::lastModifiedDate.name, now)
             .set(TDriveNode::deleteSnapSeq.name, snapSeq)
-            .set(TDriveNode::deleted.name, LocalDateTime.now())
+            .set(TDriveNode::deleted.name, now)
         return updateFirst(query, update)
     }
 
@@ -137,20 +154,17 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
     private fun listChildrenCriteria(
         projectId: String,
         repoName: String,
-        parent: String,
+        parent: String? = null,
         snapSeq: Long? = null,
     ): Criteria {
+        val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
+            .and(TDriveNode::repoName.name).isEqualTo(repoName)
+        parent?.let { criteria.and(TDriveNode::parent).isEqualTo(it) }
         return if (snapSeq == null) {
-            where(TDriveNode::projectId).isEqualTo(projectId)
-                .and(TDriveNode::repoName.name).isEqualTo(repoName)
-                .and(TDriveNode::parent).isEqualTo(parent)
-                .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
+            criteria.and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
                 .and(TDriveNode::deleted).isEqualTo(null)
         } else {
-            where(TDriveNode::projectId).isEqualTo(projectId)
-                .and(TDriveNode::repoName).isEqualTo(repoName)
-                .and(TDriveNode::parent).isEqualTo(parent)
-                .and(TDriveNode::snapSeq).lte(snapSeq)
+            criteria.and(TDriveNode::snapSeq).lte(snapSeq)
                 .and(TDriveNode::deleteSnapSeq).gt(snapSeq)
         }
     }

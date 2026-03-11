@@ -44,6 +44,7 @@ import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.drive.DriveOperationHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveNodeOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import org.slf4j.LoggerFactory
@@ -72,6 +73,7 @@ class RouteConfiguration(
     private val fsNodeHandler: FsNodeHandler,
     private val clientHandler: ClientHandler,
     private val driveOperationHandler: DriveOperationHandler,
+    private val driveNodeOperationsHandler: DriveNodeOperationsHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
     private val serverMetrics: ServerMetrics,
     private val devXAccessFilter: DevXAccessFilter,
@@ -133,6 +135,10 @@ class RouteConfiguration(
             accept(APPLICATION_OCTET_STREAM).nest {
                 GET("/{projectId}/{repoName}/{ino}", driveOperationHandler::read)
                 addMetrics(serverMetrics.downloadingCount)
+            }
+            "/node".nest {
+                GET("/page/{projectId}/{repoName}", driveNodeOperationsHandler::listNodesPage)
+                GET("/modified/page/{projectId}/{repoName}", driveNodeOperationsHandler::listModifiedNodesPage)
             }
         }
 

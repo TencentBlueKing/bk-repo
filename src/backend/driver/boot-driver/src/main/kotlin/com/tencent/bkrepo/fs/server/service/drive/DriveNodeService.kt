@@ -10,10 +10,8 @@ import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.message.DriveMessageCode
-import com.tencent.bkrepo.fs.server.response.drive.DriveNode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
-import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.repository.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeCreateRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeDeleteRequest
@@ -21,6 +19,8 @@ import com.tencent.bkrepo.fs.server.request.drive.DriveNodeMoveRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeUpdateRequest
 import com.tencent.bkrepo.fs.server.request.drive.normalizedSymlinkTarget
 import com.tencent.bkrepo.fs.server.request.drive.toDriveNode
+import com.tencent.bkrepo.fs.server.response.drive.DriveNode
+import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.slf4j.LoggerFactory
@@ -61,14 +61,14 @@ class DriveNodeService(
     suspend fun listNodesPage(
         projectId: String,
         repoName: String,
-        parent: String,
+        parent: String?,
         pageNumber: Int,
         pageSize: Int,
         includeTotalRecords: Boolean = false,
     ): Page<DriveNode> {
-        validateProjectRepoAndParent(projectId, repoName, parent)
-        Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
-        Preconditions.checkArgument(pageSize >= 0 && pageSize <= driveProperties.listCountLimit, "pageSize")
+        validateProjectRepo(projectId, repoName)
+        parent?.let { Preconditions.checkArgument(parent.isNotBlank(), TDriveNode::parent.name) }
+        validatePage(pageNumber, pageSize)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val (records, totalRecords) = driveNodeDao.nodePage(
             projectId,
@@ -76,6 +76,27 @@ class DriveNodeService(
             parent,
             pageRequest,
             includeTotalRecords
+        )
+        return Pages.ofResponse(pageRequest, totalRecords, records.map { it.toDriveNode() })
+    }
+
+    suspend fun listModifiedNodesPage(
+        projectId: String,
+        repoName: String,
+        lastModifiedDate: LocalDateTime,
+        pageNumber: Int,
+        pageSize: Int,
+        includeTotalRecords: Boolean = false,
+    ): Page<DriveNode> {
+        validateProjectRepo(projectId, repoName)
+        validatePage(pageNumber, pageSize)
+        val pageRequest = Pages.ofRequest(pageNumber, pageSize)
+        val (records, totalRecords) = driveNodeDao.modifiedNodePage(
+            projectId = projectId,
+            repoName = repoName,
+            lastModifiedDate = lastModifiedDate,
+            pageRequest = pageRequest,
+            includeTotalRecords = includeTotalRecords
         )
         return Pages.ofResponse(pageRequest, totalRecords, records.map { it.toDriveNode() })
     }
@@ -397,6 +418,11 @@ class DriveNodeService(
     private suspend fun validateProjectRepo(projectId: String, repoName: String) {
         Preconditions.checkArgument(projectId.isNotBlank(), TDriveNode::projectId.name)
         Preconditions.checkArgument(repoName.isNotBlank(), TDriveNode::repoName.name)
+    }
+
+    private suspend fun validatePage(pageNumber: Int, pageSize: Int) {
+        Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
+        Preconditions.checkArgument(pageSize >= 0 && pageSize <= driveProperties.listCountLimit, "pageSize")
     }
 
     companion object {
