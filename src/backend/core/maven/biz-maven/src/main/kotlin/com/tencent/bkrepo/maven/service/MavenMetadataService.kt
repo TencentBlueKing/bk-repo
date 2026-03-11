@@ -237,9 +237,9 @@ class MavenMetadataService(
         val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(request.projectId)
             .and(TMavenMetadataRecord::repoName.name).`is`(request.repoName)
             .apply {
-                request.groupId?.let { and(TMavenMetadataRecord::groupId.name).`is`(it) }
-                request.artifactId?.let { and(TMavenMetadataRecord::artifactId.name).`is`(it) }
-                request.version?.let { and(TMavenMetadataRecord::version.name).`is`(it) }
+                request.groupId?.let { and(TMavenMetadataRecord::groupId.name).regex(it, "i") }
+                request.artifactId?.let { and(TMavenMetadataRecord::artifactId.name).regex(it, "i") }
+                request.version?.let { and(TMavenMetadataRecord::version.name).regex(it, "i") }
             }
         val matchStage = Aggregation.match(criteria)
         val groupStage = Aggregation.group(field).first(field).`as`(field)

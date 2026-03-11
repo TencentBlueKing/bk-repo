@@ -33,6 +33,6 @@ data class MavenGroupSearchRequest(
     val groupId: String? = null,
     val artifactId: String? = null,
     val version: String? = null,
-    val pageNumber: Int = 1,
+    val pageNumber: Int = 0,
     val pageSize: Int = 10
 )
