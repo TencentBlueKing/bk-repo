@@ -8,12 +8,10 @@ import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
-import org.springframework.data.mongodb.core.aggregate
 import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
-import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
@@ -51,9 +49,7 @@ class MediaTranscodeJobDao : SimpleMongoDao<TMediaTranscodeJob>() {
         val groupOperation = Aggregation.group(TMediaTranscodeJob::projectId.name)
             .count().`as`("count")
         val aggregation = Aggregation.newAggregation(matchOperation, groupOperation)
-        val results = determineMongoTemplate().aggregate<org.bson.Document>(
-            aggregation, determineCollectionName()
-        )
+        val results = aggregate(aggregation, org.bson.Document::class.java)
         return results.mappedResults.associate { doc ->
             (doc.getString("_id") ?: "") to (doc.getInteger("count", 0).toLong())
         }
