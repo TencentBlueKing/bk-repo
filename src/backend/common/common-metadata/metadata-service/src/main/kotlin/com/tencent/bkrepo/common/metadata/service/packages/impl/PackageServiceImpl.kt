@@ -398,6 +398,7 @@ class PackageServiceImpl(
             extension = request.extension ?: extension
             lastModifiedBy = operator
             lastModifiedDate = LocalDateTime.now()
+            federatedSource = request.source
         }
         packageVersionDao.save(tPackageVersion)
         publishEvent(
@@ -541,6 +542,7 @@ class PackageServiceImpl(
                 metadata = packageVersionMetadata
                 tags = request.tags?.filter { it.isNotBlank() }.orEmpty()
                 extension = request.extension.orEmpty()
+                federatedSource = source
             }
             packageVersionDao.save(oldVersion)
             packageDao.upsert(packageQuery, packageUpdate)
@@ -656,7 +658,8 @@ class PackageServiceImpl(
                     contentPath = it.artifactPath,
                     contentPaths = it.artifactPaths ?: it.artifactPath?.let { path -> setOf(path) },
                     manifestPath = it.manifestPath,
-                    clusterNames = it.clusterNames
+                    clusterNames = it.clusterNames,
+                    federatedSource = it.federatedSource,
                 )
             }
         }

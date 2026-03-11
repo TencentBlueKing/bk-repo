@@ -72,7 +72,8 @@ data class TPackageVersion(
      * PackageVersion 所在区域
      * 由于比较版本间内容是否相似成本较高，不支持不同区域相同PackageVersion，所以目前clusterNames只会有一个值
      */
-    var clusterNames: Set<String>? = null
+    var clusterNames: Set<String>? = null,
+    var federatedSource: String? = null,
 ): ClusterResource {
     override fun readClusterNames(): Set<String>? {
         return this.clusterNames
