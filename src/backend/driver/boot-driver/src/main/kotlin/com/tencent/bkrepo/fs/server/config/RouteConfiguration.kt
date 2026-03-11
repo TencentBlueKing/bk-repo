@@ -43,6 +43,7 @@ import com.tencent.bkrepo.fs.server.handler.ClientHandler
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveOperationHandler
 import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import org.slf4j.LoggerFactory
@@ -70,6 +71,7 @@ class RouteConfiguration(
     private val loginHandler: LoginHandler,
     private val fsNodeHandler: FsNodeHandler,
     private val clientHandler: ClientHandler,
+    private val driveOperationHandler: DriveOperationHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
     private val serverMetrics: ServerMetrics,
     private val devXAccessFilter: DevXAccessFilter,
@@ -121,6 +123,18 @@ class RouteConfiguration(
             addMetrics(serverMetrics.uploadingCount)
         }
 
+
+        "/drive".nest {
+            "/block".nest {
+                filter(artifactFileCleanupFilterFunction::filter)
+                PUT("/{projectId}/{repoName}/{ino}/{offset}", driveOperationHandler::write)
+                addMetrics(serverMetrics.uploadingCount)
+            }
+            accept(APPLICATION_OCTET_STREAM).nest {
+                GET("/{projectId}/{repoName}/{ino}", driveOperationHandler::read)
+                addMetrics(serverMetrics.downloadingCount)
+            }
+        }
 
         "/client".nest {
             POST("/create/{projectId}/{repoName}", clientHandler::createClient)

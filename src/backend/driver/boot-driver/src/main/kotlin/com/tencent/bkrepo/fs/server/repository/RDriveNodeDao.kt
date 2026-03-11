@@ -49,6 +49,15 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
         return findOne(Query(criteria))
     }
 
+    suspend fun findByProjectIdAndRepoNameAndIno(projectId: String, repoName: String, ino: String): TDriveNode? {
+        val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
+            .and(TDriveNode::repoName).isEqualTo(repoName)
+            .and(TDriveNode::ino).isEqualTo(ino)
+            .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
+            .and(TDriveNode::deleted).isNull()
+        return findOne(Query(criteria))
+    }
+
     suspend fun findCurrentNode(projectId: String, repoName: String, parent: String, name: String): TDriveNode? {
         val query = Query(currentParentNameCriteria(projectId, repoName, parent, name))
         return findOne(query)

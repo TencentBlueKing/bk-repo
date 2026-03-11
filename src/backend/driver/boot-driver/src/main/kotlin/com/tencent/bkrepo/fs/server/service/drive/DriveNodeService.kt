@@ -47,6 +47,12 @@ class DriveNodeService(
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, id)
     }
 
+    suspend fun getNodeByIno(projectId: String, repoName: String, ino: String): DriveNode {
+        validateProjectRepo(projectId, repoName)
+        return driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)?.toDriveNode()
+            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
+    }
+
     suspend fun listNodes(projectId: String, repoName: String, parent: String): List<DriveNode> {
         validateProjectRepoAndParent(projectId, repoName, parent)
         return driveNodeDao.listNode(projectId, repoName, parent).map { it.toDriveNode() }

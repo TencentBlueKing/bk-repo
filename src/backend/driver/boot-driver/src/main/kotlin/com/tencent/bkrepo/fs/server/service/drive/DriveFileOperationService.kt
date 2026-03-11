@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
-import com.tencent.bkrepo.fs.server.request.drive.DriveBlockRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveBlockWriteRequest
 import com.tencent.bkrepo.fs.server.response.drive.DriveNode
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
 import org.springframework.stereotype.Component
@@ -25,7 +25,7 @@ class DriveFileOperationService(
         }
     }
 
-    suspend fun write(artifactFile: CoArtifactFile, request: DriveBlockRequest, user: String): TDriveBlockNode {
+    suspend fun write(artifactFile: CoArtifactFile, request: DriveBlockWriteRequest, user: String): TDriveBlockNode {
         with(request) {
             val blockNode = TDriveBlockNode(
                 createdBy = user,
