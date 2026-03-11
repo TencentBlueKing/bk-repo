@@ -47,8 +47,8 @@ class TranscodeJobService @Autowired constructor(
     private val transcodeJobConfigDao: TranscodeJobConfigDao
 ) {
     @Async
-    fun startJob(config: TMediaTranscodeJobConfig) {
-        val job = mediaTranscodeJobDao.findAndQueueOldestWaitingJob() ?: run {
+    fun startJob(projectId: String, config: TMediaTranscodeJobConfig) {
+        val job = mediaTranscodeJobDao.findAndQueueOldestWaitingJob(projectId) ?: run {
             logger.debug("no waiting job to run")
             return
         }

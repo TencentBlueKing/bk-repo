@@ -35,23 +35,32 @@ class TranscodeCronJob @Autowired constructor(
     @Scheduled(fixedDelay = 1 * 1000)
     fun startTranscodeJob() {
         // 判断是否超出最大任务数上线
-        val config =
-            transcodeJobConfigDao.findOne(Query(where(TMediaTranscodeJobConfig::projectId).`is`(null))) ?: kotlin.run {
-                logger.error("startTranscodeJob no default config")
-                return
+        val configs = transcodeJobConfigDao.findAll()
+        val currentJobCountMap = mediaTranscodeJobDao.queueAndRunningJobCountGroupByProject()
+        currentJobCountMap.forEach { (projectId, count) ->
+            var config = configs.find { it.projectId == projectId }
+            if (config == null) {
+                config = configs.find { it.projectId == null }
             }
+            if (config == null) {
+                return@forEach
+            }
+            doStartTranscodeJob(projectId, count, config)
+        }
+    }
+
+    fun doStartTranscodeJob(projectId: String, currentJobCount: Long, config: TMediaTranscodeJobConfig) {
         val maxJobCount = config.maxJobCount ?: 66
-        val currentJobCount = mediaTranscodeJobDao.queueAndRunningJobCount()
         if (currentJobCount >= maxJobCount) {
             return
         }
 
-        logger.debug("starting transcode job maxJob:$maxJobCount, currentJobCount:$currentJobCount")
+        logger.info("starting transcode $projectId job maxJob:$maxJobCount, currentJobCount:$currentJobCount")
 
         var wasExecuted = false
         lockProvider.lock(getLockConfiguration()).ifPresent {
             lock = it
-            it.use { doStart(config) }
+            it.use { doStart(projectId, config) }
             lock = null
             wasExecuted = true
         }
@@ -60,9 +69,9 @@ class TranscodeCronJob @Autowired constructor(
         }
     }
 
-    private fun doStart(config: TMediaTranscodeJobConfig) {
+    private fun doStart(projectId: String, config: TMediaTranscodeJobConfig) {
         try {
-            transcodeJobService.startJob(config)
+            transcodeJobService.startJob(projectId, config)
         } catch (e: Exception) {
             logger.error("Job mediaTranscodeCronJob start error", e)
         }

@@ -8,9 +8,12 @@ import com.tencent.bkrepo.media.common.pojo.transcode.MediaTranscodeJobStatus
 import org.bson.types.ObjectId
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.data.mongodb.core.aggregate
+import org.springframework.data.mongodb.core.aggregation.Aggregation
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.and
+import org.springframework.data.mongodb.core.query.inValues
 import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Repository
@@ -37,21 +40,30 @@ class MediaTranscodeJobDao : SimpleMongoDao<TMediaTranscodeJob>() {
         return updateFirst(query, update)
     }
 
-    fun queueAndRunningJobCount(): Long {
-        return count(
-            Query(
-                where(TMediaTranscodeJob::status).`in`(
-                    MediaTranscodeJobStatus.QUEUE,
-                    MediaTranscodeJobStatus.INIT,
-                    MediaTranscodeJobStatus.RUNNING
-                )
+    fun queueAndRunningJobCountGroupByProject(): Map<String, Long> {
+        val matchOperation = Aggregation.match(
+            where(TMediaTranscodeJob::status).`in`(
+                MediaTranscodeJobStatus.QUEUE,
+                MediaTranscodeJobStatus.INIT,
+                MediaTranscodeJobStatus.RUNNING
             )
         )
+        val groupOperation = Aggregation.group(TMediaTranscodeJob::projectId.name)
+            .count().`as`("count")
+        val aggregation = Aggregation.newAggregation(matchOperation, groupOperation)
+        val results = determineMongoTemplate().aggregate<org.bson.Document>(
+            aggregation, determineCollectionName()
+        )
+        return results.mappedResults.associate { doc ->
+            (doc.getString("_id") ?: "") to (doc.getInteger("count", 0).toLong())
+        }
     }
 
-    fun findAndQueueOldestWaitingJob(): TMediaTranscodeJob? {
-        val query: Query = Query(where(TMediaTranscodeJob::status).isEqualTo(MediaTranscodeJobStatus.WAITING))
-            .with(Sort.by(Sort.Direction.ASC, TMediaTranscodeJob::createdTime.name))
+    fun findAndQueueOldestWaitingJob(projectId: String): TMediaTranscodeJob? {
+        val query: Query = Query(
+            TMediaTranscodeJob::projectId.isEqualTo(projectId)
+                .and(TMediaTranscodeJob::status).isEqualTo(MediaTranscodeJobStatus.WAITING)
+        ).with(Sort.by(Sort.Direction.ASC, TMediaTranscodeJob::createdTime.name))
         val update = Update()
             .set(TMediaTranscodeJob::status.name, MediaTranscodeJobStatus.QUEUE)
             .currentDate(TMediaTranscodeJob::updateTime.name)
