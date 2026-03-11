@@ -14,4 +14,5 @@ class MediaProperties {
     var storageCredentialsKey: String? = null
     var enabledLiveProjects: List<String> = mutableListOf()
     var rtcSecret: String = "rtc-stream-pull-secret-2m98cx37yr21"
+    var remoteDevHost: String = ""
 }

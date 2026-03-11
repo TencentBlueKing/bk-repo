@@ -7,6 +7,7 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.security.permission.Permission
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo.Companion.DEFAULT_STREAM_MAPPING_URI
@@ -62,12 +63,17 @@ class UserStreamController(
      * 生成拉流地址
      */
     @GetMapping("/{projectId}/{repoName}/{resolution}/rtc")
-    @Permission(ResourceType.REPO, PermissionAction.READ)
     fun rtc(
         @PathVariable projectId: String,
         @PathVariable repoName: String,
         @PathVariable resolution: String,
     ): Response<String> {
+        // 回调remotedev校验权限
+        val userId = SecurityUtils.getUserId()
+        val workspaceName = repoName.removePrefix("REMOTEDEV_")
+        if (!streamService.checkUserWorkspaceLivePerm(projectId, workspaceName, userId)) {
+            return ResponseBuilder.fail(HttpStatus.FORBIDDEN.value, "no workspace live read perm")
+        }
         val url = streamService.fetchRtc(projectId, repoName, resolution)
         return ResponseBuilder.success(url)
     }
