@@ -129,7 +129,7 @@
 <script>
     import { getIconName } from '@repository/store/publicEnum'
     import { convertFileSize, formatDate } from '@repository/utils'
-    import { mapActions } from 'vuex'
+    import { mapActions, mapState } from 'vuex'
 
     export default {
         name: 'GenericView',
@@ -149,6 +149,7 @@
             }
         },
         computed: {
+            ...mapState(['userInfo']),
             projectId () {
                 return this.$route.params.projectId
             },
@@ -176,13 +177,16 @@
             }
         },
         created () {
-            if (this.repoName === 'lsync' && !/^\/Personal\/[^/]+/.test(this.rootPath)) {
-                this.invalidPath = true
-                this.$bkMessage({
-                    theme: 'error',
-                    message: this.$t('illegalPath') || '非法路径'
-                })
-                return
+            if (this.repoName === 'lsync') {
+                const match = this.rootPath.match(/^\/Personal\/([^/]+)/)
+                if (!match || match[1] !== this.userInfo.username) {
+                    this.invalidPath = true
+                    this.$bkMessage({
+                        theme: 'error',
+                        message: this.$t('illegalPath') || '非法路径'
+                    })
+                    return
+                }
             }
             this.currentPath = this.rootPath
             this.loadFiles()
