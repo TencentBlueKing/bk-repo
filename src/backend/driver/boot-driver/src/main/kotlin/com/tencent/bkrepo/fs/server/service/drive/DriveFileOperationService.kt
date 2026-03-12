@@ -6,7 +6,9 @@ import com.tencent.bkrepo.common.storage.pojo.RegionResource
 import com.tencent.bkrepo.fs.server.context.ReactiveArtifactContextHolder
 import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
 import com.tencent.bkrepo.fs.server.request.drive.DriveBlockWriteRequest
+import com.tencent.bkrepo.fs.server.response.drive.DriveBlockNode
 import com.tencent.bkrepo.fs.server.response.drive.DriveNode
+import com.tencent.bkrepo.fs.server.response.drive.toDriveBlockNode
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
 import org.springframework.stereotype.Component
 import java.time.LocalDateTime
@@ -25,7 +27,7 @@ class DriveFileOperationService(
         }
     }
 
-    suspend fun write(artifactFile: CoArtifactFile, request: DriveBlockWriteRequest, user: String): TDriveBlockNode {
+    suspend fun write(artifactFile: CoArtifactFile, request: DriveBlockWriteRequest, user: String): DriveBlockNode {
         with(request) {
             val blockNode = TDriveBlockNode(
                 createdBy = user,
@@ -40,7 +42,7 @@ class DriveFileOperationService(
                 snapSeq = driveSnapSeqService.getLatestSnapSeq(projectId, repoName),
             )
             driveStorageManager.storeBlock(artifactFile, blockNode)
-            return blockNode
+            return blockNode.toDriveBlockNode()
         }
     }
 

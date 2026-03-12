@@ -23,6 +23,9 @@
   - [简单文件操作](/apidoc/generic/simple.md)
   - [分块文件操作](/apidoc/generic/block.md)
   - [临时访问凭证](/apidoc/generic/temporary-access.md)
+- **Drive仓库**
+  - [文件操作](/apidoc/drive/file.md)
+  - [节点操作](/apidoc/drive/node.md)
 - **认证服务**
   - [用户相关](/apidoc/auth/user.md)
   - [用户token相关](/apidoc/auth/token.md)
