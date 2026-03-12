@@ -7,6 +7,11 @@
                 <span class="header-path">{{ currentPath || '/' }}</span>
             </div>
         </header>
+        <div v-if="invalidPath" class="generic-view-invalid">
+            <i class="bk-icon icon-close-circle-shape"></i>
+            <span>{{ $t('illegalPath') || '非法路径' }}</span>
+        </div>
+        <template v-else>
         <div class="generic-view-breadcrumb">
             <span
                 class="breadcrumb-item"
@@ -81,6 +86,7 @@
                 </bk-button>
             </div>
         </div>
+        </template>
     </div>
 </template>
 <script>
@@ -93,6 +99,7 @@
         data () {
             return {
                 isLoading: false,
+                invalidPath: false,
                 fileList: [],
                 rootPath: this.$route.query.path || '',
                 currentPath: '',
@@ -130,6 +137,14 @@
             }
         },
         created () {
+            if (this.repoName === 'lsync' && !/^\/Personal\/[^/]+/.test(this.rootPath)) {
+                this.invalidPath = true
+                this.$bkMessage({
+                    theme: 'error',
+                    message: this.$t('illegalPath') || '非法路径'
+                })
+                return
+            }
             this.currentPath = this.rootPath
             this.loadFiles()
         },
@@ -255,6 +270,20 @@
                 font-size: 12px;
                 color: #979ba5;
             }
+        }
+    }
+    .generic-view-invalid {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        color: #63656e;
+        font-size: 14px;
+        .icon-close-circle-shape {
+            font-size: 42px;
+            color: #ea3636;
+            margin-bottom: 12px;
         }
     }
     .generic-view-breadcrumb {
