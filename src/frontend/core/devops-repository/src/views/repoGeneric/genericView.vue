@@ -225,7 +225,9 @@
                     }))
                     // 如果只有一个文件（非文件夹），自动进入单文件视图
                     if (this.fileList.length === 1 && !this.fileList[0].folder) {
-                        this.singleFile = this.fileList[0]
+                        this.$nextTick(() => {
+                            this.singleFile = this.fileList[0]
+                        })
                     }
                 } catch (e) {
                     this.$bkMessage({
@@ -313,6 +315,9 @@
                 color: #63656e;
                 margin-right: 8px;
                 cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 &:hover {
                     color: #3a84ff;
                 }
@@ -422,8 +427,7 @@
         padding: 24px;
         overflow: auto;
         .generic-view-card {
-            width: 100%;
-            max-width: 800px;
+            width: 55%;
             background-color: #fff;
             border-radius: 4px;
             box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
