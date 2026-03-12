@@ -11,7 +11,9 @@ import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 
 /**
- * Drive 文件摘要引用
+ * Drive 文件摘要引用，为了与原数据库隔离，保证Drive的独立性，对DriveBlockNode的引用独立计数
+ *
+ * 由于清理任务隔离，禁止Drive类型仓库与其他仓库使用相同存储凭据，否则可能导致存储误删
  */
 @ShardingDocument("drive_file_reference")
 @CompoundIndexes(
