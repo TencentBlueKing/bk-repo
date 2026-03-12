@@ -7,29 +7,23 @@
                 <span class="header-path">{{ currentPath || '/' }}</span>
             </div>
         </header>
-        <div class="generic-view-breadcrumb" v-if="pathSegments.length">
-            <span class="breadcrumb-item hover-btn" @click="navigateTo('')">{{ replaceRepoName(repoName) }}</span>
-            <template v-for="(seg, index) in pathSegments">
+        <div class="generic-view-breadcrumb">
+            <span
+                class="breadcrumb-item"
+                :class="{ 'hover-btn': relativeBreadcrumbs.length > 0 }"
+                @click="relativeBreadcrumbs.length > 0 && navigateTo(rootPath)">
+                {{ rootName }}
+            </span>
+            <template v-for="(seg, index) in relativeBreadcrumbs">
                 <span :key="'sep-' + index" class="breadcrumb-sep">/</span>
                 <span
                     :key="'seg-' + index"
                     class="breadcrumb-item"
-                    :class="{ 'hover-btn': index < pathSegments.length - 1 }"
-                    @click="index < pathSegments.length - 1 && navigateTo(pathSegments.slice(0, index + 1).join('/'))">
+                    :class="{ 'hover-btn': index < relativeBreadcrumbs.length - 1 }"
+                    @click="index < relativeBreadcrumbs.length - 1 && navigateTo(rootPath + '/' + relativeBreadcrumbs.slice(0, index + 1).join('/'))">
                     {{ seg }}
                 </span>
             </template>
-        </div>
-        <div class="generic-view-toolbar">
-            <bk-input
-                class="search-input"
-                v-model.trim="searchName"
-                :placeholder="$t('inFolderSearchPlaceholder')"
-                clearable
-                right-icon="bk-icon icon-search"
-                @enter="handleSearch"
-                @clear="handleSearch">
-            </bk-input>
         </div>
         <div class="generic-view-table" v-bkloading="{ isLoading }">
             <bk-table
@@ -41,7 +35,7 @@
                 @sort-change="handleSortChange"
                 @row-dblclick="openFolder">
                 <template #empty>
-                    <empty-data :is-loading="isLoading" :search="Boolean(searchName)"></empty-data>
+                    <empty-data :is-loading="isLoading"></empty-data>
                 </template>
                 <bk-table-column :label="$t('fileName')" prop="name" show-overflow-tooltip>
                     <template #default="{ row }">
@@ -107,7 +101,6 @@
             return {
                 isLoading: false,
                 fileList: [],
-                searchName: '',
                 currentPath: '',
                 sortParams: [],
                 pagination: {
@@ -126,15 +119,25 @@
             path () {
                 return this.$route.query.path || ''
             },
-            pathSegments () {
-                return this.currentPath.split('/').filter(Boolean)
+            rootPath () {
+                return this.path
+            },
+            rootName () {
+                const segments = this.rootPath.split('/').filter(Boolean)
+                return segments.length > 0 ? segments[segments.length - 1] : this.replaceRepoName(this.repoName)
+            },
+            relativeBreadcrumbs () {
+                if (!this.currentPath || this.currentPath === this.rootPath) return []
+                const relative = this.currentPath.slice(this.rootPath.length).replace(/^\//, '')
+                return relative.split('/').filter(Boolean)
             }
         },
         watch: {
-            '$route.query' () {
-                this.currentPath = this.path
+            '$route.query.path' () {
+                const newPath = this.$route.query.path || this.rootPath
+                if (!newPath.startsWith(this.rootPath)) return
+                this.currentPath = newPath
                 this.pagination.current = 1
-                this.searchName = ''
                 this.loadFiles()
             }
         },
@@ -166,7 +169,6 @@
                         projectId: this.projectId,
                         repoName: this.repoName,
                         fullPath: this.currentPath || '',
-                        ...(this.searchName ? { name: this.searchName } : {}),
                         current: this.pagination.current,
                         limit: this.pagination.limit,
                         sortType,
@@ -202,7 +204,7 @@
                 this.$router.replace({
                     query: {
                         ...this.$route.query,
-                        path: path ? '/' + path : ''
+                        path: path || this.rootPath
                     }
                 })
             },
@@ -213,10 +215,6 @@
                     window.BK_SUBPATH + 'web' + url + `&x-bkrepo-project-id=${this.projectId}`,
                     '_self'
                 )
-            },
-            handleSearch () {
-                this.pagination.current = 1
-                this.loadFiles()
             },
             handleSortChange (sort) {
                 this.sortParams = []
@@ -289,13 +287,6 @@
         .breadcrumb-sep {
             margin: 0 4px;
             color: #c4c6cc;
-        }
-    }
-    .generic-view-toolbar {
-        padding: 12px 24px;
-        background-color: #fff;
-        .search-input {
-            width: 320px;
         }
     }
     .generic-view-table {
