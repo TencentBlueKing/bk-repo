@@ -4,9 +4,9 @@ data class DriveNodeMoveRequest(
     val projectId: String,
     val repoName: String,
     val srcNodeId: String? = null,
-    val srcParent: String? = null,
+    val srcParent: Long? = null,
     val srcName: String? = null,
-    val destParent: String,
+    val destParent: Long,
     val destName: String,
     val overwrite: Boolean = false,
 )

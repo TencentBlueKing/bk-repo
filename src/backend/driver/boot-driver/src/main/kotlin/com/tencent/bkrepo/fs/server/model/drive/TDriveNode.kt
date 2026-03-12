@@ -19,8 +19,6 @@ import com.tencent.bkrepo.repository.constant.PROJECT_ID
 import com.tencent.bkrepo.repository.constant.REPO_NAME
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Field
-import org.springframework.data.mongodb.core.mapping.FieldType
 import java.time.LocalDateTime
 
 /**
@@ -54,20 +52,17 @@ data class TDriveNode(
     /**
      * 自身 inode 号，在仓库内需要保证唯一避免drive-block-node数据混淆
      */
-    @Field(targetType = FieldType.OBJECT_ID)
-    var ino: String,
+    var ino: Long,
 
     /**
      * 硬链接指向的目标Ino，仅后端使用，该字段存在时替代ino返回给客户端
      */
-    @Field(targetType = FieldType.OBJECT_ID)
-    var targetIno: String? = null,
+    var targetIno: Long? = null,
 
     /**
      * 父目录 inode 号，根节点该字段值为null
      */
-    @Field(targetType = FieldType.OBJECT_ID)
-    var parent: String? = null,
+    var parent: Long? = null,
 
     /**
      * 文件名

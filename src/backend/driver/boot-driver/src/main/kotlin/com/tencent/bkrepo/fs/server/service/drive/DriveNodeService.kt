@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.fs.server.service.drive
 
+import cn.hutool.core.lang.hash.CityHash
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -30,6 +31,7 @@ import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
 import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
+import org.apache.pulsar.shade.com.google.common.hash.Hashing
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -41,6 +43,7 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
+import java.util.UUID
 
 @Service
 class DriveNodeService(
@@ -55,13 +58,13 @@ class DriveNodeService(
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, id)
     }
 
-    suspend fun getNodeByIno(projectId: String, repoName: String, ino: String): DriveNode {
+    suspend fun getNodeByIno(projectId: String, repoName: String, ino: Long): DriveNode {
         validateProjectRepo(projectId, repoName)
         return driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)?.toDriveNode()
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
     }
 
-    suspend fun listNodes(projectId: String, repoName: String, parent: String): List<DriveNode> {
+    suspend fun listNodes(projectId: String, repoName: String, parent: Long): List<DriveNode> {
         validateProjectRepoAndParent(projectId, repoName, parent)
         return driveNodeDao.listNode(projectId, repoName, parent).map { it.toDriveNode() }
     }
@@ -69,13 +72,12 @@ class DriveNodeService(
     suspend fun listNodesPage(
         projectId: String,
         repoName: String,
-        parent: String?,
+        parent: Long?,
         pageNumber: Int,
         pageSize: Int,
         includeTotalRecords: Boolean = false,
     ): Page<DriveNode> {
         validateProjectRepo(projectId, repoName)
-        parent?.let { Preconditions.checkArgument(parent.isNotBlank(), TDriveNode::parent.name) }
         validatePage(pageNumber, pageSize)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val (records, totalRecords) = driveNodeDao.nodePage(
@@ -253,7 +255,7 @@ class DriveNodeService(
     }
 
     private suspend fun createHardLinkNode(createRequest: DriveNodeCreateRequest, snapSeq: Long): DriveNode {
-        val hardLinkRequest = createRequest.copy(ino = ObjectId().toHexString(), targetIno = createRequest.ino)
+        val hardLinkRequest = createRequest.copy(ino = generatePlaceholderIno(), targetIno = createRequest.ino)
         return createNode(hardLinkRequest, snapSeq)
     }
 
@@ -288,7 +290,7 @@ class DriveNodeService(
         projectId: String,
         repoName: String,
         nodeId: String?,
-        parent: String?,
+        parent: Long?,
         name: String?,
     ): TDriveNode {
         if (!nodeId.isNullOrBlank()) {
@@ -397,7 +399,7 @@ class DriveNodeService(
             if (srcNodeId.isNullOrBlank()) {
                 validateProjectRepoAndParent(projectId, repoName, srcParent)
                 PathUtils.validateFileName(srcName.orEmpty())
-                checkParent(srcParent.orEmpty(), projectId, repoName)
+                checkParent(srcParent!!, projectId, repoName)
             }
         }
     }
@@ -452,7 +454,7 @@ class DriveNodeService(
     /**
      * 检查parent与要创建的driveNode属于同一个仓库
      */
-    private suspend fun checkParent(parent: String, projectId: String, repoName: String) {
+    private suspend fun checkParent(parent: Long, projectId: String, repoName: String) {
         val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
             .and(TDriveNode::repoName).isEqualTo(repoName)
             .and(TDriveNode::ino).isEqualTo(parent)
@@ -464,9 +466,9 @@ class DriveNodeService(
         }
     }
 
-    private suspend fun validateProjectRepoAndParent(projectId: String, repoName: String, parent: String?) {
+    private suspend fun validateProjectRepoAndParent(projectId: String, repoName: String, parent: Long?) {
         validateProjectRepo(projectId, repoName)
-        Preconditions.checkArgument(!parent.isNullOrBlank(), TDriveNode::parent.name)
+        Preconditions.checkArgument(parent != null, TDriveNode::parent.name)
     }
 
     private suspend fun validateProjectRepo(projectId: String, repoName: String) {
@@ -482,5 +484,9 @@ class DriveNodeService(
     companion object {
         private const val SUCCESS_CODE = 0
         private val logger = LoggerFactory.getLogger(DriveNodeService::class.java)
+
+        private fun generatePlaceholderIno(): Long {
+            return CityHash.hash64(ObjectId.get().toByteArray())
+        }
     }
 }

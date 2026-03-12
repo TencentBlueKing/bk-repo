@@ -7,7 +7,7 @@ data class DriveNodeUpdateRequest(
     val projectId: String,
     val repoName: String,
     val nodeId: String,
-    val parent: String? = null,
+    val parent: Long? = null,
     val name: String? = null,
     val size: Long? = null,
     val mode: Int? = null,

@@ -3,16 +3,15 @@ package com.tencent.bkrepo.fs.server.request.drive
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
-import org.bson.types.ObjectId
 import java.time.LocalDateTime
 
 data class DriveNodeCreateRequest(
     val projectId: String,
     val repoName: String,
-    val parent: String,
+    val parent: Long,
     val name: String,
-    val ino: String,
-    val targetIno: String?,
+    val ino: Long,
+    val targetIno: Long?,
     val size: Long,
     val mode: Int,
     val type: Int,

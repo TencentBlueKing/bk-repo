@@ -39,9 +39,9 @@ enum class DriveNodeBatchOp {
 
 data class DriveNodeBatchItem(
     val nodeId: String? = null,
-    val ino: String? = null,
-    val targetIno: String? = null,
-    val parent: String? = null,
+    val ino: Long? = null,
+    val targetIno: Long? = null,
+    val parent: Long? = null,
     val name: String? = null,
     val size: Long? = null,
     val mode: Int? = null,

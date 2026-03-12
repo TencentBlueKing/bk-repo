@@ -12,8 +12,6 @@ import com.tencent.bkrepo.repository.constant.PROJECT_ID
 import com.tencent.bkrepo.repository.constant.REPO_NAME
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
-import org.springframework.data.mongodb.core.mapping.Field
-import org.springframework.data.mongodb.core.mapping.FieldType
 import java.time.LocalDateTime
 
 /**
@@ -34,8 +32,7 @@ data class TDriveBlockNode(
     var createdDate: LocalDateTime,
     val projectId: String,
     val repoName: String,
-    @Field(targetType = FieldType.OBJECT_ID)
-    val ino: String,
+    val ino: Long,
     val startPos: Long,
     var sha256: String,
     var crc64ecma: String? = null,

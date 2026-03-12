@@ -18,19 +18,19 @@ import java.time.LocalDateTime
 @Component
 @Conditional(ReactiveCondition::class)
 class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
-    suspend fun listNode(projectId: String, repoName: String, parent: String): List<TDriveNode> {
+    suspend fun listNode(projectId: String, repoName: String, parent: Long): List<TDriveNode> {
         val query = Query(listChildrenCriteria(projectId, repoName, parent))
         return find(query)
     }
 
-    suspend fun existsChild(projectId: String, repoName: String, parent: String): Boolean {
+    suspend fun existsChild(projectId: String, repoName: String, parent: Long): Boolean {
         return exists(Query(listChildrenCriteria(projectId, repoName, parent)))
     }
 
     suspend fun nodePage(
         projectId: String,
         repoName: String,
-        parent: String?,
+        parent: Long?,
         pageRequest: PageRequest,
         includeTotalRecords: Boolean = false,
     ): Pair<List<TDriveNode>, Long> {
@@ -64,7 +64,7 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
         return findOne(Query(criteria))
     }
 
-    suspend fun findByProjectIdAndRepoNameAndIno(projectId: String, repoName: String, ino: String): TDriveNode? {
+    suspend fun findByProjectIdAndRepoNameAndIno(projectId: String, repoName: String, ino: Long): TDriveNode? {
         val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
             .and(TDriveNode::repoName).isEqualTo(repoName)
             .and(TDriveNode::ino).isEqualTo(ino)
@@ -73,7 +73,7 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
         return findOne(Query(criteria))
     }
 
-    suspend fun findCurrentNode(projectId: String, repoName: String, parent: String, name: String): TDriveNode? {
+    suspend fun findCurrentNode(projectId: String, repoName: String, parent: Long, name: String): TDriveNode? {
         val query = Query(currentParentNameCriteria(projectId, repoName, parent, name))
         return findOne(query)
     }
@@ -102,7 +102,7 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
         val criteria = currentNodeIdCriteria(projectId, repoName, nodeId)
         lastModifiedDate?.let { criteria.and(TDriveNode::lastModifiedDate).isEqualTo(it) }
         val update = Update()
-            .set(TDriveNode::parent.name, updatedNode.parent)
+            .set(TDriveNode::parent.name, requireNotNull(updatedNode.parent))
             .set(TDriveNode::name.name, updatedNode.name)
             .set(TDriveNode::size.name, updatedNode.size)
             .set(TDriveNode::mode.name, updatedNode.mode)
@@ -131,7 +131,7 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
     /**
      * 查当前活跃节点
      */
-    private fun currentParentNameCriteria(projectId: String, repoName: String, parent: String, name: String): Criteria {
+    private fun currentParentNameCriteria(projectId: String, repoName: String, parent: Long, name: String): Criteria {
         return snapshotParentNameCriteria(projectId, repoName, parent, name)
     }
 
@@ -141,7 +141,7 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
      * 条件：snapSeq <= targetSnapSeq AND deleteSnapSeq > targetSnapSeq
      */
     private fun snapshotParentNameCriteria(
-        projectId: String, repoName: String, parent: String, name: String, snapSeq: Long? = null
+        projectId: String, repoName: String, parent: Long, name: String, snapSeq: Long? = null
     ): Criteria {
         return listChildrenCriteria(projectId, repoName, parent, snapSeq).and(TDriveNode::name).isEqualTo(name)
     }
@@ -154,7 +154,7 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
     private fun listChildrenCriteria(
         projectId: String,
         repoName: String,
-        parent: String? = null,
+        parent: Long? = null,
         snapSeq: Long? = null,
     ): Criteria {
         val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
