@@ -322,7 +322,7 @@ class PypiLocalRepository(
         ) ?: return null
         val artifactPath = trueVersion.contentPaths?.firstOrNull() ?: trueVersion.contentPath ?: return null
         with(context.artifactInfo) {
-            val jarNode = nodeService.getNodeDetail(
+            val node = nodeService.getNodeDetail(
                 ArtifactInfo(projectId, repoName, artifactPath)
             ) ?: return null
             val stageTag = stageService.query(projectId, repoName, packageKey, version)
@@ -331,16 +331,20 @@ class PypiLocalRepository(
             )
             val count = packageVersion?.downloads ?: 0
             val pypiArtifactBasic = Basic(
-                name,
-                version,
-                jarNode.size, jarNode.fullPath,
-                jarNode.createdBy, jarNode.createdDate,
-                jarNode.lastModifiedBy, jarNode.lastModifiedDate,
-                count,
-                jarNode.sha256,
-                jarNode.md5,
-                stageTag,
-                null
+                name = name,
+                version = version,
+                size = node.size,
+                fullPath = node.fullPath,
+                createdBy = node.createdBy,
+                createdDate = node.createdDate,
+                lastModifiedBy = node.lastModifiedBy,
+                lastModifiedDate = node.lastModifiedDate,
+                downloadCount = count,
+                sha256 = node.sha256,
+                md5 = node.md5,
+                stageTag = stageTag,
+                description = null,
+                federatedSource = packageVersion?.federatedSource,
             )
             return PypiArtifactVersionData(pypiArtifactBasic, packageVersion?.packageMetadata)
         }

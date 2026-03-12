@@ -30,6 +30,8 @@ package com.tencent.bkrepo.replication.replica.type.federation
 import com.tencent.bkrepo.common.api.pojo.ClusterNodeType
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.api.util.toJsonString
+import com.tencent.bkrepo.common.artifact.constant.PACKAGE_KEY
+import com.tencent.bkrepo.common.artifact.constant.PACKAGE_VERSION
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.replication.dao.ReplicaFailureRecordDao
@@ -45,6 +47,8 @@ import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
 import org.slf4j.LoggerFactory
@@ -108,6 +112,8 @@ class FederationBasedReplicaService(
         when (event.type) {
             EventType.METADATA_DELETED -> handleMetadataDeleted(replicaContext)
             EventType.METADATA_SAVED -> handleMetadataSaved(replicaContext)
+            EventType.PACKAGE_METADATA_DELETED -> handlePackageMetadataDeleted(replicaContext)
+            EventType.PACKAGE_METADATA_SAVED -> handlePackageMetadataSaved(replicaContext)
             EventType.NODE_RENAMED -> handleNodeRenamed(replicaContext)
             EventType.NODE_COPIED -> handleNodeCopied(replicaContext)
             EventType.NODE_MOVED -> handleNodeMoved(replicaContext)
@@ -154,6 +160,33 @@ class FederationBasedReplicaService(
         }
     }
 
+    private fun handlePackageMetadataDeleted(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            val packageMetadataDeleteRequest = PackageMetadataDeleteRequest(
+                projectId = remoteProjectId!!,
+                repoName = remoteRepoName!!,
+                packageKey = event.data[PACKAGE_KEY].toString(),
+                version = event.data[PACKAGE_VERSION].toString(),
+                keysToDelete = (event.data["keys"] as? List<String>)?.toSet() ?: emptySet(),
+                operator = event.userId
+            )
+            replicaByDeletePackageMetadata(replicaContext, packageMetadataDeleteRequest)
+        }
+    }
+
+    private fun handlePackageMetadataSaved(replicaContext: ReplicaContext) {
+        with(replicaContext) {
+            val packageMetadataSaveRequest = PackageMetadataSaveRequest(
+                projectId = remoteProjectId!!,
+                repoName = remoteRepoName!!,
+                packageKey = event.data[PACKAGE_KEY].toString(),
+                version = event.data[PACKAGE_VERSION].toString(),
+                versionMetadata = parseMetadataModel(event),
+                operator = event.userId
+            )
+            replicaBySavePackageMetadata(replicaContext, packageMetadataSaveRequest)
+        }
+    }
 
     private fun parseMetadataModel(event: ArtifactEvent): List<MetadataModel>? {
         return try {

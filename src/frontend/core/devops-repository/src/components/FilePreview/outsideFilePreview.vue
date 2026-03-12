@@ -21,7 +21,7 @@
             </div>
         </div>
         <div v-if="imgShow" style="width: 100%; height: 100%">
-            <img id="image" :src="imgUrl" alt="Picture" style="max-width: 100%; max-height: 100%;">
+            <img id="image" :src="imgUrl" alt="Picture" style="display: none">
         </div>
         <div v-if="hasError" class="empty-data-container flex-center" style="background-color: white; height: 100%">
             <div class="flex-column flex-center">
