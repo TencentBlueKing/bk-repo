@@ -120,10 +120,13 @@ abstract class AbstractArtifactResourceHandler(
         val recordAbleInputStream = RecordAbleInputStream(inputStream)
         try {
             return measureThroughput {
+                // 先包装驱逐检查，再包装带宽限速；驱逐时抛 IOException，afterCompletion 自动归还计数器
+                val evictableStream = requestLimitCheckService.evictCheck(recordAbleInputStream)
+                    ?: recordAbleInputStream
                 val stream = requestLimitCheckService.bandwidthCheck(
-                    recordAbleInputStream, storageProperties.response.circuitBreakerThreshold,
+                    evictableStream, storageProperties.response.circuitBreakerThreshold,
                     length
-                ) ?: recordAbleInputStream.rateLimit(
+                ) ?: evictableStream.rateLimit(
                     responseRateLimitWrapper(storageProperties.response.rateLimit)
                 )
                 rateLimitFlag = stream is CommonRateLimitInputStream

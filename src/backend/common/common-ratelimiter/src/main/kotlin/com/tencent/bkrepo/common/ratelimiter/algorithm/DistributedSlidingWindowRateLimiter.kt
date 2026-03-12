@@ -57,12 +57,12 @@ class DistributedSlidingWindowRateLimiter(
                 val currentTime = redisTemplate.execute { connection ->
                     connection.time()
                 } ?: System.currentTimeMillis()
-                val currentSeconds = (currentTime / 1000)
-                val random = (currentTime % 1000)
+                val currentMs = currentTime
+                val uniqueId = System.nanoTime().toString()
                 // 注意， 由于redis expire只支持秒为单位，所以周期最小单位为秒
                 val results = redisTemplate.execute(
-                    redisScript, getKeys(key), limit.toString(), (duration.seconds).toString(),
-                    permits.toString(), currentSeconds.toString(), random.toString()
+                    redisScript, getKeys(key), limit.toString(), (duration.toMillis()).toString(),
+                    permits.toString(), currentMs.toString(), uniqueId
                 )
                 acquireResult = results[0] == 1L
             }

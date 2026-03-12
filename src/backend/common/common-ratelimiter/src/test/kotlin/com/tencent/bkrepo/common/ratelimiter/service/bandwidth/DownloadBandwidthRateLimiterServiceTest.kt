@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.common.ratelimiter.service.bandwidth
 
+import com.tencent.bkrepo.common.api.exception.OverloadException
 import com.tencent.bkrepo.common.ratelimiter.constant.KEY_PREFIX
 import com.tencent.bkrepo.common.ratelimiter.enums.Algorithms
 import com.tencent.bkrepo.common.ratelimiter.enums.LimitDimension
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.test.annotation.DirtiesContext
+import org.springframework.util.unit.DataSize
 import org.springframework.web.servlet.HandlerMapping
 
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -235,5 +237,63 @@ class DownloadBandwidthRateLimiterServiceTest : AbstractRateLimiterServiceTest()
     @Test
     fun limitTest() {
         Assertions.assertThrows(UnsupportedOperationException::class.java) { rateLimiterService.limit(request) }
+    }
+
+    @Test
+    fun bandwidthRateLimitTest() {
+        (rateLimiterService as DownloadBandwidthRateLimiterService).bandwidthRateLimit(
+            request = request,
+            permits = 1,
+            circuitBreakerPerSecond = DataSize.ofBytes(0)
+        )
+        (rateLimiterService as DownloadBandwidthRateLimiterService).bandwidthRateLimit(
+            request = request,
+            permits = 10000,
+            circuitBreakerPerSecond = DataSize.ofBytes(0)
+        )
+        Assertions.assertThrows(OverloadException::class.java) {
+            (rateLimiterService as DownloadBandwidthRateLimiterService).bandwidthRateLimit(
+                request = request,
+                permits = 1,
+                circuitBreakerPerSecond = DataSize.ofTerabytes(1)
+            )
+        }
+    }
+
+    @Test
+    fun bandwidthRateStartTest() {
+        val content = "1234567891"
+        Assertions.assertThrows(OverloadException::class.java) {
+            (rateLimiterService as DownloadBandwidthRateLimiterService).bandwidthRateStart(
+                request = request,
+                inputStream = content.byteInputStream(),
+                circuitBreakerPerSecond = DataSize.ofTerabytes(1),
+                rangeLength = null
+            )
+        }
+        (rateLimiterService as DownloadBandwidthRateLimiterService).bandwidthRateStart(
+            request = request,
+            inputStream = content.byteInputStream(),
+            circuitBreakerPerSecond = DataSize.ofBytes(1),
+            rangeLength = null
+        )
+    }
+
+    @Test
+    fun bandwidthLimitHandlerTest() {
+        val resourceLimit =
+            (rateLimiterService as DownloadBandwidthRateLimiterService).getResLimitInfoAndResInfo(request).first
+        Assertions.assertNotNull(resourceLimit)
+        assertEqualsLimitInfo(resourceLimit!!.resourceLimit, rateLimiterProperties.rules.first())
+        val rateLimiter = (rateLimiterService as DownloadBandwidthRateLimiterService)
+            .getAlgorithmOfRateLimiter(resourceLimit.resource, resourceLimit.resourceLimit)
+        Assertions.assertEquals(
+            true,
+            (rateLimiterService as DownloadBandwidthRateLimiterService).bandwidthLimitHandler(rateLimiter, 1)
+        )
+        Assertions.assertEquals(
+            true,
+            (rateLimiterService as DownloadBandwidthRateLimiterService).bandwidthLimitHandler(rateLimiter, 100)
+        )
     }
 }
