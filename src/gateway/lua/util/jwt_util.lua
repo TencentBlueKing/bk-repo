@@ -19,6 +19,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 --- 蓝鲸API网关JWT解析工具 ---
 
+local rsa = require("resty.rsa")
+
 local _M = {}
 
 --- base64url解码（JWT使用的是URL安全的base64编码）
@@ -67,27 +69,21 @@ local function split_jwt(token)
     return header, payload, signature, sign_input
 end
 
---- 使用RSA公钥验证JWT签名（RS512算法）
+--- 使用RSA公钥验证JWT签名（RS512算法），基于resty.rsa库
 --- @param sign_input string 待验证的签名输入（header.payload的base64url编码）
 --- @param signature string 解码后的签名数据
 --- @param public_key_pem string RSA公钥（PEM格式）
 --- @return boolean 验证是否通过
 local function verify_rs512_signature(sign_input, signature, public_key_pem)
-    local resty_rsa = require("resty.rsa")
-
-    local pub, err = resty_rsa:new({
-        public_key = public_key_pem,
-        algorithm = "SHA512",
-    })
-
-    if not pub then
+    local rsa_pub, err = rsa:new({ public_key = public_key_pem, algorithm = "sha512" })
+    if not rsa_pub then
         ngx.log(ngx.ERR, "failed to create rsa public key: ", err)
         return false
     end
 
-    local ok, err = pub:verify(sign_input, signature)
+    local ok, err = rsa_pub:verify(sign_input, signature)
     if not ok then
-        ngx.log(ngx.ERR, "failed to verify jwt signature: ", err)
+        ngx.log(ngx.ERR, "jwt signature verification failed: ", err)
         return false
     end
 
