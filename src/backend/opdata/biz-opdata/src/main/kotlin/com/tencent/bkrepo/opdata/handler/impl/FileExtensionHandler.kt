@@ -34,7 +34,7 @@ package com.tencent.bkrepo.opdata.handler.impl
 import com.tencent.bkrepo.opdata.constant.OPDATA_PROJECT_ID
 import com.tencent.bkrepo.opdata.constant.OPDATA_REPO_NAME
 import com.tencent.bkrepo.opdata.handler.QueryHandler
-import com.tencent.bkrepo.opdata.model.FileExtensionMetricsModel
+import com.tencent.bkrepo.opdata.service.model.FileExtensionMetricsModel
 import com.tencent.bkrepo.opdata.model.TFileExtensionMetrics
 import com.tencent.bkrepo.opdata.pojo.NodeResult
 import com.tencent.bkrepo.opdata.pojo.Target
