@@ -22,16 +22,8 @@ import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.pojo.token.TokenType
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.metadata.permission.PermissionManager
-import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
-import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
-import com.tencent.bkrepo.common.metadata.service.node.NodeService
-import com.tencent.bkrepo.common.metadata.service.packages.PackageService
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.common.service.util.SpringContextUtils
 import com.tencent.bkrepo.replication.context.FederationReplicaContext
-import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.AccountReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.ExternalPermissionReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.KeyReplicaRequest
@@ -77,16 +69,35 @@ import java.time.Instant
 @ExtendWith(MockKExtension::class)
 class ArtifactReplicaControllerNewEntitiesTest {
 
-    @MockK private lateinit var localRoleClient: ServiceRoleClient
-    @MockK private lateinit var localAccountClient: ServiceAccountClient
-    @MockK private lateinit var localExternalPermissionClient: ServiceExternalPermissionClient
-    @MockK private lateinit var localTemporaryTokenClient: ServiceTemporaryTokenClient
-    @MockK private lateinit var localOauthAuthorizationClient: ServiceOauthAuthorizationClient
-    @MockK private lateinit var localPermissionClient: ServicePermissionClient
-    @MockK private lateinit var localProxyClient: ServiceProxyClient
-    @MockK private lateinit var localKeyClient: ServiceKeyClient
-    @MockK private lateinit var localRepoModeClient: ServiceRepoModeClient
-    @MockK private lateinit var userResource: ServiceUserClient
+    @MockK
+    private lateinit var localRoleClient: ServiceRoleClient
+
+    @MockK
+    private lateinit var localAccountClient: ServiceAccountClient
+
+    @MockK
+    private lateinit var localExternalPermissionClient: ServiceExternalPermissionClient
+
+    @MockK
+    private lateinit var localTemporaryTokenClient: ServiceTemporaryTokenClient
+
+    @MockK
+    private lateinit var localOauthAuthorizationClient: ServiceOauthAuthorizationClient
+
+    @MockK
+    private lateinit var localPermissionClient: ServicePermissionClient
+
+    @MockK
+    private lateinit var localProxyClient: ServiceProxyClient
+
+    @MockK
+    private lateinit var localKeyClient: ServiceKeyClient
+
+    @MockK
+    private lateinit var localRepoModeClient: ServiceRepoModeClient
+
+    @MockK
+    private lateinit var userResource: ServiceUserClient
 
     private lateinit var controller: ArtifactReplicaController
 
@@ -100,6 +111,7 @@ class ArtifactReplicaControllerNewEntitiesTest {
             nodeService = mockk(relaxed = true),
             packageService = mockk(relaxed = true),
             metadataService = mockk(relaxed = true),
+            packageMetadataService = mockk(relaxed = true),
             userResource = userResource,
             permissionManager = mockk(relaxed = true),
             blockNodeService = mockk(relaxed = true),
@@ -197,38 +209,33 @@ class ArtifactReplicaControllerNewEntitiesTest {
     // ==================== replicaAccountRequest ====================
 
     @Test
-    fun `replicaAccountRequest UPSERT - account not exists should createAccountForFederation`() {
+    fun `replicaAccountRequest UPSERT - account not exists should upsertAccountForFederation`() {
         val request = AccountReplicaRequest(
             action = ReplicaAction.UPSERT,
             appId = "new-app",
             locked = false,
             authorizationGrantTypes = setOf("PLATFORM")
         )
-        every { localAccountClient.listAccountsForFederation() } returns ok(emptyList())
-        every { localAccountClient.createAccountForFederation(any()) } returns ok(true)
+        every { localAccountClient.upsertAccountForFederation(any()) } returns mockk(relaxed = true)
 
         controller.replicaAccountRequest(request)
 
-        verify(exactly = 1) { localAccountClient.createAccountForFederation(any()) }
-        verify(exactly = 0) { localAccountClient.updateAccountForFederation(any()) }
+        verify(exactly = 1) { localAccountClient.upsertAccountForFederation(any()) }
     }
 
     @Test
-    fun `replicaAccountRequest UPSERT - account exists should updateAccountForFederation`() {
-        val existing = buildAccountInfo("exist-app")
+    fun `replicaAccountRequest UPSERT - account exists should upsertAccountForFederation`() {
         val request = AccountReplicaRequest(
             action = ReplicaAction.UPSERT,
             appId = "exist-app",
             locked = true,
             authorizationGrantTypes = setOf("PLATFORM")
         )
-        every { localAccountClient.listAccountsForFederation() } returns ok(listOf(existing))
-        every { localAccountClient.updateAccountForFederation(any()) } returns ok(true)
+        every { localAccountClient.upsertAccountForFederation(any()) } returns mockk(relaxed = true)
 
         controller.replicaAccountRequest(request)
 
-        verify(exactly = 0) { localAccountClient.createAccountForFederation(any()) }
-        verify(exactly = 1) { localAccountClient.updateAccountForFederation(any()) }
+        verify(exactly = 1) { localAccountClient.upsertAccountForFederation(any()) }
     }
 
     @Test
@@ -637,6 +644,8 @@ class ArtifactReplicaControllerNewEntitiesTest {
             fingerprint = "ab:cd:ef:01",
             userId = "alice"
         )
+        val existingKey = buildKeyInfo("alice", "ab:cd:ef:01").copy(id = "key-del-id")
+        every { localKeyClient.listKeyByUserId("alice") } returns ok(listOf(existingKey))
         every { localKeyClient.deleteKeyForFederation("key-del-id") } returns ok(true)
 
         controller.replicaKeyRequest(request)

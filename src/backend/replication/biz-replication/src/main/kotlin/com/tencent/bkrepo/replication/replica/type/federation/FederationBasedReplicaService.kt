@@ -41,7 +41,6 @@ import com.tencent.bkrepo.replication.pojo.task.TaskExecuteType
 import com.tencent.bkrepo.replication.pojo.task.objects.PackageConstraint
 import com.tencent.bkrepo.replication.pojo.task.objects.PathConstraint
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
-import com.tencent.bkrepo.replication.replica.replicator.standalone.FederationReplicator
 import com.tencent.bkrepo.replication.replica.type.AbstractReplicaService
 import com.tencent.bkrepo.replication.service.ReplicaRecordService
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
@@ -51,7 +50,6 @@ import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDelet
 import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeRenameRequest
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 /**
@@ -62,7 +60,6 @@ class FederationBasedReplicaService(
     replicaRecordService: ReplicaRecordService,
     localDataManager: LocalDataManager,
     replicaFailureRecordDao: ReplicaFailureRecordDao,
-    private val federationReplicator: FederationReplicator,
 ) : AbstractReplicaService(replicaRecordService, localDataManager, replicaFailureRecordDao) {
 
     override fun replica(context: ReplicaContext) {

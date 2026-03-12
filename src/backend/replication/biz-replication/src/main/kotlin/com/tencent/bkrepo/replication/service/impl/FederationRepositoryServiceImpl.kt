@@ -616,7 +616,6 @@ class FederationRepositoryServiceImpl(
         // 幂等：按任务名精确检查，避免误跳过其他联邦组的配置
         val existing = localFederationManager.listFederationRepository(projectId, repoName, null)
         if (existing.any { it.name == autoTaskName }) {
-            logger.info("Federation already exists for repo [$projectId|$repoName] group [$federationGroupId], skipping")
             return
         }
         val currentCluster = clusterNodeService.getByClusterId(currentClusterId)

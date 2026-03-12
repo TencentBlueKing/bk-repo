@@ -89,7 +89,9 @@ class FederationPermissionEventConsumerTest {
 
     @Test
     fun `GLOBAL event - should collect remote cluster IDs from all federation groups`() {
-        val group = buildFederationGroup(currentClusterId = "local", clusterIds = listOf("local", "remote-1", "remote-2"))
+        val group = buildFederationGroup(
+            currentClusterId = "local", clusterIds = listOf("local", "remote-1", "remote-2")
+        )
         every { federationGroupService.listAll() } returns listOf(group)
         every { clusterNodeService.getByClusterId(any()) } returns null
 
@@ -127,6 +129,9 @@ class FederationPermissionEventConsumerTest {
 
     @Test
     fun `PROJECT event - should collect federated cluster IDs for the project`() {
+        val group = buildFederationGroup(
+            currentClusterId = "local", clusterIds = listOf("local", "cluster-a", "cluster-b"))
+        every { federationGroupService.listAll() } returns listOf(group)
         val repo = buildFederatedRepository("proj-1", listOf("cluster-a", "cluster-b"))
         every { federatedRepositoryDao.findByProjectId("proj-1") } returns listOf(repo)
         every { clusterNodeService.getByClusterId(any()) } returns null
@@ -139,6 +144,8 @@ class FederationPermissionEventConsumerTest {
 
     @Test
     fun `PROJECT event - no federated repos for project should skip dispatch`() {
+        val group = buildFederationGroup(currentClusterId = "local", clusterIds = listOf("local", "remote-1"))
+        every { federationGroupService.listAll() } returns listOf(group)
         every { federatedRepositoryDao.findByProjectId("proj-empty") } returns emptyList()
 
         consumer.action(buildMessage(EventType.PERMISSION_CREATED, "perm-1", "proj-empty"))
@@ -158,7 +165,9 @@ class FederationPermissionEventConsumerTest {
 
         consumer.action(buildMessage(EventType.USER_CREATED, "user-a", "proj"))
 
-        verify(exactly = 1) { federationReplicator.replicaUserChangeTo(any(), "user-a", false, "valid-cluster") }
+        verify(exactly = 1) { federationReplicator.replicaUserChangeTo(
+            any(), "user-a", false, "cluster-valid-cluster"
+        ) }
     }
 
     @Test
@@ -171,7 +180,7 @@ class FederationPermissionEventConsumerTest {
 
         consumer.action(buildMessage(EventType.USER_DELETED, "user-b", "proj"))
 
-        verify(exactly = 1) { federationReplicator.replicaUserChangeTo(any(), "user-b", true, "ok-cluster") }
+        verify(exactly = 1) { federationReplicator.replicaUserChangeTo(any(), "user-b", true, "cluster-ok-cluster") }
     }
 
     // ==================== dispatchToCluster - event routing ====================
@@ -213,7 +222,11 @@ class FederationPermissionEventConsumerTest {
 
         consumer.action(buildMessage(EventType.ROLE_CREATED, "role-mgr", "proj-1"))
 
-        verify { federationReplicator.replicaRoleChangeTo(mockReplicaClient, "role-mgr", "proj-1", false, "remote-node") }
+        verify {
+            federationReplicator.replicaRoleChangeTo(
+                mockReplicaClient, "role-mgr", "proj-1", false, "remote-node"
+            )
+        }
     }
 
     @Test
@@ -223,13 +236,21 @@ class FederationPermissionEventConsumerTest {
 
         consumer.action(buildMessage(EventType.ROLE_DELETED, "role-mgr", "proj-1"))
 
-        verify { federationReplicator.replicaRoleChangeTo(mockReplicaClient, "role-mgr", "proj-1", true, "remote-node") }
+        verify {
+            federationReplicator.replicaRoleChangeTo(
+                mockReplicaClient, "role-mgr", "proj-1", true, "remote-node"
+            )
+        }
     }
 
     @Test
     fun `PERMISSION_CREATED should call replicaPermissionChangeTo with deleted=false`() {
         setupProjectCluster("proj-1", "remote-node")
-        every { federationReplicator.replicaPermissionChangeTo(any(), any(), any(), any(), any(), any(), any()) } returns Unit
+        every {
+            federationReplicator.replicaPermissionChangeTo(
+                any(), any(), any(), any(), any(), any(), any()
+            )
+        } returns Unit
 
         consumer.action(buildMessage(EventType.PERMISSION_CREATED, "perm-id", "proj-1"))
 
@@ -243,7 +264,11 @@ class FederationPermissionEventConsumerTest {
     @Test
     fun `PERMISSION_DELETED should forward permName and resourceType from event data`() {
         setupProjectCluster("proj-1", "remote-node")
-        every { federationReplicator.replicaPermissionChangeTo(any(), any(), any(), any(), any(), any(), any()) } returns Unit
+        every {
+            federationReplicator.replicaPermissionChangeTo(
+                any(), any(), any(), any(), any(), any(), any()
+            )
+        } returns Unit
         val eventData = mapOf("permName" to "my-perm", "resourceType" to "REPO")
 
         consumer.action(buildMessage(EventType.PERMISSION_DELETED, "perm-id", "proj-1", data = eventData))
@@ -347,7 +372,11 @@ class FederationPermissionEventConsumerTest {
 
         consumer.action(buildMessage(EventType.PROXY_CREATED, "proxy-a", "proj-1"))
 
-        verify { federationReplicator.replicaProxyChangeTo(mockReplicaClient, "proxy-a", "proj-1", false, "remote-node") }
+        verify {
+            federationReplicator.replicaProxyChangeTo(
+                mockReplicaClient, "proxy-a", "proj-1", false, "remote-node"
+            )
+        }
     }
 
     @Test
@@ -357,7 +386,11 @@ class FederationPermissionEventConsumerTest {
 
         consumer.action(buildMessage(EventType.PROXY_DELETED, "proxy-a", "proj-1"))
 
-        verify { federationReplicator.replicaProxyChangeTo(mockReplicaClient, "proxy-a", "proj-1", true, "remote-node") }
+        verify {
+            federationReplicator.replicaProxyChangeTo(
+                mockReplicaClient, "proxy-a", "proj-1", true, "remote-node"
+            )
+        }
     }
 
     @Test
@@ -365,9 +398,13 @@ class FederationPermissionEventConsumerTest {
         setupProjectCluster("proj-1", "remote-node")
         every { federationReplicator.replicaRepoAuthConfigChangeTo(any(), any(), any(), any()) } returns Unit
 
-        consumer.action(buildMessage(EventType.REPO_AUTH_CONFIG_UPDATED, "my-repo", "proj-1"))
+        consumer.action(buildMessage(EventType.REPO_AUTH_CONFIG_UPDATED, "my-repo", "proj-1", repoName = "my-repo"))
 
-        verify { federationReplicator.replicaRepoAuthConfigChangeTo(mockReplicaClient, "proj-1", "my-repo", "remote-node") }
+        verify {
+            federationReplicator.replicaRepoAuthConfigChangeTo(
+                mockReplicaClient, "proj-1", "my-repo", "remote-node"
+            )
+        }
     }
 
     // ==================== helper functions ====================
@@ -381,6 +418,8 @@ class FederationPermissionEventConsumerTest {
 
     /** Setup single remote cluster via PROJECT route (federated repository) */
     private fun setupProjectCluster(projectId: String, clusterName: String) {
+        val group = buildFederationGroup(currentClusterId = "local", clusterIds = listOf("local", "remote-id"))
+        every { federationGroupService.listAll() } returns listOf(group)
         val repo = buildFederatedRepository(projectId, listOf("remote-id"))
         every { federatedRepositoryDao.findByProjectId(projectId) } returns listOf(repo)
         every { clusterNodeService.getByClusterId("remote-id") } returns buildClusterNodeInfo("remote-id", clusterName)
@@ -427,7 +466,9 @@ class FederationPermissionEventConsumerTest {
         clusterId = "local",
         federationId = "federation-1",
         name = "federation-repo-$projectId",
-        federatedClusters = clusterIds.map { FederatedCluster(projectId = projectId, repoName = "test-repo", clusterId = it) },
+        federatedClusters = clusterIds.map {
+            FederatedCluster(projectId = projectId, repoName = "test-repo", clusterId = it)
+        },
         createdBy = "admin",
         createdDate = LocalDateTime.now(),
         lastModifiedBy = "admin",

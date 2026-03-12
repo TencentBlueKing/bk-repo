@@ -29,12 +29,23 @@ import java.time.LocalDateTime
 @ExtendWith(MockKExtension::class)
 class FederationRepositoryServiceAutoEnableTest : FederationRepositoryServiceTestBase() {
 
-    @MockK private lateinit var localFederationManager: LocalFederationManager
-    @MockK private lateinit var remoteFederationManager: RemoteFederationManager
-    @MockK private lateinit var federationTaskManager: FederationTaskManager
-    @MockK private lateinit var federationSyncManager: FederationSyncManager
-    @MockK private lateinit var clusterNodeService: ClusterNodeService
-    @MockK private lateinit var federationDiffManager: FederationDiffManager
+    @MockK
+    private lateinit var localFederationManager: LocalFederationManager
+
+    @MockK
+    private lateinit var remoteFederationManager: RemoteFederationManager
+
+    @MockK
+    private lateinit var federationTaskManager: FederationTaskManager
+
+    @MockK
+    private lateinit var federationSyncManager: FederationSyncManager
+
+    @MockK
+    private lateinit var clusterNodeService: ClusterNodeService
+
+    @MockK
+    private lateinit var federationDiffManager: FederationDiffManager
 
     private lateinit var service: FederationRepositoryServiceImpl
 
@@ -59,7 +70,9 @@ class FederationRepositoryServiceAutoEnableTest : FederationRepositoryServiceTes
         type = ClusterNodeType.STANDALONE
     )
 
-    private val remoteCluster = centerCluster.copy(id = TEST_CLUSTER_ID_1, name = "remote-1", url = "http://remote1.com")
+    private val remoteCluster = centerCluster.copy(
+        id = TEST_CLUSTER_ID_1, name = "remote-1", url = "http://remote1.com"
+    )
 
     @BeforeEach
     fun setUp() {
@@ -94,7 +107,10 @@ class FederationRepositoryServiceAutoEnableTest : FederationRepositoryServiceTes
             localFederationManager.listFederationRepository(TEST_PROJECT_ID, TEST_REPO_NAME, null)
         } returns listOf(existingInfo)
 
-        service.autoEnableFederation(TEST_PROJECT_ID, TEST_REPO_NAME, groupId, "center-id", listOf("center-id", TEST_CLUSTER_ID_1))
+        service.autoEnableFederation(
+            TEST_PROJECT_ID, TEST_REPO_NAME, groupId,
+            "center-id", listOf("center-id", TEST_CLUSTER_ID_1)
+        )
 
         verify(exactly = 0) { clusterNodeService.getByClusterId(any()) }
         verify(exactly = 0) { localFederationManager.saveFederationRepository(any()) }
@@ -126,7 +142,10 @@ class FederationRepositoryServiceAutoEnableTest : FederationRepositoryServiceTes
         every { localFederationManager.saveFederationRepository(any()) } just runs
         every { localFederationManager.isFederationNameExists(any()) } returns false
 
-        service.autoEnableFederation(TEST_PROJECT_ID, TEST_REPO_NAME, groupId, "center-id", listOf("center-id", TEST_CLUSTER_ID_1))
+        service.autoEnableFederation(
+            TEST_PROJECT_ID, TEST_REPO_NAME, groupId,
+            "center-id", listOf("center-id", TEST_CLUSTER_ID_1)
+        )
 
         verify(exactly = 1) { localFederationManager.saveFederationRepository(any()) }
     }
@@ -149,7 +168,10 @@ class FederationRepositoryServiceAutoEnableTest : FederationRepositoryServiceTes
         every { localFederationManager.saveFederationRepository(capture(savedSlot)) } just runs
         every { localFederationManager.isFederationNameExists(any()) } returns false
 
-        service.autoEnableFederation(TEST_PROJECT_ID, TEST_REPO_NAME, groupId, "center-id", listOf("center-id", TEST_CLUSTER_ID_1))
+        service.autoEnableFederation(
+            TEST_PROJECT_ID, TEST_REPO_NAME, groupId,
+            "center-id", listOf("center-id", TEST_CLUSTER_ID_1)
+        )
 
         verify(exactly = 1) { localFederationManager.saveFederationRepository(any()) }
         assertEquals(TEST_PROJECT_ID, savedSlot.captured.projectId)
@@ -210,7 +232,10 @@ class FederationRepositoryServiceAutoEnableTest : FederationRepositoryServiceTes
         every { clusterNodeService.getByClusterId("unknown-id") } returns null
 
         // getByClusterId 返回 null 时，该集群被忽略，最终 federatedClusters 为空，跳过创建
-        service.autoEnableFederation(TEST_PROJECT_ID, TEST_REPO_NAME, groupId, "center-id", listOf("center-id", "unknown-id"))
+        service.autoEnableFederation(
+            TEST_PROJECT_ID, TEST_REPO_NAME, groupId,
+            "center-id", listOf("center-id", "unknown-id")
+        )
 
         verify(exactly = 0) { localFederationManager.saveFederationRepository(any()) }
     }

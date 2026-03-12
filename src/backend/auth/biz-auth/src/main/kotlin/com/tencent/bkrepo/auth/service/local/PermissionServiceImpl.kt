@@ -128,6 +128,10 @@ open class PermissionServiceImpl constructor(
         }
     }
 
+    override fun listAllPermissionByProject(projectId: String): List<Permission> {
+        return permissionDao.listAllByProject(projectId).map { PermRequestUtil.convToPermission(it) }
+    }
+
     override fun getPermissionByName(projectId: String?, resourceType: String, permName: String): Permission? {
         return permissionDao.listPermissionByProject(permName, projectId, resourceType)
             ?.let { PermRequestUtil.convToPermission(it) }

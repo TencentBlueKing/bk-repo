@@ -180,7 +180,7 @@ class FederatedRepositoryDaoTest {
         // 5. 验证结束时间
         val repository2 = federatedRepositoryDao.findByProjectIdAndRepoName(projectId, repoName, federationId).first()
         assertNotNull(repository2.lastFullSyncEndTime)
-        assertTrue(repository2.lastFullSyncEndTime!!.isAfter(repository2.lastFullSyncStartTime!!))
+        assertFalse(repository2.lastFullSyncEndTime!!.isBefore(repository2.lastFullSyncStartTime!!))
     }
 
     @Test

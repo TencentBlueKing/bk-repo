@@ -73,7 +73,9 @@ class ServiceTemporaryTokenController(
         return ResponseBuilder.success(tokens.map { it.toTokenInfo() })
     }
 
-    override fun listActiveByProjectPage(projectId: String, pageNumber: Int, pageSize: Int): Response<List<TemporaryTokenInfo>> {
+    override fun listActiveByProjectPage(
+        projectId: String, pageNumber: Int, pageSize: Int
+    ): Response<List<TemporaryTokenInfo>> {
         val tokens = authTemporaryTokenDao.listActiveByProjectPage(projectId, pageNumber, pageSize)
         return ResponseBuilder.success(tokens.map { it.toTokenInfo() })
     }

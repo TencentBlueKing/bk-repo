@@ -3,18 +3,10 @@ package com.tencent.bkrepo.replication.controller.service
 import com.tencent.bkrepo.auth.api.ServicePermissionClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.permission.Permission
-import com.tencent.bkrepo.auth.pojo.user.UserInfo
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Response
-import com.tencent.bkrepo.common.metadata.permission.PermissionManager
-import com.tencent.bkrepo.common.metadata.service.blocknode.BlockNodeService
-import com.tencent.bkrepo.common.metadata.service.metadata.MetadataService
-import com.tencent.bkrepo.common.metadata.service.node.NodeService
-import com.tencent.bkrepo.common.metadata.service.packages.PackageService
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
-import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
 import com.tencent.bkrepo.replication.context.FederationReplicaContext
-import com.tencent.bkrepo.replication.manager.LocalDataManager
 import com.tencent.bkrepo.replication.pojo.request.PermissionReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.ReplicaAction
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
@@ -37,7 +29,9 @@ import org.junit.jupiter.api.extension.ExtendWith
 import java.time.LocalDateTime
 
 @ExtendWith(MockKExtension::class)
-class ArtifactReplicaControllerAuthTest {    @MockK
+class ArtifactReplicaControllerAuthTest {
+
+    @MockK
     private lateinit var userResource: ServiceUserClient
 
     @MockK
@@ -55,6 +49,7 @@ class ArtifactReplicaControllerAuthTest {    @MockK
             nodeService = mockk(relaxed = true),
             packageService = mockk(relaxed = true),
             metadataService = mockk(relaxed = true),
+            packageMetadataService = mockk(relaxed = true),
             userResource = userResource,
             permissionManager = mockk(relaxed = true),
             blockNodeService = mockk(relaxed = true),
@@ -80,7 +75,7 @@ class ArtifactReplicaControllerAuthTest {    @MockK
     // ==================== replicaUserRequest ====================
 
     @Test
-    fun `replicaUserRequest UPSERT - user not exists should create user`() {
+    fun `replicaUserRequest UPSERT - should call upsertUserForFederation`() {
         val request = UserReplicaRequest(
             action = ReplicaAction.UPSERT,
             userId = "new-user",
@@ -88,39 +83,33 @@ class ArtifactReplicaControllerAuthTest {    @MockK
             admin = false,
             email = "new@example.com"
         )
-        every { userResource.userInfoById("new-user") } returns ok(null)
-        every { userResource.createUser(any()) } returns ok(true)
+        every { userResource.upsertUserForFederation(any(), any()) } returns ok()
 
         controller.replicaUserRequest(request)
 
-        verify(exactly = 1) { userResource.createUser(any()) }
-        verify(exactly = 0) { userResource.updateUserById(any(), any()) }
+        verify(exactly = 1) { userResource.upsertUserForFederation(any(), any()) }
     }
 
     @Test
-    fun `replicaUserRequest UPSERT - user exists should update user`() {
-        val existingUser = buildUserInfo("exist-user", "Old Name", admin = false)
+    fun `replicaUserRequest UPSERT - admin and email passed to upsertUserForFederation`() {
         val request = UserReplicaRequest(
             action = ReplicaAction.UPSERT,
-            userId = "exist-user",
-            name = "New Name",
+            userId = "user-a",
+            name = "User A",
             admin = true,
-            email = "updated@example.com"
+            email = "a@example.com"
         )
-        every { userResource.userInfoById("exist-user") } returns ok(existingUser)
-        val updateSlot = slot<com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest>()
-        every { userResource.updateUserById("exist-user", capture(updateSlot)) } returns ok(true)
+        val createSlot = slot<CreateUserRequest>()
+        every { userResource.upsertUserForFederation(capture(createSlot), any()) } returns ok()
 
         controller.replicaUserRequest(request)
 
-        verify(exactly = 0) { userResource.createUser(any()) }
-        verify(exactly = 1) { userResource.updateUserById("exist-user", any()) }
-        assertEquals(true, updateSlot.captured.admin)
-        assertEquals("updated@example.com", updateSlot.captured.email)
+        assertEquals(true, createSlot.captured.admin)
+        assertEquals("a@example.com", createSlot.captured.email)
     }
 
     @Test
-    fun `replicaUserRequest UPSERT - phone and tenantId passed to createUser`() {
+    fun `replicaUserRequest UPSERT - phone and tenantId passed to upsertUserForFederation`() {
         val request = UserReplicaRequest(
             action = ReplicaAction.UPSERT,
             userId = "user-t",
@@ -128,9 +117,8 @@ class ArtifactReplicaControllerAuthTest {    @MockK
             phone = "13900139000",
             tenantId = "tenant-b"
         )
-        every { userResource.userInfoById("user-t") } returns ok(null)
-        val createSlot = slot<com.tencent.bkrepo.auth.pojo.user.CreateUserRequest>()
-        every { userResource.createUser(capture(createSlot)) } returns ok(true)
+        val createSlot = slot<CreateUserRequest>()
+        every { userResource.upsertUserForFederation(capture(createSlot), any()) } returns ok()
 
         controller.replicaUserRequest(request)
 
@@ -139,52 +127,18 @@ class ArtifactReplicaControllerAuthTest {    @MockK
     }
 
     @Test
-    fun `replicaUserRequest UPSERT - phone and tenantId passed to updateUserById`() {
-        val existingUser = buildUserInfo("user-u", "User U", admin = false)
+    fun `replicaUserRequest UPSERT - pwd forwarded as hashedPwd`() {
         val request = UserReplicaRequest(
             action = ReplicaAction.UPSERT,
-            userId = "user-u",
-            name = "User U",
-            phone = "13700137000",
-            tenantId = "tenant-c"
+            userId = "user-p",
+            pwd = "hashed-secret"
         )
-        every { userResource.userInfoById("user-u") } returns ok(existingUser)
-        val updateSlot = slot<com.tencent.bkrepo.auth.pojo.user.UpdateUserRequest>()
-        every { userResource.updateUserById("user-u", capture(updateSlot)) } returns ok(true)
+        val pwdSlot = slot<String?>()
+        every { userResource.upsertUserForFederation(any(), captureNullable(pwdSlot)) } returns ok()
 
         controller.replicaUserRequest(request)
 
-        assertEquals("13700137000", updateSlot.captured.phone)
-        assertEquals("tenant-c", updateSlot.captured.tenantId)
-    }
-
-    @Test
-    fun `replicaPermissionRequest - null projectId should do nothing`() {
-        val request = PermissionReplicaRequest(
-            action = ReplicaAction.UPSERT,
-            resourceType = "REPO",
-            projectId = null,
-            permName = "perm-null-proj"
-        )
-
-        controller.replicaPermissionRequest(request)
-
-        verify(exactly = 0) { localPermissionClient.listPermission(any(), any(), any()) }
-        verify(exactly = 0) { localPermissionClient.createPermission(any()) }
-    }
-
-    @Test
-    fun `replicaPermissionRequest DELETE - null projectId should do nothing`() {
-        val request = PermissionReplicaRequest(
-            action = ReplicaAction.DELETE,
-            resourceType = "REPO",
-            projectId = null,
-            permName = "perm-null-del"
-        )
-
-        controller.replicaPermissionRequest(request)
-
-        verify(exactly = 0) { localPermissionClient.deletePermission(any()) }
+        assertEquals("hashed-secret", pwdSlot.captured)
     }
 
     @Test
@@ -198,15 +152,13 @@ class ArtifactReplicaControllerAuthTest {    @MockK
         controller.replicaUserRequest(request)
 
         verify(exactly = 1) { userResource.deleteUser("to-delete") }
-        verify(exactly = 0) { userResource.createUser(any()) }
-        verify(exactly = 0) { userResource.updateUserById(any(), any()) }
+        verify(exactly = 0) { userResource.upsertUserForFederation(any(), any()) }
     }
 
     @Test
     fun `replicaUserRequest - FederationReplicaContext should be cleared after execution`() {
         val request = UserReplicaRequest(action = ReplicaAction.UPSERT, userId = "u1")
-        every { userResource.userInfoById("u1") } returns ok(null)
-        every { userResource.createUser(any()) } returns ok(true)
+        every { userResource.upsertUserForFederation(any(), any()) } returns ok()
 
         controller.replicaUserRequest(request)
 
@@ -216,11 +168,12 @@ class ArtifactReplicaControllerAuthTest {    @MockK
     @Test
     fun `replicaUserRequest - FederationReplicaContext cleared even when exception occurs`() {
         val request = UserReplicaRequest(action = ReplicaAction.UPSERT, userId = "u-err")
-        every { userResource.userInfoById("u-err") } throws RuntimeException("db error")
+        every { userResource.upsertUserForFederation(any(), any()) } throws RuntimeException("db error")
 
         try {
             controller.replicaUserRequest(request)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+        }
 
         assertFalse(FederationReplicaContext.isFederationWrite())
     }
@@ -300,6 +253,58 @@ class ArtifactReplicaControllerAuthTest {    @MockK
     }
 
     @Test
+    fun `replicaPermissionRequest - null projectId UPSERT should call getPermissionByName and createPermission`() {
+        val request = PermissionReplicaRequest(
+            action = ReplicaAction.UPSERT,
+            resourceType = "SYSTEM",
+            projectId = null,
+            permName = "sys-perm",
+            actions = listOf("READ")
+        )
+        every { localPermissionClient.getPermissionByName(null, "SYSTEM", "sys-perm") } returns ok(null)
+        every { localPermissionClient.createPermission(any()) } returns ok(true)
+
+        controller.replicaPermissionRequest(request)
+
+        verify(exactly = 0) { localPermissionClient.listPermission(any(), any(), any()) }
+        verify(exactly = 1) { localPermissionClient.createPermission(any()) }
+    }
+
+    @Test
+    fun `replicaPermissionRequest - null projectId DELETE with no existing perm should not delete`() {
+        val request = PermissionReplicaRequest(
+            action = ReplicaAction.DELETE,
+            resourceType = "SYSTEM",
+            projectId = null,
+            permName = "missing-sys-perm"
+        )
+        every { localPermissionClient.getPermissionByName(null, "SYSTEM", "missing-sys-perm") } returns ok(null)
+
+        controller.replicaPermissionRequest(request)
+
+        verify(exactly = 0) { localPermissionClient.listPermission(any(), any(), any()) }
+        verify(exactly = 0) { localPermissionClient.deletePermission(any()) }
+    }
+
+    @Test
+    fun `replicaPermissionRequest - null projectId DELETE with existing perm should delete`() {
+        val existing = buildPermission("sys-perm", "proj-1", "SYSTEM", id = "sys-perm-id")
+        val request = PermissionReplicaRequest(
+            action = ReplicaAction.DELETE,
+            resourceType = "SYSTEM",
+            projectId = null,
+            permName = "sys-perm"
+        )
+        every { localPermissionClient.getPermissionByName(null, "SYSTEM", "sys-perm") } returns ok(existing)
+        every { localPermissionClient.deletePermission("sys-perm-id") } returns ok(true)
+
+        controller.replicaPermissionRequest(request)
+
+        verify(exactly = 1) { localPermissionClient.deletePermission("sys-perm-id") }
+        verify(exactly = 0) { localPermissionClient.createPermission(any()) }
+    }
+
+    @Test
     fun `replicaPermissionRequest - FederationReplicaContext should be cleared after execution`() {
         val request = PermissionReplicaRequest(
             action = ReplicaAction.UPSERT,
@@ -336,21 +341,6 @@ class ArtifactReplicaControllerAuthTest {    @MockK
     // ==================== helper builders ====================
 
     private fun <T> ok(data: T? = null) = Response(CommonMessageCode.SUCCESS.getCode(), data = data)
-
-    private fun buildUserInfo(userId: String, name: String, admin: Boolean): UserInfo {
-        return UserInfo(
-            userId = userId,
-            name = name,
-            email = null,
-            phone = null,
-            createdDate = LocalDateTime.now(),
-            locked = false,
-            admin = admin,
-            group = false,
-            asstUsers = emptyList(),
-            tenantId = null
-        )
-    }
 
     private fun buildPermission(
         permName: String,

@@ -27,6 +27,7 @@
 
 package com.tencent.bkrepo.replication.replica.type.federation
 
+import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
@@ -68,21 +69,23 @@ class FederationPermissionEventConsumer(
         val clusterIds = resolveTargetClusterIds(event)
         if (clusterIds.isEmpty()) return
 
-        executor.execute {
-            clusterIds.forEach { clusterId ->
-                try {
-                    val clusterNode = clusterNodeService.getByClusterId(clusterId) ?: run {
-                        logger.warn("Cluster[$clusterId] not found, skipping event[${event.type}]")
-                        return@forEach
+        executor.execute(
+            Runnable {
+                clusterIds.forEach { clusterId ->
+                    try {
+                        val clusterNode = clusterNodeService.getByClusterId(clusterId) ?: run {
+                            logger.warn("Cluster[$clusterId] not found, skipping event[${event.type}]")
+                            return@forEach
+                        }
+                        val clusterInfo = FederationDataBuilder.buildClusterInfo(clusterNode)
+                        val client = FeignClientFactory.create<ArtifactReplicaClient>(clusterInfo)
+                        dispatchToCluster(client, event, clusterNode.name)
+                    } catch (e: Exception) {
+                        logger.warn("Failed to sync event[${event.type}] to cluster[$clusterId]: ${e.message}")
                     }
-                    val clusterInfo = FederationDataBuilder.buildClusterInfo(clusterNode)
-                    val client = FeignClientFactory.create<ArtifactReplicaClient>(clusterInfo)
-                    dispatchToCluster(client, event, clusterNode.name)
-                } catch (e: Exception) {
-                    logger.warn("Failed to sync event[${event.type}] to cluster[$clusterId]: ${e.message}")
                 }
-            }
-        }
+            }.trace()
+        )
     }
 
     private fun resolveTargetClusterIds(event: ArtifactEvent): Set<String> {
@@ -93,9 +96,18 @@ class FederationPermissionEventConsumer(
                 .flatMap { group -> group.clusterIds.filter { it != group.currentClusterId } }
                 .toSet()
         } else {
-            // 项目级事件：查找该 project 下所有联邦仓库，收集其远端 clusterId
+            // 项目级事件：只有 projectId 在联邦组 projectScope 允许范围内才同步
+            // projectScope 为 null 表示不限项目
+            val allowedGroups = federationGroupService.listAll()
+                .filter { group -> group.projectScope == null || event.projectId in group.projectScope }
+            if (allowedGroups.isEmpty()) return emptySet()
+            val allowedClusterIds = allowedGroups
+                .flatMap { group -> group.clusterIds.filter { it != group.currentClusterId } }
+                .toSet()
+            // 再从联邦仓库中收集属于允许集群的 clusterId
             federatedRepositoryDao.findByProjectId(event.projectId)
                 .flatMap { repo -> repo.federatedClusters.map { it.clusterId } }
+                .filter { it in allowedClusterIds }
                 .toSet()
         }
     }
@@ -151,9 +163,13 @@ class FederationPermissionEventConsumer(
                     TemporaryTokenReplicaRequest(action = ReplicaAction.DELETE, token = event.resourceKey)
                 )
             EventType.PROXY_CREATED, EventType.PROXY_UPDATED ->
-                federationReplicator.replicaProxyChangeTo(client, event.resourceKey, event.projectId, false, clusterName)
+                federationReplicator.replicaProxyChangeTo(
+                    client, event.resourceKey, event.projectId, false, clusterName
+                )
             EventType.PROXY_DELETED ->
-                federationReplicator.replicaProxyChangeTo(client, event.resourceKey, event.projectId, true, clusterName)
+                federationReplicator.replicaProxyChangeTo(
+                    client, event.resourceKey, event.projectId, true, clusterName
+                )
             EventType.REPO_AUTH_CONFIG_UPDATED ->
                 federationReplicator.replicaRepoAuthConfigChangeTo(client, event.projectId, event.repoName, clusterName)
             else -> logger.warn("Unhandled event type[${event.type}] in FederationPermissionEventConsumer")

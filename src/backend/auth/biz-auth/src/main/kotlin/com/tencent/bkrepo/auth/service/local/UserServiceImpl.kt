@@ -190,7 +190,9 @@ class UserServiceImpl constructor(
         return userDao.getUserNotLockedPage(tenantId, pageNumber, pageSize).map { UserRequestUtil.convToUser(it) }
     }
 
-    override fun listUsersForFederationPage(tenantId: String?, pageNumber: Int, pageSize: Int): List<UserFederationInfo> {
+    override fun listUsersForFederationPage(
+        tenantId: String?, pageNumber: Int, pageSize: Int
+    ): List<UserFederationInfo> {
         return userDao.getUserNotLockedPage(tenantId, pageNumber, pageSize).map { u ->
             UserFederationInfo(
                 userId = u.userId,

@@ -6,12 +6,27 @@ import com.tencent.bkrepo.auth.model.TKey
 import com.tencent.bkrepo.auth.pojo.key.KeyInfo
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.data.domain.PageRequest
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServiceKeyController(
     private val keyRepository: KeyRepository
 ) : ServiceKeyClient {
+
+    override fun listKeysPage(pageNumber: Int, pageSize: Int): Response<List<KeyInfo>> {
+        val page = keyRepository.findAllBy(PageRequest.of(pageNumber - 1, pageSize))
+        return ResponseBuilder.success(page.content.map { tKey ->
+            KeyInfo(
+                id = tKey.id!!,
+                name = tKey.name,
+                key = tKey.key,
+                fingerprint = tKey.fingerprint,
+                userId = tKey.userId,
+                createAt = tKey.createAt
+            )
+        })
+    }
 
     override fun listKeyByUserId(userId: String): Response<List<KeyInfo>> {
         val keys = keyRepository.findByUserId(userId).map { tKey ->

@@ -105,8 +105,14 @@ class ServicePermissionController @Autowired constructor(
         return ResponseBuilder.success(permissionService.listPermissionProject(userId))
     }
 
-    override fun listPermission(projectId: String, repoName: String?, resourceType: String): Response<List<Permission>> {
+    override fun listPermission(
+        projectId: String, repoName: String?, resourceType: String
+    ): Response<List<Permission>> {
         return ResponseBuilder.success(permissionService.listPermission(projectId, repoName, resourceType))
+    }
+
+    override fun listAllPermissionByProject(projectId: String): Response<List<Permission>> {
+        return ResponseBuilder.success(permissionService.listAllPermissionByProject(projectId))
     }
 
     override fun createPermission(request: CreatePermissionRequest): Response<Boolean> {
@@ -122,7 +128,9 @@ class ServicePermissionController @Autowired constructor(
         return ResponseBuilder.success(permissionService.getPermission(id))
     }
 
-    override fun getPermissionByName(projectId: String?, resourceType: String, permName: String): Response<Permission?> {
+    override fun getPermissionByName(
+        projectId: String?, resourceType: String, permName: String
+    ): Response<Permission?> {
         return ResponseBuilder.success(permissionService.getPermissionByName(projectId, resourceType, permName))
     }
 

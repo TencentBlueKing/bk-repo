@@ -27,7 +27,6 @@
 
 package com.tencent.bkrepo.auth.service
 
-import com.tencent.bkrepo.auth.model.TOauthToken
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizeRequest
 import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
 import com.tencent.bkrepo.auth.pojo.oauth.GenerateTokenRequest

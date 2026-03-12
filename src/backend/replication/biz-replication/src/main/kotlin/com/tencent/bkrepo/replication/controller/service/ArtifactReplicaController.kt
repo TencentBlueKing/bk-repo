@@ -475,8 +475,10 @@ class ArtifactReplicaController(
 
     @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun listPackages(
-        projectId: String, repoName: String,
-        pageNumber: Int, pageSize: Int
+        projectId: String,
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int
     ): Response<List<Any>> {
         val packages = localDataManager.listPackagesForDiff(projectId, repoName, pageNumber, pageSize)
         return ResponseBuilder.success(packages)
@@ -555,7 +557,6 @@ class ArtifactReplicaController(
             )
         }
     }
-
 
     /**
      * 检查联邦仓库节点创建冲突
@@ -823,7 +824,8 @@ class ArtifactReplicaController(
         return ResponseBuilder.success()
     }
 
-    private fun findExistingPermission(request: PermissionReplicaRequest): com.tencent.bkrepo.auth.pojo.permission.Permission? {
+    private fun findExistingPermission(request: PermissionReplicaRequest):
+        com.tencent.bkrepo.auth.pojo.permission.Permission? {
         val projectId = request.projectId
         return if (projectId != null) {
             localPermissionClient.listPermission(
@@ -957,7 +959,10 @@ class ArtifactReplicaController(
 
                 ReplicaAction.DELETE -> {
                     if (request.id == null) {
-                        logger.warn("Skipping external permission DELETE: id is null for project=${request.projectId} repo=${request.repoName}")
+                        logger.warn(
+                            "Skipping external permission DELETE: " +
+                                "id is null for project=${request.projectId} repo=${request.repoName}"
+                        )
                     } else {
                         localExternalPermissionClient.deleteExternalPermission(request.id!!)
                     }
@@ -1179,7 +1184,10 @@ class ArtifactReplicaController(
 
                 ReplicaAction.DELETE -> {
                     // RepoAuthConfig 通常不删除，仅 UPSERT；若需要删除可在未来扩展
-                    logger.info("Skipping repo auth config DELETE (not supported): ${request.projectId}/${request.repoName}")
+                    logger.info(
+                        "Skipping repo auth config DELETE (not supported):" +
+                            " ${request.projectId}/${request.repoName}"
+                    )
                 }
             }
         } finally {
@@ -1203,7 +1211,6 @@ class ArtifactReplicaController(
     /** 构建版本路径 */
     private fun buildVersionPath(projectId: String, repoName: String, packageKey: String, versionName: String) =
         "/$projectId/$repoName/package/$packageKey/version/$versionName"
-
 
     /** 记录同步操作日志 */
     private fun logReplicaSync(action: FederatedNodeAction, path: String, source: String?, reason: String = "") {

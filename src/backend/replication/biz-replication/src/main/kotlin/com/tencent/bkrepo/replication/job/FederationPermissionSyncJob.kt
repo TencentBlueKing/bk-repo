@@ -62,7 +62,7 @@ class FederationPermissionSyncJob(
 
     @StandaloneJob
     @Scheduled(cron = "\${replication.federation.permissionSyncCron:0 0 2 ? * MON}")
-    @SchedulerLock(name = "FederationPermissionSyncJob", lockAtMostFor = "PT6H")
+    @SchedulerLock(name = "FederationPermissionSyncJob", lockAtMostFor = "PT168H")
     fun sync() {
         logger.info("Starting federation system data sync job")
 

@@ -191,13 +191,7 @@ class FederationReplicator(
 
     fun replicaPermissionsTo(client: ArtifactReplicaClient, projectId: String, clusterName: String) {
         val permissions = try {
-            val projectPerms = localPermissionClient.listPermission(
-                projectId, null, "PROJECT"
-            ).data ?: emptyList()
-            val repoPerms = localPermissionClient.listPermission(
-                projectId, null, "REPO"
-            ).data ?: emptyList()
-            projectPerms + repoPerms
+            localPermissionClient.listAllPermissionByProject(projectId).data ?: emptyList()
         } catch (e: Exception) {
             logger.warn("Failed to list permissions for federation sync: ${e.message}")
             return
@@ -486,41 +480,33 @@ class FederationReplicator(
         var pageNumber = 1
         var totalCount = 0
         while (true) {
-            val users = try {
-                localUserClient.listUsersForFederationPage(null, pageNumber, PAGE_SIZE).data ?: break
+            val keys = try {
+                localKeyClient.listKeysPage(pageNumber, PAGE_SIZE).data ?: break
             } catch (e: Exception) {
-                logger.warn("Failed to list users (page=$pageNumber) for key federation sync: ${e.message}")
+                logger.warn("Failed to list keys (page=$pageNumber) for key federation sync: ${e.message}")
                 break
             }
-            if (users.isEmpty()) break
-            users.forEach { user ->
-                val keys = try {
-                    localKeyClient.listKeyByUserId(user.userId).data ?: return@forEach
+            if (keys.isEmpty()) break
+            keys.forEach { keyInfo ->
+                try {
+                    client.replicaKeyRequest(
+                        KeyReplicaRequest(
+                            id = keyInfo.id,
+                            name = keyInfo.name,
+                            key = keyInfo.key,
+                            fingerprint = keyInfo.fingerprint,
+                            userId = keyInfo.userId,
+                            createAt = keyInfo.createAt.toString()
+                        )
+                    )
+                    totalCount++
                 } catch (e: Exception) {
-                    logger.warn("Failed to list keys for user [${user.userId}]: ${e.message}")
-                    return@forEach
-                }
-                keys.forEach { keyInfo ->
-                    try {
-                        client.replicaKeyRequest(
-                            KeyReplicaRequest(
-                                id = keyInfo.id,
-                                name = keyInfo.name,
-                                key = keyInfo.key,
-                                fingerprint = keyInfo.fingerprint,
-                                userId = keyInfo.userId,
-                                createAt = keyInfo.createAt.toString()
-                            )
-                        )
-                        totalCount++
-                    } catch (e: Exception) {
-                        logger.warn(
-                            "Failed to sync key [${keyInfo.fingerprint}] for user [${keyInfo.userId}]: ${e.message}"
-                        )
-                    }
+                    logger.warn(
+                        "Failed to sync key [${keyInfo.fingerprint}] for user [${keyInfo.userId}]: ${e.message}"
+                    )
                 }
             }
-            if (users.size < PAGE_SIZE) break
+            if (keys.size < PAGE_SIZE) break
             pageNumber++
         }
         logger.info("Synced $totalCount keys to federated cluster [$clusterName]")
@@ -646,57 +632,74 @@ class FederationReplicator(
     ) {
         try {
             if (deleted) {
-                if (permName.isNullOrBlank() || resourceType.isNullOrBlank()) {
-                    logger.warn("Missing permName or resourceType for permission[$permId] DELETE, skipping")
-                    return
-                }
-                client.replicaPermissionRequest(
-                    PermissionReplicaRequest(
-                        action = ReplicaAction.DELETE,
-                        resourceType = resourceType,
-                        projectId = projectId,
-                        permName = permName
-                    )
-                )
+                deletePermission(client, permId, projectId, permName, resourceType)
             } else {
-                // projectId 为空（系统级权限）时直接按 id 查，避免用空字符串查询
-                val perm = if (projectId.isNullOrEmpty()) {
-                    localPermissionClient.getPermissionById(permId).data ?: run {
-                        logger.warn("Permission[$permId] not found for incremental federation sync")
-                        return
-                    }
-                } else {
-                    listOf("PROJECT", "REPO").flatMap { type ->
-                        runCatching { localPermissionClient.listPermission(projectId, null, type).data ?: emptyList() }
-                            .getOrDefault(emptyList())
-                    }.find { it.id == permId } ?: run {
-                        logger.warn("Permission[$permId] not found in project[$projectId] for incremental federation sync")
-                        return
-                    }
-                }
-                client.replicaPermissionRequest(
-                    PermissionReplicaRequest(
-                        action = ReplicaAction.UPSERT,
-                        resourceType = perm.resourceType,
-                        projectId = perm.projectId,
-                        permName = perm.permName,
-                        repos = perm.repos,
-                        includePattern = perm.includePattern,
-                        excludePattern = perm.excludePattern,
-                        users = perm.users,
-                        roles = perm.roles,
-                        departments = perm.departments,
-                        actions = perm.actions,
-                        createBy = perm.createBy,
-                        updatedBy = perm.updatedBy
-                    )
-                )
+                upsertPermission(client, permId, projectId)
             }
             logger.info("Incremental permission[$permId] (deleted=$deleted) synced to cluster[$clusterName]")
         } catch (e: Exception) {
             logger.warn("Failed to sync permission[$permId] to cluster[$clusterName]: ${e.message}")
         }
     }
+
+    private fun deletePermission(
+        client: ArtifactReplicaClient,
+        permId: String,
+        projectId: String?,
+        permName: String?,
+        resourceType: String?
+    ) {
+        if (permName.isNullOrBlank() || resourceType.isNullOrBlank()) {
+            logger.warn("Missing permName or resourceType for permission[$permId] DELETE, skipping")
+            return
+        }
+        client.replicaPermissionRequest(
+            PermissionReplicaRequest(
+                action = ReplicaAction.DELETE,
+                resourceType = resourceType,
+                projectId = projectId,
+                permName = permName
+            )
+        )
+    }
+
+    private fun upsertPermission(
+        client: ArtifactReplicaClient,
+        permId: String,
+        projectId: String?
+    ) {
+        val perm = findPermissionForSync(permId, projectId) ?: run {
+            val location = if (projectId.isNullOrEmpty()) "" else " in project[$projectId]"
+            logger.warn("Permission[$permId] not found$location for incremental federation sync")
+            return
+        }
+        client.replicaPermissionRequest(
+            PermissionReplicaRequest(
+                action = ReplicaAction.UPSERT,
+                resourceType = perm.resourceType,
+                projectId = perm.projectId,
+                permName = perm.permName,
+                repos = perm.repos,
+                includePattern = perm.includePattern,
+                excludePattern = perm.excludePattern,
+                users = perm.users,
+                roles = perm.roles,
+                departments = perm.departments,
+                actions = perm.actions,
+                createBy = perm.createBy,
+                updatedBy = perm.updatedBy
+            )
+        )
+    }
+
+    // projectId 为空（系统级权限）时直接按 id 查，避免用空字符串查询
+    private fun findPermissionForSync(permId: String, projectId: String?) =
+        if (projectId.isNullOrEmpty()) {
+            localPermissionClient.getPermissionById(permId).data
+        } else {
+            localPermissionClient.listAllPermissionByProject(projectId).data
+                ?.find { it.id == permId }
+        }
 
     fun replicaAccountChangeTo(
         client: ArtifactReplicaClient,

@@ -17,7 +17,6 @@ import com.tencent.bkrepo.replication.service.FederationGroupService
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
-import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
@@ -171,7 +170,7 @@ class FederationPermissionSyncJobTest {
     // ==================== sync method order ====================
 
     @Test
-    fun `syncGlobalData - should sync in order accounts then oauthTokens then users then keys then externalPermissions`() {
+    fun `syncGlobalData -should sync in order accounts then oTokens then users then keys then externalPermissions`() {
         every { federationGroupService.listAll() } returns listOf(buildGroup())
         every { federatedRepositoryDao.findAll() } returns listOf(buildRepo("proj-1", listOf("cluster-a")))
         every { clusterNodeService.getByClusterId("cluster-a") } returns buildClusterNodeInfo("cluster-a")
@@ -189,7 +188,7 @@ class FederationPermissionSyncJobTest {
     }
 
     @Test
-    fun `syncProjectData - should sync in order roles then permissions then tokens then paths then proxies then repoAuthConfig`() {
+    fun `syncProjectData - should sync in order roles then perms then tokens then paths then proxies then rConfig`() {
         every { federationGroupService.listAll() } returns listOf(buildGroup())
         every { federatedRepositoryDao.findAll() } returns listOf(buildRepo("proj-1", listOf("cluster-a")))
         every { clusterNodeService.getByClusterId("cluster-a") } returns buildClusterNodeInfo("cluster-a")
@@ -219,7 +218,11 @@ class FederationPermissionSyncJobTest {
         every { federationReplicator.replicaOauthTokensTo(any(), any()) } throws RuntimeException("oauth failed")
         every { federationReplicator.replicaUsersTo(any(), any()) } throws RuntimeException("users failed")
         every { federationReplicator.replicaKeysTo(any(), any()) } throws RuntimeException("keys failed")
-        every { federationReplicator.replicaExternalPermissionsTo(any(), any()) } throws RuntimeException("ext perms failed")
+        every {
+            federationReplicator.replicaExternalPermissionsTo(
+                any(), any()
+            )
+        } throws RuntimeException("ext perms failed")
         stubProjectReplicatorMethods()
 
         job.sync()
@@ -239,7 +242,11 @@ class FederationPermissionSyncJobTest {
         every { clusterNodeService.getByClusterId("cluster-b") } returns buildClusterNodeInfo("cluster-b")
         stubGlobalReplicatorMethods()
         every { federationReplicator.replicaRolesTo(any(), "proj-fail", any()) } throws RuntimeException("roles failed")
-        every { federationReplicator.replicaPermissionsTo(any(), "proj-fail", any()) } throws RuntimeException("perms failed")
+        every {
+            federationReplicator.replicaPermissionsTo(
+                any(), "proj-fail", any()
+            )
+        } throws RuntimeException("perms failed")
         every { federationReplicator.replicaTemporaryTokensTo(any(), "proj-fail", any()) } throws RuntimeException()
         every { federationReplicator.replicaPersonalPathsTo(any(), "proj-fail", any()) } throws RuntimeException()
         every { federationReplicator.replicaProxiesTo(any(), "proj-fail", any()) } throws RuntimeException()
@@ -309,7 +316,9 @@ class FederationPermissionSyncJobTest {
         clusterId = "local",
         federationId = "fed-1",
         name = "fed-$projectId",
-        federatedClusters = clusterIds.map { FederatedCluster(projectId = projectId, repoName = repoName, clusterId = it) },
+        federatedClusters = clusterIds.map {
+            FederatedCluster(projectId = projectId, repoName = repoName, clusterId = it)
+        },
         createdBy = "admin",
         createdDate = LocalDateTime.now(),
         lastModifiedBy = "admin",

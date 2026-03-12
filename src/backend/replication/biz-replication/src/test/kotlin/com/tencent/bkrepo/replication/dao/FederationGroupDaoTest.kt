@@ -104,7 +104,10 @@ class FederationGroupDaoTest {
 
     @Test
     fun `findAutoEnableGroups - projectScope with multiple projects matches correctly`() {
-        save(name = "multi-scope", clusterIds = listOf("c1"), autoEnable = true, projectScope = listOf("p1", "p2", "p3"))
+        save(
+            name = "multi-scope", clusterIds = listOf("c1"),
+            autoEnable = true, projectScope = listOf("p1", "p2", "p3")
+        )
 
         assertTrue(federationGroupDao.findAutoEnableGroups("p1").isNotEmpty())
         assertTrue(federationGroupDao.findAutoEnableGroups("p2").isNotEmpty())
@@ -126,7 +129,10 @@ class FederationGroupDaoTest {
     @Test
     fun `save - clusterIds and metadata are persisted correctly`() {
         val clusterIds = listOf("cluster-1", "cluster-2", "cluster-3")
-        val group = save(name = "full-group", clusterIds = clusterIds, autoEnable = true, projectScope = listOf("proj-a"))
+        val group = save(
+            name = "full-group", clusterIds = clusterIds,
+            autoEnable = true, projectScope = listOf("proj-a")
+        )
 
         val found = federationGroupDao.findByName("full-group")!!
         assertEquals(clusterIds, found.clusterIds)

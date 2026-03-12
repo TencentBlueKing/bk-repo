@@ -280,7 +280,7 @@ class FederationRepositoryServiceImplTest : FederationRepositoryServiceTestBase(
         // When
         federationRepositoryService.removeClusterFromFederation(
             TEST_PROJECT_ID, TEST_REPO_NAME, TEST_FEDERATION_ID,
-            remoteClusterName, TEST_PROJECT_ID, TEST_REPO_NAME,true
+            remoteClusterName, TEST_PROJECT_ID, TEST_REPO_NAME, true
         )
 
         // Then

@@ -290,7 +290,10 @@ class FederationReplicatorNewEntitiesTest {
         every { localExternalPermissionClient.listExternalPermission() } returns ok(extPerms)
         every { artifactReplicaClient.replicaExternalPermissionRequest(match { it.repoName == "repo-fail" }) } throws
             RuntimeException("push failed")
-        every { artifactReplicaClient.replicaExternalPermissionRequest(match { it.repoName == "repo-ok" }) } returns ok()
+        every {
+            artifactReplicaClient.replicaExternalPermissionRequest(
+                match { it.repoName == "repo-ok" })
+        } returns ok()
 
         buildReplicator().replicaExternalPermissions(context)
 
@@ -1111,7 +1114,8 @@ class FederationReplicatorNewEntitiesTestHelper(
                         description = role.description
                     )
                 )
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1131,7 +1135,8 @@ class FederationReplicatorNewEntitiesTestHelper(
                         description = acc.description
                     )
                 )
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1151,7 +1156,8 @@ class FederationReplicatorNewEntitiesTestHelper(
                         enabled = perm.enabled
                     )
                 )
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1173,7 +1179,8 @@ class FederationReplicatorNewEntitiesTestHelper(
                         createdBy = token.createdBy
                     )
                 )
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1193,7 +1200,8 @@ class FederationReplicatorNewEntitiesTestHelper(
                         issuedAt = token.issuedAt
                     )
                 )
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1209,7 +1217,8 @@ class FederationReplicatorNewEntitiesTestHelper(
                         fullPath = path.fullPath
                     )
                 )
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1229,7 +1238,8 @@ class FederationReplicatorNewEntitiesTestHelper(
                         cacheExpireDays = proxy.cacheExpireDays
                     )
                 )
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1238,7 +1248,9 @@ class FederationReplicatorNewEntitiesTestHelper(
         users.forEach { user ->
             val keys = try {
                 localKeyClient.listKeyByUserId(user.userId).data ?: return@forEach
-            } catch (_: Exception) { return@forEach }
+            } catch (_: Exception) {
+                return@forEach
+            }
             keys.forEach { keyInfo ->
                 try {
                     context.artifactReplicaClient!!.replicaKeyRequest(
@@ -1251,7 +1263,8 @@ class FederationReplicatorNewEntitiesTestHelper(
                             createAt = keyInfo.createAt.toString()
                         )
                     )
-                } catch (_: Exception) {}
+                } catch (_: Exception) {
+                }
             }
         }
     }
@@ -1270,7 +1283,8 @@ class FederationReplicatorNewEntitiesTestHelper(
                         bkiamv3Check = config.bkiamv3Check
                     )
                 )
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1280,7 +1294,9 @@ class FederationReplicatorNewEntitiesTestHelper(
             try {
                 val userInfo = try {
                     localUserClient.userInfoById(user.userId).data
-                } catch (_: Exception) { null }
+                } catch (_: Exception) {
+                    null
+                }
                 context.artifactReplicaClient!!.replicaUserRequest(
                     UserReplicaRequest(
                         userId = user.userId,
@@ -1294,7 +1310,8 @@ class FederationReplicatorNewEntitiesTestHelper(
                         tenantId = userInfo?.tenantId
                     )
                 )
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -1307,7 +1324,9 @@ class FederationReplicatorNewEntitiesTestHelper(
                 context.localProjectId, null, "REPO"
             ).data ?: emptyList()
             projectPerms + repoPerms
-        } catch (_: Exception) { return@safe }
+        } catch (_: Exception) {
+            return@safe
+        }
         permissions.forEach { perm ->
             try {
                 context.artifactReplicaClient!!.replicaPermissionRequest(
@@ -1326,11 +1345,15 @@ class FederationReplicatorNewEntitiesTestHelper(
                         updatedBy = perm.updatedBy
                     )
                 )
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+            }
         }
     }
 
     private fun safe(block: () -> Unit) {
-        try { block() } catch (_: Exception) {}
+        try {
+            block()
+        } catch (_: Exception) {
+        }
     }
 }

@@ -28,6 +28,13 @@ interface ServiceKeyClient {
         @RequestParam userId: String
     ): Response<List<KeyInfo>>
 
+    @Operation(summary = "分页查询所有密钥（联邦同步专用）")
+    @GetMapping("/list/page")
+    fun listKeysPage(
+        @RequestParam(defaultValue = "1") pageNumber: Int,
+        @RequestParam(defaultValue = "500") pageSize: Int,
+    ): Response<List<KeyInfo>>
+
     @Operation(summary = "创建密钥（联邦同步）")
     @PostMapping("/create")
     fun createKeyForFederation(@RequestBody request: KeyInfo): Response<Boolean>
