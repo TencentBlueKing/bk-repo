@@ -62,13 +62,6 @@
                             @click="handleDownload(row)">
                             {{ $t('download') }}
                         </bk-button>
-                        <bk-button
-                            v-if="row.folder"
-                            text
-                            theme="primary"
-                            @click="openFolder(row)">
-                            {{ $t('open') }}
-                        </bk-button>
                     </template>
                 </bk-table-column>
             </bk-table>
@@ -101,6 +94,7 @@
             return {
                 isLoading: false,
                 fileList: [],
+                rootPath: this.$route.query.path || '',
                 currentPath: '',
                 sortParams: [],
                 pagination: {
@@ -116,12 +110,6 @@
             repoName () {
                 return this.$route.query.repoName
             },
-            path () {
-                return this.$route.query.path || ''
-            },
-            rootPath () {
-                return this.path
-            },
             rootName () {
                 const segments = this.rootPath.split('/').filter(Boolean)
                 return segments.length > 0 ? segments[segments.length - 1] : this.replaceRepoName(this.repoName)
@@ -133,8 +121,8 @@
             }
         },
         watch: {
-            '$route.query.path' () {
-                const newPath = this.$route.query.path || this.rootPath
+            '$route.query.path' (newVal) {
+                const newPath = newVal || this.rootPath
                 if (!newPath.startsWith(this.rootPath)) return
                 this.currentPath = newPath
                 this.pagination.current = 1
@@ -142,7 +130,7 @@
             }
         },
         created () {
-            this.currentPath = this.path
+            this.currentPath = this.rootPath
             this.loadFiles()
         },
         methods: {
