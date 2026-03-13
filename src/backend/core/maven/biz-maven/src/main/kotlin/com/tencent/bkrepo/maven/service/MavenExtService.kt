@@ -3,6 +3,8 @@ package com.tencent.bkrepo.maven.service
 import com.tencent.bkrepo.common.api.exception.ParameterInvalidException
 import com.tencent.bkrepo.common.api.pojo.Page
 import com.tencent.bkrepo.common.api.pojo.Response
+import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
+import com.tencent.bkrepo.common.metadata.permission.PermissionManager
 import com.tencent.bkrepo.common.metadata.service.node.NodeSearchService
 import com.tencent.bkrepo.common.query.model.PageLimit
 import com.tencent.bkrepo.common.query.model.QueryModel
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service
 class MavenExtService(
     private val nodeSearchService: NodeSearchService,
     private val mavenMetadataService: MavenMetadataService,
+    private val permissionManager: PermissionManager,
 ) {
 
     @Value("\${maven.domain:http://127.0.0.1:25803}")
@@ -101,14 +104,17 @@ class MavenExtService(
 
 
     fun searchGroup(request: MavenGroupSearchRequest): Page<String> {
+        permissionManager.checkRepoPermission(PermissionAction.READ, request.projectId, request.repoName)
         return mavenMetadataService.getGroupByPage(request)
     }
 
     fun searchArtifact(request: MavenArtifactSearchRequest): Page<String> {
+        permissionManager.checkRepoPermission(PermissionAction.READ, request.projectId, request.repoName)
         return mavenMetadataService.getArtifactByPage(request)
     }
 
     fun searchVersion(request: MavenVersionSearchRequest): Page<String> {
+        permissionManager.checkRepoPermission(PermissionAction.READ, request.projectId, request.repoName)
         return mavenMetadataService.getVersionByPage(request)
     }
 }
