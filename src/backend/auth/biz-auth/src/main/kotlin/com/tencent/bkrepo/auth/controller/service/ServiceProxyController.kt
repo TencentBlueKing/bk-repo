@@ -28,17 +28,66 @@
 package com.tencent.bkrepo.auth.controller.service
 
 import com.tencent.bkrepo.auth.api.ServiceProxyClient
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyCreateRequest
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
 import com.tencent.bkrepo.auth.pojo.proxy.ProxyKey
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyListOption
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyUpdateRequest
 import com.tencent.bkrepo.auth.service.ProxyService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import org.springframework.util.unit.DataSize
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServiceProxyController(
     private val proxyService: ProxyService
 ) : ServiceProxyClient {
+
     override fun getEncryptedKey(projectId: String, name: String): Response<ProxyKey> {
         return ResponseBuilder.success(proxyService.getEncryptedKey(projectId, name))
+    }
+
+    override fun listProxyByProject(projectId: String): Response<List<ProxyInfo>> {
+        // pageSize 设为较大值用于联邦全量同步，实际单项目 proxy 数量应远小于此上限
+        val page = proxyService.page(projectId, ProxyListOption(pageNumber = 0, pageSize = Int.MAX_VALUE))
+        return ResponseBuilder.success(page.records)
+    }
+
+    override fun createProxyForFederation(proxyInfo: ProxyInfo): Response<Boolean> {
+        val existing = runCatching { proxyService.getInfo(proxyInfo.projectId, proxyInfo.name) }.getOrNull()
+        if (existing != null) return ResponseBuilder.success(false)
+        proxyService.create(
+            ProxyCreateRequest(
+                projectId = proxyInfo.projectId,
+                clusterName = proxyInfo.clusterName,
+                displayName = proxyInfo.displayName,
+                domain = proxyInfo.domain,
+                syncRateLimit = DataSize.ofBytes(proxyInfo.syncRateLimit),
+                syncTimeRange = proxyInfo.syncTimeRange,
+                cacheExpireDays = proxyInfo.cacheExpireDays
+            )
+        )
+        return ResponseBuilder.success(true)
+    }
+
+    override fun updateProxyForFederation(proxyInfo: ProxyInfo): Response<Boolean> {
+        proxyService.update(
+            ProxyUpdateRequest(
+                projectId = proxyInfo.projectId,
+                name = proxyInfo.name,
+                displayName = proxyInfo.displayName,
+                domain = proxyInfo.domain,
+                syncRateLimit = DataSize.ofBytes(proxyInfo.syncRateLimit),
+                syncTimeRange = proxyInfo.syncTimeRange,
+                cacheExpiredDays = proxyInfo.cacheExpireDays
+            )
+        )
+        return ResponseBuilder.success(true)
+    }
+
+    override fun deleteProxyForFederation(projectId: String, name: String): Response<Boolean> {
+        proxyService.delete(projectId, name)
+        return ResponseBuilder.success(true)
     }
 }

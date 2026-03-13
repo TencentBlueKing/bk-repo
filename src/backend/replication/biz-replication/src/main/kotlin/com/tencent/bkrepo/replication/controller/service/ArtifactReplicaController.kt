@@ -27,9 +27,30 @@
 
 package com.tencent.bkrepo.replication.controller.service
 
+import com.tencent.bkrepo.auth.api.ServiceAccountClient
+import com.tencent.bkrepo.auth.pojo.account.AccountInfo
+import com.tencent.bkrepo.auth.api.ServiceExternalPermissionClient
+import com.tencent.bkrepo.auth.api.ServiceKeyClient
+import com.tencent.bkrepo.auth.api.ServiceOauthAuthorizationClient
+import com.tencent.bkrepo.auth.api.ServicePermissionClient
+import com.tencent.bkrepo.auth.api.ServiceProxyClient
+import com.tencent.bkrepo.auth.api.ServiceRepoModeClient
+import com.tencent.bkrepo.auth.api.ServiceRoleClient
+import com.tencent.bkrepo.auth.api.ServiceTemporaryTokenClient
 import com.tencent.bkrepo.auth.api.ServiceUserClient
 import com.tencent.bkrepo.auth.pojo.enums.PermissionAction
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.externalPermission.ExternalPermission
+import com.tencent.bkrepo.auth.pojo.key.KeyInfo
+import com.tencent.bkrepo.auth.pojo.oauth.OauthTokenInfo
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.PersonalPathInfo
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyInfo
+import com.tencent.bkrepo.auth.pojo.proxy.ProxyStatus
+import com.tencent.bkrepo.auth.pojo.role.RoleInfo
+import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
+import com.tencent.bkrepo.auth.pojo.token.TokenType
+import com.tencent.bkrepo.auth.pojo.user.CreateUserRequest
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
@@ -49,10 +70,23 @@ import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
+import com.tencent.bkrepo.replication.context.FederationReplicaContext
 import com.tencent.bkrepo.replication.constant.DEFAULT_VERSION
 import com.tencent.bkrepo.replication.enums.FederatedNodeAction
+import com.tencent.bkrepo.replication.pojo.request.AccountReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.BlockNodeCreateFinishRequest
 import com.tencent.bkrepo.replication.pojo.request.CheckPermissionRequest
+import com.tencent.bkrepo.replication.pojo.request.ExternalPermissionReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.KeyReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.OauthTokenReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.PermissionReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.PersonalPathReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.ProxyReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.RepoAuthConfigReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.ReplicaAction
+import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.TemporaryTokenReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.DirectChildrenPage
 import com.tencent.bkrepo.replication.pojo.request.DirectChildrenRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
@@ -108,6 +142,15 @@ class ArtifactReplicaController(
     private val permissionManager: PermissionManager,
     private val blockNodeService: BlockNodeService,
     private val localDataManager: LocalDataManager,
+    private val localPermissionClient: ServicePermissionClient,
+    private val localRoleClient: ServiceRoleClient,
+    private val localAccountClient: ServiceAccountClient,
+    private val localExternalPermissionClient: ServiceExternalPermissionClient,
+    private val localTemporaryTokenClient: ServiceTemporaryTokenClient,
+    private val localOauthAuthorizationClient: ServiceOauthAuthorizationClient,
+    private val localProxyClient: ServiceProxyClient,
+    private val localKeyClient: ServiceKeyClient,
+    private val localRepoModeClient: ServiceRepoModeClient,
 ) : ArtifactReplicaClient {
 
     @Value("\${spring.application.version:$DEFAULT_VERSION}")
@@ -432,8 +475,10 @@ class ArtifactReplicaController(
 
     @Permission(ResourceType.REPLICATION, PermissionAction.VIEW)
     override fun listPackages(
-        projectId: String, repoName: String,
-        pageNumber: Int, pageSize: Int
+        projectId: String,
+        repoName: String,
+        pageNumber: Int,
+        pageSize: Int
     ): Response<List<Any>> {
         val packages = localDataManager.listPackagesForDiff(projectId, repoName, pageNumber, pageSize)
         return ResponseBuilder.success(packages)
@@ -512,7 +557,6 @@ class ArtifactReplicaController(
             )
         }
     }
-
 
     /**
      * 检查联邦仓库节点创建冲突
@@ -727,6 +771,431 @@ class ArtifactReplicaController(
         }
     }
 
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaUserRequest(request: UserReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    userResource.upsertUserForFederation(
+                        CreateUserRequest(
+                            userId = request.userId,
+                            name = request.name,
+                            admin = request.admin,
+                            asstUsers = request.asstUsers,
+                            group = request.group,
+                            email = request.email,
+                            phone = request.phone,
+                            tenantId = request.tenantId,
+                        ),
+                        hashedPwd = request.pwd
+                    )
+                }
+
+                ReplicaAction.DELETE -> {
+                    userResource.deleteUser(request.userId)
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaPermissionRequest(request: PermissionReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            val existing = findExistingPermission(request)
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    // 先删旧权限（若存在），再创建，实现全量 upsert 语义
+                    existing?.id?.let { localPermissionClient.deletePermission(it) }
+                    localPermissionClient.createPermission(buildCreatePermissionRequest(request))
+                }
+
+                ReplicaAction.DELETE -> {
+                    existing?.id?.let { localPermissionClient.deletePermission(it) }
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    private fun findExistingPermission(request: PermissionReplicaRequest):
+        com.tencent.bkrepo.auth.pojo.permission.Permission? {
+        val projectId = request.projectId
+        return if (projectId != null) {
+            localPermissionClient.listPermission(
+                projectId = projectId,
+                repoName = null,
+                resourceType = request.resourceType
+            ).data?.find { it.permName == request.permName }
+        } else {
+            // projectId 为 null 时（系统级权限），按 permName+resourceType 精确查找
+            localPermissionClient.getPermissionByName(null, request.resourceType, request.permName).data
+        }
+    }
+
+    private fun buildCreatePermissionRequest(request: PermissionReplicaRequest) = CreatePermissionRequest(
+        resourceType = ResourceType.valueOf(request.resourceType),
+        projectId = request.projectId,
+        permName = request.permName,
+        repos = request.repos,
+        includePattern = request.includePattern,
+        excludePattern = request.excludePattern,
+        users = request.users,
+        roles = request.roles,
+        departments = request.departments,
+        actions = request.actions.map { PermissionAction.valueOf(it) },
+        createBy = request.createBy,
+        updatedBy = request.updatedBy
+    )
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaRoleRequest(request: RoleReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            val projectId = request.projectId ?: return ResponseBuilder.success()
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    val existing = runCatching {
+                        localRoleClient.listRoleByProject(projectId).data
+                            ?.find { it.roleId == request.roleId }
+                    }.getOrNull()
+                    val roleInfo = RoleInfo(
+                        roleId = request.roleId,
+                        name = request.name,
+                        type = request.type,
+                        projectId = request.projectId,
+                        repoName = request.repoName,
+                        admin = request.admin,
+                        users = request.users,
+                        description = request.description
+                    )
+                    if (existing == null) {
+                        localRoleClient.createRoleForFederation(roleInfo)
+                    } else {
+                        localRoleClient.updateRoleForFederation(roleInfo.copy(id = existing.id))
+                    }
+                }
+
+                ReplicaAction.DELETE -> {
+                    if (request.id == null) {
+                        logger.warn("Skipping role DELETE: id is null for roleId=${request.roleId}")
+                    } else {
+                        localRoleClient.deleteRoleForFederation(request.id!!)
+                    }
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaAccountRequest(request: AccountReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    val accountInfo = AccountInfo(
+                        appId = request.appId,
+                        locked = request.locked,
+                        authorizationGrantTypes = request.authorizationGrantTypes,
+                        homepageUrl = request.homepageUrl,
+                        redirectUri = request.redirectUri,
+                        avatarUrl = request.avatarUrl,
+                        scope = request.scope,
+                        description = request.description,
+                        credentials = request.credentials
+                    )
+                    localAccountClient.upsertAccountForFederation(accountInfo)
+                }
+
+                ReplicaAction.DELETE -> {
+                    localAccountClient.deleteAccountForFederation(request.appId)
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaExternalPermissionRequest(request: ExternalPermissionReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    val existing = runCatching {
+                        localExternalPermissionClient.listExternalPermission().data
+                            ?.find { it.projectId == request.projectId && it.repoName == request.repoName }
+                    }.getOrNull()
+                    val perm = ExternalPermission(
+                        id = existing?.id ?: (request.id ?: ""),
+                        url = request.url,
+                        headers = request.headers,
+                        projectId = request.projectId,
+                        repoName = request.repoName,
+                        scope = request.scope,
+                        platformWhiteList = request.platformWhiteList,
+                        enabled = request.enabled,
+                        createdDate = LocalDateTime.now(),
+                        createdBy = "",
+                        lastModifiedDate = LocalDateTime.now(),
+                        lastModifiedBy = ""
+                    )
+                    if (existing == null) {
+                        localExternalPermissionClient.createExternalPermission(perm)
+                    } else {
+                        localExternalPermissionClient.updateExternalPermission(perm.copy(id = existing.id))
+                    }
+                }
+
+                ReplicaAction.DELETE -> {
+                    if (request.id == null) {
+                        logger.warn(
+                            "Skipping external permission DELETE: " +
+                                "id is null for project=${request.projectId} repo=${request.repoName}"
+                        )
+                    } else {
+                        localExternalPermissionClient.deleteExternalPermission(request.id!!)
+                    }
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaTemporaryTokenRequest(request: TemporaryTokenReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    val existing = runCatching {
+                        localTemporaryTokenClient.getTokenInfo(request.token).data
+                    }.getOrNull()
+                    if (existing != null) return ResponseBuilder.success()
+                    val expireSeconds = request.expireDate?.let { dateStr ->
+                        runCatching {
+                            val expireTime = LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME)
+                            val remaining = java.time.Duration.between(LocalDateTime.now(), expireTime).seconds
+                            if (remaining > 0) remaining else return ResponseBuilder.success()
+                        }.getOrNull()
+                    }
+                    localTemporaryTokenClient.createToken(
+                        TemporaryTokenCreateRequest(
+                            projectId = request.projectId,
+                            repoName = request.repoName,
+                            fullPathSet = setOf(request.fullPath),
+                            authorizedUserSet = request.authorizedUserList,
+                            authorizedIpSet = request.authorizedIpList,
+                            expireSeconds = expireSeconds ?: java.time.Duration.ofDays(1).seconds,
+                            permits = request.permits,
+                            type = TokenType.valueOf(request.type),
+                            createdBy = request.createdBy
+                        )
+                    )
+                }
+
+                ReplicaAction.DELETE -> {
+                    localTemporaryTokenClient.deleteToken(request.token)
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaOauthTokenRequest(request: OauthTokenReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    localOauthAuthorizationClient.createOauthTokenForFederation(
+                        OauthTokenInfo(
+                            accessToken = request.accessToken,
+                            refreshToken = request.refreshToken,
+                            expireSeconds = request.expireSeconds,
+                            type = request.type,
+                            accountId = request.accountId,
+                            userId = request.userId,
+                            scope = request.scope,
+                            issuedAt = request.issuedAt
+                        )
+                    )
+                }
+
+                ReplicaAction.DELETE -> {
+                    localOauthAuthorizationClient.deleteOauthTokenForFederation(request.accessToken)
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaPersonalPathRequest(request: PersonalPathReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    localPermissionClient.createPersonalPath(
+                        PersonalPathInfo(
+                            userId = request.userId,
+                            projectId = request.projectId,
+                            repoName = request.repoName,
+                            fullPath = request.fullPath
+                        )
+                    )
+                }
+
+                ReplicaAction.DELETE -> {
+                    localPermissionClient.deletePersonalPath(
+                        projectId = request.projectId,
+                        repoName = request.repoName,
+                        userId = request.userId
+                    )
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaProxyRequest(request: ProxyReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    val existing = runCatching {
+                        localProxyClient.listProxyByProject(request.projectId).data
+                            ?.find { it.name == request.name }
+                    }.getOrNull()
+                    val proxyInfo = ProxyInfo(
+                        name = request.name,
+                        displayName = request.displayName,
+                        projectId = request.projectId,
+                        clusterName = request.clusterName,
+                        domain = request.domain,
+                        ip = "",
+                        status = ProxyStatus.OFFLINE,
+                        syncRateLimit = request.syncRateLimit,
+                        syncTimeRange = request.syncTimeRange,
+                        cacheExpireDays = request.cacheExpireDays
+                    )
+                    if (existing == null) {
+                        localProxyClient.createProxyForFederation(proxyInfo)
+                    } else {
+                        localProxyClient.updateProxyForFederation(proxyInfo)
+                    }
+                }
+
+                ReplicaAction.DELETE -> {
+                    localProxyClient.deleteProxyForFederation(request.projectId, request.name)
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaKeyRequest(request: KeyReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    // 按 fingerprint 幂等：已存在则跳过
+                    val existing = runCatching {
+                        localKeyClient.listKeyByUserId(request.userId).data
+                            ?.find { it.fingerprint == request.fingerprint }
+                    }.getOrNull()
+                    if (existing == null) {
+                        val createAt = runCatching {
+                            LocalDateTime.parse(request.createAt, DateTimeFormatter.ISO_DATE_TIME)
+                        }.getOrDefault(LocalDateTime.now())
+                        localKeyClient.createKeyForFederation(
+                            KeyInfo(
+                                id = request.id,
+                                name = request.name,
+                                key = request.key,
+                                fingerprint = request.fingerprint,
+                                userId = request.userId,
+                                createAt = createAt
+                            )
+                        )
+                    }
+                }
+
+                ReplicaAction.DELETE -> {
+                    val remoteKey = runCatching {
+                        localKeyClient.listKeyByUserId(request.userId).data
+                            ?.find { it.fingerprint == request.fingerprint }
+                    }.getOrNull()
+                    if (remoteKey != null) {
+                        localKeyClient.deleteKeyForFederation(remoteKey.id)
+                    } else {
+                        logger.warn(
+                            "Key fingerprint=${request.fingerprint} user=${request.userId} not found on remote," +
+                                " skipping delete"
+                        )
+                    }
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaRepoAuthConfigRequest(request: RepoAuthConfigReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    val accessControlMode = runCatching {
+                        com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.valueOf(request.accessControlMode)
+                    }.getOrDefault(com.tencent.bkrepo.auth.pojo.enums.AccessControlMode.DEFAULT)
+                    localRepoModeClient.upsertRepoAuthConfig(
+                        projectId = request.projectId,
+                        repoName = request.repoName,
+                        accessControlMode = accessControlMode,
+                        officeDenyGroupSet = request.officeDenyGroupSet,
+                        bkiamv3Check = request.bkiamv3Check
+                    )
+                }
+
+                ReplicaAction.DELETE -> {
+                    // RepoAuthConfig 通常不删除，仅 UPSERT；若需要删除可在未来扩展
+                    logger.info(
+                        "Skipping repo auth config DELETE (not supported):" +
+                            " ${request.projectId}/${request.repoName}"
+                    )
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
     /** ISO 日期时间字符串解析为 LocalDateTime */
     private fun String.toLocalDateTime(): LocalDateTime =
         LocalDateTime.parse(this, DateTimeFormatter.ISO_DATE_TIME)
@@ -742,7 +1211,6 @@ class ArtifactReplicaController(
     /** 构建版本路径 */
     private fun buildVersionPath(projectId: String, repoName: String, packageKey: String, versionName: String) =
         "/$projectId/$repoName/package/$packageKey/version/$versionName"
-
 
     /** 记录同步操作日志 */
     private fun logReplicaSync(action: FederatedNodeAction, path: String, source: String?, reason: String = "") {

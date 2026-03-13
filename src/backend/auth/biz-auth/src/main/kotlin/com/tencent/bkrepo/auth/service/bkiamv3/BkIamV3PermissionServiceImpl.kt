@@ -29,6 +29,7 @@ package com.tencent.bkrepo.auth.service.bkiamv3
 
 import com.tencent.bkrepo.auth.constant.CREATIVE
 import com.tencent.bkrepo.auth.constant.CUSTOM
+import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.constant.LOG
 import com.tencent.bkrepo.auth.constant.PIPELINE
 import com.tencent.bkrepo.auth.constant.REPORT
@@ -46,6 +47,7 @@ import com.tencent.bkrepo.auth.util.BkIamV3Utils.convertActionType
 import com.tencent.bkrepo.common.api.constant.StringPool
 import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.slf4j.LoggerFactory
 import java.util.Locale
 
@@ -61,7 +63,9 @@ open class BkIamV3PermissionServiceImpl(
     personalPathDao: PersonalPathDao,
     repoAuthConfigDao: RepoAuthConfigDao,
     repositoryService: RepositoryService,
-    projectService: ProjectService
+    projectService: ProjectService,
+    messageSupplier: MessageSupplier,
+    authProperties: AuthProperties
 ) : PermissionServiceImpl(
     roleRepository,
     accountDao,
@@ -70,7 +74,9 @@ open class BkIamV3PermissionServiceImpl(
     personalPathDao,
     repoAuthConfigDao,
     repositoryService,
-    projectService
+    projectService,
+    messageSupplier,
+    authProperties
 ) {
     override fun checkPermission(request: CheckPermissionRequest): Boolean {
         logger.debug("v3 checkPermission, request: $request")

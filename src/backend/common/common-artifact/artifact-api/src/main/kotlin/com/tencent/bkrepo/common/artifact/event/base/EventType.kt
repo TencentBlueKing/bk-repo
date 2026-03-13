@@ -168,5 +168,36 @@ enum class EventType(val msgKey: String) {
     SCAN_FINISHED("artifact.event.scan.finished"),
 
     // 第三方同步
-    REPLICATION_THIRD_PARTY("artifact.event.replication-third-party");
+    REPLICATION_THIRD_PARTY("artifact.event.replication-third-party"),
+
+    // USER
+    USER_CREATED("artifact.event.user-created"),
+    USER_UPDATED("artifact.event.user-updated"),
+    USER_DELETED("artifact.event.user-deleted"),
+
+    // ROLE
+    ROLE_CREATED("artifact.event.role-created"),
+    ROLE_UPDATED("artifact.event.role-updated"),
+    ROLE_DELETED("artifact.event.role-deleted"),
+
+    // PERMISSION
+    PERMISSION_CREATED("artifact.event.permission-created"),
+    PERMISSION_UPDATED("artifact.event.permission-updated"),
+    PERMISSION_DELETED("artifact.event.permission-deleted"),
+
+    // OAUTH TOKEN
+    OAUTH_TOKEN_CREATED("artifact.event.oauth-token-created"),
+    OAUTH_TOKEN_DELETED("artifact.event.oauth-token-deleted"),
+
+    // TEMPORARY TOKEN
+    TEMP_TOKEN_CREATED("artifact.event.temp-token-created"),
+    TEMP_TOKEN_DELETED("artifact.event.temp-token-deleted"),
+
+    // PROXY
+    PROXY_CREATED("artifact.event.proxy-created"),
+    PROXY_UPDATED("artifact.event.proxy-updated"),
+    PROXY_DELETED("artifact.event.proxy-deleted"),
+
+    // REPO AUTH CONFIG
+    REPO_AUTH_CONFIG_UPDATED("artifact.event.repo-auth-config-updated");
 }

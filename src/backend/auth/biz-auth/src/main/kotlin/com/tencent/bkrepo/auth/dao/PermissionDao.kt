@@ -120,6 +120,11 @@ class PermissionDao : SimpleMongoDao<TPermission>() {
         return this.find(query)
     }
 
+    fun listAllByProject(projectId: String): List<TPermission> {
+        val query = Query.query(Criteria.where(TPermission::projectId.name).`is`(projectId))
+        return this.find(query)
+    }
+
     fun listPermissionInRepo(
         projectId: String,
         repoName: String,

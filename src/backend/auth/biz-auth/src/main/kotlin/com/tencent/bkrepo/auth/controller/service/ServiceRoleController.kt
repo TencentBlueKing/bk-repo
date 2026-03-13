@@ -36,9 +36,12 @@ import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.PROJECT_MANAGE_NAME
 import com.tencent.bkrepo.auth.constant.REPO_MANAGE_ID
 import com.tencent.bkrepo.auth.constant.REPO_MANAGE_NAME
-import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
 import com.tencent.bkrepo.auth.pojo.enums.RoleType
+import com.tencent.bkrepo.auth.pojo.role.CreateRoleRequest
+import com.tencent.bkrepo.auth.pojo.role.RoleInfo
+import com.tencent.bkrepo.auth.pojo.role.UpdateRoleRequest
 import com.tencent.bkrepo.auth.service.RoleService
+import com.tencent.bkrepo.auth.service.UserService
 import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import org.springframework.beans.factory.annotation.Autowired
@@ -46,7 +49,8 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 class ServiceRoleController @Autowired constructor(
-    private val roleService: RoleService
+    private val roleService: RoleService,
+    private val userService: UserService,
 ) : ServiceRoleClient {
 
     override fun createProjectManage(projectId: String): Response<String?> {
@@ -72,5 +76,64 @@ class ServiceRoleController @Autowired constructor(
         )
         val id = roleService.createRole(request)
         return ResponseBuilder.success(id)
+    }
+
+    override fun listRoleByProject(projectId: String): Response<List<RoleInfo>> {
+        val roles = roleService.listRoleByProject(projectId)
+        return ResponseBuilder.success(roles.map { it.toRoleInfo() })
+    }
+
+    override fun listRoleByProjectPage(projectId: String, pageNumber: Int, pageSize: Int): Response<List<RoleInfo>> {
+        val roles = roleService.listRoleByProjectPage(projectId, pageNumber, pageSize)
+        return ResponseBuilder.success(roles.map { it.toRoleInfo() })
+    }
+
+    private fun com.tencent.bkrepo.auth.pojo.role.Role.toRoleInfo() = RoleInfo(
+        id = id,
+        roleId = roleId,
+        name = name,
+        type = type.name,
+        projectId = projectId,
+        repoName = repoName,
+        admin = admin,
+        users = users,
+        description = description
+    )
+
+    override fun createRoleForFederation(roleInfo: RoleInfo): Response<String?> {
+        val type = runCatching { RoleType.valueOf(roleInfo.type) }.getOrDefault(RoleType.PROJECT)
+        val request = CreateRoleRequest(
+            roleId = roleInfo.roleId,
+            name = roleInfo.name,
+            type = type,
+            projectId = roleInfo.projectId,
+            repoName = roleInfo.repoName,
+            admin = roleInfo.admin,
+            description = roleInfo.description
+        )
+        val id = roleService.createRole(request)
+        if (!roleInfo.users.isNullOrEmpty() && id != null) {
+            runCatching { userService.addUserToRoleBatch(roleInfo.users, id) }
+        }
+        return ResponseBuilder.success(id)
+    }
+
+    override fun updateRoleForFederation(roleInfo: RoleInfo): Response<Boolean> {
+        val projectId = roleInfo.projectId ?: return ResponseBuilder.success(false)
+        val existingRole = roleService.detail(roleInfo.roleId, projectId)
+            ?: return ResponseBuilder.success(false)
+        val request = UpdateRoleRequest(
+            name = roleInfo.name,
+            description = roleInfo.description,
+            userIds = roleInfo.users.toSet(),
+            deptInfoList = null
+        )
+        val result = roleService.updateRoleInfo(existingRole.id!!, request)
+        return ResponseBuilder.success(result)
+    }
+
+    override fun deleteRoleForFederation(id: String): Response<Boolean> {
+        val result = roleService.deleteRoleById(id)
+        return ResponseBuilder.success(result)
     }
 }

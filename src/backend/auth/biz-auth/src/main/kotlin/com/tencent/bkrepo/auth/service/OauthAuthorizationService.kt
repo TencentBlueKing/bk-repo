@@ -32,6 +32,7 @@ import com.tencent.bkrepo.auth.pojo.oauth.AuthorizedResult
 import com.tencent.bkrepo.auth.pojo.oauth.GenerateTokenRequest
 import com.tencent.bkrepo.auth.pojo.oauth.JsonWebKeySet
 import com.tencent.bkrepo.auth.pojo.oauth.OauthToken
+import com.tencent.bkrepo.auth.pojo.oauth.OauthTokenInfo
 import com.tencent.bkrepo.auth.pojo.oauth.OidcConfiguration
 import com.tencent.bkrepo.auth.pojo.oauth.UserInfo
 
@@ -81,4 +82,24 @@ interface OauthAuthorizationService {
      * 获取Json web key set
      */
     fun getJwks(): JsonWebKeySet
+
+    /**
+     * 按accessToken查询OauthTokenInfo（用于联邦同步）
+     */
+    fun getTokenInfo(accessToken: String): OauthTokenInfo?
+
+    /**
+     * 列举所有oauth token（用于联邦同步）
+     */
+    fun listActiveTokens(): List<OauthTokenInfo>
+
+    /**
+     * 直接保存oauth token（用于联邦同步接收端）
+     */
+    fun saveFederationToken(tokenInfo: OauthTokenInfo)
+
+    /**
+     * 删除oauth token（用于联邦同步）
+     */
+    fun deleteTokenByAccessToken(accessToken: String)
 }

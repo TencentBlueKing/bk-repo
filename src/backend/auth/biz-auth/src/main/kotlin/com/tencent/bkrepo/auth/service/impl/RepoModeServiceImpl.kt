@@ -31,13 +31,20 @@
 
 package com.tencent.bkrepo.auth.service.impl
 
+import com.tencent.bkrepo.auth.config.AuthProperties
+import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.dao.PermissionDao
 import com.tencent.bkrepo.auth.dao.RepoAuthConfigDao
 import com.tencent.bkrepo.auth.pojo.enums.AccessControlMode
 import com.tencent.bkrepo.auth.pojo.enums.ResourceType
+import com.tencent.bkrepo.auth.pojo.permission.RepoAuthConfigInfo
 import com.tencent.bkrepo.auth.pojo.permission.RepoModeStatus
 import com.tencent.bkrepo.auth.service.RepoModeService
+import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
+import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.metadata.service.repo.RepositoryService
+import com.tencent.bkrepo.common.security.util.SecurityUtils
+import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
 import org.springframework.stereotype.Service
 
 @Service
@@ -45,6 +52,8 @@ class RepoModeServiceImpl(
     private val repoAuthDao: RepoAuthConfigDao,
     private val permissionDao: PermissionDao,
     private val repositoryService: RepositoryService,
+    private val messageSupplier: MessageSupplier,
+    private val authProperties: AuthProperties
 ) : RepoModeService {
 
     override fun createOrUpdateConfig(
@@ -61,6 +70,7 @@ class RepoModeServiceImpl(
             controlMode = AccessControlMode.DEFAULT
         }
         val id = repoAuthDao.upsertProjectRepo(projectId, repoName, controlMode!!, officeDenyGroupSet, bkiamv3Check)
+        publishEvent(projectId, repoName)
         return RepoModeStatus(id, accessControlMode, officeDenyGroupSet, bkiamv3Check)
     }
 
@@ -95,4 +105,33 @@ class RepoModeServiceImpl(
         )
     }
 
+    private fun publishEvent(projectId: String, repoName: String) {
+        if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
+        val event = ArtifactEvent(
+            type = EventType.REPO_AUTH_CONFIG_UPDATED,
+            projectId = projectId,
+            repoName = repoName,
+            resourceKey = "$projectId/$repoName",
+            userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
+            eventId = ArtifactEvent.generateEventId()
+        )
+        messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
+    }
+
+    override fun listByProject(projectId: String): List<RepoAuthConfigInfo> {
+        return repoAuthDao.listByProject(projectId).map { config ->
+            RepoAuthConfigInfo(
+                id = config.id!!,
+                projectId = config.projectId,
+                repoName = config.repoName,
+                accessControlMode = config.accessControlMode,
+                officeDenyGroupSet = config.officeDenyGroupSet ?: emptySet(),
+                bkiamv3Check = config.bkiamv3Check ?: false
+            )
+        }
+    }
+
+    companion object {
+        private const val BINDING_OUT_NAME = "artifactEvent-out-0"
+    }
 }

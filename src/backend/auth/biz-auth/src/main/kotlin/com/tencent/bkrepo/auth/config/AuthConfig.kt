@@ -32,6 +32,7 @@
 package com.tencent.bkrepo.auth.config
 
 import com.tencent.bkrepo.auth.interceptor.AuthInterceptor
+import com.tencent.bkrepo.auth.interceptor.FederationWriteInterceptor
 import com.tencent.bkrepo.common.security.http.core.HttpAuthSecurity
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Configuration
@@ -39,7 +40,7 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 @Configuration
-@EnableConfigurationProperties(OauthProperties::class)
+@EnableConfigurationProperties(OauthProperties::class, AuthProperties::class)
 class AuthConfig : WebMvcConfigurer {
 
     var prefixEnabled = true
@@ -63,6 +64,9 @@ class AuthConfig : WebMvcConfigurer {
             .addPathPatterns(httpAuthSecurity.getIncludedPatterns())
             .excludePathPatterns(httpAuthSecurity.getExcludedPatterns())
             .order(0)
+        registry.addInterceptor(FederationWriteInterceptor())
+            .addPathPatterns("/service/**")
+            .order(1)
         super.addInterceptors(registry)
     }
 }

@@ -33,7 +33,10 @@ package com.tencent.bkrepo.auth.api
 
 import com.tencent.bkrepo.auth.constant.AUTH_SERVICE_PERMISSION_PREFIX
 import com.tencent.bkrepo.auth.pojo.permission.CheckPermissionRequest
+import com.tencent.bkrepo.auth.pojo.permission.CreatePermissionRequest
 import com.tencent.bkrepo.auth.pojo.permission.ListPathResult
+import com.tencent.bkrepo.auth.pojo.permission.Permission
+import com.tencent.bkrepo.auth.pojo.permission.PersonalPathInfo
 import com.tencent.bkrepo.common.api.constant.AUTH_SERVICE_NAME
 import com.tencent.bkrepo.common.api.pojo.Response
 import io.swagger.v3.oas.annotations.Operation
@@ -41,7 +44,9 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.context.annotation.Primary
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -96,4 +101,56 @@ interface ServicePermissionClient {
         @RequestBody request: CheckPermissionRequest,
     ): Response<Boolean>
 
+    @Operation(summary = "查询项目/仓库下的权限列表（用于联邦同步）")
+    @GetMapping("/list")
+    fun listPermission(
+        @RequestParam projectId: String,
+        @RequestParam(required = false) repoName: String?,
+        @RequestParam resourceType: String
+    ): Response<List<Permission>>
+
+    @Operation(summary = "查询项目下所有权限（用于联邦同步，含 PROJECT/REPO/NODE 等所有类型）")
+    @GetMapping("/listAll")
+    fun listAllPermissionByProject(
+        @RequestParam projectId: String
+    ): Response<List<Permission>>
+    @Operation(summary = "创建权限（用于联邦同步）")
+    @PostMapping("/create")
+    fun createPermission(@RequestBody request: CreatePermissionRequest): Response<Boolean>
+
+    @Operation(summary = "删除权限（用于联邦同步）")
+    @DeleteMapping("/delete/{id}")
+    fun deletePermission(@PathVariable id: String): Response<Boolean>
+
+    @Operation(summary = "按ID查询权限（用于联邦同步）")
+    @GetMapping("/get/{id}")
+    fun getPermissionById(@PathVariable id: String): Response<Permission?>
+
+    @Operation(summary = "按permName查询权限（用于联邦同步）")
+    @GetMapping("/getByName")
+    fun getPermissionByName(
+        @RequestParam(required = false) projectId: String?,
+        @RequestParam resourceType: String,
+        @RequestParam permName: String
+    ): Response<Permission?>
+
+    @Operation(summary = "查询项目下的个人目录列表（联邦同步）")
+    @GetMapping("/personalPath/list/{projectId}")
+    fun listPersonalPath(
+        @PathVariable projectId: String
+    ): Response<List<PersonalPathInfo>>
+
+    @Operation(summary = "创建个人目录（联邦同步）")
+    @PostMapping("/personalPath/create")
+    fun createPersonalPath(
+        @RequestBody request: PersonalPathInfo
+    ): Response<Boolean>
+
+    @Operation(summary = "删除个人目录（联邦同步）")
+    @DeleteMapping("/personalPath/delete")
+    fun deletePersonalPath(
+        @RequestParam projectId: String,
+        @RequestParam repoName: String,
+        @RequestParam userId: String
+    ): Response<Boolean>
 }
