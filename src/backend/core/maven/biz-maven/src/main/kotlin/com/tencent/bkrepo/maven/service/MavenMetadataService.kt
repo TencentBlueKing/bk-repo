@@ -10,7 +10,9 @@ import com.tencent.bkrepo.maven.pojo.MavenMetadataSearchPojo
 import com.tencent.bkrepo.maven.pojo.MavenVersion
 import com.tencent.bkrepo.maven.pojo.metadata.MavenMetadataRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenArtifactSearchRequest
+import com.tencent.bkrepo.maven.pojo.request.MavenArtifactSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
+import com.tencent.bkrepo.maven.pojo.request.MavenVersionSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenVersionSearchRequest
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
@@ -234,74 +236,57 @@ class MavenMetadataService(
     }
 
     fun getGroupByPage(request: MavenGroupSearchRequest): Page<String> {
-        val filters = mutableMapOf<String, String?>()
-        request.groupId?.let { filters[TMavenMetadataRecord::groupId.name] = it }
-        return aggregateByPage(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            filters = filters,
-            aggregateField = TMavenMetadataRecord::groupId.name,
-            pageNumber = request.pageNumber,
-            pageSize = request.pageSize
-        )
+        val safePageNumber = if (request.pageNumber < 0) 0 else request.pageNumber
+        val safePageSize = if (request.pageSize < 0) 0 else request.pageSize
+        val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(request.projectId)
+            .and(TMavenMetadataRecord::repoName.name).`is`(request.repoName)
+            .apply {
+                request.groupId?.let { and(TMavenMetadataRecord::groupId.name).regex(it, "i") }
+            }
+        return aggregateByPage(criteria, TMavenMetadataRecord::groupId.name, safePageNumber, safePageSize)
     }
 
     fun getArtifactByPage(request: MavenArtifactSearchRequest): Page<String> {
-        val filters = mutableMapOf(TMavenMetadataRecord::groupId.name to request.groupId as String?)
-        request.artifact?.let { filters[TMavenMetadataRecord::artifactId.name] = it }
-        return aggregateByPage(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            filters = filters,
-            aggregateField = TMavenMetadataRecord::artifactId.name,
-            pageNumber = request.pageNumber,
-            pageSize = request.pageSize
-        )
+        val safePageNumber = if (request.pageNumber < 0) 0 else request.pageNumber
+        val safePageSize = if (request.pageSize < 0) 0 else request.pageSize
+        val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(request.projectId)
+            .and(TMavenMetadataRecord::repoName.name).`is`(request.repoName)
+            .and(TMavenMetadataRecord::groupId.name).`is`(request.groupId)
+            .apply {
+                request.artifact?.let { and(TMavenMetadataRecord::artifactId.name).regex(it, "i") }
+            }
+        return aggregateByPage(criteria, TMavenMetadataRecord::artifactId.name, safePageNumber, safePageSize)
     }
 
     fun getVersionByPage(request: MavenVersionSearchRequest): Page<String> {
-        val filters = mutableMapOf(
-            TMavenMetadataRecord::groupId.name to request.groupId as String?,
-            TMavenMetadataRecord::artifactId.name to request.artifact as String?
-        )
-        request.version?.let { filters[TMavenMetadataRecord::version.name] = it }
-        return aggregateByPage(
-            projectId = request.projectId,
-            repoName = request.repoName,
-            filters = filters,
-            aggregateField = TMavenMetadataRecord::version.name,
-            pageNumber = request.pageNumber,
-            pageSize = request.pageSize
-        )
+        val safePageNumber = if (request.pageNumber < 0) 0 else request.pageNumber
+        val safePageSize = if (request.pageSize < 0) 0 else request.pageSize
+        val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(request.projectId)
+            .and(TMavenMetadataRecord::repoName.name).`is`(request.repoName)
+            .and(TMavenMetadataRecord::groupId.name).`is`(request.groupId)
+            .and(TMavenMetadataRecord::artifactId.name).`is`(request.artifact)
+            .apply {
+                request.version?.let { and(TMavenMetadataRecord::version.name).regex(it, "i") }
+            }
+        return aggregateByPage(criteria, TMavenMetadataRecord::version.name, safePageNumber, safePageSize)
     }
 
     private fun aggregateByPage(
-        projectId: String,
-        repoName: String,
-        filters: Map<String, String?>,
+        criteria: Criteria,
         aggregateField: String,
         pageNumber: Int,
         pageSize: Int
     ): Page<String> {
-        val safePageNumber = if (pageNumber < 0) 0 else pageNumber
-        val safePageSize = if (pageSize < 0) 0 else pageSize
-        val criteria = Criteria.where(TMavenMetadataRecord::projectId.name).`is`(projectId)
-            .and(TMavenMetadataRecord::repoName.name).`is`(repoName)
-            .apply {
-                filters.forEach { (field, value) ->
-                    value?.let { and(field).regex(it, "i") }
-                }
-            }
         val aggregation = Aggregation.newAggregation(
             Aggregation.match(criteria),
             Aggregation.group(aggregateField).first(aggregateField).`as`(aggregateField),
-            Aggregation.skip((safePageNumber * safePageSize).toLong()),
-            Aggregation.limit(safePageSize.toLong())
+            Aggregation.skip((pageNumber * pageSize).toLong()),
+            Aggregation.limit(pageSize.toLong())
         )
         val results = mavenMetadataDao.determineMongoTemplate().aggregate(
             aggregation, TMavenMetadataRecord::class.java, HashMap::class.java
         ).mappedResults.map { it[aggregateField]?.toString() ?: "" }
-        return Page(safePageNumber, safePageSize, 0, results)
+        return Page(pageNumber, pageSize, 0, results)
     }
 
     fun update(request: MavenMetadataRequest) {
