@@ -1,7 +1,7 @@
 package com.tencent.bkrepo.fs.server.model.drive
 
-import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot.Companion.REPO_NAME_IDX
-import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot.Companion.REPO_NAME_IDX_DEF
+import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot.Companion.SNAP_SEQ_IDX
+import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot.Companion.SNAP_SEQ_IDX_DEF
 import org.springframework.data.mongodb.core.index.CompoundIndex
 import org.springframework.data.mongodb.core.index.CompoundIndexes
 import org.springframework.data.mongodb.core.mapping.Document
@@ -12,7 +12,7 @@ import java.time.LocalDateTime
  */
 @Document("drive_snapshot")
 @CompoundIndexes(
-    CompoundIndex(name = REPO_NAME_IDX, def = REPO_NAME_IDX_DEF, unique = true, background = true)
+    CompoundIndex(name = SNAP_SEQ_IDX, def = SNAP_SEQ_IDX_DEF, unique = true, background = true)
 )
 data class TDriveSnapshot(
     var id: String? = null,
@@ -39,15 +39,12 @@ data class TDriveSnapshot(
     var snapSeq: Long,
 
     /**
-     * 快照状态
+     * 删除时间
      */
-    var status: Int = ACTIVE,
+    var deleted: LocalDateTime? = null,
 ) {
     companion object {
-        const val ACTIVE = 0
-        const val DELETING = 1
-        const val DELETED = 2
-        const val REPO_NAME_IDX = "repo_name_idx"
-        const val REPO_NAME_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'name': 1}"
+        const val SNAP_SEQ_IDX = "repo_name_idx"
+        const val SNAP_SEQ_IDX_DEF = "{'projectId': 1, 'repoName': 1, 'snapSeq': 1}"
     }
 }

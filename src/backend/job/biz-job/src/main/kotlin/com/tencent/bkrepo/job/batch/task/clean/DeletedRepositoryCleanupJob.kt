@@ -28,6 +28,8 @@
 package com.tencent.bkrepo.job.batch.task.clean
 
 import com.tencent.bkrepo.common.artifact.path.PathUtils
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
+import com.tencent.bkrepo.common.metadata.model.TRepository
 import com.tencent.bkrepo.common.mongo.constant.ID
 import com.tencent.bkrepo.job.DELETED_DATE
 import com.tencent.bkrepo.job.FULL_PATH
@@ -76,7 +78,10 @@ class DeletedRepositoryCleanupJob(
     }
 
     override fun buildQuery(): Query {
-        return Query(Criteria.where(DELETED_DATE).ne(null))
+        // DRIVE仓库不使用node，通过单独清理任务清理
+        val criteria = Criteria.where(DELETED_DATE).ne(null)
+            .and(TRepository::type.name).ne(RepositoryType.DRIVE.name)
+        return Query(criteria)
     }
 
     override fun run(row: Repository, collectionName: String, context: JobContext) {

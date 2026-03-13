@@ -5,18 +5,18 @@ import com.github.benmanes.caffeine.cache.Caffeine
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.tencent.bkrepo.common.api.exception.NotFoundException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.api.util.TraceUtils.trace
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapSeq
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveSnapSeqDao
+import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
-import org.springframework.data.mongodb.core.FindAndModifyOptions
+import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.data.mongodb.core.query.isEqualTo
@@ -24,6 +24,7 @@ import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import reactor.kotlin.core.publisher.toMono
 import java.time.Duration
+import java.time.LocalDateTime
 import java.util.concurrent.Executors
 
 /**
@@ -47,46 +48,73 @@ class DriveSnapSeqService(
         .expireAfterWrite(Duration.ofSeconds(CACHE_EXPIRE_SECONDS))
         .maximumSize(MAXIMUM_CACHE_SIZE)
         .buildAsync { key, _ ->
-            mono(refreshDispatcher) { queryLatestSnapSeq(key.projectId, key.repoName) }.toFuture()
+            mono(refreshDispatcher) { queryLatestSnapSeq(key.projectId, key.repoName).snapSeq }.toFuture()
         }
 
     /**
      * 查询仓库当前快照序列号，不存在时抛出异常。
      */
-    suspend fun getLatestSnapSeq(projectId: String, repoName: String): Long {
-        validate(projectId, repoName)
-        val cacheKey = SnapSeqCacheKey(projectId, repoName)
-        return snapSeqCache.get(cacheKey).toMono().awaitSingle()
+    suspend fun getLatestSnapSeq(projectId: String, repoName: String, fromCache: Boolean = true): Long {
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
+        return if (fromCache) {
+            val cacheKey = SnapSeqCacheKey(projectId, repoName)
+            snapSeqCache.get(cacheKey).toMono().awaitSingle()
+        } else {
+            queryLatestSnapSeq(projectId, repoName).snapSeq
+        }
+    }
+
+    suspend fun createSnapSeq(projectId: String, repoName: String): TDriveSnapSeq {
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
+        val now = LocalDateTime.now()
+        val operator = DriveServiceUtils.getUserOrSystem()
+        val snapSeq = TDriveSnapSeq(
+            id = null,
+            createdBy = operator,
+            createdDate = now,
+            lastModifiedBy = operator,
+            lastModifiedDate = now,
+            projectId = projectId,
+            repoName = repoName,
+            snapSeq = 0L,
+        )
+        return try {
+            val driveSnapSeq = driveSnapSeqDao.insert(snapSeq)
+            logger.info("Create drive snapSeq of repo [$projectId/$repoName] success.")
+            driveSnapSeq
+        } catch (_: DuplicateKeyException) {
+            logger.info("Drive snapSeq of repo [$projectId/$repoName] already exists.")
+            queryLatestSnapSeq(projectId, repoName)
+        }
     }
 
     /**
-     * 增加仓库快照序列号并返回增加后的值。
+     * 增加仓库快照序列号并返回增加后的值，两次增加的间隔不能少于[MIN_INC_INTERVAL_SECONDS],避免频繁创建快照或异常原因连续创建快照
      */
-    suspend fun incSnapSeq(projectId: String, repoName: String): Long {
-        validate(projectId, repoName)
+    suspend fun incSnapSeq(projectId: String, repoName: String, oldSeq: Long): Long {
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
+        val requiredInterval = LocalDateTime.now().minusSeconds(MIN_INC_INTERVAL_SECONDS)
+        val now = LocalDateTime.now()
         val criteria = where(TDriveSnapSeq::projectId).isEqualTo(projectId)
             .and(TDriveSnapSeq::repoName.name).isEqualTo(repoName)
-        val query = Query(criteria)
+            .and(TDriveSnapSeq::snapSeq.name).isEqualTo(oldSeq)
+            .and(TDriveSnapSeq::lastModifiedDate.name).lte(requiredInterval)
         val update = Update()
-            .setOnInsert(TDriveSnapSeq::projectId.name, projectId)
-            .setOnInsert(TDriveSnapSeq::repoName.name, repoName)
+            .set(TDriveSnapSeq::lastModifiedDate.name, now)
+            .set(TDriveSnapSeq::lastModifiedBy.name, DriveServiceUtils.getUserOrSystem())
             .inc(TDriveSnapSeq::snapSeq.name, 1L)
-        val options = FindAndModifyOptions.options().upsert(true).returnNew(true)
-        val latest = driveSnapSeqDao.findAndModify(query, update, options, TDriveSnapSeq::class.java)
-            ?: throw IllegalStateException("Failed to increase drive snap sequence for [$projectId/$repoName].")
-        logger.info("Increase drive snapSeq to [${latest.snapSeq}] in repo [$projectId/$repoName].")
-        return latest.snapSeq
+        val updateResult = driveSnapSeqDao.updateFirst(Query(criteria), update)
+        if (updateResult.modifiedCount == 0L) {
+            throw IllegalStateException("Failed to increase drive snap sequence for [$projectId/$repoName].")
+        }
+        logger.info("Increase drive snapSeq to [${oldSeq + 1}] in repo [$projectId/$repoName].")
+        return oldSeq + 1
     }
 
-    private fun validate(projectId: String, repoName: String) {
-        Preconditions.checkArgument(projectId.isNotBlank(), TDriveSnapSeq::projectId.name)
-        Preconditions.checkArgument(repoName.isNotBlank(), TDriveSnapSeq::repoName.name)
-    }
-
-    private suspend fun queryLatestSnapSeq(projectId: String, repoName: String): Long {
+    private suspend fun queryLatestSnapSeq(projectId: String, repoName: String): TDriveSnapSeq {
         val criteria = where(TDriveSnapSeq::projectId).isEqualTo(projectId)
             .and(TDriveSnapSeq::repoName.name).isEqualTo(repoName)
-        return driveSnapSeqDao.findOne(Query(criteria))?.snapSeq
+        return driveSnapSeqDao.findOne(Query(criteria))
             ?: throw NotFoundException(CommonMessageCode.RESOURCE_NOT_FOUND, "drive snapSeq[$projectId/$repoName]")
     }
 
@@ -101,6 +129,10 @@ class DriveSnapSeqService(
     )
 
     companion object {
+        /**
+         * 两次创建快照的最小间隔
+         */
+        private const val MIN_INC_INTERVAL_SECONDS = 60L
         private const val CACHE_REFRESH_SECONDS = 10L
         private const val CACHE_EXPIRE_SECONDS = 300L
         private const val MAXIMUM_CACHE_SIZE = 10_000L

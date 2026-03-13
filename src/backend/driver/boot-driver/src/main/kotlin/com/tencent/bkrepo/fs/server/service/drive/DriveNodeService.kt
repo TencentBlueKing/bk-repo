@@ -30,8 +30,8 @@ import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResponse
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
 import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
+import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
-import org.apache.pulsar.shade.com.google.common.hash.Hashing
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -43,29 +43,27 @@ import org.springframework.data.mongodb.core.query.isEqualTo
 import org.springframework.data.mongodb.core.query.where
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
-import java.util.UUID
 
 @Service
 class DriveNodeService(
     private val driveNodeDao: RDriveNodeDao,
     private val driveSnapSeqService: DriveSnapSeqService,
     private val driveProperties: DriveProperties,
-    private val driveBlockNodeService: DriveBlockNodeService,
 ) {
     suspend fun getNode(projectId: String, repoName: String, id: String): DriveNode? {
-        validateProjectRepo(projectId, repoName)
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
         return driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, id)?.toDriveNode()
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, id)
     }
 
     suspend fun getNodeByIno(projectId: String, repoName: String, ino: Long): DriveNode {
-        validateProjectRepo(projectId, repoName)
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
         return driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)?.toDriveNode()
             ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
     }
 
     suspend fun listNodes(projectId: String, repoName: String, parent: Long): List<DriveNode> {
-        validateProjectRepoAndParent(projectId, repoName, parent)
+        DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, parent)
         return driveNodeDao.listNode(projectId, repoName, parent).map { it.toDriveNode() }
     }
 
@@ -77,8 +75,8 @@ class DriveNodeService(
         pageSize: Int,
         includeTotalRecords: Boolean = false,
     ): Page<DriveNode> {
-        validateProjectRepo(projectId, repoName)
-        validatePage(pageNumber, pageSize)
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
+        DriveServiceUtils.validatePage(pageNumber, pageSize, driveProperties.listCountLimit)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val (records, totalRecords) = driveNodeDao.nodePage(
             projectId,
@@ -98,8 +96,8 @@ class DriveNodeService(
         pageSize: Int,
         includeTotalRecords: Boolean = false,
     ): Page<DriveNode> {
-        validateProjectRepo(projectId, repoName)
-        validatePage(pageNumber, pageSize)
+        DriveServiceUtils.validateProjectRepo(projectId, repoName)
+        DriveServiceUtils.validatePage(pageNumber, pageSize, driveProperties.listCountLimit)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val (records, totalRecords) = driveNodeDao.modifiedNodePage(
             projectId = projectId,
@@ -215,7 +213,7 @@ class DriveNodeService(
 
     suspend fun batch(batchRequest: DriveNodeBatchRequest): DriveNodeBatchResponse {
         with(batchRequest) {
-            validateProjectRepo(projectId, repoName)
+            DriveServiceUtils.validateProjectRepo(projectId, repoName)
             val currentSnapSeq = driveSnapSeqService.getLatestSnapSeq(projectId, repoName)
             var successCount = 0
             var failedCount = 0
@@ -383,7 +381,7 @@ class DriveNodeService(
 
     private suspend fun validateCreateRequest(createRequest: DriveNodeCreateRequest) {
         with(createRequest) {
-            validateProjectRepoAndParent(projectId, repoName, parent)
+            DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, parent)
             Preconditions.checkArgument(size >= 0, TDriveNode::size.name)
             Preconditions.checkArgument(type in TDriveNode.ALLOWED_TYPES, TDriveNode::type.name)
             PathUtils.validateFileName(name)
@@ -393,11 +391,11 @@ class DriveNodeService(
 
     private suspend fun validateMoveRequest(moveRequest: DriveNodeMoveRequest) {
         with(moveRequest) {
-            validateProjectRepoAndParent(projectId, repoName, destParent)
+            DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, destParent)
             PathUtils.validateFileName(destName)
             checkParent(destParent, projectId, repoName)
             if (srcNodeId.isNullOrBlank()) {
-                validateProjectRepoAndParent(projectId, repoName, srcParent)
+                DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, srcParent)
                 PathUtils.validateFileName(srcName.orEmpty())
                 checkParent(srcParent!!, projectId, repoName)
             }
@@ -406,7 +404,7 @@ class DriveNodeService(
 
     private suspend fun validateDeleteRequest(deleteRequest: DriveNodeDeleteRequest) {
         with(deleteRequest) {
-            validateProjectRepo(projectId, repoName)
+            DriveServiceUtils.validateProjectRepo(projectId, repoName)
             Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeDeleteRequest::nodeId.name)
             if (!force) {
                 Preconditions.checkArgument(lastModifiedDate != null, DriveNodeDeleteRequest::lastModifiedDate.name)
@@ -416,7 +414,7 @@ class DriveNodeService(
 
     private suspend fun validateUpdateRequest(updateRequest: DriveNodeUpdateRequest) {
         with(updateRequest) {
-            validateProjectRepo(projectId, repoName)
+            DriveServiceUtils.validateProjectRepo(projectId, repoName)
             Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeUpdateRequest::nodeId.name)
             size?.let { Preconditions.checkArgument(it >= 0, TDriveNode::size.name) }
             nlink?.let { Preconditions.checkArgument(it >= 0, TDriveNode::nlink.name) }
@@ -464,21 +462,6 @@ class DriveNodeService(
         if (!driveNodeDao.exists(Query(criteria))) {
             throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, parent)
         }
-    }
-
-    private suspend fun validateProjectRepoAndParent(projectId: String, repoName: String, parent: Long?) {
-        validateProjectRepo(projectId, repoName)
-        Preconditions.checkArgument(parent != null, TDriveNode::parent.name)
-    }
-
-    private suspend fun validateProjectRepo(projectId: String, repoName: String) {
-        Preconditions.checkArgument(projectId.isNotBlank(), TDriveNode::projectId.name)
-        Preconditions.checkArgument(repoName.isNotBlank(), TDriveNode::repoName.name)
-    }
-
-    private suspend fun validatePage(pageNumber: Int, pageSize: Int) {
-        Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
-        Preconditions.checkArgument(pageSize >= 0 && pageSize <= driveProperties.listCountLimit, "pageSize")
     }
 
     companion object {
