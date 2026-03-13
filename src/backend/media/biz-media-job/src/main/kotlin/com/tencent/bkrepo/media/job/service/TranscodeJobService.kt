@@ -3,7 +3,6 @@ package com.tencent.bkrepo.media.job.service
 import com.tencent.bkrepo.common.api.util.readJsonString
 import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
-import com.tencent.bkrepo.media.common.dao.TranscodeJobConfigDao
 import com.tencent.bkrepo.media.job.k8s.K8sProperties
 import com.tencent.bkrepo.media.job.k8s.limits
 import com.tencent.bkrepo.media.job.k8s.requests
@@ -31,9 +30,6 @@ import io.kubernetes.client.openapi.models.V1Volume
 import io.kubernetes.client.openapi.models.V1VolumeMount
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.isEqualTo
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.http.HttpStatus
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
@@ -44,20 +40,33 @@ class TranscodeJobService @Autowired constructor(
     private val apiClient: ApiClient,
     private val k8sProperties: K8sProperties,
     private val mediaTranscodeJobDao: MediaTranscodeJobDao,
-    private val transcodeJobConfigDao: TranscodeJobConfigDao
 ) {
+    /**
+     * 为指定项目下发转码任务
+     */
     @Async
-    fun startJob(config: TMediaTranscodeJobConfig) {
-        val job = mediaTranscodeJobDao.findAndQueueOldestWaitingJob() ?: run {
-            logger.debug("no waiting job to run")
+    fun startJobForProject(config: TMediaTranscodeJobConfig, projectId: String) {
+        val job = mediaTranscodeJobDao.findAndQueueOldestWaitingJob(projectId) ?: run {
             return
         }
+        doCreateK8sJob(config, job)
+    }
 
-        // 存在独立项目的情况就使用独立项目配置替代默认配置
-        val projectConfig = transcodeJobConfigDao.findOne(
-            Query(where(TMediaTranscodeJobConfig::projectId).isEqualTo(job.projectId))
-        ) ?: config
+    /**
+     * 为默认配置下发转码任务（排除特殊项目）
+     */
+    @Async
+    fun startJobForDefault(config: TMediaTranscodeJobConfig, excludeProjectIds: Set<String>) {
+        val job = mediaTranscodeJobDao.findAndQueueOldestWaitingJobExcludeProjects(excludeProjectIds) ?: run {
+            return
+        }
+        doCreateK8sJob(config, job)
+    }
 
+    /**
+     * 创建 K8s Job 并更新任务状态
+     */
+    private fun doCreateK8sJob(config: TMediaTranscodeJobConfig, job: TMediaTranscodeJob) {
         var jobName = "${job.id}-${job.updateTime.toInstant(ZoneOffset.ofHours(8)).toEpochMilli()}".lowercase()
         if (jobName.length > 63) {
             jobName = jobName.take(63)
@@ -75,10 +84,10 @@ class TranscodeJobService @Autowired constructor(
                 logger.error("configmap ${k8sProperties.namespace}:$configMapName not found error")
                 return
             }
-            if (!projectConfig.cosConfigMapName.isNullOrBlank()) {
-                createK8sJobCos(BatchV1Api(apiClient), job.id ?: "", jobName, projectConfig, job)
+            if (!config.cosConfigMapName.isNullOrBlank()) {
+                createK8sJobCos(BatchV1Api(apiClient), job.id ?: "", jobName, config, job)
             } else {
-                createK8sJob(BatchV1Api(apiClient), job.id ?: "", jobName, projectConfig, job)
+                createK8sJob(BatchV1Api(apiClient), job.id ?: "", jobName, config, job)
             }
         } catch (e: ApiException) {
             logger.error(e.buildMessage())
