@@ -27,10 +27,11 @@
 
 package com.tencent.bkrepo.maven.pojo.request
 
-data class MavenGroupSearchRequest(
+data class MavenArtifactSearchRequest(
     val projectId: String,
     val repoName: String,
-    val groupId: String? = null,
+    val groupId: String,
+    val artifact: String? = null,
     val pageNumber: Int = 0,
     val pageSize: Int = 10
 )
