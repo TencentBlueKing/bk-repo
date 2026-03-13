@@ -57,6 +57,7 @@ import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper.buildUpdate
 import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper.convert
 import com.tencent.bkrepo.common.metadata.util.ProjectServiceHelper.validate
 import com.tencent.bkrepo.common.mongo.dao.util.Pages
+import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.repository.pojo.project.ProjectCreateRequest
 import com.tencent.bkrepo.repository.pojo.project.ProjectInfo
@@ -203,6 +204,18 @@ class ProjectServiceImpl(
             it.key == KEY_SHARE_ENABLED
         }?.value as? Boolean ?: true
         return shareEnabled
+    }
+
+    override fun checkProjectShareEnabled(name: String, respectBypass: Boolean) {
+        if (respectBypass) {
+            val platformId = SecurityUtils.getPlatformId()
+            if (platformId != null && repositoryProperties.tokenBypassPlatforms.contains(platformId)) {
+                return
+            }
+        }
+        if (!isProjectShareEnabled(name)) {
+            throw ErrorCodeException(ArtifactMessageCode.SHARE_DISABLED, name)
+        }
     }
 
     override fun rangeQuery(request: ProjectRangeQueryRequest): Page<ProjectInfo?> {
