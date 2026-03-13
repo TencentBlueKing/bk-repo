@@ -43,8 +43,8 @@ class RDriveSnapshotDao : SimpleMongoReactiveDao<TDriveSnapshot>() {
         repoName: String,
         id: String,
         operator: String,
-        now: LocalDateTime,
     ): UpdateResult {
+        val now = LocalDateTime.now()
         val criteria = prjRepoCriteria(projectId, repoName).and(ID).isEqualTo(id)
         val update = Update()
             .set(TDriveSnapshot::lastModifiedBy.name, operator)
@@ -57,8 +57,8 @@ class RDriveSnapshotDao : SimpleMongoReactiveDao<TDriveSnapshot>() {
         projectId: String,
         repoName: String,
         id: String,
-        name: String? = null,
-        description: String? = null,
+        name: String?,
+        description: String?,
         operator: String,
     ): UpdateResult {
         val criteria = prjRepoCriteria(projectId, repoName).and(ID).isEqualTo(id)
