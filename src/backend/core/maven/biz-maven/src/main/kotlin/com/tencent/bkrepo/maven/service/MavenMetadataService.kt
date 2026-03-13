@@ -10,9 +10,7 @@ import com.tencent.bkrepo.maven.pojo.MavenMetadataSearchPojo
 import com.tencent.bkrepo.maven.pojo.MavenVersion
 import com.tencent.bkrepo.maven.pojo.metadata.MavenMetadataRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenArtifactSearchRequest
-import com.tencent.bkrepo.maven.pojo.request.MavenArtifactSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
-import com.tencent.bkrepo.maven.pojo.request.MavenVersionSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenVersionSearchRequest
 import com.tencent.bkrepo.maven.util.MavenStringUtils.resolverName
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
