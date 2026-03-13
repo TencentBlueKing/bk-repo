@@ -47,6 +47,7 @@ import com.tencent.bkrepo.common.artifact.audit.NODE_RESOURCE
 import com.tencent.bkrepo.common.artifact.metrics.ChunkArtifactTransferMetrics
 import com.tencent.bkrepo.common.artifact.router.Router
 import com.tencent.bkrepo.common.metadata.permission.PermissionManager
+import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.permission.Principal
 import com.tencent.bkrepo.common.security.permission.PrincipalType
 import com.tencent.bkrepo.common.security.util.SecurityUtils
@@ -96,23 +97,15 @@ class TemporaryAccessController(
     private val permissionManager: PermissionManager,
     private val uploadService: UploadService,
     private val genericProperties: GenericProperties,
+    private val projectService: ProjectService,
 ) {
 
     @PostMapping("/token/create")
     @Principal(PrincipalType.GENERAL)
     fun createToken(@RequestBody request: TemporaryTokenCreateRequest): Response<List<TemporaryAccessToken>> {
-        // 检查是否为白名单中的平台账户
-        val platformId = SecurityUtils.getPlatformId()
-        val bypassProjectDisable = platformId != null && 
-            genericProperties.tokenBypassPlatforms.contains(platformId)
-        
+        projectService.checkProjectShareEnabled(request.projectId)
         return ResponseBuilder.success(
-            temporaryAccessService.createToken(
-                request.copy(
-                    createdBy = SecurityUtils.getUserId(),
-                    bypassProjectDisable = bypassProjectDisable
-                )
-            )
+            temporaryAccessService.createToken(request.copy(createdBy = SecurityUtils.getUserId()))
         )
     }
 
@@ -122,6 +115,7 @@ class TemporaryAccessController(
             fullPathSet.forEach {
                 permissionManager.checkNodePermission(PermissionAction.WRITE, projectId, repoName, it)
             }
+            projectService.checkProjectShareEnabled(projectId, respectBypass = false)
             return ResponseBuilder.success(temporaryAccessService.createUrl(request))
         }
     }
