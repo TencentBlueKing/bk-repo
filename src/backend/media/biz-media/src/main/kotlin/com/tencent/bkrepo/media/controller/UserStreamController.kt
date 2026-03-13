@@ -11,8 +11,10 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo.Companion.DEFAULT_STREAM_MAPPING_URI
+import com.tencent.bkrepo.media.common.pojo.stream.MediaStreamRouteInfo
 import com.tencent.bkrepo.media.service.StreamService
 import com.tencent.bkrepo.media.service.TokenService
+import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -21,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-
 
 /**
  * 流控制器
@@ -106,6 +107,81 @@ class UserStreamController(
 
         logger.info("success stream=$stream, ip=$ip")
         return ResponseBuilder.success(true)
+    }
+
+    /**
+     * SRS http_hook 回调
+     * 接收 on_publish/on_unpublish 事件并同步活跃流记录
+     */
+    @PostMapping("/rtc/http_hook")
+    fun handleSrsHttpHook(
+        @RequestBody
+        body: Map<String, Any>,
+        request: HttpServletRequest,
+    ): Response<Boolean> {
+        val action = body["action"] as? String ?: return ResponseBuilder.fail(
+            HttpStatus.BAD_REQUEST.value,
+            "action required"
+        )
+        val streamId = body["stream"] as? String ?: return ResponseBuilder.fail(
+            HttpStatus.BAD_REQUEST.value,
+            "stream required"
+        )
+        val clientIp = body["ip"] as? String
+        return when (action) {
+            "on_publish" -> {
+                val machine = resolveHookMachine(body, request)
+                val serverId = body["server_id"] as? String
+                val app = body["app"] as? String
+                val vhost = body["vhost"] as? String
+                streamService.saveActiveStream(
+                    streamId = streamId,
+                    machine = machine,
+                    serverId = serverId,
+                    app = app,
+                    vhost = vhost,
+                    clientIp = clientIp,
+                )
+                logger.info("srs publish success, streamId=$streamId, machine=$machine, serverId=$serverId")
+                ResponseBuilder.success(true)
+            }
+
+            "on_unpublish" -> {
+                streamService.deleteActiveStream(streamId)
+                logger.info("srs unpublish success, streamId=$streamId")
+                ResponseBuilder.success(true)
+            }
+
+            else -> {
+                logger.warn("unsupported srs action=$action, streamId=$streamId")
+                ResponseBuilder.fail(HttpStatus.BAD_REQUEST.value, "unsupported action: $action")
+            }
+        }
+    }
+
+    /**
+     * 查询流所在机器，供 nginx 分配拉流机器
+     */
+    @GetMapping("/rtc/route")
+    fun getStreamRoute(
+        @RequestParam streamId: String,
+    ): Response<MediaStreamRouteInfo> {
+        val route = streamService.getActiveStreamRoute(streamId) ?: return ResponseBuilder.fail(
+            HttpStatus.NOT_FOUND.value,
+            "stream not found"
+        )
+        return ResponseBuilder.success(route)
+    }
+
+    private fun resolveHookMachine(body: Map<String, Any>, request: HttpServletRequest): String {
+        return (body["server_ip"] as? String)
+            ?.takeIf { it.isNotBlank() }
+            ?: (body["serverIp"] as? String)?.takeIf { it.isNotBlank() }
+            ?: (body["srs_server_ip"] as? String)?.takeIf { it.isNotBlank() }
+            ?: request.getHeader("X-Stream-Machine")?.substringBefore(",")?.trim()?.takeIf { it.isNotBlank() }
+            ?: request.getHeader("X-Forwarded-For")?.substringBefore(",")?.trim()?.takeIf { it.isNotBlank() }
+            ?: request.getHeader("X-Real-IP")?.trim()?.takeIf { it.isNotBlank() }
+            ?: request.remoteAddr
     }
 
     companion object {

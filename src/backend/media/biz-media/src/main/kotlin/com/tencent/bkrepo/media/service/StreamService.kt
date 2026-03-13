@@ -21,7 +21,10 @@ import com.tencent.bkrepo.common.storage.core.StorageService
 import com.tencent.bkrepo.common.storage.config.StorageProperties
 import com.tencent.bkrepo.media.STREAM_PATH
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
+import com.tencent.bkrepo.media.common.dao.MediaActiveStreamDao
+import com.tencent.bkrepo.media.common.pojo.stream.MediaStreamRouteInfo
 import com.tencent.bkrepo.media.config.MediaProperties
+
 import com.tencent.bkrepo.media.stream.ArtifactFileRecordingListener
 import com.tencent.bkrepo.media.stream.ClientStream
 import com.tencent.bkrepo.media.stream.MediaArtifactFileConsumer
@@ -41,7 +44,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.stereotype.Service
+import java.net.InetAddress
 import java.util.Base64
+
 
 @Service
 class StreamService(
@@ -56,7 +61,9 @@ class StreamService(
     private val transcodeService: TranscodeService,
     private val storageService: StorageService,
     private val blockNodeService: BlockNodeService,
+    private val mediaActiveStreamDao: MediaActiveStreamDao,
 ) : ArtifactService() {
+
 
     /**
      * 创建推流地址
@@ -370,7 +377,62 @@ class StreamService(
         }
     }
 
+    fun saveActiveStream(
+        streamId: String,
+        machine: String? = null,
+        serverId: String? = null,
+        app: String? = null,
+        vhost: String? = null,
+        clientIp: String? = null,
+    ) {
+        val normalizedStreamId = streamId.trim()
+        require(normalizedStreamId.isNotBlank()) { "streamId must not be blank" }
+        val resolvedMachine = machine?.trim()?.takeIf { it.isNotBlank() } ?: resolveLocalMachine()
+        mediaActiveStreamDao.saveOrUpdate(
+            streamId = normalizedStreamId,
+            machine = resolvedMachine,
+            serverId = serverId,
+            app = app,
+            vhost = vhost,
+            clientIp = clientIp,
+        )
+        logger.info(
+            "Saved active stream: streamId=$normalizedStreamId, machine=$resolvedMachine, serverId=$serverId, app=$app, vhost=$vhost"
+        )
+    }
+
+    fun deleteActiveStream(streamId: String): Boolean {
+        val normalizedStreamId = streamId.trim()
+        require(normalizedStreamId.isNotBlank()) { "streamId must not be blank" }
+        val result = mediaActiveStreamDao.deleteByStreamId(normalizedStreamId)
+        if (result.deletedCount > 0) {
+            logger.info("Deleted active stream: streamId=$normalizedStreamId")
+            return true
+        }
+        logger.info("Active stream already absent: streamId=$normalizedStreamId")
+        return false
+    }
+
+    fun getActiveStreamRoute(streamId: String): MediaStreamRouteInfo? {
+        val normalizedStreamId = streamId.trim()
+        require(normalizedStreamId.isNotBlank()) { "streamId must not be blank" }
+        return mediaActiveStreamDao.findByStreamId(normalizedStreamId)?.let {
+            MediaStreamRouteInfo(
+                streamId = it.streamId,
+                machine = it.machine,
+                serverId = it.serverId,
+            )
+        }
+    }
+
+    private fun resolveLocalMachine(): String {
+        return runCatching { InetAddress.getLocalHost().hostAddress }
+            .onFailure { logger.warn("Resolve local machine failed.", it) }
+            .getOrDefault("unknown")
+    }
+
     @Value("\${media.plugin.devx.devops.appCode}")
+
     private var appCode: String = ""
 
     @Value("\${media.plugin.devx.devops.appSecret}")
