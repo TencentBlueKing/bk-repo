@@ -125,6 +125,20 @@ function _M:verify_gateway_jwt(jwt_token, public_key_pem)
         return nil
     end
 
+    -- 校验Token是否过期（严格模式：exp字段必须存在）
+    -- 允许2分钟（120秒）的时钟偏移容差
+    local clock_skew = 120
+    if not payload.exp then
+        ngx.log(ngx.ERR, "jwt token missing exp field")
+        return nil
+    end
+
+    local now = ngx.time()
+    if payload.exp + clock_skew < now then
+        ngx.log(ngx.ERR, "jwt token has expired, exp: ", payload.exp, ", now: ", now)
+        return nil
+    end
+
     return payload
 end
 
