@@ -9,7 +9,9 @@ import com.tencent.bkrepo.common.query.model.QueryModel
 import com.tencent.bkrepo.common.query.model.Rule
 import com.tencent.bkrepo.common.query.model.Sort
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
+import com.tencent.bkrepo.maven.pojo.request.MavenArtifactSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
+import com.tencent.bkrepo.maven.pojo.request.MavenVersionSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -99,21 +101,14 @@ class MavenExtService(
 
 
     fun searchGroup(request: MavenGroupSearchRequest): Page<String> {
-        with(request) {
-            val field = when {
-                groupId.isNullOrEmpty() && artifactId.isNullOrEmpty() && version.isNullOrEmpty() -> "groupId"
-                !groupId.isNullOrEmpty() && artifactId.isNullOrEmpty() -> "artifactId"
-                !groupId.isNullOrEmpty() && !artifactId.isNullOrEmpty() -> "version"
-                else -> "groupId"
-            }
-            val result = mavenMetadataService.getByPage(request, field)
-            return Page(
-                pageNumber = pageNumber,
-                pageSize = pageSize,
-                totalRecords = result.totalRecords,
-                totalPages = result.totalPages,
-                records = result.records
-            )
-        }
+        return mavenMetadataService.getGroupByPage(request)
+    }
+
+    fun searchArtifact(request: MavenArtifactSearchRequest): Page<String> {
+        return mavenMetadataService.getArtifactByPage(request)
+    }
+
+    fun searchVersion(request: MavenVersionSearchRequest): Page<String> {
+        return mavenMetadataService.getVersionByPage(request)
     }
 }

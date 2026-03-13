@@ -36,8 +36,10 @@ import com.tencent.bkrepo.common.api.pojo.Response
 import com.tencent.bkrepo.common.artifact.api.ArtifactPathVariable
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.tencent.bkrepo.maven.pojo.request.MavenArtifactSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
+import com.tencent.bkrepo.maven.pojo.request.MavenVersionSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
 import io.swagger.v3.oas.annotations.Operation
@@ -96,5 +98,13 @@ interface MavenWebResource {
     @Operation(summary = "maven group search")
     @PostMapping("/search/group")
     fun searchGroup(@RequestBody request: MavenGroupSearchRequest): Response<Page<String>>
+
+    @Operation(summary = "maven artifact search")
+    @PostMapping("/search/artifact")
+    fun searchArtifact(@RequestBody request: MavenArtifactSearchRequest): Response<Page<String>>
+
+    @Operation(summary = "maven version search")
+    @PostMapping("/search/version")
+    fun searchVersion(@RequestBody request: MavenVersionSearchRequest): Response<Page<String>>
 
 }
