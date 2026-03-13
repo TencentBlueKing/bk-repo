@@ -43,6 +43,10 @@ import com.tencent.bkrepo.fs.server.handler.ClientHandler
 import com.tencent.bkrepo.fs.server.handler.FileOperationsHandler
 import com.tencent.bkrepo.fs.server.handler.LoginHandler
 import com.tencent.bkrepo.fs.server.handler.NodeOperationsHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveOperationHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveNodeOperationsHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveRepositoryHandler
+import com.tencent.bkrepo.fs.server.handler.drive.DriveSnapshotHandler
 import com.tencent.bkrepo.fs.server.handler.service.FsNodeHandler
 import com.tencent.bkrepo.fs.server.metrics.ServerMetrics
 import org.slf4j.LoggerFactory
@@ -70,6 +74,10 @@ class RouteConfiguration(
     private val loginHandler: LoginHandler,
     private val fsNodeHandler: FsNodeHandler,
     private val clientHandler: ClientHandler,
+    private val driveOperationHandler: DriveOperationHandler,
+    private val driveNodeOperationsHandler: DriveNodeOperationsHandler,
+    private val driveRepositoryHandler: DriveRepositoryHandler,
+    private val driveSnapshotHandler: DriveSnapshotHandler,
     private val authHandlerFilterFunction: AuthHandlerFilterFunction,
     private val serverMetrics: ServerMetrics,
     private val devXAccessFilter: DevXAccessFilter,
@@ -121,6 +129,32 @@ class RouteConfiguration(
             addMetrics(serverMetrics.uploadingCount)
         }
 
+
+        "/drive".nest {
+            "/repository".nest {
+                POST("/create/{projectId}/{repoName}", driveRepositoryHandler::createRepository)
+            }
+            "/block".nest {
+                filter(artifactFileCleanupFilterFunction::filter)
+                PUT("/{projectId}/{repoName}/{ino}/{offset}", driveOperationHandler::write)
+                addMetrics(serverMetrics.uploadingCount)
+            }
+            accept(APPLICATION_OCTET_STREAM).nest {
+                GET("/{projectId}/{repoName}/{ino}", driveOperationHandler::read)
+                addMetrics(serverMetrics.downloadingCount)
+            }
+            "/node".nest {
+                POST("/batch/{projectId}/{repoName}", driveNodeOperationsHandler::batch)
+                GET("/page/{projectId}/{repoName}", driveNodeOperationsHandler::listNodesPage)
+                GET("/modified/page/{projectId}/{repoName}", driveNodeOperationsHandler::listModifiedNodesPage)
+            }
+            "/snapshot".nest {
+                POST("/{projectId}/{repoName}", driveSnapshotHandler::createSnapshot)
+                GET("/page/{projectId}/{repoName}", driveSnapshotHandler::listSnapshotsPage)
+                PUT("/{projectId}/{repoName}/{id}", driveSnapshotHandler::updateSnapshot)
+                DELETE("/{projectId}/{repoName}/{id}", driveSnapshotHandler::deleteSnapshot)
+            }
+        }
 
         "/client".nest {
             POST("/create/{projectId}/{repoName}", clientHandler::createClient)
