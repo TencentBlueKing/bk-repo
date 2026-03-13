@@ -46,22 +46,37 @@ if not payload then
     return
 end
 
---- 获取用户名（user.verified 必须为 true）
-local username = jwtUtil:get_username(payload)
+--- 校验 app.verified 和 user.verified
+local user_verified = payload.user and payload.user.verified == true
+local app_verified = payload.app and payload.app.verified == true
 
---- 获取应用编码（app.verified 必须为 true）
-local app_code = jwtUtil:get_app_code(payload)
-
---- 用户名和应用编码至少要有一个
-if not username and not app_code then
-    ngx.log(ngx.ERR, "no valid user or app in jwt token")
-    ngx.exit(401)
-    return
+--- 获取应用编码
+local app_code = nil
+if app_verified then
+    app_code = payload.app.app_code
 end
 
---- 如果用户名为空，使用应用编码作为用户名
-if not username or username == "" then
-    username = app_code
+--- 获取用户名（三步校验逻辑）
+local username = nil
+
+if user_verified then
+    --- 1. user.verified 为 true，直接从 user.username 获取
+    username = payload.user.username
+    ngx.log(ngx.INFO, "get username from jwt user: ", username)
+elseif app_verified then
+    --- 2. user.verified 为 false，app.verified 为 true，从请求头 X-Bkrepo-UID 获取用户名
+    username = ngx.var.http_x_bkrepo_uid
+    if not username or username == "" then
+        ngx.log(ngx.ERR, "user not verified, app verified but X-Bkrepo-UID header is missing")
+        ngx.exit(401)
+        return
+    end
+    ngx.log(ngx.INFO, "get username from X-Bkrepo-UID header: ", username)
+else
+    --- 3. 都为 false，直接返回 401
+    ngx.log(ngx.ERR, "both user and app are not verified")
+    ngx.exit(401)
+    return
 end
 
 --- 设置用户信息到响应头，供 nginx auth_request 机制使用
