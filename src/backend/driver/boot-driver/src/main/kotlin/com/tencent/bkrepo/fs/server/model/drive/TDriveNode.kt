@@ -44,7 +44,21 @@ data class TDriveNode(
     var createdDate: LocalDateTime,
     var lastModifiedBy: String,
     var lastModifiedDate: LocalDateTime,
-    var lastAccessDate: LocalDateTime,
+
+    /**
+     * 修改时间（纳秒时间戳）
+     */
+    var mtime: Long = 0,
+
+    /**
+     * 属性变更时间（纳秒时间戳）
+     */
+    var ctime: Long = 0,
+
+    /**
+     * 访问时间（纳秒时间戳）
+     */
+    var atime: Long = 0,
 
     var projectId: String,
     var repoName: String,

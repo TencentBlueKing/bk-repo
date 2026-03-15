@@ -72,6 +72,9 @@
   | rdev             | int     | 否    | 无     | 设备 ID                                               | device id              |
   | flags            | int     | 否    | 无     | 文件标志                                                | file flags             |
   | symlinkTarget    | string  | 否    | 无     | 软链接目标路径                                             | symlink target         |
+  | mtime            | long    | 否    | 无     | 修改时间（纳秒时间戳），create 时不传则使用当前时间                       | modify time (nanos)    |
+  | ctime            | long    | 否    | 无     | 属性变更时间（纳秒时间戳），create 时不传则使用当前时间                     | change time (nanos)    |
+  | atime            | long    | 否    | 无     | 访问时间（纳秒时间戳），create 时不传则使用当前时间                       | access time (nanos)    |
   | lastModifiedDate | string  | 否    | 无     | 注意该字段不是用于更新，而是服务端的最后修改时间与参数值不匹配时将返回错误，用于并发控制避免数据被覆盖 | last modified date     |
   | force            | boolean | 否    | false | 是否强制忽略并发检查                                          | force update/delete    |
 
@@ -144,7 +147,9 @@
           "createdDate": "2026-03-12T09:00:00",
           "lastModifiedBy": "admin",
           "lastModifiedDate": "2026-03-12T09:00:00",
-          "lastAccessDate": "2026-03-12T09:00:00",
+          "mtime": 1741770000000000000,
+          "ctime": 1741770000000000000,
+          "atime": 1741770000000000000,
           "projectId": "demo",
           "repoName": "drive-local",
           "ino": 1001,

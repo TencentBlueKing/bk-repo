@@ -52,6 +52,9 @@ data class DriveNodeBatchItem(
     val rdev: Int? = null,
     val flags: Int? = null,
     val symlinkTarget: String? = null,
+    val mtime: Long? = null,
+    val ctime: Long? = null,
+    val atime: Long? = null,
     val lastModifiedDate: LocalDateTime? = null,
     val force: Boolean = false,
 )
@@ -73,6 +76,9 @@ fun DriveNodeBatchItem.toCreateRequest(projectId: String, repoName: String): Dri
         rdev = requireNotNull(rdev) { "rdev required" },
         flags = requireNotNull(flags) { "flags required" },
         symlinkTarget = symlinkTarget,
+        mtime = mtime,
+        ctime = ctime,
+        atime = atime,
     )
 }
 
@@ -91,6 +97,9 @@ fun DriveNodeBatchItem.toUpdateRequest(projectId: String, repoName: String): Dri
         rdev = rdev,
         flags = flags,
         symlinkTarget = symlinkTarget,
+        mtime = mtime,
+        ctime = ctime,
+        atime = atime,
         lastModifiedDate = lastModifiedDate,
         force = force,
     )

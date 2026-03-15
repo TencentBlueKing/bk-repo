@@ -112,6 +112,9 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
             .set(TDriveNode::rdev.name, updatedNode.rdev)
             .set(TDriveNode::flags.name, updatedNode.flags)
             .set(TDriveNode::symlinkTarget.name, updatedNode.symlinkTarget)
+            .set(TDriveNode::mtime.name, updatedNode.mtime)
+            .set(TDriveNode::ctime.name, updatedNode.ctime)
+            .set(TDriveNode::atime.name, updatedNode.atime)
             .set(TDriveNode::lastModifiedBy.name, updatedNode.lastModifiedBy)
             .set(TDriveNode::lastModifiedDate.name, updatedNode.lastModifiedDate)
         return updateFirst(

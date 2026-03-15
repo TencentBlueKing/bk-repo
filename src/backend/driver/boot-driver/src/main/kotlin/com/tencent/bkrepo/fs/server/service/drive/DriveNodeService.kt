@@ -443,9 +443,11 @@ class DriveNodeService(
             rdev = updateRequest.rdev ?: srcNode.rdev,
             flags = updateRequest.flags ?: srcNode.flags,
             symlinkTarget = updateRequest.normalizedSymlinkTarget() ?: srcNode.symlinkTarget,
+            mtime = updateRequest.mtime ?: srcNode.mtime,
+            ctime = updateRequest.ctime ?: srcNode.ctime,
+            atime = updateRequest.atime ?: srcNode.atime,
             lastModifiedBy = operator,
             lastModifiedDate = now,
-            lastAccessDate = now,
         )
     }
 

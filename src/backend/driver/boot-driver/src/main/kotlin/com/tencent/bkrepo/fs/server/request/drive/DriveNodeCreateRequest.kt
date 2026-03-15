@@ -4,6 +4,7 @@ import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 data class DriveNodeCreateRequest(
     val projectId: String,
@@ -21,6 +22,9 @@ data class DriveNodeCreateRequest(
     val rdev: Int,
     val flags: Int,
     val symlinkTarget: String? = null,
+    val mtime: Long? = null,
+    val ctime: Long? = null,
+    val atime: Long? = null,
 )
 
 fun DriveNodeCreateRequest.toDriveNode(
@@ -33,7 +37,9 @@ fun DriveNodeCreateRequest.toDriveNode(
         createdDate = now,
         lastModifiedBy = operator,
         lastModifiedDate = now,
-        lastAccessDate = now,
+        mtime = mtime ?: nowNanos(now),
+        ctime = ctime ?: nowNanos(now),
+        atime = atime ?: nowNanos(now),
         projectId = projectId,
         repoName = repoName,
         ino = ino,
@@ -51,4 +57,8 @@ fun DriveNodeCreateRequest.toDriveNode(
         symlinkTarget = symlinkTarget?.let { PathUtils.normalizeFullPath(it) },
         snapSeq = snapSeq,
     )
+}
+
+private fun nowNanos(now: LocalDateTime): Long {
+    return now.toInstant(ZoneOffset.UTC).let { it.epochSecond * 1_000_000_000L + it.nano }
 }

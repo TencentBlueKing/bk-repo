@@ -17,6 +17,9 @@ data class DriveNodeUpdateRequest(
     val rdev: Int? = null,
     val flags: Int? = null,
     val symlinkTarget: String? = null,
+    val mtime: Long? = null,
+    val ctime: Long? = null,
+    val atime: Long? = null,
     val lastModifiedDate: LocalDateTime? = null,
     val force: Boolean = false,
 )
