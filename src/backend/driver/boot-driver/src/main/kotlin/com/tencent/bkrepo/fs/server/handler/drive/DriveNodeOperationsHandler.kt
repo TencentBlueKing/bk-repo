@@ -29,8 +29,9 @@ class DriveNodeOperationsHandler(
 
     suspend fun listNodesPage(request: ServerRequest): ServerResponse {
         with(DriveNodePageRequest(request)) {
-            val page =
-                driveNodeService.listNodesPage(projectId, repoName, parent, pageNum, pageSize, includeTotalRecords)
+            val page = driveNodeService.listNodesPage(
+                projectId, repoName, parent, pageNum, pageSize, includeTotalRecords, snapSeq
+            )
             return ReactiveResponseBuilder.success(page)
         }
     }

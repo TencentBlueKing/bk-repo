@@ -74,6 +74,7 @@ class DriveNodeService(
         pageNumber: Int,
         pageSize: Int,
         includeTotalRecords: Boolean = false,
+        snapSeq: Long? = null,
     ): Page<DriveNode> {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
         DriveServiceUtils.validatePage(pageNumber, pageSize, driveProperties.listCountLimit)
@@ -83,7 +84,8 @@ class DriveNodeService(
             repoName,
             parent,
             pageRequest,
-            includeTotalRecords
+            includeTotalRecords,
+            snapSeq,
         )
         return Pages.ofResponse(pageRequest, totalRecords, records.map { it.toDriveNode() })
     }

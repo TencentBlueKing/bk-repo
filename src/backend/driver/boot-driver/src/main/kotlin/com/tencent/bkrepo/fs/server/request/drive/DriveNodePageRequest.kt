@@ -17,6 +17,11 @@ class DriveNodePageRequest(request: ServerRequest) : DriveNodeRequest(request) {
     var pageSize: Int = DEFAULT_PAGE_SIZE
     var pageNum: Int = DEFAULT_PAGE_NUMBER
     var includeTotalRecords: Boolean = false
+    val snapSeq: Long? = try {
+        request.queryParam("snapSeq").getOrNull()?.toLong()
+    } catch (_: NumberFormatException) {
+        throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "snapSeq")
+    }
 
     init {
         request.useRequestParam("pageSize") { pageSize = it.toInt() }

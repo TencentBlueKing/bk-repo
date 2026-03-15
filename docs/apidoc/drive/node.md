@@ -129,6 +129,7 @@
   | pageNum             | int     | 否    | 0     | 页码，从 0 开始          | page number           |
   | pageSize            | int     | 否    | 20    | 每页条数               | page size             |
   | includeTotalRecords | boolean | 否    | false | 是否统计总条数            | include total records |
+  | snapSeq             | long    | 否    | 无     | 快照序号，不传则查询当前视图     | snapshot sequence     |
 
 - 响应体
   ```json

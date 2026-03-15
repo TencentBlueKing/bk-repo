@@ -33,8 +33,9 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
         parent: Long?,
         pageRequest: PageRequest,
         includeTotalRecords: Boolean = false,
+        snapSeq: Long? = null,
     ): Pair<List<TDriveNode>, Long> {
-        val criteria = listChildrenCriteria(projectId, repoName, parent)
+        val criteria = listChildrenCriteria(projectId, repoName, parent, snapSeq)
         val totalRecords = if (includeTotalRecords) count(Query(criteria)) else 0L
         val records = find(Query(criteria).with(pageRequest))
         return Pair(records, totalRecords)
