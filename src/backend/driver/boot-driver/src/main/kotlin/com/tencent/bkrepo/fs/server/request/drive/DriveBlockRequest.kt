@@ -11,6 +11,18 @@ open class DriveBlockRequest(request: ServerRequest) : DriveNodeRequest(request)
         throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "ino")
     }
 
+    /**
+     * 可选的快照序列号，用于读取指定快照的数据
+     * 不传则读取当前最新数据
+     */
+    open val snapSeq: Long? = request.queryParam("snapSeq").map {
+        try {
+            it.toLong()
+        } catch (_: NumberFormatException) {
+            throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, "snapSeq")
+        }
+    }.orElse(null)
+
     override fun toString(): String {
         return "$projectId/$repoName/$ino"
     }

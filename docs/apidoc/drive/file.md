@@ -4,20 +4,21 @@
 
 ## 读取文件
 
-- API: GET /drive/{projectId}/{repoName}/{ino}
+- API: GET /drive/{projectId}/{repoName}/{ino}?snapSeq={snapSeq}
 - API 名称: drive_read_file
 - 功能说明:
-  - 中文: 按 inode 读取 Drive 文件，支持范围读取
-  - English: read drive file by inode with range support
+  - 中文: 按 inode 读取 Drive 文件，支持范围读取，支持读取指定快照的数据
+  - English: read drive file by inode with range and snapshot support
 - 请求体
 此接口请求体为空
 - 请求字段说明
 
-  | 字段        | 类型     | 是否必须 | 默认值 | 说明       | Description  |
-  | --------- | ------ | ---- | --- | -------- | ------------ |
-  | projectId | string | 是    | 无   | 项目名称     | project name |
-  | repoName  | string | 是    | 无   | 仓库名称     | repo name    |
-  | ino       | long   | 是    | 无   | 文件 inode | file inode   |
+  | 字段        | 类型     | 是否必须 | 默认值 | 说明                         | Description                        |
+  | --------- | ------ | ---- | --- | -------------------------- | ---------------------------------- |
+  | projectId | string | 是    | 无   | 项目名称                       | project name                       |
+  | repoName  | string | 是    | 无   | 仓库名称                       | repo name                          |
+  | ino       | long   | 是    | 无   | 文件 inode                   | file inode                         |
+  | snapSeq   | long   | 否    | 无   | 快照序列号，不传则读取当前最新数据 | snapshot sequence, read latest if absent |
 
 - 请求头
 

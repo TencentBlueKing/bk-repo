@@ -33,7 +33,7 @@ class DriveOperationHandler(
 
     /**
      * 读取 Drive 文件
-     * 支持按范围读取
+     * 支持按范围读取，支持读取指定快照的数据
      */
     suspend fun read(request: ServerRequest): ServerResponse {
         with(DriveBlockRequest(request)) {
@@ -44,7 +44,7 @@ class DriveOperationHandler(
                 logger.info("read drive file[$projectId/$repoName/$ino] failed: ${e.message}")
                 throw ErrorCodeException(CommonMessageCode.PARAMETER_INVALID, HttpHeaders.RANGE)
             }
-            val artifactInputStream = driveFileOperationService.read(node, range)
+            val artifactInputStream = driveFileOperationService.read(node, range, snapSeq)
                 ?: throw ArtifactNotFoundException("$projectId/$repoName/$ino")
             request.exchange().response.writeStream(artifactInputStream, range)
             return ok().buildAndAwait()

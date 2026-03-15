@@ -30,9 +30,19 @@ class DriveBlockNodeService(
         }
     }
 
-    suspend fun listBlocks(range: Range, projectId: String, repoName: String, ino: Long): List<TDriveBlockNode> {
-        val criteria = curSnapCriteria(projectId, repoName, ino)
-            .and(TDriveBlockNode::startPos.name).lte(range.end)
+    suspend fun listBlocks(
+        range: Range,
+        projectId: String,
+        repoName: String,
+        ino: Long,
+        snapSeq: Long? = null,
+    ): List<TDriveBlockNode> {
+        val criteria = if (snapSeq != null) {
+            snapCriteria(projectId, repoName, ino, snapSeq)
+        } else {
+            curSnapCriteria(projectId, repoName, ino)
+        }
+        criteria.and(TDriveBlockNode::startPos.name).lte(range.end)
             .and(TDriveBlockNode::endPos.name).gte(range.start)
         val query = Query(criteria).with(Sort.by(TDriveBlockNode::createdDate.name))
         return driveBlockNodeDao.find(query)
@@ -95,6 +105,17 @@ class DriveBlockNodeService(
             .and(TDriveBlockNode::projectId.name).isEqualTo(projectId)
             .and(TDriveBlockNode::repoName.name).isEqualTo(repoName)
             .and(TDriveBlockNode::deleteSnapSeq.name).`is`(Long.MAX_VALUE)
+    }
+
+    /**
+     * 查询指定快照可见的块：创建时的snapSeq <= targetSnapSeq 且 deleteSnapSeq > targetSnapSeq
+     */
+    private fun snapCriteria(projectId: String, repoName: String, ino: Long, snapSeq: Long): Criteria {
+        return Criteria.where(TDriveBlockNode::ino.name).`is`(ino)
+            .and(TDriveBlockNode::projectId.name).isEqualTo(projectId)
+            .and(TDriveBlockNode::repoName.name).isEqualTo(repoName)
+            .and(TDriveBlockNode::snapSeq.name).lte(snapSeq)
+            .and(TDriveBlockNode::deleteSnapSeq.name).gt(snapSeq)
     }
 
     private fun deletedCriteria(
