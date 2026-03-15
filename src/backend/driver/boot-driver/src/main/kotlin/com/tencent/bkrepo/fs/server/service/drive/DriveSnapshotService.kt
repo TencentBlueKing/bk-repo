@@ -33,6 +33,12 @@ class DriveSnapshotService(
     ): TDriveSnapshot {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
         DriveServiceUtils.validateName(name, TDriveSnapshot::name.name)
+        DriveServiceUtils.validateLength(name, TDriveSnapshot::name.name, driveProperties.nameMaxLength)
+        DriveServiceUtils.validateLength(
+            description,
+            TDriveSnapshot::description.name,
+            driveProperties.descriptionMaxLength
+        )
         val currentSnapSeq = driveSnapSeqService.getLatestSnapSeq(projectId, repoName, fromCache = false)
         val now = LocalDateTime.now()
         val operator = ReactiveSecurityUtils.getUser()
@@ -87,13 +93,19 @@ class DriveSnapshotService(
     ): TDriveSnapshot {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
         Preconditions.checkArgument(snapshotId.isNotBlank(), "snapshotId")
-        val existing = driveSnapshotDao.find(projectId, repoName, snapshotId)
-            ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "drive snapshot[$projectId/$repoName/$snapshotId]")
         if (name == null && description == null) {
+            val existing = driveSnapshotDao.find(projectId, repoName, snapshotId)
+                ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "drive snapshot[$projectId/$repoName/$snapshotId]")
             logger.info("Skip update drive snapshot[$projectId/$repoName/$snapshotId], all fields are null.")
             return existing
         }
         name?.let { DriveServiceUtils.validateName(it, TDriveSnapshot::name.name) }
+        DriveServiceUtils.validateLength(name, TDriveSnapshot::name.name, driveProperties.nameMaxLength)
+        DriveServiceUtils.validateLength(
+            description,
+            TDriveSnapshot::description.name,
+            driveProperties.descriptionMaxLength
+        )
         val operator = DriveServiceUtils.getUserOrSystem()
         val updateResult = driveSnapshotDao.updateNameAndDescription(
             projectId = projectId,
