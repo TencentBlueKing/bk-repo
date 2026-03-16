@@ -79,6 +79,7 @@ class UserStreamController(
         return ResponseBuilder.success(url)
     }
 
+    @Deprecated("被 handleSrsHttpHook 取代")
     @PostMapping("/rtc/verify_token")
     fun verifyToken(
         @RequestBody
@@ -119,6 +120,7 @@ class UserStreamController(
         body: Map<String, Any>,
         request: HttpServletRequest,
     ): Response<Boolean> {
+        logger.debug("handleSrsHttpHook| $body")
         val action = body["action"] as? String ?: return ResponseBuilder.fail(
             HttpStatus.BAD_REQUEST.value,
             "action required"
@@ -149,6 +151,21 @@ class UserStreamController(
             "on_unpublish" -> {
                 streamService.deleteActiveStream(streamId)
                 logger.info("srs unpublish success, streamId=$streamId")
+                ResponseBuilder.success(true)
+            }
+
+            "on_play" -> {
+                val param = body["param"] as String?
+                val token = param?.substringAfter("token=")?.substringBefore("&")
+                if (token.isNullOrBlank()) {
+                    logger.warn("no token $param")
+                    return ResponseBuilder.fail(HttpStatus.FORBIDDEN.value, "no token")
+                }
+                if (!streamService.verifyToken(token, streamId)) {
+                    logger.warn("token error, $streamId|$param")
+                    return ResponseBuilder.fail(HttpStatus.FORBIDDEN.value, "invalid token")
+                }
+                logger.info("success stream=$streamId, ip=$clientIp")
                 ResponseBuilder.success(true)
             }
 
