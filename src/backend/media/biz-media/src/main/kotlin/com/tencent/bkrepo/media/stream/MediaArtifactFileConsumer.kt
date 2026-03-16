@@ -9,6 +9,7 @@ import com.tencent.bkrepo.common.artifact.api.ArtifactInfo
 import com.tencent.bkrepo.common.artifact.api.toArtifactFile
 import com.tencent.bkrepo.common.artifact.manager.StorageManager
 import com.tencent.bkrepo.common.metadata.constant.FAKE_MD5
+import com.tencent.bkrepo.common.metadata.constant.FAKE_SEPARATE
 import com.tencent.bkrepo.common.metadata.constant.FAKE_SHA256
 import com.tencent.bkrepo.common.metadata.model.NodeAttribute
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
@@ -211,8 +212,13 @@ class MediaArtifactFileConsumer(
             gid = NodeAttribute.NOBODY,
             mode = NodeAttribute.DEFAULT_MODE
         )
+        val oldNode = nodeService.getNodeDetail(
+            ArtifactInfo(artifactInfo.projectId, artifactInfo.repoName, artifactInfo.getArtifactFullPath())
+        )
+        val oldNodeId = oldNode?.nodeInfo?.id ?: FAKE_SEPARATE
+        val versionedUploadId = "$uploadId/$oldNodeId"
         val metadata = mutableListOf<MetadataModel>()
-        metadata.add(MetadataModel(UPLOADID_KEY, uploadId, system = true))
+        metadata.add(MetadataModel(UPLOADID_KEY, versionedUploadId, system = true))
         metadata.add(MetadataModel(key = FS_ATTR_KEY, value = attributes))
 
         val request = NodeCreateRequest(
