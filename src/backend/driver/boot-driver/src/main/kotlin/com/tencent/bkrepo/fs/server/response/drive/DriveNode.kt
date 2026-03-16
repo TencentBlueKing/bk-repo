@@ -26,6 +26,7 @@ data class DriveNode(
     val rdev: Int,
     val flags: Int,
     val symlinkTarget: String? = null,
+    val deleted: LocalDateTime? = null,
 )
 
 fun TDriveNode.toDriveNode(): DriveNode {
@@ -52,5 +53,6 @@ fun TDriveNode.toDriveNode(): DriveNode {
         rdev = rdev,
         flags = flags,
         symlinkTarget = symlinkTarget,
+        deleted = deleted,
     )
 }

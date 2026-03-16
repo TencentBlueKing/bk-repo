@@ -79,8 +79,16 @@ class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
         return findOne(query)
     }
 
-    suspend fun markNodeDeleted(id: String, snapSeq: Long, lastModifiedDate: LocalDateTime? = null): UpdateResult {
+    suspend fun markNodeDeleted(
+        projectId: String,
+        repoName: String,
+        id: String,
+        snapSeq: Long,
+        lastModifiedDate: LocalDateTime? = null
+    ): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(id)
+            .and(TDriveNode::projectId.name).isEqualTo(projectId)
+            .and(TDriveNode::repoName.name).isEqualTo(repoName)
             .and(TDriveNode::deleted).isNull()
             .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
         lastModifiedDate?.let { criteria.and(TDriveNode::lastModifiedDate).isEqualTo(it) }

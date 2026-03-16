@@ -162,7 +162,7 @@ class DriveNodeService(
                 }
                 val createdNode = doCreate(copiedNode)
                 // COW操作仅标记旧node为已删除，不需要清理drive-node-block
-                driveNodeDao.markNodeDeleted(srcNode.id!!, currentSnapSeq)
+                driveNodeDao.markNodeDeleted(srcNode.projectId, srcNode.repoName, srcNode.id!!, currentSnapSeq)
                 createdNode
             } else {
                 val update = Update()
@@ -270,7 +270,7 @@ class DriveNodeService(
             if (driveNode.type == TYPE_DIRECTORY && driveNodeDao.existsChild(projectId, repoName, ino)) {
                 throw ErrorCodeException(DriveMessageCode.DIRECTORY_NOT_EMPTY, name)
             }
-            val result = driveNodeDao.markNodeDeleted(nodeId, curSnapSeq, lastModifiedDate)
+            val result = driveNodeDao.markNodeDeleted(projectId, repoName, nodeId, curSnapSeq, lastModifiedDate)
             if (result.modifiedCount != 1L) {
                 throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, name)
             }
@@ -340,6 +340,8 @@ class DriveNodeService(
         now: LocalDateTime,
     ): TDriveNode {
         val deleteResult = driveNodeDao.markNodeDeleted(
+            updateRequest.projectId,
+            updateRequest.repoName,
             updateRequest.nodeId,
             currentSnapSeq,
             if (updateRequest.force) null else updateRequest.lastModifiedDate
