@@ -4,7 +4,7 @@
 
 ## 创建快照
 
-- API: POST /drive/snapshot/{projectId}/{repoName}
+- API: POST /drive/snapshot/create/{projectId}/{repoName}
 - API 名称: drive_create_snapshot
 - 功能说明:
   - 中文: 创建 Drive 文件系统快照
