@@ -122,7 +122,7 @@
 
 ## 更新快照
 
-- API: PUT /drive/snapshot/{projectId}/{repoName}/{id}
+- API: PUT /drive/snapshot/update/{projectId}/{repoName}/{id}
 - API 名称: drive_update_snapshot
 - 功能说明:
   - 中文: 更新 Drive 快照名称或描述
@@ -168,7 +168,7 @@
 
 ## 删除快照
 
-- API: DELETE /drive/snapshot/{projectId}/{repoName}/{id}
+- API: DELETE /drive/snapshot/delete/{projectId}/{repoName}/{id}
 - API 名称: drive_delete_snapshot
 - 功能说明:
   - 中文: 删除 Drive 快照（软删除）

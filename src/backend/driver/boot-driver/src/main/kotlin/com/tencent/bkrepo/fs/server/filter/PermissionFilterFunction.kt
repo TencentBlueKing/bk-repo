@@ -120,6 +120,8 @@ class PermissionFilterFunction(
             "/drive/block/**",
             "/drive/repository/**",
             "/drive/snapshot/create/**",
+            "/drive/snapshot/update/**",
+            "/drive/snapshot/delete/**",
             "/drive/node/batch/**",
             "/node/change/**",
             "/node/move/**",

@@ -151,8 +151,8 @@ class RouteConfiguration(
             "/snapshot".nest {
                 POST("/create/{projectId}/{repoName}", driveSnapshotHandler::createSnapshot)
                 GET("/page/{projectId}/{repoName}", driveSnapshotHandler::listSnapshotsPage)
-                PUT("/{projectId}/{repoName}/{id}", driveSnapshotHandler::updateSnapshot)
-                DELETE("/{projectId}/{repoName}/{id}", driveSnapshotHandler::deleteSnapshot)
+                PUT("/update/{projectId}/{repoName}/{id}", driveSnapshotHandler::updateSnapshot)
+                DELETE("/delete/{projectId}/{repoName}/{id}", driveSnapshotHandler::deleteSnapshot)
             }
         }
 
