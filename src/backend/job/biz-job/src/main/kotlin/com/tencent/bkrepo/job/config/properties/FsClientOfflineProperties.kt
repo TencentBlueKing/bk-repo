@@ -39,6 +39,10 @@ import java.time.Duration
 @ConfigurationProperties("job.fs-client-offline")
 class FsClientOfflineProperties: MongodbJobProperties() {
     override var enabled: Boolean = true
+    /**
+     * 定时任务执行间隔
+     * 注意：该值必须大于 heartbeatInterval * 2（离线阈值），否则可能导致未下线的客户端被错误清理
+     */
     override var fixedDelay: Long = 30 * 60 * 1000L
     override var initialDelay: Long = 60 * 1000L
     /**
