@@ -11,10 +11,8 @@ import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.artifact.MediaArtifactInfo.Companion.DEFAULT_STREAM_MAPPING_URI
-import com.tencent.bkrepo.media.common.pojo.stream.MediaStreamRouteInfo
 import com.tencent.bkrepo.media.service.StreamService
 import com.tencent.bkrepo.media.service.TokenService
-import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -77,6 +75,7 @@ class UserStreamController(
             return ResponseBuilder.fail(HttpStatus.FORBIDDEN.value, "no workspace live read perm")
         }
         val url = streamService.fetchRtc(projectId, repoName, resolution)
+            ?: return ResponseBuilder.fail(HttpStatus.NOT_FOUND.value, "stream not found")
         return ResponseBuilder.success(url)
     }
 
@@ -117,10 +116,10 @@ class UserStreamController(
      */
     @PostMapping("/rtc/http_hook")
     fun handleSrsHttpHook(
+        @RequestParam(required = true)
+        machine: String,
         @RequestBody
-        body: Map<String, Any>,
-        @RequestParam(required = true) machine: String,
-        request: HttpServletRequest,
+        body: Map<String, Any>
     ): Response<Boolean> {
         logger.debug("handleSrsHttpHook| $body")
         val action = body["action"] as? String ?: return ResponseBuilder.fail(
@@ -178,20 +177,6 @@ class UserStreamController(
     }
 
     /**
-     * 查询流所在机器，供 nginx 分配拉流机器
-     */
-    @GetMapping("/rtc/route")
-    fun getStreamRoute(
-        @RequestParam streamId: String,
-    ): Response<MediaStreamRouteInfo> {
-        val route = streamService.getActiveStreamRoute(streamId) ?: return ResponseBuilder.fail(
-            HttpStatus.NOT_FOUND.value,
-            "stream not found"
-        )
-        return ResponseBuilder.success(route)
-    }
-
-    /**
      * 给 nginx auth_request 使用，直接通过响应头返回机器地址
      */
     @GetMapping("/rtc/route/header")
@@ -206,17 +191,6 @@ class UserStreamController(
             builder.header(HEADER_STREAM_SERVER_ID, it)
         }
         return builder.build()
-    }
-
-    /**
-     * 给 nginx lua 使用，直接返回纯 JSON 路由信息
-     */
-    @GetMapping("/rtc/route/raw")
-    fun getStreamRouteRaw(
-        @RequestParam streamId: String,
-    ): ResponseEntity<MediaStreamRouteInfo> {
-        val route = streamService.getActiveStreamRoute(streamId) ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(route)
     }
 
     companion object {

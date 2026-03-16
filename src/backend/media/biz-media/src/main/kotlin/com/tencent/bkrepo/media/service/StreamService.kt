@@ -24,7 +24,6 @@ import com.tencent.bkrepo.media.artifact.MediaArtifactInfo
 import com.tencent.bkrepo.media.common.dao.MediaActiveStreamDao
 import com.tencent.bkrepo.media.common.pojo.stream.MediaStreamRouteInfo
 import com.tencent.bkrepo.media.config.MediaProperties
-
 import com.tencent.bkrepo.media.stream.ArtifactFileRecordingListener
 import com.tencent.bkrepo.media.stream.ClientStream
 import com.tencent.bkrepo.media.stream.MediaArtifactFileConsumer
@@ -327,12 +326,16 @@ class StreamService(
         projectId: String,
         repoName: String,
         resolution: String
-    ): String {
-        val streamPattern = "$projectId-${repoName}_$resolution"
+    ): String? {
+        val streamId = "$projectId-${repoName}_$resolution"
+        if (getActiveStreamRoute(streamId) == null) {
+            logger.warn("rtc stream not found, streamId=$streamId")
+            return null
+        }
         // 5 分钟有效
         val expireAt = System.currentTimeMillis() + 300000
-        val token: String = generateToken(streamPattern, expireAt)
-        return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=${streamPattern}&token=$token"
+        val token: String = generateToken(streamId, expireAt)
+        return "${mediaProperties.repoHost}/rtc/v1/whep/?app=live&stream=${streamId}&token=$token"
     }
 
 
