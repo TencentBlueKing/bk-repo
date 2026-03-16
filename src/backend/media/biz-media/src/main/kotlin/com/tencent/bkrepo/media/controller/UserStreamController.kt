@@ -208,7 +208,19 @@ class UserStreamController(
         return builder.build()
     }
 
+    /**
+     * 给 nginx lua 使用，直接返回纯 JSON 路由信息
+     */
+    @GetMapping("/rtc/route/raw")
+    fun getStreamRouteRaw(
+        @RequestParam streamId: String,
+    ): ResponseEntity<MediaStreamRouteInfo> {
+        val route = streamService.getActiveStreamRoute(streamId) ?: return ResponseEntity.notFound().build()
+        return ResponseEntity.ok(route)
+    }
+
     companion object {
+
         private val logger = LoggerFactory.getLogger(UserStreamController::class.java)
         private const val HEADER_STREAM_MACHINE = "X-Stream-Machine"
         private const val HEADER_STREAM_ID = "X-Stream-Id"
