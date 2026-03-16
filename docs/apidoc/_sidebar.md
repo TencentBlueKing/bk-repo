@@ -26,6 +26,7 @@
 - **Drive仓库**
   - [文件操作](/apidoc/drive/file.md)
   - [节点操作](/apidoc/drive/node.md)
+  - [快照操作](/apidoc/drive/snapshot.md)
 - **认证服务**
   - [用户相关](/apidoc/auth/user.md)
   - [用户token相关](/apidoc/auth/token.md)
