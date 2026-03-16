@@ -30,7 +30,6 @@ package com.tencent.bkrepo.fs.server
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFile
 import com.tencent.bkrepo.fs.server.storage.CoArtifactFileFactory
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.core.io.buffer.DataBuffer
@@ -64,7 +63,6 @@ fun ServerRequest.useRequestParam(param: String, consumer: (x: String) -> Unit) 
 
 /**
  * 处理文件范围请求
- * @param request http server request
  * @param total 文件总长度
  * @return range 文件请求范围
  * @throws IllegalArgumentException

@@ -35,6 +35,7 @@ class DriveBlockNodeService(
         projectId: String,
         repoName: String,
         ino: Long,
+        createdDate: LocalDateTime,
         snapSeq: Long? = null,
     ): List<TDriveBlockNode> {
         val criteria = if (snapSeq != null) {
@@ -44,6 +45,7 @@ class DriveBlockNodeService(
         }
         criteria.and(TDriveBlockNode::startPos.name).lte(range.end)
             .and(TDriveBlockNode::endPos.name).gte(range.start)
+            .and(TDriveBlockNode::createdDate.name).gt(createdDate)
         val query = Query(criteria).with(Sort.by(TDriveBlockNode::createdDate.name))
         return driveBlockNodeDao.find(query)
     }

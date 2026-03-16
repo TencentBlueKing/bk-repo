@@ -22,7 +22,7 @@ class DriveFileOperationService(
     suspend fun read(node: DriveNode, range: Range, snapSeq: Long? = null): ArtifactInputStream? {
         with(node) {
             val repo = ReactiveArtifactContextHolder.getRepoDetail()
-            val blocks = driveBlockNodeService.listBlocks(range, projectId, repoName, ino, snapSeq)
+            val blocks = driveBlockNodeService.listBlocks(range, projectId, repoName, ino, createdDate, snapSeq)
                 .map { it.toRegionResource() }
             return driveStorageManager.loadArtifactInputStream(blocks, range, repo.storageCredentials)
         }

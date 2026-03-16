@@ -9,6 +9,8 @@ import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
 import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveSnapshotDao
+import com.tencent.bkrepo.fs.server.response.drive.DriveSnapshot
+import com.tencent.bkrepo.fs.server.response.drive.toDriveSnapshot
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.slf4j.LoggerFactory
@@ -30,7 +32,7 @@ class DriveSnapshotService(
         repoName: String,
         name: String,
         description: String?
-    ): TDriveSnapshot {
+    ): DriveSnapshot {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
         DriveServiceUtils.validateName(name, TDriveSnapshot::name.name)
         DriveServiceUtils.validateLength(name, TDriveSnapshot::name.name, driveProperties.nameMaxLength)
@@ -68,7 +70,7 @@ class DriveSnapshotService(
         }
         driveSnapSeqService.incSnapSeq(projectId, repoName, currentSnapSeq)
         logger.info("Create drive snapshot[$projectId/$repoName/${created.snapSeq}] success.")
-        return created
+        return created.toDriveSnapshot()
     }
 
     suspend fun listSnapshotsPage(
@@ -76,12 +78,12 @@ class DriveSnapshotService(
         repoName: String,
         pageNumber: Int,
         pageSize: Int,
-    ): Page<TDriveSnapshot> {
+    ): Page<DriveSnapshot> {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
         DriveServiceUtils.validatePage(pageNumber, pageSize, driveProperties.listCountLimit)
         val pageRequest = Pages.ofRequest(pageNumber, pageSize)
         val (records, totalRecords) = driveSnapshotDao.page(projectId, repoName, pageRequest)
-        return Pages.ofResponse(pageRequest, totalRecords, records)
+        return Pages.ofResponse(pageRequest, totalRecords, records.map { it.toDriveSnapshot() })
     }
 
     suspend fun updateSnapshot(
@@ -90,14 +92,14 @@ class DriveSnapshotService(
         snapshotId: String,
         name: String?,
         description: String?,
-    ): TDriveSnapshot {
+    ): DriveSnapshot {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
         Preconditions.checkArgument(snapshotId.isNotBlank(), "snapshotId")
         if (name == null && description == null) {
             val existing = driveSnapshotDao.find(projectId, repoName, snapshotId)
                 ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "drive snapshot[$projectId/$repoName/$snapshotId]")
             logger.info("Skip update drive snapshot[$projectId/$repoName/$snapshotId], all fields are null.")
-            return existing
+            return existing.toDriveSnapshot()
         }
         name?.let { DriveServiceUtils.validateName(it, TDriveSnapshot::name.name) }
         DriveServiceUtils.validateLength(name, TDriveSnapshot::name.name, driveProperties.nameMaxLength)
@@ -121,7 +123,7 @@ class DriveSnapshotService(
         val updated = driveSnapshotDao.find(projectId, repoName, snapshotId)
             ?: throw ErrorCodeException(RESOURCE_NOT_FOUND, "drive snapshot[$projectId/$repoName/$snapshotId]")
         logger.info("Update drive snapshot[$projectId/$repoName/$snapshotId] success.")
-        return updated
+        return updated.toDriveSnapshot()
     }
 
     suspend fun deleteSnapshot(projectId: String, repoName: String, snapshotId: String) {
