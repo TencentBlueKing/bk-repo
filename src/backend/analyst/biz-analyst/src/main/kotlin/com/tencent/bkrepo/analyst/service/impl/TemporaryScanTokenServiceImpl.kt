@@ -169,7 +169,6 @@ class TemporaryScanTokenServiceImpl(
                 expireSeconds = scannerProperties.tempDownloadUrlExpireDuration.seconds,
                 permits = scannerProperties.tempDownloadUrlPermits,
                 type = TokenType.DOWNLOAD,
-                bypassProjectDisable = true
             )
             val tokens = temporaryTokenClient.createToken(req)
             if (tokens.isNotOk()) {
