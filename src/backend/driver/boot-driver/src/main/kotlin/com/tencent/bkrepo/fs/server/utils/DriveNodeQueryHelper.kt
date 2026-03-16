@@ -4,6 +4,8 @@ import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import java.time.LocalDateTime
 
 object DriveNodeQueryHelper {
+    const val ROOT_INO = 2L
+
     /**
      * 基于旧版本节点构造 COW 新副本。
      *

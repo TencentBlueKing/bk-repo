@@ -18,6 +18,7 @@ import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOp
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeCreateRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeDeleteRequest
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBaseRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeMoveRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeUpdateRequest
 import com.tencent.bkrepo.fs.server.request.drive.normalizedSymlinkTarget
@@ -30,6 +31,7 @@ import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResponse
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
 import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
+import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper.ROOT_INO
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import org.bson.types.ObjectId
@@ -393,10 +395,25 @@ class DriveNodeService(
     private suspend fun validateCreateRequest(createRequest: DriveNodeCreateRequest) {
         with(createRequest) {
             DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, parent)
-            Preconditions.checkArgument(size >= 0, TDriveNode::size.name)
+            // ino必须大于0
+            Preconditions.checkArgument(ino >= ROOT_INO, DriveNodeCreateRequest::ino.name)
+            // 节点类型校验
             Preconditions.checkArgument(type in TDriveNode.ALLOWED_TYPES, TDriveNode::type.name)
-            PathUtils.validateFileName(name)
-            checkParent(parent, projectId, repoName)
+            // 软链接类型关联校验
+            if (type == TDriveNode.TYPE_SYMLINK) {
+                Preconditions.checkArgument(
+                    !symlinkTarget.isNullOrBlank(), TDriveNode::symlinkTarget.name
+                )
+            } else {
+                Preconditions.checkArgument(
+                    symlinkTarget == null, TDriveNode::symlinkTarget.name
+                )
+            }
+            // 时间戳非负校验
+            mtime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::mtime.name) }
+            ctime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::ctime.name) }
+            atime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::atime.name) }
+            validateCommonFields(createRequest)
         }
     }
 
@@ -427,12 +444,44 @@ class DriveNodeService(
         with(updateRequest) {
             DriveServiceUtils.validateProjectRepo(projectId, repoName)
             Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeUpdateRequest::nodeId.name)
-            size?.let { Preconditions.checkArgument(it >= 0, TDriveNode::size.name) }
-            nlink?.let { Preconditions.checkArgument(it >= 0, TDriveNode::nlink.name) }
-            parent?.let { checkParent(it, projectId, repoName) }
-            name?.let { PathUtils.validateFileName(it) }
+            // 时间戳非负校验
+            mtime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::mtime.name) }
+            ctime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::ctime.name) }
+            atime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::atime.name) }
+            validateCommonFields(updateRequest)
             if (!force) {
                 Preconditions.checkArgument(lastModifiedDate != null, DriveNodeUpdateRequest::lastModifiedDate.name)
+            }
+        }
+    }
+
+    /**
+     * 校验DriveNodeBaseRequest中的公共字段
+     * 字段为可空类型，非null时才进行校验，兼容create（字段非空）和update（字段可选）两种场景
+     */
+    private suspend fun validateCommonFields(request: DriveNodeBaseRequest) {
+        with(request) {
+            // 数值字段非负校验
+            size?.let { Preconditions.checkArgument(it >= 0, TDriveNode::size.name) }
+            mode?.let { Preconditions.checkArgument(it >= 0, TDriveNode::mode.name) }
+            nlink?.let { Preconditions.checkArgument(it >= 0, TDriveNode::nlink.name) }
+            uid?.let { Preconditions.checkArgument(it >= 0, TDriveNode::uid.name) }
+            gid?.let { Preconditions.checkArgument(it >= 0, TDriveNode::gid.name) }
+            rdev?.let { Preconditions.checkArgument(it >= 0, TDriveNode::rdev.name) }
+            flags?.let { Preconditions.checkArgument(it >= 0, TDriveNode::flags.name) }
+            // 父节点校验
+            parent?.let { checkParent(it, projectId, repoName) }
+            // 文件名校验
+            name?.let {
+                PathUtils.validateFileName(it)
+                DriveServiceUtils.validateLength(it, TDriveNode::name.name, driveProperties.nameMaxLength)
+            }
+            // 软链接目标路径校验
+            symlinkTarget?.let {
+                Preconditions.checkArgument(it.isNotBlank(), TDriveNode::symlinkTarget.name)
+                DriveServiceUtils.validateLength(
+                    it, TDriveNode::symlinkTarget.name, driveProperties.descriptionMaxLength
+                )
             }
         }
     }

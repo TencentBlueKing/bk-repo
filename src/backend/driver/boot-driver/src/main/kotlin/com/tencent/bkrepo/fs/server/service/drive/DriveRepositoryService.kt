@@ -8,6 +8,7 @@ import com.tencent.bkrepo.common.metadata.service.repo.impl.RRepositoryServiceIm
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.repository.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.request.drive.DriveRepoCreateRequest
+import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper.ROOT_INO
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils.toNanoTimestamp
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
 import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
@@ -106,7 +107,6 @@ class DriveRepositoryService(
     }
 
     companion object {
-        private const val ROOT_INO = 2L
         private const val ROOT_NAME = ""
         private const val ROOT_SIZE = 0L
         private const val ROOT_MODE = 16877
