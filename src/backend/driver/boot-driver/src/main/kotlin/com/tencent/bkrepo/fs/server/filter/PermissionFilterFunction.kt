@@ -117,6 +117,10 @@ class PermissionFilterFunction(
     companion object {
         private val logger = LoggerFactory.getLogger(PermissionFilterFunction::class.java)
         private val WRITE_REQUEST_URL_PATTERN_SET = arrayOf(
+            "/drive/block/**",
+            "/drive/repository/**",
+            "/drive/snapshot/create/**",
+            "/drive/node/batch/**",
             "/node/change/**",
             "/node/move/**",
             "/node/create/**",

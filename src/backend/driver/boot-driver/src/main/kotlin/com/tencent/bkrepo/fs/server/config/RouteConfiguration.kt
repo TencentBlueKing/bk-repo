@@ -132,7 +132,7 @@ class RouteConfiguration(
 
         "/drive".nest {
             "/repository".nest {
-                POST("/create", driveRepositoryHandler::createRepository)
+                POST("/create/{projectId}/{repoName}", driveRepositoryHandler::createRepository)
             }
             "/block".nest {
                 filter(artifactFileCleanupFilterFunction::filter)
@@ -149,7 +149,7 @@ class RouteConfiguration(
                 GET("/modified/page/{projectId}/{repoName}", driveNodeOperationsHandler::listModifiedNodesPage)
             }
             "/snapshot".nest {
-                POST("/{projectId}/{repoName}", driveSnapshotHandler::createSnapshot)
+                POST("/create/{projectId}/{repoName}", driveSnapshotHandler::createSnapshot)
                 GET("/page/{projectId}/{repoName}", driveSnapshotHandler::listSnapshotsPage)
                 PUT("/{projectId}/{repoName}/{id}", driveSnapshotHandler::updateSnapshot)
                 DELETE("/{projectId}/{repoName}/{id}", driveSnapshotHandler::deleteSnapshot)
