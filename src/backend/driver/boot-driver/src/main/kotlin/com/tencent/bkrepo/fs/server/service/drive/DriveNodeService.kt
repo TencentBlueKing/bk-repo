@@ -263,6 +263,9 @@ class DriveNodeService(
         val nodeId = driveNode.id
         requireNotNull(nodeId)
         with(driveNode) {
+            if (isRootNode(driveNode)) {
+                throw ErrorCodeException(CommonMessageCode.METHOD_NOT_ALLOWED, "Can't delete drive root node.")
+            }
             // 不允许删除非空目录
             if (driveNode.type == TYPE_DIRECTORY && driveNodeDao.existsChild(projectId, repoName, ino)) {
                 throw ErrorCodeException(DriveMessageCode.DIRECTORY_NOT_EMPTY, name)
@@ -275,6 +278,10 @@ class DriveNodeService(
                 "Delete drive node[$name] id[$nodeId] ino[$ino] of parent[$parent] at snap[$curSnapSeq] success."
             )
         }
+    }
+
+    private fun isRootNode(node: TDriveNode): Boolean {
+        return node.parent == null && node.type == TYPE_DIRECTORY && node.name.isEmpty()
     }
 
     private suspend fun resolveSnapSeq(projectId: String, repoName: String, snapSeq: Long?): Long {
