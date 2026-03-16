@@ -4,6 +4,8 @@ import com.tencent.bkrepo.common.api.constant.USER_KEY
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.fs.server.context.ReactiveRequestContextHolder
 import com.tencent.bkrepo.repository.constant.SYSTEM_USER
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 object DriveServiceUtils {
     fun validateProjectRepoAndParent(projectId: String, repoName: String, parent: Long?) {
@@ -29,6 +31,10 @@ object DriveServiceUtils {
     fun validatePage(pageNumber: Int, pageSize: Int, maxPageSize: Int) {
         Preconditions.checkArgument(pageNumber >= 0, "pageNumber")
         Preconditions.checkArgument(pageSize in 1..maxPageSize, "pageSize")
+    }
+
+    fun toNanoTimestamp(now: LocalDateTime): Long {
+        return now.toInstant(ZoneOffset.UTC).let { it.epochSecond * 1_000_000_000L + it.nano }
     }
 
     suspend fun getUserOrSystem(): String {
