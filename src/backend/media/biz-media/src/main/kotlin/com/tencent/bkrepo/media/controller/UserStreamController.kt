@@ -16,6 +16,7 @@ import com.tencent.bkrepo.media.service.StreamService
 import com.tencent.bkrepo.media.service.TokenService
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -118,6 +119,7 @@ class UserStreamController(
     fun handleSrsHttpHook(
         @RequestBody
         body: Map<String, Any>,
+        @RequestParam(required = true) machine: String,
         request: HttpServletRequest,
     ): Response<Boolean> {
         logger.debug("handleSrsHttpHook| $body")
@@ -132,7 +134,6 @@ class UserStreamController(
         val clientIp = body["ip"] as? String
         return when (action) {
             "on_publish" -> {
-                val machine = resolveHookMachine(body, request)
                 val serverId = body["server_id"] as? String
                 val app = body["app"] as? String
                 val vhost = body["vhost"] as? String
@@ -190,18 +191,27 @@ class UserStreamController(
         return ResponseBuilder.success(route)
     }
 
-    private fun resolveHookMachine(body: Map<String, Any>, request: HttpServletRequest): String {
-        return (body["server_ip"] as? String)
-            ?.takeIf { it.isNotBlank() }
-            ?: (body["serverIp"] as? String)?.takeIf { it.isNotBlank() }
-            ?: (body["srs_server_ip"] as? String)?.takeIf { it.isNotBlank() }
-            ?: request.getHeader("X-Stream-Machine")?.substringBefore(",")?.trim()?.takeIf { it.isNotBlank() }
-            ?: request.getHeader("X-Forwarded-For")?.substringBefore(",")?.trim()?.takeIf { it.isNotBlank() }
-            ?: request.getHeader("X-Real-IP")?.trim()?.takeIf { it.isNotBlank() }
-            ?: request.remoteAddr
+    /**
+     * 给 nginx auth_request 使用，直接通过响应头返回机器地址
+     */
+    @GetMapping("/rtc/route/header")
+    fun getStreamRouteHeader(
+        @RequestParam streamId: String,
+    ): ResponseEntity<Void> {
+        val route = streamService.getActiveStreamRoute(streamId) ?: return ResponseEntity.notFound().build()
+        val builder = ResponseEntity.ok()
+            .header(HEADER_STREAM_MACHINE, route.machine)
+            .header(HEADER_STREAM_ID, route.streamId)
+        route.serverId?.takeIf { it.isNotBlank() }?.let {
+            builder.header(HEADER_STREAM_SERVER_ID, it)
+        }
+        return builder.build()
     }
 
     companion object {
         private val logger = LoggerFactory.getLogger(UserStreamController::class.java)
+        private const val HEADER_STREAM_MACHINE = "X-Stream-Machine"
+        private const val HEADER_STREAM_ID = "X-Stream-Id"
+        private const val HEADER_STREAM_SERVER_ID = "X-Stream-Server-Id"
     }
 }
