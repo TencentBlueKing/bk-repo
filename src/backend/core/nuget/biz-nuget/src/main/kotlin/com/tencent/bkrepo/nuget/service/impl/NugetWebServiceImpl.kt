@@ -62,19 +62,20 @@ class NugetWebServiceImpl(
         fun buildBasicInfo(nodeDetail: NodeDetail, packageVersion: PackageVersion): BasicInfo {
             with(nodeDetail) {
                 return BasicInfo(
-                    packageVersion.name,
-                    fullPath,
-                    size,
-                    sha256!!,
-                    md5!!,
-                    packageVersion.stageTag,
-                    projectId,
-                    repoName,
-                    packageVersion.downloads,
-                    createdBy,
-                    createdDate,
-                    lastModifiedBy,
-                    lastModifiedDate
+                    version = packageVersion.name,
+                    fullPath = fullPath,
+                    size = size,
+                    sha256 = sha256!!,
+                    md5 = md5!!,
+                    stageTag = packageVersion.stageTag,
+                    projectId = projectId,
+                    repoName = repoName,
+                    downloadCount = packageVersion.downloads,
+                    createdBy = createdBy,
+                    createdDate = createdDate,
+                    lastModifiedBy = lastModifiedBy,
+                    lastModifiedDate = lastModifiedDate,
+                    federatedSource = packageVersion.federatedSource,
                 )
             }
         }

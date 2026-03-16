@@ -107,4 +107,13 @@ interface MavenWebResource {
     @PostMapping("/search/version")
     fun searchVersion(@RequestBody request: MavenVersionSearchRequest): Response<Page<String>>
 
+    @Operation(summary = "修复maven-metadata.xml（version为空修复package级别，否则修复snapshot版本级别）")
+    @PostMapping("/metadata/repair/{projectId}/{repoName}")
+    fun repairPackageMetadata(
+        @PathVariable projectId: String,
+        @PathVariable repoName: String,
+        @RequestParam packageKey: String,
+        @RequestParam(required = false) version: String?
+    ): Response<Boolean>
+
 }
