@@ -38,5 +38,7 @@ data class BasicInfo(
     @get:Schema(title = "修改者")
     val lastModifiedBy: String,
     @get:Schema(title = "修改时间")
-    val lastModifiedDate: String
+    val lastModifiedDate: String,
+    @get:Schema(title = "联邦仓库同步来源")
+    val federatedSource: String?,
 )

@@ -29,7 +29,6 @@ package com.tencent.bkrepo.auth.service.impl.center
 
 import com.tencent.bkrepo.auth.dao.AuthTemporaryTokenDao
 import com.tencent.bkrepo.auth.service.impl.TemporaryTokenServiceImpl
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.service.cluster.condition.CommitEdgeCenterCondition
 import org.springframework.context.annotation.Conditional
 import org.springframework.stereotype.Service
@@ -37,8 +36,5 @@ import org.springframework.stereotype.Service
 @Service
 @Conditional(CommitEdgeCenterCondition::class)
 class CommitEdgeCenterTemporaryTokenServiceImpl(
-    temporaryTokenRepository: AuthTemporaryTokenDao,
-    projectService: ProjectService
-) : TemporaryTokenServiceImpl(
-    temporaryTokenRepository, projectService
-)
+    temporaryTokenRepository: AuthTemporaryTokenDao
+) : TemporaryTokenServiceImpl(temporaryTokenRepository)

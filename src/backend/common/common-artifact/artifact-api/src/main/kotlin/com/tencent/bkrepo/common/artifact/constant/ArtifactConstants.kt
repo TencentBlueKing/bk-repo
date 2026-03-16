@@ -167,8 +167,15 @@ const val FORBID_REASON = "forbidReason"
 // 制品扫描状态
 const val SCAN_STATUS = "scanStatus"
 
-const val METADATA_KEY_PACKAGE_NAME = "packageName"
-const val METADATA_KEY_PACKAGE_VERSION = "packageVersion"
+// 制品包相关
+const val PACKAGE_KEY = "packageKey"
+const val PACKAGE_NAME = "packageName"
+const val PACKAGE_VERSION = "packageVersion"
+
+const val METADATA = "metadata"
+const val METADATA_KEY_PACKAGE_KEY = PACKAGE_KEY
+const val METADATA_KEY_PACKAGE_NAME = PACKAGE_NAME
+const val METADATA_KEY_PACKAGE_VERSION = PACKAGE_VERSION
 
 /**
  * 节点链接的目标项目

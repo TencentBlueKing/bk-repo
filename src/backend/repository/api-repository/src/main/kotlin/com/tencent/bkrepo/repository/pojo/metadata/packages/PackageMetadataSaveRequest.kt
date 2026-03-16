@@ -54,5 +54,7 @@ data class PackageMetadataSaveRequest(
     @get:Schema(title = "需要创建或更新的元数据", required = true)
     val versionMetadata: List<MetadataModel>? = null,
     @get:Schema(title = "操作用户")
-    override val operator: String = SYSTEM_USER
+    override val operator: String = SYSTEM_USER,
+    @get:Schema(title = "操作来源,联邦仓库同步时源集群name", required = false)
+    val source: String? = null,
 ) : PackageVersionRequest, ServiceRequest

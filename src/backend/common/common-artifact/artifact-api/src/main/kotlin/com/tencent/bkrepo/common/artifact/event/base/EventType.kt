@@ -56,6 +56,8 @@ enum class EventType(val msgKey: String) {
     // METADATA
     METADATA_DELETED("artifact.event.metadata-deleted"),
     METADATA_SAVED("artifact.event.metadata-saved"),
+    PACKAGE_METADATA_DELETED("artifact.event.package-metadata-deleted"),
+    PACKAGE_METADATA_SAVED("artifact.event.package-metadata-saved"),
 
     // VERSION
     VERSION_CREATED("artifact.event.version-created"),
