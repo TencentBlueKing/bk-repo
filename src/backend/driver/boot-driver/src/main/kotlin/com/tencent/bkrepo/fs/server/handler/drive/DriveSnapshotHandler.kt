@@ -1,10 +1,10 @@
 package com.tencent.bkrepo.fs.server.handler.drive
 
-import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.fs.server.request.drive.DriveSnapshotCreateRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveSnapshotPageRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveSnapshotRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveSnapshotUpdateRequest
+import com.tencent.bkrepo.fs.server.response.drive.DriveSnapshot
 import com.tencent.bkrepo.fs.server.service.drive.DriveSnapshotService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
 import kotlinx.coroutines.reactor.awaitSingle
@@ -40,7 +40,7 @@ class DriveSnapshotHandler(
     }
 
     suspend fun updateSnapshot(request: ServerRequest): ServerResponse {
-        val snapshotId = request.pathVariable(ID)
+        val snapshotId = request.pathVariable(DriveSnapshot::id.name)
         val body = request.bodyToMono(DriveSnapshotUpdateRequest::class.java).awaitSingle()
         with(DriveSnapshotRequest(request)) {
             val snapshot = driveSnapshotService.updateSnapshot(
@@ -55,7 +55,7 @@ class DriveSnapshotHandler(
     }
 
     suspend fun deleteSnapshot(request: ServerRequest): ServerResponse {
-        val snapshotId = request.pathVariable(ID)
+        val snapshotId = request.pathVariable(DriveSnapshot::id.name)
         with(DriveSnapshotRequest(request)) {
             driveSnapshotService.deleteSnapshot(projectId, repoName, snapshotId)
             return ReactiveResponseBuilder.success()
