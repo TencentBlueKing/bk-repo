@@ -92,6 +92,6 @@ class FsClientOfflineJob(
          * 离线阈值乘数
          * 使用2倍乘数是为了容忍一次心跳丢失，避免因网络抖动导致客户端被误判为离线
          */
-        private const val OFFLINE_THRESHOLD_MULTIPLIER = 2
+        private const val OFFLINE_THRESHOLD_MULTIPLIER = 2L
     }
 }
