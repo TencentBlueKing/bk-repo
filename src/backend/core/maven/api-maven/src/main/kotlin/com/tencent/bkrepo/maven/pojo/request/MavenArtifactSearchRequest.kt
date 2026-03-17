@@ -29,10 +29,11 @@ package com.tencent.bkrepo.maven.pojo.request
 
 import com.tencent.bkrepo.common.api.constant.DEFAULT_PAGE_SIZE
 
-data class MavenGroupSearchRequest(
+data class MavenArtifactSearchRequest(
     val projectId: String,
     val repoName: String,
-    val groupId: String? = null,
+    val groupId: String,
+    val artifact: String? = null,
     val pageNumber: Int = 1,
     val pageSize: Int = DEFAULT_PAGE_SIZE
 )

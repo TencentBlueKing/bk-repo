@@ -3,15 +3,12 @@ package com.tencent.bkrepo.media.job.cron
 import com.tencent.bkrepo.media.common.dao.MediaTranscodeJobDao
 import com.tencent.bkrepo.media.common.dao.TranscodeJobConfigDao
 import com.tencent.bkrepo.media.job.service.TranscodeJobService
-import com.tencent.bkrepo.media.common.model.TMediaTranscodeJobConfig
 import com.tencent.bkrepo.media.job.config.MediaJobProperties
 import net.javacrumbs.shedlock.core.LockConfiguration
 import net.javacrumbs.shedlock.core.LockProvider
 import net.javacrumbs.shedlock.core.SimpleLock
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.where
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.Duration
@@ -31,40 +28,89 @@ class TranscodeCronJob @Autowired constructor(
 
     /**
      * 定时下发转码任务
+     * 遍历所有配置，有projectId的走独立配额，其余走默认配置
      */
     @Scheduled(fixedDelay = 1 * 1000)
     fun startTranscodeJob() {
-        // 判断是否超出最大任务数上线
-        val config =
-            transcodeJobConfigDao.findOne(Query(where(TMediaTranscodeJobConfig::projectId).`is`(null))) ?: kotlin.run {
-                logger.error("startTranscodeJob no default config")
-                return
-            }
-        val maxJobCount = config.maxJobCount ?: 66
-        val currentJobCount = mediaTranscodeJobDao.queueAndRunningJobCount()
-        if (currentJobCount >= maxJobCount) {
-            return
-        }
-
-        logger.debug("starting transcode job maxJob:$maxJobCount, currentJobCount:$currentJobCount")
-
         var wasExecuted = false
         lockProvider.lock(getLockConfiguration()).ifPresent {
             lock = it
-            it.use { doStart(config) }
+            it.use {
+                try {
+                    doStartTranscodeJob()
+                } catch (e: Exception) {
+                    logger.error("Job mediaTranscodeCronJob start error for default config", e)
+                }
+            }
             lock = null
             wasExecuted = true
         }
         if (!wasExecuted) {
-            logger.warn("Job mediaTranscodeCronJob already execution")
+            logger.warn("startTranscodeJob already execution")
         }
     }
 
-    private fun doStart(config: TMediaTranscodeJobConfig) {
-        try {
-            transcodeJobService.startJob(config)
-        } catch (e: Exception) {
-            logger.error("Job mediaTranscodeCronJob start error", e)
+    fun doStartTranscodeJob() {
+        val configs = transcodeJobConfigDao.findAll()
+        if (configs.isEmpty()) {
+            logger.error("startTranscodeJob no config found")
+            return
+        }
+
+        // 分离特殊项目配置和默认配置
+        val projectConfigs = configs.filter { !it.projectId.isNullOrBlank() }
+        val defaultConfig = configs.find { it.projectId.isNullOrBlank() }
+
+        // 特殊项目的projectId集合，用于默认配置排除
+        val specialProjectIds = projectConfigs.mapNotNull { it.projectId }.toSet()
+
+        // 一次聚合查询获取所有项目的运行中任务数
+        val projectJobCountMap = mediaTranscodeJobDao.queueAndRunningJobCountGroupByProject()
+
+        // 处理每个特殊项目配置
+        for (config in projectConfigs) {
+            val projectId = config.projectId ?: continue
+            val maxJobCount = config.maxJobCount ?: 66
+            val currentJobCount = projectJobCountMap[projectId] ?: 0L
+            if (currentJobCount >= maxJobCount) {
+                logger.info(
+                    "Project $projectId exceeded max job limit: current=$currentJobCount, max=$maxJobCount"
+                )
+                continue
+            }
+            logger.info(
+                "starting transcode job for project $projectId, maxJob:$maxJobCount, " +
+                        "currentJobCount:$currentJobCount"
+            )
+            try {
+                transcodeJobService.startJobForProject(config, projectId)
+            } catch (e: Exception) {
+                logger.error("Job mediaTranscodeCronJob start error for project $projectId", e)
+            }
+        }
+
+        // 处理默认配置（未配置独立项目的任务）
+        if (defaultConfig != null) {
+            val maxJobCount = defaultConfig.maxJobCount ?: 66
+            // 排除特殊项目后统计默认配额的运行中任务数
+            val currentJobCount = projectJobCountMap.entries
+                .filter { it.key !in specialProjectIds }
+                .sumOf { it.value }
+            if (currentJobCount >= maxJobCount) {
+                logger.debug(
+                    "Default config exceeded max job limit: current=$currentJobCount, max=$maxJobCount"
+                )
+                return
+            }
+            logger.debug(
+                "starting transcode job for default config, maxJob:$maxJobCount, " +
+                        "currentJobCount:$currentJobCount"
+            )
+            try {
+                transcodeJobService.startJobForDefault(defaultConfig, specialProjectIds)
+            } catch (e: Exception) {
+                logger.error("Job mediaTranscodeCronJob start error for default config", e)
+            }
         }
     }
 

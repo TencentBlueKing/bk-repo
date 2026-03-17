@@ -30,19 +30,16 @@ package com.tencent.bkrepo.auth.service.impl
 import com.tencent.bkrepo.auth.config.AuthProperties
 import com.tencent.bkrepo.auth.context.FederationWriteContext
 import com.tencent.bkrepo.auth.dao.AuthTemporaryTokenDao
-import com.tencent.bkrepo.auth.message.AuthMessageCode
 import com.tencent.bkrepo.auth.model.TTemporaryToken
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenCreateRequest
 import com.tencent.bkrepo.auth.pojo.token.TemporaryTokenInfo
 import com.tencent.bkrepo.auth.service.TemporaryTokenService
 import com.tencent.bkrepo.common.api.constant.StringPool
-import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.event.base.ArtifactEvent
 import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.handler.MaskPartString
-import com.tencent.bkrepo.common.metadata.service.project.ProjectService
 import com.tencent.bkrepo.common.security.util.SecurityUtils
 import com.tencent.bkrepo.common.service.cluster.condition.DefaultCondition
 import com.tencent.bkrepo.common.stream.event.supplier.MessageSupplier
@@ -60,15 +57,12 @@ import java.util.UUID
 @Conditional(DefaultCondition::class)
 class TemporaryTokenServiceImpl(
     private val temporaryTokenRepository: AuthTemporaryTokenDao,
-    private val projectService: ProjectService,
     private val messageSupplier: MessageSupplier,
     private val authProperties: AuthProperties
 ) : TemporaryTokenService {
 
     override fun createToken(request: TemporaryTokenCreateRequest): List<TemporaryTokenInfo> {
         with(request) {
-            // 检查项目是否禁用token功能（允许特定平台账户跳过检查）
-            checkTokenFeatureEnabled(projectId, bypassProjectDisable)
             return validateAndNormalize(this).map {
                 val temporaryToken = TTemporaryToken(
                     projectId = projectId,
@@ -120,23 +114,6 @@ class TemporaryTokenServiceImpl(
         }
     }
 
-    /**
-     * 检查项目是否禁用token功能
-     * @param projectId 项目ID
-     * @param bypassProjectDisable 是否允许跳过项目禁用检查（仅特定平台账户可用）
-     */
-    private fun checkTokenFeatureEnabled(projectId: String, bypassProjectDisable: Boolean = false) {
-        // 如果允许跳过检查，则直接返回
-        if (bypassProjectDisable) {
-            logger.info("Bypass project token feature check for project [$projectId]")
-            return
-        }
-
-        val shareEnabled = projectService.isProjectShareEnabled(projectId)
-        if (!shareEnabled) {
-            throw ErrorCodeException(AuthMessageCode.TOKEN_DISABLED, projectId)
-        }
-    }
 
     private fun publishEvent(type: EventType, resourceKey: String, projectId: String) {
         if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return

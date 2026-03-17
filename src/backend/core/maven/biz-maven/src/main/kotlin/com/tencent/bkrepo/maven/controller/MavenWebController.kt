@@ -44,8 +44,10 @@ import com.tencent.bkrepo.common.service.util.ResponseBuilder
 import com.tencent.bkrepo.maven.api.MavenWebResource
 import com.tencent.bkrepo.maven.artifact.MavenArtifactInfo
 import com.tencent.bkrepo.maven.artifact.MavenDeleteArtifactInfo
+import com.tencent.bkrepo.maven.pojo.request.MavenArtifactSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenGroupSearchRequest
 import com.tencent.bkrepo.maven.pojo.request.MavenJarSearchRequest
+import com.tencent.bkrepo.maven.pojo.request.MavenVersionSearchRequest
 import com.tencent.bkrepo.maven.pojo.response.MavenGAVCResponse
 import com.tencent.bkrepo.maven.pojo.response.MavenJarInfoResponse
 import com.tencent.bkrepo.maven.service.MavenExtService
@@ -135,5 +137,22 @@ class MavenWebController(
 
     override fun searchGroup(request: MavenGroupSearchRequest): Response<Page<String>> {
         return ResponseBuilder.success(mavenExtService.searchGroup(request))
+    }
+
+    override fun searchArtifact(request: MavenArtifactSearchRequest): Response<Page<String>> {
+        return ResponseBuilder.success(mavenExtService.searchArtifact(request))
+    }
+
+    override fun searchVersion(request: MavenVersionSearchRequest): Response<Page<String>> {
+        return ResponseBuilder.success(mavenExtService.searchVersion(request))
+    }
+
+    override fun repairPackageMetadata(
+        projectId: String,
+        repoName: String,
+        packageKey: String,
+        version: String?
+    ): Response<Boolean> {
+        return ResponseBuilder.success(mavenService.repairPackageMetadata(projectId, repoName, packageKey, version))
     }
 }
