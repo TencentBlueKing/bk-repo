@@ -85,16 +85,76 @@
     "message": null,
     "data": [
       {
+        "op": "create",
         "ino": 1001,
-        "nodeId": null,
+        "nodeId": "67d074a13d19772f4b813f90",
+        "node": {
+          "id": "67d074a13d19772f4b813f90",
+          "createdBy": "admin",
+          "createdDate": "2026-03-12T09:00:00",
+          "lastModifiedBy": "admin",
+          "lastModifiedDate": "2026-03-12T09:00:00",
+          "mtime": 1741770000000000000,
+          "ctime": 1741770000000000000,
+          "atime": 1741770000000000000,
+          "projectId": "demo",
+          "repoName": "drive-local",
+          "ino": 1001,
+          "parent": 2,
+          "name": "a.txt",
+          "size": 12,
+          "mode": 33188,
+          "type": 1,
+          "nlink": 1,
+          "uid": 0,
+          "gid": 0,
+          "rdev": 0,
+          "flags": 0,
+          "symlinkTarget": null,
+          "deleted": null
+        },
         "code": 0,
         "message": null
       },
       {
+        "op": "update",
         "ino": 1002,
-        "nodeId": "67d074a13d19772f4b813f90",
-        "code": 251001,
-        "message": "node conflict"
+        "nodeId": "67d074a13d19772f4b813f91",
+        "node": {
+          "id": "67d074a13d19772f4b813f91",
+          "createdBy": "admin",
+          "createdDate": "2026-03-12T08:00:00",
+          "lastModifiedBy": "admin",
+          "lastModifiedDate": "2026-03-12T09:00:00",
+          "mtime": 1741770000000000000,
+          "ctime": 1741770000000000000,
+          "atime": 1741770000000000000,
+          "projectId": "demo",
+          "repoName": "drive-local",
+          "ino": 1002,
+          "parent": 1,
+          "name": "b.txt",
+          "size": 1024,
+          "mode": 33188,
+          "type": 1,
+          "nlink": 1,
+          "uid": 0,
+          "gid": 0,
+          "rdev": 0,
+          "flags": 0,
+          "symlinkTarget": null,
+          "deleted": null
+        },
+        "code": 0,
+        "message": null
+      },
+      {
+        "op": "delete",
+        "ino": 1005,
+        "nodeId": "67d074a13d19772f4b813f92",
+        "node": null,
+        "code": 0,
+        "message": null
       }
     ],
     "traceId": null
@@ -102,12 +162,14 @@
   ```
 - data 字段说明
 
-  | 字段      | 类型     | 说明               | Description     |
-  | ------- | ------ | ---------------- | --------------- |
-  | ino     | long   | 本次操作节点的 ino（可为空） | node ino        |
-  | nodeId  | string | 本次操作节点 ID（可为空）   | node id         |
-  | code    | int    | 操作结果码，0 表示成功     | result code     |
-  | message | string | 失败消息             | failure message |
+  | 字段      | 类型       | 说明                                                 | Description                                       |
+  | ------- | -------- |----------------------------------------------------| ------------------------------------------------- |
+  | op      | string   | 操作类型: `create`/`update`/`delete`/`create_hard_link` | operation type                                    |
+  | ino     | long     | 本次操作节点的 ino（操作失败时可能为空）                             | node ino                                          |
+  | nodeId  | string   | 本次操作节点 ID（操作失败时可能为空）                                      | node id                                           |
+  | node    | object   | 节点详细信息，仅创建和更新操作存在该字段，删除操作为 null，字段同 DriveNode      | node detail, only exists for create/update ops    |
+  | code    | int      | 操作结果码，0 表示成功                                       | result code                                       |
+  | message | string   | 失败消息                                               | failure message                                   |
 
 
 ## 分页查询目录下节点
