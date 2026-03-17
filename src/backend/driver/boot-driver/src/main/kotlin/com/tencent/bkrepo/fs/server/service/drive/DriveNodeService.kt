@@ -14,11 +14,11 @@ import com.tencent.bkrepo.fs.server.message.DriveMessageCode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
 import com.tencent.bkrepo.fs.server.repository.RDriveNodeDao
+import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBaseRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOp
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeCreateRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeDeleteRequest
-import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBaseRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeMoveRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeUpdateRequest
 import com.tencent.bkrepo.fs.server.request.drive.normalizedSymlinkTarget
@@ -237,7 +237,16 @@ class DriveNodeService(
                         )
                     }
                     successCount++
-                    DriveNodeBatchResult(ino = resultNode.ino, code = SUCCESS_CODE, message = null)
+
+                    val node = if (it.op == DriveNodeBatchOp.DELETE) null else resultNode
+                    DriveNodeBatchResult(
+                        op = it.op,
+                        ino = resultNode.ino,
+                        nodeId = resultNode.id,
+                        node = node,
+                        code = SUCCESS_CODE,
+                        message = null
+                    )
                 } catch (e: Exception) {
                     failedCount++
                     val code = if (e is ErrorCodeException) {
@@ -245,7 +254,13 @@ class DriveNodeService(
                     } else {
                         CommonMessageCode.SYSTEM_ERROR.getCode()
                     }
-                    DriveNodeBatchResult(ino = it.node.ino, nodeId = it.node.nodeId, code = code, message = e.message)
+                    DriveNodeBatchResult(
+                        op = it.op,
+                        ino = it.node.ino,
+                        nodeId = it.node.nodeId,
+                        code = code,
+                        message = e.message
+                    )
                 }
             }
             logger.info(

@@ -1,12 +1,12 @@
 package com.tencent.bkrepo.fs.server.handler.drive
 
+import com.tencent.bkrepo.fs.server.readBodyOrNull
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOperation
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeModifiedPageRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodePageRequest
 import com.tencent.bkrepo.fs.server.service.drive.DriveNodeService
 import com.tencent.bkrepo.fs.server.utils.ReactiveResponseBuilder
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -21,8 +21,7 @@ class DriveNodeOperationsHandler(
     private val driveNodeService: DriveNodeService,
 ) {
     suspend fun batch(request: ServerRequest): ServerResponse {
-        val operations =
-            request.bodyToMono(Array<DriveNodeBatchOperation>::class.java).awaitSingleOrNull()?.toList().orEmpty()
+        val operations = request.readBodyOrNull(Array<DriveNodeBatchOperation>::class.java)?.toList().orEmpty()
         val batchResult = driveNodeService.batch(DriveNodeBatchRequest(request, operations))
         return ReactiveResponseBuilder.success(batchResult)
     }
