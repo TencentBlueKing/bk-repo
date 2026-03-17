@@ -445,7 +445,8 @@ class RepositoryServiceImpl(
     private fun checkAndRemoveDeletedRepo(projectId: String, repoName: String, credentialsKey: String?) {
         val query = buildDeletedQuery(projectId, repoName)
         repositoryDao.findOne(query)?.let {
-            if (credentialsKey == it.credentialsKey) {
+            // DRIVE仓库被完全删除清理后才支持创建同名仓库，避免快照、DriveNode等数据混淆
+            if (it.type != RepositoryType.DRIVE && credentialsKey == it.credentialsKey) {
                 repositoryDao.remove(query)
                 logger.info("Retrieved deleted record of Repository[$projectId/$repoName] before creating")
             } else {

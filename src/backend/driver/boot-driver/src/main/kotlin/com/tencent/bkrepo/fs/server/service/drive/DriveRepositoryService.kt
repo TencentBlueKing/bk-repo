@@ -2,16 +2,13 @@ package com.tencent.bkrepo.fs.server.service.drive
 
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
-import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.repo.impl.RRepositoryServiceImpl
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.repository.RDriveNodeDao
-import com.tencent.bkrepo.fs.server.request.drive.DriveRepoCreateRequest
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper.ROOT_INO
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils.toNanoTimestamp
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
-import com.tencent.bkrepo.repository.pojo.repo.RepoCreateRequest
 import com.tencent.bkrepo.repository.pojo.repo.RepositoryDetail
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -20,8 +17,6 @@ import java.time.LocalDateTime
 
 /**
  * Drive 仓库服务
- *
- * 仅支持创建/初始化 DRIVE 类型仓库。
  */
 @Service
 class DriveRepositoryService(
@@ -29,32 +24,28 @@ class DriveRepositoryService(
     private val driveNodeDao: RDriveNodeDao,
     private val driveSnapSeqService: DriveSnapSeqService,
 ) {
-    suspend fun createRepository(request: DriveRepoCreateRequest): RepositoryDetail {
-        val operator = ReactiveSecurityUtils.getUser()
-        val repository = repositoryService.getRepoDetail(request.projectId, request.name)?.also {
-            checkDriveType(request.projectId, request.name, it.type)
-        } ?: repositoryService.createRepo(
-            RepoCreateRequest(
-                projectId = request.projectId,
-                name = request.name,
-                type = RepositoryType.DRIVE,
-                category = RepositoryCategory.LOCAL,
-                public = false,
-                operator = operator,
-                configuration = request.configuration,
-                storageCredentialsKey = request.storageCredentialsKey,
-                quota = request.quota,
-                description = request.description,
-                display = true,
-            )
-        )
-        ensureDriveRepositoryInitialized(request.projectId, request.name, operator)
-        return repository
+
+    /**
+     * 初始化 DRIVE 仓库
+     *
+     * 确保 DRIVE 仓库的 SnapSeq 和根节点已创建。该方法为幂等操作，可安全重复调用。
+     *
+     * @param projectId 项目 ID
+     * @param repoName 仓库名称
+     */
+    suspend fun initDriveRepository(projectId: String, repoName: String) {
+        val repo = repositoryService.getRepoDetail(projectId, repoName)
+            ?: throw ErrorCodeException(CommonMessageCode.RESOURCE_NOT_FOUND, "$projectId/$repoName")
+        initDriveRepository(repo, ReactiveSecurityUtils.getUser())
     }
 
-    private suspend fun ensureDriveRepositoryInitialized(projectId: String, repoName: String, operator: String) {
-        driveSnapSeqService.createSnapSeq(projectId, repoName)
-        ensureRootNode(projectId, repoName, operator)
+    suspend fun initDriveRepository(repo: RepositoryDetail, operator: String) {
+        with(repo) {
+            checkDriveType(projectId, name, repo.type)
+            driveSnapSeqService.createSnapSeq(projectId, name)
+            ensureRootNode(projectId, name, operator)
+            logger.info("Initialize drive repository[$projectId/$name] success.")
+        }
     }
 
     private suspend fun ensureRootNode(projectId: String, repoName: String, operator: String) {

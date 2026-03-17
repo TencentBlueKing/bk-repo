@@ -132,7 +132,7 @@ class RouteConfiguration(
 
         "/drive".nest {
             "/repository".nest {
-                POST("/create/{projectId}/{repoName}", driveRepositoryHandler::createRepository)
+                POST("/init/{projectId}/{repoName}", driveRepositoryHandler::initRepository)
             }
             "/block".nest {
                 filter(artifactFileCleanupFilterFunction::filter)

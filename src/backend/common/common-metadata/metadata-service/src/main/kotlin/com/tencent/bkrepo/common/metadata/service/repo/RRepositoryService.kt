@@ -61,6 +61,15 @@ interface RRepositoryService {
     suspend fun getRepoDetail(projectId: String, name: String, type: String? = null): RepositoryDetail?
 
     /**
+     * 查询仓库详情，包含已逻辑删除的仓库，不存在返回null
+     *
+     * @param projectId 项目id
+     * @param name 仓库名称
+     * @param type 仓库类型
+     */
+    suspend fun getRepoDetailIncludeDeleted(projectId: String, name: String, type: String? = null): RepositoryDetail?
+
+    /**
      * 查询项目[projectId]下的所有仓库
      */
     suspend fun listRepo(
