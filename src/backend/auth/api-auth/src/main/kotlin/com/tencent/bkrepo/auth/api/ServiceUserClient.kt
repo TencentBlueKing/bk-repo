@@ -166,4 +166,21 @@ interface ServiceUserClient {
         @RequestBody request: CreateUserRequest,
         @RequestParam hashedPwd: String?
     ): Response<Void>
+
+    @Operation(summary = "联邦同步：新增用户 token（hashed id 直接写入）")
+    @PostMapping("/federation/token/{uid}/{name}")
+    fun addUserTokenForFederation(
+        @PathVariable uid: String,
+        @PathVariable name: String,
+        @RequestParam hashedTokenId: String,
+        @RequestParam(required = false) createdAt: String?,
+        @RequestParam(required = false) expiredAt: String?
+    ): Response<Void>
+
+    @Operation(summary = "联邦同步：删除用户 token")
+    @DeleteMapping("/federation/token/{uid}/{name}")
+    fun removeUserTokenForFederation(
+        @PathVariable uid: String,
+        @PathVariable name: String
+    ): Response<Void>
 }

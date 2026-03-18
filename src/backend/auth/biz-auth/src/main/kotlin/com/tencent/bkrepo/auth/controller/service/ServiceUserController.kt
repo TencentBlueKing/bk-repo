@@ -132,4 +132,20 @@ class ServiceUserController @Autowired constructor(
         userService.upsertUserForFederation(request, hashedPwd)
         return ResponseBuilder.success()
     }
+
+    override fun addUserTokenForFederation(
+        uid: String,
+        name: String,
+        hashedTokenId: String,
+        createdAt: String?,
+        expiredAt: String?
+    ): Response<Void> {
+        userService.addUserTokenForFederation(uid, name, hashedTokenId, createdAt, expiredAt)
+        return ResponseBuilder.success()
+    }
+
+    override fun removeUserTokenForFederation(uid: String, name: String): Response<Void> {
+        userService.removeToken(uid, name)
+        return ResponseBuilder.success()
+    }
 }

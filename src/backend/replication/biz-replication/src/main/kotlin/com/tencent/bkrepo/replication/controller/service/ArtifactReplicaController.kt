@@ -87,6 +87,7 @@ import com.tencent.bkrepo.replication.pojo.request.ReplicaAction
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.TemporaryTokenReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.UserTokenReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.DirectChildrenPage
 import com.tencent.bkrepo.replication.pojo.request.DirectChildrenRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
@@ -1188,6 +1189,30 @@ class ArtifactReplicaController(
                         "Skipping repo auth config DELETE (not supported):" +
                             " ${request.projectId}/${request.repoName}"
                     )
+                }
+            }
+        } finally {
+            FederationReplicaContext.clear()
+        }
+        return ResponseBuilder.success()
+    }
+
+    @Permission(ResourceType.REPLICATION, PermissionAction.WRITE)
+    override fun replicaUserTokenRequest(request: UserTokenReplicaRequest): Response<Void> {
+        FederationReplicaContext.markAsFederationWrite()
+        try {
+            when (request.action) {
+                ReplicaAction.UPSERT -> {
+                    userResource.addUserTokenForFederation(
+                        uid = request.userId,
+                        name = request.tokenName,
+                        hashedTokenId = request.hashedTokenId,
+                        createdAt = request.createdAt.ifEmpty { null },
+                        expiredAt = request.expiredAt
+                    )
+                }
+                ReplicaAction.DELETE -> {
+                    userResource.removeUserTokenForFederation(request.userId, request.tokenName)
                 }
             }
         } finally {

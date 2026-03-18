@@ -110,4 +110,13 @@ interface UserService {
 
     /** 联邦同步专用：直接写入已 hash 的密码，跳过二次 hash */
     fun upsertUserForFederation(request: CreateUserRequest, hashedPwd: String?)
+
+    /** 联邦同步专用：直接写入已 hash 的 token id，跳过二次 hash */
+    fun addUserTokenForFederation(
+        userId: String,
+        tokenName: String,
+        hashedTokenId: String,
+        createdAt: String?,
+        expiredAt: String?
+    )
 }

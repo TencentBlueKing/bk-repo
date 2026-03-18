@@ -75,4 +75,7 @@ interface AccountService {
 
     /** 联邦同步专用：直接覆盖写入账号（含真实 credentials），跳过脱敏逻辑 */
     fun upsertAccountForFederation(accountInfo: AccountInfo)
+
+    /** 联邦同步专用：按 appId 查询单个账号，不校验 owner */
+    fun getAccountForFederation(appId: String): Account?
 }

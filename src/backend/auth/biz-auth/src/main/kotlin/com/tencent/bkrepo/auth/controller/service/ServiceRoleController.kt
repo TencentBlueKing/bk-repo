@@ -88,6 +88,11 @@ class ServiceRoleController @Autowired constructor(
         return ResponseBuilder.success(roles.map { it.toRoleInfo() })
     }
 
+    override fun getRoleByIdForFederation(id: String): Response<RoleInfo?> {
+        val role = roleService.detail(id)
+        return ResponseBuilder.success(role?.toRoleInfo())
+    }
+
     private fun com.tencent.bkrepo.auth.pojo.role.Role.toRoleInfo() = RoleInfo(
         id = id,
         roleId = roleId,

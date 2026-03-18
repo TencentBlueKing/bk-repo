@@ -33,8 +33,6 @@ import com.tencent.bkrepo.common.artifact.event.base.EventType
 import com.tencent.bkrepo.common.service.feign.FeignClientFactory
 import com.tencent.bkrepo.replication.api.ArtifactReplicaClient
 import com.tencent.bkrepo.replication.dao.FederatedRepositoryDao
-import com.tencent.bkrepo.replication.pojo.request.ReplicaAction
-import com.tencent.bkrepo.replication.pojo.request.TemporaryTokenReplicaRequest
 import com.tencent.bkrepo.replication.replica.executor.FederationThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.replicator.standalone.FederationReplicator
 import com.tencent.bkrepo.replication.replica.type.event.EventConsumer
@@ -156,12 +154,18 @@ class FederationPermissionEventConsumer(
                 federationReplicator.replicaOauthTokenChangeTo(client, event.resourceKey, false, clusterName)
             EventType.OAUTH_TOKEN_DELETED ->
                 federationReplicator.replicaOauthTokenChangeTo(client, event.resourceKey, true, clusterName)
+            EventType.USER_TOKEN_CREATED -> {
+                val userId = event.data["userId"]?.toString() ?: return
+                federationReplicator.replicaUserTokenChangeTo(client, userId, event.resourceKey, false, clusterName)
+            }
+            EventType.USER_TOKEN_DELETED -> {
+                val userId = event.data["userId"]?.toString() ?: return
+                federationReplicator.replicaUserTokenChangeTo(client, userId, event.resourceKey, true, clusterName)
+            }
             EventType.TEMP_TOKEN_CREATED ->
-                federationReplicator.replicaTemporaryTokensTo(client, event.projectId, clusterName)
+                federationReplicator.replicaTemporaryTokenChangeTo(client, event.resourceKey, false, clusterName)
             EventType.TEMP_TOKEN_DELETED ->
-                client.replicaTemporaryTokenRequest(
-                    TemporaryTokenReplicaRequest(action = ReplicaAction.DELETE, token = event.resourceKey)
-                )
+                federationReplicator.replicaTemporaryTokenChangeTo(client, event.resourceKey, true, clusterName)
             EventType.PROXY_CREATED, EventType.PROXY_UPDATED ->
                 federationReplicator.replicaProxyChangeTo(
                     client, event.resourceKey, event.projectId, false, clusterName
@@ -182,6 +186,7 @@ class FederationPermissionEventConsumer(
         /** 全局范围事件：与 projectId 无关，同步到所有联邦集群 */
         val GLOBAL_TYPES: Set<EventType> = setOf(
             EventType.USER_CREATED, EventType.USER_UPDATED, EventType.USER_DELETED,
+            EventType.USER_TOKEN_CREATED, EventType.USER_TOKEN_DELETED,
             EventType.ACCOUNT_CREATE, EventType.ACCOUNT_UPDATE, EventType.ACCOUNT_DELETE,
             EventType.OAUTH_TOKEN_CREATED, EventType.OAUTH_TOKEN_DELETED,
             EventType.KEYS_CREATE, EventType.KEYS_DELETE,

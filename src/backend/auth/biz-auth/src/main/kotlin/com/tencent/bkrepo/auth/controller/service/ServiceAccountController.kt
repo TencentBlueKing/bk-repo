@@ -87,6 +87,24 @@ class ServiceAccountController @Autowired constructor(
         return ResponseBuilder.success(result)
     }
 
+    override fun getAccountForFederation(appId: String): Response<AccountInfo?> {
+        val acc = accountService.getAccountForFederation(appId) ?: return ResponseBuilder.success(null)
+        return ResponseBuilder.success(
+            AccountInfo(
+                id = acc.id,
+                appId = acc.appId,
+                locked = acc.locked,
+                authorizationGrantTypes = acc.authorizationGrantTypes.map { it.name }.toSet(),
+                homepageUrl = acc.homepageUrl,
+                redirectUri = acc.redirectUri,
+                avatarUrl = acc.avatarUrl,
+                scope = acc.scope?.map { it.name }?.toSet(),
+                description = acc.description,
+                credentials = acc.credentials
+            )
+        )
+    }
+
     override fun createAccountForFederation(accountInfo: AccountInfo): Response<Boolean> {
         accountService.upsertAccountForFederation(accountInfo)
         return ResponseBuilder.success(true)

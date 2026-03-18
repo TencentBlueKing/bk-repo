@@ -5,11 +5,13 @@ import com.tencent.bkrepo.replication.model.TFederationGroup
 import com.tencent.bkrepo.replication.service.FederationGroupService
 import com.tencent.bkrepo.replication.service.FederationRepositoryService
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.mapping.Field
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
@@ -40,28 +42,29 @@ class FederationAutoEnableBatchJob(
 
         var processedCount = 0
         var successCount = 0
-        var pageNumber = 0
+        var lastId: ObjectId? = null
         val pageSize = 100
 
         while (true) {
-            val repos = fetchRepoPage(pageNumber, pageSize)
+            val repos = fetchRepoPage(lastId, pageSize)
             if (repos.isEmpty()) break
             repos.forEach { repo ->
                 processedCount++
                 successCount += processRepo(repo, allGroups)
             }
             if (repos.size < pageSize) break
-            pageNumber++
+            lastId = repos.last().objectId
         }
         logger.info("FederationAutoEnableBatchJob completed: processed=$processedCount, success=$successCount")
     }
 
-    private fun fetchRepoPage(pageNumber: Int, pageSize: Int): List<RepositoryInfo> {
-        return mongoTemplate.find(
-            Query().skip((pageNumber * pageSize).toLong()).limit(pageSize),
-            RepositoryInfo::class.java,
-            "repository"
-        )
+    private fun fetchRepoPage(lastId: ObjectId?, pageSize: Int): List<RepositoryInfo> {
+        val query = if (lastId != null) {
+            Query(Criteria.where("_id").gt(lastId)).limit(pageSize)
+        } else {
+            Query().limit(pageSize)
+        }
+        return mongoTemplate.find(query, RepositoryInfo::class.java, "repository")
     }
 
     private fun processRepo(repo: RepositoryInfo, allGroups: List<TFederationGroup>): Int {
@@ -93,7 +96,9 @@ class FederationAutoEnableBatchJob(
         @Id val id: String? = null,
         @Field("projectId") val projectId: String,
         @Field("name") val name: String
-    )
+    ) {
+        val objectId: ObjectId? get() = id?.let { runCatching { ObjectId(it) }.getOrNull() }
+    }
 
     companion object {
         private val logger = LoggerFactory.getLogger(FederationAutoEnableBatchJob::class.java)

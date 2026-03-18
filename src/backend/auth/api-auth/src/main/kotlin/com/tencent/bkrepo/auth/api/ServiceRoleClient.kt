@@ -84,6 +84,12 @@ interface ServiceRoleClient {
         @RequestParam(defaultValue = "500") pageSize: Int,
     ): Response<List<RoleInfo>>
 
+    @Operation(summary = "按 id 查询单个角色（联邦同步）")
+    @GetMapping("/federation/detail/{id}")
+    fun getRoleByIdForFederation(
+        @PathVariable id: String
+    ): Response<RoleInfo?>
+
     @Operation(summary = "创建角色（联邦同步）")
     @PostMapping("/federation/create")
     fun createRoleForFederation(

@@ -317,7 +317,10 @@ class UserServiceImpl constructor(
             val userInfo = userDao.findFirstByUserId(userId)
             val tokens = userInfo!!.tokens
             tokens.forEach {
-                if (it.name == name) return userToken
+                if (it.name == name) {
+                    publishEvent(EventType.USER_TOKEN_CREATED, name, data = mapOf("userId" to userId, "hashedTokenId" to sm3Id, "createdAt" to createdTime.toString(), "expiredAt" to (expiredTime?.toString() ?: "")))
+                    return userToken
+                }
             }
             return null
         } catch (ignored: DateTimeParseException) {
@@ -344,6 +347,7 @@ class UserServiceImpl constructor(
         logger.info("remove token userId : [$userId] ,name : [$name]")
         userHelper.checkUserExist(userId)
         userDao.removeTokenFromUser(userId, name)
+        publishEvent(EventType.USER_TOKEN_DELETED, name, data = mapOf("userId" to userId))
         return true
     }
 
@@ -456,7 +460,7 @@ class UserServiceImpl constructor(
         return userDao.findAllAdminUsers().map { it.userId }
     }
 
-    private fun publishEvent(type: EventType, resourceKey: String, projectId: String = "") {
+    private fun publishEvent(type: EventType, resourceKey: String, projectId: String = "", data: Map<String, Any> = emptyMap()) {
         if (!authProperties.eventEnabled || FederationWriteContext.isFederationWrite()) return
         val event = ArtifactEvent(
             type = type,
@@ -464,7 +468,8 @@ class UserServiceImpl constructor(
             repoName = "",
             resourceKey = resourceKey,
             userId = runCatching { SecurityUtils.getUserId() }.getOrDefault(""),
-            eventId = ArtifactEvent.generateEventId()
+            eventId = ArtifactEvent.generateEventId(),
+            data = data
         )
         messageSupplier.delegateToSupplier(event, topic = BINDING_OUT_NAME)
     }
@@ -493,6 +498,32 @@ class UserServiceImpl constructor(
                 userDao.updatePasswordByUserId(request.userId, hashedPwd)
             }
         }
+    }
+
+    override fun addUserTokenForFederation(
+        userId: String,
+        tokenName: String,
+        hashedTokenId: String,
+        createdAt: String?,
+        expiredAt: String?
+    ) {
+        userHelper.checkUserExist(userId)
+        val formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME
+        val createdTime = if (!createdAt.isNullOrEmpty()) {
+            runCatching { LocalDateTime.parse(createdAt, formatter) }.getOrDefault(LocalDateTime.now())
+        } else {
+            LocalDateTime.now()
+        }
+        val expiredTime = if (!expiredAt.isNullOrEmpty()) {
+            runCatching { LocalDateTime.parse(expiredAt, formatter) }.getOrNull()
+        } else {
+            null
+        }
+        // 联邦同步直接写入已 hash 的 token id，跳过二次 hash
+        val dataToken = Token(name = tokenName, id = hashedTokenId, createdAt = createdTime, expiredAt = expiredTime)
+        // 先移除同名旧 token，再写入（upsert 语义）
+        userDao.removeTokenFromUser(userId, tokenName)
+        userDao.addUserToken(userId, dataToken)
     }
 
     companion object {

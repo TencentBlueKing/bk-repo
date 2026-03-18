@@ -174,6 +174,8 @@ enum class EventType(val msgKey: String) {
     USER_CREATED("artifact.event.user-created"),
     USER_UPDATED("artifact.event.user-updated"),
     USER_DELETED("artifact.event.user-deleted"),
+    USER_TOKEN_CREATED("artifact.event.user-token-created"),
+    USER_TOKEN_DELETED("artifact.event.user-token-deleted"),
 
     // ROLE
     ROLE_CREATED("artifact.event.role-created"),

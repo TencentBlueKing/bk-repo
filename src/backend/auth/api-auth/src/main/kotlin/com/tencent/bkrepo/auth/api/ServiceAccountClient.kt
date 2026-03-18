@@ -87,6 +87,12 @@ interface ServiceAccountClient {
     @GetMapping("/federation/list")
     fun listAccountsForFederation(): Response<List<AccountInfo>>
 
+    @Operation(summary = "按 appId 查询单个账号（联邦同步）")
+    @GetMapping("/federation/detail/{appId}")
+    fun getAccountForFederation(
+        @PathVariable appId: String
+    ): Response<AccountInfo?>
+
     @Operation(summary = "创建账号（联邦同步）")
     @PostMapping("/federation/create")
     fun createAccountForFederation(

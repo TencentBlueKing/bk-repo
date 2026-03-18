@@ -397,4 +397,8 @@ class AccountServiceImpl constructor(
         private val logger = LoggerFactory.getLogger(AccountServiceImpl::class.java)
         private const val BINDING_OUT_NAME = "artifactEvent-out-0"
     }
+
+    override fun getAccountForFederation(appId: String): Account? {
+        return accountDao.findOneByAppId(appId)?.let { transferAccount(it, displaySecretKey = true) }
+    }
 }

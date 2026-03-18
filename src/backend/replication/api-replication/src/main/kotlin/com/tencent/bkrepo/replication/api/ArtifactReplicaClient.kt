@@ -43,6 +43,7 @@ import com.tencent.bkrepo.replication.pojo.request.RepoAuthConfigReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.TemporaryTokenReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.UserTokenReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.DirectChildrenPage
 import com.tencent.bkrepo.replication.pojo.request.DirectChildrenRequest
 import com.tencent.bkrepo.replication.pojo.request.NodeExistCheckRequest
@@ -305,4 +306,7 @@ interface ArtifactReplicaClient {
 
     @PostMapping("/repo-auth-config/replica")
     fun replicaRepoAuthConfigRequest(@RequestBody request: RepoAuthConfigReplicaRequest): Response<Void>
+
+    @PostMapping("/user-token/replica")
+    fun replicaUserTokenRequest(@RequestBody request: UserTokenReplicaRequest): Response<Void>
 }

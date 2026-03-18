@@ -69,6 +69,7 @@ import com.tencent.bkrepo.replication.pojo.request.RepoAuthConfigReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.RoleReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.TemporaryTokenReplicaRequest
 import com.tencent.bkrepo.replication.pojo.request.UserReplicaRequest
+import com.tencent.bkrepo.replication.pojo.request.UserTokenReplicaRequest
 import com.tencent.bkrepo.replication.replica.context.ReplicaContext
 import com.tencent.bkrepo.replication.replica.executor.FederationFileThreadPoolExecutor
 import com.tencent.bkrepo.replication.replica.replicator.base.AbstractFileReplicator
@@ -374,6 +375,44 @@ class FederationReplicator(
         logger.info("Synced $totalCount temporary tokens to federated cluster [$clusterName]")
     }
 
+    fun replicaTemporaryTokenChangeTo(
+        client: ArtifactReplicaClient,
+        token: String,
+        deleted: Boolean,
+        clusterName: String
+    ) {
+        try {
+            if (deleted) {
+                client.replicaTemporaryTokenRequest(
+                    TemporaryTokenReplicaRequest(action = ReplicaAction.DELETE, token = token)
+                )
+            } else {
+                val tokenInfo = localTemporaryTokenClient.getTokenInfo(token).data ?: run {
+                    logger.warn("TemporaryToken[$token] not found for incremental federation sync")
+                    return
+                }
+                client.replicaTemporaryTokenRequest(
+                    TemporaryTokenReplicaRequest(
+                        action = ReplicaAction.UPSERT,
+                        projectId = tokenInfo.projectId,
+                        repoName = tokenInfo.repoName,
+                        fullPath = tokenInfo.fullPath,
+                        token = tokenInfo.token,
+                        authorizedUserList = tokenInfo.authorizedUserList,
+                        authorizedIpList = tokenInfo.authorizedIpList,
+                        expireDate = tokenInfo.expireDate,
+                        permits = tokenInfo.permits,
+                        type = tokenInfo.type.name,
+                        createdBy = tokenInfo.createdBy
+                    )
+                )
+            }
+            logger.info("Incremental temporaryToken (deleted=$deleted) synced to cluster[$clusterName]")
+        } catch (e: Exception) {
+            logger.warn("Failed to sync temporaryToken to cluster[$clusterName]: ${e.message}")
+        }
+    }
+
     fun replicaOauthTokens(context: ReplicaContext) {
         replicaOauthTokensTo(context.artifactReplicaClient!!, context.remoteCluster.name)
     }
@@ -578,6 +617,42 @@ class FederationReplicator(
         }
     }
 
+    fun replicaUserTokenChangeTo(
+        client: ArtifactReplicaClient,
+        userId: String,
+        tokenName: String,
+        deleted: Boolean,
+        clusterName: String
+    ) {
+        try {
+            if (deleted) {
+                client.replicaUserTokenRequest(
+                    UserTokenReplicaRequest(action = ReplicaAction.DELETE, userId = userId, tokenName = tokenName)
+                )
+            } else {
+                val token = runCatching {
+                    localUserClient.detail(userId).data?.tokens?.firstOrNull { it.name == tokenName }
+                }.getOrNull() ?: run {
+                    logger.warn("UserToken[$tokenName] of user[$userId] not found for incremental federation sync")
+                    return
+                }
+                client.replicaUserTokenRequest(
+                    UserTokenReplicaRequest(
+                        action = ReplicaAction.UPSERT,
+                        userId = userId,
+                        tokenName = tokenName,
+                        hashedTokenId = token.id,
+                        createdAt = token.createdAt.toString(),
+                        expiredAt = token.expiredAt?.toString()
+                    )
+                )
+            }
+            logger.info("Incremental userToken[$tokenName] of user[$userId] (deleted=$deleted) synced to cluster[$clusterName]")
+        } catch (e: Exception) {
+            logger.warn("Failed to sync userToken[$tokenName] of user[$userId] to cluster[$clusterName]: ${e.message}")
+        }
+    }
+
     fun replicaRoleChangeTo(
         client: ArtifactReplicaClient,
         roleId: String,
@@ -589,9 +664,8 @@ class FederationReplicator(
             if (deleted) {
                 client.replicaRoleRequest(RoleReplicaRequest(action = ReplicaAction.DELETE, id = roleId))
             } else {
-                val role = localRoleClient.listRoleByProject(projectId).data
-                    ?.find { it.id == roleId } ?: run {
-                    logger.warn("Role[$roleId] not found in project[$projectId] for incremental federation sync")
+                val role = localRoleClient.getRoleByIdForFederation(roleId).data ?: run {
+                    logger.warn("Role[$roleId] not found for incremental federation sync")
                     return
                 }
                 client.replicaRoleRequest(
@@ -711,8 +785,7 @@ class FederationReplicator(
             if (deleted) {
                 client.replicaAccountRequest(AccountReplicaRequest(action = ReplicaAction.DELETE, appId = appId))
             } else {
-                val acc = localAccountClient.listAccountsForFederation().data
-                    ?.find { it.appId == appId } ?: run {
+                val acc = localAccountClient.getAccountForFederation(appId).data ?: run {
                     logger.warn("Account[$appId] not found for incremental federation sync")
                     return
                 }
