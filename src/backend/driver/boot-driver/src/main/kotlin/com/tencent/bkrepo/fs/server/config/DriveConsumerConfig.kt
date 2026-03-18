@@ -16,11 +16,11 @@ class DriveConsumerConfig {
     /**
      * 注册 Drive 仓库事件消费者
      *
-     * 对应 binding name: driveRepoEventConsumer-in-0
+     * 对应 binding name: repoEventConsumer-in-0
      * 需要配置 destination 为 artifactEvent
      */
-    @Bean("driveRepoEventConsumer")
-    fun driveRepoEventConsumer(driveRepoEventConsumer: DriveRepoEventConsumer): Consumer<Message<ArtifactEvent>> {
+    @Bean("repoEventConsumer")
+    fun repoEventConsumer(driveRepoEventConsumer: DriveRepoEventConsumer): Consumer<Message<ArtifactEvent>> {
         return Consumer { driveRepoEventConsumer.accept(it) }
     }
 }
