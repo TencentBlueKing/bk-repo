@@ -14,6 +14,48 @@ import Icon from '@repository/components/Icon'
 import { throttleMessage } from '@repository/utils'
 import cookies from 'js-cookie'
 
+import * as VueDemi from 'vue-demi'
+import VueCompositionAPI, {
+    defineComponent,
+    ref,
+    reactive,
+    computed,
+    watch,
+    watchEffect,
+    onMounted,
+    onUnmounted,
+    provide,
+    inject,
+    toRef,
+    toRefs
+} from '@vue/composition-api'
+
+// Vue 2.6需要安装@vue/composition-api插件
+import VueCompositionAPI from '@vue/composition-api'
+Vue.use(VueCompositionAPI)
+
+// 手动设置vue-demi使用Vue 2
+if (Vue.version && Vue.version.startsWith('2.')) {
+    VueDemi.isVue2 = true
+    VueDemi.isVue3 = false
+    VueDemi.Vue = Vue
+    VueDemi.Vue2 = Vue
+
+    // 直接从@vue/composition-api导入的API注入到vue-demi
+    VueDemi.defineComponent = defineComponent
+    VueDemi.ref = ref
+    VueDemi.reactive = reactive
+    VueDemi.computed = computed
+    VueDemi.watch = watch
+    VueDemi.watchEffect = watchEffect
+    VueDemi.onMounted = onMounted
+    VueDemi.onUnmounted = onUnmounted
+    VueDemi.provide = provide
+    VueDemi.inject = inject
+    VueDemi.toRef = toRef
+    VueDemi.toRefs = toRefs
+}
+
 const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))
 
 Vue.component('Icon', Icon)
