@@ -7,15 +7,8 @@ import Vue from 'vue'
 import axios from 'axios'
 import BkUserDisplayName from '@blueking/bk-user-display-name'
 
-import createLocale from '@locale'
-import CanwayDialog from '@repository/components/CanwayDialog'
-import EmptyData from '@repository/components/EmptyData'
-import Icon from '@repository/components/Icon'
-import { throttleMessage } from '@repository/utils'
-import cookies from 'js-cookie'
-
 import * as VueDemi from 'vue-demi'
-import VueCompositionAPI, {
+import {
     defineComponent,
     ref,
     reactive,
@@ -54,7 +47,15 @@ if (Vue.version && Vue.version.startsWith('2.')) {
     VueDemi.inject = inject
     VueDemi.toRef = toRef
     VueDemi.toRefs = toRefs
+
 }
+
+import createLocale from '@locale'
+import CanwayDialog from '@repository/components/CanwayDialog'
+import EmptyData from '@repository/components/EmptyData'
+import Icon from '@repository/components/Icon'
+import { throttleMessage } from '@repository/utils'
+import cookies from 'js-cookie'
 
 const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))
 
