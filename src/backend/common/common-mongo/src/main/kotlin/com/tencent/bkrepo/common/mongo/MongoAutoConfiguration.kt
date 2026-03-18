@@ -33,9 +33,9 @@ package com.tencent.bkrepo.common.mongo
 
 import com.tencent.bkrepo.common.mongo.actuate.MongoHealthIndicator
 import com.tencent.bkrepo.common.mongo.api.properties.MongoConnectionPoolProperties
-import com.tencent.bkrepo.common.mongo.dao.util.MongoSslUtils
+import com.tencent.bkrepo.common.mongo.api.properties.MongoSslProperties
+import com.tencent.bkrepo.common.mongo.api.util.MongoSslUtils
 import com.tencent.bkrepo.common.mongo.i18n.LocalDateTimeReadConverter
-import com.tencent.bkrepo.common.mongo.properties.MongoSslProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.actuate.health.HealthIndicator
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty

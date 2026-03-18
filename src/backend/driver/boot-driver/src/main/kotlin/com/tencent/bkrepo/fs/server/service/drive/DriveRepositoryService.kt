@@ -5,7 +5,7 @@ import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.pojo.RepositoryType
 import com.tencent.bkrepo.common.metadata.service.repo.impl.RRepositoryServiceImpl
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
-import com.tencent.bkrepo.fs.server.repository.RDriveNodeDao
+import com.tencent.bkrepo.fs.server.repository.drive.RDriveNodeDao
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper.ROOT_INO
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils.toNanoTimestamp
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils

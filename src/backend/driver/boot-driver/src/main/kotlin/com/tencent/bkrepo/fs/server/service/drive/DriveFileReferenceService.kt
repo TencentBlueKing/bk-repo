@@ -6,7 +6,7 @@ import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
 import com.tencent.bkrepo.fs.server.model.drive.TDriveFileReference
 import com.tencent.bkrepo.common.metadata.pojo.file.FileReference
 import com.tencent.bkrepo.common.metadata.util.FileReferenceQueryHelper
-import com.tencent.bkrepo.fs.server.repository.RDriveFileReferenceDao
+import com.tencent.bkrepo.fs.server.repository.drive.RDriveFileReferenceDao
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Conditional
 import org.springframework.dao.DuplicateKeyException

@@ -1,8 +1,7 @@
-package com.tencent.bkrepo.fs.server.repository
+package com.tencent.bkrepo.fs.server.repository.drive
 
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
-import com.tencent.bkrepo.common.mongo.reactive.dao.HashShardingMongoReactiveDao
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.PageRequest
@@ -17,7 +16,7 @@ import java.time.LocalDateTime
 
 @Component
 @Conditional(ReactiveCondition::class)
-class RDriveNodeDao : HashShardingMongoReactiveDao<TDriveNode>() {
+class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
     suspend fun listNode(projectId: String, repoName: String, parent: Long): List<TDriveNode> {
         val query = Query(listChildrenCriteria(projectId, repoName, parent))
         return find(query)

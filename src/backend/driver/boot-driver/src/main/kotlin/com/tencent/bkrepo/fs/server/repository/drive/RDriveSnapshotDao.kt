@@ -2,7 +2,6 @@ package com.tencent.bkrepo.fs.server.repository.drive
 
 import com.mongodb.client.result.UpdateResult
 import com.tencent.bkrepo.common.metadata.condition.ReactiveCondition
-import com.tencent.bkrepo.common.mongo.reactive.dao.SimpleMongoReactiveDao
 import com.tencent.bkrepo.fs.server.model.drive.TDriveSnapshot
 import org.springframework.context.annotation.Conditional
 import org.springframework.data.domain.PageRequest
@@ -17,7 +16,7 @@ import java.time.LocalDateTime
 
 @Component
 @Conditional(ReactiveCondition::class)
-class RDriveSnapshotDao : SimpleMongoReactiveDao<TDriveSnapshot>() {
+class RDriveSnapshotDao : DriveSimpleMongoReactiveDao<TDriveSnapshot>() {
     suspend fun page(
         projectId: String,
         repoName: String,

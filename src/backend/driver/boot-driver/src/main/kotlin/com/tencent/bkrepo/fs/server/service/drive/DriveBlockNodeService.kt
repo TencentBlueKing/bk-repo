@@ -3,7 +3,7 @@ package com.tencent.bkrepo.fs.server.service.drive
 import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
-import com.tencent.bkrepo.fs.server.repository.RDriveBlockNodeDao
+import com.tencent.bkrepo.fs.server.repository.drive.RDriveBlockNodeDao
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveSnapSeqDao
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
