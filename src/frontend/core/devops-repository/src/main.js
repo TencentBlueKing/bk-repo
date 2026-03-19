@@ -1,72 +1,47 @@
 import './webpack_public_path'
+
+// 第三方库
+import Vue from 'vue'
+import axios from 'axios'
+import cookies from 'js-cookie'
+import BkUserDisplayName from '@blueking/bk-user-display-name'
+import * as VueDemi from 'vue-demi'
+import { defineComponent } from '@vue/composition-api'
+import VueCompositionAPI from '@vue/composition-api'
+
+// 本地模块
 import App from '@/App'
 import createRouter from '@/router'
 import store from '@/store'
 import '@repository/utils/request'
-import Vue from 'vue'
-import axios from 'axios'
-import BkUserDisplayName from '@blueking/bk-user-display-name'
 
-import * as VueDemi from 'vue-demi'
-import {
-    defineComponent,
-    ref,
-    reactive,
-    computed,
-    watch,
-    watchEffect,
-    onMounted,
-    onUnmounted,
-    provide,
-    inject,
-    toRef,
-    toRefs
-} from '@vue/composition-api'
-
-// Vue 2.6需要安装@vue/composition-api插件
-import VueCompositionAPI from '@vue/composition-api'
-Vue.use(VueCompositionAPI)
-
-// 手动设置vue-demi使用Vue 2
-if (Vue.version && Vue.version.startsWith('2.')) {
-    VueDemi.isVue2 = true
-    VueDemi.isVue3 = false
-    VueDemi.Vue = Vue
-    VueDemi.Vue2 = Vue
-
-    // 直接从@vue/composition-api导入的API注入到vue-demi
-    VueDemi.defineComponent = defineComponent
-    VueDemi.ref = ref
-    VueDemi.reactive = reactive
-    VueDemi.computed = computed
-    VueDemi.watch = watch
-    VueDemi.watchEffect = watchEffect
-    VueDemi.onMounted = onMounted
-    VueDemi.onUnmounted = onUnmounted
-    VueDemi.provide = provide
-    VueDemi.inject = inject
-    VueDemi.toRef = toRef
-    VueDemi.toRefs = toRefs
-
-}
-
-import createLocale from '@locale'
+// 组件
 import CanwayDialog from '@repository/components/CanwayDialog'
 import EmptyData from '@repository/components/EmptyData'
 import Icon from '@repository/components/Icon'
-import { throttleMessage } from '@repository/utils'
-import cookies from 'js-cookie'
 
-const { i18n, setLocale } = createLocale(require.context('@locale/repository/', false, /\.json$/))
+// 工具函数
+import { throttleMessage, i18n, setLocale } from '@repository/utils'
+
+// 常量配置
+const THROTTLE_MESSAGE_DELAY = 3500
+const DISPLAY_NAME_CACHE_DURATION = 1000 * 60 * 5 // 5分钟
+const DEFAULT_LANGUAGE = 'zh-cn'
+
+/**
+ * 配置 vue-demi 以支持 Vue 2
+ */
+Vue.use(VueCompositionAPI)
+VueDemi.defineComponent = defineComponent
 
 Vue.component('Icon', Icon)
 Vue.component('CanwayDialog', CanwayDialog)
 Vue.component('EmptyData', EmptyData)
 
+// 全局属性配置
 Vue.prototype.$setLocale = setLocale
-Vue.prototype.$bkMessage = throttleMessage(Vue.prototype.$bkMessage, 3500)
-// 全局存储当前国际化语言
-Vue.prototype.currentLanguage = cookies.get('blueking_language') || 'zh-cn'
+Vue.prototype.$bkMessage = throttleMessage(Vue.prototype.$bkMessage, THROTTLE_MESSAGE_DELAY)
+Vue.prototype.currentLanguage = cookies.get('blueking_language') || DEFAULT_LANGUAGE
 
 document.title = i18n.t('webTitle')
 
@@ -77,7 +52,7 @@ async function setDisplayNamePlugin () {
         BkUserDisplayName.configure({
             tenantId: data.data.tenantId,
             apiBaseUrl: API_BASE_URL,
-            cacheDuration: 1000 * 60 * 5,
+            cacheDuration: DISPLAY_NAME_CACHE_DURATION,
             emptyText: '--'
         })
     } catch (error) {
