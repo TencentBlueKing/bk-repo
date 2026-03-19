@@ -1,5 +1,6 @@
 package com.tencent.bkrepo.fs.server.handler.drive
 
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.artifact.exception.ArtifactNotFoundException
@@ -19,6 +20,7 @@ import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.reactive.function.server.buildAndAwait
+import java.time.format.DateTimeFormatter
 
 /**
  * Drive 文件操作处理器
@@ -59,11 +61,26 @@ class DriveOperationHandler(
         val user = ReactiveSecurityUtils.getUser()
         val artifactFile = request.bodyToArtifactFile()
         val blockRequest = DriveBlockWriteRequest(request)
+
+        // 检查node是否已经被变更
+        val lastModifiedDate = request.headers().firstHeader(HEADER_IF_MATCH)
+            ?: throw ErrorCodeException(CommonMessageCode.HEADER_MISSING, HEADER_IF_MATCH)
+        val node = driveNodeService.getNodeByIno(blockRequest.projectId, blockRequest.repoName, blockRequest.ino)
+        if (node.lastModifiedDate.format(DateTimeFormatter.ISO_DATE_TIME) != lastModifiedDate) {
+            throw ErrorCodeException(
+                status = HttpStatus.PRECONDITION_FAILED,
+                messageCode = CommonMessageCode.PRECONDITION_FAILED,
+                params = arrayOf(HEADER_IF_MATCH),
+            )
+        }
+
+        // 写入数据
         val blockNode = driveFileOperationService.write(artifactFile, blockRequest, user)
         return ReactiveResponseBuilder.success(blockNode)
     }
 
     companion object {
+        private const val HEADER_IF_MATCH = "X-BKRepo-If-Match"
         private val logger = LoggerFactory.getLogger(DriveOperationHandler::class.java)
     }
 }

@@ -4,7 +4,6 @@ import com.tencent.bkrepo.common.artifact.stream.Range
 import com.tencent.bkrepo.common.storage.credentials.StorageCredentials
 import com.tencent.bkrepo.fs.server.model.drive.TDriveBlockNode
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveBlockNodeDao
-import com.tencent.bkrepo.fs.server.repository.drive.RDriveSnapSeqDao
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.query.Criteria
@@ -18,7 +17,6 @@ import java.time.LocalDateTime
 class DriveBlockNodeService(
     private val driveBlockNodeDao: RDriveBlockNodeDao,
     private val driveFileReferenceService: DriveFileReferenceService,
-    private val driveSnapSeq: RDriveSnapSeqDao,
 ) {
 
     suspend fun createBlock(blockNode: TDriveBlockNode, storageCredentials: StorageCredentials?): TDriveBlockNode {
