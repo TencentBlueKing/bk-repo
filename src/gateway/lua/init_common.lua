@@ -32,16 +32,13 @@ arrayUtil = require("util.array_util")
 cookieUtil = require("util.cookie_util")
 urlUtil = require("util.url_util")
 oauthUtil = require("util.oauth_util")
+jwtUtil = require("util.jwt_util")
 hostUtil = require("util.host_util")
 healthUtil = require("util.health_util")
 
 math.randomseed(os.time())
 uuid.seed()
 
-local handle = io.popen("/sbin/ifconfig eth1 | grep 'inet ' | awk '{print $2}'")
-local ip = handle:read("*a")
-handle:close()
-internal_ip = ip
 
 local ok_table = {
   status = 0,

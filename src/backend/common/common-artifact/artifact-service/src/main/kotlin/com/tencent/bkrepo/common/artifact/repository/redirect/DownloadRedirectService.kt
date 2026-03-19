@@ -28,13 +28,33 @@
 package com.tencent.bkrepo.common.artifact.repository.redirect
 
 import com.tencent.bkrepo.common.artifact.repository.context.ArtifactDownloadContext
+import com.tencent.bkrepo.common.storage.innercos.http.HttpMethod
 
 interface DownloadRedirectService {
 
     /**
-     * 是否需要重定向
+     * 支持重定向的请求方法，默认只支持GET请求
      */
-    fun shouldRedirect(context: ArtifactDownloadContext): Boolean
+    fun supportedMethods(): Set<HttpMethod> {
+        return setOf(HttpMethod.GET)
+    }
+
+    /**
+     * 是否需要重定向，默认会先检查请求方法是否在supportedMethods中
+     */
+    fun shouldRedirect(context: ArtifactDownloadContext): Boolean {
+        val requestMethod = context.request.method.uppercase()
+        val supported = supportedMethods().any { it.name.equals(requestMethod, true) }
+        if (!supported) {
+            return false
+        }
+        return doShouldRedirect(context)
+    }
+
+    /**
+     * 具体的重定向判断逻辑，由子类实现
+     */
+    fun doShouldRedirect(context: ArtifactDownloadContext): Boolean
 
     /**
      * 重定向下载请求

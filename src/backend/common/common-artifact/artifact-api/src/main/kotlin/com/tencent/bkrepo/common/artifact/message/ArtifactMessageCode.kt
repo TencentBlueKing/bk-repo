@@ -72,7 +72,8 @@ enum class ArtifactMessageCode(private val key: String) : MessageCode {
     ARTIFACT_PRELOAD_STRATEGY_NOT_FOUND("artifact.preload-strategy.not-found"),
     ARTIFACT_PRELOAD_STRATEGY_EXCEED_MAX_COUNT("artifact.preload-strategy.exceed-max-count"),
     INVALID_METADATA("artifact.metadata.invalid"),
-    TAG_EXISTED("artifact.tag.existed")
+    TAG_EXISTED("artifact.tag.existed"),
+    SHARE_DISABLED("artifact.share.disabled")
     ;
 
     override fun getBusinessCode() = ordinal + 1

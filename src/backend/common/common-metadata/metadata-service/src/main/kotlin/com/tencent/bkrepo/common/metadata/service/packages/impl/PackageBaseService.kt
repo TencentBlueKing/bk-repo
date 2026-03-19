@@ -170,7 +170,8 @@ abstract class PackageBaseService(
             stageTag = stageTag.orEmpty(),
             metadata = packageVersionMetadata,
             tags = request.tags?.filter { it.isNotBlank() }.orEmpty(),
-            extension = request.extension.orEmpty()
+            extension = request.extension.orEmpty(),
+            federatedSource = source,
         )
     }
 
@@ -192,7 +193,8 @@ abstract class PackageBaseService(
             artifactPath = artifactPath,
             stageTag = stageTag.orEmpty(),
             metadata = MetadataUtils.compatibleConvertAndCheck(metadata, packageMetadata),
-            extension = extension.orEmpty()
+            extension = extension.orEmpty(),
+            federatedSource = federatedSource,
         )
     }
 

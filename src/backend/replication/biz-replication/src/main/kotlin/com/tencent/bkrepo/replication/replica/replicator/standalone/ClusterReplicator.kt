@@ -29,9 +29,13 @@ package com.tencent.bkrepo.replication.replica.replicator.standalone
 
 import com.google.common.base.Throwables
 import com.google.common.cache.CacheBuilder
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.constant.StringPool
+import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.artifact.constant.SOURCE_TYPE
 import com.tencent.bkrepo.common.artifact.exception.NodeNotFoundException
+import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
+import com.tencent.bkrepo.common.artifact.pojo.RepositoryCategory
 import com.tencent.bkrepo.common.artifact.resolve.response.ArtifactChannel
 import com.tencent.bkrepo.common.metadata.model.TBlockNode
 import com.tencent.bkrepo.common.service.cluster.ClusterInfo
@@ -49,6 +53,8 @@ import com.tencent.bkrepo.repository.pojo.blocknode.service.BlockNodeCreateReque
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataDeleteRequest
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataModel
 import com.tencent.bkrepo.repository.pojo.metadata.MetadataSaveRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataDeleteRequest
+import com.tencent.bkrepo.repository.pojo.metadata.packages.PackageMetadataSaveRequest
 import com.tencent.bkrepo.repository.pojo.node.NodeInfo
 import com.tencent.bkrepo.repository.pojo.node.service.NodeCreateRequest
 import com.tencent.bkrepo.repository.pojo.node.service.NodeMoveCopyRequest
@@ -130,7 +136,19 @@ class ClusterReplicator(
                     configuration = localRepo.configuration,
                     operator = localRepo.createdBy
                 )
-                remoteRepoCache.put(key, artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!)
+                val remoteRepo = artifactReplicaClient!!.replicaRepoCreateRequest(request).data!!
+                remoteRepoCache.put(key, remoteRepo)
+                if (
+                    remoteRepo.type != remoteRepoType ||
+                    remoteRepo.category != RepositoryCategory.LOCAL &&
+                    remoteRepo.category != RepositoryCategory.COMPOSITE
+                ) {
+                    throw ErrorCodeException(
+                        ArtifactMessageCode.REPOSITORY_EXISTED,
+                        "$remoteProjectId/$remoteRepoName",
+                        status = HttpStatus.CONFLICT
+                    )
+                }
             }
             context.remoteRepo = remoteRepoCache.getIfPresent(key)
         }
@@ -360,6 +378,20 @@ class ClusterReplicator(
     }
 
     override fun replicaMetadataDelete(context: ReplicaContext, metadataDeleteRequest: MetadataDeleteRequest): Boolean {
+        return true
+    }
+
+    override fun replicaPackageMetadataSave(
+        context: ReplicaContext,
+        packageMetadataSaveRequest: PackageMetadataSaveRequest,
+    ): Boolean {
+        return true
+    }
+
+    override fun replicaPackageMetadataDelete(
+        context: ReplicaContext,
+        packageMetadataDeleteRequest: PackageMetadataDeleteRequest,
+    ): Boolean {
         return true
     }
 
