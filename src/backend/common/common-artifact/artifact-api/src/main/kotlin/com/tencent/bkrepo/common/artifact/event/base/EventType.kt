@@ -27,10 +27,16 @@
 
 package com.tencent.bkrepo.common.artifact.event.base
 
+import com.fasterxml.jackson.annotation.JsonCreator
+
 /**
  * 事件类型
  */
 enum class EventType(val msgKey: String) {
+    /**
+     * 未知类型，用于兼容旧版本服务反序列化新增的事件类型，防止抛出异常
+     */
+    UNKNOWN("artifact.event.unknown"),
     // PROJECT
     PROJECT_CREATED("artifact.event.project-created"),
 
@@ -202,4 +208,10 @@ enum class EventType(val msgKey: String) {
 
     // REPO AUTH CONFIG
     REPO_AUTH_CONFIG_UPDATED("artifact.event.repo-auth-config-updated");
+
+    companion object {
+        @JsonCreator
+        @JvmStatic
+        fun fromValue(value: String): EventType = entries.firstOrNull { it.name == value } ?: UNKNOWN
+    }
 }

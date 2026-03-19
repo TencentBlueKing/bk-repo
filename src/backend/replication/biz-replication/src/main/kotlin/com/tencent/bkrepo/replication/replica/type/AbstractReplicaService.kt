@@ -860,6 +860,8 @@ abstract class AbstractReplicaService(
             ExecutionStatus.SUCCESS
         } else {
             context.replicaContext.replicaProgress.failed++
+            context.status = ExecutionStatus.FAILED
+            context.replicaContext.status = ExecutionStatus.FAILED
             ExecutionStatus.FAILED
         }
     }
