@@ -4,9 +4,7 @@ import cn.hutool.core.lang.hash.CityHash
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
-import com.tencent.bkrepo.common.api.util.Preconditions
 import com.tencent.bkrepo.common.artifact.message.ArtifactMessageCode
-import com.tencent.bkrepo.common.artifact.path.PathUtils
 import com.tencent.bkrepo.common.metadata.constant.ID
 import com.tencent.bkrepo.common.mongo.util.Pages
 import com.tencent.bkrepo.fs.server.config.properties.drive.DriveProperties
@@ -14,7 +12,6 @@ import com.tencent.bkrepo.fs.server.message.DriveMessageCode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode
 import com.tencent.bkrepo.fs.server.model.drive.TDriveNode.Companion.TYPE_DIRECTORY
 import com.tencent.bkrepo.fs.server.repository.drive.RDriveNodeDao
-import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBaseRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchOp
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeBatchRequest
 import com.tencent.bkrepo.fs.server.request.drive.DriveNodeCreateRequest
@@ -31,7 +28,7 @@ import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResponse
 import com.tencent.bkrepo.fs.server.response.drive.DriveNodeBatchResult
 import com.tencent.bkrepo.fs.server.response.drive.toDriveNode
 import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper
-import com.tencent.bkrepo.fs.server.utils.DriveNodeQueryHelper.ROOT_INO
+import com.tencent.bkrepo.fs.server.utils.DriveNodeRequestValidator
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
 import com.tencent.bkrepo.fs.server.utils.ExceptionUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
@@ -52,6 +49,7 @@ class DriveNodeService(
     private val driveNodeDao: RDriveNodeDao,
     private val driveSnapSeqService: DriveSnapSeqService,
     private val driveProperties: DriveProperties,
+    private val driveNodeRequestValidator: DriveNodeRequestValidator,
 ) {
     suspend fun getNode(projectId: String, repoName: String, id: String): DriveNode? {
         DriveServiceUtils.validateProjectRepo(projectId, repoName)
@@ -116,7 +114,7 @@ class DriveNodeService(
 
     suspend fun createNode(createRequest: DriveNodeCreateRequest, snapSeq: Long? = null): DriveNode {
         with(createRequest) {
-            validateCreateRequest(createRequest)
+            driveNodeRequestValidator.validateCreateRequest(createRequest)
             val driveNode = createRequest.toDriveNode(
                 snapSeq = resolveSnapSeq(projectId, repoName, snapSeq),
                 operator = ReactiveSecurityUtils.getUser(),
@@ -130,7 +128,7 @@ class DriveNodeService(
 
     suspend fun moveNode(moveRequest: DriveNodeMoveRequest): DriveNode {
         with(moveRequest) {
-            validateMoveRequest(moveRequest)
+            driveNodeRequestValidator.validateMoveRequest(moveRequest)
             val srcNode = getRequiredSource(projectId, repoName, srcNodeId, srcParent, srcName)
             if (srcNode.parent == destParent && srcNode.name == destName) {
                 throw ErrorCodeException(
@@ -186,7 +184,7 @@ class DriveNodeService(
 
     suspend fun update(updateRequest: DriveNodeUpdateRequest, snapSeq: Long? = null): DriveNode {
         with(updateRequest) {
-            validateUpdateRequest(updateRequest)
+            driveNodeRequestValidator.validateUpdateRequest(updateRequest)
             val srcNode = findRequiredNode(projectId, repoName, nodeId)
             val operator = ReactiveSecurityUtils.getUser()
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
@@ -203,7 +201,7 @@ class DriveNodeService(
 
     suspend fun delete(deleteRequest: DriveNodeDeleteRequest, snapSeq: Long? = null): DriveNode {
         with(deleteRequest) {
-            validateDeleteRequest(deleteRequest)
+            driveNodeRequestValidator.validateDeleteRequest(deleteRequest)
             val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, nodeId)
                 ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, nodeId)
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
@@ -408,99 +406,6 @@ class DriveNodeService(
         }
     }
 
-    private suspend fun validateCreateRequest(createRequest: DriveNodeCreateRequest) {
-        with(createRequest) {
-            DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, parent)
-            // ino必须大于0
-            Preconditions.checkArgument(ino >= ROOT_INO, DriveNodeCreateRequest::ino.name)
-            // 节点类型校验
-            Preconditions.checkArgument(type in TDriveNode.ALLOWED_TYPES, TDriveNode::type.name)
-            // 软链接类型关联校验
-            if (type == TDriveNode.TYPE_SYMLINK) {
-                Preconditions.checkArgument(
-                    !symlinkTarget.isNullOrBlank(), TDriveNode::symlinkTarget.name
-                )
-            } else {
-                Preconditions.checkArgument(
-                    symlinkTarget == null, TDriveNode::symlinkTarget.name
-                )
-            }
-            // 时间戳非负校验
-            mtime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::mtime.name) }
-            ctime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::ctime.name) }
-            atime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::atime.name) }
-            validateCommonFields(createRequest)
-        }
-    }
-
-    private suspend fun validateMoveRequest(moveRequest: DriveNodeMoveRequest) {
-        with(moveRequest) {
-            DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, destParent)
-            PathUtils.validateFileName(destName)
-            checkParent(destParent, projectId, repoName)
-            if (srcNodeId.isNullOrBlank()) {
-                DriveServiceUtils.validateProjectRepoAndParent(projectId, repoName, srcParent)
-                PathUtils.validateFileName(srcName.orEmpty())
-                checkParent(srcParent!!, projectId, repoName)
-            }
-        }
-    }
-
-    private suspend fun validateDeleteRequest(deleteRequest: DriveNodeDeleteRequest) {
-        with(deleteRequest) {
-            DriveServiceUtils.validateProjectRepo(projectId, repoName)
-            Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeDeleteRequest::nodeId.name)
-            if (!force) {
-                Preconditions.checkArgument(lastModifiedDate != null, DriveNodeDeleteRequest::lastModifiedDate.name)
-            }
-        }
-    }
-
-    private suspend fun validateUpdateRequest(updateRequest: DriveNodeUpdateRequest) {
-        with(updateRequest) {
-            DriveServiceUtils.validateProjectRepo(projectId, repoName)
-            Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeUpdateRequest::nodeId.name)
-            // 时间戳非负校验
-            mtime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::mtime.name) }
-            ctime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::ctime.name) }
-            atime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::atime.name) }
-            validateCommonFields(updateRequest)
-            if (!force) {
-                Preconditions.checkArgument(lastModifiedDate != null, DriveNodeUpdateRequest::lastModifiedDate.name)
-            }
-        }
-    }
-
-    /**
-     * 校验DriveNodeBaseRequest中的公共字段
-     * 字段为可空类型，非null时才进行校验，兼容create（字段非空）和update（字段可选）两种场景
-     */
-    private suspend fun validateCommonFields(request: DriveNodeBaseRequest) {
-        with(request) {
-            // 数值字段非负校验
-            size?.let { Preconditions.checkArgument(it >= 0, TDriveNode::size.name) }
-            mode?.let { Preconditions.checkArgument(it >= 0, TDriveNode::mode.name) }
-            nlink?.let { Preconditions.checkArgument(it >= 0, TDriveNode::nlink.name) }
-            uid?.let { Preconditions.checkArgument(it >= 0, TDriveNode::uid.name) }
-            gid?.let { Preconditions.checkArgument(it >= 0, TDriveNode::gid.name) }
-            rdev?.let { Preconditions.checkArgument(it >= 0, TDriveNode::rdev.name) }
-            flags?.let { Preconditions.checkArgument(it >= 0, TDriveNode::flags.name) }
-            // 父节点校验
-            parent?.let { checkParent(it, projectId, repoName) }
-            // 文件名校验
-            name?.let {
-                PathUtils.validateFileName(it)
-                DriveServiceUtils.validateLength(it, TDriveNode::name.name, driveProperties.nameMaxLength)
-            }
-            // 软链接目标路径校验
-            symlinkTarget?.let {
-                Preconditions.checkArgument(it.isNotBlank(), TDriveNode::symlinkTarget.name)
-                DriveServiceUtils.validateLength(
-                    it, TDriveNode::symlinkTarget.name, driveProperties.descriptionMaxLength
-                )
-            }
-        }
-    }
 
     private fun buildUpdatedNode(
         srcNode: TDriveNode,
@@ -525,21 +430,6 @@ class DriveNodeService(
             lastModifiedBy = operator,
             lastModifiedDate = now,
         )
-    }
-
-    /**
-     * 检查parent与要创建的driveNode属于同一个仓库
-     */
-    private suspend fun checkParent(parent: Long, projectId: String, repoName: String) {
-        val criteria = where(TDriveNode::projectId).isEqualTo(projectId)
-            .and(TDriveNode::repoName).isEqualTo(repoName)
-            .and(TDriveNode::ino).isEqualTo(parent)
-            .and(TDriveNode::type).isEqualTo(TYPE_DIRECTORY)
-            .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
-            .and(TDriveNode::deleted).isEqualTo(null)
-        if (!driveNodeDao.exists(Query(criteria))) {
-            throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, parent)
-        }
     }
 
     companion object {
