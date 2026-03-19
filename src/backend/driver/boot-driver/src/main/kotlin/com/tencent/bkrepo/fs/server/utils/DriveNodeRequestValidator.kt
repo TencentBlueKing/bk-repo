@@ -58,9 +58,6 @@ class DriveNodeRequestValidator(
         with(deleteRequest) {
             DriveServiceUtils.validateProjectRepo(projectId, repoName)
             Preconditions.checkArgument(ino >= DriveNodeQueryHelper.ROOT_INO, DriveNodeDeleteRequest::ino.name)
-            if (!force) {
-                Preconditions.checkArgument(ifMatch != null, DriveNodeDeleteRequest::ifMatch.name)
-            }
         }
     }
 
@@ -72,9 +69,6 @@ class DriveNodeRequestValidator(
             ctime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::ctime.name) }
             atime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::atime.name) }
             validateCommonFields(updateRequest)
-            if (!force) {
-                Preconditions.checkArgument(ifMatch != null, DriveNodeUpdateRequest::ifMatch.name)
-            }
         }
     }
 
