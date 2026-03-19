@@ -1,6 +1,6 @@
 package com.tencent.bkrepo.fs.server.service.drive
 
-import cn.hutool.core.lang.hash.CityHash
+import com.tencent.bkrepo.common.api.constant.HttpStatus
 import com.tencent.bkrepo.common.api.exception.ErrorCodeException
 import com.tencent.bkrepo.common.api.message.CommonMessageCode
 import com.tencent.bkrepo.common.api.pojo.Page
@@ -32,7 +32,6 @@ import com.tencent.bkrepo.fs.server.utils.DriveNodeRequestValidator
 import com.tencent.bkrepo.fs.server.utils.DriveServiceUtils
 import com.tencent.bkrepo.fs.server.utils.ExceptionUtils
 import com.tencent.bkrepo.fs.server.utils.ReactiveSecurityUtils
-import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.data.mongodb.core.query.Criteria
@@ -185,7 +184,9 @@ class DriveNodeService(
     suspend fun update(updateRequest: DriveNodeUpdateRequest, snapSeq: Long? = null): DriveNode {
         with(updateRequest) {
             driveNodeRequestValidator.validateUpdateRequest(updateRequest)
-            val srcNode = findRequiredNode(projectId, repoName, nodeId)
+            val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
+            checkIfMatch(ifMatch, srcNode)
             val operator = ReactiveSecurityUtils.getUser()
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
             val now = LocalDateTime.now()
@@ -194,7 +195,7 @@ class DriveNodeService(
                 checkConflict(updatedNode)
             }
             val savedNode = saveUpdatedNode(srcNode, updatedNode, updateRequest, currentSnapSeq, operator, now)
-            logger.info("Update drive node[$projectId/$repoName/${srcNode.realIno()}] id[$nodeId] success.")
+            logger.info("Update drive node[$projectId/$repoName/$ino] success.")
             return savedNode.toDriveNode()
         }
     }
@@ -202,12 +203,13 @@ class DriveNodeService(
     suspend fun delete(deleteRequest: DriveNodeDeleteRequest, snapSeq: Long? = null): DriveNode {
         with(deleteRequest) {
             driveNodeRequestValidator.validateDeleteRequest(deleteRequest)
-            val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, nodeId)
-                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, nodeId)
+            val srcNode = driveNodeDao.findByProjectIdAndRepoNameAndIno(projectId, repoName, ino)
+                ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, ino)
+            checkIfMatch(ifMatch, srcNode)
             val currentSnapSeq = resolveSnapSeq(projectId, repoName, snapSeq)
-            doDelete(srcNode, currentSnapSeq, if (force) null else lastModifiedDate)
+            doDelete(srcNode, currentSnapSeq, if (force) null else ifMatch)
             logger.info(
-                "Delete drive node[$projectId/$repoName/${srcNode.realIno()}] " +
+                "Delete drive node[$projectId/$repoName/$ino] " +
                         "at[${srcNode.parent}/${srcNode.name}] success."
             )
             return srcNode.toDriveNode()
@@ -230,10 +232,6 @@ class DriveNodeService(
 
                         DriveNodeBatchOp.UPDATE -> update(it.node.toUpdateRequest(projectId, repoName), currentSnapSeq)
                         DriveNodeBatchOp.DELETE -> delete(it.node.toDeleteRequest(projectId, repoName), currentSnapSeq)
-                        DriveNodeBatchOp.CREATE_HARD_LINK -> createHardLinkNode(
-                            it.node.toCreateRequest(projectId, repoName),
-                            currentSnapSeq
-                        )
                     }
                     successCount++
 
@@ -270,12 +268,7 @@ class DriveNodeService(
         }
     }
 
-    private suspend fun createHardLinkNode(createRequest: DriveNodeCreateRequest, snapSeq: Long): DriveNode {
-        val hardLinkRequest = createRequest.copy(ino = generatePlaceholderIno(), targetIno = createRequest.ino)
-        return createNode(hardLinkRequest, snapSeq)
-    }
-
-    private suspend fun doDelete(driveNode: TDriveNode, curSnapSeq: Long, lastModifiedDate: LocalDateTime? = null) {
+    private suspend fun doDelete(driveNode: TDriveNode, curSnapSeq: Long, ifMatch: LocalDateTime? = null) {
         val nodeId = driveNode.id
         requireNotNull(nodeId)
         with(driveNode) {
@@ -286,7 +279,7 @@ class DriveNodeService(
             if (driveNode.type == TYPE_DIRECTORY && driveNodeDao.existsChild(projectId, repoName, ino)) {
                 throw ErrorCodeException(DriveMessageCode.DIRECTORY_NOT_EMPTY, name)
             }
-            val result = driveNodeDao.markNodeDeleted(projectId, repoName, nodeId, curSnapSeq, lastModifiedDate)
+            val result = driveNodeDao.markNodeDeleted(projectId, repoName, nodeId, curSnapSeq, ifMatch)
             if (result.modifiedCount != 1L) {
                 throw ErrorCodeException(ArtifactMessageCode.NODE_CONFLICT, name)
             }
@@ -302,11 +295,6 @@ class DriveNodeService(
 
     private suspend fun resolveSnapSeq(projectId: String, repoName: String, snapSeq: Long?): Long {
         return snapSeq ?: driveSnapSeqService.getLatestSnapSeq(projectId, repoName)
-    }
-
-    private suspend fun findRequiredNode(projectId: String, repoName: String, nodeId: String): TDriveNode {
-        return driveNodeDao.findByProjectIdAndRepoNameAndId(projectId, repoName, nodeId)
-            ?: throw ErrorCodeException(ArtifactMessageCode.NODE_NOT_FOUND, nodeId)
     }
 
     private suspend fun getRequiredSource(
@@ -356,11 +344,11 @@ class DriveNodeService(
         now: LocalDateTime,
     ): TDriveNode {
         val deleteResult = driveNodeDao.markNodeDeleted(
-            updateRequest.projectId,
-            updateRequest.repoName,
-            updateRequest.nodeId,
+            srcNode.projectId,
+            srcNode.repoName,
+            srcNode.id!!,
             currentSnapSeq,
-            if (updateRequest.force) null else updateRequest.lastModifiedDate
+            if (updateRequest.force) null else updateRequest.ifMatch
         )
         checkUpdateResult(deleteResult.modifiedCount, srcNode.name)
         return doCreate(DriveNodeQueryHelper.buildCowNode(updatedNode, currentSnapSeq, operator, now))
@@ -373,10 +361,10 @@ class DriveNodeService(
     ): TDriveNode {
         val result = try {
             driveNodeDao.updateByNodeId(
-                updateRequest.projectId,
-                updateRequest.repoName,
-                updateRequest.nodeId,
-                if (updateRequest.force) null else updateRequest.lastModifiedDate,
+                srcNode.projectId,
+                srcNode.repoName,
+                srcNode.id!!,
+                if (updateRequest.force) null else updateRequest.ifMatch,
                 updatedNode
             )
         } catch (_: DuplicateKeyException) {
@@ -384,6 +372,16 @@ class DriveNodeService(
         }
         checkUpdateResult(result.modifiedCount, srcNode.name)
         return updatedNode
+    }
+
+    private fun checkIfMatch(ifMatch: LocalDateTime?, srcNode: TDriveNode) {
+        if (ifMatch != null && ifMatch != srcNode.lastModifiedDate) {
+            throw ErrorCodeException(
+                status = HttpStatus.PRECONDITION_FAILED,
+                messageCode = CommonMessageCode.PRECONDITION_FAILED,
+                params = arrayOf("ifMatch"),
+            )
+        }
     }
 
     private fun checkUpdateResult(modifiedCount: Long, nodeName: String) {
@@ -435,9 +433,5 @@ class DriveNodeService(
     companion object {
         private const val SUCCESS_CODE = 0
         private val logger = LoggerFactory.getLogger(DriveNodeService::class.java)
-
-        private fun generatePlaceholderIno(): Long {
-            return CityHash.hash64(ObjectId.get().toByteArray())
-        }
     }
 }

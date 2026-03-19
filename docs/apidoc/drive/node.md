@@ -31,16 +31,16 @@
     {
       "op": "update",
       "node": {
-        "nodeId": "67d074a13d19772f4b813f90",
+        "ino": 1001,
         "size": 1024,
-        "lastModifiedDate": "2026-03-12T09:00:00"
+        "ifMatch": "2026-03-12T09:00:00"
       }
     },
     {
       "op": "delete",
       "node": {
-        "nodeId": "67d074a13d19772f4b813f91",
-        "lastModifiedDate": "2026-03-12T09:10:00"
+        "ino": 1002,
+        "ifMatch": "2026-03-12T09:10:00"
       }
     }
   ]
@@ -51,32 +51,31 @@
   | --------- | ------ | ---- | --- | --------------------------------------------------- | -------------- |
   | projectId | string | 是    | 无   | 项目名称                                                | project name   |
   | repoName  | string | 是    | 无   | 仓库名称                                                | repo name      |
-  | op        | string | 是    | 无   | 操作类型: `create`/`update`/`delete`/`create_hard_link` | operation type |
+  | op        | string | 是    | 无   | 操作类型: `create`/`update`/`delete` | operation type |
   | node      | object | 是    | 无   | 操作对象                                                | operation node |
 
 - `node` 字段说明
 
-  | 字段               | 类型      | 是否必须 | 默认值   | 说明                                                  | Description            |
-  | ---------------- | ------- | ---- | ----- | --------------------------------------------------- | ---------------------- |
-  | nodeId           | string  | 否    | 无     | 节点 ID（update/delete 必填）                             | node id                |
-  | ino              | long    | 否    | 无     | inode（create/create_hard_link 必填）                   | inode                  |
-  | targetIno        | long    | 否    | 无     | 硬链接目标 inode（可选）                                     | hard-link target inode |
-  | parent           | long    | 否    | 无     | 父目录 inode（create 常用）                                | parent inode           |
-  | name             | string  | 否    | 无     | 文件名                                                 | node name              |
-  | size             | long    | 否    | 无     | 文件大小                                                | file size              |
-  | mode             | int     | 否    | 无     | 文件模式                                                | file mode              |
-  | type             | int     | 否    | 无     | 文件类型: 1 文件, 2 目录, 3 软链接                             | file type              |
-  | nlink            | int     | 否    | 无     | 硬链接数                                                | hard link count        |
-  | uid              | int     | 否    | 无     | 用户 ID                                               | user id                |
-  | gid              | int     | 否    | 无     | 组 ID                                                | group id               |
-  | rdev             | int     | 否    | 无     | 设备 ID                                               | device id              |
-  | flags            | int     | 否    | 无     | 文件标志                                                | file flags             |
-  | symlinkTarget    | string  | 否    | 无     | 软链接目标路径                                             | symlink target         |
-  | mtime            | long    | 否    | 无     | 修改时间（纳秒时间戳），create 时不传则使用当前时间                       | modify time (nanos)    |
-  | ctime            | long    | 否    | 无     | 属性变更时间（纳秒时间戳），create 时不传则使用当前时间                     | change time (nanos)    |
-  | atime            | long    | 否    | 无     | 访问时间（纳秒时间戳），create 时不传则使用当前时间                       | access time (nanos)    |
-  | lastModifiedDate | string  | 否    | 无     | 注意该字段不是用于更新，而是服务端的最后修改时间与参数值不匹配时将返回错误，用于并发控制避免数据被覆盖 | last modified date     |
-  | force            | boolean | 否    | false | 是否强制忽略并发检查                                          | force update/delete    |
+  | 字段            | 类型      | 是否必须 | 默认值   | 说明                                                                | Description            |
+  | ------------- | ------- | ---- | ----- | ----------------------------------------------------------------- | ---------------------- |
+  | ino           | long    | 否    | 无     | inode（create/update/delete 必填）                   | inode                  |
+  | targetIno     | long    | 否    | 无     | 硬链接目标 inode                                                       | hard-link target inode |
+  | parent        | long    | 否    | 无     | 父目录 inode（create 常用）                                              | parent inode           |
+  | name          | string  | 否    | 无     | 文件名                                                               | node name              |
+  | size          | long    | 否    | 无     | 文件大小                                                              | file size              |
+  | mode          | int     | 否    | 无     | 文件模式                                                              | file mode              |
+  | type          | int     | 否    | 无     | 文件类型: 1 文件, 2 目录, 3 软链接                                           | file type              |
+  | nlink         | int     | 否    | 无     | 硬链接数                                                              | hard link count        |
+  | uid           | int     | 否    | 无     | 用户 ID                                                             | user id                |
+  | gid           | int     | 否    | 无     | 组 ID                                                              | group id               |
+  | rdev          | int     | 否    | 无     | 设备 ID                                                             | device id              |
+  | flags         | int     | 否    | 无     | 文件标志                                                              | file flags             |
+  | symlinkTarget | string  | 否    | 无     | 软链接目标路径                                                           | symlink target         |
+  | mtime         | long    | 否    | 无     | 修改时间（纳秒时间戳），create 时不传则使用当前时间                                     | modify time (nanos)    |
+  | ctime         | long    | 否    | 无     | 属性变更时间（纳秒时间戳），create 时不传则使用当前时间                                   | change time (nanos)    |
+  | atime         | long    | 否    | 无     | 访问时间（纳秒时间戳），create 时不传则使用当前时间                                     | access time (nanos)    |
+  | ifMatch       | string  | 否    | 无     | 前置条件检查，服务端的 lastModifiedDate 与该值不匹配时返回 PRECONDITION_FAILED，用于并发控制 | precondition check     |
+  | force         | boolean | 否    | false | 是否强制忽略 ifMatch 检查                                                 | force update/delete    |
 
 - 响应体
   ```json
@@ -162,50 +161,48 @@
   ```
 - data 字段说明
 
-  | 字段      | 类型       | 说明                                                 | Description                                       |
-  | ------- | -------- |----------------------------------------------------| ------------------------------------------------- |
-  | op      | string   | 操作类型: `create`/`update`/`delete`/`create_hard_link` | operation type                                    |
-  | ino     | long     | 本次操作节点的 ino（操作失败时可能为空）                             | node ino                                          |
-  | nodeId  | string   | 本次操作节点 ID（操作失败时可能为空）                                      | node id                                           |
-  | node    | object   | 节点详细信息，仅创建和更新操作存在该字段，删除操作为 null，字段同 DriveNode      | node detail, only exists for create/update ops    |
-  | code    | int      | 操作结果码，0 表示成功                                       | result code                                       |
-  | message | string   | 失败消息                                               | failure message                                   |
+  | 字段      | 类型     | 说明                                                  | Description                                    |
+  | ------- | ------ | --------------------------------------------------- | ---------------------------------------------- |
+  | op      | string | 操作类型: `create`/`update`/`delete` | operation type                                 |
+  | ino     | long   | 本次操作节点的 ino（操作失败时可能为空）                              | node ino                                       |
+  | nodeId  | string | 本次操作节点 ID（操作失败时可能为空）                                | node id                                        |
+  | node    | object | 节点详细信息，仅创建和更新操作存在该字段，删除操作为 null，字段同 DriveNode       | node detail, only exists for create/update ops |
+  | code    | int    | 操作结果码，0 表示成功                                        | result code                                    |
+  | message | string | 失败消息                                                | failure message                                |
 
 - 各操作返回的 code 说明
-
   > 每个操作独立执行，单个操作失败不影响其他操作。code 为 0 表示操作成功，非 0 表示失败。
-
   **通用错误码**（所有操作均可能返回）
 
-  | code   | 错误码枚举          | 说明     | 触发场景              |
-  | ------ | --------------- | ------ | ----------------- |
-  | 0      | SUCCESS         | 操作成功   | 操作执行成功            |
-  | 250102 | SYSTEM_ERROR    | 系统异常   | 服务端发生未预期的异常       |
+  | code   | 错误码枚举             | 说明   | 触发场景                      |
+  | ------ | ----------------- | ---- | ------------------------- |
+  | 0      | SUCCESS           | 操作成功 | 操作执行成功                    |
+  | 250102 | SYSTEM_ERROR      | 系统异常 | 服务端发生未预期的异常               |
   | 250104 | PARAMETER_INVALID | 参数非法 | 请求参数校验不通过，如必填字段缺失、字段值不合法等 |
 
-  **create / create_hard_link 操作**
+  **create 操作**
 
-  | code   | 错误码枚举         | 说明     | 触发场景                       |
-  | ------ | -------------- | ------ | -------------------------- |
-  | 251010 | NODE_NOT_FOUND | 节点不存在  | 指定的父目录（parent）不存在          |
-  | 251012 | NODE_EXISTED   | 节点已存在  | 同一父目录下已存在同名节点              |
+  | code   | 错误码枚举          | 说明    | 触发场景              |
+  | ------ | -------------- | ----- | ----------------- |
+  | 251010 | NODE_NOT_FOUND | 节点不存在 | 指定的父目录（parent）不存在 |
+  | 251012 | NODE_EXISTED   | 节点已存在 | 同一父目录下已存在同名节点     |
 
   **update 操作**
 
-  | code   | 错误码枚举          | 说明     | 触发场景                                                            |
-  | ------ | --------------- | ------ | --------------------------------------------------------------- |
-  | 251010 | NODE_NOT_FOUND  | 节点不存在  | 指定的 nodeId 对应的节点不存在                                             |
-  | 251012 | NODE_EXISTED    | 节点已存在  | 更新 parent 或 name 后，目标位置已存在同名节点                                  |
-  | 251013 | NODE_CONFLICT   | 并发冲突   | 请求中 lastModifiedDate 与服务端当前值不一致（可通过 force=true 跳过此检查）            |
+  | code   | 错误码枚举               | 说明     | 触发场景                                                    |
+  | ------ | ------------------- | ------ | ------------------------------------------------------- |
+  | 251010 | NODE_NOT_FOUND      | 节点不存在  | 指定的 ino 对应的节点不存在                                        |
+  | 251012 | NODE_EXISTED        | 节点已存在  | 更新 parent 或 name 后，目标位置已存在同名节点                          |
+  | 250112 | PRECONDITION_FAILED | 前置条件失败 | ifMatch 与服务端 lastModifiedDate 不一致（可通过 force=true 跳过此检查） |
 
   **delete 操作**
 
-  | code   | 错误码枚举               | 说明    | 触发场景                                                             |
-  | ------ | -------------------- | ----- | ---------------------------------------------------------------- |
-  | 250111 | METHOD_NOT_ALLOWED   | 操作不允许 | 尝试删除根节点                                                          |
-  | 251001 | DIRECTORY_NOT_EMPTY  | 目录非空  | 尝试删除的目录下仍存在子节点                                                   |
-  | 251010 | NODE_NOT_FOUND       | 节点不存在 | 指定的 nodeId 对应的节点不存在                                              |
-  | 251013 | NODE_CONFLICT        | 并发冲突  | 请求中 lastModifiedDate 与服务端当前值不一致（可通过 force=true 跳过此检查）             |
+  | code   | 错误码枚举               | 说明     | 触发场景                                                    |
+  | ------ | ------------------- | ------ | ------------------------------------------------------- |
+  | 250111 | METHOD_NOT_ALLOWED  | 操作不允许  | 尝试删除根节点                                                 |
+  | 251001 | DIRECTORY_NOT_EMPTY | 目录非空   | 尝试删除的目录下仍存在子节点                                          |
+  | 251010 | NODE_NOT_FOUND      | 节点不存在  | 指定的 ino 对应的节点不存在                                        |
+  | 250112 | PRECONDITION_FAILED | 前置条件失败 | ifMatch 与服务端 lastModifiedDate 不一致（可通过 force=true 跳过此检查） |
 
 
 ## 分页查询目录下节点

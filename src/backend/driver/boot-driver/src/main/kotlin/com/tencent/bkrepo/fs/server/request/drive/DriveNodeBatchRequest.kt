@@ -32,9 +32,6 @@ enum class DriveNodeBatchOp {
 
     @JsonProperty("update")
     UPDATE,
-
-    @JsonProperty("create_hard_link")
-    CREATE_HARD_LINK,
 }
 
 data class DriveNodeBatchItem(
@@ -55,7 +52,7 @@ data class DriveNodeBatchItem(
     val mtime: Long? = null,
     val ctime: Long? = null,
     val atime: Long? = null,
-    val lastModifiedDate: LocalDateTime? = null,
+    val ifMatch: LocalDateTime? = null,
     val force: Boolean = false,
 )
 
@@ -86,7 +83,7 @@ fun DriveNodeBatchItem.toUpdateRequest(projectId: String, repoName: String): Dri
     return DriveNodeUpdateRequest(
         projectId = projectId,
         repoName = repoName,
-        nodeId = requireNotNull(nodeId) { "nodeId required" },
+        ino = requireNotNull(ino) { "ino required" },
         parent = parent,
         name = name,
         size = size,
@@ -100,7 +97,7 @@ fun DriveNodeBatchItem.toUpdateRequest(projectId: String, repoName: String): Dri
         mtime = mtime,
         ctime = ctime,
         atime = atime,
-        lastModifiedDate = lastModifiedDate,
+        ifMatch = ifMatch,
         force = force,
     )
 }
@@ -109,8 +106,8 @@ fun DriveNodeBatchItem.toDeleteRequest(projectId: String, repoName: String): Dri
     return DriveNodeDeleteRequest(
         projectId = projectId,
         repoName = repoName,
-        nodeId = requireNotNull(nodeId) { "nodeId required" },
-        lastModifiedDate = lastModifiedDate,
+        ino = requireNotNull(ino) { "ino required" },
+        ifMatch = ifMatch,
         force = force,
     )
 }

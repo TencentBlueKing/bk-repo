@@ -83,14 +83,14 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         repoName: String,
         id: String,
         snapSeq: Long,
-        lastModifiedDate: LocalDateTime? = null
+        ifMatch: LocalDateTime? = null
     ): UpdateResult {
         val criteria = Criteria.where(ID).isEqualTo(id)
             .and(TDriveNode::projectId.name).isEqualTo(projectId)
             .and(TDriveNode::repoName.name).isEqualTo(repoName)
             .and(TDriveNode::deleted).isNull()
             .and(TDriveNode::deleteSnapSeq).isEqualTo(Long.MAX_VALUE)
-        lastModifiedDate?.let { criteria.and(TDriveNode::lastModifiedDate).isEqualTo(it) }
+        ifMatch?.let { criteria.and(TDriveNode::lastModifiedDate).isEqualTo(it) }
         val query = Query(criteria)
         val now = LocalDateTime.now()
         val update = Update()
@@ -104,11 +104,11 @@ class RDriveNodeDao : DriveHashShardingMongoReactiveDao<TDriveNode>() {
         projectId: String,
         repoName: String,
         nodeId: String,
-        lastModifiedDate: LocalDateTime? = null,
+        ifMatch: LocalDateTime? = null,
         updatedNode: TDriveNode
     ): UpdateResult {
         val criteria = currentNodeIdCriteria(projectId, repoName, nodeId)
-        lastModifiedDate?.let { criteria.and(TDriveNode::lastModifiedDate).isEqualTo(it) }
+        ifMatch?.let { criteria.and(TDriveNode::lastModifiedDate).isEqualTo(it) }
         val update = Update()
             .set(TDriveNode::parent.name, requireNotNull(updatedNode.parent))
             .set(TDriveNode::name.name, updatedNode.name)

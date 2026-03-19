@@ -57,9 +57,9 @@ class DriveNodeRequestValidator(
     fun validateDeleteRequest(deleteRequest: DriveNodeDeleteRequest) {
         with(deleteRequest) {
             DriveServiceUtils.validateProjectRepo(projectId, repoName)
-            Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeDeleteRequest::nodeId.name)
+            Preconditions.checkArgument(ino >= DriveNodeQueryHelper.ROOT_INO, DriveNodeDeleteRequest::ino.name)
             if (!force) {
-                Preconditions.checkArgument(lastModifiedDate != null, DriveNodeDeleteRequest::lastModifiedDate.name)
+                Preconditions.checkArgument(ifMatch != null, DriveNodeDeleteRequest::ifMatch.name)
             }
         }
     }
@@ -67,13 +67,13 @@ class DriveNodeRequestValidator(
     suspend fun validateUpdateRequest(updateRequest: DriveNodeUpdateRequest) {
         with(updateRequest) {
             DriveServiceUtils.validateProjectRepo(projectId, repoName)
-            Preconditions.checkArgument(nodeId.isNotBlank(), DriveNodeUpdateRequest::nodeId.name)
+            Preconditions.checkArgument(ino >= DriveNodeQueryHelper.ROOT_INO, DriveNodeUpdateRequest::ino.name)
             mtime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::mtime.name) }
             ctime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::ctime.name) }
             atime?.let { Preconditions.checkArgument(it >= 0, TDriveNode::atime.name) }
             validateCommonFields(updateRequest)
             if (!force) {
-                Preconditions.checkArgument(lastModifiedDate != null, DriveNodeUpdateRequest::lastModifiedDate.name)
+                Preconditions.checkArgument(ifMatch != null, DriveNodeUpdateRequest::ifMatch.name)
             }
         }
     }

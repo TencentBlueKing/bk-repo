@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 data class DriveNodeUpdateRequest(
     override val projectId: String,
     override val repoName: String,
-    val nodeId: String,
+    val ino: Long,
     override val parent: Long? = null,
     override val name: String? = null,
     override val size: Long? = null,
@@ -20,7 +20,7 @@ data class DriveNodeUpdateRequest(
     val mtime: Long? = null,
     val ctime: Long? = null,
     val atime: Long? = null,
-    val lastModifiedDate: LocalDateTime? = null,
+    val ifMatch: LocalDateTime? = null,
     val force: Boolean = false,
 ) : DriveNodeBaseRequest(
     projectId = projectId,
